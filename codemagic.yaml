@@ -1,0 +1,198 @@
+workflows:
+  pre-check:
+    name: Pre-check
+    instance_type: mac_mini_m2
+    environment:
+      groups:
+        - notification_emails
+      flutter: stable
+    triggering:
+      events:
+        - pull_request
+      branch_patterns:
+        - pattern: "**"
+          include: true
+          source: false
+    when:
+      changeset:
+        includes:
+          - '.'
+        excludes:
+          - '**/*.md' #Ignore md files
+    cache:
+      cache_paths:
+        - ~/.gradle/caches
+        - ~/.pub-cache
+        - ios/Pods
+        - $FLUTTER_ROOT/.pub-cache
+    scripts:
+      - name: Block skip-checks
+        script: |
+          # Fail if commit message contains "[skip ci]"
+          if git log -1 --pretty=%B | grep -Eq "\[skip ci\]|\[ci skip\]"; then
+            echo "❌ Skipping checks is not allowed!"
+            exit 1
+          fi
+      - name: Clone and Checkout
+        script: |
+          git clone "$CM_REPO_URL" .
+          git checkout "$CM_COMMIT"
+
+      - name: Install Dependencies
+        script: |
+          flutter pub get
+
+      - name: Run Code Analysis
+        script: |
+          echo "🛠️ Running Flutter analysis..."
+          # Get the base commit (when the PR branched off the target branch)
+          BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
+
+          # Identify changed Dart files (lib/ and test/)
+          CHANGED_DART_FILES=$(git diff --name-only $BASE_COMMIT HEAD -- "lib/*.dart" "test/*.dart")
+
+          if [ -z "$CHANGED_DART_FILES" ]; then
+          echo "✅ No Dart files modified. Skipping analysis."
+          exit 0
+          fi
+          echo "🛠️ Analyzing changed files:"
+          echo "$CHANGED_DART_FILES"
+          flutter analyze --fatal-infos --fatal-warnings $CHANGED_DART_FILES
+      - name: Run Changed Tests
+        script: |
+          # Find the common ancestor commit between source and target branches
+          BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
+          
+          # Get changed test files since branching from target
+          CHANGED_TESTS=$(git diff --name-only $BASE_COMMIT HEAD -- "test/*.dart")
+          
+          if [ -z "$CHANGED_TESTS" ]; then
+            echo "✅ No test files modified. Skipping tests."
+            exit 0
+          fi
+          echo "🔍 Running tests for changed files:"
+          echo "$CHANGED_TESTS"
+          flutter test $CHANGED_TESTS --update-goldens
+    publishing:
+      email:
+        recipients:
+          - $EMAIL_DANIEL
+        notify:
+          success: true
+          failure: true
+      slack:
+        channel: '#build-notifications'
+        notify_on_build_start: true
+        notify:
+          success: true
+          failure: true
+  comprehensive-check:
+    name: Comprehensive Check
+    environment:
+      groups:
+        - notification_emails
+        - ripple_arc
+      flutter: stable
+    triggering:
+      events:
+        - pull_request
+      branch_patterns:
+        - pattern: "master"
+          include: true
+    cache:
+      cache_paths:
+        - ~/.gradle/caches
+        - ~/.pub-cache
+        - ios/Pods
+        - $FLUTTER_ROOT/.pub-cache
+        - /usr/local/Homebrew
+        - /usr/local/bin/lcov
+    scripts:
+      - name: Clone and Checkout
+        script: |
+          git clone $CM_REPO_URL .
+          git checkout $CM_COMMIT
+
+      - name: Install Dependencies
+        script: |
+          echo "Downloading Dependencies..."
+          flutter pub get
+
+      - name: Run Code Analysis
+        script: |
+          echo "🛠️ Running Flutter analysis..."
+          flutter analyze --fatal-infos --fatal-warnings .
+
+      - name: Run Unit Tests With Coverage Report
+        script: |
+          TARGET = $ARC_CODE_COVERAGE_TARGET
+          if git log -1 --pretty=%B | grep -Eq "#DeltaCoverageLow=|DCL="; then
+            TARGET = $CODE_COVERAGE_MINIMUM
+            echo "Using minimum coverage target: ${TARGET}% "
+          fi
+          HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
+          mkdir -p test-results 
+          flutter test --tags=units --coverage --machine > test-results/flutter.json
+          # Compute coverage
+          LF=$(grep -m1 '^LF:' coverage/lcov.info | cut -d':' -f2)
+          LH=$(grep -m1 '^LH:' coverage/lcov.info | cut -d':' -f2)
+          COVERAGE_PERCENT=$(echo "scale=2; $LH*100/$LF" | bc)
+        
+          echo "Code Coverage: ${COVERAGE_PERCENT}% "
+          
+          if (( $(echo "$COVERAGE_PERCENT < $TARGET" | bc -l) )); then
+            echo "❌ Coverage is $COVERAGE_PERCENT%, below $ARC_CODE_COVERAGE_TARGET%"
+            exit 1
+          else
+            echo "✅ Coverage is $COVERAGE_PERCENT% (>= $ARC_CODE_COVERAGE_TARGET%)"
+          fi
+        test_report: test-results/flutter.json
+
+      - name: Run Widget Tests
+        script: |
+          flutter test test/widgets
+
+      - name: Run Screenshot Tests
+        script: |
+          flutter test test/screenshots --update-goldens
+
+      - name: Mutation Testing
+        script: |
+          CHANGED_FILES=$(git diff --name-only HEAD HEAD~1 | grep -v "^test" | grep ".dart$" | tr '\n' ' ')
+
+          # Check if CHANGED_FILES is empty
+          if [ -z "$CHANGED_FILES" ]; then
+          echo "No changed Dart files detected. Skipping mutation tests."
+          exit 0
+          else
+          echo "Running mutation tests on: $CHANGED_FILES"
+          dart run mutation_test $CHANGED_FILES --rules=mutation_test_rules.xml
+          fi
+
+      - name: Build Android Debug
+        script: |
+          flutter build apk --debug
+
+      - name: Build iOS Debug
+        script: |
+          flutter build ios --debug --no-codesign
+
+    artifacts:
+      - build/**/outputs/**/*.apk
+      - build/ios/ipa/*.ipa
+      - coverage/*
+      - test-results/flutter.json
+      - mutation-test-report/*
+    publishing:
+      email:
+        recipients:
+          - $EMAIL_DANIEL
+        notify:
+          success: true
+          failure: true
+      slack:
+        channel: '#build-notifications'
+        notify_on_build_start: true
+        notify:
+          success: true
+          failure: true
