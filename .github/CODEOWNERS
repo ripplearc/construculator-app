@@ -1,5 +1,5 @@
-/.github/CODEOWNERS @orionedge
-/.github/workflows/run-c-check.yml @orionedge
-codemagic.yaml  @hyperdanyel
-mutation_test_rules.xml @orionedge
-analysis_options.yaml @orionedge
+/.github/CODEOWNERS @nyelnizy @suyangdong
+/.github/workflows/run-c-check.yml @nyelnizy @suyangdong
+codemagic.yaml  @nyelnizy @suyangdong
+mutation_test_rules.xml @nyelnizy @suyangdong
+analysis_options.yaml @nyelnizy @suyangdong
