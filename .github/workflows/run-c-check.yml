@@ -36,7 +36,7 @@ jobs:
             -H "x-auth-token: $CODEMAGIC_API_TOKEN" \
             -d '{
               "appId": "'"$CODEMAGIC_APP_ID"'",
-              "workflowId": "'comprehensive-check'",
+              "workflowId": "'pre-check'",
               "branch": "'"${{ steps.extract-branch.outputs.source_branch }}"'"
             }' \
             "https://api.codemagic.io/builds")
