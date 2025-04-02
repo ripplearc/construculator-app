@@ -87,13 +87,6 @@ workflows:
         - notification_emails
         - ripple_arc
       flutter: stable
-    triggering:
-      events:
-        - pull_request
-      branch_patterns:
-        - pattern: "exclude-all-branches"
-          include: false
-          source: false
     cache:
       cache_paths:
         - ~/.gradle/caches
@@ -197,13 +190,6 @@ workflows:
         - notification_emails
         - ripple_arc
       flutter: stable
-    triggering:
-      events:
-        - pull_request
-      branch_patterns:
-        - pattern: "exclude-all-branches"
-          include: false
-          source: false
     cache:
       cache_paths:
         - ~/.gradle/caches
