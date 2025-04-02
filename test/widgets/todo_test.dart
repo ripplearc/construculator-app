@@ -19,7 +19,7 @@ void main() {
       expect(find.text('No todos found'), findsOneWidget);
     });
 
-    testWidgets('Add new todo through Fab', (WidgetTester tester) async {
+    testWidgets('Add new todo through FAB', (WidgetTester tester) async {
       await tester.pumpWidget(
         ChangeNotifierProvider(
           create: (_) => TodoProvider(),
