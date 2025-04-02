@@ -1,5 +1,5 @@
-/.github/CODEOWNERS @hyperdanyel
-/.github/workflows/run-c-check.yml @hyperdanyel
-codemagic.yaml  @hyperdanyel
-mutation_test_rules.xml @hyperdanyel
-analysis_options.yaml @hyperdanyel
+/.github/CODEOWNERS @nyelnizy
+/.github/workflows/run-c-check.yml @nyelnizy
+codemagic.yaml  @nyelnizy
+mutation_test_rules.xml @nyelnizy
+analysis_options.yaml @nyelnizy
