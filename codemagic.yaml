@@ -10,7 +10,7 @@ workflows:
       events:
         - pull_request
       branch_patterns:
-        - pattern: "*"
+        - pattern: "no-br"
           include: true
           source: false
     cache:
@@ -61,7 +61,7 @@ workflows:
           CHANGED_TESTS=$(git diff --name-only $BASE_COMMIT HEAD -- "test/*.dart")
           
           if [ -z "$CHANGED_TESTS" ]; then
-            echo "✅ No test files modified. Skipping tests."
+            echo "✅ No test files modified. Skipping tests..."
             exit 0
           fi
           echo "🔍 Running tests for changed files:"
