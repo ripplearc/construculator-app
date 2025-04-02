@@ -39,7 +39,7 @@ workflows:
       - name: Run Code Analysis
         script: |
           echo "🛠️ Running Flutter analysis..."
-          # Get the base commit (when the PR branched off the target branch)
+          # Get the base commit (the PR branched off the target branch)
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
 
           # Identify changed Dart files (lib/ and test/)
