@@ -13,12 +13,6 @@ workflows:
         - pattern: "**"
           include: true
           source: false
-    when:
-      changeset:
-        includes:
-          - '.'
-        excludes:
-          - '**/*.md' #Ignore md files
     cache:
       cache_paths:
         - ~/.gradle/caches
@@ -115,7 +109,6 @@ workflows:
 
       - name: Install Dependencies
         script: |
-          echo "Downloading Dependencies..."
           flutter pub get
 
       - name: Run Code Analysis
