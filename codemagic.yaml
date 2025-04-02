@@ -211,7 +211,7 @@ workflows:
 
       - name: Run Code Analysis
         script: |
-          echo "🛠️ Running Flutter analysis..."
+          echo "🛠️ Running Flutter analysis....."
           flutter analyze --fatal-infos --fatal-warnings .
 
       - name: Run Unit Tests With Coverage Report
