@@ -10,17 +10,6 @@ jobs:
       github.event.issue.pull_request &&
       contains(github.event.comment.body, '#RunCheck')
     steps:
-      - name: Check Secrets Exist
-        run: |
-          if [ -z "$CODEMAGIC_API_TOKEN" ]; then
-            echo "Error: CODEMAGIC_API_TOKEN is not set! no"
-            exit 1
-          fi
-          if [ -z "$CODEMAGIC_APP_ID" ]; then
-            echo "Error: CODEMAGIC_APP_ID is not set!"
-            exit 1
-          fi
-          echo "Secrets are set (values hidden for security)."
       - name: Extract PR Source Branch
         id: extract-branch
         env:
