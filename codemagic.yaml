@@ -10,7 +10,7 @@ workflows:
       events:
         - pull_request
       branch_patterns:
-        - pattern: "**"
+        - pattern: "*"
           include: true
           source: false
     cache:
@@ -91,7 +91,7 @@ workflows:
       events:
         - pull_request
       branch_patterns:
-        - pattern: "master"
+        - pattern: "*"
           include: true
     cache:
       cache_paths:
@@ -190,7 +190,7 @@ workflows:
           success: true
           failure: true
   periodic-check:
-    name: Periodic Comprehensive Check
+    name: Periodic Check
     environment:
       groups:
         - notification_emails
@@ -200,7 +200,7 @@ workflows:
       events:
         - pull_request
       branch_patterns:
-        - pattern: "**"
+        - pattern: "*"
           include: true
     cache:
       cache_paths:
