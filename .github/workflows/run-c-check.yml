@@ -30,6 +30,8 @@ jobs:
           CODEMAGIC_APP_ID: ${{ secrets.CODEMAGIC_APP_ID }}
         run: |
           # Use -f to make curl exit with a non-zero status code on HTTP error
+          echo "$CODEMAGIC_API_TOKEN"
+          echo "$CODEMAGIC_APP_ID"
           RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
             -X POST \
             -H "Content-Type: application/json" \
