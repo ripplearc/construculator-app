@@ -10,7 +10,7 @@ workflows:
       events:
         - pull_request
       branch_patterns:
-        - pattern: "**"
+        - pattern: "*"
           include: true
           source: false
     cache:
@@ -87,12 +87,6 @@ workflows:
         - notification_emails
         - ripple_arc
       flutter: stable
-    triggering:
-      events:
-        - pull_request
-      branch_patterns:
-        - pattern: "master"
-          include: true
     cache:
       cache_paths:
         - ~/.gradle/caches
@@ -190,18 +184,12 @@ workflows:
           success: true
           failure: true
   periodic-check:
-    name: Periodic Comprehensive Check
+    name: Periodic Check
     environment:
       groups:
         - notification_emails
         - ripple_arc
       flutter: stable
-    triggering:
-      events:
-        - pull_request
-      branch_patterns:
-        - pattern: "**"
-          include: true
     cache:
       cache_paths:
         - ~/.gradle/caches
