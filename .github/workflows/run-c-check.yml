@@ -13,7 +13,7 @@ jobs:
       - name: Check Secrets Exist
         run: |
           if [ -z "$CODEMAGIC_API_TOKEN" ]; then
-            echo "Error: CODEMAGIC_API_TOKEN is not set!"
+            echo "Error: CODEMAGIC_API_TOKEN is not set! no"
             exit 1
           fi
           if [ -z "$CODEMAGIC_APP_ID" ]; then
