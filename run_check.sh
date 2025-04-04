@@ -1,6 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
+#Use the commands below to execute checks as needed:
+#./run_check.sh --pre: run pre-check only
+#./run_check.sh --comp: run comprehensive check only
+#./run_check.sh --all: run both pre-check and comprehensive check
+
 # Configuration
 TARGET_BRANCH=${TARGET_BRANCH:-master}
 ARC_CODE_COVERAGE_TARGET=${ARC_CODE_COVERAGE_TARGET:-95}
