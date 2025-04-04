@@ -1,5 +1,6 @@
 /.github/CODEOWNERS @ripplearc/construculator-devop
-/.github/workflows/run-c-check.yml @ripplearc/construculator-devop
+/.github/workflows/run_c_check.yml @ripplearc/construculator-devop
 codemagic.yaml  @ripplearc/construculator-devop
 mutation_test_rules.xml @ripplearc/construculator-devop
 analysis_options.yaml @ripplearc/construculator-devop
+run_check.sh.yaml @ripplearc/construculator-devop
