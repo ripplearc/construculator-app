@@ -68,26 +68,26 @@ workflows:
           echo "🔍 Running tests for changed files:"
           echo "$CHANGED_TESTS"
           TARGET = $ARC_CODE_COVERAGE_TARGET
-            if git log -1 --pretty=%B | grep -Eq "#DeltaCoverageLow|DCL"; then
-              TARGET = $CODE_COVERAGE_MINIMUM
-              echo "Using minimum coverage target: ${TARGET}% "
-            fi
-            HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
-            mkdir -p test-results 
-            flutter test $CHANGED_TESTS --coverage --machine > test-results/flutter.json
-            # Compute coverage
-            LF=$(grep -m1 '^LF:' coverage/lcov.info | cut -d':' -f2)
-            LH=$(grep -m1 '^LH:' coverage/lcov.info | cut -d':' -f2)
-            COVERAGE_PERCENT=$(echo "scale=2; $LH*100/$LF" | bc)
+          if git log -1 --pretty=%B | grep -Eq "#DeltaCoverageLow|DCL"; then
+            TARGET = $CODE_COVERAGE_MINIMUM
+            echo "Using minimum coverage target: ${TARGET}% "
+          fi
+          HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
+          mkdir -p test-results 
+          flutter test $CHANGED_TESTS --coverage --machine > test-results/flutter.json
+          # Compute coverage
+          LF=$(grep -m1 '^LF:' coverage/lcov.info | cut -d':' -f2)
+          LH=$(grep -m1 '^LH:' coverage/lcov.info | cut -d':' -f2)
+          COVERAGE_PERCENT=$(echo "scale=2; $LH*100/$LF" | bc)
 
-            echo "Code Coverage: ${COVERAGE_PERCENT}% "
+          echo "Code Coverage: ${COVERAGE_PERCENT}% "
 
-            if (( $(echo "$COVERAGE_PERCENT < $TARGET" | bc -l) )); then
-              echo "❌ Coverage is $COVERAGE_PERCENT%, below $ARC_CODE_COVERAGE_TARGET%"
-              exit 1
-            else
-              echo "✅ Coverage is $COVERAGE_PERCENT% (>= $ARC_CODE_COVERAGE_TARGET%)"
-            fi
+          if (( $(echo "$COVERAGE_PERCENT < $TARGET" | bc -l) )); then
+            echo "❌ Coverage is $COVERAGE_PERCENT%, below $ARC_CODE_COVERAGE_TARGET%"
+            exit 1
+          else
+            echo "✅ Coverage is $COVERAGE_PERCENT% (>= $ARC_CODE_COVERAGE_TARGET%)"
+          fi
         test_report: test-results/flutter.json
       - name: Run Changed Tests
         script: |
