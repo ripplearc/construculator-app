@@ -201,9 +201,9 @@ workflows:
         script: |
           flutter build apk --debug
 
-      - name: Build iOS Debug
-        script: |
-          flutter build ios --debug --no-codesign
+#      - name: Build iOS Debug
+#        script: |
+#          flutter build ios --debug --no-codesign
 
     artifacts:
       - build/**/outputs/**/*.apk
