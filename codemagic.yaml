@@ -46,8 +46,8 @@ workflows:
           CHANGED_DART_FILES=$(git diff --name-only $BASE_COMMIT HEAD -- "lib/*.dart" "test/*.dart")
 
           if [ -z "$CHANGED_DART_FILES" ]; then
-          echo "✅ No Dart files modified. Skipping analysis."
-          exit 0
+            echo "✅ No Dart files modified. Skipping analysis."
+            exit 0
           fi
           echo "🛠️ Analyzing changed files:"
           echo "$CHANGED_DART_FILES"
@@ -188,13 +188,13 @@ workflows:
           # Get changed test files since branching from target
           CHANGED_FILES=$(git diff --name-only $BASE_COMMIT HEAD | grep -v "^test" | grep ".dart$" | tr '\n' ' ')
           
-         # Check if CHANGED_FILES is empty
+          # Check if CHANGED_FILES is empty
           if [ -z "$CHANGED_FILES" ]; then
-          echo "No changed Dart files detected. Skipping mutation tests."
-          exit 0
+            echo "No changed Dart files detected. Skipping mutation tests."
+            exit 0
           else
-          echo "Running mutation tests on: $CHANGED_FILES"
-          dart run mutation_test $CHANGED_FILES --rules=mutation_test_rules.xml
+            echo "Running mutation tests on: $CHANGED_FILES"
+            dart run mutation_test $CHANGED_FILES --rules=mutation_test_rules.xml
           fi
 
       - name: Build Android Debug
@@ -292,7 +292,6 @@ workflows:
       - name: Mutation Testing
         script: |
           CHANGED_FILES=$(git diff --name-only HEAD HEAD~1 | grep -v "^test" | grep ".dart$" | tr '\n' ' ')
-
           # Check if CHANGED_FILES is empty
           if [ -z "$CHANGED_FILES" ]; then
             echo "No changed Dart files detected. Skipping mutation tests."
