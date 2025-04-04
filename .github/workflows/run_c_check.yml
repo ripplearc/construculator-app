@@ -48,7 +48,7 @@ jobs:
             -d '{
               "appId": "'"$CODEMAGIC_APP_ID"'",
               "workflowId": "comprehensive-check",
-              "branch": "'"feature/test"'"
+              "branch": "'"$BRANCH_NAME"'"
             }' \
             "https://api.codemagic.io/builds"
           )
