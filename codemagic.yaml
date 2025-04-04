@@ -1,7 +1,7 @@
 workflows:
   pre-check:
     name: Pre-check
-    instance_type: mac_mini_m2
+    instance_type: linux_x2
     environment:
       groups:
         - notification_emails
