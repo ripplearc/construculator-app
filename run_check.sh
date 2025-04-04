@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Configuration
 TARGET_BRANCH=${TARGET_BRANCH:-master}
-ARC_CODE_COVERAGE_TARGET=${ARC_CODE_COVERAGE_TARGET:-90}
+ARC_CODE_COVERAGE_TARGET=${ARC_CODE_COVERAGE_TARGET:-95}
 
 # Functions
 check_dependencies() {
@@ -14,7 +14,7 @@ check_dependencies() {
     fi
   done
 
-  if [[ "$RUN_COMPREHENSIVE" == true && ! -f "/usr/local/bin/lcov" ]]; then
+  if [[ "$RUN_COMPREHENSIVE" == true && -z "$(command -v lcov)" ]]; then
     missing+=("lcov")
   fi
 
@@ -55,7 +55,23 @@ pre_check() {
     echo "✅ No tests changed"
   else
     echo "🧪 Running changed tests..."
-    flutter test $changed_tests --update-goldens
+    flutter test $changed_tests --update-goldens --coverage
+
+  # Process coverage
+  if [[ -f "coverage/lcov.info" ]]; then
+    local lf=$(grep -m1 '^LF:' coverage/lcov.info | cut -d: -f2)
+    local lh=$(grep -m1 '^LH:' coverage/lcov.info | cut -d: -f2)
+    local coverage=$(echo "scale=2; $lh*100/$lf" | bc)
+
+    echo "📊 Coverage: $coverage% (Target: ${ARC_CODE_COVERAGE_TARGET}%)"
+    if (( $(echo "$coverage < $ARC_CODE_COVERAGE_TARGET" | bc -l) )); then
+      echo "❌ Low coverage"
+      exit 1
+    fi
+  else
+    echo "❌ Coverage file missing"
+    exit 1
+  fi
   fi
 }
 
@@ -72,7 +88,7 @@ comprehensive_check() {
   # Unit tests with coverage
   echo "🧪 Unit tests with coverage..."
   mkdir -p test-results
-  flutter test --tags=units --coverage --machine > test-results/flutter.json
+  flutter test test/units --coverage --machine > test-results/flutter.json
 
   # Process coverage
   if [[ -f "coverage/lcov.info" ]]; then
@@ -115,14 +131,17 @@ comprehensive_check() {
   echo "🤖 Building Android..."
   flutter build apk --debug
 
-  # Build iOS
-  echo "🍏 Building iOS..."
-  if [[ -d "ios" ]]; then
-    cd ios
-    pod install
-    cd ..
+  if [[ "$(uname)" == "Darwin" ]]; then
+    echo "🍏 Building iOS..."
+    if [[ -d "ios" ]]; then
+      cd ios
+      pod install
+      cd ..
+    fi
+    flutter build ios --debug --no-codesign
+  else
+    echo "Skipping iOS build because the system is not macOS."
   fi
-  flutter build ios --debug --no-codesign
 }
 
 # Main execution

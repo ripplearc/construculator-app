@@ -52,6 +52,43 @@ workflows:
           echo "🛠️ Analyzing changed files:"
           echo "$CHANGED_DART_FILES"
           flutter analyze --fatal-infos --fatal-warnings $CHANGED_DART_FILES
+
+      - name: Run Unit Tests With Coverage
+        script: |
+          # Find the common ancestor commit between source and target branches
+          BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
+
+          # Get changed test files since branching from target
+          CHANGED_TESTS=$(git diff --name-only $BASE_COMMIT HEAD -- "test/units/*.dart")
+
+          if [ -z "$CHANGED_TESTS" ]; then
+            echo "✅ No test files modified. Skipping tests..."
+            exit 0
+          fi
+          echo "🔍 Running tests for changed files:"
+          echo "$CHANGED_TESTS"
+          TARGET = $ARC_CODE_COVERAGE_TARGET
+            if git log -1 --pretty=%B | grep -Eq "#DeltaCoverageLow|DCL"; then
+              TARGET = $CODE_COVERAGE_MINIMUM
+              echo "Using minimum coverage target: ${TARGET}% "
+            fi
+            HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
+            mkdir -p test-results 
+            flutter test $CHANGED_TESTS --coverage --machine > test-results/flutter.json
+            # Compute coverage
+            LF=$(grep -m1 '^LF:' coverage/lcov.info | cut -d':' -f2)
+            LH=$(grep -m1 '^LH:' coverage/lcov.info | cut -d':' -f2)
+            COVERAGE_PERCENT=$(echo "scale=2; $LH*100/$LF" | bc)
+
+            echo "Code Coverage: ${COVERAGE_PERCENT}% "
+
+            if (( $(echo "$COVERAGE_PERCENT < $TARGET" | bc -l) )); then
+              echo "❌ Coverage is $COVERAGE_PERCENT%, below $ARC_CODE_COVERAGE_TARGET%"
+              exit 1
+            else
+              echo "✅ Coverage is $COVERAGE_PERCENT% (>= $ARC_CODE_COVERAGE_TARGET%)"
+            fi
+        test_report: test-results/flutter.json
       - name: Run Changed Tests
         script: |
           # Find the common ancestor commit between source and target branches
@@ -66,7 +103,7 @@ workflows:
           fi
           echo "🔍 Running tests for changed files:"
           echo "$CHANGED_TESTS"
-          flutter test $CHANGED_TESTS --update-goldens
+          flutter test $CHANGED_TESTS --update-goldens --exclude-tags=units
     publishing:
       email:
         recipients:
@@ -113,13 +150,13 @@ workflows:
       - name: Run Unit Tests With Coverage Report
         script: |
           TARGET = $ARC_CODE_COVERAGE_TARGET
-          if git log -1 --pretty=%B | grep -Eq "#DeltaCoverageLow=|DCL="; then
+          if git log -1 --pretty=%B | grep -Eq "#DeltaCoverageLow|DCL"; then
             TARGET = $CODE_COVERAGE_MINIMUM
             echo "Using minimum coverage target: ${TARGET}% "
           fi
           HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
           mkdir -p test-results 
-          flutter test --tags=units --coverage --machine > test-results/flutter.json
+          flutter test test/units --coverage --machine > test-results/flutter.json
           # Compute coverage
           LF=$(grep -m1 '^LF:' coverage/lcov.info | cut -d':' -f2)
           LH=$(grep -m1 '^LH:' coverage/lcov.info | cut -d':' -f2)

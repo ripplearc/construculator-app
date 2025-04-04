@@ -44,3 +44,4 @@ app.*.map.json
 /mutation-test-report
 /test/screenshots/failures
 /coverage
+/test-results
