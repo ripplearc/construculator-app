@@ -5,7 +5,7 @@ workflows:
     environment:
       groups:
         - notification_emails
-      flutter: stable
+      flutter: 3.29.2
     triggering:
       events:
         - pull_request
@@ -86,7 +86,7 @@ workflows:
       groups:
         - notification_emails
         - ripple_arc
-      flutter: stable
+      flutter: 3.29.2
     cache:
       cache_paths:
         - ~/.gradle/caches
@@ -145,9 +145,12 @@ workflows:
 
       - name: Mutation Testing
         script: |
-          CHANGED_FILES=$(git diff --name-only HEAD HEAD~1 | grep -v "^test" | grep ".dart$" | tr '\n' ' ')
-
-          # Check if CHANGED_FILES is empty
+          BASE_COMMIT=$(git merge-base HEAD origin/$BASE_BRANCH)
+          
+          # Get changed test files since branching from target
+          CHANGED_FILES=$(git diff --name-only $BASE_COMMIT HEAD | grep -v "^test" | grep ".dart$" | tr '\n' ' ')
+          
+         # Check if CHANGED_FILES is empty
           if [ -z "$CHANGED_FILES" ]; then
           echo "No changed Dart files detected. Skipping mutation tests."
           exit 0
@@ -189,7 +192,7 @@ workflows:
       groups:
         - notification_emails
         - ripple_arc
-      flutter: stable
+      flutter: 3.29.2
     cache:
       cache_paths:
         - ~/.gradle/caches
@@ -217,7 +220,7 @@ workflows:
       - name: Run Unit Tests With Coverage Report
         script: |
           TARGET = $ARC_CODE_COVERAGE_TARGET
-          if git log -1 --pretty=%B | grep -Eq "#DeltaCoverageLow=|DCL="; then
+          if git log -1 --pretty=%B | grep -Eq "#DeltaCoverageLow|DCL"; then
             TARGET = $CODE_COVERAGE_MINIMUM
             echo "Using minimum coverage target: ${TARGET}% "
           fi
