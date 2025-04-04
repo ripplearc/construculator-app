@@ -295,11 +295,11 @@ workflows:
 
           # Check if CHANGED_FILES is empty
           if [ -z "$CHANGED_FILES" ]; then
-          echo "No changed Dart files detected. Skipping mutation tests."
-          exit 0
+            echo "No changed Dart files detected. Skipping mutation tests."
+            exit 0
           else
-          echo "Running mutation tests on: $CHANGED_FILES"
-          dart run mutation_test $CHANGED_FILES --rules=mutation_test_rules.xml
+            echo "Running mutation tests on: $CHANGED_FILES"
+            dart run mutation_test $CHANGED_FILES --rules=mutation_test_rules.xml
           fi
 
       - name: Build Android Debug
