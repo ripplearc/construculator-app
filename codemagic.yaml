@@ -292,7 +292,6 @@ workflows:
       - name: Mutation Testing
         script: |
           CHANGED_FILES=$(git diff --name-only HEAD HEAD~1 | grep -v "^test" | grep ".dart$" | tr '\n' ' ')
-
           # Check if CHANGED_FILES is empty
           if [ -z "$CHANGED_FILES" ]; then
             echo "No changed Dart files detected. Skipping mutation tests."
