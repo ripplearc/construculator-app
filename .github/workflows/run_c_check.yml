@@ -22,24 +22,12 @@ jobs:
 
           BRANCH_NAME=$(echo "$PR_JSON" | jq -r '.head.ref')
           echo "BRANCH: $BRANCH_NAME"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
       - name: Trigger Codemagic on Source Branch
         env:
           CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
           CODEMAGIC_APP_ID: ${{ secrets.CODEMAGIC_APP_ID }}
         run: |
-          # Use -f to make curl exit with a non-zero status code on HTTP error
-          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-            -X POST \
-            -H "Content-Type: application/json" \
-            -H "x-auth-token: $CODEMAGIC_API_TOKEN" \
-            -d '{
-              "appId": "'"$CODEMAGIC_APP_ID"'",
-              "workflowId": "comprehensive-check",
-              "branch": "'"$BRANCH_NAME"'"
-            }' \
-            "https://api.codemagic.io/builds"
-          )
-
           # Capture the actual response body for debugging
           FULL_RESPONSE=$(curl -s \
             -X POST \
@@ -48,7 +36,7 @@ jobs:
             -d '{
               "appId": "'"$CODEMAGIC_APP_ID"'",
               "workflowId": "comprehensive-check",
-              "branch": "'"$BRANCH_NAME"'"
+              "branch": "'"${{ steps.extract-branch.outputs.branch_name }}"'"
             }' \
             "https://api.codemagic.io/builds"
           )
