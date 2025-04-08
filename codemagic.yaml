@@ -104,7 +104,7 @@ workflows:
           fi
           echo "🔍 Running tests for changed files:"
           echo "$CHANGED_TESTS"
-          flutter test $CHANGED_TESTS --update-goldens --exclude-tags=units
+          flutter test $CHANGED_TESTS --exclude-tags=units
     publishing:
       email:
         recipients:
@@ -181,7 +181,7 @@ workflows:
 
       - name: Run Screenshot Tests
         script: |
-          flutter test test/screenshots --update-goldens
+          flutter test test/screenshots
 
       - name: Mutation Testing
         script: |
