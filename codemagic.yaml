@@ -126,7 +126,6 @@ workflows:
         - notification_emails
         - ripple_arc
       flutter: 3.19.6
-      ubuntu: 24.04
     cache:
       cache_paths:
         - ~/.gradle/caches
