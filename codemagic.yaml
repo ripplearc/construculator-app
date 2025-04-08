@@ -6,7 +6,6 @@ workflows:
       groups:
         - notification_emails
       flutter: 3.29.2
-      ubuntu: 24.04
     triggering:
       events:
         - pull_request
@@ -39,6 +38,8 @@ workflows:
 
       - name: Run Code Analysis
         script: |
+          echo "Linux version: $(uname -a)"
+          echo "Triggered By: $CM_BUILD_STARTED_BY"
           echo "🛠️ Running Flutter analysis..."
           # Get the base commit (when the PR branched off the target branch)
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
@@ -125,7 +126,7 @@ workflows:
       groups:
         - notification_emails
         - ripple_arc
-      flutter: 3.19.6
+      flutter: 3.29.2
     cache:
       cache_paths:
         - ~/.gradle/caches
@@ -318,7 +319,7 @@ workflows:
         notify:
           success: true
           failure: true
-  build-ios-debug:
+  ios-debug-build:
     name: Build Ios Debug
     instance_type: mac_mini_m2
     environment:
@@ -342,61 +343,6 @@ workflows:
         script: |
           echo "Downloading Dependencies..."
           flutter pub get
-
-      - name: Run Code Analysis
-        script: |
-          echo "🛠️ Running Flutter analysis..."
-          flutter analyze --fatal-infos --fatal-warnings .
-
-      - name: Run Unit Tests With Coverage Report
-        script: |
-          TARGET = $ARC_CODE_COVERAGE_TARGET
-          if git log -1 --pretty=%B | grep -Eq "#DeltaCoverageLow|DCL"; then
-            TARGET = $CODE_COVERAGE_MINIMUM
-            echo "Using minimum coverage target: ${TARGET}% "
-          fi
-          HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
-          mkdir -p test-results 
-          flutter test --tags=units --coverage --machine > test-results/flutter.json
-          # Compute coverage
-          LF=$(grep -m1 '^LF:' coverage/lcov.info | cut -d':' -f2)
-          LH=$(grep -m1 '^LH:' coverage/lcov.info | cut -d':' -f2)
-          COVERAGE_PERCENT=$(echo "scale=2; $LH*100/$LF" | bc)
-
-          echo "Code Coverage: ${COVERAGE_PERCENT}% "
-
-          if (( $(echo "$COVERAGE_PERCENT < $TARGET" | bc -l) )); then
-            echo "❌ Coverage is $COVERAGE_PERCENT%, below $ARC_CODE_COVERAGE_TARGET%"
-            exit 1
-          else
-            echo "✅ Coverage is $COVERAGE_PERCENT% (>= $ARC_CODE_COVERAGE_TARGET%)"
-          fi
-        test_report: test-results/flutter.json
-
-      - name: Run Widget Tests
-        script: |
-          flutter test test/widgets
-
-      - name: Run Screenshot Tests
-        script: |
-          flutter test test/screenshots
-
-      - name: Mutation Testing
-        script: |
-          CHANGED_FILES=$(git diff --name-only HEAD HEAD~1 | grep -v "^test" | grep ".dart$" | tr '\n' ' ')
-          # Check if CHANGED_FILES is empty
-          if [ -z "$CHANGED_FILES" ]; then
-            echo "No changed Dart files detected. Skipping mutation tests."
-            exit 0
-          else
-            echo "Running mutation tests on: $CHANGED_FILES"
-            dart run mutation_test $CHANGED_FILES --rules=mutation_test_rules.xml
-          fi
-
-      - name: Build Android Debug
-        script: |
-          flutter build apk --debug
-
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
