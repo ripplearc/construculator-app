@@ -6,6 +6,7 @@ workflows:
       groups:
         - notification_emails
       flutter: 3.29.2
+      ubuntu: 24.04
     triggering:
       events:
         - pull_request
@@ -125,6 +126,7 @@ workflows:
         - notification_emails
         - ripple_arc
       flutter: 3.29.2
+      ubuntu: 24.04
     cache:
       cache_paths:
         - ~/.gradle/caches
@@ -200,10 +202,6 @@ workflows:
       - name: Build Android Debug
         script: |
           flutter build apk --debug
-
-#      - name: Build iOS Debug
-#        script: |
-#          flutter build ios --debug --no-codesign
 
     artifacts:
       - build/**/outputs/**/*.apk
