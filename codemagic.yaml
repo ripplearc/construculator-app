@@ -343,6 +343,9 @@ workflows:
         script: |
           echo "Downloading Dependencies..."
           flutter pub get
+      - name: Build Ios Debug
+        script: |
+          flutter build ios --debug --no-codesign
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
