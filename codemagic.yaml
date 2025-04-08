@@ -320,7 +320,7 @@ workflows:
           success: true
           failure: true
   ios-debug-build:
-    name: Build Ios Debug
+    name: Ios Debug Build
     instance_type: mac_mini_m2
     environment:
       groups:
