@@ -336,8 +336,8 @@ workflows:
     scripts:
       - name: Clone and Checkout
         script: |
-          git clone $CM_REPO_URL .
-          git checkout $BASE_BRANCH
+          git clone "$CM_REPO_URL" .
+          git checkout "$CM_COMMIT"
 
       - name: Install Dependencies
         script: |
