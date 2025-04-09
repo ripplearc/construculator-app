@@ -201,7 +201,7 @@ workflows:
           flutter build apk --debug
 
     artifacts:
-      - build/**/outputs/**/*.apk
+      - build/app/outputs/flutter-apk/*.apk
       - coverage/*
       - test-results/flutter.json
       - mutation-test-report/*
@@ -301,7 +301,7 @@ workflows:
           flutter build apk --debug
 
     artifacts:
-      - build/**/outputs/**/*.apk
+      - build/app/outputs/flutter-apk/*.apk
       - build/ios/ipa/*.ipa
       - coverage/*
       - test-results/flutter.json
