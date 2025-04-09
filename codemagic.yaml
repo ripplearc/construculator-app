@@ -38,6 +38,8 @@ workflows:
 
       - name: Run Code Analysis
         script: |
+          echo "Linux version: $(uname -a)"
+          echo "Triggered By: $CM_BUILD_STARTED_BY"
           echo "🛠️ Running Flutter analysis..."
           # Get the base commit (when the PR branched off the target branch)
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
@@ -103,7 +105,7 @@ workflows:
           fi
           echo "🔍 Running tests for changed files:"
           echo "$CHANGED_TESTS"
-          flutter test $CHANGED_TESTS --update-goldens --exclude-tags=units
+          flutter test $CHANGED_TESTS --exclude-tags=units
     publishing:
       email:
         recipients:
@@ -129,10 +131,7 @@ workflows:
       cache_paths:
         - ~/.gradle/caches
         - ~/.pub-cache
-        - ios/Pods
         - $FLUTTER_ROOT/.pub-cache
-        - /usr/local/Homebrew
-        - /usr/local/bin/lcov
     scripts:
       - name: Clone and Checkout
         script: |
@@ -150,19 +149,19 @@ workflows:
 
       - name: Run Unit Tests With Coverage Report
         script: |
-          TARGET = $ARC_CODE_COVERAGE_TARGET
+          TARGET=$ARC_CODE_COVERAGE_TARGET
           if git log -1 --pretty=%B | grep -Eq "#DeltaCoverageLow|DCL"; then
-            TARGET = $CODE_COVERAGE_MINIMUM
+            TARGET=$CODE_COVERAGE_MINIMUM
             echo "Using minimum coverage target: ${TARGET}% "
           fi
-          HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
+          sudo apt-get install -y lcov
           mkdir -p test-results 
           flutter test test/units --coverage --machine > test-results/flutter.json
           # Compute coverage
           LF=$(grep -m1 '^LF:' coverage/lcov.info | cut -d':' -f2)
           LH=$(grep -m1 '^LH:' coverage/lcov.info | cut -d':' -f2)
           COVERAGE_PERCENT=$(echo "scale=2; $LH*100/$LF" | bc)
-        
+          
           echo "Code Coverage: ${COVERAGE_PERCENT}% "
           
           if (( $(echo "$COVERAGE_PERCENT < $TARGET" | bc -l) )); then
@@ -179,7 +178,7 @@ workflows:
 
       - name: Run Screenshot Tests
         script: |
-          flutter test test/screenshots --update-goldens
+          flutter test test/screenshots
 
       - name: Mutation Testing
         script: |
@@ -201,13 +200,8 @@ workflows:
         script: |
           flutter build apk --debug
 
-#      - name: Build iOS Debug
-#        script: |
-#          flutter build ios --debug --no-codesign
-
     artifacts:
-      - build/**/outputs/**/*.apk
-      - build/ios/ipa/*.ipa
+      - build/app/outputs/flutter-apk/*.apk
       - coverage/*
       - test-results/flutter.json
       - mutation-test-report/*
@@ -226,12 +220,13 @@ workflows:
           failure: true
   periodic-check:
     name: Periodic Check
-    instance_type: mac_mini_m2
+    instance_type: linux_x2
     environment:
       groups:
         - notification_emails
         - ripple_arc
       flutter: 3.29.2
+      ubuntu: 24.04
     cache:
       cache_paths:
         - ~/.gradle/caches
@@ -287,7 +282,7 @@ workflows:
 
       - name: Run Screenshot Tests
         script: |
-          flutter test test/screenshots --update-goldens
+          flutter test test/screenshots
 
       - name: Mutation Testing
         script: |
@@ -305,16 +300,54 @@ workflows:
         script: |
           flutter build apk --debug
 
-      - name: Build iOS Debug
-        script: |
-          flutter build ios --debug --no-codesign
-
     artifacts:
-      - build/**/outputs/**/*.apk
+      - build/app/outputs/flutter-apk/*.apk
       - build/ios/ipa/*.ipa
       - coverage/*
       - test-results/flutter.json
       - mutation-test-report/*
+    publishing:
+      email:
+        recipients:
+          - $EMAIL_DANIEL
+        notify:
+          success: true
+          failure: true
+      slack:
+        channel: '#build-notifications'
+        notify_on_build_start: true
+        notify:
+          success: true
+          failure: true
+  ios-debug-build:
+    name: Ios Debug Build
+    instance_type: mac_mini_m2
+    environment:
+      groups:
+        - notification_emails
+        - ripple_arc
+      flutter: 3.29.2
+    cache:
+      cache_paths:
+        - ~/.pub-cache
+        - ios/Pods
+        - $FLUTTER_ROOT/.pub-cache
+        - /usr/local/Homebrew
+    scripts:
+      - name: Clone and Checkout
+        script: |
+          git clone "$CM_REPO_URL" .
+          git checkout "$CM_COMMIT"
+
+      - name: Install Dependencies
+        script: |
+          echo "Downloading Dependencies..."
+          flutter pub get
+      - name: Build Ios Debug
+        script: |
+          flutter build ios --debug --no-codesign
+    artifacts:
+      - build/ios/iphoneos/*.app
     publishing:
       email:
         recipients:
