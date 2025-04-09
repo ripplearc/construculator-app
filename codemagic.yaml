@@ -347,7 +347,7 @@ workflows:
         script: |
           flutter build ios --debug --no-codesign
     artifacts:
-      - build/ios/ipa/*.ipa
+      - build/ios/iphoneos/*.app
     publishing:
       email:
         recipients:
