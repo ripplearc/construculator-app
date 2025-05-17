@@ -1,0 +1,2 @@
+/Users/syedusamawaqas/Projects/construculator-app/android/app/.cxx/Debug/5h6b6t2t/x86/CMakeFiles/edit_cache.dir
+/Users/syedusamawaqas/Projects/construculator-app/android/app/.cxx/Debug/5h6b6t2t/x86/CMakeFiles/rebuild_cache.dir
