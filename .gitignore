@@ -45,3 +45,9 @@ app.*.map.json
 /test/screenshots/failures
 /coverage
 /test-results
+review.text
+pr_review_for_claude.txt
+.env.*
+!.env.template
+mutation_test_rules.xml
+.cursor
