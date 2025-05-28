@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+   <files>
+        <file>lib/core/config/constants.dart</file>
+    </files>
+    <rules>
+        <literal text="&amp;&amp;" id="and-to-or">
+            <mutation text="||"/>
+        </literal>
+        <literal text="||" id="or-to-and">
+            <mutation text="&amp;&amp;"/>
+        </literal>
+        <literal text="==" id="equals">
+            <mutation text="!="/>
+        </literal>
+        <regex pattern="[\s]if[\s]*\((.*?)\)[\s]*{" dotAll="true" id="if-negation">
+            <mutation text=" if (!($1)) {"/>
+        </regex>
+    </rules>
+
+    <commands>
+           <command group="constants" expected-return="0">flutter test test/units/core/config/constants_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations> 
