@@ -45,7 +45,7 @@ workflows:
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
 
           # Identify changed Dart files (lib/ and test/)
-          CHANGED_DART_FILES=$(git diff --name-only $BASE_COMMIT HEAD -- "lib/*.dart" "test/*.dart")
+          CHANGED_DART_FILES=$(git diff --name-only  --diff-filter=d $BASE_COMMIT HEAD -- "lib/*.dart" "test/*.dart")
 
           if [ -z "$CHANGED_DART_FILES" ]; then
             echo "✅ No Dart files modified. Skipping analysis."
@@ -61,7 +61,7 @@ workflows:
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
 
           # Get changed test files since branching from target
-          CHANGED_TESTS=$(git diff --name-only $BASE_COMMIT HEAD -- "test/units/*.dart")
+          CHANGED_TESTS=$(git diff --name-only  --diff-filter=d $BASE_COMMIT HEAD -- "test/units/*.dart")
 
           if [ -z "$CHANGED_TESTS" ]; then
             echo "✅ No test files modified. Skipping tests..."
@@ -97,7 +97,7 @@ workflows:
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
           
           # Get changed test files since branching from target
-          CHANGED_TESTS=$(git diff --name-only $BASE_COMMIT HEAD -- "test/*.dart")
+          CHANGED_TESTS=$(git diff --name-only  --diff-filter=d $BASE_COMMIT HEAD -- "test/*.dart")
           
           if [ -z "$CHANGED_TESTS" ]; then
             echo "✅ No test files modified. Skipping tests..."
@@ -185,7 +185,7 @@ workflows:
           BASE_COMMIT=$(git merge-base HEAD origin/$BASE_BRANCH)
           
           # Get changed test files since branching from target
-          CHANGED_FILES=$(git diff --name-only $BASE_COMMIT HEAD | grep -v "^test" | grep ".dart$" | tr '\n' ' ')
+          CHANGED_FILES=$(git diff --name-only  --diff-filter=d $BASE_COMMIT HEAD | grep -v "^test" | grep ".dart$" | tr '\n' ' ')
           
           # Check if CHANGED_FILES is empty
           if [ -z "$CHANGED_FILES" ]; then
@@ -286,7 +286,7 @@ workflows:
 
       - name: Mutation Testing
         script: |
-          CHANGED_FILES=$(git diff --name-only HEAD HEAD~1 | grep -v "^test" | grep ".dart$" | tr '\n' ' ')
+          CHANGED_FILES=$(git diff --name-only  --diff-filter=d HEAD HEAD~1 | grep -v "^test" | grep ".dart$" | tr '\n' ' ')
           # Check if CHANGED_FILES is empty
           if [ -z "$CHANGED_FILES" ]; then
             echo "No changed Dart files detected. Skipping mutation tests."

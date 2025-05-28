@@ -1,10 +1,12 @@
 #!/bin/bash
 set -euo pipefail
-
-#Use the commands below to execute checks as needed:
-#./run_check.sh --pre: run pre-check only
-#./run_check.sh --comp: run comprehensive check only
-#./run_check.sh --all: run both pre-check and comprehensive check
+echo "🔄 Script started at: $(date +'%Y-%m-%d %H:%M:%S %Z')"
+# Command options:
+# ./run_check.sh --pre: run pre-check only
+# ./run_check.sh --comp: run comprehensive check only
+# ./run_check.sh --all: run both pre-check and comprehensive check
+# ./run_check.sh --mutations: run mutation tests only
+# ./run_check.sh --target BRANCH: specify target branch (default: master)
 
 # Configuration
 TARGET_BRANCH=${TARGET_BRANCH:-master}
@@ -19,7 +21,7 @@ check_dependencies() {
     fi
   done
 
-  if [[ "$RUN_COMPREHENSIVE" == true && -z "$(command -v lcov)" ]]; then
+  if [[ "$RUN_MUTATIONS" == true || "$RUN_COMPREHENSIVE" == true ]] && [[ -z "$(command -v lcov)" ]]; then
     missing+=("lcov")
   fi
 
@@ -46,7 +48,7 @@ pre_check() {
   local base_commit=$(git merge-base HEAD "origin/$TARGET_BRANCH")
 
   # Changed Dart files analysis
-  local changed_dart_files=$(git diff --name-only "$base_commit" -- "lib/*.dart" "test/*.dart")
+  local changed_dart_files=$(git diff --name-only --diff-filter=d "$base_commit" -- "lib/*.dart" "test/*.dart")
   if [[ -z "$changed_dart_files" ]]; then
     echo "✅ No Dart files changed"
   else
@@ -55,29 +57,104 @@ pre_check() {
   fi
 
   # Changed tests
-  local changed_tests=$(git diff --name-only "$base_commit" -- "test/*.dart")
+  local changed_tests=$(git diff --name-only --diff-filter=d "$base_commit" -- "test/*.dart")
   if [[ -z "$changed_tests" ]]; then
     echo "✅ No tests changed"
   else
     echo "🧪 Running changed tests..."
     flutter test $changed_tests --update-goldens --coverage
 
-  # Process coverage
-  if [[ -f "coverage/lcov.info" ]]; then
-    local lf=$(grep -m1 '^LF:' coverage/lcov.info | cut -d: -f2)
-    local lh=$(grep -m1 '^LH:' coverage/lcov.info | cut -d: -f2)
-    local coverage=$(echo "scale=2; $lh*100/$lf" | bc)
+    # Process coverage
+    if [[ -f "coverage/lcov.info" ]]; then
+      local lf=$(grep '^LF:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
+      local lh=$(grep '^LH:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
+      local coverage=$(echo "scale=2; $lh*100/$lf" | bc)
 
-    echo "📊 Coverage: $coverage% (Target: ${ARC_CODE_COVERAGE_TARGET}%)"
-    if (( $(echo "$coverage < $ARC_CODE_COVERAGE_TARGET" | bc -l) )); then
-      echo "❌ Low coverage"
+      echo "📊 Coverage: $coverage% (Target: ${ARC_CODE_COVERAGE_TARGET}%)"
+      if (( $(echo "$coverage < $ARC_CODE_COVERAGE_TARGET" | bc -l) )); then
+        echo "❌ Low coverage"
+        exit 1
+      fi
+    else
+      echo "❌ Coverage file missing"
       exit 1
     fi
-  else
-    echo "❌ Coverage file missing"
-    exit 1
   fi
+}
+
+run_mutation_tests() {
+  echo "🧬 Running mutation tests..."
+  local start=$(date +%s)
+  echo "⏳ [$(date +'%H:%M:%S')] Starting mutation tests..."
+  local base_commit=$(git merge-base HEAD "origin/$TARGET_BRANCH")
+  
+  # Get all mutation test files in test/mutations/ and subdirectories
+  local all_mutation_files=$(find test/mutations -type f -name "*.xml")
+  
+  # Get all changed files
+  local changed_files=$(git diff --name-only --diff-filter=d "$base_commit" -- "lib/*.dart" "test/*.dart")
+  # Filter mutation files - keep only those that appear in changed_files
+  local mutation_files_to_run=()
+  for mutation_file in $all_mutation_files; do
+    if echo "$changed_files" | grep -qF "$mutation_file"; then
+      mutation_files_to_run+=("$mutation_file")
+    fi
+  done
+  # Hardcoded mutation test files
+  local mutation_files_to_run=($all_mutation_files)
+  if [[ ${#mutation_files_to_run[@]} -eq 0 ]]; then
+    echo "✅ No mutation test files changed"
+    return 0
   fi
+
+  echo "Mutation test files to run:"
+  printf '%s\n' "${mutation_files_to_run[@]}"
+
+  # Create a temporary directory for logs
+  local tmpdir=$(mktemp -d)
+  trap 'rm -rf "$tmpdir"' EXIT
+
+  # Array to store PIDs of background processes
+  local pids=()
+  local failed=0
+
+  # Run mutation tests for each XML file in parallel
+  for mutation_file in "${mutation_files_to_run[@]}"; do
+    {
+      # Create a clean logfile name by replacing slashes with underscores
+      local clean_name=$(echo "$mutation_file" | tr '/' '_')
+      local logfile="$tmpdir/${clean_name}.log"
+      
+      echo "🏃 Running mutation test: $mutation_file"
+      if ! dart run mutation_test "$mutation_file" --no-builtin > "$logfile" 2>&1; then
+        echo "❌ Mutation test failed for: $mutation_file"
+        cat "$logfile"
+        exit 1
+      else
+        echo "✅ Mutation test passed for: $mutation_file"
+        # Only show full output if there were warnings or important info
+        if grep -q -i -e "warning" -e "error" -e "exception" "$logfile"; then
+          cat "$logfile"
+        fi
+      fi
+    } &
+    pids+=($!)
+  done
+
+  # Wait for all tests to complete and check results
+  for pid in "${pids[@]}"; do
+    if ! wait "$pid"; then
+      failed=1
+    fi
+  done
+
+  if [[ "$failed" -eq 1 ]]; then
+    echo "❌ Some mutation tests failed"
+    return 1
+  fi
+  local end=$(date +%s)
+  echo "✅ [$(date +'%H:%M:%S')] Mutation tests completed in $((end - start)) seconds"
+  return 0
 }
 
 comprehensive_check() {
@@ -97,8 +174,8 @@ comprehensive_check() {
 
   # Process coverage
   if [[ -f "coverage/lcov.info" ]]; then
-    local lf=$(grep -m1 '^LF:' coverage/lcov.info | cut -d: -f2)
-    local lh=$(grep -m1 '^LH:' coverage/lcov.info | cut -d: -f2)
+    local lf=$(grep '^LF:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
+    local lh=$(grep '^LH:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
     local coverage=$(echo "scale=2; $lh*100/$lf" | bc)
 
     echo "📊 Coverage: $coverage% (Target: ${ARC_CODE_COVERAGE_TARGET}%)"
@@ -119,17 +196,10 @@ comprehensive_check() {
   echo "🖼️ Screenshot tests..."
   flutter test test/screenshots --update-goldens
 
-  # Mutation testing
-  echo "🧬 Mutation testing..."
-  local base_commit=$(git merge-base HEAD "origin/$TARGET_BRANCH")
-  local changed_files=$(git diff --name-only "$base_commit" | grep -v "^test/" | grep "\.dart$")
 
-  if [[ -n "$changed_files" ]]; then
-    echo "Running mutation tests for:"
-    echo "$changed_files"
-    dart run mutation_test $changed_files --rules=mutation_test_rules.xml
-  else
-    echo "✅ No files for mutation testing"
+  # Run mutation tests in parallel
+  if ! run_mutation_tests; then
+    exit 1
   fi
 
   # Build Android
@@ -152,20 +222,22 @@ comprehensive_check() {
 # Main execution
 RUN_PRE=false
 RUN_COMPREHENSIVE=false
+RUN_MUTATIONS=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
     --pre) RUN_PRE=true ;;
     --comp) RUN_COMPREHENSIVE=true ;;
     --all) RUN_PRE=true; RUN_COMPREHENSIVE=true ;;
+    --mutations) RUN_MUTATIONS=true ;;
     --target) TARGET_BRANCH="$2"; shift ;;
     *) echo "Unknown option: $1"; exit 1 ;;
   esac
   shift
 done
 
-if ! $RUN_PRE && ! $RUN_COMPREHENSIVE; then
-  echo "Usage: $0 [--pre] [--comp] [--all] [--target BRANCH]"
+if ! $RUN_PRE && ! $RUN_COMPREHENSIVE && ! $RUN_MUTATIONS; then
+  echo "Usage: $0 [--pre] [--comp] [--all] [--mutations] [--target BRANCH]"
   exit 1
 fi
 
@@ -179,4 +251,17 @@ if $RUN_COMPREHENSIVE; then
   comprehensive_check
 fi
 
+if $RUN_MUTATIONS; then
+  # Install dependencies if not already done
+  if ! $RUN_PRE && ! $RUN_COMPREHENSIVE; then
+    flutter pub get
+  fi
+  
+  if ! run_mutation_tests; then
+    exit 1
+  fi
+fi
+
 echo "✅ All checks completed successfully"
+
+echo "🏁 Script completed at: $(date +'%Y-%m-%d %H:%M:%S %Z')"
