@@ -100,7 +100,7 @@ void main() {
           expect(testAppConfig.isProd, isFalse);
 
           // Verify method calls
-          expect(fakeDotEnvLoader.lastLoadedFileName, equals('.env.dev'));
+          expect(fakeDotEnvLoader.lastLoadedFileName, equals('assets/env/.env.dev'));
           expect(fakeSupabaseInitializer.lastUrl, equals('https://dev.supabase.co'));
           expect(fakeSupabaseInitializer.lastAnonKey, equals('dev-key'));
           expect(fakeSupabaseInitializer.lastDebugFlag, isTrue);
@@ -126,7 +126,7 @@ void main() {
           expect(testAppConfig.isDev, isFalse);
           expect(testAppConfig.isProd, isFalse);
 
-          expect(fakeDotEnvLoader.lastLoadedFileName, equals('.env.qa'));
+          expect(fakeDotEnvLoader.lastLoadedFileName, equals('assets/env/.env.qa'));
           expect(fakeSupabaseInitializer.lastUrl, equals('https://qa.supabase.co'));
           expect(fakeSupabaseInitializer.lastAnonKey, equals('qa-key'));
           expect(fakeSupabaseInitializer.lastDebugFlag, isTrue);
@@ -150,7 +150,7 @@ void main() {
           expect(testAppConfig.debugFeaturesEnabled, isFalse);
           expect(testAppConfig.isProd, isTrue);
 
-          expect(fakeDotEnvLoader.lastLoadedFileName, equals('.env.prod'));
+          expect(fakeDotEnvLoader.lastLoadedFileName, equals('assets/env/.env.prod'));
           expect(fakeSupabaseInitializer.lastUrl, equals('https://prod.supabase.co'));
           expect(fakeSupabaseInitializer.lastAnonKey, equals('prod-key'));
           expect(fakeSupabaseInitializer.lastDebugFlag, isFalse);
@@ -259,7 +259,7 @@ void main() {
             await freshConfig.initialize(environments[i]);
 
             // Assert
-            expect(freshFakeDotEnvLoader.lastLoadedFileName, equals(expectedFiles[i]));
+            expect(freshFakeDotEnvLoader.lastLoadedFileName, equals("assets/env/${expectedFiles[i]}"));
           }
         });
       });
