@@ -51,3 +51,6 @@ pr_review_for_claude.txt
 !.env.template
 mutation_test_rules.xml
 .cursorandroid/build/
+
+# Cursor editor
+.cursor/
