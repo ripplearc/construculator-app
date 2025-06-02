@@ -1,4 +1,4 @@
-import 'package:construculator_app_architecture/core/libraries/storage/interfaces/storage_service.dart' show IStorageService;
+import 'package:construculator/core/libraries/storage/interfaces/storage_service.dart' show IStorageService;
 
 class SharedPrefService implements IStorageService {
   @override
@@ -13,6 +13,18 @@ class SharedPrefService implements IStorageService {
   @override
   Future<void> saveData<T>(String key, T value) {
     // TODO: implement saveData
+    throw UnimplementedError();
+  }
+  
+  @override
+  Future<void> clearAll() {
+    // TODO: implement clearAll
+    throw UnimplementedError();
+  }
+  
+  @override
+  Future<void> removeData(String key) {
+    // TODO: implement removeData
     throw UnimplementedError();
   }
 }

@@ -1,12 +1,12 @@
-name: construculator_app_architecture
-description: "A new Flutter project."
+name: construculator
+description: "A calculator for construction workers"
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.7.0
+  sdk: 3.7.2
 
 dependencies:
   flutter:
@@ -56,14 +56,15 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
+  remove_alpha_ios: true
   image_path: "assets/icons/app_icon.png"
   
   # Environment-specific icons
   development:
     image_path: "assets/icons/app_icon_dev.png"
   
-  staging:
-    image_path: "assets/icons/app_icon_staging.png"
+  qa:
+    image_path: "assets/icons/app_icon_qa.png"
 
 flutter_native_splash:
   color: "#5482a0"
