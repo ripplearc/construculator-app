@@ -50,7 +50,7 @@ pr_review_for_claude.txt
 .env.*
 !.env.template
 mutation_test_rules.xml
-.cursorandroid/build/
+android/build/
 devtools_options.yaml
 # Cursor editor
 .cursor/
