@@ -6,9 +6,11 @@ abstract class DotEnvLoader {
   String? get(String key);
 }
 
-abstract class AppLogger {
-  void info(String message);
-}
+// AppLogger interface is removed as AppConfig will use the more generic ILogger.
+// abstract class AppLogger {
+//   void info(String message);
+// }
+
 abstract class SupabaseInitializer {
   Future<SupabaseClient> initialize({
     required String url,

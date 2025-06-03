@@ -1,18 +1,31 @@
 import 'package:construculator/core/config/env_constants.dart';
 import 'package:construculator/core/config/interfaces/app_config_interfaces.dart';
-import 'package:construculator/core/logging/logger.dart';
+import 'package:construculator/core/libraries/logging/interfaces/ilogger.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // Default implementations
 class DotEnvLoaderImpl implements DotEnvLoader {
+  // Keep track of loaded files to avoid reloading the same one if not necessary,
+  // or ensure .env is loaded before .env.specific
+  final Set<String> _loadedFiles = {};
+
   @override
   Future<void> load({String? fileName}) async {
-    if (fileName != null) {
-      await dotenv.load(fileName: fileName);
-    } else {
-      await dotenv.load();
+    final String effectiveFileName = fileName ?? '.env'; // Ensures it's non-null
+
+    // Avoid reloading the default '.env' if it was already loaded, 
+    // but always reload specific files if explicitly asked.
+    if (_loadedFiles.contains(effectiveFileName) && effectiveFileName == '.env') {
+      return; // Already loaded default .env, do nothing
     }
+
+    if (effectiveFileName == '.env') {
+      await dotenv.load(); // Loads the default .env file
+    } else {
+      await dotenv.load(fileName: effectiveFileName); // Loads the specified file
+    }
+    _loadedFiles.add(effectiveFileName);
   }
 
   @override
@@ -37,58 +50,23 @@ class SupabaseInitializerImpl implements SupabaseInitializer {
   }
 }
 
-class AppConfigLoggerImpl implements AppLogger {
-  final String tag;
-  
-  AppConfigLoggerImpl(this.tag);
-  
-  @override
-  void info(String message) {
-    Logger(tag).info(message);
-  }
-}
-
-// NoOpLogger is a logger that does nothing - for testing
-class NoOpLogger implements AppLogger {
-  @override
-  void info(String message) {
-    // Do nothing - for testing
-  }
-}
-
 class AppConfig {
-  AppConfig._({
-    DotEnvLoader? dotEnvLoader,
-    SupabaseInitializer? supabaseInitializer,
-    AppLogger? logger,
-  }) : _dotEnvLoader = dotEnvLoader ?? DotEnvLoaderImpl(),
-       _supabaseInitializer = supabaseInitializer ?? SupabaseInitializerImpl(),
-       _logger = logger ?? AppConfigLoggerImpl("App-Config");
+  // Constructor now requires dependencies and is public.
+  // Singleton pattern and default initializers are removed.
+  AppConfig({
+    required DotEnvLoader dotEnvLoader,
+    required SupabaseInitializer supabaseInitializer,
+    required ILogger logger,
+  }) : _dotEnvLoader = dotEnvLoader,
+       _supabaseInitializer = supabaseInitializer,
+       _logger = logger;
 
-  static AppConfig? _instance;
-  static AppConfig get instance => _instance ??= AppConfig._();
-
-  // Factory from configuration - useful for testing with injected dependencies
-  static AppConfig createFromConfig({
-    DotEnvLoader? dotEnvLoader,
-    SupabaseInitializer? supabaseInitializer,
-    AppLogger? logger,
-  }) {
-    return AppConfig._(
-      dotEnvLoader: dotEnvLoader,
-      supabaseInitializer: supabaseInitializer,
-      logger: logger,
-    );
-  }
-
-  // Reset singleton for testing
-  static void resetForTesting() {
-    _instance = null;
-  }
+  // Static instance, instance getter, createFromConfig factory, and resetForTesting are removed
+  // as Modular will manage AppConfig as a singleton.
 
   final DotEnvLoader _dotEnvLoader;
   final SupabaseInitializer _supabaseInitializer;
-  final AppLogger _logger;
+  final ILogger _logger;
 
   late Environment environment;
   late SupabaseClient supabaseClient;
@@ -97,9 +75,34 @@ class AppConfig {
   late String baseAppName;
   late bool debugFeaturesEnabled;
 
-  Future<void> initialize(Environment env) async {
-    environment = env; // Set environment first, before any logging
-    
+  Future<void> initialize() async {
+    // 1. Load the default .env file to get APP_ENV
+    // Assuming DotEnvLoader.load() without filename loads default '.env'
+    await _dotEnvLoader.load(); 
+    final appEnvStr = _dotEnvLoader.get('APP_ENV');
+
+    if (appEnvStr == null) {
+      _logger.error('APP_ENV not found in .env file. Defaulting to Environment.dev.');
+      environment = Environment.dev; // Default or throw error
+    } else {
+      switch (appEnvStr.toLowerCase()) {
+        case 'dev':
+          environment = Environment.dev;
+          break;
+        case 'qa':
+          environment = Environment.qa;
+          break;
+        case 'prod':
+          environment = Environment.prod;
+          break;
+        default:
+          _logger.warning('Unknown APP_ENV value: $appEnvStr. Defaulting to Environment.dev.');
+          environment = Environment.dev; // Default or throw error
+      }
+    }
+    _logger.info('Runtime Environment determined from APP_ENV: ${getEnvironmentName(environment)}');
+
+    // 2. Load the environment-specific .env file
     String envFileName;
     switch (environment) {
       case Environment.dev:
@@ -113,8 +116,11 @@ class AppConfig {
         break;
     }
     
+    // Pass the full path to the environment-specific file
     await _dotEnvLoader.load(fileName: "assets/env/$envFileName");
+    _logger.info('Loaded environment-specific config: $envFileName');
 
+    // 3. Continue with existing initialization logic
     baseAppName = _dotEnvLoader.get('APP_NAME') ?? 'MyApp';
     apiUrl = _dotEnvLoader.get('API_URL') ?? '';
 
@@ -138,6 +144,7 @@ class AppConfig {
     _logger.info('Supabase URL: $supabaseUrl');
     
     if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
+      _logger.error('Supabase URL or Anon Key is missing in the loaded .env files.');
       throw Exception(
         'Supabase configuration is missing. Check your .env files.',
       );
