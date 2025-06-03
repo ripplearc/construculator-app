@@ -1,6 +1,6 @@
 import 'package:construculator/core/config/env_constants.dart';
 import 'package:construculator/core/config/interfaces/app_config_interfaces.dart';
-import 'package:construculator/core/libraries/logging/interfaces/ilogger.dart';
+import 'package:construculator/core/libraries/logging/interfaces/logger.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -56,17 +56,17 @@ class AppConfig {
   AppConfig({
     required DotEnvLoader dotEnvLoader,
     required SupabaseInitializer supabaseInitializer,
-    required ILogger logger,
+    required AppLogger logger,
   }) : _dotEnvLoader = dotEnvLoader,
        _supabaseInitializer = supabaseInitializer,
-       _logger = logger;
+       _logger = logger.tag("AppConfig");
 
   // Static instance, instance getter, createFromConfig factory, and resetForTesting are removed
   // as Modular will manage AppConfig as a singleton.
 
   final DotEnvLoader _dotEnvLoader;
   final SupabaseInitializer _supabaseInitializer;
-  final ILogger _logger;
+  final AppLogger _logger;
 
   late Environment environment;
   late SupabaseClient supabaseClient;
