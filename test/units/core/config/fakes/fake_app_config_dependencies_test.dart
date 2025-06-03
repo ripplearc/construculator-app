@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:construculator_app_architecture/core/config/fakes/fake_app_config_dependencies.dart';
+import 'package:construculator/core/config/fakes/fake_app_config_dependencies.dart';
 
 void main() {
   group('FakeDotEnvLoader', () {
