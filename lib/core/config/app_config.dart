@@ -113,7 +113,7 @@ class AppConfig {
         break;
     }
     
-    await _dotEnvLoader.load(fileName: envFileName);
+    await _dotEnvLoader.load(fileName: "assets/env/$envFileName");
 
     baseAppName = _dotEnvLoader.get('APP_NAME') ?? 'MyApp';
     apiUrl = _dotEnvLoader.get('API_URL') ?? '';
