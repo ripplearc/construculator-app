@@ -1,15 +1,34 @@
-abstract class Failure {}
+import 'package:equatable/equatable.dart';
+
+// Failure represents specific, anticipated error conditions or alternative outcomes of an operation (e.g., a use case or repository method).
+// Unlike exceptions (which signify unexpected, disruptive events and are `thrown`),
+// `Failure` objects are `returned`, typically as the `Left` side of an `Either<Failure, SuccessType>`.
+// This pattern makes error handling explicit and part of the function's contract.
+//
+// Key Difference between `Failure` (with `Either`) and `AppException`:
+//    - `Failure`: Represents *expected/anticipated* alternative outcomes. Handled by checking the
+//      result of a function (e.g., `result.isLeft()` or `result.fold(...)`).
+//    - `AppException`: Represents *unexpected/exceptional* events that disrupt normal flow.
+//      Handled using `try-catch` blocks.
+
+abstract class Failure extends Equatable {
+  const Failure();
+
+  @override
+  List<Object?> get props => [];
+}
+
 
 class ServerFailure extends Failure {
   final String message;
-  ServerFailure(this.message);
+  const ServerFailure(this.message);
 }
 class NetworkFailure extends Failure {}
 class ValidationFailure extends Failure {
   final String errors;
-  ValidationFailure(this.errors);
+  const ValidationFailure(this.errors);
 }
 class ClientFailure extends Failure {
   final String message;
-  ClientFailure(this.message);
+  const ClientFailure(this.message);
 }
