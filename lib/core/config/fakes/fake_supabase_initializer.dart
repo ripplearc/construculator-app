@@ -3,7 +3,7 @@ import 'package:construculator/core/config/interfaces/app_config_interfaces.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Fake implementation of ISupabaseInitializer for testing
-class FakeSupabaseInitializer implements ISupabaseInitializer {
+class FakeSupabaseInitializer implements SupabaseInitializer {
   bool shouldThrowOnInitialize = false;
   String? initializeErrorMessage;
   String? lastUrl;

@@ -1,11 +1,11 @@
-import 'package:construculator_app_architecture/core/config/constants.dart';
-import 'package:construculator_app_architecture/core/config/interfaces/app_config_interfaces.dart';
-import 'package:construculator_app_architecture/core/utils/logger.dart';
+import 'package:construculator/core/config/env_constants.dart';
+import 'package:construculator/core/config/interfaces/app_config_interfaces.dart';
+import 'package:construculator/core/logging/logger.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // Default implementations
-class DotEnvLoader implements IDotEnvLoader {
+class DotEnvLoaderImpl implements DotEnvLoader {
   @override
   Future<void> load({String? fileName}) async {
     if (fileName != null) {
@@ -21,7 +21,7 @@ class DotEnvLoader implements IDotEnvLoader {
   }
 }
 
-class SupabaseInitializer implements ISupabaseInitializer {
+class SupabaseInitializerImpl implements SupabaseInitializer {
   @override
   Future<SupabaseClient> initialize({
     required String url,
@@ -37,10 +37,10 @@ class SupabaseInitializer implements ISupabaseInitializer {
   }
 }
 
-class AppConfigLogger implements ILogger {
+class AppConfigLoggerImpl implements AppLogger {
   final String tag;
   
-  AppConfigLogger(this.tag);
+  AppConfigLoggerImpl(this.tag);
   
   @override
   void info(String message) {
@@ -49,7 +49,7 @@ class AppConfigLogger implements ILogger {
 }
 
 // NoOpLogger is a logger that does nothing - for testing
-class NoOpLogger implements ILogger {
+class NoOpLogger implements AppLogger {
   @override
   void info(String message) {
     // Do nothing - for testing
@@ -58,21 +58,21 @@ class NoOpLogger implements ILogger {
 
 class AppConfig {
   AppConfig._({
-    IDotEnvLoader? dotEnvLoader,
-    ISupabaseInitializer? supabaseInitializer,
-    ILogger? logger,
-  }) : _dotEnvLoader = dotEnvLoader ?? DotEnvLoader(),
-       _supabaseInitializer = supabaseInitializer ?? SupabaseInitializer(),
-       _logger = logger ?? AppConfigLogger("App-Config");
+    DotEnvLoader? dotEnvLoader,
+    SupabaseInitializer? supabaseInitializer,
+    AppLogger? logger,
+  }) : _dotEnvLoader = dotEnvLoader ?? DotEnvLoaderImpl(),
+       _supabaseInitializer = supabaseInitializer ?? SupabaseInitializerImpl(),
+       _logger = logger ?? AppConfigLoggerImpl("App-Config");
 
   static AppConfig? _instance;
   static AppConfig get instance => _instance ??= AppConfig._();
 
   // Factory from configuration - useful for testing with injected dependencies
   static AppConfig createFromConfig({
-    IDotEnvLoader? dotEnvLoader,
-    ISupabaseInitializer? supabaseInitializer,
-    ILogger? logger,
+    DotEnvLoader? dotEnvLoader,
+    SupabaseInitializer? supabaseInitializer,
+    AppLogger? logger,
   }) {
     return AppConfig._(
       dotEnvLoader: dotEnvLoader,
@@ -86,9 +86,9 @@ class AppConfig {
     _instance = null;
   }
 
-  final IDotEnvLoader _dotEnvLoader;
-  final ISupabaseInitializer _supabaseInitializer;
-  final ILogger _logger;
+  final DotEnvLoader _dotEnvLoader;
+  final SupabaseInitializer _supabaseInitializer;
+  final AppLogger _logger;
 
   late Environment environment;
   late SupabaseClient supabaseClient;

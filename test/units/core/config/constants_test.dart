@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:construculator_app_architecture/core/config/constants.dart';
+import 'package:construculator/core/config/env_constants.dart';
 
 void main() {
-  group('Constants', () {
+  group('Env Constants', () {
     group('Environment String Constants', () {
       test('should have correct environment string values', () {
         expect(devEnv, equals('dev'));
