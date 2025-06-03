@@ -1,6 +1,7 @@
-import 'package:construculator/core/libraries/storage/interfaces/storage_service.dart' show IStorageService;
 
-class SharedPrefService implements IStorageService {
+import 'package:construculator/core/libraries/storage/interfaces/storage_service.dart';
+
+class SharedPrefServiceImpl implements StorageService {
   @override
   Future<void> initialize() async {
   }
