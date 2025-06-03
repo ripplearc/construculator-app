@@ -1,4 +1,4 @@
-import 'package:construculator_app_architecture/core/config/interfaces/app_config_interfaces.dart';
+import 'package:construculator/core/config/interfaces/app_config_interfaces.dart';
 
 /// Fake implementation of IDotEnvLoader for testing
 class FakeDotEnvLoader implements IDotEnvLoader {

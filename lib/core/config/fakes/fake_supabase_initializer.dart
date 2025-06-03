@@ -1,5 +1,5 @@
-import 'package:construculator_app_architecture/core/config/fakes/fake_supabase_client.dart';
-import 'package:construculator_app_architecture/core/config/interfaces/app_config_interfaces.dart';
+import 'package:construculator/core/config/fakes/fake_supabase_client.dart';
+import 'package:construculator/core/config/interfaces/app_config_interfaces.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Fake implementation of ISupabaseInitializer for testing
