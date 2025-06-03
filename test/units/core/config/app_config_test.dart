@@ -1,8 +1,8 @@
-import 'package:construculator_app_architecture/core/config/fakes/fake_supabase_initializer.dart';
+import 'package:construculator/core/config/fakes/fake_supabase_initializer.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:construculator_app_architecture/core/config/app_config.dart';
-import 'package:construculator_app_architecture/core/config/constants.dart';
-import 'package:construculator_app_architecture/core/config/fakes/fake_app_config_dependencies.dart';
+import 'package:construculator/core/config/app_config.dart';
+import 'package:construculator/core/config/env_constants.dart';
+import 'package:construculator/core/config/fakes/fake_app_config_dependencies.dart';
 
 void main() {
   group('AppConfig', () {
@@ -237,7 +237,7 @@ void main() {
       group('Environment File Loading', () {
         test('should load correct env file for each environment', () async {
           final environments = [Environment.dev, Environment.qa, Environment.prod];
-          final expectedFiles = ['.env.dev', '.env.qa', '.env.prod'];
+          final expectedFiles = ['assets/env/.env.dev', 'assets/env/.env.qa', 'assets/env/.env.prod'];
 
           for (int i = 0; i < environments.length; i++) {
             // Create fresh instance for each test
@@ -259,7 +259,7 @@ void main() {
             await freshConfig.initialize(environments[i]);
 
             // Assert
-            expect(freshFakeDotEnvLoader.lastLoadedFileName, equals("assets/env/${expectedFiles[i]}"));
+            expect(freshFakeDotEnvLoader.lastLoadedFileName, equals(expectedFiles[i]));
           }
         });
       });
@@ -339,10 +339,10 @@ void main() {
 
     group('Default Implementation Tests', () {
       group('DotEnvLoader', () {
-        late DotEnvLoader loader;
+        late DotEnvLoaderImpl loader;
 
         setUp(() {
-          loader = DotEnvLoader();
+          loader = DotEnvLoaderImpl();
         });
 
         test('should have load method that handles null filename', () async {
@@ -363,11 +363,11 @@ void main() {
 
       group('SupabaseInitializer', () {
         test('should verify SupabaseInitializer exists and has correct interface', () {
-          final initializer = SupabaseInitializer();
+          final initializer = SupabaseInitializerImpl();
           
           // Just verify the initializer exists and has the right interface
           // We don't call initialize multiple times since Supabase can only be initialized once
-          expect(initializer, isA<SupabaseInitializer>());
+          expect(initializer, isA<SupabaseInitializerImpl>());
           expect(initializer.initialize, isA<Function>());
         });
         
@@ -377,7 +377,7 @@ void main() {
         // Only line 53 (Logger(tag).info(message)) remains uncovered.
       });
 
-      group('AppConfigLogger', () {
+      group('AppConfigLoggerImpl', () {
         setUp(() {
           // Set up AppConfig environment for Logger to work properly
           AppConfig.resetForTesting();
@@ -389,27 +389,27 @@ void main() {
         });
 
         test('should create logger with tag', () {
-          final logger = AppConfigLogger('TestTag');
+          final logger = AppConfigLoggerImpl('TestTag');
           expect(logger.tag, equals('TestTag'));
         });
 
         test('should handle empty tag', () {
-          final logger = AppConfigLogger('');
+          final logger = AppConfigLoggerImpl('');
           expect(logger.tag, equals(''));
         });
 
         test('should handle special characters in tag', () {
-          final logger = AppConfigLogger('Test-Tag_123!@#');
+          final logger = AppConfigLoggerImpl('Test-Tag_123!@#');
           expect(logger.tag, equals('Test-Tag_123!@#'));
         });
 
         test('should call info method and log message', () {
-          final logger = AppConfigLogger('TestLogger');
+          final logger = AppConfigLoggerImpl('TestLogger');
           expect(() => logger.info('Test message'), returnsNormally);
         });
 
         test('should handle different message types in info', () {
-          final logger = AppConfigLogger('TestLogger');
+          final logger = AppConfigLoggerImpl('TestLogger');
           
           // Test various message types to ensure the info method works correctly
           expect(() => logger.info('String message'), returnsNormally);
@@ -421,9 +421,9 @@ void main() {
         });
 
         test('should handle multiple loggers with different tags', () {
-          final logger1 = AppConfigLogger('Logger1');
-          final logger2 = AppConfigLogger('Logger2');
-          final logger3 = AppConfigLogger('Logger3');
+          final logger1 = AppConfigLoggerImpl('Logger1');
+          final logger2 = AppConfigLoggerImpl('Logger2');
+          final logger3 = AppConfigLoggerImpl('Logger3');
           
           expect(() => logger1.info('Message from logger 1'), returnsNormally);
           expect(() => logger2.info('Message from logger 2'), returnsNormally);
@@ -431,13 +431,13 @@ void main() {
         });
 
         test('should work with unicode and special characters in tag and message', () {
-          final logger = AppConfigLogger('测试Logger🚀');
+          final logger = AppConfigLoggerImpl('测试Logger🚀');
           expect(() => logger.info('Unicode message: 你好世界 🌍'), returnsNormally);
         });
 
-        test('should directly call AppConfigLogger.info to cover lines 48 and 53', () {
-          // Create a real AppConfigLogger instance
-          final logger = AppConfigLogger('DirectTest');
+        test('should directly call AppConfigLoggerImpl.info to cover lines 48 and 53', () {
+          // Create a real AppConfigLoggerImpl instance
+          final logger = AppConfigLoggerImpl('DirectTest');
           
           // This should cover line 48 (void info(String message) {) and line 53 (Logger(tag).info(message);)
           expect(() => logger.info('Direct test message for coverage'), returnsNormally);
@@ -448,13 +448,13 @@ void main() {
           expect(() => logger.info('Message 3'), returnsNormally);
         });
 
-        test('should test AppConfigLogger in production mode to cover logger lines 28/29', () {
+        test('should test AppConfigLoggerImpl in production mode to cover logger lines 28/29', () {
           // Set up production environment to hit the non-debug path in Logger._getLogOutput()
           AppConfig.resetForTesting();
           AppConfig.instance.environment = Environment.prod;
           
           // Create a logger in production mode
-          final logger = AppConfigLogger('ProdTest');
+          final logger = AppConfigLoggerImpl('ProdTest');
           
           // This should hit the production path in Logger._getLogOutput() (lines 28/29)
           expect(() => logger.info('Production mode test message'), returnsNormally);
@@ -464,13 +464,13 @@ void main() {
           AppConfig.instance.environment = Environment.dev;
         });
 
-        test('should test AppConfigLogger in dev mode to cover logger line 29', () {
+        test('should test AppConfigLoggerImpl in dev mode to cover logger line 29', () {
           // Ensure we're in dev mode to hit the debug path in Logger._getLogOutput()
           AppConfig.resetForTesting();
           AppConfig.instance.environment = Environment.dev;
           
           // Create a logger with a unique tag to ensure fresh instance
-          final logger = AppConfigLogger('DevModeTest');
+          final logger = AppConfigLoggerImpl('DevModeTest');
           
           // This should hit line 29: return log_package.MultiOutput([log_package.ConsoleOutput()]);
           expect(() => logger.info('Dev mode test message for line 29'), returnsNormally);
@@ -482,7 +482,7 @@ void main() {
           AppConfig.instance.environment = Environment.dev;
           
           // Create a logger with a unique tag to force constructor call
-          final devLogger = AppConfigLogger('UniqueDevLogger${DateTime.now().millisecondsSinceEpoch}');
+          final devLogger = AppConfigLoggerImpl('UniqueDevLogger${DateTime.now().millisecondsSinceEpoch}');
           expect(() => devLogger.info('Dev environment message'), returnsNormally);
           
           // Test production environment (should hit line 32, but kDebugMode might still be true)
@@ -490,14 +490,14 @@ void main() {
           AppConfig.instance.environment = Environment.prod;
           
           // Create another logger with a different unique tag
-          final prodLogger = AppConfigLogger('UniqueProdLogger${DateTime.now().millisecondsSinceEpoch}');
+          final prodLogger = AppConfigLoggerImpl('UniqueProdLogger${DateTime.now().millisecondsSinceEpoch}');
           expect(() => prodLogger.info('Prod environment message'), returnsNormally);
           
           // Test QA environment as well
           AppConfig.resetForTesting();
           AppConfig.instance.environment = Environment.qa;
           
-          final qaLogger = AppConfigLogger('UniqueQALogger${DateTime.now().millisecondsSinceEpoch}');
+          final qaLogger = AppConfigLoggerImpl('UniqueQALogger${DateTime.now().millisecondsSinceEpoch}');
           expect(() => qaLogger.info('QA environment message'), returnsNormally);
         });
       });
@@ -661,12 +661,12 @@ void main() {
     });
 
     group('Real Default Implementation Integration Tests', () {
-      test('should use real AppConfigLogger when no logger injected', () {
-        // Create AppConfig without injecting a logger to test the default AppConfigLogger
+      test('should use real AppConfigLoggerImpl when no logger injected', () {
+        // Create AppConfig without injecting a logger to test the default AppConfigLoggerImpl
         final appConfig = AppConfig.createFromConfig();
         expect(appConfig, isA<AppConfig>());
         
-        // The default logger should be AppConfigLogger with "App-Config" tag
+        // The default logger should be AppConfigLoggerImpl with "App-Config" tag
         // This exercises the default constructor path
       });
 
@@ -714,22 +714,22 @@ void main() {
 
       test('should exercise all default implementation code paths', () {
         // Create instances of all default implementations to ensure they're covered
-        final dotEnvLoader = DotEnvLoader();
-        final supabaseInitializer = SupabaseInitializer();
-        final appConfigLogger = AppConfigLogger('CoverageTest');
+        final dotEnvLoader = DotEnvLoaderImpl();
+        final supabaseInitializer = SupabaseInitializerImpl();
+        final appConfigLoggerImpl = AppConfigLoggerImpl('CoverageTest');
         final noOpLogger = NoOpLogger();
         
-        expect(dotEnvLoader, isA<DotEnvLoader>());
-        expect(supabaseInitializer, isA<SupabaseInitializer>());
-        expect(appConfigLogger, isA<AppConfigLogger>());
+        expect(dotEnvLoader, isA<DotEnvLoaderImpl>());
+        expect(supabaseInitializer, isA<SupabaseInitializerImpl>());
+        expect(appConfigLoggerImpl, isA<AppConfigLoggerImpl>());
         expect(noOpLogger, isA<NoOpLogger>());
         
         // Exercise the logger methods to cover lines 48, 53, 62, 64
-        expect(() => appConfigLogger.info('Coverage test message'), returnsNormally);
+        expect(() => appConfigLoggerImpl.info('Coverage test message'), returnsNormally);
         expect(() => noOpLogger.info('Coverage test message'), returnsNormally);
       });
 
-      test('should test AppConfigLogger with various scenarios', () {
+      test('should test AppConfigLoggerImpl with various scenarios', () {
         final scenarios = [
           'Simple message',
           '',
@@ -742,7 +742,7 @@ void main() {
         ];
         
         for (final scenario in scenarios) {
-          final logger = AppConfigLogger('ScenarioTest');
+          final logger = AppConfigLoggerImpl('ScenarioTest');
           expect(() => logger.info(scenario), returnsNormally);
         }
       });
@@ -766,7 +766,7 @@ void main() {
       });
 
       test('should validate SupabaseInitializer parameter handling', () {
-        final initializer = SupabaseInitializer();
+        final initializer = SupabaseInitializerImpl();
         
         // Test that the initializer accepts various parameter combinations
         // without actually calling initialize (to avoid multiple initialization)
