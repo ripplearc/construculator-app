@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+   <files>
+        <file>lib/libraries/logging/testing/fake_logger_wrapper.dart</file>
+    </files>
+    <rules>
+        <regex pattern="(\w+Messages)\.add\([^)]+\);" id="generic.list.skipAddCall">
+            <mutation text=""/>
+        </regex>
+        <regex pattern="(\w+Messages)\.add\(\s*\{\s*'message'\s*:\s*(\w+)([^}]*)\}\s*\);" id="generic.map.mutateMessageKeyInListAdd">
+            <mutation text="$1.add({\'msg\': $2$3});"/>
+        </regex>
+        <regex pattern="(\w+Messages)\.clear\(\);" id="generic.list.skipClearCall">
+            <mutation text=""/>
+        </regex>
+    </rules>
+
+    <commands>
+           <command group="fake_logger_wrapper" expected-return="0">flutter test test/units/libraries/logging/fakes/fake_logger_wrapper_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations> 
