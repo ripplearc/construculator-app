@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:construculator/core/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 /// Fake implementation of ISupabaseWrapper for testing
