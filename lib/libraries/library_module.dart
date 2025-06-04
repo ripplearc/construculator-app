@@ -1,5 +1,6 @@
 import 'package:construculator/libraries/config/app_config.dart';
 import 'package:construculator/libraries/config/dotenv_loader.dart';
+import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/logging/app_logger_wrapper.dart';
@@ -15,13 +16,13 @@ class LibraryModule extends Module {
 
   @override
   void exportedBinds(Injector i) {
-    i.addLazySingleton<LoggerWrapper>(() => AppLoggerWrapperImpl());
+    i.addLazySingleton<LoggerWrapper>(() => AppLoggerWrapper());
     i.addLazySingleton<Logger>(() => AppLoggerImpl(internalLogger: i()));
-    i.addLazySingleton<StorageService>(() => SharedPrefServiceImpl());
-    i.addLazySingleton<EnvLoader>(() => DotEnvLoaderImpl());
+    i.addLazySingleton<StorageService>(() => SharedPrefService());
+    i.addLazySingleton<EnvLoader>(() => DotEnvLoader());
     i.addLazySingleton<SupabaseInitializer>(() => DefaultSupabaseInitializer());
 
-    i.addLazySingleton<AppConfig>(() => AppConfig(
+    i.addLazySingleton<Config>(() => AppConfig(
       dotEnvLoader: i(), 
       supabaseInitializer: i(), 
       logger: i(), 
