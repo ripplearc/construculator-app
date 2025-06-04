@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+   <files>
+        <file>lib/libraries/config/app_config.dart</file>
+    </files>
+    <rules>
+        <regex pattern="baseAppName = _dotEnvLoader.get\('APP_NAME'\) \?\? 'Construculator';" id="app_config.defaultBaseAppName">
+            <mutation text="baseAppName = _dotEnvLoader.get('APP_NAME') ?? 'MutatedApp';"/>
+        </regex>
+        <regex pattern="apiUrl = _dotEnvLoader.get\('API_URL'\) \?\? '';" id="app_config.defaultApiUrl">
+            <mutation text="apiUrl = _dotEnvLoader.get('API_URL') ?? 'http://mutated.api';"/>
+        </regex>
+        <regex pattern="debugFeaturesEnabled = environment != Environment.prod;" id="app_config.invertDebugFeaturesEnabled">
+            <mutation text="debugFeaturesEnabled = environment == Environment.prod;"/>
+        </regex>
+        <regex pattern="appName = '\$baseAppName \(${getEnvironmentName(environment, isAlias: true)}\)';" id="app_config.alterAppNameFormat">
+            <mutation text="appName = '$baseAppName - (${getEnvironmentName(environment, isAlias: true)})';"/>
+        </regex>
+        <regex pattern="if \(supabaseUrl\.isEmpty \|\| supabaseAnonKey\.isEmpty\)" id="app_config.supabase.mutateUrlCheck">
+            <mutation text="if (supabaseUrl.isNotEmpty || supabaseAnonKey.isEmpty)"/>
+        </regex>
+        <regex pattern="throw Exception\(\s*'Supabase configuration is missing\. Check your \.env files\.'\s*\);" id="app_config.supabase.differentException">
+            <mutation text="throw Exception('Supabase setup error!');"/>
+        </regex>
+        <regex pattern="bool get isDev => environment == Environment.dev;" id="app_config.isDev.mutateCondition">
+            <mutation text="bool get isDev => environment == Environment.qa;"/>
+        </regex>
+        <!-- Generic Ternary Operator Mutations -->
+        <regex pattern="(return\s+)([^?]+)\s*\?\s*([^:]+)\s*:\s*([^;]+);" id="generic.ternary.forceTrue">
+            <mutation text="$1$3;"/>
+        </regex>
+        <regex pattern="(return\s+)([^?]+)\s*\?\s*([^:]+)\s*:\s*([^;]+);" id="generic.ternary.forceFalse">
+            <mutation text="$1$4;"/>
+        </regex>
+        <regex pattern="(return\s+)([^?]+)\s*\?\s*([^:]+)\s*:\s*([^;]+);" id="generic.ternary.swapExpressions">
+            <mutation text="$1$2 ? $4 : $3;"/>
+        </regex>
+        <!-- Generic Switch Case Mutation -->
+        <regex pattern="(case\s+[^:]+:\s*(?:break;\s*)?return\s+)(\w+|&quot;[^&quot;]*&quot;|'[^']*');" id="generic.switch.mutateReturnIdentifierOrString" dotAll="true">
+            <mutation text="$1&quot;mutatedSwitchReturn&quot;;"/>
+        </regex>
+    </rules>
+
+    <commands>
+           <command group="app_config" expected-return="0">flutter test test/units/libraries/config/app_config_functionality_test.dart</command>
+           <command group="app_config" expected-return="0">flutter test test/units/libraries/config/app_config_initialization_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations> 
