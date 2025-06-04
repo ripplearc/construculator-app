@@ -4,7 +4,7 @@ import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.da
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 /// Fake implementation of ISupabaseWrapper for testing
-class FakeSupabaseWrapper implements ISupabaseWrapper {
+class FakeSupabaseWrapper implements SupabaseWrapper {
   final StreamController<supabase.AuthState> _authStateController = 
       StreamController<supabase.AuthState>.broadcast();
   
