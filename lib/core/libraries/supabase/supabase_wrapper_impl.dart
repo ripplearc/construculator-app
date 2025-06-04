@@ -1,6 +1,6 @@
 // coverage:ignore-file 
 import 'dart:async';
-import 'package:construculator_app_architecture/core/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/core/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 /// Concrete implementation of ISupabaseWrapper that wraps the actual Supabase client
