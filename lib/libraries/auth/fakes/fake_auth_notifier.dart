@@ -4,7 +4,7 @@ import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
-class FakeAuthNotifier implements IAuthNotifier, Disposable {
+class FakeAuthNotifier implements AuthNotifier, Disposable {
   final _loginController = StreamController<UserCredential>.broadcast();
   final _logoutController = StreamController<void>.broadcast();
   final _authStateController = StreamController<AuthStatus>.broadcast();

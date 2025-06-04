@@ -1,8 +1,9 @@
-import 'package:construculator/core/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
+import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 
-abstract class IAuthService {
+/// Interface for shared auth library, provides functionality for user authentication and basic profile management.
+abstract class AuthService {
   /// Log in a user with email and password
   Future<bool> loginWithEmail(String email, String password);
   
