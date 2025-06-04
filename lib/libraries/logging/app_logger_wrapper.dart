@@ -2,10 +2,10 @@ import 'package:construculator/libraries/logging/interfaces/logger_wrapper.dart'
 import 'package:logger/logger.dart';
 
 // Wrapper for the flutter logger package, directly uses the flutter logger package.
-class AppLoggerWrapperImpl implements LoggerWrapper {
+class AppLoggerWrapper implements LoggerWrapper {
   late Logger _logger;
 
-  AppLoggerWrapperImpl() {
+  AppLoggerWrapper() {
     _logger = Logger(
       filter: ProductionFilter(),
       printer: PrettyPrinter(
