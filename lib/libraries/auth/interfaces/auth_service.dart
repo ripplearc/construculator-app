@@ -1,6 +1,6 @@
+import 'package:construculator/core/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 abstract class IAuthService {
   /// Log in a user with email and password
