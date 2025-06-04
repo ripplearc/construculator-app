@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:construculator/core/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
+import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
@@ -8,18 +8,18 @@ import 'package:construculator/libraries/auth/interfaces/auth_service.dart';
 import 'package:construculator/libraries/logging/interfaces/logger.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
-class AuthServiceImpl implements IAuthService, Disposable {
-  final IAuthNotifier _notifier;
-  final IAuthRepository _repository;
+class SharedAuthService implements AuthService, Disposable {
+  final AuthNotifier _notifier;
+  final AuthRepository _repository;
   final Logger _logger = Modular.get<Logger>().tag('AuthService');
   
   // Track subscriptions for disposal
   StreamSubscription<AuthStatus>? _authStateSubscription;
   StreamSubscription<UserCredential?>? _userSubscription;
 
-  AuthServiceImpl({
-    required IAuthNotifier notifier,
-    required IAuthRepository repository,
+  SharedAuthService({
+    required AuthNotifier notifier,
+    required AuthRepository repository,
   }) : _notifier = notifier,
        _repository = repository {
     _logger.debug('Initializing auth service');
@@ -211,7 +211,7 @@ class AuthServiceImpl implements IAuthService, Disposable {
         return isRegistered;
       } else {
         _logger.warning('Failed to check email registration: ${result.errorMessage}');
-        return false; // Default to false on error - safer to assume not registered
+        return false;
       }
     } catch (e) {
       _logger.error('Email registration check failed with exception', e);

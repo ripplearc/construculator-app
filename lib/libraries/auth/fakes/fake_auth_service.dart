@@ -6,8 +6,8 @@ import 'package:construculator/libraries/auth/interfaces/auth_service.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
-class FakeAuthService implements IAuthService, Disposable {
-  final IAuthNotifier _notifier;
+class FakeAuthService implements AuthService, Disposable {
+  final AuthNotifier _notifier;
   final _authStateController = StreamController<AuthStatus>.broadcast();
   
   bool _isAuthenticated = false;
@@ -33,7 +33,7 @@ class FakeAuthService implements IAuthService, Disposable {
   final Set<String> registeredEmails = {'registered@example.com'};
   
   FakeAuthService({
-    required IAuthNotifier notifier,
+    required AuthNotifier notifier,
     bool initiallyAuthenticated = false,
   }) : _notifier = notifier {
     _isAuthenticated = initiallyAuthenticated;
