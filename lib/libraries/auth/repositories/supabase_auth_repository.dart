@@ -10,7 +10,7 @@ import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.da
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
-class SupabaseAuthRepository implements IAuthRepository, Disposable {
+class SupabaseAuthRepository implements AuthRepository, Disposable {
   final SupabaseWrapper _supabaseWrapper;
   final _logger = AppLogger().tag('SupabaseAuthRepository');
   final _authStateController = StreamController<AuthStatus>.broadcast();

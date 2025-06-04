@@ -20,7 +20,7 @@ void main() {
 
     group('Interface Contract Verification', () {
       test('should implement IAuthRepository interface', () {
-        expect(fakeRepository, isA<IAuthRepository>());
+        expect(fakeRepository, isA<AuthRepository>());
       });
 
       test('should provide all required authentication methods', () async {
