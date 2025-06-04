@@ -4,15 +4,15 @@ import 'package:construculator/libraries/logging/interfaces/logger_wrapper.dart'
 // Logger implementation that uses the flutter logger package.
 // Currently, it is only used to log messages to the console. 
 // This implementation will be extended to support other logging targets in the future.
-class AppLoggerImpl implements Logger {
+class AppLogger implements Logger {
   final String _tag;
   final String _emojiPrefix;
   final LoggerWrapper _internalLogger;
 
   // Private constructor for internal instantiation by tag() and emoji()
-  AppLoggerImpl._private(this._tag, this._emojiPrefix, this._internalLogger);
+  AppLogger._private(this._tag, this._emojiPrefix, this._internalLogger);
 
-  AppLoggerImpl({
+  AppLogger({
     required LoggerWrapper internalLogger,
   })  : _tag = 'Construculator',
         _emojiPrefix = '',
@@ -31,20 +31,20 @@ class AppLoggerImpl implements Logger {
   Logger fresh() {
     // Return a new instance with the default tag and emoji prefix, 
     // and sharing the same internal logger
-    return AppLoggerImpl._private('Construculator', '', _internalLogger);
+    return AppLogger._private('Construculator', '', _internalLogger);
   }
   @override
   Logger tag(String newTag) {
     // Return a new instance with the new tag, preserving the current emojiPrefix 
     // and sharing the same internal 
-    return AppLoggerImpl._private(newTag, _emojiPrefix, _internalLogger);
+    return AppLogger._private(newTag, _emojiPrefix, _internalLogger);
   }
 
   @override
   Logger emoji(String newEmojiPrefix) {
     // Return a new instance with the new emojiPrefix, preserving the current tag
     // and sharing the same internal 
-    return AppLoggerImpl._private(_tag, newEmojiPrefix, _internalLogger);
+    return AppLogger._private(_tag, newEmojiPrefix, _internalLogger);
   }
 
   @override
