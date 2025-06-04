@@ -4,13 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:logger/logger.dart';
 
 void main() {
-  group('AppLoggerImpl', () {
-    late AppLoggerImpl logger;
+  group('AppLogger', () {
+    late AppLogger logger;
     late FakeLoggerWrapper internalTestLogger; // The logger instance we inject
 
     setUp(() {
       internalTestLogger = FakeLoggerWrapper();
-      logger = AppLoggerImpl(internalLogger: internalTestLogger);
+      logger = AppLogger(internalLogger: internalTestLogger);
       Logger.level = Level.all; // Ensure all levels are processed by the logger system
     });
 
@@ -19,7 +19,7 @@ void main() {
     });
 
     test('logger uses default tag and emoji when none provided', () {
-      logger = AppLoggerImpl(internalLogger: internalTestLogger);
+      logger = AppLogger(internalLogger: internalTestLogger);
       logger.info('Test message');
       expect(internalTestLogger.iMessages.length, 1);
       final event = internalTestLogger.iMessages.first;
