@@ -4,7 +4,7 @@ import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 
 /// Interface that abstracts authentication provider operations.
 /// This allows the auth service to work with any authentication backend.
-abstract class IAuthRepository {
+abstract class AuthRepository {
   /// Logs in a user with email and password
   Future<AuthResult<UserCredential>> loginWithEmail(String email, String password);
 

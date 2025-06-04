@@ -6,7 +6,7 @@ import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 /// A fake implementation of IAuthRepository for testing purposes.
-class FakeAuthRepository implements IAuthRepository, Disposable {
+class FakeAuthRepository implements AuthRepository, Disposable {
   final _authStateController = StreamController<AuthStatus>.broadcast();
   final _userController = StreamController<UserCredential?>.broadcast();
   
