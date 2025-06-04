@@ -19,7 +19,7 @@ class LibraryModule extends Module {
     i.addLazySingleton<Logger>(() => AppLoggerImpl(internalLogger: i()));
     i.addLazySingleton<StorageService>(() => SharedPrefServiceImpl());
     i.addLazySingleton<EnvLoader>(() => DotEnvLoaderImpl());
-    i.addLazySingleton<SupabaseInitializer>(() => DefaultSupabaseInitializerImpl());
+    i.addLazySingleton<SupabaseInitializer>(() => DefaultSupabaseInitializer());
 
     i.addLazySingleton<AppConfig>(() => AppConfig(
       dotEnvLoader: i(), 
