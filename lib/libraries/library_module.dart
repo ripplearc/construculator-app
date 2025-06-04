@@ -17,7 +17,7 @@ class LibraryModule extends Module {
   @override
   void exportedBinds(Injector i) {
     i.addLazySingleton<LoggerWrapper>(() => AppLoggerWrapper());
-    i.addLazySingleton<Logger>(() => AppLoggerImpl(internalLogger: i()));
+    i.addLazySingleton<Logger>(() => AppLogger(internalLogger: i()));
     i.addLazySingleton<StorageService>(() => SharedPrefService());
     i.addLazySingleton<EnvLoader>(() => DotEnvLoader());
     i.addLazySingleton<SupabaseInitializer>(() => DefaultSupabaseInitializer());
