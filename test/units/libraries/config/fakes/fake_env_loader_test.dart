@@ -87,7 +87,7 @@ void main() {
           throwsA(isA<Exception>().having(
             (e) => e.toString(),
             'message',
-            contains('Failed to load env file'),
+            contains('Failed to load env file'), // Default message
           )),
         );
       });
@@ -110,7 +110,7 @@ void main() {
 
       test('allows normal operations after a reset from a throwing state', () async {
         fakeLoader.shouldThrowOnLoad = true;
-        fakeLoader.reset();
+        fakeLoader.reset(); // Reset the throwing behavior
 
         expect(
           () async => await fakeLoader.load(fileName: '.env.production'),

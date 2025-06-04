@@ -281,14 +281,9 @@ void main() {
               );
               freshFakeDotEnvLoader.setEnvVar('SUPABASE_ANON_KEY', 'test-key');
 
-              // Act
               await freshConfig.initialize(testCase.$1);
 
-              // Assert
               expect(freshConfig.debugFeaturesEnabled, equals(testCase.$2));
-
-              // Verify debug flag is passed correctly to Supabase
-              // (Supabase init is called during freshConfig.initialize)
               expect(
                 freshFakeDotEnvLoader.get('SUPABASE_URL'),
                 equals('https://test.supabase.co'),
