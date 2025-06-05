@@ -532,7 +532,6 @@ void main() {
         expect(copiedUser.id, 'newId123');
         expect(copiedUser.credentialId, originalUser.credentialId);
         expect(copiedUser.email, originalUser.email);
-        // ... other fields should remain the same
       });
 
       test('should update only credentialId when provided', () {
@@ -722,9 +721,9 @@ void main() {
         final copiedUser = originalUser.copyWith(firstName: 'Jane');
 
         // Assert
-        expect(originalUser.firstName, 'John'); // Original unchanged
-        expect(copiedUser.firstName, 'Jane'); // Copy changed
-        expect(identical(originalUser, copiedUser), false); // Different instances
+        expect(originalUser.firstName, 'John');
+        expect(copiedUser.firstName, 'Jane');
+        expect(identical(originalUser, copiedUser), false);
       });
     });
 
@@ -852,7 +851,7 @@ void main() {
         expect(user.lastName, '');
         expect(user.professionalRole, '');
         expect(user.profilePhotoUrl, '');
-        expect(user.fullName, ' '); // Empty first + space + empty last
+        expect(user.fullName, ' ');
       });
 
       test('should handle very large user preferences', () {
