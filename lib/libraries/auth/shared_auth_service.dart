@@ -239,7 +239,7 @@ class SharedAuthService implements AuthService, Disposable {
       }
     } catch (e) {
       _logger.error('Logout failed with exception', e);
-      rethrow;
+      rethrow; // Consistent with original behavior
     }
   }
 
