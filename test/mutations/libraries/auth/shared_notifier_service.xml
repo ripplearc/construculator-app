@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <files>
+        <file>lib/libraries/auth/shared_auth_notifier.dart</file>
+    </files>
+
+    <rules>
+        <!-- Core service logic mutations (EXISTING) -->
+        <literal text="&amp;&amp;" id="and-to-or">
+            <mutation text="||"/>
+        </literal>
+        <literal text="||" id="or-to-and">
+            <mutation text="&amp;&amp;"/>
+        </literal>
+        <literal text="==" id="equals">
+            <mutation text="!="/>
+        </literal>
+        <literal text="!=" id="not-equals">
+            <mutation text="=="/>
+        </literal>
+        <literal text="??" id="null-coalescing">
+            <mutation text=""/>
+        </literal>
+        <literal text="return true" id="return-true-to-false">
+            <mutation text="return false"/>
+        </literal>
+        <literal text="return false" id="return-false-to-true">
+            <mutation text="return true"/>
+        </literal>
+        <literal text="isEmpty" id="isEmpty-to-isNotEmpty">
+            <mutation text="isNotEmpty"/>
+        </literal>
+        <literal text="isNotEmpty" id="isNotEmpty-to-isEmpty">
+            <mutation text="isEmpty"/>
+        </literal>
+        <regex pattern="[\s]if[\s]*\((.*?)\)[\s]*{" dotAll="true" id="if-condition-negation">
+            <mutation text=" if (!($1)) {"/>
+        </regex>
+
+        <!-- Mutations for StreamController.add() calls -->
+        <regex pattern="_loginController.add\(user\);" id="sharedNotifier.emitLogin.skipAddUser">
+            <mutation text="// _loginController.add(user);"/>
+        </regex>
+        <regex pattern="_authStateController.add\(AuthStatus.authenticated\);" id="sharedNotifier.emitLogin.skipAddAuthStatus">
+            <mutation text="// _authStateController.add(AuthStatus.authenticated);"/>
+        </regex>
+        <regex pattern="_authStateController.add\(AuthStatus.authenticated\);" id="sharedNotifier.emitLogin.changeAuthStatusToUnauthenticated">
+            <mutation text="_authStateController.add(AuthStatus.unauthenticated);"/>
+        </regex>
+        <regex pattern="_setupProfileController.add\(null\);" id="sharedNotifier.emitSetupProfile.skipAddNull">
+            <mutation text="// _setupProfileController.add(null);"/>
+        </regex>
+        <regex pattern="_logoutController.add\(null\);" id="sharedNotifier.emitLogout.skipAddNull">
+            <mutation text="// _logoutController.add(null);"/>
+        </regex>
+        <regex pattern="_authStateController.add\(status\);" id="sharedNotifier.emitAuthStateChanged.skipAddStatus">
+            <mutation text="// _authStateController.add(status);"/>
+        </regex>
+        
+        <!-- Mutations for StreamController.close() calls in dispose -->
+        <regex pattern="_loginController.close\(\);" id="sharedNotifier.dispose.skipCloseLoginController">
+            <mutation text="// _loginController.close();"/>
+        </regex>
+        <regex pattern="_logoutController.close\(\);" id="sharedNotifier.dispose.skipCloseLogoutController">
+            <mutation text="// _logoutController.close();"/>
+        </regex>
+        <regex pattern="_authStateController.close\(\);" id="sharedNotifier.dispose.skipCloseAuthStateController">
+            <mutation text="// _authStateController.close();"/>
+        </regex>
+        <regex pattern="_setupProfileController.close\(\);" id="sharedNotifier.dispose.skipCloseSetupProfileController">
+            <mutation text="// _setupProfileController.close();"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="auth-notifier" expected-return="0">flutter test test/units/libraries/auth/notifiers/shared_auth_notifier_events_p1_test.dart</command>
+        <command group="auth-notifier" expected-return="0">flutter test test/units/libraries/auth/notifiers/shared_auth_notifier_events_p2_test.dart</command>
+         </commands>
+
+    <threshold failure="85">
+        <rating over="90" name="A"/>
+        <rating over="85" name="B"/>
+        <rating over="80" name="C"/>
+        <rating over="70" name="D"/>
+        <rating over="50" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations> 
