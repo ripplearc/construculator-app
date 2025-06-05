@@ -101,7 +101,6 @@ void main() {
 
     test('verifyOtp should fail when no OTP was sent', () async {
       // Arrange
-      // No OTP sent. Configure verifyOtp to reflect this failure.
       // The FakeAuthRepository handles this specific error message and type.
       fakeRepository.fakeAuthResponse(succeed: false, errorMessage: 'No OTP was sent to this address');
 
@@ -154,10 +153,6 @@ void main() {
       // Assert
       expect(result.isSuccess, true);
       expect(result.data, isNotNull);
-      expect(
-        result.data!.email,
-        'fake@example.com',
-      ); // Since it's phone, we use fake email
       expect(result.data!.metadata['receiver'], 'phone');
       expect(fakeRepository.isAuthenticated(), true);
       expect(

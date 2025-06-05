@@ -6,7 +6,6 @@ import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart'
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 
-// Helper function to create fake users for testing
 User _createFakeUser({String? credentialId, String? email, String? id}) {
   return User(
     id: id ?? 'fake-user-id',
@@ -281,8 +280,6 @@ void main() {
       );
       expect(successResult.isSuccess, true);
 
-      // Reset and test failure
-      // No need to call fakeRepository.reset() as fakeAuthResponse overwrites previous setting.
       fakeRepository.fakeAuthResponse(
         succeed: false,
         errorMessage: 'Test error',

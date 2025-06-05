@@ -36,18 +36,15 @@ void main() {
         ];
 
         for (final errorMessage in authErrors) {
-          // This test inherently tests behavior of a persistent repository,
-          // so re-creating it for each sub-scenario is part of the test logic.
+
           var localFakeSupabaseWrapper = FakeSupabaseWrapper();
           var localAuthRepository = SupabaseAuthRepository(
             supabaseWrapper: localFakeSupabaseWrapper,
           );
 
           localFakeSupabaseWrapper.simulateAuthStreamError(errorMessage);
-          await Future.delayed(const Duration(milliseconds: 10)); // Allow time for stream to emit and be handled
+          await Future.delayed(const Duration(milliseconds: 10));
 
-          // The test implies that the repository should internally handle these
-          // stream errors without crashing. If it reaches here, it's a pass.
           expect(true, isTrue, reason: "Error '$errorMessage' should be handled gracefully.");
           localAuthRepository.dispose();
         }
@@ -55,7 +52,6 @@ void main() {
     );
 
     test('should handle network-related stream errors', () async {
-      // Similar to the above, re-creation is part of the test logic.
       var localFakeSupabaseWrapper = FakeSupabaseWrapper();
       var localAuthRepository = SupabaseAuthRepository(
         supabaseWrapper: localFakeSupabaseWrapper,
