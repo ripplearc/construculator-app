@@ -34,7 +34,9 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
           _authStateController.add(AuthStatus.unauthenticated);
           _userController.add(null);
         } else {
-          _logger.warning('Non-auth stream error (network/connection issue), emitting connectionError');
+          _logger.warning(
+            'Non-auth stream error (network/connection issue), emitting connectionError',
+          );
           // Emit connectionError so UI can show appropriate message
           _authStateController.add(AuthStatus.connectionError);
           // Don't clear user credentials for connection errors
@@ -56,9 +58,9 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
   void _handleAuthStateChange(supabase.AuthState state) {
     final event = state.event;
     final session = state.session;
-    
+
     _logger.info('Auth state changed: $event');
-    
+
     switch (event) {
       case supabase.AuthChangeEvent.signedIn:
       case supabase.AuthChangeEvent.userUpdated:
@@ -82,10 +84,7 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
     return UserCredential(
       id: user.id,
       email: user.email ?? '',
-      metadata: {
-        ...user.appMetadata,
-        ...user.userMetadata ?? {},
-      },
+      metadata: {...user.appMetadata, ...user.userMetadata ?? {}},
       createdAt: DateTime.parse(user.createdAt),
     );
   }
@@ -93,92 +92,152 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
   /// Maps exceptions to appropriate AuthErrorType for better error handling
   AuthResult<T> _handleException<T>(dynamic error, String operation) {
     _logger.error('$operation failed with error', error);
-    
+
     // Network-related errors
     if (error is SocketException) {
-      return AuthResult.failure('Network connection failed. Please check your internet connection.', AuthErrorType.networkError);
+      return AuthResult.failure(
+        'Network connection failed. Please check your internet connection.',
+        AuthErrorType.networkError,
+      );
     }
-    
+
     if (error is TimeoutException) {
-      return AuthResult.failure('Request timed out. Please try again.', AuthErrorType.timeout);
+      return AuthResult.failure(
+        'Request timed out. Please try again.',
+        AuthErrorType.timeout,
+      );
     }
-    
+
     // Supabase AuthException with error codes
     if (error is supabase.AuthException) {
       // Use error.code to check for specific Supabase error codes
       switch (error.code) {
         case 'invalid_credentials':
-          return AuthResult.failure('Invalid email or password', AuthErrorType.invalidCredentials);
+          return AuthResult.failure(
+            'Invalid email or password',
+            AuthErrorType.invalidCredentials,
+          );
         case 'email_address_invalid':
-          return AuthResult.failure('Invalid email address format', AuthErrorType.invalidCredentials);
+          return AuthResult.failure(
+            'Invalid email address format',
+            AuthErrorType.invalidCredentials,
+          );
         case 'weak_password':
-          return AuthResult.failure('Password does not meet security requirements', AuthErrorType.invalidCredentials);
+          return AuthResult.failure(
+            'Password does not meet security requirements',
+            AuthErrorType.invalidCredentials,
+          );
         case 'user_not_found':
-          return AuthResult.failure('Invalid email or password', AuthErrorType.invalidCredentials); // Security: don't reveal user existence
+          return AuthResult.failure(
+            'Invalid email or password',
+            AuthErrorType.invalidCredentials,
+          ); // Security: don't reveal user existence
         case 'email_not_confirmed':
-          return AuthResult.failure('Please verify your email address', AuthErrorType.invalidCredentials);
+          return AuthResult.failure(
+            'Please verify your email address',
+            AuthErrorType.invalidCredentials,
+          );
         case 'email_exists':
         case 'user_already_exists':
-          return AuthResult.failure('Email already exists', AuthErrorType.registrationFailure);
+          return AuthResult.failure(
+            'Email already exists',
+            AuthErrorType.registrationFailure,
+          );
         case 'over_request_rate_limit':
         case 'over_email_send_rate_limit':
         case 'over_sms_send_rate_limit':
-          return AuthResult.failure('Too many attempts. Please try again later.', AuthErrorType.rateLimited);
+          return AuthResult.failure(
+            'Too many attempts. Please try again later.',
+            AuthErrorType.rateLimited,
+          );
         case 'signup_disabled':
         case 'email_provider_disabled':
         case 'phone_provider_disabled':
-          return AuthResult.failure('Registration is currently disabled', AuthErrorType.registrationFailure);
+          return AuthResult.failure(
+            'Registration is currently disabled',
+            AuthErrorType.registrationFailure,
+          );
         case 'session_expired':
         case 'session_not_found':
         case 'refresh_token_not_found':
         case 'refresh_token_already_used':
-          return AuthResult.failure('Session expired. Please login again.', AuthErrorType.invalidCredentials);
+          return AuthResult.failure(
+            'Session expired. Please login again.',
+            AuthErrorType.invalidCredentials,
+          );
         case 'request_timeout':
-          return AuthResult.failure('Request timed out. Please try again.', AuthErrorType.timeout);
+          return AuthResult.failure(
+            'Request timed out. Please try again.',
+            AuthErrorType.timeout,
+          );
         case 'otp_expired':
-          return AuthResult.failure('OTP code has expired. Please request a new one.', AuthErrorType.invalidCredentials);
+          return AuthResult.failure(
+            'OTP code has expired. Please request a new one.',
+            AuthErrorType.invalidCredentials,
+          );
         case 'bad_jwt':
         case 'no_authorization':
-          return AuthResult.failure('Authentication token is invalid', AuthErrorType.invalidCredentials);
+          return AuthResult.failure(
+            'Authentication token is invalid',
+            AuthErrorType.invalidCredentials,
+          );
         default:
           // Fallback for unknown auth error codes
-          return AuthResult.failure('Authentication failed', AuthErrorType.invalidCredentials);
+          return AuthResult.failure(
+            'Authentication failed',
+            AuthErrorType.invalidCredentials,
+          );
       }
     }
-    
+
     // Supabase PostgrestException with error codes
     if (error is supabase.PostgrestException) {
       switch (error.code) {
         case '23505': // Unique constraint violation
-          return AuthResult.failure('Email already exists', AuthErrorType.registrationFailure);
+          return AuthResult.failure(
+            'Email already exists',
+            AuthErrorType.registrationFailure,
+          );
         case '08001': // Unable to connect
-        case '08006': // Connection failure  
+        case '08006': // Connection failure
         case '08003': // Connection does not exist
-          return AuthResult.failure('Database connection failed', AuthErrorType.connectionError);
+          return AuthResult.failure(
+            'Database connection failed',
+            AuthErrorType.connectionError,
+          );
         default:
-          return AuthResult.failure('Database error occurred', AuthErrorType.serverError);
+          return AuthResult.failure(
+            'Database error occurred',
+            AuthErrorType.serverError,
+          );
       }
     }
-    
+
     // Default to server error for unknown errors
     return AuthResult.failure(error.toString(), AuthErrorType.serverError);
   }
 
   @override
-  Future<AuthResult<UserCredential>> loginWithEmail(String email, String password) async {
+  Future<AuthResult<UserCredential>> loginWithEmail(
+    String email,
+    String password,
+  ) async {
     _logger.info('Attempting login for user: $email');
-    
+
     try {
       final response = await supabaseWrapper.signInWithPassword(
         email: email,
         password: password,
       );
-      
+
       if (response.user == null) {
         _logger.warning('Login failed for user: $email - No user returned');
-        return AuthResult.failure('Login failed - invalid credentials', AuthErrorType.invalidCredentials);
+        return AuthResult.failure(
+          'Login failed - invalid credentials',
+          AuthErrorType.invalidCredentials,
+        );
       }
-      
+
       _logger.info('Login successful for user: $email');
       return AuthResult.success(_mapSupabaseUserToCredential(response.user!));
     } catch (e) {
@@ -187,20 +246,28 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
   }
 
   @override
-  Future<AuthResult<UserCredential>> registerWithEmail(String email, String password) async {
+  Future<AuthResult<UserCredential>> registerWithEmail(
+    String email,
+    String password,
+  ) async {
     _logger.info('Attempting registration for user: $email');
-    
+
     try {
       final response = await supabaseWrapper.signUp(
         email: email,
         password: password,
       );
-      
+
       if (response.user == null) {
-        _logger.warning('Registration failed for user: $email - No user returned');
-        return AuthResult.failure('Registration failed - please try again', AuthErrorType.registrationFailure);
+        _logger.warning(
+          'Registration failed for user: $email - No user returned',
+        );
+        return AuthResult.failure(
+          'Registration failed - please try again',
+          AuthErrorType.registrationFailure,
+        );
       }
-      
+
       _logger.info('Registration successful for user: $email');
       return AuthResult.success(_mapSupabaseUserToCredential(response.user!));
     } catch (e) {
@@ -219,30 +286,42 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
         phone: receiver == OtpReceiver.phone ? address : null,
         shouldCreateUser: true,
       );
-      
+
       _logger.info('OTP sent successfully to: $address');
       return AuthResult.success(null);
     } catch (e) {
       return _handleException(e, 'Send OTP');
     }
   }
-  
+
   @override
-  Future<AuthResult<UserCredential>> verifyOtp(String address, String otp, OtpReceiver receiver) async {
+  Future<AuthResult<UserCredential>> verifyOtp(
+    String address,
+    String otp,
+    OtpReceiver receiver,
+  ) async {
     _logger.info('Verifying OTP for: $address');
     try {
       final response = await supabaseWrapper.verifyOTP(
         email: receiver == OtpReceiver.email ? address : null,
         phone: receiver == OtpReceiver.phone ? address : null,
         token: otp,
-        type: receiver == OtpReceiver.email ? supabase.OtpType.email : supabase.OtpType.sms,
+        type:
+            receiver == OtpReceiver.email
+                ? supabase.OtpType.email
+                : supabase.OtpType.sms,
       );
-      
+
       if (response.user == null) {
-        _logger.warning('OTP verification failed for: $address - No user returned');
-        return AuthResult.failure('Invalid verification code', AuthErrorType.invalidCredentials);
+        _logger.warning(
+          'OTP verification failed for: $address - No user returned',
+        );
+        return AuthResult.failure(
+          'Invalid verification code',
+          AuthErrorType.invalidCredentials,
+        );
       }
-      
+
       _logger.info('OTP verification successful for: $address');
       return AuthResult.success(_mapSupabaseUserToCredential(response.user!));
     } catch (e) {
@@ -258,7 +337,7 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
         email,
         redirectTo: null, // Optional: can add a custom redirect URL if needed
       );
-      
+
       _logger.info('Password reset email sent successfully to: $email');
       return AuthResult.success(null);
     } catch (e) {
@@ -278,10 +357,12 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
         filterColumn: 'email',
         filterValue: email,
       );
-      
+
       final isRegistered = response != null;
-      
-      _logger.info('Email check complete for: $email - Registered: $isRegistered');
+
+      _logger.info(
+        'Email check complete for: $email - Registered: $isRegistered',
+      );
       return AuthResult.success(isRegistered);
     } catch (e) {
       return _handleException(e, 'Email registration check');
@@ -321,19 +402,26 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
         filterColumn: 'credential_id',
         filterValue: credentialId,
       );
-      
+
       if (response == null) {
-        _logger.warning('No user profile found for credential ID: $credentialId');
-        return AuthResult.failure('User profile not found', AuthErrorType.userNotFound);
+        _logger.warning(
+          'No user profile found for credential ID: $credentialId',
+        );
+        return AuthResult.failure(
+          'User profile not found',
+          AuthErrorType.userNotFound,
+        );
       }
-      
+
       _logger.debug('Successfully retrieved user profile');
-      
+
       // Parse user_preferences from JSONB
       Map<String, dynamic> userPreferences = {};
       if (response['user_preferences'] != null) {
         if (response['user_preferences'] is Map) {
-          userPreferences = Map<String, dynamic>.from(response['user_preferences']);
+          userPreferences = Map<String, dynamic>.from(
+            response['user_preferences'],
+          );
         } else if (response['user_preferences'] is String) {
           userPreferences = jsonDecode(response['user_preferences']);
         }
@@ -351,12 +439,13 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
         profilePhotoUrl: response['profile_photo_url'],
         createdAt: DateTime.parse(response['created_at']),
         updatedAt: DateTime.parse(response['updated_at']),
-        userStatus: response['user_status'] == 'active'
-            ? UserProfileStatus.active
-            : UserProfileStatus.inactive,
+        userStatus:
+            response['user_status'] == 'active'
+                ? UserProfileStatus.active
+                : UserProfileStatus.inactive,
         userPreferences: userPreferences,
       );
-      
+
       return AuthResult.success(user);
     } catch (e) {
       return _handleException(e, 'Get user profile');
@@ -375,17 +464,18 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
         'last_name': user.lastName,
         'professional_role': user.professionalRole,
         'profile_photo_url': user.profilePhotoUrl,
-        'user_status': user.userStatus == UserProfileStatus.active ? 'active' : 'inactive',
+        'user_status':
+            user.userStatus == UserProfileStatus.active ? 'active' : 'inactive',
         'user_preferences': user.userPreferences,
       };
-      
+
       final response = await supabaseWrapper.insert(
         table: 'users',
         data: userData,
       );
-          
+
       _logger.info('User profile created successfully');
-      
+
       // Parse response into User model
       final createdUser = User(
         id: response['id'].toString(),
@@ -398,14 +488,16 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
         profilePhotoUrl: response['profile_photo_url'],
         createdAt: DateTime.parse(response['created_at']),
         updatedAt: DateTime.parse(response['updated_at']),
-        userStatus: response['user_status'] == 'active'
-            ? UserProfileStatus.active
-            : UserProfileStatus.inactive,
-        userPreferences: response['user_preferences'] is Map
-            ? Map<String, dynamic>.from(response['user_preferences'])
-            : {},
+        userStatus:
+            response['user_status'] == 'active'
+                ? UserProfileStatus.active
+                : UserProfileStatus.inactive,
+        userPreferences:
+            response['user_preferences'] is Map
+                ? Map<String, dynamic>.from(response['user_preferences'])
+                : {},
       );
-      
+
       return AuthResult.success(createdUser);
     } catch (e) {
       return _handleException(e, 'Create user profile');
@@ -423,19 +515,20 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
         'last_name': user.lastName,
         'professional_role': user.professionalRole,
         'profile_photo_url': user.profilePhotoUrl,
-        'user_status': user.userStatus == UserProfileStatus.active ? 'active' : 'inactive',
+        'user_status':
+            user.userStatus == UserProfileStatus.active ? 'active' : 'inactive',
         'user_preferences': user.userPreferences,
       };
-      
+
       final response = await supabaseWrapper.update(
         table: 'users',
         data: userData,
         filterColumn: 'credential_id',
         filterValue: user.credentialId,
       );
-          
+
       _logger.info('User profile updated successfully');
-      
+
       // Parse response into User model
       final updatedUser = User(
         id: response['id'].toString(),
@@ -448,14 +541,16 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
         profilePhotoUrl: response['profile_photo_url'],
         createdAt: DateTime.parse(response['created_at']),
         updatedAt: DateTime.parse(response['updated_at']),
-        userStatus: response['user_status'] == 'active'
-            ? UserProfileStatus.active
-            : UserProfileStatus.inactive,
-        userPreferences: response['user_preferences'] is Map
-            ? Map<String, dynamic>.from(response['user_preferences'])
-            : {},
+        userStatus:
+            response['user_status'] == 'active'
+                ? UserProfileStatus.active
+                : UserProfileStatus.inactive,
+        userPreferences:
+            response['user_preferences'] is Map
+                ? Map<String, dynamic>.from(response['user_preferences'])
+                : {},
       );
-      
+
       return AuthResult.success(updatedUser);
     } catch (e) {
       return _handleException(e, 'Update user profile');
@@ -475,4 +570,4 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
     _userController.close();
     _logger.debug('SupabaseAuthRepository disposed');
   }
-} 
+}
