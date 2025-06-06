@@ -1,9 +1,7 @@
 import 'package:construculator/libraries/config/env_constants.dart';
-import 'package:construculator/libraries/logging/testing/fake_logger_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_initializer.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/config/app_config.dart';
-import 'package:construculator/libraries/logging/testing/test_app_logger.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 
 void main() {
@@ -13,7 +11,6 @@ void main() {
         final appConfig = AppConfig(
           dotEnvLoader: FakeEnvLoader(),
           supabaseInitializer: FakeSupabaseInitializer(),
-          logger: TestAppLogger(internalLogger: FakeLoggerWrapper()),
         );
 
         expect(
@@ -30,7 +27,6 @@ void main() {
         final appConfig = AppConfig(
           dotEnvLoader: FakeEnvLoader(),
           supabaseInitializer: FakeSupabaseInitializer(),
-          logger: TestAppLogger(internalLogger: FakeLoggerWrapper()),
         );
 
         expect(
@@ -51,27 +47,21 @@ void main() {
     group('App Config Functionality Tests', () {
       late FakeEnvLoader fakeDotEnvLoader;
       late FakeSupabaseInitializer fakeSupabaseInitializer;
-      late TestAppLogger testAppLogger;
       late AppConfig appConfig;
-      late FakeLoggerWrapper fakeLoggerWrapper;
 
       setUp(() {
         fakeDotEnvLoader = FakeEnvLoader();
-        fakeLoggerWrapper = FakeLoggerWrapper();
         fakeSupabaseInitializer = FakeSupabaseInitializer();
-        testAppLogger = TestAppLogger(internalLogger: fakeLoggerWrapper);
 
         appConfig = AppConfig(
           dotEnvLoader: fakeDotEnvLoader,
           supabaseInitializer: fakeSupabaseInitializer,
-          logger: testAppLogger,
         );
       });
 
       tearDown(() {
         fakeDotEnvLoader.reset();
         fakeSupabaseInitializer.reset();
-        testAppLogger.clear();
       });
 
       group('Default Values Handling', () {
@@ -167,13 +157,9 @@ void main() {
             for (int i = 0; i < environments.length; i++) {
               final freshFakeDotEnvLoader = FakeEnvLoader();
               final freshFakeSupabaseInitializer = FakeSupabaseInitializer();
-              final freshFakeLogger = TestAppLogger(
-                internalLogger: FakeLoggerWrapper(),
-              );
               final freshConfig = AppConfig(
                 dotEnvLoader: freshFakeDotEnvLoader,
                 supabaseInitializer: freshFakeSupabaseInitializer,
-                logger: freshFakeLogger,
               );
               freshFakeDotEnvLoader.setEnvVar(
                 'SUPABASE_URL',
@@ -237,7 +223,7 @@ void main() {
             final freshConfig = AppConfig(
               dotEnvLoader: freshFakeDotEnvLoader,
               supabaseInitializer: freshFakeSupabaseInitializer,
-              logger: TestAppLogger(internalLogger: FakeLoggerWrapper()),
+             
             );
 
             freshFakeDotEnvLoader.setEnvVar('APP_NAME', testCase.$2);
@@ -272,9 +258,7 @@ void main() {
               final freshConfig = AppConfig(
                 dotEnvLoader: freshFakeDotEnvLoader,
                 supabaseInitializer: freshFakeSupabaseInitializer,
-                logger: TestAppLogger(
-                  internalLogger: FakeLoggerWrapper(),
-                ), // Use TestAppLogger
+               
               );
 
               // Arrange: Set necessary vars for initialization to succeed
@@ -315,11 +299,10 @@ void main() {
         setUp(() {
           fakeDotEnvLoader = FakeEnvLoader();
           fakeSupabaseInitializer = FakeSupabaseInitializer();
-          testAppLogger = TestAppLogger(internalLogger: FakeLoggerWrapper());
           appConfig = AppConfig(
             dotEnvLoader: fakeDotEnvLoader,
             supabaseInitializer: fakeSupabaseInitializer,
-            logger: testAppLogger,
+            
           );
           // Required for successful initialization in sub-tests
           fakeDotEnvLoader.setEnvVar(
