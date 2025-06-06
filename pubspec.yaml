@@ -49,19 +49,6 @@ flutter:
     - assets/icons/
     - assets/images/
 
-flutter_launcher_icons:
-  android: true
-  ios: true
-  remove_alpha_ios: true
-  image_path: "assets/icons/app_icon.png"
-  
-  # Environment-specific icons
-  development:
-    image_path: "assets/icons/app_icon_dev.png"
-  
-  qa:
-    image_path: "assets/icons/app_icon_qa.png"
-
 flutter_native_splash:
   image: "assets/icons/splash_icon.png"
   background_image: "assets/images/splash_bg.png"
