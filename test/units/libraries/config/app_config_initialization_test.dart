@@ -1,34 +1,28 @@
 import 'package:construculator/libraries/config/env_constants.dart';
-import 'package:construculator/libraries/logging/testing/fake_logger_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_initializer.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/config/app_config.dart';
-import 'package:construculator/libraries/logging/testing/test_app_logger.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 
 void main() {
   group('App Config Initialization Tests', () {
       late FakeEnvLoader fakeDotEnvLoader;
       late FakeSupabaseInitializer fakeSupabaseInitializer;
-      late TestAppLogger testAppLogger;
       late AppConfig appConfig;
 
       setUp(() {
         fakeDotEnvLoader = FakeEnvLoader();
         fakeSupabaseInitializer = FakeSupabaseInitializer();
-        testAppLogger = TestAppLogger(internalLogger: FakeLoggerWrapper());
 
         appConfig = AppConfig(
           dotEnvLoader: fakeDotEnvLoader,
           supabaseInitializer: fakeSupabaseInitializer,
-          logger: testAppLogger,
         );
       });
 
       tearDown(() {
         fakeDotEnvLoader.reset();
         fakeSupabaseInitializer.reset();
-        testAppLogger.clear();
       });
 
        test('should initialize successfully for dev environment', () async {
