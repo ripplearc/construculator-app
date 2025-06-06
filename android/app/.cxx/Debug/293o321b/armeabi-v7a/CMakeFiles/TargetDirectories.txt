@@ -1,0 +1,2 @@
+/Users/orionedge/Documents/Personal/construculator-app/android/app/.cxx/Debug/293o321b/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/orionedge/Documents/Personal/construculator-app/android/app/.cxx/Debug/293o321b/armeabi-v7a/CMakeFiles/rebuild_cache.dir
