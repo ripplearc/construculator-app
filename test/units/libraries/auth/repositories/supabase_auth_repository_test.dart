@@ -18,7 +18,7 @@ void main() {
 
   setUp(() {
     fakeSupabaseWrapper = FakeSupabaseWrapper();
-    authRepository = SupabaseAuthRepository(fakeSupabaseWrapper);
+    authRepository = SupabaseAuthRepository(supabaseWrapper: fakeSupabaseWrapper);
     fakeDotEnvLoader = FakeEnvLoader();
 
     appConfig = AppConfigImpl(
@@ -800,7 +800,7 @@ void main() {
         fakeSupabaseWrapper.reset();
         authRepository.dispose();
         fakeSupabaseWrapper = FakeSupabaseWrapper();
-        authRepository = SupabaseAuthRepository(fakeSupabaseWrapper);
+        authRepository = SupabaseAuthRepository(supabaseWrapper: fakeSupabaseWrapper);
 
         fakeSupabaseWrapper.shouldThrowOnSignIn = true;
         fakeSupabaseWrapper.signInErrorMessage = scenario['message'] as String;
@@ -1332,7 +1332,7 @@ void main() {
         fakeSupabaseWrapper.reset();
         authRepository.dispose();
         fakeSupabaseWrapper = FakeSupabaseWrapper();
-        authRepository = SupabaseAuthRepository(fakeSupabaseWrapper);
+        authRepository = SupabaseAuthRepository(supabaseWrapper: fakeSupabaseWrapper);
 
         // Simulate auth stream error using the available method
         fakeSupabaseWrapper.simulateAuthStreamError(errorMessage);
@@ -1350,7 +1350,7 @@ void main() {
       fakeSupabaseWrapper.reset();
       authRepository.dispose();
       fakeSupabaseWrapper = FakeSupabaseWrapper();
-      authRepository = SupabaseAuthRepository(fakeSupabaseWrapper);
+      authRepository = SupabaseAuthRepository(supabaseWrapper: fakeSupabaseWrapper);
 
       // Act - Simulate network error
       fakeSupabaseWrapper.simulateAuthStreamError(
