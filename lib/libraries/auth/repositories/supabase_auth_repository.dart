@@ -11,18 +11,18 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 class SupabaseAuthRepository implements AuthRepository, Disposable {
-  final SupabaseWrapper _supabaseWrapper;
+  final SupabaseWrapper supabaseWrapper;
   final _logger = AppLogger().tag('SupabaseAuthRepository');
   final _authStateController = StreamController<AuthStatus>.broadcast();
   final _userController = StreamController<UserCredential?>.broadcast();
   StreamSubscription<supabase.AuthState>? _authSubscription;
 
-  SupabaseAuthRepository(this._supabaseWrapper) {
+  SupabaseAuthRepository({required this.supabaseWrapper}) {
     _initAuthListener();
   }
 
   void _initAuthListener() {
-    _authSubscription = _supabaseWrapper.onAuthStateChange.listen(
+    _authSubscription = supabaseWrapper.onAuthStateChange.listen(
       (state) {
         _handleAuthStateChange(state);
       },
@@ -43,7 +43,7 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
     );
 
     // Check initial state
-    final initialUser = _supabaseWrapper.currentUser;
+    final initialUser = supabaseWrapper.currentUser;
     if (initialUser != null) {
       _authStateController.add(AuthStatus.authenticated);
       _userController.add(_mapSupabaseUserToCredential(initialUser));
@@ -169,7 +169,7 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
     _logger.info('Attempting login for user: $email');
     
     try {
-      final response = await _supabaseWrapper.signInWithPassword(
+      final response = await supabaseWrapper.signInWithPassword(
         email: email,
         password: password,
       );
@@ -191,7 +191,7 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
     _logger.info('Attempting registration for user: $email');
     
     try {
-      final response = await _supabaseWrapper.signUp(
+      final response = await supabaseWrapper.signUp(
         email: email,
         password: password,
       );
@@ -214,7 +214,7 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
     try {
       // signInWithOtp will send an otp to the address if user is registered already.
       // If the user is not registered, It will create a new user and send an otp to the address
-      await _supabaseWrapper.signInWithOtp(
+      await supabaseWrapper.signInWithOtp(
         email: receiver == OtpReceiver.email ? address : null,
         phone: receiver == OtpReceiver.phone ? address : null,
         shouldCreateUser: true,
@@ -231,7 +231,7 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
   Future<AuthResult<UserCredential>> verifyOtp(String address, String otp, OtpReceiver receiver) async {
     _logger.info('Verifying OTP for: $address');
     try {
-      final response = await _supabaseWrapper.verifyOTP(
+      final response = await supabaseWrapper.verifyOTP(
         email: receiver == OtpReceiver.email ? address : null,
         phone: receiver == OtpReceiver.phone ? address : null,
         token: otp,
@@ -254,7 +254,7 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
   Future<AuthResult<void>> resetPassword(String email) async {
     _logger.info('Initiating password reset for: $email');
     try {
-      await _supabaseWrapper.resetPasswordForEmail(
+      await supabaseWrapper.resetPasswordForEmail(
         email,
         redirectTo: null, // Optional: can add a custom redirect URL if needed
       );
@@ -272,7 +272,7 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
     try {
       // Using a lightweight custom query to check if email exists
       // Select only id for better performance
-      final response = await _supabaseWrapper.selectSingle(
+      final response = await supabaseWrapper.selectSingle(
         table: 'users',
         columns: 'id',
         filterColumn: 'email',
@@ -292,7 +292,7 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
   Future<AuthResult<void>> logout() async {
     _logger.info('Logging out user');
     try {
-      await _supabaseWrapper.signOut();
+      await supabaseWrapper.signOut();
       _logger.info('Logout successful');
       return AuthResult.success(null);
     } catch (e) {
@@ -302,12 +302,12 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
 
   @override
   bool isAuthenticated() {
-    return _supabaseWrapper.isAuthenticated;
+    return supabaseWrapper.isAuthenticated;
   }
 
   @override
   UserCredential? getCurrentCredentials() {
-    final supaUser = _supabaseWrapper.currentUser;
+    final supaUser = supabaseWrapper.currentUser;
     if (supaUser == null) return null;
     return _mapSupabaseUserToCredential(supaUser);
   }
@@ -316,7 +316,7 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
   Future<AuthResult<User>> getUserProfile(String credentialId) async {
     _logger.debug('Fetching user profile for credential ID: $credentialId');
     try {
-      final response = await _supabaseWrapper.selectSingle(
+      final response = await supabaseWrapper.selectSingle(
         table: 'users',
         filterColumn: 'credential_id',
         filterValue: credentialId,
@@ -379,7 +379,7 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
         'user_preferences': user.userPreferences,
       };
       
-      final response = await _supabaseWrapper.insert(
+      final response = await supabaseWrapper.insert(
         table: 'users',
         data: userData,
       );
@@ -427,7 +427,7 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
         'user_preferences': user.userPreferences,
       };
       
-      final response = await _supabaseWrapper.update(
+      final response = await supabaseWrapper.update(
         table: 'users',
         data: userData,
         filterColumn: 'credential_id',
