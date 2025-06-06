@@ -22,7 +22,7 @@ class FakeEnvLoader implements EnvLoader {
     return _envVars[key];
   }
 
-  // Test helper methods
+  // Test helper methods, sets env vars for testing
   void setEnvVar(String key, String? value) {
     _envVars[key] = value;
   }

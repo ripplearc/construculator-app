@@ -2,6 +2,10 @@ import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Interface that abstracts configuration operations.
+/// 
+/// [initialize] is used to initialize any important services the app requires to run.
+/// 
+/// [getEnvironmentName] is used to get the name(eg. dev, qa, prod, etc) or alias(eg. fishfood, dogfood, etc) of the environment.
 abstract class Config {
   late Environment environment;
   late SupabaseClient supabaseClient;
@@ -10,18 +14,13 @@ abstract class Config {
   late String baseAppName;
   late bool debugFeaturesEnabled;
 
-  /// Initializes the configuration with the given environment.
   Future<void> initialize(Environment env);
 
-  /// Returns the name or alias of the environment.
   String getEnvironmentName(Environment env, {bool isAlias = false});
 
-  /// Returns true if the environment is development.
   bool get isDev;
 
-  /// Returns true if the environment is QA.
   bool get isQa;
 
-  /// Returns true if the environment is production.
   bool get isProd;
 }
