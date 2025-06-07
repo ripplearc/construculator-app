@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:construculator/libraries/auth/shared_auth_notifier.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -19,7 +20,7 @@ void main() {
 
     group('Interface Contract Verification', () {
       test('should implement IAuthNotifier interface', () {
-        expect(authNotifier, isA<SharedAuthNotifier>());
+        expect(authNotifier, isA<AuthNotifier>());
       });
 
       test('should implement Disposable interface', () {
