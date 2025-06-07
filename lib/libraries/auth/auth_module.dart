@@ -1,6 +1,5 @@
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/repositories/supabase_auth_repository.dart';
-import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -13,7 +12,7 @@ class AuthLibraryModule extends Module {
   void exportedBinds(Injector i) {
     i.addLazySingleton<AuthRepository>(
       () => SupabaseAuthRepository(
-        supabaseWrapper: i.get<SupabaseWrapper>(),
+        supabaseWrapper: i(),
       ),
     );
   }
