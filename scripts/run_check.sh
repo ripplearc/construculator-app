@@ -92,23 +92,14 @@ run_mutation_tests() {
   local all_mutation_files=$(find test/mutations -type f -name "*.xml")
   
   # Get all changed files
-  local changed_files=$(git diff --name-only --diff-filter=d "$base_commit" -- "lib/*.dart" "test/*.dart")
-  # Filter mutation files - keep only those that appear in changed_files
-  local mutation_files_to_run=()
-  for mutation_file in $all_mutation_files; do
-    if echo "$changed_files" | grep -qF "$mutation_file"; then
-      mutation_files_to_run+=("$mutation_file")
-    fi
-  done
-  # Hardcoded mutation test files
-  local mutation_files_to_run=($all_mutation_files)
-  if [[ ${#mutation_files_to_run[@]} -eq 0 ]]; then
+  local changed_files=$(git diff --name-only --diff-filter=d "$base_commit" -- "test/mutations/*.xml")
+  if [[ -z "$changed_files" ]]; then
     echo "✅ No mutation test files changed"
     return 0
   fi
 
   echo "Mutation test files to run:"
-  printf '%s\n' "${mutation_files_to_run[@]}"
+  printf '%s\n' "$changed_files"
 
   # Create a temporary directory for logs
   local tmpdir=$(mktemp -d)
