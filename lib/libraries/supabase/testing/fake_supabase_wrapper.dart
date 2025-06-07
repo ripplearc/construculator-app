@@ -42,6 +42,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   String? selectExceptionType;
   String? insertExceptionType;
   String? updateExceptionType;
+  String? signInErrorCode;
   
   // PostgrestException specific configuration
   String? postgrestErrorCode;
@@ -341,9 +342,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   void _throwConfiguredException(String? exceptionType, String message) {
     switch (exceptionType) {
       case 'auth':
-        throw FakeAuthException(message, code: message);
+        throw supabase.AuthException(message, code: signInErrorCode);
       case 'postgrest':
-        throw FakePostgrestException(message, code: postgrestErrorCode);
+        throw supabase.PostgrestException(code: postgrestErrorCode, message: message);
       case 'socket':
         throw SocketException(message);
       case 'timeout':
