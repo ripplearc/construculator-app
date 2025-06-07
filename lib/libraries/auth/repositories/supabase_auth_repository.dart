@@ -8,13 +8,14 @@ import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 class SupabaseAuthRepository implements AuthRepository, Disposable {
   final SupabaseWrapper supabaseWrapper;
   final _logger = AppLogger().tag('SupabaseAuthRepository');
-  final _authStateController = StreamController<AuthStatus>.broadcast();
-  final _userController = StreamController<UserCredential?>.broadcast();
+  final _authStateController = BehaviorSubject<AuthStatus>();
+  final _userController = BehaviorSubject<UserCredential?>();
   StreamSubscription<supabase.AuthState>? _authSubscription;
 
   SupabaseAuthRepository({required this.supabaseWrapper}) {
@@ -40,9 +41,9 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
         }
       },
     );
-
     // Check initial state
     final initialUser = supabaseWrapper.currentUser;
+
     if (initialUser != null) {
       _authStateController.add(AuthStatus.authenticated);
       _userController.add(_mapSupabaseUserToCredential(initialUser));
