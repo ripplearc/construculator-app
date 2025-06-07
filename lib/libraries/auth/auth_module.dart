@@ -1,4 +1,3 @@
-import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/repositories/supabase_auth_repository_impl.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_service.dart';
@@ -20,8 +19,8 @@ class AuthModule extends Module {
     );
     i.addLazySingleton<AuthService>(
       () => SharedAuthService(
-        notifier: i.get<AuthNotifier>(),
-        repository: i.get<AuthRepository>(),
+        notifier: i(),
+        repository: i(),
       ),
     );
   }
