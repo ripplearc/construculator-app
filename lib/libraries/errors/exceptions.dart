@@ -1,5 +1,4 @@
-import 'package:construculator/libraries/logging/interfaces/logger.dart';
-import 'package:flutter_modular/flutter_modular.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:stack_trace/stack_trace.dart' as trace;
 
 // Base class for all custom exceptions in this application.
@@ -34,13 +33,13 @@ abstract class AppException implements Exception {
 }
 
 class ServerException extends AppException {
-  final Logger log = Modular.get<Logger>();
+  final log = AppLogger();
   ServerException(super.stackTrace,super.exception) {
     log.tag('ServerException').error(toString());
   }
 }
 class ClientException extends AppException {
-  final Logger log = Modular.get<Logger>();
+  final log = AppLogger();
   final String message;
   ClientException(super.stackTrace,super.exception,this.message) {
     log.tag('ClientException').warning(toString());
