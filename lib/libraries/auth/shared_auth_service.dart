@@ -11,7 +11,11 @@ import 'package:flutter_modular/flutter_modular.dart';
 class SharedAuthService implements AuthService, Disposable {
   final AuthNotifier _notifier;
   final AuthRepository _repository;
+<<<<<<< HEAD
   final _logger = AppLogger().tag('AuthService');
+=======
+  final Logger _logger;
+>>>>>>> c5f718d (Refactor)
   
   // Track subscriptions for disposal
   StreamSubscription<AuthStatus>? _authStateSubscription;
@@ -20,8 +24,10 @@ class SharedAuthService implements AuthService, Disposable {
   SharedAuthService({
     required AuthNotifier notifier,
     required AuthRepository repository,
+    required Logger logger,
   }) : _notifier = notifier,
-       _repository = repository {
+       _repository = repository,
+       _logger = logger.tag('AuthService') {
     _logger.debug('Initializing auth service');
     _initializeListeners();
   }
@@ -233,7 +239,7 @@ class SharedAuthService implements AuthService, Disposable {
       }
     } catch (e) {
       _logger.error('Logout failed with exception', e);
-      rethrow; // Consistent with original behavior
+      rethrow;
     }
   }
 
