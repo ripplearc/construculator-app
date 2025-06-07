@@ -1,22 +1,30 @@
-import 'package:construculator/libraries/logging/interfaces/logger.dart';
-import 'package:construculator/libraries/logging/interfaces/logger_wrapper.dart';
+// coverage:ignore-file
+import 'package:construculator/libraries/config/env_constants.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:logger/logger.dart';
 
-// Logger implementation that uses the flutter logger package.
-// Currently, it is only used to log messages to the console. 
-// This implementation will be extended to support other logging targets in the future.
-class AppLogger implements Logger {
+// Global Logger For The App
+class AppLogger {
   final String _tag;
   final String _emojiPrefix;
-  final LoggerWrapper _internalLogger;
+  final Logger _internalLogger;
 
   // Private constructor for internal instantiation by tag() and emoji()
   AppLogger._private(this._tag, this._emojiPrefix, this._internalLogger);
 
-  AppLogger({
-    required LoggerWrapper internalLogger,
-  })  : _tag = 'Construculator',
+  AppLogger()  : _tag = 'Construculator',
         _emojiPrefix = '',
-        _internalLogger = internalLogger;
+        _internalLogger = Logger(
+          filter: _AppLogFilter(),
+          printer: PrettyPrinter(
+            methodCount: 1,
+            errorMethodCount: 5,
+            lineLength: 80,
+            colors: true,
+            printEmojis: true,
+          ),
+          output: ConsoleOutput(),
+        );
 
   String _formatMessage(String message) {
     String prefix = '';
@@ -27,53 +35,57 @@ class AppLogger implements Logger {
     return '$prefix $message';
   }
 
-  @override
-  Logger fresh() {
+  AppLogger fresh() {
     // Return a new instance with the default tag and emoji prefix, 
     // and sharing the same internal logger
     return AppLogger._private('Construculator', '', _internalLogger);
   }
-  @override
-  Logger tag(String newTag) {
+
+  AppLogger tag(String newTag) {
     // Return a new instance with the new tag, preserving the current emojiPrefix 
     // and sharing the same internal 
     return AppLogger._private(newTag, _emojiPrefix, _internalLogger);
   }
 
-  @override
-  Logger emoji(String newEmojiPrefix) {
+  AppLogger emoji(String newEmojiPrefix) {
     // Return a new instance with the new emojiPrefix, preserving the current tag
     // and sharing the same internal 
     return AppLogger._private(_tag, newEmojiPrefix, _internalLogger);
   }
 
-  @override
   void info(String message, [dynamic error, StackTrace? stackTrace]) {
     _internalLogger.i(_formatMessage(message), error: error, stackTrace: stackTrace);
   }
 
-  @override
   void warning(String message, [dynamic error, StackTrace? stackTrace]) {
     _internalLogger.w(_formatMessage(message), error: error, stackTrace: stackTrace);
   }
 
-  @override
   void error(String message, [dynamic error, StackTrace? stackTrace]) {
     _internalLogger.e(_formatMessage(message), error: error, stackTrace: stackTrace);
   }
 
-  @override
   void debug(String message, [dynamic error, StackTrace? stackTrace]) {
     _internalLogger.d(_formatMessage(message), error: error, stackTrace: stackTrace);
   }
 
-  @override
-  void wtf(String message, [dynamic error, StackTrace? stackTrace]) {
-    _internalLogger.f(_formatMessage(message), error: error, stackTrace: stackTrace);
-  }
-
-  @override
   void omg(String message, [dynamic error, StackTrace? stackTrace]) {
     _internalLogger.f(_formatMessage(message), error: error, stackTrace: stackTrace);
   }
 } 
+
+class _AppLogFilter extends LogFilter {
+  @override
+  bool shouldLog(LogEvent event) {
+    final env = String.fromEnvironment('APP_ENV',defaultValue: devEnv);
+    if (env == prodEnv && !kDebugMode) {
+      return event.level.index >= Level.warning.index; // Only log warnings and errors and fatal/omg in production
+    }
+
+    if (env == qaEnv && !kDebugMode) {
+      return event.level.index >= Level.info.index; // Only log info and above in qa
+    }
+
+    return true; // Log all messages in dev
+  }
+}
