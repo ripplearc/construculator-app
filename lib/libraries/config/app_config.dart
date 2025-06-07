@@ -1,29 +1,56 @@
 import 'package:construculator/libraries/config/env_constants.dart';
+import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
-import 'package:construculator/libraries/logging/interfaces/logger.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_initializer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class AppConfig {
+class AppConfig implements Config {
   AppConfig({
     required EnvLoader dotEnvLoader,
     required SupabaseInitializer supabaseInitializer,
-    required Logger logger,
   }) : _dotEnvLoader = dotEnvLoader,
        _supabaseInitializer = supabaseInitializer,
-       _logger = logger.tag("AppConfig");
+       _logger = AppLogger().tag("AppConfig");
 
   final EnvLoader _dotEnvLoader;
   final SupabaseInitializer _supabaseInitializer;
-  final Logger _logger;
+  final AppLogger _logger;
 
+  Future<SupabaseClient> _initializeSupabaseClient() async {
+    final supabaseUrl = _dotEnvLoader.get('SUPABASE_URL') ?? '';
+    final supabaseAnonKey = _dotEnvLoader.get('SUPABASE_ANON_KEY') ?? '';
+    _logger.info('Supabase URL: $supabaseUrl');
+    
+    if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
+      _logger.error('Supabase URL or Anon Key is missing in the loaded .env files.');
+      throw Exception(
+        'Supabase configuration is missing. Check your .env files.',
+      );
+    }
+    
+    _logger.info('Initializing Supabase');
+    return await _supabaseInitializer.initialize(
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
+      debug: debugFeaturesEnabled,
+    );
+  }
+
+  @override
   late Environment environment;
+  @override
   late SupabaseClient supabaseClient;
+  @override
   late String apiUrl;
+  @override
   late String appName;
+  @override
   late String baseAppName;
+  @override
   late bool debugFeaturesEnabled;
 
+  @override
   Future<void> initialize(Environment env) async {
     environment = env;
     String envFileName;
@@ -58,26 +85,7 @@ class AppConfig {
     _logger.emoji('📱').info('App Name: $appName');
   }
 
-  Future<SupabaseClient> _initializeSupabaseClient() async {
-    final supabaseUrl = _dotEnvLoader.get('SUPABASE_URL') ?? '';
-    final supabaseAnonKey = _dotEnvLoader.get('SUPABASE_ANON_KEY') ?? '';
-    _logger.info('Supabase URL: $supabaseUrl');
-    
-    if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
-      _logger.error('Supabase URL or Anon Key is missing in the loaded .env files.');
-      throw Exception(
-        'Supabase configuration is missing. Check your .env files.',
-      );
-    }
-    
-    _logger.info('Initializing Supabase');
-    return await _supabaseInitializer.initialize(
-      url: supabaseUrl,
-      anonKey: supabaseAnonKey,
-      debug: debugFeaturesEnabled,
-    );
-  }
-
+  @override
   String getEnvironmentName(Environment env, {bool isAlias = false}) {
     switch (env) {
       case Environment.dev:
@@ -89,7 +97,12 @@ class AppConfig {
     }
   }
 
+  @override
   bool get isDev => environment == Environment.dev;
+
+  @override
   bool get isQa => environment == Environment.qa;
+
+  @override
   bool get isProd => environment == Environment.prod;
 }
