@@ -9,6 +9,13 @@ enum OtpReceiver { email, phone }
 
 enum UserProfileStatus { active, inactive }
 
+/// Postgres error codes
+/// 
+/// [uniqueViolation] corresponds to the error code 23505 and is used when a unique constraint is violated
+/// [unableToConnect] corresponds to the error code 08001 and is used when the connection to the server is lost
+/// [connectionFailure] corresponds to the error code 08006 and is used when the connection to the server is lost
+/// [connectionDoesNotExist] corresponds to the error code 08003 and is used when the connection to the server is lost
+/// [unknownError] is used when the error is unknown
 enum PostgresErrorCode {
   uniqueViolation,
   unableToConnect,
