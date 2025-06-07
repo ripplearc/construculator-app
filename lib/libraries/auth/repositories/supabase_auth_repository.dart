@@ -28,8 +28,7 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
       },
       onError: (error) {
         _logger.error('Error in Supabase auth state stream', error);
-        // Handle auth-specific vs non-auth errors differently
-        if (error is supabase.AuthException) {
+        if (error is supabase.AuthSessionMissingException) {
           _logger.warning('Auth-specific error, emitting unauthenticated');
           _authStateController.add(AuthStatus.unauthenticated);
           _userController.add(null);
@@ -37,9 +36,7 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
           _logger.warning(
             'Non-auth stream error (network/connection issue), emitting connectionError',
           );
-          // Emit connectionError so UI can show appropriate message
           _authStateController.add(AuthStatus.connectionError);
-          // Don't clear user credentials for connection errors
         }
       },
     );
@@ -65,13 +62,14 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
       case supabase.AuthChangeEvent.signedIn:
       case supabase.AuthChangeEvent.userUpdated:
       case supabase.AuthChangeEvent.tokenRefreshed:
-        if (session?.user != null) {
+      case supabase.AuthChangeEvent.mfaChallengeVerified:
+        final user = session?.user;
+        if (user != null) {
           _authStateController.add(AuthStatus.authenticated);
-          _userController.add(_mapSupabaseUserToCredential(session!.user));
+          _userController.add(_mapSupabaseUserToCredential(user));
         }
         break;
       case supabase.AuthChangeEvent.signedOut:
-      case supabase.AuthChangeEvent.mfaChallengeVerified:
         _authStateController.add(AuthStatus.unauthenticated);
         _userController.add(null);
         break;
@@ -190,17 +188,16 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
       }
     }
 
-    // Supabase PostgrestException with error codes
     if (error is supabase.PostgrestException) {
-      switch (error.code) {
-        case '23505': // Unique constraint violation
+      switch (convertToPostgresErrorCode(error.code)) {
+        case PostgresErrorCode.uniqueViolation:
           return AuthResult.failure(
             'Email already exists',
             AuthErrorType.registrationFailure,
           );
-        case '08001': // Unable to connect
-        case '08006': // Connection failure
-        case '08003': // Connection does not exist
+        case PostgresErrorCode.unableToConnect:
+        case PostgresErrorCode.connectionFailure:
+        case PostgresErrorCode.connectionDoesNotExist:
           return AuthResult.failure(
             'Database connection failed',
             AuthErrorType.connectionError,
@@ -333,10 +330,7 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
   Future<AuthResult<void>> resetPassword(String email) async {
     _logger.info('Initiating password reset for: $email');
     try {
-      await supabaseWrapper.resetPasswordForEmail(
-        email,
-        redirectTo: null, // Optional: can add a custom redirect URL if needed
-      );
+      await supabaseWrapper.resetPasswordForEmail(email, redirectTo: null);
 
       _logger.info('Password reset email sent successfully to: $email');
       return AuthResult.success(null);
@@ -349,8 +343,6 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
   Future<AuthResult<bool>> isEmailRegistered(String email) async {
     _logger.info('Checking if email is registered: $email');
     try {
-      // Using a lightweight custom query to check if email exists
-      // Select only id for better performance
       final response = await supabaseWrapper.selectSingle(
         table: 'users',
         columns: 'id',
@@ -427,7 +419,6 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
         }
       }
 
-      // Map database record to User model
       final user = User(
         id: response['id'].toString(),
         credentialId: response['credential_id'],
@@ -476,7 +467,6 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
 
       _logger.info('User profile created successfully');
 
-      // Parse response into User model
       final createdUser = User(
         id: response['id'].toString(),
         credentialId: response['credential_id'],
@@ -529,7 +519,6 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
 
       _logger.info('User profile updated successfully');
 
-      // Parse response into User model
       final updatedUser = User(
         id: response['id'].toString(),
         credentialId: response['credential_id'],
