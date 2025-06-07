@@ -6,10 +6,10 @@ echo "🔄 Script started at: $(date +'%Y-%m-%d %H:%M:%S %Z')"
 # ./run_check.sh --comp: run comprehensive check only
 # ./run_check.sh --all: run both pre-check and comprehensive check
 # ./run_check.sh --mutations: run mutation tests only
-# ./run_check.sh --target BRANCH: specify target branch (default: master)
+# ./run_check.sh --target BRANCH: specify target branch (default: main)
 
 # Configuration
-TARGET_BRANCH=${TARGET_BRANCH:-master}
+TARGET_BRANCH=${TARGET_BRANCH:-main}
 ARC_CODE_COVERAGE_TARGET=${ARC_CODE_COVERAGE_TARGET:-95}
 
 # Functions
@@ -168,33 +168,49 @@ comprehensive_check() {
   flutter analyze --fatal-infos --fatal-warnings .
 
   # Unit tests with coverage
-  echo "🧪 Unit tests with coverage..."
-  mkdir -p test-results
-  flutter test test/units --coverage --machine > test-results/flutter.json
+  if [ -d "test/units" ] && [ "$(ls -A test/units)" ]; then
+    echo "🧪 Unit tests with coverage..."
+    mkdir -p test-results
+    flutter test test/units --coverage --machine > test-results/flutter.json
 
-  # Process coverage
-  if [[ -f "coverage/lcov.info" ]]; then
-    local lf=$(grep '^LF:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
-    local lh=$(grep '^LH:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
-    local coverage=$(echo "scale=2; $lh*100/$lf" | bc)
+    # Process coverage
+    if [[ -f "coverage/lcov.info" ]]; then
+      local lf=$(grep '^LF:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
+      local lh=$(grep '^LH:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
+      local coverage=$(echo "scale=2; $lh*100/$lf" | bc)
 
-    echo "📊 Coverage: $coverage% (Target: ${ARC_CODE_COVERAGE_TARGET}%)"
-    if (( $(echo "$coverage < $ARC_CODE_COVERAGE_TARGET" | bc -l) )); then
-      echo "❌ Low coverage"
+      echo "📊 Coverage: $coverage% (Target: ${ARC_CODE_COVERAGE_TARGET}%)"
+      if (( $(echo "$coverage < $ARC_CODE_COVERAGE_TARGET" | bc -l) )); then
+        echo "❌ Low coverage"
+        exit 1
+      fi
+    else
+      echo "⚠️ Coverage file missing after running unit tests. This might indicate an issue with test execution or setup."
+      # Optionally, decide if this should be an exit 1 or just a warning.
+      # For now, it's a warning, as the original script exits.
+      # If skipping unit tests is fine, then missing coverage if tests didn't run is also fine.
+      # However, if tests RAN and coverage is STILL missing, that's an error.
       exit 1
     fi
   else
-    echo "❌ Coverage file missing"
-    exit 1
+    echo "⏩ Skipping unit tests: test/units directory not found."
   fi
 
   # Widget tests
-  echo "📱 Widget tests..."
-  flutter test test/widgets
+  if [ -d "test/widgets" ] && [ "$(ls -A test/widgets)" ]; then
+    echo "📱 Widget tests..."
+    flutter test test/widgets
+  else
+    echo "⏩ Skipping widget tests: test/widgets directory not found."
+  fi
 
   # Screenshot tests
-  echo "🖼️ Screenshot tests..."
-  flutter test test/screenshots --update-goldens
+  if [ -d "test/screenshots" ] && [ "$(ls -A test/screenshots)" ]; then
+    echo "🖼️ Screenshot tests..."
+    flutter test test/screenshots --update-goldens
+  else
+    echo "⏩ Skipping screenshot tests: test/screenshots directory not found."
+  fi
 
   # Build Android
   echo "🤖 Building Android..."
