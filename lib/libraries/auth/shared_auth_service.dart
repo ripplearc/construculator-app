@@ -5,13 +5,13 @@ import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_service.dart';
-import 'package:construculator/libraries/logging/interfaces/logger.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class SharedAuthService implements AuthService, Disposable {
   final AuthNotifier _notifier;
   final AuthRepository _repository;
-  final Logger _logger = Modular.get<Logger>().tag('AuthService');
+  final _logger = AppLogger().tag('AuthService');
   
   // Track subscriptions for disposal
   StreamSubscription<AuthStatus>? _authStateSubscription;

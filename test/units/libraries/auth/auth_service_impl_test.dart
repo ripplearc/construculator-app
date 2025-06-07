@@ -1,10 +1,9 @@
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
-import 'package:construculator/libraries/config/env_constants.dart';
+import 'package:construculator/libraries/auth/fakes/fake_auth_notifier.dart';
+import 'package:construculator/libraries/auth/shared_auth_service.dart';
+import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:construculator/libraries/auth/auth_service_impl.dart';
-import 'package:construculator/libraries/auth/fakes/fake_auth_repository.dart';
-import 'package:construculator/libraries/config/app_config.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 
 void main() {
@@ -14,18 +13,16 @@ void main() {
   // Set up our minimal test environment
   late FakeAuthNotifier authNotifier;
   late FakeAuthRepository authRepository;
-  late AuthServiceImpl authService;
+  late SharedAuthService authService;
 
   setUp(() {
-    // Initialize AppConfig.environment to prevent Logger errors
-    AppConfig.instance.environment = Environment.dev;
     
     // Create the fake dependencies
     authNotifier = FakeAuthNotifier();
     authRepository = FakeAuthRepository();
     
     // Create the service to test
-    authService = AuthServiceImpl(
+    authService = SharedAuthService(
       notifier: authNotifier,
       repository: authRepository,
     );
@@ -248,7 +245,7 @@ void main() {
     test('isAuthenticated should return true when user is authenticated', () {
       // Arrange
       authRepository = FakeAuthRepository(startAuthenticated: true);
-      authService = AuthServiceImpl(
+      authService = SharedAuthService(
         notifier: authNotifier,
         repository: authRepository,
       );
@@ -344,7 +341,7 @@ void main() {
     test('getUserInfo should return null when no user is authenticated', () async {
       // Arrange - ensure no user is authenticated
       authRepository = FakeAuthRepository(startAuthenticated: false);
-      authService = AuthServiceImpl(
+      authService = SharedAuthService(
         notifier: authNotifier,
         repository: authRepository,
       );
@@ -540,7 +537,7 @@ void main() {
     test('getCurrentUser should return null when not authenticated', () async {
       // Arrange
       authRepository = FakeAuthRepository(startAuthenticated: false);
-      authService = AuthServiceImpl(
+      authService = SharedAuthService(
         notifier: authNotifier,
         repository: authRepository,
       );
@@ -557,7 +554,7 @@ void main() {
       // Arrange
       final repo = FakeAuthRepository(startAuthenticated: true);
       final notifier = FakeAuthNotifier();
-      final authService = AuthServiceImpl(
+      final authService = SharedAuthService(
         notifier: notifier,
         repository: repo,
       );
@@ -595,18 +592,16 @@ void main() {
   group('Auth State Management', () {
     late FakeAuthNotifier authNotifier;
     late FakeAuthRepository authRepository;
-    late AuthServiceImpl authService;
+    late SharedAuthService authService;
 
     setUp(() {
-      // Initialize AppConfig.environment to prevent Logger errors
-      AppConfig.instance.environment = Environment.dev;
       
       // Create the fake dependencies
       authNotifier = FakeAuthNotifier();
       authRepository = FakeAuthRepository();
       
       // Create the service to test
-      authService = AuthServiceImpl(
+      authService = SharedAuthService(
         notifier: authNotifier,
         repository: authRepository,
       );
@@ -621,7 +616,7 @@ void main() {
       // Arrange
       authNotifier = FakeAuthNotifier();
       authRepository = FakeAuthRepository();
-      authService = AuthServiceImpl(
+      authService = SharedAuthService(
         notifier: authNotifier,
         repository: authRepository,
       );
@@ -643,7 +638,7 @@ void main() {
       // Arrange
       authNotifier = FakeAuthNotifier();
       authRepository = FakeAuthRepository(startAuthenticated: true);
-      authService = AuthServiceImpl(
+      authService = SharedAuthService(
         notifier: authNotifier,
         repository: authRepository,
       );
@@ -663,7 +658,7 @@ void main() {
       // Arrange
       authNotifier = FakeAuthNotifier();
       authRepository = FakeAuthRepository();
-      authService = AuthServiceImpl(
+      authService = SharedAuthService(
         notifier: authNotifier,
         repository: authRepository,
       );
@@ -686,7 +681,7 @@ void main() {
       authRepository.returnNullUserProfile = true;
       
       // Create service which will trigger user profile check on initialization
-      authService = AuthServiceImpl(
+      authService = SharedAuthService(
         notifier: authNotifier,
         repository: authRepository,
       );
