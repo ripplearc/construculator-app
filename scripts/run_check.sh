@@ -118,28 +118,26 @@ run_mutation_tests() {
   local pids=()
   local failed=0
 
-  # Run mutation tests for each XML file in parallel
+ # Run mutation tests for each XML file in series
   for mutation_file in "${mutation_files_to_run[@]}"; do
-    {
-      # Create a clean logfile name by replacing slashes with underscores
-      local clean_name=$(echo "$mutation_file" | tr '/' '_')
-      local logfile="$tmpdir/${clean_name}.log"
-      
-      echo "🏃 Running mutation test: $mutation_file"
-      if ! dart run mutation_test "$mutation_file" --no-builtin > "$logfile" 2>&1; then
-        echo "❌ Mutation test failed for: $mutation_file"
+    # Create a clean logfile name by replacing slashes with underscores
+    clean_name=$(echo "$mutation_file" | tr '/' '_')
+    logfile="$tmpdir/${clean_name}.log"
+
+    echo "🏃 Running mutation test: $mutation_file"
+    if ! mutation_test "$mutation_file" --no-builtin > "$logfile" 2>&1; then
+      echo "❌ Mutation test failed for: $mutation_file"
+      cat "$logfile"
+      exit 1
+    else
+      echo "✅ Mutation test passed for: $mutation_file"
+      # Only show full output if there were warnings or important info
+      if grep -q -i -e "warning" -e "error" -e "exception" "$logfile"; then
         cat "$logfile"
-        exit 1
-      else
-        echo "✅ Mutation test passed for: $mutation_file"
-        # Only show full output if there were warnings or important info
-        if grep -q -i -e "warning" -e "error" -e "exception" "$logfile"; then
-          cat "$logfile"
-        fi
       fi
-    } &
-    pids+=($!)
+    fi
   done
+
 
   # Wait for all tests to complete and check results
   for pid in "${pids[@]}"; do
