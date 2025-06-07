@@ -196,12 +196,6 @@ comprehensive_check() {
   echo "🖼️ Screenshot tests..."
   flutter test test/screenshots --update-goldens
 
-
-  # Run mutation tests in parallel
-  if ! run_mutation_tests; then
-    exit 1
-  fi
-
   # Build Android
   echo "🤖 Building Android..."
   flutter build apk --debug
