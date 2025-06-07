@@ -1,8 +1,6 @@
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
-import 'package:construculator/libraries/logging/testing/fake_logger_wrapper.dart';
-import 'package:construculator/libraries/logging/testing/test_app_logger.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/auth/shared_auth_service.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
@@ -15,17 +13,14 @@ void main() {
   late FakeAuthNotifier authNotifier;
   late FakeAuthRepository authRepository;
   late SharedAuthService authService;
-  late TestAppLogger fakeLogger;
 
   setUp(() {
-    fakeLogger = TestAppLogger(internalLogger: FakeLoggerWrapper());
     authNotifier = FakeAuthNotifier();
     authRepository = FakeAuthRepository();
 
     authService = SharedAuthService(
       notifier: authNotifier,
       repository: authRepository,
-      logger: fakeLogger,
     );
   });
 
@@ -56,7 +51,6 @@ void main() {
       authService = SharedAuthService(
         notifier: authNotifier,
         repository: authRepository,
-        logger: fakeLogger,
       );
 
       await authService.logout();
@@ -76,7 +70,6 @@ void main() {
       authService = SharedAuthService(
         notifier: authNotifier,
         repository: authRepository,
-        logger: fakeLogger,
       );
 
       // setupProfile event should be emitted when profile not found
