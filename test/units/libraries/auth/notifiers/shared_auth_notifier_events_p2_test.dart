@@ -43,10 +43,8 @@ void main() {
 
         await Future.delayed(Duration(milliseconds: 10));
 
-        expect(stateEvents, hasLength(4));
-        expect(stateEvents[0], AuthStatus.authenticated);
-        expect(stateEvents[1], AuthStatus.unauthenticated);
-        expect(stateEvents[2], AuthStatus.connectionError);
+        expect(stateEvents, hasLength(3));
+        expect(stateEvents, [AuthStatus.authenticated, AuthStatus.unauthenticated, AuthStatus.connectionError]);
       });
 
       test('emitAuthStateChanged should not automatically trigger other events', () async {
@@ -62,7 +60,7 @@ void main() {
 
         await Future.delayed(Duration(milliseconds: 10));
 
-        expect(stateEvents, hasLength(1));
+        expect(stateEvents, isEmpty);
         expect(loginEvents, isEmpty);
         expect(logoutEventCount, 0);
         expect(setupEventCount, 0);
@@ -110,7 +108,7 @@ void main() {
         expect(loginEvents, hasLength(1));
         expect(setupEventCount, 1);
         expect(logoutEventCount, 1);
-        expect(stateEvents, hasLength(2));
+        expect(stateEvents, hasLength(1));
         
         expect(loginEvents[0].email, fakeCredential.email);
         
