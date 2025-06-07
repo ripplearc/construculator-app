@@ -1,17 +1,16 @@
 import 'dart:async';
+import 'package:construculator/libraries/auth/shared_auth_notifier.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:construculator/libraries/auth/auth_notifier_impl.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 void main() {
-  group('AuthNotifierImpl', () {
-    late AuthNotifierImpl authNotifier;
+  group('SharedAuthNotifier', () {
+    late SharedAuthNotifier authNotifier;
 
     setUp(() {
-      authNotifier = AuthNotifierImpl();
+      authNotifier = SharedAuthNotifier();
     });
 
     tearDown(() {
@@ -20,7 +19,7 @@ void main() {
 
     group('Interface Contract Verification', () {
       test('should implement IAuthNotifier interface', () {
-        expect(authNotifier, isA<IAuthNotifier>());
+        expect(authNotifier, isA<SharedAuthNotifier>());
       });
 
       test('should implement Disposable interface', () {
@@ -68,7 +67,7 @@ void main() {
       });
 
       test('streams should be accessible immediately after creation', () {
-        final notifier = AuthNotifierImpl();
+        final notifier = SharedAuthNotifier();
         
         expect(notifier.onLogin, isNotNull);
         expect(notifier.onLogout, isNotNull);
@@ -416,7 +415,7 @@ void main() {
     group('Resource Management and Disposal', () {
       test('dispose should close all stream controllers', () {
         // Arrange
-        final notifier = AuthNotifierImpl();
+        final notifier = SharedAuthNotifier();
         
         // Add listeners to verify streams are working
         notifier.onLogin.listen((_) {});
@@ -430,7 +429,7 @@ void main() {
 
       test('streams should throw StateError after disposal', () async {
         // Arrange
-        final notifier = AuthNotifierImpl();
+        final notifier = SharedAuthNotifier();
         final loginEvents = <UserCredential>[];
         int logoutEventCount = 0;
         final stateEvents = <AuthStatus>[];
@@ -462,7 +461,7 @@ void main() {
 
       test('multiple dispose calls should not cause errors', () {
         // Arrange
-        final notifier = AuthNotifierImpl();
+        final notifier = SharedAuthNotifier();
 
         // Act & Assert - multiple dispose calls should not throw
         expect(() => notifier.dispose(), returnsNormally);

@@ -1,6 +1,7 @@
 import 'dart:async';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:construculator/libraries/auth/fakes/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 
@@ -18,7 +19,7 @@ void main() {
 
     group('Interface Contract Verification', () {
       test('should implement IAuthNotifier interface', () {
-        expect(fakeNotifier, isA<IAuthNotifier>());
+        expect(fakeNotifier, isA<AuthNotifier>());
       });
 
       test('should provide all required streams', () {

@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:construculator/libraries/auth/fakes/fake_auth_notifier.dart';
+import 'package:construculator/libraries/auth/fakes/fake_auth_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_service.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
@@ -22,7 +24,7 @@ void main() {
 
     group('Interface Contract Verification', () {
       test('should implement IAuthService interface', () {
-        expect(fakeService, isA<IAuthService>());
+        expect(fakeService, isA<AuthService>());
       });
 
       test('should provide all required authentication methods', () async {
