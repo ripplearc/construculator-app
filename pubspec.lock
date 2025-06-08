@@ -584,14 +584,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
-  mock_supabase_http_client:
-    dependency: "direct dev"
-    description:
-      name: mock_supabase_http_client
-      sha256: "2b83986ab5b469e416c349aed76105fe8e12478a9d7092cfbdaafbb982eefa8a"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.3"
   modular_core:
     dependency: transitive
     description:
