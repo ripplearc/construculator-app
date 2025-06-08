@@ -18,16 +18,19 @@ abstract class Failure extends Equatable {
   List<Object?> get props => [];
 }
 
-
+/// Failure thrown when a server error occurs.
 class ServerFailure extends Failure {
   final String message;
   const ServerFailure(this.message);
 }
+/// Failure thrown when a network error occurs.
 class NetworkFailure extends Failure {}
+/// Failure thrown when a validation error occurs.
 class ValidationFailure extends Failure {
   final String errors;
   const ValidationFailure(this.errors);
 }
+/// Failure thrown when a client error occurs.
 class ClientFailure extends Failure {
   final String message;
   const ClientFailure(this.message);

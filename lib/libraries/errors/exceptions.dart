@@ -31,13 +31,14 @@ abstract class AppException implements Exception {
     return 'AppException: $message\nOriginating StackTrace:\n$t';
   }
 }
-
+/// Exception thrown when a server error occurs.
 class ServerException extends AppException {
   final log = AppLogger();
   ServerException(super.stackTrace,super.exception) {
     log.tag('ServerException').error(toString());
   }
 }
+/// Exception thrown when a client error occurs.
 class ClientException extends AppException {
   final log = AppLogger();
   final String message;

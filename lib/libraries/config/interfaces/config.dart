@@ -1,5 +1,4 @@
 import 'package:construculator/libraries/config/env_constants.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Interface that abstracts configuration operations.
 /// 
@@ -8,7 +7,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// [getEnvironmentName] is used to get the name(eg. dev, qa, prod, etc) or alias(eg. fishfood, dogfood, etc) of the environment.
 abstract class Config {
   late Environment environment;
-  late SupabaseClient supabaseClient;
   late String apiUrl;
   late String appName;
   late String baseAppName;

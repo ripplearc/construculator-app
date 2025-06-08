@@ -1,8 +1,8 @@
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-// Default implementation of EnvLoader using the flutter_dotenv package
-class DotEnvLoader implements EnvLoader {
+/// Default implementation of EnvLoader using the flutter_dotenv package
+class EnvLoaderImpl implements EnvLoader {
   @override
   Future<void> load({String? fileName}) async {
     if (fileName == null) {

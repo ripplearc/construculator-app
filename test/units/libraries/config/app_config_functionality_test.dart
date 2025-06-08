@@ -1,5 +1,4 @@
 import 'package:construculator/libraries/config/env_constants.dart';
-import 'package:construculator/libraries/supabase/testing/fake_supabase_initializer.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/config/app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
@@ -8,9 +7,8 @@ void main() {
   group('AppConfig', () {
     group('Environment Name Tests', () {
       test('should return correct environment names', () {
-        final appConfig = AppConfig(
-          dotEnvLoader: FakeEnvLoader(),
-          supabaseInitializer: FakeSupabaseInitializer(),
+        final appConfig = AppConfigImpl(
+          envLoader: FakeEnvLoader(),
         );
 
         expect(
@@ -24,9 +22,8 @@ void main() {
         );
       });
       test('should return correct environment aliases', () {
-        final appConfig = AppConfig(
-          dotEnvLoader: FakeEnvLoader(),
-          supabaseInitializer: FakeSupabaseInitializer(),
+        final appConfig = AppConfigImpl(
+          envLoader: FakeEnvLoader(),
         );
 
         expect(
@@ -46,22 +43,18 @@ void main() {
 
     group('App Config Functionality Tests', () {
       late FakeEnvLoader fakeDotEnvLoader;
-      late FakeSupabaseInitializer fakeSupabaseInitializer;
-      late AppConfig appConfig;
+      late AppConfigImpl appConfig;
 
       setUp(() {
         fakeDotEnvLoader = FakeEnvLoader();
-        fakeSupabaseInitializer = FakeSupabaseInitializer();
 
-        appConfig = AppConfig(
-          dotEnvLoader: fakeDotEnvLoader,
-          supabaseInitializer: fakeSupabaseInitializer,
+        appConfig = AppConfigImpl(
+          envLoader: fakeDotEnvLoader,
         );
       });
 
       tearDown(() {
         fakeDotEnvLoader.reset();
-        fakeSupabaseInitializer.reset();
       });
 
       group('Default Values Handling', () {
@@ -156,10 +149,8 @@ void main() {
 
             for (int i = 0; i < environments.length; i++) {
               final freshFakeDotEnvLoader = FakeEnvLoader();
-              final freshFakeSupabaseInitializer = FakeSupabaseInitializer();
-              final freshConfig = AppConfig(
-                dotEnvLoader: freshFakeDotEnvLoader,
-                supabaseInitializer: freshFakeSupabaseInitializer,
+              final freshConfig = AppConfigImpl(
+                envLoader: freshFakeDotEnvLoader,
               );
               freshFakeDotEnvLoader.setEnvVar(
                 'SUPABASE_URL',
@@ -219,10 +210,8 @@ void main() {
 
           for (final testCase in testCases) {
             final freshFakeDotEnvLoader = FakeEnvLoader();
-            final freshFakeSupabaseInitializer = FakeSupabaseInitializer();
-            final freshConfig = AppConfig(
-              dotEnvLoader: freshFakeDotEnvLoader,
-              supabaseInitializer: freshFakeSupabaseInitializer,
+            final freshConfig = AppConfigImpl(
+              envLoader: freshFakeDotEnvLoader,
              
             );
 
@@ -254,10 +243,8 @@ void main() {
 
             for (final testCase in testCases) {
               final freshFakeDotEnvLoader = FakeEnvLoader();
-              final freshFakeSupabaseInitializer = FakeSupabaseInitializer();
-              final freshConfig = AppConfig(
-                dotEnvLoader: freshFakeDotEnvLoader,
-                supabaseInitializer: freshFakeSupabaseInitializer,
+              final freshConfig = AppConfigImpl(
+                envLoader: freshFakeDotEnvLoader,
                
               );
 
@@ -279,15 +266,15 @@ void main() {
               // Verify debug flag is passed correctly to Supabase
               // (Supabase init is called during freshConfig.initialize)
               expect(
-                freshFakeSupabaseInitializer.lastUrl,
+                freshFakeDotEnvLoader.get('SUPABASE_URL'),
                 equals('https://test.supabase.co'),
               );
               expect(
-                freshFakeSupabaseInitializer.lastAnonKey,
+                freshFakeDotEnvLoader.get('SUPABASE_ANON_KEY'),
                 equals('test-key'),
               );
               expect(
-                freshFakeSupabaseInitializer.lastDebugFlag,
+                freshFakeDotEnvLoader.get('SUPABASE_DEBUG'),
                 equals(testCase.$2),
               );
             }
@@ -298,10 +285,8 @@ void main() {
       group('Environment Variable Input Handling', () {
         setUp(() {
           fakeDotEnvLoader = FakeEnvLoader();
-          fakeSupabaseInitializer = FakeSupabaseInitializer();
-          appConfig = AppConfig(
-            dotEnvLoader: fakeDotEnvLoader,
-            supabaseInitializer: fakeSupabaseInitializer,
+          appConfig = AppConfigImpl(
+            envLoader: fakeDotEnvLoader,
             
           );
           // Required for successful initialization in sub-tests

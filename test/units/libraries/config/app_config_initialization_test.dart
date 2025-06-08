@@ -1,5 +1,4 @@
 import 'package:construculator/libraries/config/env_constants.dart';
-import 'package:construculator/libraries/supabase/testing/fake_supabase_initializer.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/config/app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
@@ -7,22 +6,18 @@ import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 void main() {
   group('App Config Initialization Tests', () {
       late FakeEnvLoader fakeDotEnvLoader;
-      late FakeSupabaseInitializer fakeSupabaseInitializer;
-      late AppConfig appConfig;
+      late AppConfigImpl appConfig;
 
       setUp(() {
         fakeDotEnvLoader = FakeEnvLoader();
-        fakeSupabaseInitializer = FakeSupabaseInitializer();
 
-        appConfig = AppConfig(
-          dotEnvLoader: fakeDotEnvLoader,
-          supabaseInitializer: fakeSupabaseInitializer,
+        appConfig = AppConfigImpl(
+          envLoader: fakeDotEnvLoader,
         );
       });
 
       tearDown(() {
         fakeDotEnvLoader.reset();
-        fakeSupabaseInitializer.reset();
       });
 
        test('should initialize successfully for dev environment', () async {
@@ -47,12 +42,11 @@ void main() {
             equals('assets/env/.env.dev'),
           );
           expect(
-            fakeSupabaseInitializer.lastUrl,
+            fakeDotEnvLoader.get('SUPABASE_URL'),
             equals('https://dev.supabase.co'),
           );
-          expect(fakeSupabaseInitializer.lastAnonKey, equals('dev-key'));
-          expect(fakeSupabaseInitializer.lastDebugFlag, isTrue);
-          expect(appConfig.supabaseClient, isNotNull);
+          expect(fakeDotEnvLoader.get('SUPABASE_ANON_KEY'), equals('dev-key'));
+          expect(fakeDotEnvLoader.get('SUPABASE_DEBUG'), isTrue);
         });
 
         test('should initialize successfully for qa environment', () async {
@@ -71,18 +65,17 @@ void main() {
           expect(appConfig.isQa, isTrue);
           expect(appConfig.isDev, isFalse);
           expect(appConfig.isProd, isFalse);
-          expect(appConfig.supabaseClient, isNotNull);
 
           expect(
             fakeDotEnvLoader.lastLoadedFileName,
             equals('assets/env/.env.qa'),
           );
           expect(
-            fakeSupabaseInitializer.lastUrl,
+            fakeDotEnvLoader.get('SUPABASE_URL'),
             equals('https://qa.supabase.co'),
           );
-          expect(fakeSupabaseInitializer.lastAnonKey, equals('qa-key'));
-          expect(fakeSupabaseInitializer.lastDebugFlag, isTrue);
+          expect(fakeDotEnvLoader.get('SUPABASE_ANON_KEY'), equals('qa-key'));
+          expect(fakeDotEnvLoader.get('SUPABASE_DEBUG'), isTrue);
         });
 
         test('should initialize successfully for prod environment', () async {
@@ -102,18 +95,17 @@ void main() {
           expect(appConfig.appName, equals('ProdApp'));
           expect(appConfig.debugFeaturesEnabled, isFalse);
           expect(appConfig.isProd, isTrue);
-          expect(appConfig.supabaseClient, isNotNull);
 
           expect(
             fakeDotEnvLoader.lastLoadedFileName,
             equals('assets/env/.env.prod'),
           );
           expect(
-            fakeSupabaseInitializer.lastUrl,
+            fakeDotEnvLoader.get('SUPABASE_URL'),
             equals('https://prod.supabase.co'),
           );
-          expect(fakeSupabaseInitializer.lastAnonKey, equals('prod-key'));
-          expect(fakeSupabaseInitializer.lastDebugFlag, isFalse);
+          expect(fakeDotEnvLoader.get('SUPABASE_ANON_KEY'), equals('prod-key'));
+          expect(fakeDotEnvLoader.get('SUPABASE_DEBUG'), isFalse);
         });
 
  });
