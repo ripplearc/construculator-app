@@ -61,13 +61,13 @@ android {
     flavorDimensions += "env"
 
     productFlavors {
-        fish {
+        fishfood {
             dimension = "env"
-            applicationIdSuffix = ".fish"
+            applicationIdSuffix = ".fishfood"
         }
-        dog {
+        dogfood {
             dimension = "env"
-            applicationIdSuffix = ".dog"
+            applicationIdSuffix = ".dogfood"
         }
         prod {
             dimension = "env"
