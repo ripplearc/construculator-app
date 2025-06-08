@@ -2,45 +2,18 @@ import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
-import 'package:construculator/libraries/supabase/interfaces/supabase_initializer.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-class AppConfig implements Config {
-  AppConfig({
-    required EnvLoader dotEnvLoader,
-    required SupabaseInitializer supabaseInitializer,
-  }) : _dotEnvLoader = dotEnvLoader,
-       _supabaseInitializer = supabaseInitializer,
+class AppConfigImpl implements Config {
+  AppConfigImpl({
+    required EnvLoader envLoader,
+  }) : _envLoader = envLoader,
        _logger = AppLogger().tag("AppConfig");
 
-  final EnvLoader _dotEnvLoader;
-  final SupabaseInitializer _supabaseInitializer;
+  final EnvLoader _envLoader;
   final AppLogger _logger;
-
-  Future<SupabaseClient> _initializeSupabaseClient() async {
-    final supabaseUrl = _dotEnvLoader.get('SUPABASE_URL') ?? '';
-    final supabaseAnonKey = _dotEnvLoader.get('SUPABASE_ANON_KEY') ?? '';
-    _logger.info('Supabase URL: $supabaseUrl');
-    
-    if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
-      _logger.error('Supabase URL or Anon Key is missing in the loaded .env files.');
-      throw Exception(
-        'Supabase configuration is missing. Check your .env files.',
-      );
-    }
-    
-    _logger.info('Initializing Supabase');
-    return await _supabaseInitializer.initialize(
-      url: supabaseUrl,
-      anonKey: supabaseAnonKey,
-      debug: debugFeaturesEnabled,
-    );
-  }
 
   @override
   late Environment environment;
-  @override
-  late SupabaseClient supabaseClient;
   @override
   late String apiUrl;
   @override
@@ -65,11 +38,11 @@ class AppConfig implements Config {
         envFileName = '.env.prod';
         break;
     }
-    await _dotEnvLoader.load(fileName: "assets/env/$envFileName");
+    await _envLoader.load(fileName: "assets/env/$envFileName");
     _logger.info('Loaded environment-specific config: $envFileName');
 
-    baseAppName = _dotEnvLoader.get('APP_NAME') ?? 'Construculator';
-    apiUrl = _dotEnvLoader.get('API_URL') ?? '';
+    baseAppName = _envLoader.get('APP_NAME') ?? 'Construculator';
+    apiUrl = _envLoader.get('API_URL') ?? '';
 
     debugFeaturesEnabled = environment != Environment.prod;
 
@@ -78,8 +51,6 @@ class AppConfig implements Config {
     } else {
       appName = '$baseAppName (${getEnvironmentName(environment, isAlias: true)})';
     }
-    
-    supabaseClient = await _initializeSupabaseClient();
     _logger.emoji('🚀').info('AppConfig initialized for ${getEnvironmentName(environment)}');
     _logger.emoji('🔌').info('API URL: $apiUrl');
     _logger.emoji('📱').info('App Name: $appName');

@@ -35,21 +35,21 @@ class AppLogger {
     return '$prefix $message';
   }
 
+  /// Return a new instance with the default tag and emoji prefix, 
+  /// and sharing the same internal logger
   AppLogger fresh() {
-    // Return a new instance with the default tag and emoji prefix, 
-    // and sharing the same internal logger
     return AppLogger._private('Construculator', '', _internalLogger);
   }
 
+  /// Return a new instance with the new tag, preserving the current emojiPrefix 
+  /// and sharing the same internal logger
   AppLogger tag(String newTag) {
-    // Return a new instance with the new tag, preserving the current emojiPrefix 
-    // and sharing the same internal 
     return AppLogger._private(newTag, _emojiPrefix, _internalLogger);
   }
 
+  /// Return a new instance with the new emojiPrefix, preserving the current tag
+  /// and sharing the same internal logger
   AppLogger emoji(String newEmojiPrefix) {
-    // Return a new instance with the new emojiPrefix, preserving the current tag
-    // and sharing the same internal 
     return AppLogger._private(_tag, newEmojiPrefix, _internalLogger);
   }
 
