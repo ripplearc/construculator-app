@@ -34,7 +34,6 @@ dev_dependencies:
   flutter_lints: 5.0.0
   flutter_launcher_icons: 0.14.3
   flutter_native_splash: 2.4.6
-  mock_supabase_http_client: 0.0.3
   build_runner: 2.4.15
   mutation_test: 1.7.0
 
