@@ -1,6 +1,14 @@
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 
 /// Fake implementation of EnvLoader for testing
+/// 
+/// [shouldThrowOnLoad] - if true, will throw an exception when load is called
+/// [loadErrorMessage] - the error message to throw if shouldThrowOnLoad is true
+/// [lastLoadedFileName] - the last file name that was loaded
+/// 
+/// [setEnvVar] - sets an env var for testing
+/// [clearEnvVars] - clears all env vars
+/// [reset] - resets the env loader to its initial state
 class FakeEnvLoader implements EnvLoader {
   final Map<String, String?> _envVars = {};
   bool shouldThrowOnLoad = false;
