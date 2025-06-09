@@ -3,13 +3,13 @@ import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:logger/logger.dart';
 
-// Global Logger For The App
+/// Global Logger For The App
 class AppLogger {
   final String _tag;
   final String _emojiPrefix;
   final Logger _internalLogger;
 
-  // Private constructor for internal instantiation by tag() and emoji()
+  /// Private constructor for internal instantiation by tag() and emoji()
   AppLogger._private(this._tag, this._emojiPrefix, this._internalLogger);
 
   AppLogger()  : _tag = 'Construculator',
