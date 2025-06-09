@@ -1,8 +1,12 @@
 import 'package:construculator/libraries/config/env_constants.dart';
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 import 'package:construculator/libraries/config/testing/fake_supabase_initializer.dart';
 >>>>>>> ec9afe0 (Move supabase initializer to config)
+=======
+import 'package:construculator/libraries/supabase/testing/fake_supabase_initializer.dart';
+>>>>>>> 75661ee (Refactor)
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/config/app_config_impl.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';

@@ -1,5 +1,5 @@
 import 'package:construculator/libraries/supabase/testing/fake_supabase_client.dart';
-import 'package:construculator/libraries/config/testing/fake_supabase_initializer.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_initializer.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
