@@ -4,30 +4,23 @@ import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 
 class AppConfigImpl implements Config {
-  AppConfigImpl({
-    required EnvLoader envLoader,
-  }) : _envLoader = envLoader,
-       _logger = AppLogger().tag("AppConfig");
+  AppConfigImpl({required EnvLoader envLoader})
+    : _envLoader = envLoader,
+      _logger = AppLogger().tag("AppConfig");
 
   final EnvLoader _envLoader;
   final AppLogger _logger;
 
-  @override
-  late Environment environment;
-  @override
-  late String apiUrl;
-  @override
-  late String appName;
-  @override
-  late String baseAppName;
-  @override
-  late bool debugFeaturesEnabled;
+  late Environment _environment;
+  late String _appName;
+  late String _baseAppName;
+  late bool _debugFeaturesEnabled;
 
   @override
   Future<void> initialize(Environment env) async {
-    environment = env;
+    _environment = env;
     String envFileName;
-    switch (environment) {
+    switch (_environment) {
       case Environment.dev:
         envFileName = '.env.dev';
         break;
@@ -41,19 +34,19 @@ class AppConfigImpl implements Config {
     await _envLoader.load(fileName: "assets/env/$envFileName");
     _logger.info('Loaded environment-specific config: $envFileName');
 
-    baseAppName = _envLoader.get('APP_NAME') ?? 'Construculator';
-    apiUrl = _envLoader.get('API_URL') ?? '';
+    _baseAppName = _envLoader.get('APP_NAME') ?? 'Construculator';
+    _debugFeaturesEnabled = _environment != Environment.prod;
 
-    debugFeaturesEnabled = environment != Environment.prod;
-
-    if (environment == Environment.prod) {
-      appName = baseAppName;
+    if (_environment == Environment.prod) {
+      _appName = _baseAppName;
     } else {
-      appName = '$baseAppName (${getEnvironmentName(environment, isAlias: true)})';
+      _appName =
+          '$_baseAppName (${getEnvironmentName(_environment, isAlias: true)})';
     }
-    _logger.emoji('🚀').info('AppConfig initialized for ${getEnvironmentName(environment)}');
-    _logger.emoji('🔌').info('API URL: $apiUrl');
-    _logger.emoji('📱').info('App Name: $appName');
+    _logger
+        .emoji('🚀')
+        .info('AppConfig initialized for ${getEnvironmentName(environment)}');
+    _logger.emoji('📱').info('App Name: $_appName');
   }
 
   @override
@@ -69,11 +62,23 @@ class AppConfigImpl implements Config {
   }
 
   @override
-  bool get isDev => environment == Environment.dev;
+  bool get isDev => _environment == Environment.dev;
 
   @override
-  bool get isQa => environment == Environment.qa;
+  bool get isQa => _environment == Environment.qa;
 
   @override
-  bool get isProd => environment == Environment.prod;
+  bool get isProd => _environment == Environment.prod;
+
+  @override
+  Environment get environment => _environment;
+
+  @override
+  String get appName => _appName;
+
+  @override
+  String get baseAppName => _baseAppName;
+
+  @override
+  bool get debugFeaturesEnabled => _debugFeaturesEnabled;
 }
