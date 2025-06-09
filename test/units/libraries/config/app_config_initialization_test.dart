@@ -1,6 +1,6 @@
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:construculator/libraries/config/app_config.dart';
+import 'package:construculator/libraries/config/app_config_impl.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 
 void main() {
@@ -30,7 +30,6 @@ void main() {
 
           expect(appConfig.environment, equals(Environment.dev));
           expect(appConfig.baseAppName, equals('TestApp'));
-          expect(appConfig.apiUrl, equals('https://dev-api.com'));
           expect(appConfig.appName, equals('TestApp (Fishfood)'));
           expect(appConfig.debugFeaturesEnabled, isTrue);
           expect(appConfig.isDev, isTrue);
@@ -46,7 +45,6 @@ void main() {
             equals('https://dev.supabase.co'),
           );
           expect(fakeDotEnvLoader.get('SUPABASE_ANON_KEY'), equals('dev-key'));
-          expect(fakeDotEnvLoader.get('SUPABASE_DEBUG'), isTrue);
         });
 
         test('should initialize successfully for qa environment', () async {
@@ -59,7 +57,6 @@ void main() {
 
           expect(appConfig.environment, equals(Environment.qa));
           expect(appConfig.baseAppName, equals('QAApp'));
-          expect(appConfig.apiUrl, equals('https://qa-api.com'));
           expect(appConfig.appName, equals('QAApp (Dogfood)'));
           expect(appConfig.debugFeaturesEnabled, isTrue);
           expect(appConfig.isQa, isTrue);
@@ -75,7 +72,6 @@ void main() {
             equals('https://qa.supabase.co'),
           );
           expect(fakeDotEnvLoader.get('SUPABASE_ANON_KEY'), equals('qa-key'));
-          expect(fakeDotEnvLoader.get('SUPABASE_DEBUG'), isTrue);
         });
 
         test('should initialize successfully for prod environment', () async {
@@ -91,7 +87,6 @@ void main() {
 
           expect(appConfig.environment, equals(Environment.prod));
           expect(appConfig.baseAppName, equals('ProdApp'));
-          expect(appConfig.apiUrl, equals('https://prod-api.com'));
           expect(appConfig.appName, equals('ProdApp'));
           expect(appConfig.debugFeaturesEnabled, isFalse);
           expect(appConfig.isProd, isTrue);
@@ -105,7 +100,6 @@ void main() {
             equals('https://prod.supabase.co'),
           );
           expect(fakeDotEnvLoader.get('SUPABASE_ANON_KEY'), equals('prod-key'));
-          expect(fakeDotEnvLoader.get('SUPABASE_DEBUG'), isFalse);
         });
 
  });

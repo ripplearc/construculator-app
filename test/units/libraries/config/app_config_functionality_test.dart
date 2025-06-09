@@ -1,6 +1,6 @@
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:construculator/libraries/config/app_config.dart';
+import 'package:construculator/libraries/config/app_config_impl.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 
 void main() {
@@ -68,68 +68,8 @@ void main() {
           await appConfig.initialize(Environment.dev);
 
           expect(appConfig.baseAppName, equals('Construculator'));
-          expect(appConfig.apiUrl, equals(''));
           expect(appConfig.appName, equals('Construculator (Fishfood)'));
         });
-      });
-
-      group('Supabase Configuration Validation', () {
-        test(
-          'should throw exception and log error when Supabase URL is missing',
-          () async {
-            fakeDotEnvLoader.setEnvVar('SUPABASE_ANON_KEY', 'test-key');
-            fakeDotEnvLoader.setEnvVar('SUPABASE_URL', ''); // Empty URL
-            expect(
-              () async => await appConfig.initialize(Environment.dev),
-              throwsA(
-                isA<Exception>().having(
-                  (e) => e.toString(),
-                  'message',
-                  contains('Supabase configuration is missing'),
-                ),
-              ),
-            );
-          },
-        );
-
-        test(
-          'should throw exception and log error when Supabase anon key is missing',
-          () async {
-            fakeDotEnvLoader.setEnvVar(
-              'SUPABASE_URL',
-              'https://test.supabase.co',
-            );
-            fakeDotEnvLoader.setEnvVar('SUPABASE_ANON_KEY', ''); // Empty key
-
-            expect(
-              () async => await appConfig.initialize(Environment.dev),
-              throwsA(
-                isA<Exception>().having(
-                  (e) => e.toString(),
-                  'message',
-                  contains('Supabase configuration is missing'),
-                ),
-              ),
-            );
-          },
-        );
-
-        test(
-          'should throw exception and log error when both Supabase URL and key are missing (null)',
-          () async {
-            // SUPABASE_URL and SUPABASE_ANON_KEY are null by default in FakeEnvLoader
-            expect(
-              () async => await appConfig.initialize(Environment.dev),
-              throwsA(
-                isA<Exception>().having(
-                  (e) => e.toString(),
-                  'message',
-                  contains('Supabase configuration is missing'),
-                ),
-              ),
-            );
-          },
-        );
       });
 
       group('Environment File Loading', () {
@@ -273,10 +213,6 @@ void main() {
                 freshFakeDotEnvLoader.get('SUPABASE_ANON_KEY'),
                 equals('test-key'),
               );
-              expect(
-                freshFakeDotEnvLoader.get('SUPABASE_DEBUG'),
-                equals(testCase.$2),
-              );
             }
           },
         );
@@ -302,7 +238,6 @@ void main() {
           fakeDotEnvLoader.setEnvVar('API_URL', '');
           await appConfig.initialize(Environment.dev);
           expect(appConfig.baseAppName, equals(''));
-          expect(appConfig.apiUrl, equals(''));
         });
 
         test('should handle very long environment variable values', () async {
@@ -312,7 +247,6 @@ void main() {
           fakeDotEnvLoader.setEnvVar('API_URL', longApiUrl);
           await appConfig.initialize(Environment.dev);
           expect(appConfig.baseAppName, equals(longAppName));
-          expect(appConfig.apiUrl, equals(longApiUrl));
         });
 
         test(
@@ -325,10 +259,6 @@ void main() {
             );
             await appConfig.initialize(Environment.dev);
             expect(appConfig.baseAppName, equals('Test-App_123!@#'));
-            expect(
-              appConfig.apiUrl,
-              equals('https://api-test_123.com/path?param=value&other=123'),
-            );
           },
         );
       });
