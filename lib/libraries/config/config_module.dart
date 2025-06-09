@@ -3,11 +3,15 @@ import 'package:construculator/libraries/config/env_loader_impl.dart';
 import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import 'package:flutter_modular/flutter_modular.dart';
 
 class ConfigModule extends Module {
 =======
 import 'package:construculator/libraries/config/interfaces/supabase_initializer.dart';
+=======
+import 'package:construculator/libraries/supabase/interfaces/supabase_initializer.dart';
+>>>>>>> 8a7ef10 (Resolve conflicts)
 import 'package:flutter_modular/flutter_modular.dart';
 
 class ConfigModule extends Module {
