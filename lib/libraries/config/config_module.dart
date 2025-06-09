@@ -1,4 +1,4 @@
-import 'package:construculator/libraries/config/app_config.dart';
+import 'package:construculator/libraries/config/app_config_impl.dart';
 import 'package:construculator/libraries/config/env_loader_impl.dart';
 import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';

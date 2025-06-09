@@ -1,7 +1,12 @@
 /// Interface for loading environment variables from a file.
 abstract class EnvLoader {
-  /// The [load] method is used to load the environment variables from a file.
+  /// Used to load the environment variables from a file.
+  /// 
+  /// [fileName] is the name of the file to load the environment variables from.
   Future<void> load({String? fileName});
-  /// The [get] method is used to get a specific environment variable.
+
+  /// Used to get a specific environment variable.
+  /// 
+  /// [key] is the key of the environment variable to get.
   String? get(String key);
 }
