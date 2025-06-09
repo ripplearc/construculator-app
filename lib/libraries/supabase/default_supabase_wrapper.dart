@@ -4,25 +4,25 @@ import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.da
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 class DefaultSupabaseWrapper implements SupabaseWrapper {
-  final supabase.SupabaseClient _client;
+  final supabase.SupabaseClient supabaseClient;
 
-  DefaultSupabaseWrapper(this._client);
-
-  @override
-  Stream<supabase.AuthState> get onAuthStateChange => _client.auth.onAuthStateChange;
+  DefaultSupabaseWrapper({required this.supabaseClient});
 
   @override
-  supabase.User? get currentUser => _client.auth.currentUser;
+  Stream<supabase.AuthState> get onAuthStateChange => supabaseClient.auth.onAuthStateChange;
 
   @override
-  bool get isAuthenticated => _client.auth.currentUser != null;
+  supabase.User? get currentUser => supabaseClient.auth.currentUser;
+
+  @override
+  bool get isAuthenticated => supabaseClient.auth.currentUser != null;
 
   @override
   Future<supabase.AuthResponse> signInWithPassword({
     required String email,
     required String password,
   }) async {
-    return await _client.auth.signInWithPassword(
+    return await supabaseClient.auth.signInWithPassword(
       email: email,
       password: password,
     );
@@ -33,7 +33,7 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
     required String email,
     required String password,
   }) async {
-    return await _client.auth.signUp(
+    return await supabaseClient.auth.signUp(
       email: email,
       password: password,
     );
@@ -45,7 +45,7 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
     String? phone,
     bool shouldCreateUser = false,
   }) async {
-    await _client.auth.signInWithOtp(
+    await supabaseClient.auth.signInWithOtp(
       email: email,
       phone: phone,
       shouldCreateUser: shouldCreateUser,
@@ -59,7 +59,7 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
     required String token,
     required supabase.OtpType type,
   }) async {
-    return await _client.auth.verifyOTP(
+    return await supabaseClient.auth.verifyOTP(
       email: email,
       phone: phone,
       token: token,
@@ -69,12 +69,12 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
 
   @override
   Future<void> resetPasswordForEmail(String email, {String? redirectTo}) async {
-    await _client.auth.resetPasswordForEmail(email, redirectTo: redirectTo);
+    await supabaseClient.auth.resetPasswordForEmail(email, redirectTo: redirectTo);
   }
 
   @override
   Future<void> signOut() async {
-    await _client.auth.signOut();
+    await supabaseClient.auth.signOut();
   }
 
   @override
@@ -84,7 +84,7 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
     required String filterColumn,
     required dynamic filterValue,
   }) async {
-    return await _client
+    return await supabaseClient
         .from(table)
         .select(columns)
         .eq(filterColumn, filterValue)
@@ -96,7 +96,7 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
     required String table,
     required Map<String, dynamic> data,
   }) async {
-    return await _client
+    return await supabaseClient
         .from(table)
         .insert(data)
         .select()
@@ -110,7 +110,7 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
     required String filterColumn,
     required dynamic filterValue,
   }) async {
-    return await _client
+    return await supabaseClient
         .from(table)
         .update(data)
         .eq(filterColumn, filterValue)
