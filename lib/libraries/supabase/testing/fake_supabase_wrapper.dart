@@ -12,7 +12,8 @@ enum FakeExceptionType{
   postgrest,
   socket,
   timeout,
-  type
+  type,
+  unknown
 }
 /// Fake implementation of SupabaseWrapper for testing
 class FakeSupabaseWrapper implements SupabaseWrapper {
@@ -514,8 +515,12 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   }
 
   /// Simulates an auth stream error
-  void simulateAuthStreamError(String errorMessage) {
-    _authStateController.addError(Exception(errorMessage));
+  void simulateAuthStreamError(String errorMessage,{Exception? exception}) {
+    var ex = Exception(errorMessage);
+    if(exception != null){
+      ex = exception;
+    }
+    _authStateController.addError(ex);
   }
   
   /// Emits an auth state error
