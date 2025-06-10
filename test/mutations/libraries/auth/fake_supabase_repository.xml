@@ -68,15 +68,7 @@
     </rules>
 
     <commands>
-       <command group="fake-auth-repository" expected-return="0">flutter test test/units/libraries/auth/fakes/repositories/fake_auth_repository_core_auth_test.dart</command>
-       <command group="fake-auth-repository" expected-return="0">flutter test test/units/libraries/auth/fakes/repositories/fake_auth_repository_email_check_test.dart</command>
-       <command group="fake-auth-repository" expected-return="0">flutter test test/units/libraries/auth/fakes/repositories/fake_auth_repository_initial_state_test.dart</command>
-       <command group="fake-auth-repository" expected-return="0">flutter test test/units/libraries/auth/fakes/repositories/fake_auth_repository_otp_test.dart</command>
-       <command group="fake-auth-repository" expected-return="0">flutter test test/units/libraries/auth/fakes/repositories/fake_auth_repository_password_reset_test.dart</command>
-       <command group="fake-auth-repository" expected-return="0">flutter test test/units/libraries/auth/fakes/repositories/fake_auth_repository_resource_management_test.dart</command>
-       <command group="fake-auth-repository" expected-return="0">flutter test test/units/libraries/auth/fakes/repositories/fake_auth_repository_stream_behavior_test.dart</command>
-       <command group="fake-auth-repository" expected-return="0">flutter test test/units/libraries/auth/fakes/repositories/fake_auth_repository_user_profile_db_ops_test.dart</command>
-       <command group="fake-auth-repository" expected-return="0">flutter test test/units/libraries/auth/fakes/repositories/fake_auth_repository_utility_features_test.dart</command>
+       <command group="fake-auth-repository" expected-return="0">flutter test test/units/libraries/auth/fakes/fake_auth_repository_test.dart</command>
     </commands>
 
     <threshold failure="75">
