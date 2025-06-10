@@ -3,7 +3,7 @@ import 'package:construculator/libraries/auth/repositories/supabase_auth_reposit
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
-class AuthLibraryModule extends Module {
+class AuthModule extends Module {
   @override
   List<Module> get imports => [
     SupabaseModule(),

@@ -1,15 +1,15 @@
 /// Represents a user credential in the application
-///
-/// [id] is the unique identifier for the credential
-/// [email] is the email of the user
-/// [metadata] is a map of metadata for the credential
-/// [createdAt] is the date and time the credential was created
-///
-/// [empty] is a method to create an empty credential
 class UserCredential {
+  /// The unique identifier for the credential
   final String id;
+
+  /// The email of the user
   final String email;
+
+  /// The metadata for the credential
   final Map<String, dynamic> metadata;
+
+  /// The date and time the credential was created
   final DateTime createdAt;
   
   UserCredential({
@@ -18,7 +18,7 @@ class UserCredential {
     required this.metadata,
     required this.createdAt,
   });
-  
+  /// Used to create an empty credential
   factory UserCredential.empty() {
     return UserCredential(
       id: '',
