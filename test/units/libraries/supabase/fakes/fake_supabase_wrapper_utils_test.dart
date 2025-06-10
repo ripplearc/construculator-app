@@ -63,8 +63,7 @@ void main() {
       expect(postResult, isNull, reason: "Post data should be cleared");
     });
 
-    test('reset reverts all mock configurations, clears data, and auth state', () async {
-      // Setup some specific mock states
+    test('reset reverts all fake configurations, clears data, and auth state', () async {
       await fakeWrapper.signInWithPassword(email: 'user@example.com', password: 'password');
       fakeWrapper.addTableData('users', [{'id': '1', 'name': 'User 1'}]);
       fakeWrapper.shouldThrowOnSignIn = true;
@@ -99,7 +98,7 @@ void main() {
     });
 
     tearDown(() {
-      fakeWrapper.reset(); // Resets method calls among other things
+      fakeWrapper.reset();
     });
 
     test('getMethodCalls returns empty list initially and all calls after operations', () async {
