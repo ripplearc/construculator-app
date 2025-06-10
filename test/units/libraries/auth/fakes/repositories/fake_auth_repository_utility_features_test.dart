@@ -352,8 +352,7 @@ void main() {
         expect(result2.data, false);
       },
     );
-
-    test('getSentOtp should return OTP codes for testing', () async {
+   test('getSentOtp should return OTP codes for testing', () async {
       // Arrange
       fakeRepository.fakeAuthResponse(succeed: true); // For sendOtp calls
       await fakeRepository.sendOtp('test1@example.com', OtpReceiver.email);
