@@ -22,6 +22,7 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
     _initAuthListener();
   }
 
+  /// Initializes the auth listener and sets the initial auth state
   void _initAuthListener() {
     _authSubscription = supabaseWrapper.onAuthStateChange.listen(
       (state) {
@@ -41,7 +42,7 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
         }
       },
     );
-    // Check initial state
+
     final initialUser = supabaseWrapper.currentUser;
 
     if (initialUser != null) {
@@ -53,6 +54,7 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
     }
   }
 
+  /// Handles the authentication state change event
   void _handleAuthStateChange(supabase.AuthState state) {
     final event = state.event;
     final session = state.session;
@@ -79,6 +81,7 @@ class SupabaseAuthRepository implements AuthRepository, Disposable {
     }
   }
 
+  /// Maps a Supabase user to a UserCredential object
   UserCredential _mapSupabaseUserToCredential(supabase.User user) {
     return UserCredential(
       id: user.id,

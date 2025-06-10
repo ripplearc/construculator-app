@@ -5,49 +5,102 @@ import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
-/// A fake implementation of IAuthRepository for testing purposes.
+/// A fake implementation of AuthRepository for testing purposes.
 class FakeAuthRepository implements AuthRepository, Disposable {
+  /// Controller for authentication state changes
   final _authStateController = StreamController<AuthStatus>.broadcast();
+
+  /// Controller for user changes
   final _userController = StreamController<UserCredential?>.broadcast();
   
-  // Control vars for testing
+  /// Currently authenticated user
   UserCredential? _currentUser;
+
+  /// Map of user profiles, keyed by credentialId
   final Map<String, User> _userProfiles = {};
+
+  /// Flag to control if authentication should succeed
   bool _authShouldSucceed = true;
+
+  /// Error message to be returned on exceptions
   String? _errorMessage;
+
+  /// Flag to control if empty credentials should be rejected
   bool shouldRejectEmptyCredentials = false;
+
+  /// Flag to control if a null user profile should be returned
   bool returnNullUserProfile = false;
+
+  /// Flag to control if a success result with null data should be returned
   bool returnSuccessWithNullData = false;
-  bool returnSuccessWithNullUserProfile = false; // New flag for getUserProfile testing
+
+  /// Flag to control if a success result with null user profile should be returned
+  bool returnSuccessWithNullUserProfile = false;
   
-  // Exception throwing flags for testing catch blocks
+  /// Flag to control if a login should throw an exception
   bool shouldThrowOnLogin = false;
+
+  /// Flag to control if a registration should throw an exception
   bool shouldThrowOnRegister = false;
+
+  /// Flag to control if a send OTP should throw an exception
   bool shouldThrowOnSendOtp = false;
+
+  /// Flag to control if a verify OTP should throw an exception
   bool shouldThrowOnVerifyOtp = false;
+
+  /// Flag to control if a reset password should throw an exception
   bool shouldThrowOnResetPassword = false;
+
+  /// Flag to control if an email check should throw an exception
   bool shouldThrowOnEmailCheck = false;
+
+  /// Flag to control if a logout should throw an exception
   bool shouldThrowOnLogout = false;
+
+  /// Flag to control if a get user profile should throw an exception
   bool shouldThrowOnGetUserProfile = false;
+
+  /// Exception message to be returned on exceptions
   String exceptionMessage = 'Test exception';
   
-  // For tracking method calls in tests
+  /// List of login calls
   final List<String> loginCalls = [];
+
+  /// List of register calls
   final List<String> registerCalls = [];
+
+  /// List of logout calls
   final List<String> logoutCalls = [];
+
+  /// List of send OTP calls
   final List<String> sendOtpCalls = [];
+
+  /// List of verify OTP calls
   final List<String> verifyOtpCalls = [];
+
+  /// List of reset password calls
   final List<String> resetPasswordCalls = [];
+
+  /// List of email check calls
   final List<String> emailCheckCalls = [];
+
+  /// List of get user profile calls
   final List<String> getUserProfileCalls = [];
+
+  /// List of create profile calls
   final List<User> createProfileCalls = [];
+
+  /// List of update profile calls
   final List<User> updateProfileCalls = [];
+
+  /// Count of get current user calls
   int getCurrentUserCallCount = 0;
   
-  // OTP tracking - now includes receiver type
+  /// OTP tracking - now includes receiver type
   final Map<String, Map<OtpReceiver, String>> _sentOtpCodes = {}; // Maps address -> receiver -> code
   
-  // Email registration tracking
+  /// Tracks a set of registered emails
   final Set<String> _registeredEmails = {'registered@example.com'};
   
   FakeAuthRepository({bool startAuthenticated = false}) {
@@ -65,20 +118,20 @@ class FakeAuthRepository implements AuthRepository, Disposable {
     }
   }
   
-  /// Control method to set the authenticated user
+  /// Sets the authenticated user and sets the authentication state to authenticated
   void _setAuthenticatedUser(UserCredential user) {
     _currentUser = user;
     _authStateController.add(AuthStatus.authenticated);
     _userController.add(user);
   }
   
-  /// Configure testing behavior
+  /// Configures the response behavior for the auth operations
   void fakeAuthResponse({bool succeed = true, String? errorMessage}) {
     _authShouldSucceed = succeed;
     _errorMessage = errorMessage;
   }
   
-  /// Setup fake user profiles for testing
+  /// Sets up fake user profiles for testing
   void fakeUserProfile(User user) {
     _userProfiles[user.credentialId] = user;
   }
@@ -87,7 +140,6 @@ class FakeAuthRepository implements AuthRepository, Disposable {
   Future<AuthResult<UserCredential>> loginWithEmail(String email, String password) async {
     loginCalls.add('$email:$password');
     
-    // Throw exception if configured to do so
     if (shouldThrowOnLogin) {
       throw Exception(exceptionMessage);
     }
@@ -100,7 +152,6 @@ class FakeAuthRepository implements AuthRepository, Disposable {
       return AuthResult.failure(_errorMessage ?? 'Authentication failed', AuthErrorType.invalidCredentials);
     }
     
-    // For testing AND logic mutations - return success but with null data
     if (returnSuccessWithNullData) {
       return AuthResult.success(null);
     }
@@ -120,7 +171,6 @@ class FakeAuthRepository implements AuthRepository, Disposable {
   Future<AuthResult<UserCredential>> registerWithEmail(String email, String password) async {
     registerCalls.add('$email:$password');
     
-    // Throw exception if configured to do so
     if (shouldThrowOnRegister) {
       throw Exception(exceptionMessage);
     }
@@ -133,7 +183,6 @@ class FakeAuthRepository implements AuthRepository, Disposable {
       return AuthResult.failure(_errorMessage ?? 'Registration failed', AuthErrorType.registrationFailure);
     }
     
-    // For testing AND logic mutations - return success but with null data
     if (returnSuccessWithNullData) {
       return AuthResult.success(null);
     }
@@ -153,7 +202,6 @@ class FakeAuthRepository implements AuthRepository, Disposable {
   Future<AuthResult<void>> sendOtp(String address, OtpReceiver receiver) async {
     sendOtpCalls.add('$address:$receiver');
     
-    // Throw exception if configured to do so
     if (shouldThrowOnSendOtp) {
       throw Exception(exceptionMessage);
     }
@@ -162,15 +210,12 @@ class FakeAuthRepository implements AuthRepository, Disposable {
       return AuthResult.failure(_errorMessage ?? 'Failed to send OTP', AuthErrorType.serverError);
     }
     
-    // Generate a fake 6-digit OTP code
     final otp = (100000 + DateTime.now().millisecondsSinceEpoch % 900000).toString();
     
-    // Initialize the address entry if it doesn't exist
     if (!_sentOtpCodes.containsKey(address)) {
       _sentOtpCodes[address] = {};
     }
     
-    // Add the receiver-specific OTP
     _sentOtpCodes[address]![receiver] = otp;
     
     return AuthResult.success(null);
@@ -180,7 +225,6 @@ class FakeAuthRepository implements AuthRepository, Disposable {
   Future<AuthResult<UserCredential>> verifyOtp(String address, String otp, OtpReceiver receiver) async {
     verifyOtpCalls.add('$address:$otp:$receiver');
     
-    // Throw exception if configured to do so
     if (shouldThrowOnVerifyOtp) {
       throw Exception(exceptionMessage);
     }
@@ -189,17 +233,15 @@ class FakeAuthRepository implements AuthRepository, Disposable {
       return AuthResult.failure(_errorMessage ?? 'OTP verification failed', AuthErrorType.invalidCredentials);
     }
     
-    // Check if the OTP matches what was sent
     final sentOtp = _sentOtpCodes[address]?[receiver];
     if (sentOtp == null) {
       return AuthResult.failure('No OTP was sent to this address', AuthErrorType.invalidCredentials);
     }
     
-    if (sentOtp != otp && otp != '123456') { // Allow a test-specific OTP
+    if (sentOtp != otp && otp != '123456') {
       return AuthResult.failure('Invalid OTP code', AuthErrorType.invalidCredentials);
     }
     
-    // OTP is valid, authenticate the user
     final user = UserCredential(
       id: 'user-${address.split('@')[0]}',
       email: receiver == OtpReceiver.email ? address : 'fake@example.com',
@@ -215,7 +257,6 @@ class FakeAuthRepository implements AuthRepository, Disposable {
   Future<AuthResult<void>> resetPassword(String email) async {
     resetPasswordCalls.add(email);
     
-    // Throw exception if configured to do so
     if (shouldThrowOnResetPassword) {
       throw Exception(exceptionMessage);
     }
@@ -224,7 +265,6 @@ class FakeAuthRepository implements AuthRepository, Disposable {
       return AuthResult.failure(_errorMessage ?? 'Failed to send password reset email', AuthErrorType.serverError);
     }
     
-    // Just record that this was called - in a real system, an email would be sent
     return AuthResult.success(null);
   }
   
@@ -232,7 +272,6 @@ class FakeAuthRepository implements AuthRepository, Disposable {
   Future<AuthResult<bool>> isEmailRegistered(String email) async {
     emailCheckCalls.add(email);
     
-    // Throw exception if configured to do so
     if (shouldThrowOnEmailCheck) {
       throw Exception(exceptionMessage);
     }
@@ -241,7 +280,6 @@ class FakeAuthRepository implements AuthRepository, Disposable {
       return AuthResult.failure(_errorMessage ?? 'Failed to check email registration', AuthErrorType.serverError);
     }
     
-    // Check if email is in our predefined set or was previously registered
     final isRegistered = _registeredEmails.contains(email);
     return AuthResult.success(isRegistered);
   }
@@ -250,7 +288,6 @@ class FakeAuthRepository implements AuthRepository, Disposable {
   Future<AuthResult<void>> logout() async {
     logoutCalls.add('logout');
     
-    // Throw exception if configured to do so
     if (shouldThrowOnLogout) {
       throw Exception(exceptionMessage);
     }
@@ -280,7 +317,6 @@ class FakeAuthRepository implements AuthRepository, Disposable {
   Future<AuthResult<User>> getUserProfile(String userId) async {
     getUserProfileCalls.add(userId);
     
-    // Throw exception if configured to do so
     if (shouldThrowOnGetUserProfile) {
       throw Exception(exceptionMessage);
     }
@@ -289,12 +325,10 @@ class FakeAuthRepository implements AuthRepository, Disposable {
       return AuthResult.failure(_errorMessage ?? 'Failed to get user profile', AuthErrorType.serverError);
     }
     
-    // For testing AND→OR mutations - return success but with null data
     if (returnSuccessWithNullUserProfile) {
       return AuthResult.success(null);
     }
     
-    // For testing profile not found scenario
     if (returnNullUserProfile) {
       return AuthResult.failure('User profile not found', AuthErrorType.userNotFound);
     }
@@ -316,7 +350,6 @@ class FakeAuthRepository implements AuthRepository, Disposable {
       return AuthResult.failure(_errorMessage ?? 'Failed to create user profile', AuthErrorType.serverError);
     }
     
-    // Create a copy with an ID
     final createdUser = User(
       id: 'profile-${user.email.split('@')[0]}',
       credentialId: user.credentialId,
@@ -348,7 +381,6 @@ class FakeAuthRepository implements AuthRepository, Disposable {
       return AuthResult.failure('User profile not found', AuthErrorType.userNotFound);
     }
     
-    // Create a copy with updated timestamp
     final updatedUser = User(
       id: user.id,
       credentialId: user.credentialId,
@@ -408,7 +440,6 @@ class FakeAuthRepository implements AuthRepository, Disposable {
       return addressMap[receiver];
     }
     
-    // For backward compatibility, return the first available OTP
     return addressMap.values.isNotEmpty ? addressMap.values.first : null;
   }
   
@@ -423,7 +454,6 @@ class FakeAuthRepository implements AuthRepository, Disposable {
     returnSuccessWithNullData = false;
     returnSuccessWithNullUserProfile = false;
     
-    // Reset exception throwing flags
     shouldThrowOnLogin = false;
     shouldThrowOnRegister = false;
     shouldThrowOnSendOtp = false;
