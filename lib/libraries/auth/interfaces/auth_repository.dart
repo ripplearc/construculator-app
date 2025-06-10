@@ -1,6 +1,6 @@
-import 'package:construculator_app_architecture/core/libraries/auth/data/models/auth_credential.dart';
-import 'package:construculator_app_architecture/core/libraries/auth/data/models/auth_user.dart';
-import 'package:construculator_app_architecture/core/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
+import 'package:construculator/libraries/auth/data/models/auth_user.dart';
+import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 
 /// Interface that abstracts authentication provider operations.
 /// This allows the auth service to work with any authentication backend.

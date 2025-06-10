@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'package:construculator_app_architecture/core/libraries/auth/data/models/auth_credential.dart';
-import 'package:construculator_app_architecture/core/libraries/auth/data/types/auth_types.dart';
-import 'package:construculator_app_architecture/core/libraries/auth/interfaces/auth_repository.dart';
-import 'package:construculator_app_architecture/core/libraries/auth/data/models/auth_user.dart';
+import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
+import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
+import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 /// A fake implementation of IAuthRepository for testing purposes.

@@ -1,18 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:construculator_app_architecture/core/libraries/auth/data/models/auth_credential.dart';
-import 'package:construculator_app_architecture/core/libraries/auth/data/types/auth_types.dart';
-import 'package:construculator_app_architecture/core/libraries/auth/interfaces/auth_repository.dart';
-import 'package:construculator_app_architecture/core/libraries/auth/data/models/auth_user.dart';
-import 'package:construculator_app_architecture/core/libraries/supabase/interfaces/supabase_wrapper.dart';
-import 'package:construculator_app_architecture/core/utils/logger.dart';
+import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
+import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
+import 'package:construculator/libraries/auth/data/models/auth_user.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 class SupabaseAuthRepository implements IAuthRepository, Disposable {
-  final ISupabaseWrapper _supabaseWrapper;
-  final Logger _logger = Logger('SupabaseAuthRepository');
+  final SupabaseWrapper _supabaseWrapper;
+  final _logger = AppLogger().tag('SupabaseAuthRepository');
   final _authStateController = StreamController<AuthStatus>.broadcast();
   final _userController = StreamController<UserCredential?>.broadcast();
   StreamSubscription<supabase.AuthState>? _authSubscription;
