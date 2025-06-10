@@ -16,9 +16,12 @@ enum FakeExceptionType{
 }
 /// Fake implementation of SupabaseWrapper for testing
 class FakeSupabaseWrapper implements SupabaseWrapper {
+
+  /// Used to notify listeners of changes in the authentication state through [onAuthStateChange]
   final StreamController<supabase.AuthState> _authStateController = 
       StreamController<supabase.AuthState>.broadcast();
   
+  /// Tracks the currently authenticated user
   supabase.User? _currentUser;
 
   /// Tracks table data for assertions during [selectSingle], [insert], and [update]
@@ -383,6 +386,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     throw Exception('Record not found for update');
   }
 
+  /// Creates a fake user based on the email, 
+  /// allows the flexibility of creating a fake user to return on login or signup
   supabase.User _createFakeUser(String email) {
     return FakeUser(
       id: 'fake-user-${email.hashCode}',
@@ -391,6 +396,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     );
   }
 
+  /// Creates an auth response based on the user, 
+  /// allows the flexibility of returning a desired response on login or signup
   supabase.AuthResponse _createAuthResponse(supabase.User? user) {
     supabase.Session? session;
     if (user != null) {
@@ -399,6 +406,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return FakeAuthResponse(user: user, session: session);
   }
 
+  /// Creates an auth state based on the event and user, 
+  /// enables the creation of a fake session to mimic an authenticated state
   supabase.AuthState _createAuthState(supabase.AuthChangeEvent event, supabase.User? user) {
     supabase.Session? session;
     if (user != null) {
@@ -407,6 +416,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return FakeAuthState(event: event, session: session);
   }
 
+  /// Throws an exception based on the configured exception type and message
   void _throwConfiguredException(FakeExceptionType? exceptionType, String message) {
     switch (exceptionType) {
       case FakeExceptionType.auth:
@@ -424,14 +434,17 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     }
   }
 
+  /// Adds data to a specific table
   void addTableData(String table, List<Map<String, dynamic>> data) {
     _tables[table] = data;
   }
 
+  /// Clears all data for a specific table
   void clearTableData(String table) {
     _tables[table] = [];
   }
 
+  /// Clears all table data and the currently authenticated user
   void clearAllData() {
     _tables.clear();
     _currentUser = null;
@@ -447,11 +460,13 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   List<Map<String, dynamic>> getMethodCallsFor(String methodName) {
     return _methodCalls.where((call) => call['method'] == methodName).toList();
   }
-  
+
+  /// Clears all method calls
   void clearMethodCalls() {
     _methodCalls.clear();
   }
 
+  /// Resets all fake configurations, clears data, and auth state
   void reset() {
     shouldThrowOnSignIn = false;
     shouldThrowOnSignUp = false;
@@ -493,6 +508,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     clearMethodCalls();
   }
 
+  /// Closes the auth state controller
   void dispose() {
     _authStateController.close();
   }
