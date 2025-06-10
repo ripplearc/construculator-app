@@ -123,11 +123,11 @@
     </commands>
 
     <threshold failure="85">
-        <rating over="90" name="A"/>
-        <rating over="85" name="B"/>
-        <rating over="80" name="C"/>
-        <rating over="70" name="D"/>
-        <rating over="50" name="E"/>
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
         <rating over="0" name="F"/>
     </threshold>
 </mutations> 

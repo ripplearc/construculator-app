@@ -97,7 +97,7 @@
         <command group="fake-auth-notifier" expected-return="0">flutter test test/units/libraries/auth/fakes/notifiers/fake_auth_notifier_test.dart</command>
     </commands>
 
-    <threshold failure="75">
+    <threshold failure="85">
         <rating over="85" name="A"/>
         <rating over="75" name="B"/>
         <rating over="65" name="C"/>
