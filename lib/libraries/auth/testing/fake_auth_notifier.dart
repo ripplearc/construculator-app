@@ -5,15 +5,22 @@ import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class FakeAuthNotifier implements AuthNotifier, Disposable {
+  /// The controller for login events
   final _loginController = StreamController<UserCredential>.broadcast();
+  /// The controller for logout events
   final _logoutController = StreamController<void>.broadcast();
+  /// The controller for auth state changes
   final _authStateController = StreamController<AuthStatus>.broadcast();
+  /// The controller for setup profile events
   final _setupProfileController = StreamController<void>.broadcast();
   
-  // Test verification lists
+  /// The list of login events
   final List<UserCredential> loginEvents = [];
+  /// The list of logout events
   final List<void> logoutEvents = [];
+  /// The list of auth state changes
   final List<AuthStatus> stateChangedEvents = [];
+  /// The list of setup profile events
   final List<void> setupProfileEvents = [];
   
   // Control flag for auth state emission behavior
@@ -60,6 +67,7 @@ class FakeAuthNotifier implements AuthNotifier, Disposable {
   @override
   Stream<void> get onSetupProfile => _setupProfileController.stream;
   
+  /// Resets the notifier to its initial state
   void reset() {
     loginEvents.clear();
     logoutEvents.clear();
