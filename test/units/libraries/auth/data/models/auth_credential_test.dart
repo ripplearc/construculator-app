@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:construculator_app_architecture/core/libraries/auth/data/models/auth_credential.dart';
+import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 
 void main() {
   group('UserCredential Model', () {

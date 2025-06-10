@@ -1,10 +1,11 @@
+import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:construculator_app_architecture/core/libraries/auth/repositories/supabase_auth_repository.dart';
-import 'package:construculator_app_architecture/core/libraries/auth/data/types/auth_types.dart';
-import 'package:construculator_app_architecture/core/libraries/auth/data/models/auth_user.dart';
-import 'package:construculator_app_architecture/core/libraries/supabase/fakes/fake_supabase_wrapper.dart';
-import 'package:construculator_app_architecture/core/config/app_config.dart';
-import 'package:construculator_app_architecture/core/config/constants.dart';
+import 'package:construculator/libraries/auth/repositories/supabase_auth_repository.dart';
+import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/data/models/auth_user.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/config/app_config_impl.dart';
+import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 void main() {
@@ -12,11 +13,18 @@ void main() {
 
   late FakeSupabaseWrapper fakeSupabaseWrapper;
   late SupabaseAuthRepository authRepository;
+  late FakeEnvLoader fakeDotEnvLoader;
+  late AppConfigImpl appConfig;
 
   setUp(() {
-    AppConfig.instance.environment = Environment.dev;
     fakeSupabaseWrapper = FakeSupabaseWrapper();
     authRepository = SupabaseAuthRepository(fakeSupabaseWrapper);
+    fakeDotEnvLoader = FakeEnvLoader();
+
+    appConfig = AppConfigImpl(
+      envLoader: fakeDotEnvLoader,
+    );
+    appConfig.initialize(Environment.dev);
   });
 
   tearDown(() {
@@ -27,35 +35,46 @@ void main() {
 
   group('User Authentication', () {
     group('Email and Password Login', () {
-      test('should successfully log in existing user with valid credentials', () async {
-        // Arrange
-        const userEmail = 'john.doe@construction.com';
-        const userPassword = 'SecurePass123!';
+      test(
+        'should successfully log in existing user with valid credentials',
+        () async {
+          // Arrange
+          const userEmail = 'john.doe@construction.com';
+          const userPassword = 'SecurePass123!';
 
-        // Act
-        final result = await authRepository.loginWithEmail(userEmail, userPassword);
+          // Act
+          final result = await authRepository.loginWithEmail(
+            userEmail,
+            userPassword,
+          );
 
-        // Assert
-        expect(result.isSuccess, isTrue);
-        expect(result.data?.email, equals(userEmail));
-        expect(result.data?.id, isNotNull);
-        expect(result.errorMessage, isNull);
+          // Assert
+          expect(result.isSuccess, isTrue);
+          expect(result.data?.email, equals(userEmail));
+          expect(result.data?.id, isNotNull);
+          expect(result.errorMessage, isNull);
 
-        // Verify correct parameters were passed
-        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('signInWithPassword');
-        expect(methodCalls.length, equals(1));
-        expect(methodCalls.first['email'], equals(userEmail));
-        expect(methodCalls.first['password'], equals(userPassword));
-      });
+          // Verify correct parameters were passed
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
+            'signInWithPassword',
+          );
+          expect(methodCalls.length, equals(1));
+          expect(methodCalls.first['email'], equals(userEmail));
+          expect(methodCalls.first['password'], equals(userPassword));
+        },
+      );
 
       test('should reject login with incorrect password', () async {
         // Arrange
         fakeSupabaseWrapper.shouldThrowOnSignIn = true;
-        fakeSupabaseWrapper.signInExceptionType = 'auth';
+        fakeSupabaseWrapper.signInExceptionType = FakeExceptionType.auth;
         fakeSupabaseWrapper.signInErrorMessage = 'invalid_credentials';
 
         // Act
-        final result = await authRepository.loginWithEmail('user@example.com', 'wrongpassword');
+        final result = await authRepository.loginWithEmail(
+          'user@example.com',
+          'wrongpassword',
+        );
 
         // Assert
         expect(result.isSuccess, isFalse);
@@ -63,29 +82,38 @@ void main() {
         expect(result.errorMessage, contains('Invalid email or password'));
       });
 
-      test('should handle account lockout due to too many failed attempts', () async {
-        // Arrange
-        fakeSupabaseWrapper.shouldThrowOnSignIn = true;
-        fakeSupabaseWrapper.signInExceptionType = 'auth';
-        fakeSupabaseWrapper.signInErrorMessage = 'over_request_rate_limit';
+      test(
+        'should handle account lockout due to too many failed attempts',
+        () async {
+          // Arrange
+          fakeSupabaseWrapper.shouldThrowOnSignIn = true;
+          fakeSupabaseWrapper.signInExceptionType = FakeExceptionType.auth;
+          fakeSupabaseWrapper.signInErrorMessage = 'over_request_rate_limit';
 
-        // Act
-        final result = await authRepository.loginWithEmail('user@example.com', 'password');
+          // Act
+          final result = await authRepository.loginWithEmail(
+            'user@example.com',
+            'password',
+          );
 
-        // Assert
-        expect(result.isSuccess, isFalse);
-        expect(result.errorType, equals(AuthErrorType.rateLimited));
-        expect(result.errorMessage, contains('Too many attempts'));
-      });
+          // Assert
+          expect(result.isSuccess, isFalse);
+          expect(result.errorType, equals(AuthErrorType.rateLimited));
+          expect(result.errorMessage, contains('Too many attempts'));
+        },
+      );
 
       test('should handle network connectivity issues during login', () async {
         // Arrange
         fakeSupabaseWrapper.shouldThrowOnSignIn = true;
-        fakeSupabaseWrapper.signInExceptionType = 'socket';
+        fakeSupabaseWrapper.signInExceptionType = FakeExceptionType.socket;
         fakeSupabaseWrapper.signInErrorMessage = 'Network unreachable';
 
         // Act
-        final result = await authRepository.loginWithEmail('user@example.com', 'password');
+        final result = await authRepository.loginWithEmail(
+          'user@example.com',
+          'password',
+        );
 
         // Assert
         expect(result.isSuccess, isFalse);
@@ -96,11 +124,14 @@ void main() {
       test('should handle server timeout during authentication', () async {
         // Arrange
         fakeSupabaseWrapper.shouldThrowOnSignIn = true;
-        fakeSupabaseWrapper.signInExceptionType = 'timeout';
+        fakeSupabaseWrapper.signInExceptionType = FakeExceptionType.timeout;
         fakeSupabaseWrapper.signInErrorMessage = 'Request timeout';
 
         // Act
-        final result = await authRepository.loginWithEmail('user@example.com', 'password');
+        final result = await authRepository.loginWithEmail(
+          'user@example.com',
+          'password',
+        );
 
         // Assert
         expect(result.isSuccess, isFalse);
@@ -111,83 +142,132 @@ void main() {
       test('should handle malformed authentication response', () async {
         // Arrange
         fakeSupabaseWrapper.shouldThrowOnSignIn = true;
-        fakeSupabaseWrapper.signInExceptionType = 'unknown';
+        fakeSupabaseWrapper.signInExceptionType = FakeExceptionType.unknown;
 
         // Act
-        final result = await authRepository.loginWithEmail('user@example.com', 'password');
+        final result = await authRepository.loginWithEmail(
+          'user@example.com',
+          'password',
+        );
 
         // Assert
         expect(result.isSuccess, isFalse);
         expect(result.errorType, equals(AuthErrorType.serverError));
       });
 
-      test('should handle authentication service returning null user', () async {
-        // Arrange
-        fakeSupabaseWrapper.shouldReturnNullUser = true;
+      test(
+        'should handle authentication service returning null user',
+        () async {
+          // Arrange
+          fakeSupabaseWrapper.shouldReturnNullUser = true;
 
-        // Act
-        final result = await authRepository.loginWithEmail('user@example.com', 'password');
+          // Act
+          final result = await authRepository.loginWithEmail(
+            'user@example.com',
+            'password',
+          );
 
-        // Assert
-        expect(result.isSuccess, isFalse);
-        expect(result.errorType, equals(AuthErrorType.invalidCredentials));
-        expect(result.errorMessage, contains('Login failed - invalid credentials'));
-      });
+          // Assert
+          expect(result.isSuccess, isFalse);
+          expect(result.errorType, equals(AuthErrorType.invalidCredentials));
+          expect(
+            result.errorMessage,
+            contains('Login failed - invalid credentials'),
+          );
+        },
+      );
 
       test('should handle various authentication error patterns', () async {
         // Test different Supabase error scenarios that might occur in production
         final errorScenarios = [
-          {'message': 'invalid_credentials', 'expectedType': AuthErrorType.invalidCredentials},
-          {'message': 'user_not_found', 'expectedType': AuthErrorType.invalidCredentials},
-          {'message': 'email_address_invalid', 'expectedType': AuthErrorType.invalidCredentials},
-          {'message': 'weak_password', 'expectedType': AuthErrorType.invalidCredentials},
-          {'message': 'email_not_confirmed', 'expectedType': AuthErrorType.invalidCredentials},
+          {
+            'message': 'invalid_credentials',
+            'expectedType': AuthErrorType.invalidCredentials,
+          },
+          {
+            'message': 'user_not_found',
+            'expectedType': AuthErrorType.invalidCredentials,
+          },
+          {
+            'message': 'email_address_invalid',
+            'expectedType': AuthErrorType.invalidCredentials,
+          },
+          {
+            'message': 'weak_password',
+            'expectedType': AuthErrorType.invalidCredentials,
+          },
+          {
+            'message': 'email_not_confirmed',
+            'expectedType': AuthErrorType.invalidCredentials,
+          },
         ];
 
         for (final scenario in errorScenarios) {
           fakeSupabaseWrapper.reset();
           fakeSupabaseWrapper.shouldThrowOnSignIn = true;
-          fakeSupabaseWrapper.signInExceptionType = 'auth';
-          fakeSupabaseWrapper.signInErrorMessage = scenario['message'] as String;
+          fakeSupabaseWrapper.signInExceptionType = FakeExceptionType.auth;
+          fakeSupabaseWrapper.signInErrorMessage =
+              scenario['message'] as String;
 
-          final result = await authRepository.loginWithEmail('test@example.com', 'password');
+          final result = await authRepository.loginWithEmail(
+            'test@example.com',
+            'password',
+          );
 
-          expect(result.isSuccess, isFalse, reason: 'Should fail for: ${scenario['message']}');
-          expect(result.errorType, equals(scenario['expectedType']), reason: 'Error type should match for: ${scenario['message']}');
+          expect(
+            result.isSuccess,
+            isFalse,
+            reason: 'Should fail for: ${scenario['message']}',
+          );
+          expect(
+            result.errorType,
+            equals(scenario['expectedType']),
+            reason: 'Error type should match for: ${scenario['message']}',
+          );
         }
       });
     });
 
     group('User Registration', () {
-      test('should successfully register new user with valid information', () async {
-        // Arrange
-        const newUserEmail = 'sarah.wilson@contractor.com';
-        const newUserPassword = 'StrongPassword456!';
+      test(
+        'should successfully register new user with valid information',
+        () async {
+          // Arrange
+          const newUserEmail = 'sarah.wilson@contractor.com';
+          const newUserPassword = 'StrongPassword456!';
 
-        // Act
-        final result = await authRepository.registerWithEmail(newUserEmail, newUserPassword);
+          // Act
+          final result = await authRepository.registerWithEmail(
+            newUserEmail,
+            newUserPassword,
+          );
 
-        // Assert
-        expect(result.isSuccess, isTrue);
-        expect(result.data?.email, equals(newUserEmail));
-        expect(result.data?.id, isNotNull);
+          // Assert
+          expect(result.isSuccess, isTrue);
+          expect(result.data?.email, equals(newUserEmail));
+          expect(result.data?.id, isNotNull);
 
-        // Verify correct parameters were passed
-        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('signUp');
-        expect(methodCalls.length, equals(1));
-        expect(methodCalls.first['email'], equals(newUserEmail));
-        expect(methodCalls.first['password'], equals(newUserPassword));
-      });
+          // Verify correct parameters were passed
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('signUp');
+          expect(methodCalls.length, equals(1));
+          expect(methodCalls.first['email'], equals(newUserEmail));
+          expect(methodCalls.first['password'], equals(newUserPassword));
+        },
+      );
 
       test('should prevent registration with already existing email', () async {
         // Arrange
         fakeSupabaseWrapper.shouldThrowOnSignUp = true;
-        fakeSupabaseWrapper.signUpExceptionType = 'postgrest';
+        fakeSupabaseWrapper.signUpExceptionType = FakeExceptionType.postgrest;
         fakeSupabaseWrapper.postgrestErrorCode = '23505';
-        fakeSupabaseWrapper.signUpErrorMessage = 'duplicate key value violates unique constraint';
+        fakeSupabaseWrapper.signUpErrorMessage =
+            'duplicate key value violates unique constraint';
 
         // Act
-        final result = await authRepository.registerWithEmail('existing@example.com', 'password');
+        final result = await authRepository.registerWithEmail(
+          'existing@example.com',
+          'password',
+        );
 
         // Assert
         expect(result.isSuccess, isFalse);
@@ -195,57 +275,102 @@ void main() {
         expect(result.errorMessage, contains('Email already exists'));
       });
 
-      test('should handle database connection issues during registration', () async {
-        // Arrange
-        fakeSupabaseWrapper.shouldThrowOnSignUp = true;
-        fakeSupabaseWrapper.signUpExceptionType = 'postgrest';
-        fakeSupabaseWrapper.postgrestErrorCode = '08001';
-        fakeSupabaseWrapper.signUpErrorMessage = 'could not connect to server';
+      test(
+        'should handle database connection issues during registration',
+        () async {
+          // Arrange
+          fakeSupabaseWrapper.shouldThrowOnSignUp = true;
+          fakeSupabaseWrapper.signUpExceptionType = FakeExceptionType.postgrest;
+          fakeSupabaseWrapper.postgrestErrorCode = '08001';
+          fakeSupabaseWrapper.signUpErrorMessage =
+              'could not connect to server';
 
-        // Act
-        final result = await authRepository.registerWithEmail('newuser@example.com', 'password');
+          // Act
+          final result = await authRepository.registerWithEmail(
+            'newuser@example.com',
+            'password',
+          );
 
-        // Assert
-        expect(result.isSuccess, isFalse);
-        expect(result.errorType, equals(AuthErrorType.connectionError));
-        expect(result.errorMessage, contains('Database connection failed'));
-      });
+          // Assert
+          expect(result.isSuccess, isFalse);
+          expect(result.errorType, equals(AuthErrorType.connectionError));
+          expect(result.errorMessage, contains('Database connection failed'));
+        },
+      );
 
       test('should handle registration service returning null user', () async {
         // Arrange
         fakeSupabaseWrapper.shouldReturnNullUser = true;
 
         // Act
-        final result = await authRepository.registerWithEmail('newuser@example.com', 'password');
+        final result = await authRepository.registerWithEmail(
+          'newuser@example.com',
+          'password',
+        );
 
         // Assert
         expect(result.isSuccess, isFalse);
         expect(result.errorType, equals(AuthErrorType.registrationFailure));
-        expect(result.errorMessage, contains('Registration failed - please try again'));
+        expect(
+          result.errorMessage,
+          contains('Registration failed - please try again'),
+        );
       });
 
-      test('should handle various database error codes during registration', () async {
-        // Test different PostgreSQL error codes that might occur
-        final errorCodes = [
-          {'code': '23505', 'expectedType': AuthErrorType.registrationFailure, 'description': 'unique constraint violation'},
-          {'code': '08001', 'expectedType': AuthErrorType.connectionError, 'description': 'unable to connect'},
-          {'code': '08006', 'expectedType': AuthErrorType.connectionError, 'description': 'connection failure'},
-          {'code': '08003', 'expectedType': AuthErrorType.connectionError, 'description': 'connection does not exist'},
-        ];
+      test(
+        'should handle various database error codes during registration',
+        () async {
+          // Test different PostgreSQL error codes that might occur
+          final errorCodes = [
+            {
+              'code': '23505',
+              'expectedType': AuthErrorType.registrationFailure,
+              'description': 'unique constraint violation',
+            },
+            {
+              'code': '08001',
+              'expectedType': AuthErrorType.connectionError,
+              'description': 'unable to connect',
+            },
+            {
+              'code': '08006',
+              'expectedType': AuthErrorType.connectionError,
+              'description': 'connection failure',
+            },
+            {
+              'code': '08003',
+              'expectedType': AuthErrorType.connectionError,
+              'description': 'connection does not exist',
+            },
+          ];
 
-        for (final errorCode in errorCodes) {
-          fakeSupabaseWrapper.reset();
-          fakeSupabaseWrapper.shouldThrowOnSignUp = true;
-          fakeSupabaseWrapper.signUpExceptionType = 'postgrest';
-          fakeSupabaseWrapper.postgrestErrorCode = errorCode['code'] as String;
-          fakeSupabaseWrapper.signUpErrorMessage = errorCode['description'] as String;
+          for (final errorCode in errorCodes) {
+            fakeSupabaseWrapper.reset();
+            fakeSupabaseWrapper.shouldThrowOnSignUp = true;
+            fakeSupabaseWrapper.signUpExceptionType = FakeExceptionType.postgrest;
+            fakeSupabaseWrapper.postgrestErrorCode =
+                errorCode['code'] as String;
+            fakeSupabaseWrapper.signUpErrorMessage =
+                errorCode['description'] as String;
 
-          final result = await authRepository.registerWithEmail('test@example.com', 'password');
+            final result = await authRepository.registerWithEmail(
+              'test@example.com',
+              'password',
+            );
 
-          expect(result.isSuccess, isFalse, reason: 'Should fail for error code: ${errorCode['code']}');
-          expect(result.errorType, equals(errorCode['expectedType']), reason: 'Error type should match for code: ${errorCode['code']}');
-        }
-      });
+            expect(
+              result.isSuccess,
+              isFalse,
+              reason: 'Should fail for error code: ${errorCode['code']}',
+            );
+            expect(
+              result.errorType,
+              equals(errorCode['expectedType']),
+              reason: 'Error type should match for code: ${errorCode['code']}',
+            );
+          }
+        },
+      );
     });
 
     group('One-Time Password (OTP) Authentication', () {
@@ -254,14 +379,19 @@ void main() {
         const userEmail = 'contractor@buildsite.com';
 
         // Act
-        final result = await authRepository.sendOtp(userEmail, OtpReceiver.email);
+        final result = await authRepository.sendOtp(
+          userEmail,
+          OtpReceiver.email,
+        );
 
         // Assert
         expect(result.isSuccess, isTrue);
         expect(result.errorMessage, isNull);
 
         // Verify correct parameters for email OTP
-        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('signInWithOtp');
+        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
+          'signInWithOtp',
+        );
         expect(methodCalls.length, equals(1));
         expect(methodCalls.first['email'], equals(userEmail));
         expect(methodCalls.first['phone'], isNull);
@@ -273,14 +403,19 @@ void main() {
         const userPhone = '+1-555-123-4567';
 
         // Act
-        final result = await authRepository.sendOtp(userPhone, OtpReceiver.phone);
+        final result = await authRepository.sendOtp(
+          userPhone,
+          OtpReceiver.phone,
+        );
 
         // Assert
         expect(result.isSuccess, isTrue);
         expect(result.errorMessage, isNull);
 
         // Verify correct parameters for phone OTP
-        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('signInWithOtp');
+        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
+          'signInWithOtp',
+        );
         expect(methodCalls.length, equals(1));
         expect(methodCalls.first['email'], isNull);
         expect(methodCalls.first['phone'], equals(userPhone));
@@ -293,7 +428,11 @@ void main() {
         const otpCode = '123456';
 
         // Act
-        final result = await authRepository.verifyOtp(userEmail, otpCode, OtpReceiver.email);
+        final result = await authRepository.verifyOtp(
+          userEmail,
+          otpCode,
+          OtpReceiver.email,
+        );
 
         // Assert
         expect(result.isSuccess, isTrue);
@@ -314,7 +453,11 @@ void main() {
         const otpCode = '654321';
 
         // Act
-        final result = await authRepository.verifyOtp(userPhone, otpCode, OtpReceiver.phone);
+        final result = await authRepository.verifyOtp(
+          userPhone,
+          otpCode,
+          OtpReceiver.phone,
+        );
 
         // Assert
         expect(result.isSuccess, isTrue);
@@ -334,7 +477,11 @@ void main() {
         fakeSupabaseWrapper.shouldReturnNullUser = true;
 
         // Act
-        final result = await authRepository.verifyOtp('user@example.com', '000000', OtpReceiver.email);
+        final result = await authRepository.verifyOtp(
+          'user@example.com',
+          '000000',
+          OtpReceiver.email,
+        );
 
         // Assert
         expect(result.isSuccess, isFalse);
@@ -348,7 +495,7 @@ void main() {
         // Arrange
         const existingEmail = 'manager@construction.com';
         fakeSupabaseWrapper.addTableData('users', [
-          {'id': '123', 'email': existingEmail}
+          {'id': '123', 'email': existingEmail},
         ]);
 
         // Act
@@ -359,7 +506,9 @@ void main() {
         expect(result.data, isTrue);
 
         // Verify correct database query
-        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('selectSingle');
+        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
+          'selectSingle',
+        );
         expect(methodCalls.length, equals(1));
         expect(methodCalls.first['table'], equals('users'));
         expect(methodCalls.first['columns'], equals('id'));
@@ -379,19 +528,25 @@ void main() {
         expect(result.data, isFalse);
       });
 
-      test('should handle database connectivity issues during email check', () async {
-        // Arrange
-        fakeSupabaseWrapper.shouldThrowOnSelect = true;
-        fakeSupabaseWrapper.selectErrorMessage = 'Connection to database lost';
+      test(
+        'should handle database connectivity issues during email check',
+        () async {
+          // Arrange
+          fakeSupabaseWrapper.shouldThrowOnSelect = true;
+          fakeSupabaseWrapper.selectErrorMessage =
+              'Connection to database lost';
 
-        // Act
-        final result = await authRepository.isEmailRegistered('test@example.com');
+          // Act
+          final result = await authRepository.isEmailRegistered(
+            'test@example.com',
+          );
 
-        // Assert
-        expect(result.isSuccess, isFalse);
-        expect(result.errorType, equals(AuthErrorType.serverError));
-        expect(result.errorMessage, contains('Connection to database lost'));
-      });
+          // Assert
+          expect(result.isSuccess, isFalse);
+          expect(result.errorType, equals(AuthErrorType.serverError));
+          expect(result.errorMessage, contains('Connection to database lost'));
+        },
+      );
     });
   });
 
@@ -413,8 +568,12 @@ void main() {
             'created_at': '2023-01-15T08:30:00Z',
             'updated_at': '2023-12-01T14:22:00Z',
             'user_status': 'active',
-            'user_preferences': {'theme': 'light', 'notifications': true, 'language': 'en'},
-          }
+            'user_preferences': {
+              'theme': 'light',
+              'notifications': true,
+              'language': 'en',
+            },
+          },
         ]);
 
         // Act
@@ -430,7 +589,9 @@ void main() {
         expect(result.data?.userPreferences['theme'], equals('light'));
 
         // Verify correct database query
-        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('selectSingle');
+        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
+          'selectSingle',
+        );
         expect(methodCalls.first['table'], equals('users'));
         expect(methodCalls.first['filterColumn'], equals('credential_id'));
         expect(methodCalls.first['filterValue'], equals(credentialId));
@@ -453,7 +614,7 @@ void main() {
             'created_at': '2022-06-01T00:00:00Z',
             'updated_at': '2023-08-15T00:00:00Z',
             'user_preferences': null,
-          }
+          },
         ]);
 
         // Act
@@ -472,7 +633,9 @@ void main() {
         const nonExistentCredentialId = 'cred-999-not-found';
 
         // Act
-        final result = await authRepository.getUserProfile(nonExistentCredentialId);
+        final result = await authRepository.getUserProfile(
+          nonExistentCredentialId,
+        );
 
         // Assert
         expect(result.isSuccess, isFalse);
@@ -510,12 +673,15 @@ void main() {
         // Verify correct database insertion
         final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('insert');
         expect(methodCalls.first['table'], equals('users'));
-        
+
         final insertData = methodCalls.first['data'] as Map<String, dynamic>;
         expect(insertData['credential_id'], equals('cred-new-active-user'));
         expect(insertData['email'], equals('new.engineer@construction.com'));
         expect(insertData['user_status'], equals('active'));
-        expect(insertData['user_preferences'], equals({'theme': 'dark', 'units': 'metric'}));
+        expect(
+          insertData['user_preferences'],
+          equals({'theme': 'dark', 'units': 'metric'}),
+        );
       });
 
       test('should create new inactive user profile', () async {
@@ -561,7 +727,7 @@ void main() {
             'user_status': 'inactive',
             'created_at': '2023-01-01T00:00:00Z',
             'updated_at': '2023-01-01T00:00:00Z',
-          }
+          },
         ]);
 
         final updatedUser = User(
@@ -592,11 +758,14 @@ void main() {
         expect(methodCalls.first['table'], equals('users'));
         expect(methodCalls.first['filterColumn'], equals('credential_id'));
         expect(methodCalls.first['filterValue'], equals(credentialId));
-        
+
         final updateData = methodCalls.first['data'] as Map<String, dynamic>;
         expect(updateData['email'], equals('updated.email@construction.com'));
         expect(updateData['user_status'], equals('active'));
-        expect(updateData['user_preferences'], equals({'theme': 'auto', 'notifications': false}));
+        expect(
+          updateData['user_preferences'],
+          equals({'theme': 'auto', 'notifications': false}),
+        );
       });
     });
   });
@@ -604,11 +773,27 @@ void main() {
   group('Error Handling and Edge Cases', () {
     test('should handle various authentication error scenarios', () async {
       final errorScenarios = [
-        {'message': 'Login credentials are not valid', 'expectedType': AuthErrorType.serverError},
-        {'message': 'invalid_credentials', 'expectedType': AuthErrorType.invalidCredentials, 'useAuthException': true},
-        {'message': 'Email address format is incorrect', 'expectedType': AuthErrorType.serverError},
-        {'message': 'Password does not meet security requirements', 'expectedType': AuthErrorType.serverError},
-        {'message': 'User authentication token has expired', 'expectedType': AuthErrorType.serverError},
+        {
+          'message': 'Login credentials are not valid',
+          'expectedType': AuthErrorType.serverError,
+        },
+        {
+          'message': 'invalid_credentials',
+          'expectedType': AuthErrorType.invalidCredentials,
+          'useAuthException': true,
+        },
+        {
+          'message': 'Email address format is incorrect',
+          'expectedType': AuthErrorType.serverError,
+        },
+        {
+          'message': 'Password does not meet security requirements',
+          'expectedType': AuthErrorType.serverError,
+        },
+        {
+          'message': 'User authentication token has expired',
+          'expectedType': AuthErrorType.serverError,
+        },
       ];
 
       for (final scenario in errorScenarios) {
@@ -619,13 +804,16 @@ void main() {
 
         fakeSupabaseWrapper.shouldThrowOnSignIn = true;
         fakeSupabaseWrapper.signInErrorMessage = scenario['message'] as String;
-        
+
         // Use auth exception type for specific error codes
         if (scenario['useAuthException'] == true) {
-          fakeSupabaseWrapper.signInExceptionType = 'auth';
+          fakeSupabaseWrapper.signInExceptionType = FakeExceptionType.auth;
         }
 
-        final result = await authRepository.loginWithEmail('test@example.com', 'password');
+        final result = await authRepository.loginWithEmail(
+          'test@example.com',
+          'password',
+        );
 
         expect(result.isSuccess, isFalse);
         expect(result.errorType, equals(scenario['expectedType']));
@@ -642,10 +830,13 @@ void main() {
       for (final errorMessage in rateLimitScenarios) {
         fakeSupabaseWrapper.reset();
         fakeSupabaseWrapper.shouldThrowOnSignIn = true;
-        fakeSupabaseWrapper.signInExceptionType = 'unknown';
+        fakeSupabaseWrapper.signInExceptionType = FakeExceptionType.unknown;
         fakeSupabaseWrapper.signInErrorMessage = errorMessage;
 
-        final result = await authRepository.loginWithEmail('test@example.com', 'password');
+        final result = await authRepository.loginWithEmail(
+          'test@example.com',
+          'password',
+        );
 
         expect(result.isSuccess, isFalse);
         expect(result.errorType, equals(AuthErrorType.serverError));
@@ -661,10 +852,13 @@ void main() {
       for (final errorMessage in networkErrors) {
         fakeSupabaseWrapper.reset();
         fakeSupabaseWrapper.shouldThrowOnSignIn = true;
-        fakeSupabaseWrapper.signInExceptionType = 'unknown';
+        fakeSupabaseWrapper.signInExceptionType = FakeExceptionType.unknown;
         fakeSupabaseWrapper.signInErrorMessage = errorMessage;
 
-        final result = await authRepository.loginWithEmail('test@example.com', 'password');
+        final result = await authRepository.loginWithEmail(
+          'test@example.com',
+          'password',
+        );
 
         expect(result.isSuccess, isFalse);
         expect(result.errorType, equals(AuthErrorType.serverError));
@@ -673,34 +867,87 @@ void main() {
 
     test('should handle auth exception error codes', () async {
       final authErrorCodes = [
-        {'code': 'email_exists', 'expectedType': AuthErrorType.registrationFailure},
-        {'code': 'user_already_exists', 'expectedType': AuthErrorType.registrationFailure},
-        {'code': 'over_email_send_rate_limit', 'expectedType': AuthErrorType.rateLimited},
-        {'code': 'over_sms_send_rate_limit', 'expectedType': AuthErrorType.rateLimited},
-        {'code': 'signup_disabled', 'expectedType': AuthErrorType.registrationFailure},
-        {'code': 'email_provider_disabled', 'expectedType': AuthErrorType.registrationFailure},
-        {'code': 'phone_provider_disabled', 'expectedType': AuthErrorType.registrationFailure},
-        {'code': 'session_expired', 'expectedType': AuthErrorType.invalidCredentials},
-        {'code': 'session_not_found', 'expectedType': AuthErrorType.invalidCredentials},
-        {'code': 'refresh_token_not_found', 'expectedType': AuthErrorType.invalidCredentials},
-        {'code': 'refresh_token_already_used', 'expectedType': AuthErrorType.invalidCredentials},
+        {
+          'code': 'email_exists',
+          'expectedType': AuthErrorType.registrationFailure,
+        },
+        {
+          'code': 'user_already_exists',
+          'expectedType': AuthErrorType.registrationFailure,
+        },
+        {
+          'code': 'over_email_send_rate_limit',
+          'expectedType': AuthErrorType.rateLimited,
+        },
+        {
+          'code': 'over_sms_send_rate_limit',
+          'expectedType': AuthErrorType.rateLimited,
+        },
+        {
+          'code': 'signup_disabled',
+          'expectedType': AuthErrorType.registrationFailure,
+        },
+        {
+          'code': 'email_provider_disabled',
+          'expectedType': AuthErrorType.registrationFailure,
+        },
+        {
+          'code': 'phone_provider_disabled',
+          'expectedType': AuthErrorType.registrationFailure,
+        },
+        {
+          'code': 'session_expired',
+          'expectedType': AuthErrorType.invalidCredentials,
+        },
+        {
+          'code': 'session_not_found',
+          'expectedType': AuthErrorType.invalidCredentials,
+        },
+        {
+          'code': 'refresh_token_not_found',
+          'expectedType': AuthErrorType.invalidCredentials,
+        },
+        {
+          'code': 'refresh_token_already_used',
+          'expectedType': AuthErrorType.invalidCredentials,
+        },
         {'code': 'request_timeout', 'expectedType': AuthErrorType.timeout},
-        {'code': 'otp_expired', 'expectedType': AuthErrorType.invalidCredentials},
+        {
+          'code': 'otp_expired',
+          'expectedType': AuthErrorType.invalidCredentials,
+        },
         {'code': 'bad_jwt', 'expectedType': AuthErrorType.invalidCredentials},
-        {'code': 'no_authorization', 'expectedType': AuthErrorType.invalidCredentials},
-        {'code': 'unknown_error_code', 'expectedType': AuthErrorType.invalidCredentials},
+        {
+          'code': 'no_authorization',
+          'expectedType': AuthErrorType.invalidCredentials,
+        },
+        {
+          'code': 'unknown_error_code',
+          'expectedType': AuthErrorType.invalidCredentials,
+        },
       ];
 
       for (final scenario in authErrorCodes) {
         fakeSupabaseWrapper.reset();
         fakeSupabaseWrapper.shouldThrowOnSignIn = true;
-        fakeSupabaseWrapper.signInExceptionType = 'auth';
+        fakeSupabaseWrapper.signInExceptionType = FakeExceptionType.auth;
         fakeSupabaseWrapper.signInErrorMessage = scenario['code'] as String;
 
-        final result = await authRepository.loginWithEmail('test@example.com', 'password');
+        final result = await authRepository.loginWithEmail(
+          'test@example.com',
+          'password',
+        );
 
-        expect(result.isSuccess, isFalse, reason: 'Should fail for: ${scenario['code']}');
-        expect(result.errorType, equals(scenario['expectedType']), reason: 'Error type should match for: ${scenario['code']}');
+        expect(
+          result.isSuccess,
+          isFalse,
+          reason: 'Should fail for: ${scenario['code']}',
+        );
+        expect(
+          result.errorType,
+          equals(scenario['expectedType']),
+          reason: 'Error type should match for: ${scenario['code']}',
+        );
       }
     });
 
@@ -715,13 +962,24 @@ void main() {
       for (final scenario in postgrestErrorCodes) {
         fakeSupabaseWrapper.reset();
         fakeSupabaseWrapper.shouldThrowOnSignIn = true;
-        fakeSupabaseWrapper.signInExceptionType = 'postgrest';
+        fakeSupabaseWrapper.signInExceptionType = FakeExceptionType.postgrest;
         fakeSupabaseWrapper.postgrestErrorCode = scenario['code'] as String;
 
-        final result = await authRepository.loginWithEmail('test@example.com', 'password');
+        final result = await authRepository.loginWithEmail(
+          'test@example.com',
+          'password',
+        );
 
-        expect(result.isSuccess, isFalse, reason: 'Should fail for: ${scenario['code']}');
-        expect(result.errorType, equals(scenario['expectedType']), reason: 'Error type should match for: ${scenario['code']}');
+        expect(
+          result.isSuccess,
+          isFalse,
+          reason: 'Should fail for: ${scenario['code']}',
+        );
+        expect(
+          result.errorType,
+          equals(scenario['expectedType']),
+          reason: 'Error type should match for: ${scenario['code']}',
+        );
       }
     });
 
@@ -829,34 +1087,40 @@ void main() {
       expect(result.errorType, equals(AuthErrorType.serverError));
     });
 
-    test('should handle user preferences as string in profile parsing', () async {
-      // Arrange
-      fakeSupabaseWrapper.addTableData('users', [
-        {
-          'id': 'test-id',
-          'credential_id': 'test-credential-id',
-          'email': 'test@example.com',
-          'phone': null,
-          'first_name': 'Test',
-          'last_name': 'User',
-          'professional_role': 'Developer',
-          'profile_photo_url': null,
-          'created_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
-          'user_status': 'active',
-          'user_preferences': '{"theme": "dark", "notifications": true}', // String JSON
-        }
-      ]);
+    test(
+      'should handle user preferences as string in profile parsing',
+      () async {
+        // Arrange
+        fakeSupabaseWrapper.addTableData('users', [
+          {
+            'id': 'test-id',
+            'credential_id': 'test-credential-id',
+            'email': 'test@example.com',
+            'phone': null,
+            'first_name': 'Test',
+            'last_name': 'User',
+            'professional_role': 'Developer',
+            'profile_photo_url': null,
+            'created_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+            'user_status': 'active',
+            'user_preferences':
+                '{"theme": "dark", "notifications": true}', // String JSON
+          },
+        ]);
 
-      // Act
-      final result = await authRepository.getUserProfile('test-credential-id');
+        // Act
+        final result = await authRepository.getUserProfile(
+          'test-credential-id',
+        );
 
-      // Assert
-      expect(result.isSuccess, isTrue);
-      expect(result.data?.userPreferences, isA<Map<String, dynamic>>());
-      expect(result.data?.userPreferences['theme'], equals('dark'));
-      expect(result.data?.userPreferences['notifications'], equals(true));
-    });
+        // Assert
+        expect(result.isSuccess, isTrue);
+        expect(result.data?.userPreferences, isA<Map<String, dynamic>>());
+        expect(result.data?.userPreferences['theme'], equals('dark'));
+        expect(result.data?.userPreferences['notifications'], equals(true));
+      },
+    );
 
     test('should handle null user preferences in profile parsing', () async {
       // Arrange
@@ -874,7 +1138,7 @@ void main() {
           'updated_at': DateTime.now().toIso8601String(),
           'user_status': 'active',
           'user_preferences': null, // Null preferences
-        }
+        },
       ]);
 
       // Act
@@ -901,7 +1165,7 @@ void main() {
           'updated_at': DateTime.now().toIso8601String(),
           'user_status': 'inactive', // Inactive status
           'user_preferences': {},
-        }
+        },
       ]);
 
       // Act
@@ -912,133 +1176,145 @@ void main() {
       expect(result.data?.userStatus, equals(UserProfileStatus.inactive));
     });
 
-    test('should handle user preferences as map in create profile response', () async {
-      // Arrange
-      final user = User(
-        id: 'test-id',
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-        firstName: 'Test',
-        lastName: 'User',
-        professionalRole: 'Developer',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        userStatus: UserProfileStatus.active,
-        userPreferences: {'theme': 'dark'},
-      );
+    test(
+      'should handle user preferences as map in create profile response',
+      () async {
+        // Arrange
+        final user = User(
+          id: 'test-id',
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+          firstName: 'Test',
+          lastName: 'User',
+          professionalRole: 'Developer',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          userStatus: UserProfileStatus.active,
+          userPreferences: {'theme': 'dark'},
+        );
 
-      // Act
-      final result = await authRepository.createUserProfile(user);
+        // Act
+        final result = await authRepository.createUserProfile(user);
 
-      // Assert
-      expect(result.isSuccess, isTrue);
-      expect(result.data?.userPreferences, equals({'theme': 'dark'}));
-    });
+        // Assert
+        expect(result.isSuccess, isTrue);
+        expect(result.data?.userPreferences, equals({'theme': 'dark'}));
+      },
+    );
 
-    test('should handle empty user preferences in create profile response', () async {
-      // Arrange
-      final user = User(
-        id: 'test-id',
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-        firstName: 'Test',
-        lastName: 'User',
-        professionalRole: 'Developer',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        userStatus: UserProfileStatus.active,
-        userPreferences: {},
-      );
+    test(
+      'should handle empty user preferences in create profile response',
+      () async {
+        // Arrange
+        final user = User(
+          id: 'test-id',
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+          firstName: 'Test',
+          lastName: 'User',
+          professionalRole: 'Developer',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          userStatus: UserProfileStatus.active,
+          userPreferences: {},
+        );
 
-      // Act
-      final result = await authRepository.createUserProfile(user);
+        // Act
+        final result = await authRepository.createUserProfile(user);
 
-      // Assert
-      expect(result.isSuccess, isTrue);
-      expect(result.data?.userPreferences, equals({}));
-    });
+        // Assert
+        expect(result.isSuccess, isTrue);
+        expect(result.data?.userPreferences, equals({}));
+      },
+    );
 
-    test('should handle user preferences as map in update profile response', () async {
-      // Arrange
-      final user = User(
-        id: 'test-id',
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-        firstName: 'Test',
-        lastName: 'User',
-        professionalRole: 'Developer',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        userStatus: UserProfileStatus.active,
-        userPreferences: {'theme': 'light'},
-      );
+    test(
+      'should handle user preferences as map in update profile response',
+      () async {
+        // Arrange
+        final user = User(
+          id: 'test-id',
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+          firstName: 'Test',
+          lastName: 'User',
+          professionalRole: 'Developer',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          userStatus: UserProfileStatus.active,
+          userPreferences: {'theme': 'light'},
+        );
 
-      // First create the user in the table
-      fakeSupabaseWrapper.addTableData('users', [
-        {
-          'id': 'test-id',
-          'credential_id': 'test-credential-id',
-          'email': 'test@example.com',
-          'phone': null,
-          'first_name': 'Test',
-          'last_name': 'User',
-          'professional_role': 'Developer',
-          'profile_photo_url': null,
-          'created_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
-          'user_status': 'active',
-          'user_preferences': {'theme': 'dark'},
-        }
-      ]);
+        // First create the user in the table
+        fakeSupabaseWrapper.addTableData('users', [
+          {
+            'id': 'test-id',
+            'credential_id': 'test-credential-id',
+            'email': 'test@example.com',
+            'phone': null,
+            'first_name': 'Test',
+            'last_name': 'User',
+            'professional_role': 'Developer',
+            'profile_photo_url': null,
+            'created_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+            'user_status': 'active',
+            'user_preferences': {'theme': 'dark'},
+          },
+        ]);
 
-      // Act
-      final result = await authRepository.updateUserProfile(user);
+        // Act
+        final result = await authRepository.updateUserProfile(user);
 
-      // Assert
-      expect(result.isSuccess, isTrue);
-      expect(result.data?.userPreferences, equals({'theme': 'light'}));
-    });
+        // Assert
+        expect(result.isSuccess, isTrue);
+        expect(result.data?.userPreferences, equals({'theme': 'light'}));
+      },
+    );
 
-    test('should handle empty user preferences in update profile response', () async {
-      // Arrange
-      final user = User(
-        id: 'test-id',
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-        firstName: 'Test',
-        lastName: 'User',
-        professionalRole: 'Developer',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        userStatus: UserProfileStatus.active,
-        userPreferences: {},
-      );
+    test(
+      'should handle empty user preferences in update profile response',
+      () async {
+        // Arrange
+        final user = User(
+          id: 'test-id',
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+          firstName: 'Test',
+          lastName: 'User',
+          professionalRole: 'Developer',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          userStatus: UserProfileStatus.active,
+          userPreferences: {},
+        );
 
-      // First create the user in the table
-      fakeSupabaseWrapper.addTableData('users', [
-        {
-          'id': 'test-id',
-          'credential_id': 'test-credential-id',
-          'email': 'test@example.com',
-          'phone': null,
-          'first_name': 'Test',
-          'last_name': 'User',
-          'professional_role': 'Developer',
-          'profile_photo_url': null,
-          'created_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
-          'user_status': 'active',
-          'user_preferences': 'not_a_map',
-        }
-      ]);
+        // First create the user in the table
+        fakeSupabaseWrapper.addTableData('users', [
+          {
+            'id': 'test-id',
+            'credential_id': 'test-credential-id',
+            'email': 'test@example.com',
+            'phone': null,
+            'first_name': 'Test',
+            'last_name': 'User',
+            'professional_role': 'Developer',
+            'profile_photo_url': null,
+            'created_at': DateTime.now().toIso8601String(),
+            'updated_at': DateTime.now().toIso8601String(),
+            'user_status': 'active',
+            'user_preferences': 'not_a_map',
+          },
+        ]);
 
-      // Act
-      final result = await authRepository.updateUserProfile(user);
+        // Act
+        final result = await authRepository.updateUserProfile(user);
 
-      // Assert
-      expect(result.isSuccess, isTrue);
-      expect(result.data?.userPreferences, equals({}));
-    });
+        // Assert
+        expect(result.isSuccess, isTrue);
+        expect(result.data?.userPreferences, equals({}));
+      },
+    );
   });
 
   group('Authentication State Management', () {
@@ -1077,7 +1353,9 @@ void main() {
       authRepository = SupabaseAuthRepository(fakeSupabaseWrapper);
 
       // Act - Simulate network error
-      fakeSupabaseWrapper.simulateAuthStreamError('Network connection lost during authentication');
+      fakeSupabaseWrapper.simulateAuthStreamError(
+        'Network connection lost during authentication',
+      );
 
       // Allow time for error handling
       await Future.delayed(const Duration(milliseconds: 10));
@@ -1086,17 +1364,26 @@ void main() {
       expect(true, isTrue); // Test passes if no exception
     });
 
-    test('should handle authentication responses with missing user data', () async {
-      // Test first scenario: null user returned
-      fakeSupabaseWrapper.shouldReturnNullUser = true;
-      var result = await authRepository.loginWithEmail('test@example.com', 'password');
-      expect(result.isSuccess, isFalse);
+    test(
+      'should handle authentication responses with missing user data',
+      () async {
+        // Test first scenario: null user returned
+        fakeSupabaseWrapper.shouldReturnNullUser = true;
+        var result = await authRepository.loginWithEmail(
+          'test@example.com',
+          'password',
+        );
+        expect(result.isSuccess, isFalse);
 
-      // Test second scenario: successful auth with user
-      fakeSupabaseWrapper.reset();
-      result = await authRepository.loginWithEmail('test@example.com', 'password');
-      expect(result.isSuccess, isTrue);
-    });
+        // Test second scenario: successful auth with user
+        fakeSupabaseWrapper.reset();
+        result = await authRepository.loginWithEmail(
+          'test@example.com',
+          'password',
+        );
+        expect(result.isSuccess, isTrue);
+      },
+    );
 
     test('should handle getCurrentCredentials when user is null', () {
       // Arrange
@@ -1145,4 +1432,4 @@ void main() {
       expect(isAuth, isTrue);
     });
   });
-} 
+}
