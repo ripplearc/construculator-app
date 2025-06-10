@@ -4,57 +4,131 @@ import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.da
 import 'package:construculator/libraries/supabase/testing/fake_supabase_classes.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
-/// Fake implementation of ISupabaseWrapper for testing
+/// Fake implementation of SupabaseWrapper for testing
 class FakeSupabaseWrapper implements SupabaseWrapper {
   final StreamController<supabase.AuthState> _authStateController = 
       StreamController<supabase.AuthState>.broadcast();
   
   supabase.User? _currentUser;
+
+  /// Tracks table data for assertions during [selectSingle], [insert], and [update]
   final Map<String, List<Map<String, dynamic>>> _tables = {};
   
-  // Parameter tracking for assertions
+  /// Tracks method calls for assertions
   final List<Map<String, dynamic>> _methodCalls = [];
   
-  // Test configuration
+  /// Controls whether [signInWithPassword] throws an exception
   bool shouldThrowOnSignIn = false;
+
+  /// Controls whether [signUp] throws an exception
   bool shouldThrowOnSignUp = false;
+
+  /// Controls whether [signInWithOtp] throws an exception
   bool shouldThrowOnOtp = false;
+
+  /// Controls whether [verifyOTP] throws an exception
   bool shouldThrowOnVerifyOtp = false;
+
+  /// Controls whether [resetPasswordForEmail] throws an exception
   bool shouldThrowOnResetPassword = false;
+
+  /// Controls whether [signOut] throws an exception
   bool shouldThrowOnSignOut = false;
+
+  /// Controls whether [selectSingle] throws an exception
   bool shouldThrowOnSelect = false;
+
+  /// Controls whether [insert] throws an exception
   bool shouldThrowOnInsert = false;
+
+  /// Controls whether [update] throws an exception
   bool shouldThrowOnUpdate = false;
-  
+
+  /// Error message for sign in.
+  /// Used to specify the error message thrown when [signInWithPassword] is attempted
   String? signInErrorMessage;
+
+  /// Error message for sign up.
+  /// Used to specify the error message thrown when [signUp] is attempted
   String? signUpErrorMessage;
+
+  /// Error message for OTP.
+  /// Used to specify the error message thrown when [signInWithOtp] is attempted
   String? otpErrorMessage;
+
+  /// Error message for verify OTP.
+  /// Used to specify the error message thrown when [verifyOtp] is attempted
   String? verifyOtpErrorMessage;
+
+  /// Error message for reset password.
+  /// Used to specify the error message thrown when [resetPasswordForEmail] is attempted
   String? resetPasswordErrorMessage;
+
+  /// Error message for sign out.
+  /// Used to specify the error message thrown when [signOut] is attempted
   String? signOutErrorMessage;
+
+  /// Error message for select.
+  /// Used to specify the error message thrown when [selectSingle] is attempted
   String? selectErrorMessage;
+
+  /// Error message for insert.
+  /// Used to specify the error message thrown when [insert] is attempted
   String? insertErrorMessage;
+
+  /// Error message for update.
+  /// Used to specify the error message thrown when [update] is attempted
   String? updateErrorMessage;
   
-  // Exception type configuration
+  /// Used to specify the type of exception thrown when [signInWithPassword] is attempted
   String? signInExceptionType; // 'auth', 'postgrest', 'socket', 'timeout', 'type'
+
+  /// Used to specify the type of exception thrown when [signUp] is attempted
   String? signUpExceptionType;
+
+  /// Used to specify the type of exception thrown when [selectSingle] is attempted
   String? selectExceptionType;
+
+  /// Used to specify the type of exception thrown when [insert] is attempted
   String? insertExceptionType;
+
+  /// Used to specify the type of exception thrown when [update] is attempted
   String? updateExceptionType;
+
+  /// Used to specify the error code thrown when [signInWithPassword] is attempted
   String? signInErrorCode;
   
-  // PostgrestException specific configuration
+  /// Used to specify the error code thrown when [selectSingle] is attempted
+  String? selectErrorCode;
+
+  /// Used to specify the error code thrown when [insert] is attempted
+  String? insertErrorCode;
+
+  /// Used to specify the error code thrown during [selectSingle], [insert], and [update]
   String? postgrestErrorCode;
+
+  /// Used to specify the error code thrown when [update] is attempted
+  String? updateErrorCode;
   
+  /// Controls whether [signInWithPassword] returns a null user
   bool shouldReturnNullUser = false;
+
+  /// Controls whether [selectSingle] returns a null user
   bool shouldReturnNullOnSelect = false;
   
-  // Performance and resilience testing flags
+  /// Controls whether operations should be delayed
   bool shouldDelayOperations = false;
+
+  /// The delay duration in milliseconds for operations
   int operationDelayMs = 100;
+
+  /// Controls whether stream errors should be emitted
   bool shouldEmitStreamErrors = false;
+
+  /// Controls whether [signInWithPassword] returns a user
   bool shouldReturnUser = false;
+
+  /// Controls whether [signInWithPassword] throws an exception when getting the user profile
   bool shouldThrowOnGetUserProfile = false;
 
   @override
@@ -71,12 +145,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required String email,
     required String password,
   }) async {
-    // Add delay if configured for performance testing
     if (shouldDelayOperations) {
       await Future.delayed(Duration(milliseconds: operationDelayMs));
     }
-    
-    // Track method call
     _methodCalls.add({
       'method': 'signInWithPassword',
       'email': email,
@@ -104,7 +175,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required String email,
     required String password,
   }) async {
-    // Track method call
     _methodCalls.add({
       'method': 'signUp',
       'email': email,
@@ -133,7 +203,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     String? phone,
     bool shouldCreateUser = false,
   }) async {
-    // Track method call
     _methodCalls.add({
       'method': 'signInWithOtp',
       'email': email,
@@ -144,7 +213,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     if (shouldThrowOnOtp) {
       throw Exception(otpErrorMessage ?? 'OTP send failed');
     }
-    // OTP sending doesn't return anything, just simulates success
   }
 
   @override
@@ -154,7 +222,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required String token,
     required supabase.OtpType type,
   }) async {
-    // Track method call
     _methodCalls.add({
       'method': 'verifyOTP',
       'email': email,
@@ -182,7 +249,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   @override
   Future<void> resetPasswordForEmail(String email, {String? redirectTo}) async {
-    // Track method call
     _methodCalls.add({
       'method': 'resetPasswordForEmail',
       'email': email,
@@ -192,12 +258,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     if (shouldThrowOnResetPassword) {
       throw Exception(resetPasswordErrorMessage ?? 'Password reset failed');
     }
-    // Password reset doesn't return anything, just simulates success
   }
 
   @override
   Future<void> signOut() async {
-    // Track method call
     _methodCalls.add({
       'method': 'signOut',
     });
@@ -217,7 +281,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required String filterColumn,
     required dynamic filterValue,
   }) async {
-    // Track method call
     _methodCalls.add({
       'method': 'selectSingle',
       'table': table,
@@ -250,7 +313,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required String table,
     required Map<String, dynamic> data,
   }) async {
-    // Track method call
     _methodCalls.add({
       'method': 'insert',
       'table': table,
@@ -263,7 +325,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     
     final tableData = _tables[table] ?? [];
     
-    // Add auto-generated fields
     final insertData = Map<String, dynamic>.from(data);
     insertData['id'] = (tableData.length + 1).toString();
     insertData['created_at'] = DateTime.now().toIso8601String();
@@ -282,7 +343,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required String filterColumn,
     required dynamic filterValue,
   }) async {
-    // Track method call
     _methodCalls.add({
       'method': 'update',
       'table': table,
@@ -313,7 +373,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     throw Exception('Record not found for update');
   }
 
-  // Helper methods for creating fake objects
   supabase.User _createFakeUser(String email) {
     return FakeUser(
       id: 'fake-user-${email.hashCode}',
@@ -338,7 +397,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return FakeAuthState(event: event, session: session);
   }
 
-  // Helper method to throw configured exceptions
   void _throwConfiguredException(String? exceptionType, String message) {
     switch (exceptionType) {
       case 'auth':
@@ -356,7 +414,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     }
   }
 
-  // Utility methods for testing
   void addTableData(String table, List<Map<String, dynamic>> data) {
     _tables[table] = data;
   }
@@ -370,11 +427,13 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     _currentUser = null;
   }
 
-  // Parameter tracking methods
+  /// Returns a list of all method calls
   List<Map<String, dynamic>> getMethodCalls() => List.from(_methodCalls);
   
+  /// Returns the last method call
   Map<String, dynamic>? getLastMethodCall() => _methodCalls.isEmpty ? null : _methodCalls.last;
   
+  /// Returns a list of all method calls for a given method name
   List<Map<String, dynamic>> getMethodCallsFor(String methodName) {
     return _methodCalls.where((call) => call['method'] == methodName).toList();
   }
@@ -428,13 +487,20 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     _authStateController.close();
   }
 
-  // Method to simulate auth stream errors for testing
+  /// Simulates an auth stream error
   void simulateAuthStreamError(String errorMessage) {
     _authStateController.addError(Exception(errorMessage));
   }
   
-  // Alias for test compatibility
+  /// Emits an auth state error
   void emitAuthStateError(String errorMessage) {
     simulateAuthStreamError(errorMessage);
+  }
+  
+  @override
+  Future<void> initialize() {
+    // No need to implement this method, fake supabase wrapper does not need 
+    // to initialize any dependencies
+    throw UnimplementedError();
   }
 }

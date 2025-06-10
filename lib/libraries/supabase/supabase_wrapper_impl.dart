@@ -1,28 +1,46 @@
-// coverage:ignore-file 
+// coverage:ignore-file
 import 'dart:async';
+import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
-class DefaultSupabaseWrapper implements SupabaseWrapper {
-  final supabase.SupabaseClient supabaseClient;
+class SupabaseWrapperImpl implements SupabaseWrapper {
+  late supabase.SupabaseClient _supabaseClient;
+  final EnvLoader _envLoader;
 
-  DefaultSupabaseWrapper({required this.supabaseClient});
-
-  @override
-  Stream<supabase.AuthState> get onAuthStateChange => supabaseClient.auth.onAuthStateChange;
+  SupabaseWrapperImpl({required EnvLoader envLoader}) : _envLoader = envLoader;
 
   @override
-  supabase.User? get currentUser => supabaseClient.auth.currentUser;
+  Future<void> initialize() async {
+    final supabaseUrl = _envLoader.get('SUPABASE_URL');
+    final supabaseAnonKey = _envLoader.get('SUPABASE_ANON_KEY');
+    if (supabaseUrl != null && supabaseAnonKey != null) {
+      await supabase.Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseAnonKey,
+        debug: _envLoader.get('DEBUG_MODE') == 'true',
+      );
+      _supabaseClient = supabase.Supabase.instance.client;
+    }
+    throw Exception('SUPABASE_URL and SUPABASE_ANON_KEY variables are required');
+  }
 
   @override
-  bool get isAuthenticated => supabaseClient.auth.currentUser != null;
+  Stream<supabase.AuthState> get onAuthStateChange =>
+      _supabaseClient.auth.onAuthStateChange;
+
+  @override
+  supabase.User? get currentUser => _supabaseClient.auth.currentUser;
+
+  @override
+  bool get isAuthenticated => _supabaseClient.auth.currentUser != null;
 
   @override
   Future<supabase.AuthResponse> signInWithPassword({
     required String email,
     required String password,
   }) async {
-    return await supabaseClient.auth.signInWithPassword(
+    return await _supabaseClient.auth.signInWithPassword(
       email: email,
       password: password,
     );
@@ -33,10 +51,7 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
     required String email,
     required String password,
   }) async {
-    return await supabaseClient.auth.signUp(
-      email: email,
-      password: password,
-    );
+    return await _supabaseClient.auth.signUp(email: email, password: password);
   }
 
   @override
@@ -45,7 +60,7 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
     String? phone,
     bool shouldCreateUser = false,
   }) async {
-    await supabaseClient.auth.signInWithOtp(
+    await _supabaseClient.auth.signInWithOtp(
       email: email,
       phone: phone,
       shouldCreateUser: shouldCreateUser,
@@ -59,7 +74,7 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
     required String token,
     required supabase.OtpType type,
   }) async {
-    return await supabaseClient.auth.verifyOTP(
+    return await _supabaseClient.auth.verifyOTP(
       email: email,
       phone: phone,
       token: token,
@@ -69,12 +84,15 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
 
   @override
   Future<void> resetPasswordForEmail(String email, {String? redirectTo}) async {
-    await supabaseClient.auth.resetPasswordForEmail(email, redirectTo: redirectTo);
+    await _supabaseClient.auth.resetPasswordForEmail(
+      email,
+      redirectTo: redirectTo,
+    );
   }
 
   @override
   Future<void> signOut() async {
-    await supabaseClient.auth.signOut();
+    await _supabaseClient.auth.signOut();
   }
 
   @override
@@ -84,7 +102,7 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
     required String filterColumn,
     required dynamic filterValue,
   }) async {
-    return await supabaseClient
+    return await _supabaseClient
         .from(table)
         .select(columns)
         .eq(filterColumn, filterValue)
@@ -96,11 +114,7 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
     required String table,
     required Map<String, dynamic> data,
   }) async {
-    return await supabaseClient
-        .from(table)
-        .insert(data)
-        .select()
-        .single();
+    return await _supabaseClient.from(table).insert(data).select().single();
   }
 
   @override
@@ -110,11 +124,11 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
     required String filterColumn,
     required dynamic filterValue,
   }) async {
-    return await supabaseClient
+    return await _supabaseClient
         .from(table)
         .update(data)
         .eq(filterColumn, filterValue)
         .select()
         .single();
   }
-} 
+}

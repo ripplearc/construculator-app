@@ -165,5 +165,12 @@ void main() {
 
       expect(fakeWrapper.getMethodCallsFor('nonExistentMethod'), isEmpty, reason: "Calls for a non-existent method should be empty.");
     });
+
+    test('initialize throws exception when called', () async {
+      expect(
+        () async => await fakeWrapper.initialize(),
+        throwsA(isA<UnimplementedError>()),
+      );
+    });
   });
 } 

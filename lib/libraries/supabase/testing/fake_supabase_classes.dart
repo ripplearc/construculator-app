@@ -76,3 +76,11 @@ class FakeAuthState implements supabase.AuthState {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 } 
+
+class FakeSupabaseClient extends supabase.SupabaseClient{
+  FakeSupabaseClient(super.supabaseUrl, super.supabaseKey);
+  @override
+  noSuchMethod(Invocation invocation) {
+    return super.noSuchMethod(invocation);
+  }
+}
