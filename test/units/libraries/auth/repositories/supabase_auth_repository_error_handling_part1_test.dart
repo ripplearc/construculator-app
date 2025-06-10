@@ -185,13 +185,8 @@ void main() {
       for (final scenario in authErrorCodes) {
         fakeSupabaseWrapper.reset();
         fakeSupabaseWrapper.shouldThrowOnSignIn = true;
-<<<<<<< HEAD
         fakeSupabaseWrapper.signInExceptionType = FakeExceptionType.auth;
         fakeSupabaseWrapper.signInErrorMessage = scenario['code'] as String;
-=======
-        fakeSupabaseWrapper.signInExceptionType = 'auth';
-        fakeSupabaseWrapper.signInErrorCode = scenario['code'] as String;
->>>>>>> 1b91bce (Add more test scenarios)
 
         final result = await authRepository.loginWithEmail(
           'test@example.com',
