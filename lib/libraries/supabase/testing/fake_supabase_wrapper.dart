@@ -1,9 +1,19 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
-import 'package:construculator/libraries/supabase/testing/fake_supabase_classes.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_response.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_state.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_session.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
+enum FakeExceptionType{
+  auth,
+  postgrest,
+  socket,
+  timeout,
+  type
+}
 /// Fake implementation of SupabaseWrapper for testing
 class FakeSupabaseWrapper implements SupabaseWrapper {
   final StreamController<supabase.AuthState> _authStateController = 
@@ -81,19 +91,19 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   String? updateErrorMessage;
   
   /// Used to specify the type of exception thrown when [signInWithPassword] is attempted
-  String? signInExceptionType; // 'auth', 'postgrest', 'socket', 'timeout', 'type'
+  FakeExceptionType? signInExceptionType;
 
   /// Used to specify the type of exception thrown when [signUp] is attempted
-  String? signUpExceptionType;
+  FakeExceptionType? signUpExceptionType;
 
   /// Used to specify the type of exception thrown when [selectSingle] is attempted
-  String? selectExceptionType;
+  FakeExceptionType? selectExceptionType;
 
   /// Used to specify the type of exception thrown when [insert] is attempted
-  String? insertExceptionType;
+  FakeExceptionType? insertExceptionType;
 
   /// Used to specify the type of exception thrown when [update] is attempted
-  String? updateExceptionType;
+  FakeExceptionType? updateExceptionType;
 
   /// Used to specify the error code thrown when [signInWithPassword] is attempted
   String? signInErrorCode;
@@ -397,17 +407,17 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return FakeAuthState(event: event, session: session);
   }
 
-  void _throwConfiguredException(String? exceptionType, String message) {
+  void _throwConfiguredException(FakeExceptionType? exceptionType, String message) {
     switch (exceptionType) {
-      case 'auth':
+      case FakeExceptionType.auth:
         throw supabase.AuthException(message, code: signInErrorCode);
-      case 'postgrest':
+      case FakeExceptionType.postgrest:
         throw supabase.PostgrestException(code: postgrestErrorCode, message: message);
-      case 'socket':
+      case FakeExceptionType.socket:
         throw SocketException(message);
-      case 'timeout':
+      case FakeExceptionType.timeout:
         throw TimeoutException(message);
-      case 'type':
+      case FakeExceptionType.type:
         throw TypeError();
       default:
         throw Exception(message);
