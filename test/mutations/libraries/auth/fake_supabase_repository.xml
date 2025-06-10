@@ -51,9 +51,12 @@
 
     <commands>
 <<<<<<< HEAD
+<<<<<<< HEAD
        <command group="fake-auth-repository" expected-return="0">flutter test test/units/libraries/auth/fakes/fake_auth_repository_test.dart</command>
 =======
 <<<<<<< HEAD
+=======
+>>>>>>> 91918b4 (Fix restack conflicts)
        <command group="fake-auth-repository" expected-return="0">flutter test test/units/libraries/auth/fakes/repositories/fake_auth_repository_core_auth_test.dart</command>
        <command group="fake-auth-repository" expected-return="0">flutter test test/units/libraries/auth/fakes/repositories/fake_auth_repository_email_check_test.dart</command>
        <command group="fake-auth-repository" expected-return="0">flutter test test/units/libraries/auth/fakes/repositories/fake_auth_repository_initial_state_test.dart</command>
@@ -63,6 +66,7 @@
        <command group="fake-auth-repository" expected-return="0">flutter test test/units/libraries/auth/fakes/repositories/fake_auth_repository_stream_behavior_test.dart</command>
        <command group="fake-auth-repository" expected-return="0">flutter test test/units/libraries/auth/fakes/repositories/fake_auth_repository_user_profile_db_ops_test.dart</command>
        <command group="fake-auth-repository" expected-return="0">flutter test test/units/libraries/auth/fakes/repositories/fake_auth_repository_utility_features_test.dart</command>
+<<<<<<< HEAD
 =======
         <command group="fake-auth-repository" expected-return="0">flutter test test/units/libraries/auth/fakes/repositories/fake_auth_repository_core_auth_test.dart</command>
         <command group="fake-auth-repository" expected-return="0">flutter test test/units/libraries/auth/fakes/repositories/fake_auth_repository_email_check_test.dart</command>
@@ -75,6 +79,8 @@
         <command group="fake-auth-repository" expected-return="0">flutter test test/units/libraries/auth/fakes/repositories/fake_auth_repository_utility_features_test.dart</command>
 >>>>>>> f9a3825 (update mutation config)
 >>>>>>> 9d88a33 (Fix restack conflicts)
+=======
+>>>>>>> 91918b4 (Fix restack conflicts)
     </commands>
 
     <threshold failure="85">
