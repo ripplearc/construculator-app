@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:construculator_app_architecture/core/libraries/auth/fakes/fake_auth_repository.dart';
-import 'package:construculator_app_architecture/core/libraries/auth/interfaces/auth_repository.dart';
-import 'package:construculator_app_architecture/core/libraries/auth/data/models/auth_credential.dart';
-import 'package:construculator_app_architecture/core/libraries/auth/data/types/auth_types.dart';
-import 'package:construculator_app_architecture/core/libraries/auth/data/models/auth_user.dart';
+import 'package:construculator/libraries/auth/fakes/fake_auth_repository.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
+import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
+import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 
 void main() {
   group('FakeAuthRepository', () {

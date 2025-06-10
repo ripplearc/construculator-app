@@ -1,4 +1,4 @@
-import 'package:construculator_app_architecture/core/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 
 class User {
   final String id;
