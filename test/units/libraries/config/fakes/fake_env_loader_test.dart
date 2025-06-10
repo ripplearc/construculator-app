@@ -14,92 +14,61 @@ void main() {
     });
 
     group('Environment Variable Management', () {
-      test('should set and get environment variables', () {
-        // Arrange
+      test('setEnvVar correctly stores a variable and get retrieves it', () {
         fakeLoader.setEnvVar('TEST_KEY', 'test_value');
-
-        // Act
         final result = fakeLoader.get('TEST_KEY');
-
-        // Assert
         expect(result, equals('test_value'));
       });
 
-      test('should return null for non-existent environment variables', () {
-        // Act
+      test('get returns null for a non-existent environment variable', () {
         final result = fakeLoader.get('NON_EXISTENT_KEY');
-
-        // Assert
         expect(result, isNull);
       });
 
-      test('should handle null values', () {
-        // Arrange
+      test('setEnvVar and get handle null values correctly', () {
         fakeLoader.setEnvVar('NULL_KEY', null);
-
-        // Act
         final result = fakeLoader.get('NULL_KEY');
-
-        // Assert
         expect(result, isNull);
       });
 
-      test('should override existing environment variables', () {
-        // Arrange
+      test('setEnvVar overrides an existing environment variable', () {
         fakeLoader.setEnvVar('OVERRIDE_KEY', 'original_value');
         fakeLoader.setEnvVar('OVERRIDE_KEY', 'new_value');
-
-        // Act
         final result = fakeLoader.get('OVERRIDE_KEY');
-
-        // Assert
         expect(result, equals('new_value'));
       });
 
-      test('should clear environment variables', () {
-        // Arrange
+      test('clearEnvVars removes all stored environment variables', () {
         fakeLoader.setEnvVar('CLEAR_KEY', 'value');
         expect(fakeLoader.get('CLEAR_KEY'), equals('value'));
 
-        // Act
         fakeLoader.clearEnvVars();
-
-        // Assert
         expect(fakeLoader.get('CLEAR_KEY'), isNull);
       });
     });
 
-    group('Load Method', () {
-      test('should load successfully when not configured to throw', () async {
-        // Act & Assert
+    group('Load Method Behavior', () {
+      test('load executes successfully when not configured to throw', () async {
         expect(
           () async => await fakeLoader.load(),
           returnsNormally,
         );
       });
 
-      test('should load with filename parameter', () async {
-        // Act
+      test('load captures the provided filename when one is given', () async {
         await fakeLoader.load(fileName: '.env.test');
-
-        // Assert
         expect(fakeLoader.lastLoadedFileName, equals('.env.test'));
       });
 
-      test('should load without filename parameter', () async {
-        // Act
+      test('load sets lastLoadedFileName to null if no filename is provided', () async {
         await fakeLoader.load();
-
-        // Assert
         expect(fakeLoader.lastLoadedFileName, isNull);
       });
 
-      test('should throw exception when configured to fail', () async {
-        // Arrange
+      test('load throws a custom exception when configured to fail', () async {
         fakeLoader.shouldThrowOnLoad = true;
         fakeLoader.loadErrorMessage = 'Failed to load .env file';
 
-        // Act & Assert
         expect(
           () async => await fakeLoader.load(),
           throwsA(isA<Exception>().having(
@@ -110,11 +79,9 @@ void main() {
         );
       });
 
-      test('should throw default error message when no custom message set', () async {
-        // Arrange
+      test('load throws a default error message if configured to fail without a custom message', () async {
         fakeLoader.shouldThrowOnLoad = true;
-
-        // Act & Assert
+        // No custom message is set here
         expect(
           () async => await fakeLoader.load(),
           throwsA(isA<Exception>().having(
@@ -127,40 +94,34 @@ void main() {
     });
 
     group('Reset Functionality', () {
-      test('should reset all configuration and data', () async {
-        // Arrange
+      test('reset clears all configurations, data, and error states', () async {
         fakeLoader.setEnvVar('TEST_KEY', 'test_value');
         fakeLoader.shouldThrowOnLoad = true;
         fakeLoader.loadErrorMessage = 'Custom error';
-        await fakeLoader.load(fileName: '.env.test').catchError((_) {});
+        await fakeLoader.load(fileName: '.env.test').catchError((_) {}); // Attempt load to set lastLoadedFileName
 
-        // Act
         fakeLoader.reset();
 
-        // Assert
         expect(fakeLoader.get('TEST_KEY'), isNull);
         expect(fakeLoader.shouldThrowOnLoad, isFalse);
         expect(fakeLoader.loadErrorMessage, isNull);
         expect(fakeLoader.lastLoadedFileName, isNull);
       });
 
-      test('should allow normal operation after reset', () async {
-        // Arrange
+      test('allows normal operations after a reset from a throwing state', () async {
         fakeLoader.shouldThrowOnLoad = true;
         fakeLoader.reset();
 
-        // Act & Assert
         expect(
           () async => await fakeLoader.load(fileName: '.env.production'),
-          returnsNormally,
+          returnsNormally
         );
         expect(fakeLoader.lastLoadedFileName, equals('.env.production'));
       });
     });
 
-    group('Multiple Environment Variables', () {
-      test('should handle multiple environment variables', () {
-        // Arrange
+    group('Handling Multiple and Special Environment Variables', () {
+      test('correctly sets and gets multiple environment variables', () {
         final envVars = {
           'API_URL': 'https://api.example.com',
           'API_KEY': 'secret_key_123',
@@ -168,25 +129,18 @@ void main() {
           'PORT': '3000',
         };
 
-        // Act
         envVars.forEach((key, value) {
           fakeLoader.setEnvVar(key, value);
         });
 
-        // Assert
         envVars.forEach((key, expectedValue) {
           expect(fakeLoader.get(key), equals(expectedValue));
         });
       });
 
-      test('should handle empty string values', () {
-        // Arrange
+      test('correctly handles empty string values for environment variables', () {
         fakeLoader.setEnvVar('EMPTY_KEY', '');
-
-        // Act
         final result = fakeLoader.get('EMPTY_KEY');
-
-        // Assert
         expect(result, equals(''));
       });
     });
