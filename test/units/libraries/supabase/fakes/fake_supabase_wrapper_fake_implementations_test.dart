@@ -1,4 +1,6 @@
-import 'package:construculator/libraries/supabase/testing/fake_supabase_classes.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_response.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_session.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
