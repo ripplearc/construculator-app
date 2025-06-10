@@ -71,12 +71,8 @@
     </rules>
 
     <commands>
-           <command group="fake_supabase_wrapper_auth_methods" expected-return="0">flutter test test/units/libraries/supabase/fakes/fake_supabase_wrapper_auth_methods_test.dart</command>
-           <command group="fake_supabase_wrapper_auth_state" expected-return="0">flutter test test/units/libraries/supabase/fakes/fake_supabase_wrapper_auth_state_test.dart</command>
-           <command group="fake_supabase_wrapper_database_ops" expected-return="0">flutter test test/units/libraries/supabase/fakes/fake_supabase_wrapper_database_ops_test.dart</command>
-           <command group="fake_supabase_wrapper_fake_implementations" expected-return="0">flutter test test/units/libraries/supabase/fakes/fake_supabase_wrapper_fake_implementations_test.dart</command>
-           <command group="fake_supabase_wrapper_utils" expected-return="0">flutter test test/units/libraries/supabase/fakes/fake_supabase_wrapper_utils_test.dart</command>
-    </commands>
+           <command group="fake_supabase_wrapper_auth_methods" expected-return="0">flutter test test/units/libraries/supabase/fakes/fake_supabase_wrapper_test.dart</command>
+            </commands>
 
     <threshold failure="85">
         <rating over="85" name="A"/>
