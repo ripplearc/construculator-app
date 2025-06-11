@@ -2,7 +2,7 @@ import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
-import 'package:construculator/libraries/config/interfaces/supabase_initializer.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_initializer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AppConfig implements Config {

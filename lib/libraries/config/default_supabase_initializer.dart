@@ -1,5 +1,5 @@
 
-import 'package:construculator/libraries/config/interfaces/supabase_initializer.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_initializer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DefaultSupabaseInitializer implements SupabaseInitializer {
