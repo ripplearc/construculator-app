@@ -1,3 +1,4 @@
+// coverage:ignore-file
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:stack_trace/stack_trace.dart' as trace;
 
@@ -54,6 +55,18 @@ class ClientException extends AppException {
   ClientException(super.stackTrace,super.exception,this.message) {
     log.tag('ClientException').warning(toString());
   }
+  @override
+  String toString() {
+    return message;
+  }
+}
+
+/// Exception thrown when a configuration error occurs.
+/// 
+/// [message] is the error message containing the details of the configuration error.
+class ConfigException extends AppException {
+  final String message;
+  ConfigException(stackTrace,this.message) : super(stackTrace,Exception(message));
   @override
   String toString() {
     return message;

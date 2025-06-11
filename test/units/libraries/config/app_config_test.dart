@@ -1,24 +1,41 @@
 import 'package:construculator/libraries/config/env_constants.dart';
+import 'package:construculator/libraries/config/interfaces/config.dart';
+import 'package:construculator/libraries/config/interfaces/env_loader.dart';
+import 'package:construculator/libraries/config/testing/config_test_module.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/config/app_config_impl.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 
 void main() {
+  late FakeEnvLoader fakeDotEnvLoader;
+  late AppConfigImpl appConfig;
+
+  setUpAll(() {
+    Modular.init(_TestAppModule());
+    appConfig =
+        Modular.get<Config>(key: 'appConfigWithFakeDep') as AppConfigImpl;
+    fakeDotEnvLoader = Modular.get<EnvLoader>() as FakeEnvLoader;
+  });
+
+  tearDownAll(() {
+    Modular.destroy();
+  });
+
   group('AppConfig', () {
-    group('App Config Initialization Tests', () {
-      late FakeEnvLoader fakeDotEnvLoader;
-      late AppConfigImpl appConfig;
-
-      setUp(() {
-        fakeDotEnvLoader = FakeEnvLoader();
-
-        appConfig = AppConfigImpl(envLoader: fakeDotEnvLoader);
-      });
-
-      tearDown(() {
+    group('Default Values Handling', () {
+      test('should use default values when env vars are null', () async {
         fakeDotEnvLoader.reset();
-      });
+        fakeDotEnvLoader.setEnvVar('SUPABASE_URL', 'https://test.supabase.co');
+        fakeDotEnvLoader.setEnvVar('SUPABASE_ANON_KEY', 'test-key');
 
+        await appConfig.initialize(Environment.dev);
+
+        expect(appConfig.baseAppName, equals('Construculator'));
+        expect(appConfig.appName, equals('Construculator (Fishfood)'));
+      });
+    });
+    group('App Config Initialization Tests', () {
       test('should initialize successfully for dev environment', () async {
         fakeDotEnvLoader.setEnvVar('APP_NAME', 'TestApp');
         fakeDotEnvLoader.setEnvVar('API_URL', 'https://dev-api.com');
@@ -132,34 +149,6 @@ void main() {
     });
 
     group('App Config Functionality Tests', () {
-      late FakeEnvLoader fakeDotEnvLoader;
-      late AppConfigImpl appConfig;
-
-      setUp(() {
-        fakeDotEnvLoader = FakeEnvLoader();
-
-        appConfig = AppConfigImpl(envLoader: fakeDotEnvLoader);
-      });
-
-      tearDown(() {
-        fakeDotEnvLoader.reset();
-      });
-
-      group('Default Values Handling', () {
-        test('should use default values when env vars are null', () async {
-          fakeDotEnvLoader.setEnvVar(
-            'SUPABASE_URL',
-            'https://test.supabase.co',
-          );
-          fakeDotEnvLoader.setEnvVar('SUPABASE_ANON_KEY', 'test-key');
-
-          await appConfig.initialize(Environment.dev);
-
-          expect(appConfig.baseAppName, equals('Construculator'));
-          expect(appConfig.appName, equals('Construculator (Fishfood)'));
-        });
-      });
-
       group('Environment File Loading', () {
         test(
           'should load correct env file for each environment and log it',
@@ -199,8 +188,6 @@ void main() {
 
       group('Environment Getters', () {
         setUp(() {
-          // Re-init appConfig for this group if needed, or ensure it's fresh.
-          // For these tests, AppConfig needs to be initialized.
           fakeDotEnvLoader.setEnvVar(
             'SUPABASE_URL',
             'https://test.supabase.co',
@@ -281,14 +268,10 @@ void main() {
               );
               freshFakeDotEnvLoader.setEnvVar('SUPABASE_ANON_KEY', 'test-key');
 
-              // Act
               await freshConfig.initialize(testCase.$1);
 
-              // Assert
               expect(freshConfig.debugFeaturesEnabled, equals(testCase.$2));
 
-              // Verify debug flag is passed correctly to Supabase
-              // (Supabase init is called during freshConfig.initialize)
               expect(
                 freshFakeDotEnvLoader.get('SUPABASE_URL'),
                 equals('https://test.supabase.co'),
@@ -304,8 +287,6 @@ void main() {
 
       group('Environment Variable Input Handling', () {
         setUp(() {
-          fakeDotEnvLoader = FakeEnvLoader();
-          appConfig = AppConfigImpl(envLoader: fakeDotEnvLoader);
           // Required for successful initialization in sub-tests
           fakeDotEnvLoader.setEnvVar(
             'SUPABASE_URL',
@@ -345,4 +326,9 @@ void main() {
       });
     });
   });
+}
+
+class _TestAppModule extends Module {
+  @override
+  List<Module> get imports => [ConfigTestModule()];
 }

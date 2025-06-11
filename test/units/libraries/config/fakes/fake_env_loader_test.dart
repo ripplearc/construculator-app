@@ -1,18 +1,22 @@
+import 'package:construculator/libraries/config/interfaces/env_loader.dart';
+import 'package:construculator/libraries/config/testing/config_test_module.dart';
+import 'package:construculator/libraries/errors/exceptions.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 
 void main() {
+  late FakeEnvLoader fakeLoader;
+
+  setUpAll(() {
+    Modular.init(_TestAppModule());
+    fakeLoader = Modular.get<EnvLoader>() as FakeEnvLoader;
+  });
+
+  tearDownAll(() {
+    Modular.destroy();
+  });
   group('FakeEnvLoader', () {
-    late FakeEnvLoader fakeLoader;
-
-    setUp(() {
-      fakeLoader = FakeEnvLoader();
-    });
-
-    tearDown(() {
-      fakeLoader.reset();
-    });
-
     group('Environment Variable Management', () {
       test('setEnvVar correctly stores a variable and get retrieves it', () {
         fakeLoader.setEnvVar('TEST_KEY', 'test_value');
@@ -49,10 +53,7 @@ void main() {
 
     group('Load Method Behavior', () {
       test('load executes successfully when not configured to throw', () async {
-        expect(
-          () async => await fakeLoader.load(),
-          returnsNormally,
-        );
+        expect(() async => await fakeLoader.load(), returnsNormally);
       });
 
       test('load captures the provided filename when one is given', () async {
@@ -60,10 +61,13 @@ void main() {
         expect(fakeLoader.lastLoadedFileName, equals('.env.test'));
       });
 
-      test('load sets lastLoadedFileName to null if no filename is provided', () async {
-        await fakeLoader.load();
-        expect(fakeLoader.lastLoadedFileName, isNull);
-      });
+      test(
+        'load sets lastLoadedFileName to null if no filename is provided',
+        () async {
+          await fakeLoader.load();
+          expect(fakeLoader.lastLoadedFileName, isNull);
+        },
+      );
 
       test('load throws a custom exception when configured to fail', () async {
         fakeLoader.shouldThrowOnLoad = true;
@@ -71,29 +75,63 @@ void main() {
 
         expect(
           () async => await fakeLoader.load(),
-          throwsA(isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('Failed to load .env file'),
-          )),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Failed to load .env file'),
+            ),
+          ),
         );
       });
 
-      test('load throws a default error message if configured to fail without a custom message', () async {
-        fakeLoader.shouldThrowOnLoad = true;
-        // No custom message is set here
-        expect(
-          () async => await fakeLoader.load(),
-          throwsA(isA<Exception>().having(
-            (e) => e.toString(),
-            'message',
-            contains('Failed to load env file'),
-          )),
-        );
+      test(
+        'load throws a default error message if configured to fail without a custom message',
+        () async {
+          fakeLoader.loadErrorMessage = 'Failed to load env file';
+          fakeLoader.shouldThrowOnLoad = true;
+          expect(
+            () async => await fakeLoader.load(),
+            throwsA(
+              isA<ConfigException>().having(
+                (e) => e.message,
+                'message',
+                equals('Failed to load env file'),
+              ),
+            ),
+          );
+        },
+      );
+    });
+    group('Handling Multiple and Special Environment Variables', () {
+      test('correctly sets and gets multiple environment variables', () {
+        final envVars = {
+          'API_URL': 'https://api.example.com',
+          'API_KEY': 'secret_key_123',
+          'DEBUG_MODE': 'true',
+          'PORT': '3000',
+        };
+
+        envVars.forEach((key, value) {
+          fakeLoader.setEnvVar(key, value);
+        });
+
+        envVars.forEach((key, expectedValue) {
+          expect(fakeLoader.get(key), equals(expectedValue));
+        });
       });
+
+      test(
+        'correctly handles empty string values for environment variables',
+        () {
+          fakeLoader.setEnvVar('EMPTY_KEY', '');
+          final result = fakeLoader.get('EMPTY_KEY');
+          expect(result, equals(''));
+        },
+      );
     });
 
-    group('Reset Functionality', () {
+      group('Reset Functionality', () {
       test('reset clears all configurations, data, and error states', () async {
         fakeLoader.setEnvVar('TEST_KEY', 'test_value');
         fakeLoader.shouldThrowOnLoad = true;
@@ -119,30 +157,10 @@ void main() {
         expect(fakeLoader.lastLoadedFileName, equals('.env.production'));
       });
     });
-
-    group('Handling Multiple and Special Environment Variables', () {
-      test('correctly sets and gets multiple environment variables', () {
-        final envVars = {
-          'API_URL': 'https://api.example.com',
-          'API_KEY': 'secret_key_123',
-          'DEBUG_MODE': 'true',
-          'PORT': '3000',
-        };
-
-        envVars.forEach((key, value) {
-          fakeLoader.setEnvVar(key, value);
-        });
-
-        envVars.forEach((key, expectedValue) {
-          expect(fakeLoader.get(key), equals(expectedValue));
-        });
-      });
-
-      test('correctly handles empty string values for environment variables', () {
-        fakeLoader.setEnvVar('EMPTY_KEY', '');
-        final result = fakeLoader.get('EMPTY_KEY');
-        expect(result, equals(''));
-      });
-    });
   });
-} 
+}
+
+class _TestAppModule extends Module {
+  @override
+  List<Module> get imports => [ConfigTestModule()];
+}

@@ -1,4 +1,6 @@
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
+import 'package:construculator/libraries/errors/exceptions.dart';
+import 'package:stack_trace/stack_trace.dart';
 
 /// Fake implementation of EnvLoader for testing
 class FakeEnvLoader implements EnvLoader {
@@ -16,7 +18,7 @@ class FakeEnvLoader implements EnvLoader {
   @override
   Future<void> load({String? fileName}) async {
     if (shouldThrowOnLoad) {
-      throw Exception(loadErrorMessage ?? 'Failed to load env file');
+      throw ConfigException(Trace.current(), loadErrorMessage ?? 'Failed to load env file');
     }
     lastLoadedFileName = fileName;
     if (fileName == null || !fileName.contains(_envVars['APP_ENV_FILE_INDICATOR'] ?? 'unique_string_never_found')) {
