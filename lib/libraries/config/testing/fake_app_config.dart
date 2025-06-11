@@ -9,22 +9,30 @@ class FakeAppConfig implements Config {
   bool _debugFeaturesEnabled = true;
 
   /// Sets the environment for the fake config.
+  /// 
+  /// [environment] the environment to set, eg. Evironment.dev
   void setEnvironment(Environment environment) {
     _environment = environment;
     _debugFeaturesEnabled = environment != Environment.prod;
   }
 
   /// Sets the app name for the fake config.
+  /// 
+  /// [appName] is the app name to set
   void setAppName(String appName) {
     _appName = appName;
   }
 
   /// Sets the base app name for the fake config.
+  /// 
+  /// [baseAppName] is the base app name to set
   void setBaseAppName(String baseAppName) {
     _baseAppName = baseAppName;
   }
 
   /// Sets whether debug features are enabled for the fake config.
+  /// 
+  /// [enabled] indicates whether or not debug should be enabled
   void setDebugFeaturesEnabled(bool enabled) {
     _debugFeaturesEnabled = enabled;
   }
