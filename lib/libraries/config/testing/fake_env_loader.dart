@@ -43,12 +43,4 @@ class FakeEnvLoader implements EnvLoader {
   void clearEnvVars() {
     _envVars.clear();
   }
-
-  /// Test helper methods, resets the env loader to its initial state
-  void reset() {
-    _envVars.clear();
-    shouldThrowOnLoad = false;
-    loadErrorMessage = null;
-    lastLoadedFileName = null;
-  }
 }

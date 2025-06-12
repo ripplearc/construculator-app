@@ -8,12 +8,12 @@ import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 void main() {
   late FakeEnvLoader fakeLoader;
 
-  setUpAll(() {
+  setUp(() {
     Modular.init(_TestAppModule());
     fakeLoader = Modular.get<EnvLoader>() as FakeEnvLoader;
   });
 
-  tearDownAll(() {
+  tearDown(() {
     Modular.destroy();
   });
   group('FakeEnvLoader', () {
@@ -129,33 +129,6 @@ void main() {
           expect(result, equals(''));
         },
       );
-    });
-
-      group('Reset Functionality', () {
-      test('reset clears all configurations, data, and error states', () async {
-        fakeLoader.setEnvVar('TEST_KEY', 'test_value');
-        fakeLoader.shouldThrowOnLoad = true;
-        fakeLoader.loadErrorMessage = 'Custom error';
-        await fakeLoader.load(fileName: '.env.test').catchError((_) {}); // Attempt load to set lastLoadedFileName
-
-        fakeLoader.reset();
-
-        expect(fakeLoader.get('TEST_KEY'), isNull);
-        expect(fakeLoader.shouldThrowOnLoad, isFalse);
-        expect(fakeLoader.loadErrorMessage, isNull);
-        expect(fakeLoader.lastLoadedFileName, isNull);
-      });
-
-      test('allows normal operations after a reset from a throwing state', () async {
-        fakeLoader.shouldThrowOnLoad = true;
-        fakeLoader.reset();
-
-        expect(
-          () async => await fakeLoader.load(fileName: '.env.production'),
-          returnsNormally
-        );
-        expect(fakeLoader.lastLoadedFileName, equals('.env.production'));
-      });
     });
   });
 }

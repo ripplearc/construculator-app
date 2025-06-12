@@ -8,12 +8,12 @@ import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 void main() {
   late FakeAppConfig fakeConfig;
 
-  setUpAll(() {
+  setUp(() {
     Modular.init(_TestAppModule());
     fakeConfig = Modular.get<Config>(key: 'fakeAppConfig') as FakeAppConfig;
   });
 
-  tearDownAll(() {
+  tearDown(() {
     Modular.destroy();
   });
 
@@ -48,7 +48,7 @@ void main() {
       expect(
         () async => await fakeConfig.initialize(Environment.dev),
         throwsA(
-          isA<Exception>(),
+          isA<UnimplementedError>(),
         ),
       );
     });

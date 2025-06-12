@@ -11,21 +11,20 @@ void main() {
   late FakeEnvLoader fakeDotEnvLoader;
   late AppConfigImpl appConfig;
 
-  setUpAll(() {
+  setUp(() {
     Modular.init(_TestAppModule());
     appConfig =
         Modular.get<Config>(key: 'appConfigWithFakeDep') as AppConfigImpl;
     fakeDotEnvLoader = Modular.get<EnvLoader>() as FakeEnvLoader;
   });
 
-  tearDownAll(() {
+  tearDown(() {
     Modular.destroy();
   });
 
   group('AppConfig', () {
     group('Default Values Handling', () {
       test('should use default values when env vars are null', () async {
-        fakeDotEnvLoader.reset();
         fakeDotEnvLoader.setEnvVar('SUPABASE_URL', 'https://test.supabase.co');
         fakeDotEnvLoader.setEnvVar('SUPABASE_ANON_KEY', 'test-key');
 

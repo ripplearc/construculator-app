@@ -39,7 +39,7 @@ class FakeAppConfig implements Config {
 
   @override
   Future<void> initialize(Environment env) async {
-    throw Exception('No-op for fake implementation');
+    throw UnimplementedError();
   }
 
   @override
