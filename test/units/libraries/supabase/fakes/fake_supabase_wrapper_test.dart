@@ -910,6 +910,15 @@ void main() {
           );
         },
       );
+      test('clearMethodCalls clears the method calls', () async {
+        await fakeWrapper.signInWithPassword(
+          email: 'test@example.com',
+          password: 'password',
+        );
+        expect(fakeWrapper.getMethodCalls(), isNotEmpty);
+        fakeWrapper.clearMethodCalls();
+        expect(fakeWrapper.getMethodCalls(), isEmpty);
+      });
 
       test('initialize throws exception when called', () async {
         expect(
