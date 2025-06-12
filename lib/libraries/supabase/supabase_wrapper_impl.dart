@@ -1,7 +1,9 @@
 // coverage:ignore-file
 import 'dart:async';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
+import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:stack_trace/stack_trace.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 class SupabaseWrapperImpl implements SupabaseWrapper {
@@ -22,7 +24,7 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
       );
       _supabaseClient = supabase.Supabase.instance.client;
     }
-    throw Exception('SUPABASE_URL and SUPABASE_ANON_KEY variables are required');
+    throw ClientException(Trace.current(), 'SUPABASE_URL and SUPABASE_ANON_KEY variables are required');
   }
 
   @override

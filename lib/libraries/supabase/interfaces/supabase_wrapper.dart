@@ -13,6 +13,8 @@ abstract class SupabaseWrapper {
   bool get isAuthenticated;
   
   /// Initialize the Supabase client
+  /// 
+  /// throws [ClientException] if the supabase url or anon key is not set
   Future<void> initialize();
 
   /// Sign in a user with email and password

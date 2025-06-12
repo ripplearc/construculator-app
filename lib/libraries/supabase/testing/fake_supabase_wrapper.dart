@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_response.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_state.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_session.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
+import 'package:stack_trace/stack_trace.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 enum FakeExceptionType{
@@ -225,7 +227,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     });
     
     if (shouldThrowOnOtp) {
-      throw Exception(otpErrorMessage ?? 'OTP send failed');
+      throw ServerException(Trace.current(), Exception(otpErrorMessage ?? 'OTP send failed'));
     }
   }
 
@@ -245,7 +247,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     });
     
     if (shouldThrowOnVerifyOtp) {
-      throw Exception(verifyOtpErrorMessage ?? 'OTP verification failed');
+      throw ServerException(Trace.current(), Exception(verifyOtpErrorMessage ?? 'OTP verification failed'));
     }
     
     if (shouldReturnNullUser) {
@@ -270,7 +272,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     });
     
     if (shouldThrowOnResetPassword) {
-      throw Exception(resetPasswordErrorMessage ?? 'Password reset failed');
+      throw ServerException(Trace.current(), Exception(resetPasswordErrorMessage ?? 'Password reset failed'));
     }
   }
 
@@ -281,7 +283,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     });
     
     if (shouldThrowOnSignOut) {
-      throw Exception(signOutErrorMessage ?? 'Sign out failed');
+      throw ServerException(Trace.current(), Exception(signOutErrorMessage ?? 'Sign out failed'));
     }
     
     _currentUser = null;
@@ -384,11 +386,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       }
     }
     
-    throw Exception('Record not found for update');
+    throw ServerException(Trace.current(), Exception('Record not found for update'));
   }
 
-  /// Creates a fake user based on the email, 
-  /// allows the flexibility of creating a fake user to return on login or signup
   supabase.User _createFakeUser(String email) {
     return FakeUser(
       id: 'fake-user-${email.hashCode}',
@@ -397,8 +397,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     );
   }
 
-  /// Creates an auth response based on the user, 
-  /// allows the flexibility of returning a desired response on login or signup
   supabase.AuthResponse _createAuthResponse(supabase.User? user) {
     supabase.Session? session;
     if (user != null) {
@@ -407,8 +405,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return FakeAuthResponse(user: user, session: session);
   }
 
-  /// Creates an auth state based on the event and user, 
-  /// enables the creation of a fake session to mimic an authenticated state
   supabase.AuthState _createAuthState(supabase.AuthChangeEvent event, supabase.User? user) {
     supabase.Session? session;
     if (user != null) {
@@ -417,7 +413,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return FakeAuthState(event: event, session: session);
   }
 
-  /// Throws an exception based on the configured exception type and message
   void _throwConfiguredException(FakeExceptionType? exceptionType, String message) {
     switch (exceptionType) {
       case FakeExceptionType.auth:
@@ -431,7 +426,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       case FakeExceptionType.type:
         throw TypeError();
       default:
-        throw Exception(message);
+        throw ServerException(Trace.current(), Exception(message));
     }
   }
 
@@ -467,65 +462,23 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     _methodCalls.clear();
   }
 
-  /// Resets all fake configurations, clears data, and auth state
-  void reset() {
-    shouldThrowOnSignIn = false;
-    shouldThrowOnSignUp = false;
-    shouldThrowOnOtp = false;
-    shouldThrowOnVerifyOtp = false;
-    shouldThrowOnResetPassword = false;
-    shouldThrowOnSignOut = false;
-    shouldThrowOnSelect = false;
-    shouldThrowOnInsert = false;
-    shouldThrowOnUpdate = false;
-    
-    signInErrorMessage = null;
-    signUpErrorMessage = null;
-    otpErrorMessage = null;
-    verifyOtpErrorMessage = null;
-    resetPasswordErrorMessage = null;
-    signOutErrorMessage = null;
-    selectErrorMessage = null;
-    insertErrorMessage = null;
-    updateErrorMessage = null;
-    
-    signInExceptionType = null;
-    signUpExceptionType = null;
-    selectExceptionType = null;
-    insertExceptionType = null;
-    updateExceptionType = null;
-    postgrestErrorCode = null;
-    
-    shouldReturnNullUser = false;
-    shouldReturnNullOnSelect = false;
-    
-    shouldDelayOperations = false;
-    operationDelayMs = 100;
-    shouldEmitStreamErrors = false;
-    shouldReturnUser = false;
-    shouldThrowOnGetUserProfile = false;
-    
-    clearAllData();
-    clearMethodCalls();
-  }
-
   /// Closes the auth state controller
   void dispose() {
     _authStateController.close();
   }
 
-  /// Simulates an auth stream error
-  void simulateAuthStreamError(String errorMessage,{Exception? exception}) {
+  /// Sets an auth stream error
+  void setAuthStreamError(String errorMessage,{Exception? exception}) {
     var ex = Exception(errorMessage);
     if(exception != null){
       ex = exception;
     }
-    _authStateController.addError(ex);
+    _authStateController.addError(ServerException(Trace.current(), ex));
   }
   
   /// Emits an auth state error
   void emitAuthStateError(String errorMessage) {
-    simulateAuthStreamError(errorMessage);
+    setAuthStreamError(errorMessage);
   }
   
   @override
