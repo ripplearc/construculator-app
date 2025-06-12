@@ -1,5 +1,4 @@
 // coverage:ignore-file
-import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:stack_trace/stack_trace.dart' as trace;
 
 /// Base class for all custom exceptions in this application.
@@ -21,7 +20,7 @@ import 'package:stack_trace/stack_trace.dart' as trace;
 //    generic Dart or third-party exceptions.
 abstract class AppException implements Exception {
   final trace.Trace stackTrace;
-  final Exception exception;
+  final Object exception;
 
   AppException(this.stackTrace, this.exception);
 
@@ -37,10 +36,7 @@ abstract class AppException implements Exception {
 /// Throw this exception when status of an upstream request 
 /// suggests a server error, eg. 500 level errors.
 class ServerException extends AppException {
-  final log = AppLogger();
-  ServerException(super.stackTrace,super.exception) {
-    log.tag('ServerException').error(toString());
-  }
+  ServerException(super.stackTrace,super.exception);
 }
 
 /// Exception thrown when a client error occurs.
@@ -50,11 +46,8 @@ class ServerException extends AppException {
 /// 
 /// [message] is the user friendly message that will be displayed to the user.
 class ClientException extends AppException {
-  final log = AppLogger();
   final String message;
-  ClientException(super.stackTrace,super.exception,this.message) {
-    log.tag('ClientException').warning(toString());
-  }
+  ClientException(stackTrace,this.message) : super(stackTrace,Exception(message));
   @override
   String toString() {
     return message;
