@@ -270,7 +270,6 @@ void main() {
               await freshConfig.initialize(testCase.$1);
 
               expect(freshConfig.debugFeaturesEnabled, equals(testCase.$2));
-
               expect(
                 freshFakeDotEnvLoader.get('SUPABASE_URL'),
                 equals('https://test.supabase.co'),
