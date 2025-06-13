@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mutations version="1.0">
    <files>
-        <file>lib/libraries/config/app_config.dart</file>
+        <file>lib/libraries/config/app_config_impl.dart</file>
     </files>
     <rules>
         <regex pattern="baseAppName = _dotEnvLoader.get\('APP_NAME'\) \?\? 'Construculator';" id="app_config.defaultBaseAppName">
