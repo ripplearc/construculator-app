@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
+import 'package:construculator/libraries/auth/testing/auth_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/auth/repositories/supabase_auth_repository.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
@@ -10,17 +12,17 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 void main() {
   late FakeSupabaseWrapper fakeSupabaseWrapper;
-  late SupabaseAuthRepository authRepository;
+  late SupabaseAuthRepositoryImpl authRepository;
 
   setUp(() {
-    fakeSupabaseWrapper = FakeSupabaseWrapper();
-    authRepository = SupabaseAuthRepository(
-      supabaseWrapper: fakeSupabaseWrapper,
-    );
+    Modular.init(_TestAppModule());
+    fakeSupabaseWrapper = Modular.get<FakeSupabaseWrapper>(key: 'singletonFakeSupabaseWrapper');
+    authRepository = Modular.get<SupabaseAuthRepositoryImpl>(key: 'authRepositoryWithFakeDep');
   });
 
   tearDown(() {
-    fakeSupabaseWrapper.dispose();
+    fakeSupabaseWrapper.clearAllData();
+    Modular.destroy();
   });
 
   group('Auth Repository', () {
@@ -367,12 +369,13 @@ void main() {
           );
 
           final result = await authRepository.createUserProfile(newUser);
-
+          print('result.data: ${result.data!.userStatus}');
           expect(result.isSuccess, isTrue);
           expect(result.data!.userStatus, equals(UserProfileStatus.inactive));
-
           final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('insert');
           final insertData = methodCalls.first['data'] as Map<String, dynamic>;
+          print('insertData: $insertData');
+          print('insertData: ${methodCalls.length}');
           expect(insertData['user_status'], equals('inactive'));
         });
       });
@@ -428,4 +431,11 @@ void main() {
       });
     });
   });
+}
+
+class _TestAppModule extends Module {
+  @override
+  List<Module> get imports => [
+    AuthTestModule(),
+  ];
 }

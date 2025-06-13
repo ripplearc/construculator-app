@@ -11,7 +11,7 @@ class AuthModule extends Module {
   @override
   void exportedBinds(Injector i) {
     i.addLazySingleton<AuthRepository>(
-      () => SupabaseAuthRepository(
+      () => SupabaseAuthRepositoryImpl(
         supabaseWrapper: i(),
       ),
     );
