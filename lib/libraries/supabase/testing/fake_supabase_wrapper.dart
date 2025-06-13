@@ -482,49 +482,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   void clearMethodCalls() {
     _methodCalls.clear();
   }
-
-  /// Resets all fake configurations, clears data, and auth state
-  void reset() {
-    shouldThrowOnSignIn = false;
-    shouldThrowOnSignUp = false;
-    shouldThrowOnOtp = false;
-    shouldThrowOnVerifyOtp = false;
-    shouldThrowOnResetPassword = false;
-    shouldThrowOnSignOut = false;
-    shouldThrowOnSelect = false;
-    shouldThrowOnInsert = false;
-    shouldThrowOnUpdate = false;
-
-    signInErrorMessage = null;
-    signUpErrorMessage = null;
-    otpErrorMessage = null;
-    verifyOtpErrorMessage = null;
-    resetPasswordErrorMessage = null;
-    signOutErrorMessage = null;
-    selectErrorMessage = null;
-    insertErrorMessage = null;
-    updateErrorMessage = null;
-
-    signInExceptionType = null;
-    signUpExceptionType = null;
-    selectExceptionType = null;
-    insertExceptionType = null;
-    updateExceptionType = null;
-    postgrestErrorCode = null;
-
-    shouldReturnNullUser = false;
-    shouldReturnNullOnSelect = false;
-
-    shouldDelayOperations = false;
-    operationDelayMs = 100;
-    shouldEmitStreamErrors = false;
-    shouldReturnUser = false;
-    shouldThrowOnGetUserProfile = false;
-
-    clearAllData();
-    clearMethodCalls();
-  }
-
   /// Closes the auth state controller
   void dispose() {
     _authStateController.close();

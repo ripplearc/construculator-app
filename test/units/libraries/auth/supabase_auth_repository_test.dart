@@ -20,7 +20,6 @@ void main() {
 
   tearDown(() {
     fakeSupabaseWrapper.dispose();
-    fakeSupabaseWrapper.reset();
   });
 
   group('Auth Repository', () {
