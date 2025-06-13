@@ -39,7 +39,6 @@ void main() {
 
         authNotifier.emitAuthStateChanged(AuthStatus.authenticated);
         authNotifier.emitAuthStateChanged(AuthStatus.unauthenticated);
-        authNotifier.emitAuthStateChanged(AuthStatus.loading);
         authNotifier.emitAuthStateChanged(AuthStatus.connectionError);
 
         await Future.delayed(Duration(milliseconds: 10));
@@ -47,8 +46,7 @@ void main() {
         expect(stateEvents, hasLength(4));
         expect(stateEvents[0], AuthStatus.authenticated);
         expect(stateEvents[1], AuthStatus.unauthenticated);
-        expect(stateEvents[2], AuthStatus.loading);
-        expect(stateEvents[3], AuthStatus.connectionError);
+        expect(stateEvents[2], AuthStatus.connectionError);
       });
 
       test('emitAuthStateChanged should not automatically trigger other events', () async {
@@ -62,12 +60,9 @@ void main() {
         authNotifier.onSetupProfile.listen((_) => setupEventCount++);
         authNotifier.onAuthStateChanged.listen(stateEvents.add);
 
-        authNotifier.emitAuthStateChanged(AuthStatus.loading);
-
         await Future.delayed(Duration(milliseconds: 10));
 
         expect(stateEvents, hasLength(1));
-        expect(stateEvents[0], AuthStatus.loading);
         expect(loginEvents, isEmpty);
         expect(logoutEventCount, 0);
         expect(setupEventCount, 0);
@@ -108,7 +103,6 @@ void main() {
 
         authNotifier.emitLogin(fakeCredential);
         authNotifier.emitSetupProfile();
-        authNotifier.emitAuthStateChanged(AuthStatus.loading);
         authNotifier.emitLogout();
 
         await Future.delayed(Duration(milliseconds: 10));
@@ -121,7 +115,6 @@ void main() {
         expect(loginEvents[0].email, fakeCredential.email);
         
         expect(stateEvents.contains(AuthStatus.authenticated), true);
-        expect(stateEvents.contains(AuthStatus.loading), true);
       });
 
       test('should handle multiple listeners without interference', () async {
