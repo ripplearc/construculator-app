@@ -48,8 +48,8 @@ app.*.map.json
 /test-results
 review.text
 pr_review_for_claude.txt
-.env.*
-!.env.template
+assets/env/.env.*
+!assets/env/.env.template
 mutation_test_rules.xml
 android/build/
 devtools_options.yaml
