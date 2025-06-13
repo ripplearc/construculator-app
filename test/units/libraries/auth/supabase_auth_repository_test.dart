@@ -5,7 +5,7 @@ import 'package:construculator/libraries/auth/testing/auth_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:construculator/libraries/auth/repositories/supabase_auth_repository.dart';
+import 'package:construculator/libraries/auth/repositories/supabase_auth_repository_impl.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
