@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:construculator/libraries/errors/exceptions.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_response.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_state.dart';
@@ -9,14 +10,6 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dar
 import 'package:stack_trace/stack_trace.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
-enum FakeExceptionType{
-  auth,
-  postgrest,
-  socket,
-  timeout,
-  type,
-  unknown
-}
 /// Fake implementation of SupabaseWrapper for testing
 class FakeSupabaseWrapper implements SupabaseWrapper {
 
@@ -97,22 +90,22 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   String? updateErrorMessage;
   
   /// Used to specify the type of exception thrown when [signInWithPassword] is attempted
-  FakeExceptionType? signInExceptionType;
+  SupabaseExceptionType? signInExceptionType;
 
   /// Used to specify the type of exception thrown when [signUp] is attempted
-  FakeExceptionType? signUpExceptionType;
+  SupabaseExceptionType? signUpExceptionType;
 
   /// Used to specify the type of exception thrown when [selectSingle] is attempted
-  FakeExceptionType? selectExceptionType;
+  SupabaseExceptionType? selectExceptionType;
 
   /// Used to specify the type of exception thrown when [insert] is attempted
-  FakeExceptionType? insertExceptionType;
+  SupabaseExceptionType? insertExceptionType;
 
   /// Used to specify the type of exception thrown when [update] is attempted
-  FakeExceptionType? updateExceptionType;
+  SupabaseExceptionType? updateExceptionType;
 
   /// Used to specify the error code thrown when [signInWithPassword] is attempted
-  String? signInErrorCode;
+  SupabaseAuthErrorCode? signInErrorCode;
   
   /// Used to specify the error code thrown when [selectSingle] is attempted
   String? selectErrorCode;
@@ -121,7 +114,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   String? insertErrorCode;
 
   /// Used to specify the error code thrown during [selectSingle], [insert], and [update]
-  String? postgrestErrorCode;
+  PostgresErrorCode? postgrestErrorCode;
 
   /// Used to specify the error code thrown when [update] is attempted
   String? updateErrorCode;
@@ -146,9 +139,15 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Controls whether [signInWithPassword] throws an exception when getting the user profile
   bool shouldThrowOnGetUserProfile = false;
+  supabase.AuthChangeEvent signInEvent = supabase.AuthChangeEvent.signedIn;
+
+  void setCurrentUser(supabase.User? user) {
+    _currentUser = user;
+  }
 
   @override
-  Stream<supabase.AuthState> get onAuthStateChange => _authStateController.stream;
+  Stream<supabase.AuthState> get onAuthStateChange =>
+      _authStateController.stream;
 
   @override
   supabase.User? get currentUser => _currentUser;
@@ -169,20 +168,23 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       'email': email,
       'password': password,
     });
-    
+
     if (shouldThrowOnSignIn) {
-      _throwConfiguredException(signInExceptionType, signInErrorMessage ?? 'Sign in failed');
+      _throwConfiguredException(
+        signInExceptionType,
+        signInErrorMessage ?? 'Sign in failed',
+      );
     }
-    
+
     if (shouldReturnNullUser) {
       return _createAuthResponse(null);
     }
-    
+
     final user = _createFakeUser(email);
     _currentUser = user;
-    
-    _authStateController.add(_createAuthState(supabase.AuthChangeEvent.signedIn, user));
-    
+
+    _authStateController.add(_createAuthState(signInEvent, user));
+
     return _createAuthResponse(user);
   }
 
@@ -196,20 +198,25 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       'email': email,
       'password': password,
     });
-    
+
     if (shouldThrowOnSignUp) {
-      _throwConfiguredException(signUpExceptionType, signUpErrorMessage ?? 'Sign up failed');
+      _throwConfiguredException(
+        signUpExceptionType,
+        signUpErrorMessage ?? 'Sign up failed',
+      );
     }
-    
+
     if (shouldReturnNullUser) {
       return _createAuthResponse(null);
     }
-    
+
     final user = _createFakeUser(email);
     _currentUser = user;
-    
-    _authStateController.add(_createAuthState(supabase.AuthChangeEvent.signedIn, user));
-    
+
+    _authStateController.add(
+      _createAuthState(supabase.AuthChangeEvent.signedIn, user),
+    );
+
     return _createAuthResponse(user);
   }
 
@@ -225,7 +232,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       'phone': phone,
       'shouldCreateUser': shouldCreateUser,
     });
-    
+
     if (shouldThrowOnOtp) {
       throw ServerException(Trace.current(), Exception(otpErrorMessage ?? 'OTP send failed'));
     }
@@ -245,21 +252,23 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       'token': token,
       'type': type,
     });
-    
+
     if (shouldThrowOnVerifyOtp) {
       throw ServerException(Trace.current(), Exception(verifyOtpErrorMessage ?? 'OTP verification failed'));
     }
-    
+
     if (shouldReturnNullUser) {
       return _createAuthResponse(null);
     }
-    
+
     final address = email ?? phone ?? 'unknown@example.com';
     final user = _createFakeUser(address);
     _currentUser = user;
-    
-    _authStateController.add(_createAuthState(supabase.AuthChangeEvent.signedIn, user));
-    
+
+    _authStateController.add(
+      _createAuthState(supabase.AuthChangeEvent.signedIn, user),
+    );
+
     return _createAuthResponse(user);
   }
 
@@ -270,7 +279,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       'email': email,
       'redirectTo': redirectTo,
     });
-    
+
     if (shouldThrowOnResetPassword) {
       throw ServerException(Trace.current(), Exception(resetPasswordErrorMessage ?? 'Password reset failed'));
     }
@@ -285,9 +294,11 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     if (shouldThrowOnSignOut) {
       throw ServerException(Trace.current(), Exception(signOutErrorMessage ?? 'Sign out failed'));
     }
-    
+
     _currentUser = null;
-    _authStateController.add(_createAuthState(supabase.AuthChangeEvent.signedOut, null));
+    _authStateController.add(
+      _createAuthState(supabase.AuthChangeEvent.signedOut, null),
+    );
   }
 
   @override
@@ -304,23 +315,26 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       'filterColumn': filterColumn,
       'filterValue': filterValue,
     });
-    
+
     if (shouldThrowOnSelect) {
-      _throwConfiguredException(selectExceptionType, selectErrorMessage ?? 'Select failed');
+      _throwConfiguredException(
+        selectExceptionType,
+        selectErrorMessage ?? 'Select failed',
+      );
     }
-    
+
     if (shouldReturnNullOnSelect) {
       return null;
     }
-    
+
     final tableData = _tables[table] ?? [];
-    
+
     for (final row in tableData) {
       if (row[filterColumn] == filterValue) {
         return Map<String, dynamic>.from(row);
       }
     }
-    
+
     return null;
   }
 
@@ -334,21 +348,24 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       'table': table,
       'data': Map<String, dynamic>.from(data),
     });
-    
+
     if (shouldThrowOnInsert) {
-      _throwConfiguredException(insertExceptionType, insertErrorMessage ?? 'Insert failed');
+      _throwConfiguredException(
+        insertExceptionType,
+        insertErrorMessage ?? 'Insert failed',
+      );
     }
-    
+
     final tableData = _tables[table] ?? [];
     
     final insertData = Map<String, dynamic>.from(data);
     insertData['id'] = (tableData.length + 1).toString();
     insertData['created_at'] = DateTime.now().toIso8601String();
     insertData['updated_at'] = DateTime.now().toIso8601String();
-    
+
     tableData.add(insertData);
     _tables[table] = tableData;
-    
+
     return Map<String, dynamic>.from(insertData);
   }
 
@@ -366,26 +383,29 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       'filterColumn': filterColumn,
       'filterValue': filterValue,
     });
-    
+
     if (shouldThrowOnUpdate) {
-      _throwConfiguredException(updateExceptionType, updateErrorMessage ?? 'Update failed');
+      _throwConfiguredException(
+        updateExceptionType,
+        updateErrorMessage ?? 'Update failed',
+      );
     }
-    
+
     final tableData = _tables[table] ?? [];
-    
+
     for (int i = 0; i < tableData.length; i++) {
       if (tableData[i][filterColumn] == filterValue) {
         final updatedData = Map<String, dynamic>.from(tableData[i]);
         updatedData.addAll(data);
         updatedData['updated_at'] = DateTime.now().toIso8601String();
-        
+
         tableData[i] = updatedData;
         _tables[table] = tableData;
-        
+
         return Map<String, dynamic>.from(updatedData);
       }
     }
-    
+
     throw ServerException(Trace.current(), Exception('Record not found for update'));
   }
 
@@ -405,6 +425,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return FakeAuthResponse(user: user, session: session);
   }
 
+  /// Creates an auth state based on the event and user, 
+  /// enables the creation of a fake session to mimic an authenticated state
+
   supabase.AuthState _createAuthState(supabase.AuthChangeEvent event, supabase.User? user) {
     supabase.Session? session;
     if (user != null) {
@@ -413,17 +436,17 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return FakeAuthState(event: event, session: session);
   }
 
-  void _throwConfiguredException(FakeExceptionType? exceptionType, String message) {
+  void _throwConfiguredException(SupabaseExceptionType? exceptionType, String message) {
     switch (exceptionType) {
-      case FakeExceptionType.auth:
-        throw supabase.AuthException(message, code: signInErrorCode);
-      case FakeExceptionType.postgrest:
-        throw supabase.PostgrestException(code: postgrestErrorCode, message: message);
-      case FakeExceptionType.socket:
+      case SupabaseExceptionType.auth:
+        throw supabase.AuthException(message, code: signInErrorCode.toString());
+      case SupabaseExceptionType.postgrest:
+        throw supabase.PostgrestException(code: postgrestErrorCode.toString(), message: message);
+      case SupabaseExceptionType.socket:
         throw SocketException(message);
-      case FakeExceptionType.timeout:
+      case SupabaseExceptionType.timeout:
         throw TimeoutException(message);
-      case FakeExceptionType.type:
+      case SupabaseExceptionType.type:
         throw TypeError();
       default:
         throw ServerException(Trace.current(), Exception(message));
@@ -443,6 +466,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Clears all table data and the currently authenticated user
   void clearAllData() {
     _tables.clear();
+    _methodCalls.clear();
     _currentUser = null;
   }
 
@@ -461,7 +485,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   void clearMethodCalls() {
     _methodCalls.clear();
   }
-
   /// Closes the auth state controller
   void dispose() {
     _authStateController.close();

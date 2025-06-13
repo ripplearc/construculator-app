@@ -3,7 +3,6 @@ import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.da
 import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_response.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_session.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
-import 'package:construculator/libraries/supabase/testing/supabase_test_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -537,6 +536,7 @@ void main() {
         test(
           'throws exception when trying to update a non-existent record',
           () async {
+            // No data in the table initially
             expect(
               () async => await fakeWrapper.update(
                 table: 'users',
@@ -932,5 +932,7 @@ void main() {
 
 class _TestAppModule extends Module {
   @override
-  List<Module> get imports => [SupabaseTestModule()];
+  void binds(Injector i) {
+    i.add<SupabaseWrapper>(() => FakeSupabaseWrapper());
+  }
 }
