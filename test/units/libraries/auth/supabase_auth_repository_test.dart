@@ -369,13 +369,10 @@ void main() {
           );
 
           final result = await authRepository.createUserProfile(newUser);
-          print('result.data: ${result.data!.userStatus}');
           expect(result.isSuccess, isTrue);
           expect(result.data!.userStatus, equals(UserProfileStatus.inactive));
           final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('insert');
           final insertData = methodCalls.first['data'] as Map<String, dynamic>;
-          print('insertData: $insertData');
-          print('insertData: ${methodCalls.length}');
           expect(insertData['user_status'], equals('inactive'));
         });
       });
