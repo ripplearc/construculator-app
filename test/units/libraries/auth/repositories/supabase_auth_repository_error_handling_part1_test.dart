@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/auth/repositories/supabase_auth_repository.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -184,8 +185,13 @@ void main() {
       for (final scenario in authErrorCodes) {
         fakeSupabaseWrapper.reset();
         fakeSupabaseWrapper.shouldThrowOnSignIn = true;
+<<<<<<< HEAD
         fakeSupabaseWrapper.signInExceptionType = FakeExceptionType.auth;
         fakeSupabaseWrapper.signInErrorMessage = scenario['code'] as String;
+=======
+        fakeSupabaseWrapper.signInExceptionType = 'auth';
+        fakeSupabaseWrapper.signInErrorCode = scenario['code'] as String;
+>>>>>>> 1b91bce (Add more test scenarios)
 
         final result = await authRepository.loginWithEmail(
           'test@example.com',
@@ -257,4 +263,47 @@ void main() {
       expect(result.errorType, equals(AuthErrorType.serverError));
     });
   });
+
+  test(
+        'should handle AuthSessionMissingException from auth stream',
+        () async {
+          // Arrange
+          final exception = supabase.AuthSessionMissingException();
+          final authStateFuture = expectLater(
+            authRepository.authStateChanges,
+            emits(AuthStatus.unauthenticated),
+          );
+          final userFuture = expectLater(
+            authRepository.userChanges,
+            emits(isNull),
+          );
+
+          // Act
+          fakeSupabaseWrapper.simulateAuthStreamError('',exception: exception);
+
+          // Assert
+          await authStateFuture;
+          await userFuture;
+        },
+      );
+
+      test(
+        'should handle generic Exception from auth stream',
+        () async {
+          // Arrange
+          final exception = Exception('Generic stream error');
+          // First emits unauthenticated, then emits connection error.
+          // By default when auth repo is instantiated and there is no user, it emits unauthenticated.
+          final authStateFuture = expectLater(
+            authRepository.authStateChanges,
+            emitsInOrder([AuthStatus.unauthenticated, AuthStatus.connectionError]),
+          );
+
+          // Act
+          fakeSupabaseWrapper.simulateAuthStreamError('',exception: exception);
+
+          // Assert
+          await authStateFuture;
+        },
+      );
 } 

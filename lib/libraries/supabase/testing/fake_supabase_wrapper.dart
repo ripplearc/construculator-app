@@ -12,18 +12,21 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 /// Fake implementation of SupabaseWrapper for testing
 class FakeSupabaseWrapper implements SupabaseWrapper {
-  final StreamController<supabase.AuthState> _authStateController =
-      StreamController<supabase.AuthState>.broadcast();
 
+  /// Used to notify listeners of changes in the authentication state through [onAuthStateChange]
+  final StreamController<supabase.AuthState> _authStateController = 
+      StreamController<supabase.AuthState>.broadcast();
+  
+  /// Tracks the currently authenticated user
   supabase.User? _currentUser;
 
   /// Tracks table data for assertions during [selectSingle], [insert], and [update]
   final Map<String, List<Map<String, dynamic>>> _tables = {};
-
-  // Parameter tracking for assertions
+  
+  /// Tracks method calls for assertions
   final List<Map<String, dynamic>> _methodCalls = [];
-
-  // Test configuration
+  
+  /// Controls whether [signInWithPassword] throws an exception
   bool shouldThrowOnSignIn = false;
 
   /// Controls whether [signUp] throws an exception
@@ -50,6 +53,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Controls whether [update] throws an exception
   bool shouldThrowOnUpdate = false;
 
+  /// Error message for sign in.
+  /// Used to specify the error message thrown when [signInWithPassword] is attempted
   String? signInErrorMessage;
 
   /// Error message for sign up.
@@ -111,12 +116,16 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Used to specify the error code thrown during [selectSingle], [insert], and [update]
   PostgresErrorCode? postgrestErrorCode;
 
+  /// Used to specify the error code thrown when [update] is attempted
+  String? updateErrorCode;
+  
+  /// Controls whether [signInWithPassword] returns a null user
   bool shouldReturnNullUser = false;
 
   /// Controls whether [selectSingle] returns a null user
   bool shouldReturnNullOnSelect = false;
-
-  // Performance and resilience testing flags
+  
+  /// Controls whether operations should be delayed
   bool shouldDelayOperations = false;
 
   /// The delay duration in milliseconds for operations
@@ -154,8 +163,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     if (shouldDelayOperations) {
       await Future.delayed(Duration(milliseconds: operationDelayMs));
     }
-
-    // Track method call
     _methodCalls.add({
       'method': 'signInWithPassword',
       'email': email,
@@ -280,9 +287,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   @override
   Future<void> signOut() async {
-    // Track method call
-    _methodCalls.add({'method': 'signOut'});
-
+    _methodCalls.add({
+      'method': 'signOut',
+    });
+    
     if (shouldThrowOnSignOut) {
       throw ServerException(Trace.current(), Exception(signOutErrorMessage ?? 'Sign out failed'));
     }
@@ -349,8 +357,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     }
 
     final tableData = _tables[table] ?? [];
-
-    // Add auto-generated fields
+    
     final insertData = Map<String, dynamic>.from(data);
     insertData['id'] = (tableData.length + 1).toString();
     insertData['created_at'] = DateTime.now().toIso8601String();
@@ -419,7 +426,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   }
 
   supabase.AuthState _createAuthState(supabase.AuthChangeEvent event, supabase.User? user) {
-
     supabase.Session? session;
     if (user != null) {
       session = FakeSession(user: user);
@@ -463,14 +469,16 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Returns a list of all method calls
   List<Map<String, dynamic>> getMethodCalls() => List.from(_methodCalls);
-
-  Map<String, dynamic>? getLastMethodCall() =>
-      _methodCalls.isEmpty ? null : _methodCalls.last;
-
+  
+  /// Returns the last method call
+  Map<String, dynamic>? getLastMethodCall() => _methodCalls.isEmpty ? null : _methodCalls.last;
+  
+  /// Returns a list of all method calls for a given method name
   List<Map<String, dynamic>> getMethodCallsFor(String methodName) {
     return _methodCalls.where((call) => call['method'] == methodName).toList();
   }
 
+  /// Clears all method calls
   void clearMethodCalls() {
     _methodCalls.clear();
   }
