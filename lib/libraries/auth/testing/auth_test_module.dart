@@ -1,5 +1,5 @@
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
-import 'package:construculator/libraries/auth/repositories/supabase_auth_repository.dart';
+import 'package:construculator/libraries/auth/repositories/supabase_auth_repository_impl.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/supabase_test_module.dart';
