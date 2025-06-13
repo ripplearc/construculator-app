@@ -41,7 +41,17 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/app/.cxx
 /mutation-test-report
 /test/screenshots/failures
 /coverage
 /test-results
+review.text
+pr_review_for_claude.txt
+.env.*
+!.env.template
+mutation_test_rules.xml
+android/build/
+devtools_options.yaml
+# Cursor editor
+.cursor/

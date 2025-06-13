@@ -45,7 +45,7 @@ workflows:
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
 
           # Identify changed Dart files (lib/ and test/)
-          CHANGED_DART_FILES=$(git diff --name-only $BASE_COMMIT HEAD -- "lib/*.dart" "test/*.dart")
+          CHANGED_DART_FILES=$(git diff --name-only  --diff-filter=d $BASE_COMMIT HEAD -- "lib/*.dart" "test/*.dart")
 
           if [ -z "$CHANGED_DART_FILES" ]; then
             echo "✅ No Dart files modified. Skipping analysis."
@@ -61,7 +61,7 @@ workflows:
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
 
           # Get changed test files since branching from target
-          CHANGED_TESTS=$(git diff --name-only $BASE_COMMIT HEAD -- "test/units/*.dart")
+          CHANGED_TESTS=$(git diff --name-only  --diff-filter=d $BASE_COMMIT HEAD -- "test/units/*.dart")
 
           if [ -z "$CHANGED_TESTS" ]; then
             echo "✅ No test files modified. Skipping tests..."
@@ -69,26 +69,59 @@ workflows:
           fi
           echo "🔍 Running tests for changed files:"
           echo "$CHANGED_TESTS"
-          TARGET = $ARC_CODE_COVERAGE_TARGET
+          TARGET=$ARC_CODE_COVERAGE_TARGET
           if git log -1 --pretty=%B | grep -Eq "#DeltaCoverageLow|DCL"; then
-            TARGET = $CODE_COVERAGE_MINIMUM
+            TARGET=$CODE_COVERAGE_MINIMUM
             echo "Using minimum coverage target: ${TARGET}% "
           fi
           HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
-          mkdir -p test-results 
+          mkdir -p test-results
           flutter test $CHANGED_TESTS --coverage --machine > test-results/flutter.json
-          # Compute coverage
-          LF=$(grep -m1 '^LF:' coverage/lcov.info | cut -d':' -f2)
-          LH=$(grep -m1 '^LH:' coverage/lcov.info | cut -d':' -f2)
-          COVERAGE_PERCENT=$(echo "scale=2; $LH*100/$LF" | bc)
 
-          echo "Code Coverage: ${COVERAGE_PERCENT}% "
+          # Compute coverage
+          if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
+            echo "❌ Coverage file coverage/lcov.info is missing or empty."
+            exit 1
+          fi
+
+          LF_RAW=$(grep '^LF:' coverage/lcov.info | cut -d: -f2 || true)
+          LH_RAW=$(grep '^LH:' coverage/lcov.info | cut -d: -f2 || true)
+
+          if [ -z "$LF_RAW" ]; then
+              LF_SUM=0
+          else
+              LF_SUM=$(echo "$LF_RAW" | awk '{sum+=$1} END {print sum}')
+          fi
+
+          if [ -z "$LH_RAW" ]; then
+              LH_SUM=0
+          else
+              LH_SUM=$(echo "$LH_RAW" | awk '{sum+=$1} END {print sum}')
+          fi
+          
+          if ! [[ "$LF_SUM" =~ ^[0-9]+$ ]]; then
+              echo "❌ LF_SUM ($LF_SUM) is not a valid number. Cannot calculate coverage."
+              exit 1
+          fi
+          if ! [[ "$LH_SUM" =~ ^[0-9]+$ ]]; then
+              echo "⚠️ LH_SUM ($LH_SUM) is not a valid number. Assuming 0 lines hit for calculation."
+              LH_SUM=0
+          fi
+
+          if [ "$LF_SUM" -eq 0 ]; then
+            COVERAGE_PERCENT="0.00"
+            echo "⚠️ LF (total lines found) is 0. Setting coverage to 0.00%."
+          else
+            COVERAGE_PERCENT=$(echo "scale=2; $LH_SUM*100/$LF_SUM" | bc)
+          fi
+
+          echo "Code Coverage: ${COVERAGE_PERCENT}%"
 
           if (( $(echo "$COVERAGE_PERCENT < $TARGET" | bc -l) )); then
-            echo "❌ Coverage is $COVERAGE_PERCENT%, below $ARC_CODE_COVERAGE_TARGET%"
+            echo "❌ Coverage is $COVERAGE_PERCENT%, below $TARGET%"
             exit 1
           else
-            echo "✅ Coverage is $COVERAGE_PERCENT% (>= $ARC_CODE_COVERAGE_TARGET%)"
+            echo "✅ Coverage is $COVERAGE_PERCENT% (>= $TARGET%)"
           fi
         test_report: test-results/flutter.json
       - name: Run Changed Tests
@@ -97,7 +130,7 @@ workflows:
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
           
           # Get changed test files since branching from target
-          CHANGED_TESTS=$(git diff --name-only $BASE_COMMIT HEAD -- "test/*.dart")
+          CHANGED_TESTS=$(git diff --name-only  --diff-filter=d $BASE_COMMIT HEAD -- "test/*.dart")
           
           if [ -z "$CHANGED_TESTS" ]; then
             echo "✅ No test files modified. Skipping tests..."
@@ -155,20 +188,53 @@ workflows:
             echo "Using minimum coverage target: ${TARGET}% "
           fi
           sudo apt-get install -y lcov
-          mkdir -p test-results 
+          mkdir -p test-results
           flutter test test/units --coverage --machine > test-results/flutter.json
-          # Compute coverage
-          LF=$(grep -m1 '^LF:' coverage/lcov.info | cut -d':' -f2)
-          LH=$(grep -m1 '^LH:' coverage/lcov.info | cut -d':' -f2)
-          COVERAGE_PERCENT=$(echo "scale=2; $LH*100/$LF" | bc)
           
-          echo "Code Coverage: ${COVERAGE_PERCENT}% "
+          # Compute coverage
+          if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
+            echo "❌ Coverage file coverage/lcov.info is missing or empty."
+            exit 1
+          fi
+
+          LF_RAW=$(grep '^LF:' coverage/lcov.info | cut -d: -f2 || true)
+          LH_RAW=$(grep '^LH:' coverage/lcov.info | cut -d: -f2 || true)
+
+          if [ -z "$LF_RAW" ]; then
+              LF_SUM=0
+          else
+              LF_SUM=$(echo "$LF_RAW" | awk '{sum+=$1} END {print sum}')
+          fi
+
+          if [ -z "$LH_RAW" ]; then
+              LH_SUM=0
+          else
+              LH_SUM=$(echo "$LH_RAW" | awk '{sum+=$1} END {print sum}')
+          fi
+
+          if ! [[ "$LF_SUM" =~ ^[0-9]+$ ]]; then
+              echo "❌ LF_SUM ($LF_SUM) is not a valid number. Cannot calculate coverage."
+              exit 1
+          fi
+          if ! [[ "$LH_SUM" =~ ^[0-9]+$ ]]; then
+              echo "⚠️ LH_SUM ($LH_SUM) is not a valid number. Assuming 0 lines hit for calculation."
+              LH_SUM=0
+          fi
+
+          if [ "$LF_SUM" -eq 0 ]; then
+            COVERAGE_PERCENT="0.00"
+            echo "⚠️ LF (total lines found) is 0. Setting coverage to 0.00%."
+          else
+            COVERAGE_PERCENT=$(echo "scale=2; $LH_SUM*100/$LF_SUM" | bc)
+          fi
+          
+          echo "Code Coverage: ${COVERAGE_PERCENT}%"
           
           if (( $(echo "$COVERAGE_PERCENT < $TARGET" | bc -l) )); then
-            echo "❌ Coverage is $COVERAGE_PERCENT%, below $ARC_CODE_COVERAGE_TARGET%"
+            echo "❌ Coverage is $COVERAGE_PERCENT%, below $TARGET%"
             exit 1
           else
-            echo "✅ Coverage is $COVERAGE_PERCENT% (>= $ARC_CODE_COVERAGE_TARGET%)"
+            echo "✅ Coverage is $COVERAGE_PERCENT% (>= $TARGET%)"
           fi
         test_report: test-results/flutter.json
 
@@ -184,16 +250,39 @@ workflows:
         script: |
           BASE_COMMIT=$(git merge-base HEAD origin/$BASE_BRANCH)
           
-          # Get changed test files since branching from target
-          CHANGED_FILES=$(git diff --name-only $BASE_COMMIT HEAD | grep -v "^test" | grep ".dart$" | tr '\n' ' ')
+          echo "🧬 Running mutation tests..."
+          # Get changed mutation config files from test/mutations/
+          CHANGED_MUTATION_CONFIGS=$(git diff --name-only --diff-filter=d "$BASE_COMMIT" HEAD -- "test/mutations/*.xml")
           
-          # Check if CHANGED_FILES is empty
-          if [ -z "$CHANGED_FILES" ]; then
-            echo "No changed Dart files detected. Skipping mutation tests."
+          if [ -z "$CHANGED_MUTATION_CONFIGS" ]; then
+            echo "✅ No changed mutation config files (test/mutations/*.xml) detected. Skipping mutation tests."
             exit 0
           else
-            echo "Running mutation tests on: $CHANGED_FILES"
-            dart run mutation_test $CHANGED_FILES --rules=mutation_test_rules.xml
+            echo "Found changed mutation config files:"
+            echo "$CHANGED_MUTATION_CONFIGS"
+            FAILED_MUTATION_TESTS=0
+            # Ensure IFS is set to newline for the loop to handle filenames with spaces correctly, though git diff usually doesn't produce them.
+            OLD_IFS="$IFS"
+            IFS=$'\n'
+            for CONFIG_FILE in $CHANGED_MUTATION_CONFIGS; do
+              IFS="$OLD_IFS" # Restore IFS for commands within the loop
+              echo "🏃 Running mutation test with config: $CONFIG_FILE"
+              if ! dart run mutation_test "$CONFIG_FILE" --no-builtin; then
+                echo "❌ Mutation test failed for config: $CONFIG_FILE"
+                FAILED_MUTATION_TESTS=$((FAILED_MUTATION_TESTS + 1))
+              else
+                echo "✅ Mutation test passed for config: $CONFIG_FILE"
+              fi
+              IFS=$'\n' # Re-set IFS for the next iteration
+            done
+            IFS="$OLD_IFS" # Restore IFS after the loop
+
+            if [ "$FAILED_MUTATION_TESTS" -gt 0 ]; then
+              echo "❌ $FAILED_MUTATION_TESTS mutation test(s) failed."
+              exit 1
+            else
+              echo "✅ All mutation tests passed."
+            fi
           fi
 
       - name: Build Android Debug
@@ -253,26 +342,59 @@ workflows:
 
       - name: Run Unit Tests With Coverage Report
         script: |
-          TARGET = $ARC_CODE_COVERAGE_TARGET
+          TARGET=$ARC_CODE_COVERAGE_TARGET
           if git log -1 --pretty=%B | grep -Eq "#DeltaCoverageLow|DCL"; then
-            TARGET = $CODE_COVERAGE_MINIMUM
+            TARGET=$CODE_COVERAGE_MINIMUM
             echo "Using minimum coverage target: ${TARGET}% "
           fi
           HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
-          mkdir -p test-results 
+          mkdir -p test-results
           flutter test --tags=units --coverage --machine > test-results/flutter.json
+          
           # Compute coverage
-          LF=$(grep -m1 '^LF:' coverage/lcov.info | cut -d':' -f2)
-          LH=$(grep -m1 '^LH:' coverage/lcov.info | cut -d':' -f2)
-          COVERAGE_PERCENT=$(echo "scale=2; $LH*100/$LF" | bc)
+          if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
+            echo "❌ Coverage file coverage/lcov.info is missing or empty."
+            exit 1
+          fi
 
-          echo "Code Coverage: ${COVERAGE_PERCENT}% "
+          LF_RAW=$(grep '^LF:' coverage/lcov.info | cut -d: -f2 || true)
+          LH_RAW=$(grep '^LH:' coverage/lcov.info | cut -d: -f2 || true)
+
+          if [ -z "$LF_RAW" ]; then
+              LF_SUM=0
+          else
+              LF_SUM=$(echo "$LF_RAW" | awk '{sum+=$1} END {print sum}')
+          fi
+
+          if [ -z "$LH_RAW" ]; then
+              LH_SUM=0
+          else
+              LH_SUM=$(echo "$LH_RAW" | awk '{sum+=$1} END {print sum}')
+          fi
+
+          if ! [[ "$LF_SUM" =~ ^[0-9]+$ ]]; then
+              echo "❌ LF_SUM ($LF_SUM) is not a valid number. Cannot calculate coverage."
+              exit 1
+          fi
+          if ! [[ "$LH_SUM" =~ ^[0-9]+$ ]]; then
+              echo "⚠️ LH_SUM ($LH_SUM) is not a valid number. Assuming 0 lines hit for calculation."
+              LH_SUM=0
+          fi
+
+          if [ "$LF_SUM" -eq 0 ]; then
+            COVERAGE_PERCENT="0.00"
+            echo "⚠️ LF (total lines found) is 0. Setting coverage to 0.00%."
+          else
+            COVERAGE_PERCENT=$(echo "scale=2; $LH_SUM*100/$LF_SUM" | bc)
+          fi
+
+          echo "Code Coverage: ${COVERAGE_PERCENT}%"
 
           if (( $(echo "$COVERAGE_PERCENT < $TARGET" | bc -l) )); then
-            echo "❌ Coverage is $COVERAGE_PERCENT%, below $ARC_CODE_COVERAGE_TARGET%"
+            echo "❌ Coverage is $COVERAGE_PERCENT%, below $TARGET%"
             exit 1
           else
-            echo "✅ Coverage is $COVERAGE_PERCENT% (>= $ARC_CODE_COVERAGE_TARGET%)"
+            echo "✅ Coverage is $COVERAGE_PERCENT% (>= $TARGET%)"
           fi
         test_report: test-results/flutter.json
 
@@ -286,7 +408,7 @@ workflows:
 
       - name: Mutation Testing
         script: |
-          CHANGED_FILES=$(git diff --name-only HEAD HEAD~1 | grep -v "^test" | grep ".dart$" | tr '\n' ' ')
+          CHANGED_FILES=$(git diff --name-only  --diff-filter=d HEAD HEAD~1 | grep -v "^test" | grep ".dart$" | tr '\n' ' ')
           # Check if CHANGED_FILES is empty
           if [ -z "$CHANGED_FILES" ]; then
             echo "No changed Dart files detected. Skipping mutation tests."
