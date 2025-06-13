@@ -5,13 +5,9 @@ import 'package:flutter_modular/flutter_modular.dart';
 
 class SupabaseTestModule extends Module {
   @override
-  List<Module> get imports => [
-    ConfigTestModule(),
-  ];
+  List<Module> get imports => [ConfigTestModule()];
   @override
-  void exportedBinds(Injector i){
-    i.add<SupabaseWrapper>(
-      () => FakeSupabaseWrapper(),
-    );
+  void exportedBinds(Injector i) {
+    i.addSingleton<SupabaseWrapper>(() => FakeSupabaseWrapper());
   }
 }
