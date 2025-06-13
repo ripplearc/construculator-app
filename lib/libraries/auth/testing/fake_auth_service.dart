@@ -8,28 +8,47 @@ import 'package:flutter_modular/flutter_modular.dart';
 
 class FakeAuthService implements AuthService, Disposable {
   final AuthNotifier _notifier;
+
+  /// The controller for auth state changes
   final _authStateController = StreamController<AuthStatus>.broadcast();
   
+  /// The controller for the current user
   bool _isAuthenticated = false;
+  
+  /// The currently authenticated user
   User? _currentUser;
+
+  /// The currently authenticated user's credential
   UserCredential? _currentCredential;
   
-  // Test control flags
+  /// The flag to control if the login should succeed
   bool loginShouldSucceed = true;
+
+  /// The flag to control if the OTP should succeed
   bool otpShouldSucceed = true;
+
+  /// The flag to control if the reset password should succeed
   bool resetPasswordShouldSucceed = true;
+
+  /// The flag to control if the email check should succeed
   bool emailCheckShouldSucceed = true;
   
-  // Authentication callbacks for verification
+  /// The list of login calls
   List<String> loginCalls = [];
+  /// The list of OTP send calls
   List<String> otpSendCalls = [];
+  /// The list of OTP verify calls
   List<String> otpVerifyCalls = [];
+  /// The list of reset password calls
   List<String> resetPasswordCalls = [];
+  /// The list of email check calls
   List<String> emailCheckCalls = [];
+  /// The number of logout calls
   int logoutCallCount = 0;
+  /// The number of get current user calls
   int getCurrentUserCallCount = 0;
   
-  // Set of emails that should be considered "registered"
+  /// The set of emails that should be considered "registered"
   final Set<String> registeredEmails = {'registered@example.com'};
   
   FakeAuthService({
@@ -45,6 +64,7 @@ class FakeAuthService implements AuthService, Disposable {
     }
   }
   
+  /// Sets up the authenticated user, sets the current credential and user
   void _setupAuthenticatedUser(String email) {
     _currentCredential = UserCredential(
       id: 'fake-credential-id',
@@ -165,7 +185,7 @@ class FakeAuthService implements AuthService, Disposable {
     return _currentUser;
   }
   
-  // Reset the fake service state
+  /// Resets the fake service state
   void reset() {
     loginShouldSucceed = true;
     otpShouldSucceed = true;
@@ -184,7 +204,7 @@ class FakeAuthService implements AuthService, Disposable {
     _authStateController.add(AuthStatus.unauthenticated);
   }
   
-  // Set authenticated state for tests
+  /// Sets the authenticated state for tests
   void setAuthenticated(bool value, {String? email}) {
     _isAuthenticated = value;
     if (value) {

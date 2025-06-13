@@ -9,12 +9,15 @@ import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class SharedAuthService implements AuthService, Disposable {
+  /// The notifier for the auth service
   final AuthNotifier _notifier;
+  /// The repository for the auth service
   final AuthRepository _repository;
+  /// The logger for the auth service
   final _logger = AppLogger().tag('AuthService');
-  
-  // Track subscriptions for disposal
+  /// The subscription for the auth state changes, used by [onAuthStateChanged]
   StreamSubscription<AuthStatus>? _authStateSubscription;
+  /// The subscription for the user state changes, used by [onUserChanged]
   StreamSubscription<UserCredential?>? _userSubscription;
 
   SharedAuthService({
@@ -26,29 +29,27 @@ class SharedAuthService implements AuthService, Disposable {
     _initializeListeners();
   }
 
+  /// Initializes the listeners for the auth service
+  /// 
+  /// Repository should handle all stream errors and convert them to appropriate AuthStatus
+  /// If we reach here, it means the repository error handling failed
   void _initializeListeners() {
-    // Listen for authentication state changes from the repository
     _authStateSubscription = _repository.authStateChanges.listen(
       (status) {
         _logger.debug('Auth state changed: $status');
         
-        // Forward auth state changes to all listeners
         _notifier.emitAuthStateChanged(status);
         
-        // If authentication state changes to unauthenticated, emit logout
         if (status == AuthStatus.unauthenticated) {
           _notifier.emitLogout();
         }
       },
       onError: (error) {
         _logger.error('Unexpected error in auth state stream - repository should handle this', error);
-        // Repository should handle all stream errors and convert them to appropriate AuthStatus
-        // If we reach here, it means the repository error handling failed
         _notifier.emitAuthStateChanged(AuthStatus.connectionError);
       },
     );
     
-    // Listen for user credential changes from the repository
     _userSubscription = _repository.userChanges.listen(
       (credentials) {
         if (credentials == null) {
@@ -58,21 +59,18 @@ class SharedAuthService implements AuthService, Disposable {
         
         _logger.debug('User credentials updated: ${credentials.id}');
         
-        // Just emit the credentials - let consumers fetch user profile when needed
         _notifier.emitLogin(credentials);
       },
       onError: (error) {
         _logger.error('Unexpected error in user credentials stream - repository should handle this', error);
-        // Repository should handle all stream errors appropriately
-        // If we reach here, it means the repository error handling failed
          _notifier.emitAuthStateChanged(AuthStatus.connectionError);
       },
     );
 
-    // Check initial state
     _checkInitialState();
   }
 
+  /// Checks the initial state of the auth service
   void _checkInitialState() {
     final isAuth = _repository.isAuthenticated();
     _logger.info(isAuth 
@@ -94,7 +92,6 @@ class SharedAuthService implements AuthService, Disposable {
   Future<bool> loginWithEmail(String email, String password) async {
     _logger.info('Attempting login for user: $email');
     
-    // Validate inputs
     if (email.isEmpty || password.isEmpty) {
       _logger.warning('Login attempt with empty email or password');
       return false;
@@ -120,7 +117,6 @@ class SharedAuthService implements AuthService, Disposable {
   Future<bool> registerWithEmail(String email, String password) async {
     _logger.info('Attempting registration for user: $email');
     
-    // Validate inputs
     if (email.isEmpty || password.isEmpty) {
       _logger.warning('Registration attempt with empty email or password');
       return false;
@@ -233,7 +229,7 @@ class SharedAuthService implements AuthService, Disposable {
       }
     } catch (e) {
       _logger.error('Logout failed with exception', e);
-      rethrow; // Consistent with original behavior
+      rethrow;
     }
   }
 
@@ -262,7 +258,6 @@ class SharedAuthService implements AuthService, Disposable {
         return profileResult.data;
       } else {
         _logger.warning('Error getting user profile: ${profileResult.errorMessage}');
-        // If profile wasn't found, emit setup profile event
         if (profileResult.errorType == AuthErrorType.userNotFound) {
           _logger.warning('User profile not found - need setup');
           _notifier.emitSetupProfile();
