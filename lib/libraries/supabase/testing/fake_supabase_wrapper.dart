@@ -501,6 +501,49 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     setAuthStreamError(errorMessage);
   }
   
+  /// Resets all fake configurations, clears data, and auth state
+  void reset() {
+    shouldThrowOnSignIn = false;
+    shouldThrowOnSignUp = false;
+    shouldThrowOnOtp = false;
+    shouldThrowOnVerifyOtp = false;
+    shouldThrowOnResetPassword = false;
+    shouldThrowOnSignOut = false;
+    shouldThrowOnSelect = false;
+    shouldThrowOnInsert = false;
+    shouldThrowOnUpdate = false;
+
+    signInErrorMessage = null;
+    signUpErrorMessage = null;
+    otpErrorMessage = null;
+    verifyOtpErrorMessage = null;
+    resetPasswordErrorMessage = null;
+    signOutErrorMessage = null;
+    selectErrorMessage = null;
+    insertErrorMessage = null;
+    updateErrorMessage = null;
+
+    signInExceptionType = null;
+    signUpExceptionType = null;
+    selectExceptionType = null;
+    insertExceptionType = null;
+    updateExceptionType = null;
+    postgrestErrorCode = null;
+
+    shouldReturnNullUser = false;
+    shouldReturnNullOnSelect = false;
+
+    shouldDelayOperations = false;
+    operationDelayMs = 100;
+    shouldEmitStreamErrors = false;
+    shouldReturnUser = false;
+    shouldThrowOnGetUserProfile = false;
+
+    clearAllData();
+    clearMethodCalls();
+  }
+
+
   @override
   Future<void> initialize() {
     // No need to implement this method, fake supabase wrapper does not need 
