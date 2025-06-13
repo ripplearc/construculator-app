@@ -425,9 +425,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return FakeAuthResponse(user: user, session: session);
   }
 
-  /// Creates an auth state based on the event and user, 
-  /// enables the creation of a fake session to mimic an authenticated state
-
   supabase.AuthState _createAuthState(supabase.AuthChangeEvent event, supabase.User? user) {
     supabase.Session? session;
     if (user != null) {
