@@ -23,7 +23,7 @@ void main() {
   });
 
   tearDown(() {
-    fakeSupabaseWrapper.reset();
+    // fakeSupabaseWrapper.reset();
     Modular.destroy();
   });
 
