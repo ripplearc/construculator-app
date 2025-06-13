@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/auth/repositories/supabase_auth_repository.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
@@ -236,7 +237,7 @@ void main() {
         group('Exception Handling', () {
           test('should handle network connection failures', () async {
             fakeSupabaseWrapper.shouldThrowOnSelect = true;
-            fakeSupabaseWrapper.selectExceptionType = FakeExceptionType.socket;
+            fakeSupabaseWrapper.selectExceptionType = SupabaseExceptionType.socket;
             fakeSupabaseWrapper.selectErrorMessage = 'Network connection failed';
 
             final result = await authRepository.getUserProfile('any-id');
@@ -251,7 +252,7 @@ void main() {
 
           test('should handle request timeouts', () async {
             fakeSupabaseWrapper.shouldThrowOnSelect = true;
-            fakeSupabaseWrapper.selectExceptionType = FakeExceptionType.timeout;
+            fakeSupabaseWrapper.selectExceptionType = SupabaseExceptionType.timeout;
             fakeSupabaseWrapper.selectErrorMessage = 'Request timed out';
 
             final result = await authRepository.getUserProfile('any-id');
@@ -266,8 +267,8 @@ void main() {
 
           test('should handle Supabase auth errors', () async {
             fakeSupabaseWrapper.shouldThrowOnSelect = true;
-            fakeSupabaseWrapper.selectExceptionType = FakeExceptionType.auth;
-            fakeSupabaseWrapper.signInErrorCode = 'invalid_credentials';
+            fakeSupabaseWrapper.selectExceptionType = SupabaseExceptionType.auth;
+            fakeSupabaseWrapper.signInErrorCode = SupabaseAuthErrorCode.invalidCredentials;
             fakeSupabaseWrapper.selectErrorMessage = 'Invalid credentials';
 
             final result = await authRepository.getUserProfile('any-id');
@@ -282,8 +283,8 @@ void main() {
 
           test('should handle Postgres database errors', () async {
             fakeSupabaseWrapper.shouldThrowOnSelect = true;
-            fakeSupabaseWrapper.selectExceptionType = FakeExceptionType.postgrest;
-            fakeSupabaseWrapper.postgrestErrorCode = '23505'; // unique violation
+            fakeSupabaseWrapper.selectExceptionType = SupabaseExceptionType.postgrest;
+            fakeSupabaseWrapper.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
             fakeSupabaseWrapper.selectErrorMessage = 'Unique violation';
 
             final result = await authRepository.getUserProfile('any-id');
@@ -298,7 +299,7 @@ void main() {
 
           test('should handle unknown errors', () async {
             fakeSupabaseWrapper.shouldThrowOnSelect = true;
-            fakeSupabaseWrapper.selectExceptionType = FakeExceptionType.type;
+            fakeSupabaseWrapper.selectExceptionType = SupabaseExceptionType.type;
             fakeSupabaseWrapper.selectErrorMessage = 'Unknown error';
 
             final result = await authRepository.getUserProfile('any-id');

@@ -6,6 +6,7 @@ import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
@@ -43,12 +44,12 @@ class SupabaseAuthRepository implements AuthRepository {
 
     if (error is supabase.AuthException) {
       final code = SupabaseAuthErrorCode.fromCode(error.code ?? 'unknown');
-      return AuthResult.failure(code.message, code.errorType);
+      return AuthResult.failure(code.message, authErrorCodeToType(code));
     }
 
     if (error is supabase.PostgrestException) {
       final code = PostgresErrorCode.fromCode(error.code ?? 'unknown');
-      return AuthResult.failure(code.message, code.errorType);
+      return AuthResult.failure(code.message, postgresErrorCodeToType(code));
     }
 
     return AuthResult.failure(error.toString(), AuthErrorType.serverError);
