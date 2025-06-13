@@ -1,3 +1,6 @@
+import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
+import 'package:construculator/libraries/auth/testing/auth_test_module.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
@@ -25,12 +28,15 @@ void main() {
   }
 
   setUp(() {
-    fakeRepository = FakeAuthRepository();
+    Modular.init(_TestAppModule());
+    fakeRepository = Modular.get<AuthRepository>(key: 'fakeAuthRepository') as FakeAuthRepository;
     // Default to successful responses unless a test configures otherwise
     fakeRepository.setAuthResponse(succeed: true);
   });
 
-  tearDown(() {});
+  tearDown(() {
+    Modular.destroy();
+  });
 
   group('Credential Management', () {
     test('getCurrentCredentials should track call count', () {
@@ -252,4 +258,11 @@ void main() {
       expect(result2.data!.id, testUser2.id);
     });
   });
+}
+
+class _TestAppModule extends Module {
+  @override
+  List<Module> get imports => [
+    AuthTestModule(),
+  ];
 }

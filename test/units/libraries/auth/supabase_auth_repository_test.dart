@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/auth_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/auth/repositories/supabase_auth_repository_impl.dart';
@@ -16,12 +18,12 @@ void main() {
 
   setUp(() {
     Modular.init(_TestAppModule());
-    fakeSupabaseWrapper = Modular.get<FakeSupabaseWrapper>(key: 'singletonFakeSupabaseWrapper');
-    authRepository = Modular.get<SupabaseAuthRepositoryImpl>(key: 'authRepositoryWithFakeDep');
+    fakeSupabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+    authRepository = Modular.get<AuthRepository>(key: 'authRepositoryWithFakeDep') as SupabaseAuthRepositoryImpl;
   });
 
   tearDown(() {
-    fakeSupabaseWrapper.clearAllData();
+    fakeSupabaseWrapper.reset();
     Modular.destroy();
   });
 
