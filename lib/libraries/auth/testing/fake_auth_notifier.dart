@@ -1,86 +1,52 @@
 import 'dart:async';
-import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
-import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/data/models/auth_state.dart';
+import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class FakeAuthNotifier implements AuthNotifier, Disposable {
-  /// The controller for login events
-  final _loginController = StreamController<UserCredential>.broadcast();
-  /// The controller for logout events
-  final _logoutController = StreamController<void>.broadcast();
   /// The controller for auth state changes
-  final _authStateController = StreamController<AuthStatus>.broadcast();
-  /// The controller for setup profile events
-  final _setupProfileController = StreamController<void>.broadcast();
+  final _authStateController = StreamController<AuthState>.broadcast();
   
-  /// The list of login events
-  final List<UserCredential> loginEvents = [];
-  /// The list of logout events
-  final List<void> logoutEvents = [];
+  /// The controller for user profile changes
+  final _userProfileController = StreamController<User?>.broadcast();
+  
   /// The list of auth state changes
-  final List<AuthStatus> stateChangedEvents = [];
-  /// The list of setup profile events
-  final List<void> setupProfileEvents = [];
+  final List<AuthState> stateChangedEvents = [];
   
-  // Control flag for auth state emission behavior
-  bool shouldEmitAuthStateOnLogout = true;
+  /// The list of user profile changes
+  final List<User?> userProfileChangedEvents = [];
   
   FakeAuthNotifier() {
-    _loginController.stream.listen((user) => loginEvents.add(user));
-    _logoutController.stream.listen((_) => logoutEvents.add(null));
-    _authStateController.stream.listen((status) => stateChangedEvents.add(status));
-    _setupProfileController.stream.listen((_) => setupProfileEvents.add(null));
+    _authStateController.stream.listen((state) => stateChangedEvents.add(state));
+    _userProfileController.stream.listen((user) => userProfileChangedEvents.add(user));
   }
   
   @override
-  Stream<UserCredential> get onLogin => _loginController.stream;
+  Stream<AuthState> get onAuthStateChanged => _authStateController.stream;
   
   @override
-  Stream<void> get onLogout => _logoutController.stream;
+  Stream<User?> get onUserProfileChanged => _userProfileController.stream;
   
   @override
-  Stream<AuthStatus> get onAuthStateChanged => _authStateController.stream;
-  
-  @override
-  void emitLogin(UserCredential user) {
-    _loginController.add(user);
-    _authStateController.add(AuthStatus.authenticated);
+  void emitAuthStateChanged(AuthState state) {
+    _authStateController.add(state);
   }
   
   @override
-  void emitLogout() {
-    _logoutController.add(null);
+  void emitUserProfileChanged(User? user) {
+    _userProfileController.add(user);
   }
-  
-  @override
-  void emitAuthStateChanged(AuthStatus status) {
-    _authStateController.add(status);
-  }
-  
-  @override
-  void emitSetupProfile() {
-    _setupProfileController.add(null);
-    _authStateController.add(AuthStatus.authenticated);
-  }
-  
-  @override
-  Stream<void> get onSetupProfile => _setupProfileController.stream;
   
   /// Resets the notifier to its initial state
   void reset() {
-    loginEvents.clear();
-    logoutEvents.clear();
     stateChangedEvents.clear();
-    setupProfileEvents.clear();
-    shouldEmitAuthStateOnLogout = true;
+    userProfileChangedEvents.clear();
   }
   
   @override
   void dispose() {
-    _loginController.close();
-    _logoutController.close();
     _authStateController.close();
-    _setupProfileController.close();
+    _userProfileController.close();
   }
 } 

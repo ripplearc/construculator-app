@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
+import 'package:construculator/libraries/auth/data/models/auth_state.dart';
+import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -10,42 +14,70 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 class AuthManagerImpl implements AuthManager {
   final SupabaseWrapper _wrapper;
   final AuthNotifier _authNotifier;
+  final AuthRepository _authRepository;
   final _logger = AppLogger().tag('AuthManagerImpl');
-  final _authStateController = StreamController<AuthStatus>.broadcast();
 
-  AuthManagerImpl({required SupabaseWrapper wrapper}) : _wrapper = wrapper {
+  AuthManagerImpl({
+    required SupabaseWrapper wrapper,
+    required AuthRepository authRepository,
+    required AuthNotifier authNotifier,
+  }) : _wrapper = wrapper,
+       _authRepository = authRepository,
+       _authNotifier = authNotifier {
     _initAuthListener();
+  }
+
+  void _emitAuthStateChanged(AuthStatus status, UserCredential? user) {
+    _authNotifier.emitAuthStateChanged(AuthState(status: status, user: user));
   }
 
   void _initAuthListener() {
     _wrapper.onAuthStateChange.listen(
       (state) {
         if (state.event == supabase.AuthChangeEvent.signedIn) {
-          _authStateController.add(AuthStatus.authenticated);
+          final user = state.session?.user;
+          if (user != null) {
+            _emitAuthStateChanged(AuthStatus.authenticated, _mapSupabaseUserToCredential(user));
+          } else {
+            _emitAuthStateChanged(AuthStatus.unauthenticated, null);
+          }
         } else if (state.event == supabase.AuthChangeEvent.signedOut) {
-          _authStateController.add(AuthStatus.unauthenticated);
+          _emitAuthStateChanged(AuthStatus.unauthenticated, null);
         }
       },
       onError: (error) {
         _logger.error('Error in auth state stream', error);
         if (error is supabase.AuthSessionMissingException) {
           _logger.warning('Auth-specific error, emitting unauthenticated');
-          _authStateController.add(AuthStatus.unauthenticated);
+          _emitAuthStateChanged(AuthStatus.unauthenticated, null);
         } else {
           _logger.warning(
-            'Non-auth stream error (network/connection issue), emitting connectionError',
+            'Stream error (network/connection issue), emitting connectionError',
           );
-          _authStateController.add(AuthStatus.connectionError);
+          _emitAuthStateChanged(AuthStatus.connectionError, null);
         }
       },
     );
 
-    // Set initial state
     if (_wrapper.isAuthenticated) {
-      _authStateController.add(AuthStatus.authenticated);
+      final user = _wrapper.currentUser;
+      if (user != null) {
+        _emitAuthStateChanged(AuthStatus.authenticated, _mapSupabaseUserToCredential(user));
+      } else {
+        _emitAuthStateChanged(AuthStatus.unauthenticated, null);
+      }
     } else {
-      _authStateController.add(AuthStatus.unauthenticated);
+      _emitAuthStateChanged(AuthStatus.unauthenticated, null);
     }
+  }
+
+  UserCredential _mapSupabaseUserToCredential(supabase.User user) {
+    return UserCredential(
+      id: user.id,
+      email: user.email ?? '',
+      metadata: {...user.appMetadata, ...user.userMetadata ?? {}},
+      createdAt: DateTime.parse(user.createdAt),
+    );
   }
 
   AuthResult<T> _handleException<T>(dynamic error, String operation) {
@@ -65,9 +97,6 @@ class AuthManagerImpl implements AuthManager {
 
     return AuthResult.failure(error.toString(), AuthErrorType.serverError);
   }
-
-  @override
-  Stream<AuthStatus> get authStateChanges => _authStateController.stream;
 
   @override
   Future<AuthResult<UserCredential>> loginWithEmail(
@@ -91,6 +120,7 @@ class AuthManagerImpl implements AuthManager {
       }
 
       _logger.info('Login successful for user: $email');
+      _emitAuthStateChanged(AuthStatus.authenticated, _mapSupabaseUserToCredential(response.user!));
       return AuthResult.success(_mapSupabaseUserToCredential(response.user!));
     } catch (e) {
       return _handleException(e, 'Login');
@@ -105,10 +135,7 @@ class AuthManagerImpl implements AuthManager {
     _logger.info('Attempting registration for user: $email');
 
     try {
-      final response = await _wrapper.signUp(
-        email: email,
-        password: password,
-      );
+      final response = await _wrapper.signUp(email: email, password: password);
 
       if (response.user == null) {
         _logger.warning(
@@ -121,6 +148,7 @@ class AuthManagerImpl implements AuthManager {
       }
 
       _logger.info('Registration successful for user: $email');
+      _emitAuthStateChanged(AuthStatus.authenticated, _mapSupabaseUserToCredential(response.user!));
       return AuthResult.success(_mapSupabaseUserToCredential(response.user!));
     } catch (e) {
       return _handleException(e, 'Registration');
@@ -131,7 +159,7 @@ class AuthManagerImpl implements AuthManager {
   Future<AuthResult> sendOtp(String address, OtpReceiver receiver) async {
     _logger.info('Sending OTP to: $address');
     try {
-      // signInWithOtp will send an otp to the address if user is registered already.
+      // [signInWithOtp] will send an otp to the address if user is registered already.
       // If the user is not registered, It will create a new user and send an otp to the address
       await _wrapper.signInWithOtp(
         email: receiver == OtpReceiver.email ? address : null,
@@ -175,6 +203,7 @@ class AuthManagerImpl implements AuthManager {
       }
 
       _logger.info('OTP verification successful for: $address');
+      _emitAuthStateChanged(AuthStatus.authenticated, _mapSupabaseUserToCredential(response.user!));
       return AuthResult.success(_mapSupabaseUserToCredential(response.user!));
     } catch (e) {
       return _handleException(e, 'OTP verification');
@@ -182,7 +211,7 @@ class AuthManagerImpl implements AuthManager {
   }
 
   @override
-  Future<AuthResult<void>> resetPassword(String email) async {
+  Future<AuthResult<bool>> resetPassword(String email) async {
     _logger.info('Initiating password reset for: $email');
     try {
       await _wrapper.resetPasswordForEmail(email, redirectTo: null);
@@ -222,6 +251,7 @@ class AuthManagerImpl implements AuthManager {
     try {
       await _wrapper.signOut();
       _logger.info('Logout successful');
+      _emitAuthStateChanged(AuthStatus.unauthenticated, null);
       return AuthResult.success(null);
     } catch (e) {
       return _handleException(e, 'Logout');
@@ -233,101 +263,46 @@ class AuthManagerImpl implements AuthManager {
     return _wrapper.isAuthenticated;
   }
 
-}
-
-import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
-import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
-import 'package:construculator/libraries/auth/data/types/auth_types.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
-import 'package:construculator/libraries/auth/data/models/auth_user.dart';
-import 'package:construculator/libraries/logging/app_logger.dart';
-import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
-import 'package:flutter_modular/flutter_modular.dart';
-import 'package:rxdart/rxdart.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
-
-class SupabaseAuthRepository implements AuthRepository, Disposable {
-  final SupabaseWrapper supabaseWrapper;
-  final _logger = AppLogger().tag('SupabaseAuthRepository');
-  final _authStateController = BehaviorSubject<AuthStatus>();
-  final _userController = BehaviorSubject<UserCredential?>();
-  StreamSubscription<supabase.AuthState>? _authSubscription;
-
-  SupabaseAuthRepository({required this.supabaseWrapper}) {
-    _initAuthListener();
-  }
-
-  void _initAuthListener() {
-    _authSubscription = _wrapper.onAuthStateChange.listen(
-      (state) {
-        _handleAuthStateChange(state);
-      },
-      onError: (error) {
-        _logger.error('Error in Supabase auth state stream', error);
-        if (error is supabase.AuthSessionMissingException) {
-          _logger.warning('Auth-specific error, emitting unauthenticated');
-          _authStateController.add(AuthStatus.unauthenticated);
-          _userController.add(null);
-        } else {
-          _logger.warning(
-            'Non-auth stream error (network/connection issue), emitting connectionError',
-          );
-          _authStateController.add(AuthStatus.connectionError);
-        }
-      },
-    );
-    // Check initial state
-    final initialUser = _wrapper.currentUser;
-
-    if (initialUser != null) {
-      _authStateController.add(AuthStatus.authenticated);
-      _userController.add(_mapSupabaseUserToCredential(initialUser));
-    } else {
-      _authStateController.add(AuthStatus.unauthenticated);
-      _userController.add(null);
+  @override
+  Future<AuthResult<User?>> createUserProfile(User user) async {
+    try {
+      final result = await _authRepository.createUserProfile(user);
+      _authNotifier.emitUserProfileChanged(result);
+      return AuthResult.success(result);
+    } catch (e) {
+      return _handleException(e, 'Create user profile');
     }
   }
 
-  void _handleAuthStateChange(supabase.AuthState state) {
-    final event = state.event;
-    final session = state.session;
-
-    _logger.info('Auth state changed: $event');
-
-    switch (event) {
-      case supabase.AuthChangeEvent.signedIn:
-      case supabase.AuthChangeEvent.userUpdated:
-      case supabase.AuthChangeEvent.tokenRefreshed:
-      case supabase.AuthChangeEvent.mfaChallengeVerified:
-        final user = session?.user;
-        if (user != null) {
-          _authStateController.add(AuthStatus.authenticated);
-          _userController.add(_mapSupabaseUserToCredential(user));
-        }
-        break;
-      case supabase.AuthChangeEvent.signedOut:
-        _authStateController.add(AuthStatus.unauthenticated);
-        _userController.add(null);
-        break;
-      default:
-        _logger.debug('Unhandled auth event: $event');
+  @override
+  AuthResult<UserCredential?> getCurrentCredentials() {
+    try {
+      final result =  _authRepository.getCurrentCredentials();
+      return AuthResult.success(result);
+    } catch (e) {
+      return _handleException(e, 'Get current credentials');
     }
   }
 
-  
   @override
-  Stream<AuthStatus> get authStateChanges => _authStateController.stream;
+  Future<AuthResult<User?>> getUserProfile(String credentialId) async {
+    try {
+      final result = await _authRepository.getUserProfile(credentialId);
+      _authNotifier.emitUserProfileChanged(result);
+      return AuthResult.success(result);
+    } catch (e) {
+      return _handleException(e, 'Get user profile');
+    }
+  }
 
   @override
-  Stream<UserCredential?> get userChanges => _userController.stream;
-
-  @override
-  void dispose() {
-    _authSubscription?.cancel();
-    _authStateController.close();
-    _userController.close();
-    _logger.debug('SupabaseAuthRepository disposed');
+  Future<AuthResult<User?>> updateUserProfile(User user) async {
+    try {
+      final result = await _authRepository.updateUserProfile(user);
+      _authNotifier.emitUserProfileChanged(result);
+      return AuthResult.success(result);
+    } catch (e) {
+      return _handleException(e, 'Update user profile');
+    }
   }
 }

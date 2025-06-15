@@ -1,9 +1,36 @@
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
+import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 
 /// Interface for shared auth library, provides functionality 
 /// for user authentication and basic profile management.
 abstract class AuthManager {
+  /// Used to get the current user's credentials
+  /// 
+  /// Returns an [AuthResult] of [UserCredential] with the current user's credentials.
+  AuthResult<UserCredential?> getCurrentCredentials();
+
+  /// Used to get the user profile
+  /// 
+  /// [credentialId] - The credential ID of the user.
+  /// 
+  /// Returns an [AuthResult] of [User] with the user profile or null if the user is not found.
+  Future<AuthResult<User?>> getUserProfile(String credentialId);
+
+  /// Used to create a new user profile
+  /// 
+  /// [user] - The user profile to create.
+  /// 
+  /// Returns an [AuthResult] of [User] with the created user profile.
+  Future<AuthResult<User?>> createUserProfile(User user);
+
+  /// Used to update the user profile
+  /// 
+  /// [user] - The user profile to update.
+  /// 
+  /// Returns an [AuthResult] of [User] with the updated user profile.
+  Future<AuthResult<User?>> updateUserProfile(User user);
+
   /// Logs in a user with email and password.
   /// 
   /// [email] - The email of the user.
@@ -42,21 +69,18 @@ abstract class AuthManager {
   /// [email] - The email of the user.
   /// 
   /// Returns a bool [AuthResult] with the result of the password reset.
-  Future<bool> resetPassword(String email);
+  Future<AuthResult<bool>> resetPassword(String email);
 
   /// Checks if an email is already registered.
   /// 
   /// [email] - The email of the user.
   /// 
   /// Returns a bool [AuthResult] with the result of the email registration check.
-  Future<bool> isEmailRegistered(String email);
+  Future<AuthResult<bool>> isEmailRegistered(String email);
 
   /// Logs out the current user.
   Future<AuthResult<void>> logout();
 
   /// Checks if a user is currently authenticated.
-  Future<AuthResult<bool>> isAuthenticated();
-
-  /// Listens to authentication state changes.
-  Stream<AuthStatus> get authStateChanges;
+  bool isAuthenticated();
 }

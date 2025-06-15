@@ -1,7 +1,9 @@
+import 'package:construculator/libraries/auth/auth_manager_impl.dart';
+import 'package:construculator/libraries/auth/auth_notifier_impl.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
-import 'package:construculator/libraries/auth/repositories/supabase_auth_repository_impl.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_service.dart';
-import 'package:construculator/libraries/auth/shared_auth_service.dart';
+import 'package:construculator/libraries/auth/repositories/supabase_repository_impl.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -17,10 +19,14 @@ class AuthModule extends Module {
         supabaseWrapper: i(),
       ),
     );
-    i.addLazySingleton<AuthService>(
-      () => SharedAuthService(
-        notifier: i(),
-        repository: i(),
+    i.addLazySingleton<AuthNotifier>(
+      () => AuthNotifierImpl(),
+    );
+    i.addLazySingleton<AuthManager>(
+      () => AuthManagerImpl(
+        wrapper: i(),
+        authRepository: i(),
+        authNotifier: i(),
       ),
     );
   }
