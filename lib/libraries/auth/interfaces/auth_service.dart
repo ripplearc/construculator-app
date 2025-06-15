@@ -1,11 +1,15 @@
-import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
-import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 
-/// Interface for shared auth library, provides functionality for user authentication and basic profile management.
+/// Interface for shared auth library, provides functionality for user 
+/// authentication and basic profile management.
 abstract class AuthService {
   /// Logs in a user with email and password.
-  Future<bool> loginWithEmail(String email, String password);
+  /// 
+  /// [email] - The email of the user.
+  /// [password] - The password of the user.
+  /// 
+  /// Returns a bool [AuthResult] with the result of the login.
+  Future<AuthResult<bool>> loginWithEmail(String email, String password);
 
   /// Registers a new user with email and password.
   Future<bool> registerWithEmail(String email, String password);
@@ -27,13 +31,4 @@ abstract class AuthService {
 
   /// Checks if a user is currently authenticated.
   bool isAuthenticated();
-
-  /// Gets the current user's profile information.
-  Future<User?> getUserInfo();
-
-  /// Gets the current user's credentials.
-  Future<UserCredential?> getCurrentUser();
-
-  /// Listens to authentication state changes.
-  Stream<AuthStatus> get authStateChanges;
 }

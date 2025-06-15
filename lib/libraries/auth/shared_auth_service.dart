@@ -6,13 +6,15 @@ import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_service.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class SharedAuthService implements AuthService, Disposable {
-  /// The notifier for the auth service
+  // The notifier for the auth service
   final AuthNotifier _notifier;
-  /// The repository for the auth service
+  // The repository for the auth service
   final AuthRepository _repository;
+  final SupabaseWrapper _wrapper;
   /// The logger for the auth service
   final _logger = AppLogger().tag('AuthService');
   /// The subscription for the auth state changes, used by [onAuthStateChanged]
@@ -23,8 +25,10 @@ class SharedAuthService implements AuthService, Disposable {
   SharedAuthService({
     required AuthNotifier notifier,
     required AuthRepository repository,
+    required SupabaseWrapper wrapper,
   }) : _notifier = notifier,
-       _repository = repository {
+       _repository = repository,
+       _wrapper = wrapper {
     _logger.debug('Initializing auth service');
     _initializeListeners();
   }
@@ -33,42 +37,43 @@ class SharedAuthService implements AuthService, Disposable {
   /// 
   /// Repository should handle all stream errors and convert them to appropriate AuthStatus
   /// If we reach here, it means the repository error handling failed
-  void _initializeListeners() {
-    _authStateSubscription = _repository.authStateChanges.listen(
-      (status) {
-        _logger.debug('Auth state changed: $status');
+  
+  // void _initializeListeners() {
+  //   _authStateSubscription = _wrapper.onAuthStateChange.listen(
+  //     (status) {
+  //       _logger.debug('Auth state changed: $status');
         
-        _notifier.emitAuthStateChanged(status);
+  //       _notifier.emitAuthStateChanged(status);
         
-        if (status == AuthStatus.unauthenticated) {
-          _notifier.emitLogout();
-        }
-      },
-      onError: (error) {
-        _logger.error('Unexpected error in auth state stream - repository should handle this', error);
-        _notifier.emitAuthStateChanged(AuthStatus.connectionError);
-      },
-    );
+  //       if (status == AuthStatus.unauthenticated) {
+  //         _notifier.emitLogout();
+  //       }
+  //     },
+  //     onError: (error) {
+  //       _logger.error('Unexpected error in auth state stream - repository should handle this', error);
+  //       _notifier.emitAuthStateChanged(AuthStatus.connectionError);
+  //     },
+  //   );
     
-    _userSubscription = _repository.userChanges.listen(
-      (credentials) {
-        if (credentials == null) {
-          _logger.debug('User credentials cleared');
-          return;
-        }
+  //   _userSubscription = _repository.userChanges.listen(
+  //     (credentials) {
+  //       if (credentials == null) {
+  //         _logger.debug('User credentials cleared');
+  //         return;
+  //       }
         
-        _logger.debug('User credentials updated: ${credentials.id}');
+  //       _logger.debug('User credentials updated: ${credentials.id}');
         
-        _notifier.emitLogin(credentials);
-      },
-      onError: (error) {
-        _logger.error('Unexpected error in user credentials stream - repository should handle this', error);
-         _notifier.emitAuthStateChanged(AuthStatus.connectionError);
-      },
-    );
+  //       _notifier.emitLogin(credentials);
+  //     },
+  //     onError: (error) {
+  //       _logger.error('Unexpected error in user credentials stream - repository should handle this', error);
+  //        _notifier.emitAuthStateChanged(AuthStatus.connectionError);
+  //     },
+  //   );
 
-    _checkInitialState();
-  }
+  //   _checkInitialState();
+  // }
 
   /// Checks the initial state of the auth service
   void _checkInitialState() {
