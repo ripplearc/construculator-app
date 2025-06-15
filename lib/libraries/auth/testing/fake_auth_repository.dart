@@ -7,16 +7,17 @@ import 'package:stack_trace/stack_trace.dart';
 
 /// A fake implementation of AuthRepository for testing purposes.
 class FakeAuthRepository implements AuthRepository {
-  /// Currently authenticated user
+
+  // Currently authenticated user
   UserCredential? _currentUser;
 
-  /// Map of user profiles, keyed by credentialId
+  // Map of user profiles, keyed by credentialId
   final Map<String, User> _userProfiles = {};
 
-  /// Error message to be returned on exceptions
+  // Error message to be returned on exceptions
   String? _errorMessage;
 
-  /// Flag to control if the auth should succeed
+  // Flag to control if the auth should succeed
   bool _authShouldSucceed = true;
 
   /// Flag to control if a null user profile should be returned
