@@ -1,20 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
-import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
-class SupabaseAuthRepositoryImpl implements AuthRepository {
+class SupabaseRepositoryImpl implements AuthRepository {
   final SupabaseWrapper supabaseWrapper;
-  final _logger = AppLogger().tag('SupabaseAuthRepositoryImpl');
+  final _logger = AppLogger().tag('SupabaseRepositoryImpl');
 
-  SupabaseAuthRepositoryImpl({required this.supabaseWrapper});
+  SupabaseRepositoryImpl({required this.supabaseWrapper});
 
   UserCredential _mapSupabaseUserToCredential(supabase.User user) {
     return UserCredential(
@@ -25,36 +23,6 @@ class SupabaseAuthRepositoryImpl implements AuthRepository {
     );
   }
 
-  AuthResult<T> _handleException<T>(dynamic error, String operation) {
-    _logger.error('$operation failed with error', error);
-
-    if (error is SocketException) {
-      return AuthResult.failure(
-        'Network connection failed. Please check your internet connection.',
-        AuthErrorType.networkError,
-      );
-    }
-
-    if (error is TimeoutException) {
-      return AuthResult.failure(
-        'Request timed out. Please try again.',
-        AuthErrorType.timeout,
-      );
-    }
-
-    if (error is supabase.AuthException) {
-      final code = SupabaseAuthErrorCode.fromCode(error.code ?? 'unknown');
-      return AuthResult.failure(code.message, authErrorCodeToType(code));
-    }
-
-    if (error is supabase.PostgrestException) {
-      final code = PostgresErrorCode.fromCode(error.code ?? 'unknown');
-      return AuthResult.failure(code.message, postgresErrorCodeToType(code));
-    }
-
-    return AuthResult.failure(error.toString(), AuthErrorType.serverError);
-  }
-
   @override
   UserCredential? getCurrentCredentials() {
     final supaUser = supabaseWrapper.currentUser;
@@ -63,7 +31,7 @@ class SupabaseAuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<AuthResult<User>> getUserProfile(String credentialId) async {
+  Future<User?> getUserProfile(String credentialId) async {
     _logger.debug('Fetching user profile for credential ID: $credentialId');
     try {
       final response = await supabaseWrapper.selectSingle(
@@ -76,10 +44,7 @@ class SupabaseAuthRepositoryImpl implements AuthRepository {
         _logger.warning(
           'No user profile found for credential ID: $credentialId',
         );
-        return AuthResult.failure(
-          'User profile not found',
-          AuthErrorType.userNotFound,
-        );
+        return null;
       }
 
       _logger.debug('Successfully retrieved user profile');
@@ -106,14 +71,15 @@ class SupabaseAuthRepositoryImpl implements AuthRepository {
         userPreferences: userPreferences,
       );
 
-      return AuthResult.success(user);
+      return user;
     } catch (e) {
-      return _handleException(e, 'Get user profile');
+      _logger.error('Error getting user profile: $e');
+      rethrow;
     }
   }
 
   @override
-  Future<AuthResult<User>> createUserProfile(User user) async {
+  Future<User?> createUserProfile(User user) async {
     _logger.info('Creating user profile for: ${user.email}');
     try {
       final userData = {
@@ -157,14 +123,15 @@ class SupabaseAuthRepositoryImpl implements AuthRepository {
                 : {},
       );
 
-      return AuthResult.success(createdUser);
+      return createdUser;
     } catch (e) {
-      return _handleException(e, 'Create user profile');
+      _logger.error('Error creating user profile: $e');
+      rethrow;
     }
   }
 
   @override
-  Future<AuthResult<User>> updateUserProfile(User user) async {
+  Future<User?> updateUserProfile(User user) async {
     _logger.info('Updating user profile for: ${user.email}');
     try {
       final userData = {
@@ -209,9 +176,10 @@ class SupabaseAuthRepositoryImpl implements AuthRepository {
                 : {},
       );
 
-      return AuthResult.success(updatedUser);
+      return updatedUser;
     } catch (e) {
-      return _handleException(e, 'Update user profile');
+      _logger.error('Error updating user profile: $e');
+      rethrow;
     }
   }
 

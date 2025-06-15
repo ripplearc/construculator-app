@@ -7,19 +7,19 @@ import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:construculator/libraries/auth/repositories/supabase_auth_repository_impl.dart';
+import 'package:construculator/libraries/auth/repositories/supabase_repository_impl.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 void main() {
   late FakeSupabaseWrapper fakeSupabaseWrapper;
-  late SupabaseAuthRepositoryImpl authRepository;
+  late SupabaseRepositoryImpl authRepository;
 
   setUp(() {
     Modular.init(_TestAppModule());
     fakeSupabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
-    authRepository = Modular.get<AuthRepository>(key: 'authRepositoryWithFakeDep') as SupabaseAuthRepositoryImpl;
+    authRepository = Modular.get<AuthRepository>(key: 'authRepositoryWithFakeDep') as SupabaseRepositoryImpl;
   });
 
   tearDown(() {
@@ -131,26 +131,21 @@ void main() {
 
           final result = await authRepository.getUserProfile(credentialId);
 
-          expect(result.isSuccess, isTrue);
-          expect(
-            result.data!.email,
-            equals('project.manager@construction.com'),
-          );
-          expect(result.data!.firstName, equals('Sarah'));
-          expect(result.data!.lastName, equals('Johnson'));
-          expect(result.data!.professionalRole, equals('Project Manager'));
-          expect(result.data!.userStatus, equals(UserProfileStatus.active));
-          expect(result.data!.userPreferences['theme'], equals('light'));
+          expect(result, isNotNull);
+          expect(result!.email, equals('project.manager@construction.com'));
+          expect(result.firstName, equals('Sarah'));
+          expect(result.lastName, equals('Johnson'));
+          expect(result.professionalRole, equals('Project Manager'));
+          expect(result.userStatus, equals(UserProfileStatus.active));
+          expect(result.userPreferences['theme'], equals('light'));
 
-          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
-            'selectSingle',
-          );
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('selectSingle');
           expect(methodCalls.first['table'], equals('users'));
           expect(methodCalls.first['filterColumn'], equals('credential_id'));
           expect(methodCalls.first['filterValue'], equals(credentialId));
         });
 
-         test('should get complete user profile for active user with string preferences', () async {
+        test('should get complete user profile for active user with string preferences', () async {
           const credentialId = 'cred-123-active-user';
           fakeSupabaseWrapper.addTableData('users', [
             {
@@ -176,26 +171,19 @@ void main() {
 
           final result = await authRepository.getUserProfile(credentialId);
 
-          expect(result.isSuccess, isTrue);
-          expect(
-            result.data!.email,
-            equals('project.manager@construction.com'),
-          );
-          expect(result.data!.firstName, equals('Sarah'));
-          expect(result.data!.lastName, equals('Johnson'));
-          expect(result.data!.professionalRole, equals('Project Manager'));
-          expect(result.data!.userStatus, equals(UserProfileStatus.active));
-          expect(result.data!.userPreferences['theme'], equals('light'));
+          expect(result, isNotNull);
+          expect(result!.email, equals('project.manager@construction.com'));
+          expect(result.firstName, equals('Sarah'));
+          expect(result.lastName, equals('Johnson'));
+          expect(result.professionalRole, equals('Project Manager'));
+          expect(result.userStatus, equals(UserProfileStatus.active));
+          expect(result.userPreferences['theme'], equals('light'));
 
-          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
-            'selectSingle',
-          );
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('selectSingle');
           expect(methodCalls.first['table'], equals('users'));
           expect(methodCalls.first['filterColumn'], equals('credential_id'));
           expect(methodCalls.first['filterValue'], equals(credentialId));
         });
-
-
 
         test('should get user profile for inactive user', () async {
           const credentialId = 'cred-456-inactive-user';
@@ -218,101 +206,76 @@ void main() {
 
           final result = await authRepository.getUserProfile(credentialId);
 
-          expect(result.isSuccess, isTrue);
-          expect(result.data!.userStatus, equals(UserProfileStatus.inactive));
-          expect(result.data!.userPreferences, isEmpty);
-          expect(result.data!.phone, isNull);
-          expect(result.data!.profilePhotoUrl, isNull);
+          expect(result, isNotNull);
+          expect(result!.userStatus, equals(UserProfileStatus.inactive));
+          expect(result.userPreferences, isEmpty);
+          expect(result.phone, isNull);
+          expect(result.profilePhotoUrl, isNull);
         });
 
-        test('should handle request for non-existent user profile', () async {
-
+        test('should return null for non-existent user profile', () async {
           const nonExistentCredentialId = 'cred-999-not-found';
 
-          final result = await authRepository.getUserProfile(
-            nonExistentCredentialId,
-          );
+          final result = await authRepository.getUserProfile(nonExistentCredentialId);
 
-          expect(result.isSuccess, isFalse);
-          expect(result.errorType, equals(AuthErrorType.userNotFound));
-          expect(result.errorMessage, contains('User profile not found'));
+          expect(result, isNull);
         });
 
         group('Exception Handling', () {
-          test('should handle network connection failures', () async {
+          test('should throw on network connection failures', () async {
             fakeSupabaseWrapper.shouldThrowOnSelect = true;
             fakeSupabaseWrapper.selectExceptionType = SupabaseExceptionType.socket;
             fakeSupabaseWrapper.selectErrorMessage = 'Network connection failed';
 
-            final result = await authRepository.getUserProfile('any-id');
-
-            expect(result.isSuccess, isFalse);
-            expect(result.errorType, equals(AuthErrorType.networkError));
             expect(
-              result.errorMessage,
-              contains('Network connection failed'),
+              () => authRepository.getUserProfile('any-id'),
+              throwsException,
             );
           });
 
-          test('should handle request timeouts', () async {
+          test('should throw on request timeouts', () async {
             fakeSupabaseWrapper.shouldThrowOnSelect = true;
             fakeSupabaseWrapper.selectExceptionType = SupabaseExceptionType.timeout;
             fakeSupabaseWrapper.selectErrorMessage = 'Request timed out';
 
-            final result = await authRepository.getUserProfile('any-id');
-
-            expect(result.isSuccess, isFalse);
-            expect(result.errorType, equals(AuthErrorType.timeout));
             expect(
-              result.errorMessage,
-              contains('Request timed out'),
+              () => authRepository.getUserProfile('any-id'),
+              throwsException,
             );
           });
 
-          test('should handle Supabase auth errors', () async {
+          test('should throw on Supabase auth errors', () async {
             fakeSupabaseWrapper.shouldThrowOnSelect = true;
             fakeSupabaseWrapper.selectExceptionType = SupabaseExceptionType.auth;
             fakeSupabaseWrapper.signInErrorCode = SupabaseAuthErrorCode.invalidCredentials;
             fakeSupabaseWrapper.selectErrorMessage = 'Invalid credentials';
 
-            final result = await authRepository.getUserProfile('any-id');
-
-            expect(result.isSuccess, isFalse);
-            expect(result.errorType, equals(AuthErrorType.invalidCredentials));
             expect(
-              result.errorMessage,
-              contains('Invalid email or password'),
+              () => authRepository.getUserProfile('any-id'),
+              throwsException,
             );
           });
 
-          test('should handle Postgres database errors', () async {
+          test('should throw on Postgres database errors', () async {
             fakeSupabaseWrapper.shouldThrowOnSelect = true;
             fakeSupabaseWrapper.selectExceptionType = SupabaseExceptionType.postgrest;
             fakeSupabaseWrapper.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
             fakeSupabaseWrapper.selectErrorMessage = 'Unique violation';
 
-            final result = await authRepository.getUserProfile('any-id');
-
-            expect(result.isSuccess, isFalse);
-            expect(result.errorType, equals(AuthErrorType.invalidCredentials));
             expect(
-              result.errorMessage,
-              contains('This value already exists'),
+              () => authRepository.getUserProfile('any-id'),
+              throwsException,
             );
           });
 
-          test('should handle unknown errors', () async {
+          test('should throw on unknown errors', () async {
             fakeSupabaseWrapper.shouldThrowOnSelect = true;
             fakeSupabaseWrapper.selectExceptionType = SupabaseExceptionType.type;
             fakeSupabaseWrapper.selectErrorMessage = 'Unknown error';
 
-            final result = await authRepository.getUserProfile('any-id');
-
-            expect(result.isSuccess, isFalse);
-            expect(result.errorType, equals(AuthErrorType.serverError));
             expect(
-              result.errorMessage,
-              contains('TypeError'),
+              () => authRepository.getUserProfile('any-id'),
+              throwsA(isA<TypeError>()),
             );
           });
         });
@@ -337,9 +300,9 @@ void main() {
 
           final result = await authRepository.createUserProfile(newUser);
 
-          expect(result.isSuccess, isTrue);
-          expect(result.data!.userStatus, equals(UserProfileStatus.active));
-          expect(result.data!.email, equals('new.engineer@construction.com'));
+          expect(result, isNotNull);
+          expect(result!.userStatus, equals(UserProfileStatus.active));
+          expect(result.email, equals('new.engineer@construction.com'));
 
           final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('insert');
           expect(methodCalls.first['table'], equals('users'));
@@ -371,8 +334,8 @@ void main() {
           );
 
           final result = await authRepository.createUserProfile(newUser);
-          expect(result.isSuccess, isTrue);
-          expect(result.data!.userStatus, equals(UserProfileStatus.inactive));
+          expect(result, isNotNull);
+          expect(result!.userStatus, equals(UserProfileStatus.inactive));
           final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('insert');
           final insertData = methodCalls.first['data'] as Map<String, dynamic>;
           expect(insertData['user_status'], equals('inactive'));
@@ -410,9 +373,9 @@ void main() {
 
           final result = await authRepository.updateUserProfile(updatedUser);
 
-          expect(result.isSuccess, isTrue);
-          expect(result.data!.userStatus, equals(UserProfileStatus.active));
-          expect(result.data!.email, equals('updated.email@construction.com'));
+          expect(result, isNotNull);
+          expect(result!.userStatus, equals(UserProfileStatus.active));
+          expect(result.email, equals('updated.email@construction.com'));
 
           final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
           expect(methodCalls.first['table'], equals('users'));

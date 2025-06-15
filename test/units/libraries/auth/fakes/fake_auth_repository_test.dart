@@ -6,6 +6,7 @@ import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart'
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
+import 'package:construculator/libraries/errors/exceptions.dart';
 
 void main() {
   late FakeAuthRepository fakeRepository;
@@ -29,7 +30,9 @@ void main() {
 
   setUp(() {
     Modular.init(_TestAppModule());
-    fakeRepository = Modular.get<AuthRepository>(key: 'fakeAuthRepository') as FakeAuthRepository;
+    fakeRepository =
+        Modular.get<AuthRepository>(key: 'fakeAuthRepository')
+            as FakeAuthRepository;
     // Default to successful responses unless a test configures otherwise
     fakeRepository.setAuthResponse(succeed: true);
   });
@@ -80,10 +83,9 @@ void main() {
 
       final result = await fakeRepository.getUserProfile(fakeUser.credentialId);
 
-      expect(result.isSuccess, true);
-      expect(result.data, isNotNull);
-      expect(result.data!.email, fakeUser.email);
-      expect(result.data!.credentialId, fakeUser.credentialId);
+      expect(result, isNotNull);
+      expect(result!.email, fakeUser.email);
+      expect(result.credentialId, fakeUser.credentialId);
       expect(
         fakeRepository.getUserProfileCalls,
         contains(fakeUser.credentialId),
@@ -91,30 +93,39 @@ void main() {
     });
 
     test(
-      'getUserProfile should return user not found when profile does not exist',
+      'getUserProfile should return null when profile does not exist',
       () async {
         fakeRepository.setAuthResponse(succeed: true);
 
         final result = await fakeRepository.getUserProfile('non-existent-id');
 
-        expect(result.isSuccess, false);
-        expect(result.errorMessage, 'User profile not found');
-        expect(result.errorType, AuthErrorType.userNotFound);
+        expect(result, isNull);
         expect(fakeRepository.getUserProfileCalls, contains('non-existent-id'));
       },
     );
 
+    test('getUserProfile should throw when configured to fail', () async {
+      fakeRepository.shouldThrowOnGetUserProfile = true;
+      fakeRepository.exceptionMessage = 'Failed to get profile';
+
+      expect(
+        () => fakeRepository.getUserProfile('any-id'),
+        throwsA(
+          isA<ServerException>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Failed to get profile'),
+          ),
+        ),
+      );
+    });
+
     test(
-      'getUserProfile should return user not found when returnNullUserProfile is true',
+      'getUserProfile should return null when configured to return null',
       () async {
-        fakeRepository.setAuthResponse(succeed: true);
         fakeRepository.returnNullUserProfile = true;
-
         final result = await fakeRepository.getUserProfile('any-id');
-
-        expect(result.isSuccess, false);
-        expect(result.errorMessage, 'User profile not found');
-        expect(result.errorType, AuthErrorType.userNotFound);
+        expect(result, isNull);
       },
     );
 
@@ -126,32 +137,30 @@ void main() {
 
         final result = await fakeRepository.createUserProfile(fakeUser);
 
-        expect(result.isSuccess, true);
-        expect(result.data, isNotNull);
-        expect(result.data!.email, fakeUser.email);
-        expect(result.data!.credentialId, fakeUser.credentialId);
+        expect(result, isNotNull);
+        expect(result!.email, fakeUser.email);
+        expect(result.credentialId, fakeUser.credentialId);
         expect(fakeRepository.createProfileCalls, contains(fakeUser));
 
         final fetchResult = await fakeRepository.getUserProfile(
           fakeUser.credentialId,
         );
-        expect(fetchResult.isSuccess, true);
-        expect(fetchResult.data!.email, fakeUser.email);
+        expect(fetchResult, isNotNull);
+        expect(fetchResult!.email, fakeUser.email);
       },
     );
 
-    test('createUserProfile should fail when configured to fail', () async {
+    test('createUserProfile should throw when configured to fail', () async {
       final fakeUser = createFakeUser();
       fakeRepository.setAuthResponse(
         succeed: false,
         errorMessage: 'Profile creation failed',
       );
 
-      final result = await fakeRepository.createUserProfile(fakeUser);
-
-      expect(result.isSuccess, false);
-      expect(result.errorMessage, 'Profile creation failed');
-      expect(result.errorType, AuthErrorType.serverError);
+      expect(
+        () => fakeRepository.createUserProfile(fakeUser),
+        throwsA(isA<ServerException>()),
+      );
       expect(fakeRepository.createProfileCalls, contains(fakeUser));
     });
 
@@ -165,12 +174,12 @@ void main() {
         fakeRepository.setAuthResponse(succeed: true);
 
         // First create the profile so it exists for update
-        final createResult = await fakeRepository.createUserProfile(
+        final createdUser = await fakeRepository.createUserProfile(
           originalUser,
         );
         expect(
-          createResult.isSuccess,
-          true,
+          createdUser,
+          isNotNull,
           reason: "Pre-condition: Create profile failed",
         );
 
@@ -178,22 +187,21 @@ void main() {
 
         final result = await fakeRepository.updateUserProfile(updatedUser);
 
-        expect(result.isSuccess, true);
-        expect(result.data, isNotNull);
-        expect(result.data!.firstName, 'UpdatedName');
-        expect(result.data!.credentialId, originalUser.credentialId);
+        expect(result, isNotNull);
+        expect(result!.firstName, 'UpdatedName');
+        expect(result.credentialId, originalUser.credentialId);
         expect(fakeRepository.updateProfileCalls, contains(updatedUser));
 
         // Verify the update is reflected
         final fetchResult = await fakeRepository.getUserProfile(
           originalUser.credentialId,
         );
-        expect(fetchResult.isSuccess, true);
-        expect(fetchResult.data!.firstName, 'UpdatedName');
+        expect(fetchResult, isNotNull);
+        expect(fetchResult!.firstName, 'UpdatedName');
       },
     );
 
-    test('updateUserProfile should fail when configured to fail', () async {
+    test('updateUserProfile should throw when configured to fail', () async {
       final fakeUser = createFakeUser();
 
       await fakeRepository.createUserProfile(fakeUser);
@@ -203,27 +211,27 @@ void main() {
         errorMessage: 'Profile update failed',
       );
 
-      final result = await fakeRepository.updateUserProfile(fakeUser);
-
-      expect(result.isSuccess, false);
-      expect(result.errorMessage, 'Profile update failed');
-      expect(result.errorType, AuthErrorType.serverError);
+      expect(
+        () => fakeRepository.updateUserProfile(fakeUser),
+        throwsA(isA<ServerException>()),
+      );
       expect(fakeRepository.updateProfileCalls, contains(fakeUser));
     });
 
-    test('updateUserProfile should fail if profile does not exist', () async {
-      final nonExistentUser = createFakeUser(
-        credentialId: 'non-existent-for-update',
-      );
-      fakeRepository.setAuthResponse(succeed: true);
+    test(
+      'updateUserProfile should return null if profile does not exist',
+      () async {
+        final nonExistentUser = createFakeUser(
+          credentialId: 'non-existent-for-update',
+        );
+        fakeRepository.setAuthResponse(succeed: true);
 
-      final result = await fakeRepository.updateUserProfile(nonExistentUser);
+        final result = await fakeRepository.updateUserProfile(nonExistentUser);
 
-      expect(result.isSuccess, false);
-      expect(result.errorMessage, 'User profile not found');
-      expect(result.errorType, AuthErrorType.userNotFound);
-      expect(fakeRepository.updateProfileCalls, contains(nonExistentUser));
-    });
+        expect(result, isNull);
+        expect(fakeRepository.updateProfileCalls, contains(nonExistentUser));
+      },
+    );
   });
 
   group('Test Utility Features', () {
@@ -246,23 +254,21 @@ void main() {
       final result1 = await fakeRepository.getUserProfile(
         testUser1.credentialId,
       );
-      expect(result1.isSuccess, true);
-      expect(result1.data!.email, 'user1@test.com');
-      expect(result1.data!.id, testUser1.id);
+      expect(result1, isNotNull);
+      expect(result1!.email, 'user1@test.com');
+      expect(result1.id, testUser1.id);
 
       final result2 = await fakeRepository.getUserProfile(
         testUser2.credentialId,
       );
-      expect(result2.isSuccess, true);
-      expect(result2.data!.email, 'user2@test.com');
-      expect(result2.data!.id, testUser2.id);
+      expect(result2, isNotNull);
+      expect(result2!.email, 'user2@test.com');
+      expect(result2.id, testUser2.id);
     });
   });
 }
 
 class _TestAppModule extends Module {
   @override
-  List<Module> get imports => [
-    AuthTestModule(),
-  ];
+  List<Module> get imports => [AuthTestModule()];
 }

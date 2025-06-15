@@ -1,5 +1,5 @@
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
-import 'package:construculator/libraries/auth/repositories/supabase_auth_repository_impl.dart';
+import 'package:construculator/libraries/auth/repositories/supabase_repository_impl.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
 import 'package:construculator/libraries/supabase/testing/supabase_test_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -14,7 +14,7 @@ class AuthTestModule extends Module {
       key: 'fakeAuthRepository',
     );
     i.add<AuthRepository>(
-      () => SupabaseAuthRepositoryImpl(supabaseWrapper: i()),
+      () => SupabaseRepositoryImpl(supabaseWrapper: i()),
       key: 'authRepositoryWithFakeDep',
     );
   }
