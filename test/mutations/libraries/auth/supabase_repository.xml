@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- AUTH REPOSITORIES MUTATION TESTING -->
+    <!-- Targets: All files in repositories folder -->
+    
+      <files>
+        <file>lib/libraries/auth/repositories/supabase_repository_impl.dart</file>
+    </files>
+
+    <exclude>
+        <!-- Exclude abstract classes and interfaces -->
+        <regex pattern="abstract\s+class\s+\w+.*?{.*?}" dotAll="true"/>
+        <regex pattern="abstract\s+class\s+\w+[^{]*{" dotAll="true"/>
+        
+        <!-- Exclude logging statements -->
+        <regex pattern="print\s*\(" dotAll="false"/>
+        <regex pattern="debugPrint\s*\(" dotAll="false"/>
+        <regex pattern="log\s*\(" dotAll="false"/>
+        
+        <!-- Exclude exception throwing -->
+        <regex pattern="throw\s+\w+" dotAll="false"/>
+        
+        <!-- Exclude repository boilerplate -->
+        <regex pattern="@override" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- Repository-specific mutations -->
+        <literal text="&amp;&amp;" id="and-to-or">
+            <mutation text="||"/>
+        </literal>
+        <literal text="||" id="or-to-and">
+            <mutation text="&amp;&amp;"/>
+        </literal>
+        <literal text="==" id="equals">
+            <mutation text="!="/>
+        </literal>
+        <literal text="!=" id="not-equals">
+            <mutation text="=="/>
+        </literal>
+        
+        <!-- Null safety - critical for data layer -->
+        <literal text="??" id="null-coalescing">
+            <mutation text=""/>
+        </literal>
+        
+        <!-- Success/failure mutations for repository results -->
+        <literal text="return true" id="return-true">
+            <mutation text="return false"/>
+        </literal>
+        <literal text="return false" id="return-false">
+            <mutation text="return true"/>
+        </literal>
+        
+        <!-- String validation for data integrity -->
+        <literal text="isEmpty" id="is-empty">
+            <mutation text="isNotEmpty"/>
+        </literal>
+        <literal text="isNotEmpty" id="is-not-empty">
+            <mutation text="isEmpty"/>
+        </literal>
+        
+        <!-- Conditional logic for data validation -->
+        <regex pattern="[\s]if[\s]*\((.*?)\)[\s]*{" dotAll="true" id="if-negation">
+            <mutation text=" if (!($1)) {"/>
+        </regex>
+        
+        <!-- Comparison operators for data validation -->
+        <literal text="&lt;=" id="less-equal">
+            <mutation text="=="/>
+            <mutation text="&lt;"/>
+        </literal>
+        <literal text="&gt;=" id="greater-equal">
+            <mutation text="=="/>
+            <mutation text="&gt;"/>
+        </literal>
+    </rules>
+
+    <commands>
+        <command group="auth-repositories" expected-return="0">flutter test test/units/libraries/auth/supabase_repository_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="90" name="A"/>
+        <rating over="85" name="B"/>
+        <rating over="75" name="C"/>
+        <rating over="65" name="D"/>
+        <rating over="45" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations> 
