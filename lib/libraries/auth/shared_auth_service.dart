@@ -30,7 +30,37 @@ class SharedAuthService implements AuthService, Disposable {
        _repository = repository,
        _wrapper = wrapper {
     _logger.debug('Initializing auth service');
-    _initializeListeners();
+    _initAuthListener();
+  }
+  void _initAuthListener() {
+    _authSubscription = _wrapper.onAuthStateChange.listen(
+      (state) {
+        _handleAuthStateChange(state);
+      },
+      onError: (error) {
+        _logger.error('Error in Supabase auth state stream', error);
+        if (error is supabase.AuthSessionMissingException) {
+          _logger.warning('Auth-specific error, emitting unauthenticated');
+          _authStateController.add(AuthStatus.unauthenticated);
+          _userController.add(null);
+        } else {
+          _logger.warning(
+            'Non-auth stream error (network/connection issue), emitting connectionError',
+          );
+          _authStateController.add(AuthStatus.connectionError);
+        }
+      },
+    );
+
+    final initialUser = supabaseWrapper.currentUser;
+
+    if (initialUser != null) {
+      _authStateController.add(AuthStatus.authenticated);
+      _userController.add(_mapSupabaseUserToCredential(initialUser));
+    } else {
+      _authStateController.add(AuthStatus.unauthenticated);
+      _userController.add(null);
+    }
   }
 
   /// Initializes the listeners for the auth service
@@ -77,7 +107,7 @@ class SharedAuthService implements AuthService, Disposable {
 
   /// Checks the initial state of the auth service
   void _checkInitialState() {
-    final isAuth = _repository.isAuthenticated();
+    final isAuth = _wrapper.isAuthenticated;
     _logger.info(isAuth 
         ? 'User is already authenticated on initialization' 
         : 'No authenticated user on initialization');
@@ -103,7 +133,7 @@ class SharedAuthService implements AuthService, Disposable {
     }
     
     try {
-      final result = await _repository.loginWithEmail(email, password);
+      final result = await _wrapper.signInWithPassword(email:email, password: password);
       
       if (result.isSuccess && result.data != null) {
         _logger.info('Login successful for user: $email');
