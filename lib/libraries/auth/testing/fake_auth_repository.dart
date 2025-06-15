@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
-import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
+import 'package:construculator/libraries/errors/exceptions.dart';
+import 'package:stack_trace/stack_trace.dart';
 
 /// A fake implementation of AuthRepository for testing purposes.
 class FakeAuthRepository implements AuthRepository {
-  
   /// Currently authenticated user
   UserCredential? _currentUser;
 
@@ -22,18 +22,11 @@ class FakeAuthRepository implements AuthRepository {
   /// Flag to control if a null user profile should be returned
   bool returnNullUserProfile = false;
 
-  /// Flag to control if a success result with null data should be returned
-  bool returnSuccessWithNullData = false;
-
-  /// Flag to control if a success result with null user profile should be returned
-  bool returnSuccessWithNullUserProfile = false;
-
   /// Flag to control if a get user profile should throw an exception
   bool shouldThrowOnGetUserProfile = false;
 
   /// Exception message to be returned on exceptions
   String exceptionMessage = 'Test exception';
-  
 
   /// List of get user profile calls
   final List<String> getUserProfileCalls = [];
@@ -47,7 +40,6 @@ class FakeAuthRepository implements AuthRepository {
   /// Count of get current user calls
   int getCurrentUserCallCount = 0;
 
-  
   /// Sets the current user credentials for testing
   void setCurrentCredentials(UserCredential credentials) {
     _currentUser = credentials;
@@ -71,42 +63,28 @@ class FakeAuthRepository implements AuthRepository {
   }
   
   @override
-  Future<AuthResult<User>> getUserProfile(String userId) async {
+  Future<User?> getUserProfile(String userId) async {
     getUserProfileCalls.add(userId);
     
     if (shouldThrowOnGetUserProfile) {
-      throw Exception(exceptionMessage);
-    }
-    
-    if (!_authShouldSucceed) {
-      return AuthResult.failure(_errorMessage ?? 'Failed to get user profile', AuthErrorType.serverError);
-    }
-    
-    if (returnSuccessWithNullUserProfile) {
-      return AuthResult.success(null);
+      throw ServerException(Trace.current(), Exception(exceptionMessage));
     }
     
     if (returnNullUserProfile) {
-      return AuthResult.failure('User profile not found', AuthErrorType.userNotFound);
+      return null;
     }
     
-    final profile = _userProfiles[userId];
-    
-    if (profile != null) {
-      return AuthResult.success(profile);
-    } else {
-      return AuthResult.failure('User profile not found', AuthErrorType.userNotFound);
-    }
+    return _userProfiles[userId];
   }
   
   @override
-  Future<AuthResult<User>> createUserProfile(User user) async {
+  Future<User?> createUserProfile(User user) async {
     createProfileCalls.add(user);
     
     if (!_authShouldSucceed) {
-      return AuthResult.failure(_errorMessage ?? 'Failed to create user profile', AuthErrorType.serverError);
+      throw ServerException(Trace.current(), Exception(_errorMessage));
     }
-    
+        
     final createdUser = User(
       id: 'profile-${user.email.split('@')[0]}',
       credentialId: user.credentialId,
@@ -123,19 +101,19 @@ class FakeAuthRepository implements AuthRepository {
     );
     
     _userProfiles[user.credentialId] = createdUser;
-    return AuthResult.success(createdUser);
+    return createdUser;
   }
   
   @override
-  Future<AuthResult<User>> updateUserProfile(User user) async {
+  Future<User?> updateUserProfile(User user) async {
     updateProfileCalls.add(user);
     
-    if (!_authShouldSucceed) {
-      return AuthResult.failure(_errorMessage ?? 'Failed to update user profile', AuthErrorType.serverError);
+    if (!_authShouldSucceed && _errorMessage != null) {
+      throw ServerException(Trace.current(), Exception(_errorMessage));
     }
     
     if (!_userProfiles.containsKey(user.credentialId)) {
-      return AuthResult.failure('User profile not found', AuthErrorType.userNotFound);
+      return null;
     }
     
     final updatedUser = User(
@@ -154,6 +132,6 @@ class FakeAuthRepository implements AuthRepository {
     );
     
     _userProfiles[user.credentialId] = updatedUser;
-    return AuthResult.success(updatedUser);
+    return updatedUser;
   }
 } 
