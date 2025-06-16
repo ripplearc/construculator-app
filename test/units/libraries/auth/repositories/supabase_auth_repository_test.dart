@@ -246,8 +246,7 @@ void main() {
 
           test('should throw on Supabase auth errors', () async {
             fakeSupabaseWrapper.shouldThrowOnSelect = true;
-            fakeSupabaseWrapper.selectExceptionType = SupabaseExceptionType.auth;
-            fakeSupabaseWrapper.signInErrorCode = SupabaseAuthErrorCode.invalidCredentials;
+            fakeSupabaseWrapper.authErrorCode = SupabaseAuthErrorCode.invalidCredentials;
             fakeSupabaseWrapper.selectErrorMessage = 'Invalid credentials';
 
             expect(

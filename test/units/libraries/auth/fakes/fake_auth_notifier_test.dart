@@ -1,224 +1,187 @@
-import 'dart:async';
-import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
+import 'package:construculator/libraries/auth/data/models/auth_state.dart';
+import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
+import 'package:construculator/libraries/auth/testing/auth_test_module.dart';
+import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  late FakeAuthNotifier fakeNotifier;
+
+  UserCredential createFakeCredential({String? email}) {
+    return UserCredential(
+      id: 'fake-id',
+      email: email ?? 'test@example.com',
+      metadata: {'source': 'test'},
+      createdAt: DateTime.now(),
+    );
+  }
+
+  User createFakeUser({String? email}) {
+    return User(
+      id: 'fake-id',
+      credentialId: 'fake-cred-id',
+      email: email ?? 'test@example.com',
+      firstName: 'Test',
+      lastName: 'User',
+      professionalRole: 'Developer',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      userStatus: UserProfileStatus.active,
+      userPreferences: {},
+    );
+  }
+
+  setUp(() {
+    Modular.init(_TestAppModule());
+    fakeNotifier =
+        Modular.get<AuthNotifier>(key: 'fakeAuthNotifier') as FakeAuthNotifier;
+  });
+
+  tearDown(() {
+    Modular.destroy();
+  });
+
   group('FakeAuthNotifier', () {
-    late FakeAuthNotifier fakeNotifier;
-
-    setUp(() {
-      fakeNotifier = FakeAuthNotifier();
-    });
-
-    tearDown(() {
-      fakeNotifier.dispose();
-    });
-
     group('Interface Contract Verification', () {
-      test('should implement IAuthNotifier interface', () {
-        expect(fakeNotifier, isA<AuthNotifier>());
-      });
-
       test('should provide all required streams', () {
-        expect(fakeNotifier.onLogin, isA<Stream<UserCredential>>());
-        expect(fakeNotifier.onLogout, isA<Stream<void>>());
-        expect(fakeNotifier.onAuthStateChanged, isA<Stream<AuthStatus>>());
-        expect(fakeNotifier.onSetupProfile, isA<Stream<void>>());
+        expect(fakeNotifier.onAuthStateChanged, isA<Stream<AuthState>>());
+        expect(fakeNotifier.onUserProfileChanged, isA<Stream<User?>>());
       });
 
       test('should provide all required emit methods', () {
-        expect(() => fakeNotifier.emitLogin(_createFakeCredential()), returnsNormally);
-        expect(() => fakeNotifier.emitLogout(), returnsNormally);
-        expect(() => fakeNotifier.emitAuthStateChanged(AuthStatus.authenticated), returnsNormally);
-        expect(() => fakeNotifier.emitSetupProfile(), returnsNormally);
+        final authState = AuthState(
+          status: AuthStatus.authenticated,
+          user: createFakeCredential(),
+        );
+        final user = createFakeUser();
+
+        expect(
+          () => fakeNotifier.emitAuthStateChanged(authState),
+          returnsNormally,
+        );
+        expect(
+          () => fakeNotifier.emitUserProfileChanged(user),
+          returnsNormally,
+        );
       });
     });
 
     group('Core Functionality', () {
-      test('emitLogin should emit login event and authenticated state', () async {
-        final fakeCredential = _createFakeCredential();
-        final loginCompleter = Completer<UserCredential>();
-        final stateCompleter = Completer<AuthStatus>();
-        
-        fakeNotifier.onLogin.listen(loginCompleter.complete);
-        fakeNotifier.onAuthStateChanged.listen(stateCompleter.complete);
+      test('emitAuthStateChanged should emit auth state', () async {
+        final authState = AuthState(
+          status: AuthStatus.authenticated,
+          user: createFakeCredential(),
+        );
 
-        fakeNotifier.emitLogin(fakeCredential);
+        expectLater(fakeNotifier.onAuthStateChanged, emits(authState));
 
-        final receivedCredential = await loginCompleter.future.timeout(Duration(seconds: 1));
-        final receivedState = await stateCompleter.future.timeout(Duration(seconds: 1));
-        
-        expect(receivedCredential.email, fakeCredential.email);
-        expect(receivedState, AuthStatus.authenticated);
+        fakeNotifier.emitAuthStateChanged(authState);
       });
 
-      test('emitLogout should emit logout event only', () async {
-        final logoutCompleter = Completer<void>();
-        
-        fakeNotifier.onLogout.listen((_) => logoutCompleter.complete());
+      test('emitUserProfileChanged should emit user profile', () async {
+        final user = createFakeUser();
 
-        fakeNotifier.emitLogout();
+        expectLater(fakeNotifier.onUserProfileChanged, emits(user));
 
-        await logoutCompleter.future.timeout(Duration(seconds: 1));
-      });
-
-      test('emitSetupProfile should emit setup profile event and authenticated state', () async {
-        final setupCompleter = Completer<void>();
-        final stateCompleter = Completer<AuthStatus>();
-        
-        fakeNotifier.onSetupProfile.listen((_) => setupCompleter.complete());
-        fakeNotifier.onAuthStateChanged.listen(stateCompleter.complete);
-
-        fakeNotifier.emitSetupProfile();
-
-        await setupCompleter.future.timeout(Duration(seconds: 1));
-        final receivedState = await stateCompleter.future.timeout(Duration(seconds: 1));
-        
-        expect(receivedState, AuthStatus.authenticated);
-      });
-
-      test('emitAuthStateChanged should emit correct auth state', () async {
-        final stateCompleter = Completer<AuthStatus>();
-        fakeNotifier.onAuthStateChanged.listen(stateCompleter.complete);
-
-        fakeNotifier.emitAuthStateChanged(AuthStatus.authenticated);
-
-        final receivedState = await stateCompleter.future.timeout(Duration(seconds: 1));
-        expect(receivedState, AuthStatus.authenticated);
+        fakeNotifier.emitUserProfileChanged(user);
       });
     });
 
     group('Test Utility Features', () {
-      test('should track login events for test verification', () async {
-        final credential1 = _createFakeCredential(email: 'user1@test.com');
-        final credential2 = _createFakeCredential(email: 'user2@test.com');
+      test(
+        'should track auth state change events for test verification',
+        () async {
+          final authState1 = AuthState(
+            status: AuthStatus.authenticated,
+            user: createFakeCredential(),
+          );
+          final authState2 = AuthState(
+            status: AuthStatus.unauthenticated,
+            user: null,
+          );
 
-        fakeNotifier.emitLogin(credential1);
-        fakeNotifier.emitLogin(credential2);
+          expectLater(
+            fakeNotifier.onAuthStateChanged,
+            emitsInOrder([authState1, authState2]),
+          );
 
-        await Future.delayed(Duration(milliseconds: 10));
+          fakeNotifier.emitAuthStateChanged(authState1);
+          fakeNotifier.emitAuthStateChanged(authState2);
+        },
+      );
 
-        expect(fakeNotifier.loginEvents, hasLength(2));
-        expect(fakeNotifier.loginEvents[0].email, 'user1@test.com');
-        expect(fakeNotifier.loginEvents[1].email, 'user2@test.com');
-      });
+      test(
+        'should track user profile change events for test verification',
+        () async {
+          final user1 = createFakeUser(email: 'user1@test.com');
+          final user2 = createFakeUser(email: 'user2@test.com');
 
-      test('should track logout events for test verification', () async {
-        fakeNotifier.emitLogout();
-        fakeNotifier.emitLogout();
+          expectLater(
+            fakeNotifier.onUserProfileChanged,
+            emitsInOrder([user1, user2]),
+          );
 
-        await Future.delayed(Duration(milliseconds: 10));
-
-        expect(fakeNotifier.logoutEvents, hasLength(2));
-      });
-
-      test('should track auth state change events for test verification', () async {
-        fakeNotifier.emitAuthStateChanged(AuthStatus.authenticated);
-        fakeNotifier.emitAuthStateChanged(AuthStatus.unauthenticated);
-        fakeNotifier.emitAuthStateChanged(AuthStatus.authenticated);
-
-        await Future.delayed(Duration(milliseconds: 10));
-
-        expect(fakeNotifier.stateChangedEvents, hasLength(3));
-        expect(fakeNotifier.stateChangedEvents[0], AuthStatus.authenticated);
-        expect(fakeNotifier.stateChangedEvents[1], AuthStatus.unauthenticated);
-        expect(fakeNotifier.stateChangedEvents[2], AuthStatus.authenticated);
-      });
-
-      test('should track setup profile events for test verification', () async {
-        fakeNotifier.emitSetupProfile();
-        fakeNotifier.emitSetupProfile();
-
-        await Future.delayed(Duration(milliseconds: 10));
-
-        expect(fakeNotifier.setupProfileEvents, hasLength(2));
-      });
-
-      test('emitLogin should trigger both login and auth state events', () async {
-        fakeNotifier.emitLogin(_createFakeCredential());
-
-        await Future.delayed(Duration(milliseconds: 10));
-
-        expect(fakeNotifier.loginEvents, hasLength(1));
-        expect(fakeNotifier.stateChangedEvents, hasLength(1));
-        expect(fakeNotifier.stateChangedEvents[0], AuthStatus.authenticated);
-      });
-
-      test('emitLogout should trigger logout events only', () async {
-        fakeNotifier.emitLogout();
-
-        await Future.delayed(Duration(milliseconds: 10));
-
-        expect(fakeNotifier.logoutEvents, hasLength(1));
-        expect(fakeNotifier.stateChangedEvents, hasLength(0));
-      });
-
-      test('emitSetupProfile should trigger both setup profile and auth state events', () async {
-        fakeNotifier.emitSetupProfile();
-
-        await Future.delayed(Duration(milliseconds: 10));
-
-        expect(fakeNotifier.setupProfileEvents, hasLength(1));
-        expect(fakeNotifier.stateChangedEvents, hasLength(1));
-        expect(fakeNotifier.stateChangedEvents[0], AuthStatus.authenticated);
-      });
+          fakeNotifier.emitUserProfileChanged(user1);
+          fakeNotifier.emitUserProfileChanged(user2);
+        },
+      );
 
       test('reset should clear all tracked events', () async {
-        fakeNotifier.emitLogin(_createFakeCredential());
-        fakeNotifier.emitLogout();
-        fakeNotifier.emitAuthStateChanged(AuthStatus.authenticated);
-        fakeNotifier.emitSetupProfile();
+        final authState = AuthState(
+          status: AuthStatus.authenticated,
+          user: createFakeCredential(),
+        );
+        final user = createFakeUser();
 
-        await Future.delayed(Duration(milliseconds: 10));
+        // Start listening FIRST
+        final authStateReceived = expectLater(
+          fakeNotifier.onAuthStateChanged,
+          emits(authState),
+        );
 
-        expect(fakeNotifier.loginEvents, isNotEmpty);
-        expect(fakeNotifier.logoutEvents, isNotEmpty);
-        expect(fakeNotifier.stateChangedEvents, isNotEmpty);
-        expect(fakeNotifier.setupProfileEvents, isNotEmpty);
+        final userProfileReceived = expectLater(
+          fakeNotifier.onUserProfileChanged,
+          emits(user),
+        );
 
+        // THEN emit the events
+        fakeNotifier.emitAuthStateChanged(authState);
+        fakeNotifier.emitUserProfileChanged(user);
+
+        // Wait for both expectations to complete
+        await Future.wait([authStateReceived, userProfileReceived]);
+
+        expect(fakeNotifier.stateChangedEvents, [authState]);
+        expect(fakeNotifier.userProfileChangedEvents, [user]);
+        
         fakeNotifier.reset();
-
-        expect(fakeNotifier.loginEvents, isEmpty);
-        expect(fakeNotifier.logoutEvents, isEmpty);
         expect(fakeNotifier.stateChangedEvents, isEmpty);
-        expect(fakeNotifier.setupProfileEvents, isEmpty);
+        expect(fakeNotifier.userProfileChangedEvents, isEmpty);
       });
     });
 
     group('Stream Behavior', () {
       test('streams should be broadcast and allow multiple listeners', () {
         expect(() {
-          fakeNotifier.onLogin.listen((_) {});
-          fakeNotifier.onLogin.listen((_) {});
-        }, returnsNormally);
-
-        expect(() {
-          fakeNotifier.onLogout.listen((_) {});
-          fakeNotifier.onLogout.listen((_) {});
-        }, returnsNormally);
-
-        expect(() {
           fakeNotifier.onAuthStateChanged.listen((_) {});
           fakeNotifier.onAuthStateChanged.listen((_) {});
         }, returnsNormally);
 
         expect(() {
-          fakeNotifier.onSetupProfile.listen((_) {});
-          fakeNotifier.onSetupProfile.listen((_) {});
+          fakeNotifier.onUserProfileChanged.listen((_) {});
+          fakeNotifier.onUserProfileChanged.listen((_) {});
         }, returnsNormally);
       });
     });
 
     group('Resource Management', () {
       test('dispose should close all streams without error', () {
-        fakeNotifier.onLogin.listen((_) {});
-        fakeNotifier.onLogout.listen((_) {});
         fakeNotifier.onAuthStateChanged.listen((_) {});
-        fakeNotifier.onSetupProfile.listen((_) {});
+        fakeNotifier.onUserProfileChanged.listen((_) {});
 
         expect(() => fakeNotifier.dispose(), returnsNormally);
       });
@@ -226,11 +189,7 @@ void main() {
   });
 }
 
-UserCredential _createFakeCredential({String? email}) {
-  return UserCredential(
-    id: 'fake-id',
-    email: email ?? 'test@example.com',
-    metadata: {'source': 'test'},
-    createdAt: DateTime.now(),
-  );
-} 
+class _TestAppModule extends Module {
+  @override
+  List<Module> get imports => [AuthTestModule()];
+}
