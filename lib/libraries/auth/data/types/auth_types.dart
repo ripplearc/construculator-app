@@ -44,27 +44,29 @@ enum AuthErrorType {
   timeout,
 }
 
-AuthErrorType authErrorCodeToType(SupabaseAuthErrorCode code) {
-  switch (code) {
-    case SupabaseAuthErrorCode.invalidCredentials:
-      return AuthErrorType.invalidCredentials;
-    case SupabaseAuthErrorCode.emailExists:
-    case SupabaseAuthErrorCode.registrationFailure:
-      return AuthErrorType.registrationFailure;
-    case SupabaseAuthErrorCode.rateLimited:
-      return AuthErrorType.rateLimited;
-    case SupabaseAuthErrorCode.timeout:
-      return AuthErrorType.timeout;
-    case SupabaseAuthErrorCode.unknown:
-      return AuthErrorType.unknownError;
+extension SupabaseAuthErrorCodeExtension on SupabaseAuthErrorCode {
+  AuthErrorType toAuthErrorType() {
+    switch (this) {
+      case SupabaseAuthErrorCode.invalidCredentials:
+        return AuthErrorType.invalidCredentials;
+      case SupabaseAuthErrorCode.emailExists:
+      case SupabaseAuthErrorCode.registrationFailure:
+        return AuthErrorType.registrationFailure;
+      case SupabaseAuthErrorCode.rateLimited:
+        return AuthErrorType.rateLimited;
+      case SupabaseAuthErrorCode.timeout:
+        return AuthErrorType.timeout;
+      case SupabaseAuthErrorCode.unknown:
+        return AuthErrorType.unknownError;
+    }
   }
 }
 
-
-  AuthErrorType postgresErrorCodeToType(PostgresErrorCode code) {
-    switch (code) {
+extension PostgresErrorCodeExtension on PostgresErrorCode {
+  AuthErrorType toAuthErrorType() {
+    switch (this) {
       case PostgresErrorCode.uniqueViolation:
-        return AuthErrorType.invalidCredentials; // or maybe registrationFailure?
+        return AuthErrorType.invalidCredentials;
       case PostgresErrorCode.unableToConnect:
       case PostgresErrorCode.connectionFailure:
       case PostgresErrorCode.connectionDoesNotExist:
@@ -73,6 +75,7 @@ AuthErrorType authErrorCodeToType(SupabaseAuthErrorCode code) {
         return AuthErrorType.unknownError;
     }
   }
+}
 
 /// Generic result class for authentication operations
 class AuthResult<T> {

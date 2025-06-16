@@ -39,9 +39,6 @@ void main() {
         'should create multiple empty credentials with different timestamps',
         () async {
           final credential1 = UserCredential.empty();
-
-          await Future.delayed(Duration(milliseconds: 1));
-
           final credential2 = UserCredential.empty();
 
           expect(
