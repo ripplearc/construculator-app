@@ -5,10 +5,10 @@ import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class FakeAuthNotifier implements AuthNotifier, Disposable {
-  /// The controller for auth state changes
+  // The controller for auth state changes
   final _authStateController = StreamController<AuthState>.broadcast();
   
-  /// The controller for user profile changes
+  // The controller for user profile changes
   final _userProfileController = StreamController<User?>.broadcast();
   
   /// The list of auth state changes
