@@ -3,6 +3,7 @@ import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_state.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
@@ -58,7 +59,6 @@ class AuthManagerImpl implements AuthManager {
         }
       },
     );
-
     if (_wrapper.isAuthenticated) {
       final user = _wrapper.currentUser;
       if (user != null) {
@@ -105,6 +105,18 @@ class AuthManagerImpl implements AuthManager {
   ) async {
     _logger.info('Attempting login for user: $email');
 
+    // Validate email
+    final emailError = AuthValidationUtils.validateEmail(email);
+    if (emailError != null) {
+      return AuthResult.failure(emailError, AuthErrorType.invalidCredentials);
+    }
+
+    // Validate password
+    final passwordError = AuthValidationUtils.validatePassword(password);
+    if (passwordError != null) {
+      return AuthResult.failure(passwordError, AuthErrorType.invalidCredentials);
+    }
+
     try {
       final response = await _wrapper.signInWithPassword(
         email: email,
@@ -120,7 +132,6 @@ class AuthManagerImpl implements AuthManager {
       }
 
       _logger.info('Login successful for user: $email');
-      _emitAuthStateChanged(AuthStatus.authenticated, _mapSupabaseUserToCredential(response.user!));
       return AuthResult.success(_mapSupabaseUserToCredential(response.user!));
     } catch (e) {
       return _handleException(e, 'Login');
@@ -133,6 +144,18 @@ class AuthManagerImpl implements AuthManager {
     String password,
   ) async {
     _logger.info('Attempting registration for user: $email');
+
+    // Validate email
+    final emailError = AuthValidationUtils.validateEmail(email);
+    if (emailError != null) {
+      return AuthResult.failure(emailError, AuthErrorType.invalidCredentials);
+    }
+
+    // Validate password
+    final passwordError = AuthValidationUtils.validatePassword(password);
+    if (passwordError != null) {
+      return AuthResult.failure(passwordError, AuthErrorType.invalidCredentials);
+    }
 
     try {
       final response = await _wrapper.signUp(email: email, password: password);
@@ -148,7 +171,6 @@ class AuthManagerImpl implements AuthManager {
       }
 
       _logger.info('Registration successful for user: $email');
-      _emitAuthStateChanged(AuthStatus.authenticated, _mapSupabaseUserToCredential(response.user!));
       return AuthResult.success(_mapSupabaseUserToCredential(response.user!));
     } catch (e) {
       return _handleException(e, 'Registration');
@@ -158,9 +180,17 @@ class AuthManagerImpl implements AuthManager {
   @override
   Future<AuthResult> sendOtp(String address, OtpReceiver receiver) async {
     _logger.info('Sending OTP to: $address');
+
+    // Validate address based on receiver type
+    final addressError = receiver == OtpReceiver.email
+        ? AuthValidationUtils.validateEmail(address)
+        : AuthValidationUtils.validatePhone(address);
+    
+    if (addressError != null) {
+      return AuthResult.failure(addressError, AuthErrorType.invalidCredentials);
+    }
+
     try {
-      // [signInWithOtp] will send an otp to the address if user is registered already.
-      // If the user is not registered, It will create a new user and send an otp to the address
       await _wrapper.signInWithOtp(
         email: receiver == OtpReceiver.email ? address : null,
         phone: receiver == OtpReceiver.phone ? address : null,
@@ -181,6 +211,22 @@ class AuthManagerImpl implements AuthManager {
     OtpReceiver receiver,
   ) async {
     _logger.info('Verifying OTP for: $address');
+
+    // Validate address based on receiver type
+    final addressError = receiver == OtpReceiver.email
+        ? AuthValidationUtils.validateEmail(address)
+        : AuthValidationUtils.validatePhone(address);
+    
+    if (addressError != null) {
+      return AuthResult.failure(addressError, AuthErrorType.invalidCredentials);
+    }
+
+    // Validate OTP
+    final otpError = AuthValidationUtils.validateOtp(otp);
+    if (otpError != null) {
+      return AuthResult.failure(otpError, AuthErrorType.invalidCredentials);
+    }
+
     try {
       final response = await _wrapper.verifyOTP(
         email: receiver == OtpReceiver.email ? address : null,
@@ -203,7 +249,6 @@ class AuthManagerImpl implements AuthManager {
       }
 
       _logger.info('OTP verification successful for: $address');
-      _emitAuthStateChanged(AuthStatus.authenticated, _mapSupabaseUserToCredential(response.user!));
       return AuthResult.success(_mapSupabaseUserToCredential(response.user!));
     } catch (e) {
       return _handleException(e, 'OTP verification');
@@ -213,6 +258,13 @@ class AuthManagerImpl implements AuthManager {
   @override
   Future<AuthResult<bool>> resetPassword(String email) async {
     _logger.info('Initiating password reset for: $email');
+
+    // Validate email
+    final emailError = AuthValidationUtils.validateEmail(email);
+    if (emailError != null) {
+      return AuthResult.failure(emailError, AuthErrorType.invalidCredentials);
+    }
+
     try {
       await _wrapper.resetPasswordForEmail(email, redirectTo: null);
 
@@ -226,6 +278,13 @@ class AuthManagerImpl implements AuthManager {
   @override
   Future<AuthResult<bool>> isEmailRegistered(String email) async {
     _logger.info('Checking if email is registered: $email');
+
+    // Validate email
+    final emailError = AuthValidationUtils.validateEmail(email);
+    if (emailError != null) {
+      return AuthResult.failure(emailError, AuthErrorType.invalidCredentials);
+    }
+
     try {
       final response = await _wrapper.selectSingle(
         table: 'users',
@@ -251,7 +310,6 @@ class AuthManagerImpl implements AuthManager {
     try {
       await _wrapper.signOut();
       _logger.info('Logout successful');
-      _emitAuthStateChanged(AuthStatus.unauthenticated, null);
       return AuthResult.success(null);
     } catch (e) {
       return _handleException(e, 'Logout');
