@@ -88,12 +88,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Error message for update.
   /// Used to specify the error message thrown when [update] is attempted
   String? updateErrorMessage;
-  
-  /// Used to specify the type of exception thrown when [signInWithPassword] is attempted
-  SupabaseExceptionType? signInExceptionType;
-
-  /// Used to specify the type of exception thrown when [signUp] is attempted
-  SupabaseExceptionType? signUpExceptionType;
 
   /// Used to specify the type of exception thrown when [selectSingle] is attempted
   SupabaseExceptionType? selectExceptionType;
@@ -105,19 +99,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   SupabaseExceptionType? updateExceptionType;
 
   /// Used to specify the error code thrown when [signInWithPassword] is attempted
-  SupabaseAuthErrorCode? signInErrorCode;
-  
-  /// Used to specify the error code thrown when [selectSingle] is attempted
-  String? selectErrorCode;
-
-  /// Used to specify the error code thrown when [insert] is attempted
-  String? insertErrorCode;
+  SupabaseAuthErrorCode? authErrorCode;
 
   /// Used to specify the error code thrown during [selectSingle], [insert], and [update]
   PostgresErrorCode? postgrestErrorCode;
-
-  /// Used to specify the error code thrown when [update] is attempted
-  String? updateErrorCode;
   
   /// Controls whether [signInWithPassword] returns a null user
   bool shouldReturnNullUser = false;
@@ -171,7 +156,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
     if (shouldThrowOnSignIn) {
       _throwConfiguredException(
-        signInExceptionType,
+        SupabaseExceptionType.auth,
         signInErrorMessage ?? 'Sign in failed',
       );
     }
@@ -201,7 +186,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
     if (shouldThrowOnSignUp) {
       _throwConfiguredException(
-        signUpExceptionType,
+        SupabaseExceptionType.auth,
         signUpErrorMessage ?? 'Sign up failed',
       );
     }
@@ -234,7 +219,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     });
 
     if (shouldThrowOnOtp) {
-      throw ServerException(Trace.current(), Exception(otpErrorMessage ?? 'OTP send failed'));
+      _throwConfiguredException(
+        SupabaseExceptionType.auth,
+        otpErrorMessage ?? 'OTP send failed',
+      );
     }
   }
 
@@ -254,7 +242,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     });
 
     if (shouldThrowOnVerifyOtp) {
-      throw ServerException(Trace.current(), Exception(verifyOtpErrorMessage ?? 'OTP verification failed'));
+      _throwConfiguredException(
+        SupabaseExceptionType.auth,
+        verifyOtpErrorMessage ?? 'OTP verification failed',
+      );
     }
 
     if (shouldReturnNullUser) {
@@ -281,7 +272,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     });
 
     if (shouldThrowOnResetPassword) {
-      throw ServerException(Trace.current(), Exception(resetPasswordErrorMessage ?? 'Password reset failed'));
+      _throwConfiguredException(
+        SupabaseExceptionType.auth,
+        resetPasswordErrorMessage ?? 'Password reset failed',
+      );
     }
   }
 
@@ -436,7 +430,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   void _throwConfiguredException(SupabaseExceptionType? exceptionType, String message) {
     switch (exceptionType) {
       case SupabaseExceptionType.auth:
-        throw supabase.AuthException(message, code: signInErrorCode.toString());
+        throw supabase.AuthException(message, code: authErrorCode.toString());
       case SupabaseExceptionType.postgrest:
         throw supabase.PostgrestException(code: postgrestErrorCode.toString(), message: message);
       case SupabaseExceptionType.socket:
@@ -489,11 +483,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Sets an auth stream error
   void setAuthStreamError(String errorMessage,{Exception? exception}) {
-    var ex = Exception(errorMessage);
-    if(exception != null){
-      ex = exception;
-    }
-    _authStateController.addError(ServerException(Trace.current(), ex));
+    exception ??= ServerException(Trace.current(), Exception(errorMessage));
+    _authStateController.addError(exception);
   }
   
   /// Emits an auth state error
@@ -523,8 +514,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     insertErrorMessage = null;
     updateErrorMessage = null;
 
-    signInExceptionType = null;
-    signUpExceptionType = null;
     selectExceptionType = null;
     insertExceptionType = null;
     updateExceptionType = null;
