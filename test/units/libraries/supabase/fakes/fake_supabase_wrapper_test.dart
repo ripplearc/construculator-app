@@ -2101,6 +2101,7 @@ void main() {
         fakeWrapper.clearMethodCalls();
         expect(fakeWrapper.getMethodCalls(), isEmpty);
       });
+<<<<<<< HEAD
 
       test('initialize throws exception when called', () async {
         expect(
@@ -2716,6 +2717,8 @@ class _TestAppModule extends Module {
           );
         },
       );
+=======
+>>>>>>> b0b9b8a (Fix restack errors)
 
       test('initialize throws exception when called', () async {
         expect(
