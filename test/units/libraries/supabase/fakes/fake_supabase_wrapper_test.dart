@@ -10,6 +10,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_res
 import 'package:construculator/libraries/supabase/testing/fake_supabase_session.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import 'package:flutter_modular/flutter_modular.dart';
 =======
 import 'package:construculator/libraries/supabase/testing/fake_supabase_client.dart';
@@ -64,6 +65,8 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dar
 >>>>>>> f0238ef (Group tests)
 =======
 import 'package:construculator/libraries/supabase/testing/supabase_test_module.dart';
+=======
+>>>>>>> 77c4663 (Refactor to support new types)
 import 'package:flutter_modular/flutter_modular.dart';
 >>>>>>> dba60ba (Refactor: use app defined exceptions)
 import 'package:flutter_test/flutter_test.dart';
@@ -598,6 +601,7 @@ void main() {
         test(
           'throws exception when trying to update a non-existent record',
           () async {
+            // No data in the table initially
             expect(
               () async => await fakeWrapper.update(
                 table: 'users',
@@ -2732,6 +2736,8 @@ class _TestAppModule extends Module {
 
 class _TestAppModule extends Module {
   @override
-  List<Module> get imports => [SupabaseTestModule()];
+  void binds(Injector i) {
+    i.add<SupabaseWrapper>(() => FakeSupabaseWrapper());
+  }
 }
 >>>>>>> dba60ba (Refactor: use app defined exceptions)

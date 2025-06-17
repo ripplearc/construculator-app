@@ -2,9 +2,13 @@ import 'dart:async';
 import 'dart:io';
 import 'package:construculator/libraries/errors/exceptions.dart';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 =======
 >>>>>>> dba60ba (Refactor: use app defined exceptions)
+=======
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+>>>>>>> 77c4663 (Refactor to support new types)
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -30,6 +34,7 @@ import 'package:stack_trace/stack_trace.dart';
 >>>>>>> dba60ba (Refactor: use app defined exceptions)
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
+<<<<<<< HEAD
 enum FakeExceptionType{
   auth,
   postgrest,
@@ -39,6 +44,8 @@ enum FakeExceptionType{
   unknown
 }
 >>>>>>> c96cea6 (Add test supabase module)
+=======
+>>>>>>> 77c4663 (Refactor to support new types)
 /// Fake implementation of SupabaseWrapper for testing
 class FakeSupabaseWrapper implements SupabaseWrapper {
 
@@ -132,6 +139,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 <<<<<<< HEAD
   /// Used to specify the type of exception thrown when [signInWithPassword] is attempted
 <<<<<<< HEAD
+<<<<<<< HEAD
   SupabaseExceptionType? signInExceptionType;
 
   /// Used to specify the type of exception thrown when [signUp] is attempted
@@ -157,22 +165,29 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 =======
   FakeExceptionType? signInExceptionType;
 >>>>>>> c96cea6 (Add test supabase module)
+=======
+  SupabaseExceptionType? signInExceptionType;
+>>>>>>> 77c4663 (Refactor to support new types)
 
   /// Used to specify the type of exception thrown when [signUp] is attempted
-  FakeExceptionType? signUpExceptionType;
+  SupabaseExceptionType? signUpExceptionType;
 
   /// Used to specify the type of exception thrown when [selectSingle] is attempted
-  FakeExceptionType? selectExceptionType;
+  SupabaseExceptionType? selectExceptionType;
 
   /// Used to specify the type of exception thrown when [insert] is attempted
-  FakeExceptionType? insertExceptionType;
+  SupabaseExceptionType? insertExceptionType;
 
   /// Used to specify the type of exception thrown when [update] is attempted
-  FakeExceptionType? updateExceptionType;
+  SupabaseExceptionType? updateExceptionType;
 
   /// Used to specify the error code thrown when [signInWithPassword] is attempted
+<<<<<<< HEAD
   String? signInErrorCode;
 >>>>>>> 1f92bb4 (Refactor)
+=======
+  SupabaseAuthErrorCode? signInErrorCode;
+>>>>>>> 77c4663 (Refactor to support new types)
   
   /// Used to specify the error code thrown when [selectSingle] is attempted
   String? selectErrorCode;
@@ -182,10 +197,14 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Used to specify the error code thrown during [selectSingle], [insert], and [update]
 <<<<<<< HEAD
+<<<<<<< HEAD
   PostgresErrorCode? postgrestErrorCode;
 =======
   String? postgrestErrorCode;
 >>>>>>> 0836451 (Fix restack errors)
+=======
+  PostgresErrorCode? postgrestErrorCode;
+>>>>>>> 77c4663 (Refactor to support new types)
 
   /// Used to specify the error code thrown when [update] is attempted
   String? updateErrorCode;
@@ -477,10 +496,14 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       }
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
     
 >>>>>>> dba60ba (Refactor: use app defined exceptions)
+=======
+
+>>>>>>> 77c4663 (Refactor to support new types)
     throw ServerException(Trace.current(), Exception('Record not found for update'));
   }
 
@@ -500,6 +523,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return FakeAuthResponse(user: user, session: session);
   }
 
+  /// Creates an auth state based on the event and user, 
+  /// enables the creation of a fake session to mimic an authenticated state
+
   supabase.AuthState _createAuthState(supabase.AuthChangeEvent event, supabase.User? user) {
     supabase.Session? session;
     if (user != null) {
@@ -508,6 +534,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return FakeAuthState(event: event, session: session);
   }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -547,11 +574,24 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       case SupabaseExceptionType.type:
 =======
       case FakeExceptionType.socket:
+=======
+  void _throwConfiguredException(SupabaseExceptionType? exceptionType, String message) {
+    switch (exceptionType) {
+      case SupabaseExceptionType.auth:
+        throw supabase.AuthException(message, code: signInErrorCode.toString());
+      case SupabaseExceptionType.postgrest:
+        throw supabase.PostgrestException(code: postgrestErrorCode.toString(), message: message);
+      case SupabaseExceptionType.socket:
+>>>>>>> 77c4663 (Refactor to support new types)
         throw SocketException(message);
-      case FakeExceptionType.timeout:
+      case SupabaseExceptionType.timeout:
         throw TimeoutException(message);
+<<<<<<< HEAD
       case FakeExceptionType.type:
 >>>>>>> c96cea6 (Add test supabase module)
+=======
+      case SupabaseExceptionType.type:
+>>>>>>> 77c4663 (Refactor to support new types)
         throw TypeError();
       default:
         throw ServerException(Trace.current(), Exception(message));
@@ -597,6 +637,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   void clearMethodCalls() {
     _methodCalls.clear();
   }
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 
@@ -646,6 +687,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 >>>>>>> 704ddee (Update comments)
 =======
 >>>>>>> dba60ba (Refactor: use app defined exceptions)
+=======
+>>>>>>> 77c4663 (Refactor to support new types)
   /// Closes the auth state controller
   void dispose() {
     _authStateController.close();
@@ -697,6 +740,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   }
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 }
 =======
 }
@@ -704,3 +748,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 =======
 }
 >>>>>>> 0836451 (Fix restack errors)
+=======
+}
+>>>>>>> 77c4663 (Refactor to support new types)
