@@ -1,46 +1,6 @@
 // coverage:ignore-file
+
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
-
-class FakeAuthException implements supabase.AuthException {
-  @override
-  final String message;
-  
-  @override
-  final String? statusCode;
-
-  @override
-  final String? code;
-
-  FakeAuthException(this.message, {this.statusCode, this.code});
-
-  @override
-  String toString() => message;
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class FakePostgrestException implements supabase.PostgrestException {
-  @override
-  final String message;
-  
-  @override
-  final String? code;
-  
-  @override
-  final String? details;
-  
-  @override
-  final String? hint;
-
-  FakePostgrestException(this.message, {this.code, this.details, this.hint});
-
-  @override
-  String toString() => message;
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
 
 class FakeSession implements supabase.Session {
   @override

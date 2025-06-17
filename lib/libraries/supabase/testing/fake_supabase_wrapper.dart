@@ -98,6 +98,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Used to specify the error message thrown when [update] is attempted
   String? updateErrorMessage;
   
+<<<<<<< HEAD
   /// Used to specify the type of exception thrown when [signInWithPassword] is attempted
   SupabaseExceptionType? signInExceptionType;
 
@@ -115,6 +116,15 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Used to specify the error code thrown when [signInWithPassword] is attempted
   SupabaseAuthErrorCode? signInErrorCode;
+=======
+  // Exception type configuration
+  String? signInExceptionType; // 'auth', 'postgrest', 'socket', 'timeout', 'type'
+  String? signUpExceptionType;
+  String? selectExceptionType;
+  String? insertExceptionType;
+  String? updateExceptionType;
+  String? signInErrorCode;
+>>>>>>> 1f92bb4 (Refactor)
   
   /// Used to specify the error code thrown when [selectSingle] is attempted
   String? selectErrorCode;
@@ -444,11 +454,19 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   void _throwConfiguredException(SupabaseExceptionType? exceptionType, String message) {
     switch (exceptionType) {
+<<<<<<< HEAD
       case SupabaseExceptionType.auth:
         throw supabase.AuthException(message, code: signInErrorCode.toString());
       case SupabaseExceptionType.postgrest:
         throw supabase.PostgrestException(code: postgrestErrorCode.toString(), message: message);
       case SupabaseExceptionType.socket:
+=======
+      case 'auth':
+        throw supabase.AuthException(message, code: signInErrorCode);
+      case 'postgrest':
+        throw supabase.PostgrestException(code: postgrestErrorCode, message: message);
+      case 'socket':
+>>>>>>> 1f92bb4 (Refactor)
         throw SocketException(message);
       case SupabaseExceptionType.timeout:
         throw TimeoutException(message);
