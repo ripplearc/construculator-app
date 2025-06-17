@@ -106,13 +106,13 @@ class AuthManagerImpl implements AuthManager {
     _logger.info('Attempting login for user: $email');
 
     // Validate email
-    final emailError = AuthValidationUtils.validateEmail(email);
+    final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
       return AuthResult.failure(emailError, AuthErrorType.invalidCredentials);
     }
 
     // Validate password
-    final passwordError = AuthValidationUtils.validatePassword(password);
+    final passwordError = AuthValidation.validatePassword(password);
     if (passwordError != null) {
       return AuthResult.failure(passwordError, AuthErrorType.invalidCredentials);
     }
@@ -146,13 +146,13 @@ class AuthManagerImpl implements AuthManager {
     _logger.info('Attempting registration for user: $email');
 
     // Validate email
-    final emailError = AuthValidationUtils.validateEmail(email);
+    final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
       return AuthResult.failure(emailError, AuthErrorType.invalidCredentials);
     }
 
     // Validate password
-    final passwordError = AuthValidationUtils.validatePassword(password);
+    final passwordError = AuthValidation.validatePassword(password);
     if (passwordError != null) {
       return AuthResult.failure(passwordError, AuthErrorType.invalidCredentials);
     }
@@ -183,8 +183,8 @@ class AuthManagerImpl implements AuthManager {
 
     // Validate address based on receiver type
     final addressError = receiver == OtpReceiver.email
-        ? AuthValidationUtils.validateEmail(address)
-        : AuthValidationUtils.validatePhone(address);
+        ? AuthValidation.validateEmail(address)
+        : AuthValidation.validatePhone(address);
     
     if (addressError != null) {
       return AuthResult.failure(addressError, AuthErrorType.invalidCredentials);
@@ -214,15 +214,15 @@ class AuthManagerImpl implements AuthManager {
 
     // Validate address based on receiver type
     final addressError = receiver == OtpReceiver.email
-        ? AuthValidationUtils.validateEmail(address)
-        : AuthValidationUtils.validatePhone(address);
+        ? AuthValidation.validateEmail(address)
+        : AuthValidation.validatePhone(address);
     
     if (addressError != null) {
       return AuthResult.failure(addressError, AuthErrorType.invalidCredentials);
     }
 
     // Validate OTP
-    final otpError = AuthValidationUtils.validateOtp(otp);
+    final otpError = AuthValidation.validateOtp(otp);
     if (otpError != null) {
       return AuthResult.failure(otpError, AuthErrorType.invalidCredentials);
     }
@@ -260,7 +260,7 @@ class AuthManagerImpl implements AuthManager {
     _logger.info('Initiating password reset for: $email');
 
     // Validate email
-    final emailError = AuthValidationUtils.validateEmail(email);
+    final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
       return AuthResult.failure(emailError, AuthErrorType.invalidCredentials);
     }
@@ -280,7 +280,7 @@ class AuthManagerImpl implements AuthManager {
     _logger.info('Checking if email is registered: $email');
 
     // Validate email
-    final emailError = AuthValidationUtils.validateEmail(email);
+    final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
       return AuthResult.failure(emailError, AuthErrorType.invalidCredentials);
     }

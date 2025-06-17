@@ -1,20 +1,20 @@
 /// Utility class for validating authentication inputs
-class AuthValidationUtils {
-  /// Email validation regex pattern
+class AuthValidation {
+  // Email validation regex pattern
   static final RegExp _emailRegex = RegExp(
     r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
   );
 
-  /// Password validation regex patterns
+  // Password validation regex patterns
   static final RegExp _uppercaseRegex = RegExp(r'[A-Z]');
   static final RegExp _lowercaseRegex = RegExp(r'[a-z]');
   static final RegExp _numberRegex = RegExp(r'[0-9]');
   static final RegExp _specialCharRegex = RegExp(r'[!@#\$&*~]');
 
-  /// OTP validation regex pattern
+  // OTP validation regex pattern
   static final RegExp _otpRegex = RegExp(r'^\d{6}$');
 
-  /// Phone number validation regex pattern (international format)
+  // Phone number validation regex pattern (international format)
   static final RegExp _phoneRegex = RegExp(r'^\+[1-9]\d{1,14}$');
 
   /// Validates an email address
