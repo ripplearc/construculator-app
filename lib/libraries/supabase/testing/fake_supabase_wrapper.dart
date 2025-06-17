@@ -35,6 +35,7 @@ enum FakeExceptionType{
 class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Used to notify listeners of changes in the authentication state through [onAuthStateChange]
+<<<<<<< HEAD
 =======
 /// Fake implementation of ISupabaseWrapper for testing
 =======
@@ -42,6 +43,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 >>>>>>> 0836451 (Fix restack errors)
 class FakeSupabaseWrapper implements SupabaseWrapper {
 >>>>>>> 5b674ca (Refactor supabase library to be more consistent with conventions)
+=======
+>>>>>>> 704ddee (Update comments)
   final StreamController<supabase.AuthState> _authStateController = 
       StreamController<supabase.AuthState>.broadcast();
   
@@ -469,6 +472,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     throw ServerException(Trace.current(), Exception('Record not found for update'));
   }
 
+  /// Creates a fake user based on the email, 
+  /// allows the flexibility of creating a fake user to return on login or signup
   supabase.User _createFakeUser(String email) {
     return FakeUser(
       id: 'fake-user-${email.hashCode}',
@@ -477,6 +482,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     );
   }
 
+  /// Creates an auth response based on the user, 
+  /// allows the flexibility of returning a desired response on login or signup
   supabase.AuthResponse _createAuthResponse(supabase.User? user) {
     supabase.Session? session;
     if (user != null) {
@@ -485,6 +492,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return FakeAuthResponse(user: user, session: session);
   }
 
+  /// Creates an auth state based on the event and user, 
+  /// enables the creation of a fake session to mimic an authenticated state
   supabase.AuthState _createAuthState(supabase.AuthChangeEvent event, supabase.User? user) {
     supabase.Session? session;
     if (user != null) {
@@ -493,6 +502,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return FakeAuthState(event: event, session: session);
   }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
   void _throwConfiguredException(SupabaseExceptionType? exceptionType, String message) {
@@ -509,6 +519,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 =======
       case 'auth':
 =======
+=======
+  /// Throws an exception based on the configured exception type and message
+>>>>>>> 704ddee (Update comments)
   void _throwConfiguredException(FakeExceptionType? exceptionType, String message) {
     switch (exceptionType) {
       case FakeExceptionType.auth:
@@ -537,9 +550,13 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   /// Adds data to a specific table
 =======
 >>>>>>> 0836451 (Fix restack errors)
+=======
+  /// Adds data to a specific table
+>>>>>>> 704ddee (Update comments)
   void addTableData(String table, List<Map<String, dynamic>> data) {
     _tables[table] = data;
   }
@@ -571,6 +588,52 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   void clearMethodCalls() {
     _methodCalls.clear();
   }
+<<<<<<< HEAD
+=======
+
+  /// Resets all fake configurations, clears data, and auth state
+  void reset() {
+    shouldThrowOnSignIn = false;
+    shouldThrowOnSignUp = false;
+    shouldThrowOnOtp = false;
+    shouldThrowOnVerifyOtp = false;
+    shouldThrowOnResetPassword = false;
+    shouldThrowOnSignOut = false;
+    shouldThrowOnSelect = false;
+    shouldThrowOnInsert = false;
+    shouldThrowOnUpdate = false;
+    
+    signInErrorMessage = null;
+    signUpErrorMessage = null;
+    otpErrorMessage = null;
+    verifyOtpErrorMessage = null;
+    resetPasswordErrorMessage = null;
+    signOutErrorMessage = null;
+    selectErrorMessage = null;
+    insertErrorMessage = null;
+    updateErrorMessage = null;
+    
+    signInExceptionType = null;
+    signUpExceptionType = null;
+    selectExceptionType = null;
+    insertExceptionType = null;
+    updateExceptionType = null;
+    postgrestErrorCode = null;
+    
+    shouldReturnNullUser = false;
+    shouldReturnNullOnSelect = false;
+    
+    shouldDelayOperations = false;
+    operationDelayMs = 100;
+    shouldEmitStreamErrors = false;
+    shouldReturnUser = false;
+    shouldThrowOnGetUserProfile = false;
+    
+    clearAllData();
+    clearMethodCalls();
+  }
+
+>>>>>>> 704ddee (Update comments)
   /// Closes the auth state controller
   void dispose() {
     _authStateController.close();
