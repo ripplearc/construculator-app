@@ -3,11 +3,15 @@ import 'dart:io';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+<<<<<<< HEAD
 import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_response.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_state.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_session.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:stack_trace/stack_trace.dart';
+=======
+import 'package:construculator/libraries/supabase/testing/fake_supabase_classes.dart';
+>>>>>>> d7a8e6a (Separate supabase fake classes from main wrapper class)
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 <<<<<<< HEAD
@@ -512,4 +516,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     // to initialize any dependencies
     throw UnimplementedError();
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> d7a8e6a (Separate supabase fake classes from main wrapper class)
