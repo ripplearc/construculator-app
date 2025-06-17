@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mutations version="1.0">
    <files>
+<<<<<<< HEAD
         <file>lib/libraries/supabase/testing/fake_supabase_wrapper.dart</file>
     </files>
       <rules>
@@ -67,12 +68,33 @@
         <!-- RULE 13: In `clearAllData`, fail to clear the tables. -->
         <regex pattern="(_tables\\.clear\\(\\);)" id="fakes.state.clear_fails_for_tables">
             <mutation text="// $1"/>
+=======
+        <file>lib/core/libraries/supabase/fakes/fake_supabase_wrapper.dart</file>
+    </files>
+    <rules>
+        <literal text="&amp;&amp;" id="and-to-or">
+            <mutation text="||"/>
+        </literal>
+        <literal text="||" id="or-to-and">
+            <mutation text="&amp;&amp;"/>
+        </literal>
+        <literal text="==" id="equals">
+            <mutation text="!="/>
+        </literal>
+        <regex pattern="[\s]if[\s]*\((.*?)\)[\s]*{" dotAll="true" id="if-negation">
+            <mutation text=" if (!($1)) {"/>
+>>>>>>> de6d043 (Move supabase wrapper mutation config from core to libraries)
         </regex>
     </rules>
 
     <commands>
+<<<<<<< HEAD
            <command group="fake_supabase_wrapper_auth_methods" expected-return="0">flutter test test/units/libraries/supabase/fakes/fake_supabase_wrapper_test.dart</command>
             </commands>
+=======
+           <command group="supabase-wrapper" expected-return="0">flutter test test/units/core/libraries/supabase/fakes/fake_supabase_wrapper_test.dart</command>
+    </commands>
+>>>>>>> de6d043 (Move supabase wrapper mutation config from core to libraries)
 
     <threshold failure="85">
         <rating over="85" name="A"/>
