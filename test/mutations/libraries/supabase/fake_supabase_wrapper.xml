@@ -2,6 +2,7 @@
 <mutations version="1.0">
    <files>
 <<<<<<< HEAD
+<<<<<<< HEAD
         <file>lib/libraries/supabase/testing/fake_supabase_wrapper.dart</file>
     </files>
       <rules>
@@ -70,29 +71,43 @@
             <mutation text="// $1"/>
 =======
         <file>lib/core/libraries/supabase/fakes/fake_supabase_wrapper.dart</file>
+=======
+        <file>lib/libraries/supabase/testing/fake_supabase_wrapper.dart</file>
+>>>>>>> 94ceeb9 (Update mutation config rules)
     </files>
     <rules>
-        <literal text="&amp;&amp;" id="and-to-or">
-            <mutation text="||"/>
-        </literal>
-        <literal text="||" id="or-to-and">
-            <mutation text="&amp;&amp;"/>
-        </literal>
-        <literal text="==" id="equals">
-            <mutation text="!="/>
-        </literal>
-        <regex pattern="[\s]if[\s]*\((.*?)\)[\s]*{" dotAll="true" id="if-negation">
+        <regex pattern="[\\s]if[\\s]*\\((.*?)\\)[\\s]*\\{" dotAll="true" id="generic.if.negateConditionInBracedScope">
             <mutation text=" if (!($1)) {"/>
 >>>>>>> de6d043 (Move supabase wrapper mutation config from core to libraries)
+        </regex>
+        <regex pattern="([:\\s=]|return\\s+)\\'([^\\']+)\\'" id="generic.string.mutateSingleQuotedLiteral">
+            <mutation text="$1\\'MUTATED_$2\\'"/>
+        </regex>
+        <regex pattern="([:\\s=]|return\\s+)\\&quot;([^\\&quot;]+)\\&quot;" id="generic.string.mutateDoubleQuotedLiteral">
+            <mutation text="$1\\&quot;MUTATED_$2\\&quot;"/>
+        </regex>
+        <regex pattern="([a-zA-Z_][a-zA-Z0-9_]*)\\s*=\\s*(?!(null|true|false|\\d+(\\.\\d+)?|\\'.*?\\'|\\&amp;quot;.*?\\&amp;quot;|new\\s|\\[\\]|\\{\\}))([^;]+);" id="generic.assignment.setExpressionToNull">
+            <mutation text="$1 = null;"/>
+        </regex>
+        <regex pattern="([a-zA-Z_][a-zA-Z0-9_]*)\\s*=\\s*null;" id="generic.assignment.setNullToPlaceholder">
+            <mutation text="$1 = \\'NON_NULL_MUTATION_PLACEHOLDER\\';"/>
         </regex>
     </rules>
 
     <commands>
 <<<<<<< HEAD
+<<<<<<< HEAD
            <command group="fake_supabase_wrapper_auth_methods" expected-return="0">flutter test test/units/libraries/supabase/fakes/fake_supabase_wrapper_test.dart</command>
             </commands>
 =======
            <command group="supabase-wrapper" expected-return="0">flutter test test/units/core/libraries/supabase/fakes/fake_supabase_wrapper_test.dart</command>
+=======
+           <command group="fake_supabase_wrapper_auth_methods" expected-return="0">flutter test test/units/libraries/supabase/fakes/fake_supabase_wrapper_auth_methods_test.dart</command>
+           <command group="fake_supabase_wrapper_auth_state" expected-return="0">flutter test test/units/libraries/supabase/fakes/fake_supabase_wrapper_auth_state_test.dart</command>
+           <command group="fake_supabase_wrapper_database_ops" expected-return="0">flutter test test/units/libraries/supabase/fakes/fake_supabase_wrapper_database_ops_test.dart</command>
+           <command group="fake_supabase_wrapper_fake_implementations" expected-return="0">flutter test test/units/libraries/supabase/fakes/fake_supabase_wrapper_fake_implementations_test.dart</command>
+           <command group="fake_supabase_wrapper_utils" expected-return="0">flutter test test/units/libraries/supabase/fakes/fake_supabase_wrapper_utils_test.dart</command>
+>>>>>>> 94ceeb9 (Update mutation config rules)
     </commands>
 >>>>>>> de6d043 (Move supabase wrapper mutation config from core to libraries)
 
