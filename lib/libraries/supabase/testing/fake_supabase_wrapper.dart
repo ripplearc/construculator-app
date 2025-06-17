@@ -1,65 +1,19 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:construculator/libraries/errors/exceptions.dart';
-<<<<<<< HEAD
-<<<<<<< HEAD
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
-=======
->>>>>>> dba60ba (Refactor: use app defined exceptions)
-=======
-import 'package:construculator/libraries/supabase/data/supabase_types.dart';
->>>>>>> 77c4663 (Refactor to support new types)
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> c96cea6 (Add test supabase module)
 import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_response.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_state.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_session.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
-<<<<<<< HEAD
-<<<<<<< HEAD
 import 'package:stack_trace/stack_trace.dart';
-=======
-import 'package:construculator/libraries/supabase/testing/fake_supabase_classes.dart';
->>>>>>> d7a8e6a (Separate supabase fake classes from main wrapper class)
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
-import 'package:stack_trace/stack_trace.dart';
->>>>>>> dba60ba (Refactor: use app defined exceptions)
-import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
-
-<<<<<<< HEAD
-enum FakeExceptionType{
-  auth,
-  postgrest,
-  socket,
-  timeout,
-  type,
-  unknown
-}
->>>>>>> c96cea6 (Add test supabase module)
-=======
->>>>>>> 77c4663 (Refactor to support new types)
 /// Fake implementation of SupabaseWrapper for testing
 class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Used to notify listeners of changes in the authentication state through [onAuthStateChange]
-<<<<<<< HEAD
-=======
-/// Fake implementation of ISupabaseWrapper for testing
-=======
-/// Fake implementation of SupabaseWrapper for testing
->>>>>>> 0836451 (Fix restack errors)
-class FakeSupabaseWrapper implements SupabaseWrapper {
->>>>>>> 5b674ca (Refactor supabase library to be more consistent with conventions)
-=======
->>>>>>> 704ddee (Update comments)
   final StreamController<supabase.AuthState> _authStateController = 
       StreamController<supabase.AuthState>.broadcast();
   
@@ -135,11 +89,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Used to specify the error message thrown when [update] is attempted
   String? updateErrorMessage;
   
-<<<<<<< HEAD
-<<<<<<< HEAD
   /// Used to specify the type of exception thrown when [signInWithPassword] is attempted
-<<<<<<< HEAD
-<<<<<<< HEAD
   SupabaseExceptionType? signInExceptionType;
 
   /// Used to specify the type of exception thrown when [signUp] is attempted
@@ -156,38 +106,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Used to specify the error code thrown when [signInWithPassword] is attempted
   SupabaseAuthErrorCode? signInErrorCode;
-=======
-  // Exception type configuration
-=======
-  /// Used to specify the type of exception thrown when [signInWithPassword] is attempted
->>>>>>> 0836451 (Fix restack errors)
-  String? signInExceptionType; // 'auth', 'postgrest', 'socket', 'timeout', 'type'
-=======
-  FakeExceptionType? signInExceptionType;
->>>>>>> c96cea6 (Add test supabase module)
-=======
-  SupabaseExceptionType? signInExceptionType;
->>>>>>> 77c4663 (Refactor to support new types)
-
-  /// Used to specify the type of exception thrown when [signUp] is attempted
-  SupabaseExceptionType? signUpExceptionType;
-
-  /// Used to specify the type of exception thrown when [selectSingle] is attempted
-  SupabaseExceptionType? selectExceptionType;
-
-  /// Used to specify the type of exception thrown when [insert] is attempted
-  SupabaseExceptionType? insertExceptionType;
-
-  /// Used to specify the type of exception thrown when [update] is attempted
-  SupabaseExceptionType? updateExceptionType;
-
-  /// Used to specify the error code thrown when [signInWithPassword] is attempted
-<<<<<<< HEAD
-  String? signInErrorCode;
->>>>>>> 1f92bb4 (Refactor)
-=======
-  SupabaseAuthErrorCode? signInErrorCode;
->>>>>>> 77c4663 (Refactor to support new types)
   
   /// Used to specify the error code thrown when [selectSingle] is attempted
   String? selectErrorCode;
@@ -196,15 +114,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   String? insertErrorCode;
 
   /// Used to specify the error code thrown during [selectSingle], [insert], and [update]
-<<<<<<< HEAD
-<<<<<<< HEAD
   PostgresErrorCode? postgrestErrorCode;
-=======
-  String? postgrestErrorCode;
->>>>>>> 0836451 (Fix restack errors)
-=======
-  PostgresErrorCode? postgrestErrorCode;
->>>>>>> 77c4663 (Refactor to support new types)
 
   /// Used to specify the error code thrown when [update] is attempted
   String? updateErrorCode;
@@ -495,15 +405,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
         return Map<String, dynamic>.from(updatedData);
       }
     }
-<<<<<<< HEAD
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> dba60ba (Refactor: use app defined exceptions)
-=======
-
->>>>>>> 77c4663 (Refactor to support new types)
     throw ServerException(Trace.current(), Exception('Record not found for update'));
   }
 
@@ -531,47 +433,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return FakeAuthState(event: event, session: session);
   }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-  void _throwConfiguredException(SupabaseExceptionType? exceptionType, String message) {
-=======
-  void _throwConfiguredException(String? exceptionType, String message) {
->>>>>>> 0836451 (Fix restack errors)
-    switch (exceptionType) {
-<<<<<<< HEAD
-      case SupabaseExceptionType.auth:
-        throw supabase.AuthException(message, code: signInErrorCode.toString());
-      case SupabaseExceptionType.postgrest:
-        throw supabase.PostgrestException(code: postgrestErrorCode.toString(), message: message);
-      case SupabaseExceptionType.socket:
-=======
-      case 'auth':
-=======
-=======
-  /// Throws an exception based on the configured exception type and message
->>>>>>> 704ddee (Update comments)
-=======
->>>>>>> dba60ba (Refactor: use app defined exceptions)
-  void _throwConfiguredException(FakeExceptionType? exceptionType, String message) {
-    switch (exceptionType) {
-      case FakeExceptionType.auth:
->>>>>>> c96cea6 (Add test supabase module)
-        throw supabase.AuthException(message, code: signInErrorCode);
-      case FakeExceptionType.postgrest:
-        throw supabase.PostgrestException(code: postgrestErrorCode, message: message);
-<<<<<<< HEAD
-      case 'socket':
->>>>>>> 1f92bb4 (Refactor)
-        throw SocketException(message);
-      case SupabaseExceptionType.timeout:
-        throw TimeoutException(message);
-      case SupabaseExceptionType.type:
-=======
-      case FakeExceptionType.socket:
-=======
   void _throwConfiguredException(SupabaseExceptionType? exceptionType, String message) {
     switch (exceptionType) {
       case SupabaseExceptionType.auth:
@@ -579,30 +440,17 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       case SupabaseExceptionType.postgrest:
         throw supabase.PostgrestException(code: postgrestErrorCode.toString(), message: message);
       case SupabaseExceptionType.socket:
->>>>>>> 77c4663 (Refactor to support new types)
         throw SocketException(message);
       case SupabaseExceptionType.timeout:
         throw TimeoutException(message);
-<<<<<<< HEAD
-      case FakeExceptionType.type:
->>>>>>> c96cea6 (Add test supabase module)
-=======
       case SupabaseExceptionType.type:
->>>>>>> 77c4663 (Refactor to support new types)
         throw TypeError();
       default:
         throw ServerException(Trace.current(), Exception(message));
     }
   }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
   /// Adds data to a specific table
-=======
->>>>>>> 0836451 (Fix restack errors)
-=======
-  /// Adds data to a specific table
->>>>>>> 704ddee (Update comments)
   void addTableData(String table, List<Map<String, dynamic>> data) {
     _tables[table] = data;
   }
@@ -634,65 +482,11 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   void clearMethodCalls() {
     _methodCalls.clear();
   }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-
-<<<<<<< HEAD
-  /// Resets all fake configurations, clears data, and auth state
-  void reset() {
-    shouldThrowOnSignIn = false;
-    shouldThrowOnSignUp = false;
-    shouldThrowOnOtp = false;
-    shouldThrowOnVerifyOtp = false;
-    shouldThrowOnResetPassword = false;
-    shouldThrowOnSignOut = false;
-    shouldThrowOnSelect = false;
-    shouldThrowOnInsert = false;
-    shouldThrowOnUpdate = false;
-    
-    signInErrorMessage = null;
-    signUpErrorMessage = null;
-    otpErrorMessage = null;
-    verifyOtpErrorMessage = null;
-    resetPasswordErrorMessage = null;
-    signOutErrorMessage = null;
-    selectErrorMessage = null;
-    insertErrorMessage = null;
-    updateErrorMessage = null;
-    
-    signInExceptionType = null;
-    signUpExceptionType = null;
-    selectExceptionType = null;
-    insertExceptionType = null;
-    updateExceptionType = null;
-    postgrestErrorCode = null;
-    
-    shouldReturnNullUser = false;
-    shouldReturnNullOnSelect = false;
-    
-    shouldDelayOperations = false;
-    operationDelayMs = 100;
-    shouldEmitStreamErrors = false;
-    shouldReturnUser = false;
-    shouldThrowOnGetUserProfile = false;
-    
-    clearAllData();
-    clearMethodCalls();
-  }
-
->>>>>>> 704ddee (Update comments)
-=======
->>>>>>> dba60ba (Refactor: use app defined exceptions)
-=======
->>>>>>> 77c4663 (Refactor to support new types)
   /// Closes the auth state controller
   void dispose() {
     _authStateController.close();
   }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
   /// Sets an auth stream error
   void setAuthStreamError(String errorMessage,{Exception? exception}) {
     var ex = Exception(errorMessage);
@@ -700,28 +494,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       ex = exception;
     }
     _authStateController.addError(ServerException(Trace.current(), ex));
-=======
-  /// Simulates an auth stream error
-<<<<<<< HEAD
-  void simulateAuthStreamError(String errorMessage) {
-    _authStateController.addError(Exception(errorMessage));
->>>>>>> 0836451 (Fix restack errors)
-=======
-  void simulateAuthStreamError(String errorMessage,{Exception? exception}) {
-=======
-  /// Sets an auth stream error
-  void setAuthStreamError(String errorMessage,{Exception? exception}) {
->>>>>>> dba60ba (Refactor: use app defined exceptions)
-    var ex = Exception(errorMessage);
-    if(exception != null){
-      ex = exception;
-    }
-<<<<<<< HEAD
-    _authStateController.addError(ex);
->>>>>>> 46a12a3 (Accept an optional exception)
-=======
-    _authStateController.addError(ServerException(Trace.current(), ex));
->>>>>>> dba60ba (Refactor: use app defined exceptions)
   }
   
   /// Emits an auth state error
@@ -735,16 +507,4 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     // to initialize any dependencies
     throw UnimplementedError();
   }
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> d7a8e6a (Separate supabase fake classes from main wrapper class)
-=======
-}
->>>>>>> 0836451 (Fix restack errors)
-=======
-}
->>>>>>> 77c4663 (Refactor to support new types)
