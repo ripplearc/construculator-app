@@ -9,6 +9,7 @@
         <!-- RULE 1: Invert conditional error throwing. If it's supposed to throw, don't. -->
         <regex pattern="if\\s*\\((shouldThrowOn[A-Z][a-zA-Z]+)\\)\\s*\\{" id="fakes.errors.skip_configured_throw">
             <mutation text="if (!$1) {"/>
+<<<<<<< HEAD
         </regex>
 
         <!-- RULE 2: In `signInWithPassword`, fail to set the current user after success. -->
@@ -79,18 +80,68 @@
         <regex pattern="[\\s]if[\\s]*\\((.*?)\\)[\\s]*\\{" dotAll="true" id="generic.if.negateConditionInBracedScope">
             <mutation text=" if (!($1)) {"/>
 >>>>>>> de6d043 (Move supabase wrapper mutation config from core to libraries)
+=======
+>>>>>>> 48ea53a (Move initializer to supabase)
         </regex>
-        <regex pattern="([:\\s=]|return\\s+)\\'([^\\']+)\\'" id="generic.string.mutateSingleQuotedLiteral">
-            <mutation text="$1\\'MUTATED_$2\\'"/>
+
+        <!-- RULE 2: In `signInWithPassword`, fail to set the current user after success. -->
+        <regex pattern="(_currentUser\\s*=\\s*user;)" id="fakes.auth.signin_fails_to_set_user">
+            <mutation text="// $1"/>
         </regex>
-        <regex pattern="([:\\s=]|return\\s+)\\&quot;([^\\&quot;]+)\\&quot;" id="generic.string.mutateDoubleQuotedLiteral">
-            <mutation text="$1\\&quot;MUTATED_$2\\&quot;"/>
+
+        <!-- RULE 3: In `signInWithPassword`, fail to notify auth state listeners after success. -->
+        <regex pattern="(_authStateController\\.add\\(_createAuthState\\(supabase\\.AuthChangeEvent\\.signedIn, user\\)\\);)" id="fakes.auth.signin_fails_to_notify">
+            <mutation text="// $1"/>
         </regex>
-        <regex pattern="([a-zA-Z_][a-zA-Z0-9_]*)\\s*=\\s*(?!(null|true|false|\\d+(\\.\\d+)?|\\'.*?\\'|\\&amp;quot;.*?\\&amp;quot;|new\\s|\\[\\]|\\{\\}))([^;]+);" id="generic.assignment.setExpressionToNull">
-            <mutation text="$1 = null;"/>
+
+        <!-- RULE 4: In `signOut`, fail to clear the current user. -->
+        <regex pattern="(_currentUser\\s*=\\s*null;)" id="fakes.auth.signout_fails_to_clear_user">
+            <mutation text="// $1"/>
         </regex>
-        <regex pattern="([a-zA-Z_][a-zA-Z0-9_]*)\\s*=\\s*null;" id="generic.assignment.setNullToPlaceholder">
-            <mutation text="$1 = \\'NON_NULL_MUTATION_PLACEHOLDER\\';"/>
+
+        <!-- RULE 5: In `signOut`, fail to notify auth state listeners. -->
+        <regex pattern="(_authStateController\\.add\\(_createAuthState\\(supabase\\.AuthChangeEvent\\.signedOut, null\\)\\);)" id="fakes.auth.signout_fails_to_notify">
+            <mutation text="// $1"/>
+        </regex>
+
+        <!-- RULE 6: Force `isAuthenticated` to always be true. -->
+        <regex pattern="(bool\\s+get\\s+isAuthenticated\\s*=>\\s*_currentUser\\s*!=\\s*null;)" id="fakes.auth.force_authenticated">
+            <mutation text="bool get isAuthenticated => true;"/>
+        </regex>
+
+        <!-- RULE 7: In `selectSingle`, if a record is found, return null instead. -->
+        <regex pattern="(if\\s*\\(row\\[filterColumn\\]\\s*==\\s*filterValue\\)\\s*\\{)" id="fakes.db.select_returns_null_on_match">
+            <mutation text="$1 return null;"/>
+        </regex>
+
+        <!-- RULE 8: In `insert`, add the wrong data to the table. -->
+        <regex pattern="(tableData\\.add\\(insertData\\);)" id="fakes.db.insert_adds_wrong_data">
+            <mutation text="tableData.add({'mutated': 'data'});"/>
+        </regex>
+
+        <!-- RULE 9: In `update`, do not apply the update to the table data. -->
+        <regex pattern="(tableData\\[i\\]\\s*=\\s*updatedData;)" id="fakes.db.update_fails_to_apply">
+            <mutation text="// $1"/>
+        </regex>
+        
+        <!-- RULE 10: In `update`, return the old data instead of the updated data. -->
+        <regex pattern="(return\\s*Map<String, dynamic>\\.from\\(updatedData\\);)" id="fakes.db.update_returns_old_data">
+            <mutation text="return Map&lt;String, dynamic>.from(tableData[i]);"/>
+        </regex>
+
+        <!-- RULE 11: In `_throwConfiguredException`, always throw a generic exception. -->
+        <regex pattern="(switch\\s*\\(exceptionType\\)\\s*\\{)" id="fakes.errors.throw_generic_exception">
+            <mutation text="throw Exception(message); $1"/>
+        </regex>
+        
+        <!-- RULE 12: In `reset`, fail to reset one of the boolean flags. -->
+        <regex pattern="(shouldThrowOnSignIn\\s*=\\s*false;)" id="fakes.state.reset_fails_for_flag">
+            <mutation text="// $1"/>
+        </regex>
+        
+        <!-- RULE 13: In `clearAllData`, fail to clear the tables. -->
+        <regex pattern="(_tables\\.clear\\(\\);)" id="fakes.state.clear_fails_for_tables">
+            <mutation text="// $1"/>
         </regex>
     </rules>
 
