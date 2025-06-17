@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:construculator/libraries/errors/exceptions.dart';
+<<<<<<< HEAD
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+=======
+>>>>>>> dba60ba (Refactor: use app defined exceptions)
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -12,6 +15,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_sta
 import 'package:construculator/libraries/supabase/testing/fake_supabase_session.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import 'package:stack_trace/stack_trace.dart';
 =======
 import 'package:construculator/libraries/supabase/testing/fake_supabase_classes.dart';
@@ -21,6 +25,9 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 <<<<<<< HEAD
 <<<<<<< HEAD
 =======
+=======
+import 'package:stack_trace/stack_trace.dart';
+>>>>>>> dba60ba (Refactor: use app defined exceptions)
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 enum FakeExceptionType{
@@ -469,12 +476,14 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
         return Map<String, dynamic>.from(updatedData);
       }
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> dba60ba (Refactor: use app defined exceptions)
     throw ServerException(Trace.current(), Exception('Record not found for update'));
   }
 
-  /// Creates a fake user based on the email, 
-  /// allows the flexibility of creating a fake user to return on login or signup
   supabase.User _createFakeUser(String email) {
     return FakeUser(
       id: 'fake-user-${email.hashCode}',
@@ -483,8 +492,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     );
   }
 
-  /// Creates an auth response based on the user, 
-  /// allows the flexibility of returning a desired response on login or signup
   supabase.AuthResponse _createAuthResponse(supabase.User? user) {
     supabase.Session? session;
     if (user != null) {
@@ -493,8 +500,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return FakeAuthResponse(user: user, session: session);
   }
 
-  /// Creates an auth state based on the event and user, 
-  /// enables the creation of a fake session to mimic an authenticated state
   supabase.AuthState _createAuthState(supabase.AuthChangeEvent event, supabase.User? user) {
     supabase.Session? session;
     if (user != null) {
@@ -503,6 +508,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return FakeAuthState(event: event, session: session);
   }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -523,6 +529,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 =======
   /// Throws an exception based on the configured exception type and message
 >>>>>>> 704ddee (Update comments)
+=======
+>>>>>>> dba60ba (Refactor: use app defined exceptions)
   void _throwConfiguredException(FakeExceptionType? exceptionType, String message) {
     switch (exceptionType) {
       case FakeExceptionType.auth:
@@ -592,6 +600,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 <<<<<<< HEAD
 =======
 
+<<<<<<< HEAD
   /// Resets all fake configurations, clears data, and auth state
   void reset() {
     shouldThrowOnSignIn = false;
@@ -635,11 +644,14 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   }
 
 >>>>>>> 704ddee (Update comments)
+=======
+>>>>>>> dba60ba (Refactor: use app defined exceptions)
   /// Closes the auth state controller
   void dispose() {
     _authStateController.close();
   }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
   /// Sets an auth stream error
   void setAuthStreamError(String errorMessage,{Exception? exception}) {
@@ -656,12 +668,20 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 >>>>>>> 0836451 (Fix restack errors)
 =======
   void simulateAuthStreamError(String errorMessage,{Exception? exception}) {
+=======
+  /// Sets an auth stream error
+  void setAuthStreamError(String errorMessage,{Exception? exception}) {
+>>>>>>> dba60ba (Refactor: use app defined exceptions)
     var ex = Exception(errorMessage);
     if(exception != null){
       ex = exception;
     }
+<<<<<<< HEAD
     _authStateController.addError(ex);
 >>>>>>> 46a12a3 (Accept an optional exception)
+=======
+    _authStateController.addError(ServerException(Trace.current(), ex));
+>>>>>>> dba60ba (Refactor: use app defined exceptions)
   }
   
   /// Emits an auth state error

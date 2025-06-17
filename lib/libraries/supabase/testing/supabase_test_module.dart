@@ -24,7 +24,7 @@ class SupabaseTestModule extends Module {
   ];
   @override
   void exportedBinds(Injector i){
-    i.addLazySingleton<SupabaseWrapper>(
+    i.add<SupabaseWrapper>(
       () => FakeSupabaseWrapper(),
     );
 >>>>>>> c96cea6 (Add test supabase module)
