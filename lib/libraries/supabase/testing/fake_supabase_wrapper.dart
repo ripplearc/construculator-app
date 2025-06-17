@@ -4,10 +4,14 @@ import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> c96cea6 (Add test supabase module)
 import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_response.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_state.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_session.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
+<<<<<<< HEAD
 import 'package:stack_trace/stack_trace.dart';
 =======
 import 'package:construculator/libraries/supabase/testing/fake_supabase_classes.dart';
@@ -16,6 +20,17 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+=======
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
+
+enum FakeExceptionType{
+  auth,
+  postgrest,
+  socket,
+  timeout,
+  type
+}
+>>>>>>> c96cea6 (Add test supabase module)
 /// Fake implementation of SupabaseWrapper for testing
 class FakeSupabaseWrapper implements SupabaseWrapper {
 
@@ -105,6 +120,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 <<<<<<< HEAD
 <<<<<<< HEAD
   /// Used to specify the type of exception thrown when [signInWithPassword] is attempted
+<<<<<<< HEAD
   SupabaseExceptionType? signInExceptionType;
 
   /// Used to specify the type of exception thrown when [signUp] is attempted
@@ -127,18 +143,21 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Used to specify the type of exception thrown when [signInWithPassword] is attempted
 >>>>>>> 0836451 (Fix restack errors)
   String? signInExceptionType; // 'auth', 'postgrest', 'socket', 'timeout', 'type'
+=======
+  FakeExceptionType? signInExceptionType;
+>>>>>>> c96cea6 (Add test supabase module)
 
   /// Used to specify the type of exception thrown when [signUp] is attempted
-  String? signUpExceptionType;
+  FakeExceptionType? signUpExceptionType;
 
   /// Used to specify the type of exception thrown when [selectSingle] is attempted
-  String? selectExceptionType;
+  FakeExceptionType? selectExceptionType;
 
   /// Used to specify the type of exception thrown when [insert] is attempted
-  String? insertExceptionType;
+  FakeExceptionType? insertExceptionType;
 
   /// Used to specify the type of exception thrown when [update] is attempted
-  String? updateExceptionType;
+  FakeExceptionType? updateExceptionType;
 
   /// Used to specify the error code thrown when [signInWithPassword] is attempted
   String? signInErrorCode;
@@ -475,6 +494,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   void _throwConfiguredException(SupabaseExceptionType? exceptionType, String message) {
 =======
   void _throwConfiguredException(String? exceptionType, String message) {
@@ -488,15 +508,28 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       case SupabaseExceptionType.socket:
 =======
       case 'auth':
+=======
+  void _throwConfiguredException(FakeExceptionType? exceptionType, String message) {
+    switch (exceptionType) {
+      case FakeExceptionType.auth:
+>>>>>>> c96cea6 (Add test supabase module)
         throw supabase.AuthException(message, code: signInErrorCode);
-      case 'postgrest':
+      case FakeExceptionType.postgrest:
         throw supabase.PostgrestException(code: postgrestErrorCode, message: message);
+<<<<<<< HEAD
       case 'socket':
 >>>>>>> 1f92bb4 (Refactor)
         throw SocketException(message);
       case SupabaseExceptionType.timeout:
         throw TimeoutException(message);
       case SupabaseExceptionType.type:
+=======
+      case FakeExceptionType.socket:
+        throw SocketException(message);
+      case FakeExceptionType.timeout:
+        throw TimeoutException(message);
+      case FakeExceptionType.type:
+>>>>>>> c96cea6 (Add test supabase module)
         throw TypeError();
       default:
         throw ServerException(Trace.current(), Exception(message));
