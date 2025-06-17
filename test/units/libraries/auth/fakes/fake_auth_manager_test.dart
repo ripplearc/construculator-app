@@ -1,8 +1,12 @@
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_manager.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -15,12 +19,14 @@ void main() {
   const testUserId = 'test-test';
 
   setUp(() {
-    authNotifier = FakeAuthNotifier();
-    authRepository = FakeAuthRepository();
-    authManager = FakeAuthManager(
-      authNotifier: authNotifier,
-      authRepository: authRepository,
-    );
+    Modular.init(_TestAppModule());
+    authNotifier = Modular.get<AuthNotifier>() as FakeAuthNotifier;
+    authRepository = Modular.get<AuthRepository>() as FakeAuthRepository;
+    authManager = Modular.get<AuthManager>() as FakeAuthManager;
+  });
+
+  tearDown(() {
+    Modular.destroy();
   });
 
   group('FakeAuthManager', () {
@@ -282,8 +288,8 @@ void main() {
         );
 
         expect(result.isSuccess, true);
-        expect(result.data?.email, testEmail);
-        expect(result.data?.id, 'test-test');
+        expect(result.data!.email, testEmail);
+        expect(result.data!.id, 'test-test');
         expect(authManager.isAuthenticated(), true);
         expect(authManager.loginAttempts.length, 1);
         expect(authManager.loginAttempts.first.email, testEmail);
@@ -326,8 +332,8 @@ void main() {
         );
 
         expect(result.isSuccess, true);
-        expect(result.data?.email, testEmail);
-        expect(result.data?.id, 'test-test');
+        expect(result.data!.email, testEmail);
+        expect(result.data!.id, 'test-test');
         expect(authManager.isAuthenticated(), true);
         expect(authManager.registrationAttempts.length, 1);
         expect(authManager.registrationAttempts.first.email, testEmail);
@@ -397,7 +403,7 @@ void main() {
         );
 
         expect(result.isSuccess, true);
-        expect(result.data?.email, testEmail);
+        expect(result.data!.email, testEmail);
         expect(authManager.isAuthenticated(), true);
         expect(authManager.otpVerificationAttempts.length, 1);
         expect(authManager.otpVerificationAttempts.first.address, testEmail);
@@ -642,4 +648,16 @@ void main() {
       expect(authManager.getCurrentCredentials().data, null);
     });
   });
+}
+
+class _TestAppModule extends Module {
+  @override
+  void binds(Injector i) {
+    i.addSingleton<AuthNotifier>(() => FakeAuthNotifier());
+    i.addSingleton<AuthRepository>(() => FakeAuthRepository());
+    i.add<AuthManager>(() => FakeAuthManager(
+      authNotifier: i(),
+      authRepository: i(),
+    ));
+  }
 }

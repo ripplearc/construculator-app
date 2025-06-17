@@ -117,7 +117,7 @@ void main() {
             predicate<AuthState>(
               (state) =>
                   state.status == AuthStatus.authenticated &&
-                  state.user?.email == credential.email,
+                  state.user!.email == credential.email,
             ),
             predicate<AuthState>(
               (state) =>

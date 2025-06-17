@@ -48,7 +48,7 @@ void main() {
               password: 'wrong-password',
             ),
             throwsA(
-              isA<ServerException>().having(
+              isA<supabase.AuthException>().having(
                 (e) => e.toString(),
                 'message',
                 contains('Invalid credentials'),
@@ -97,7 +97,7 @@ void main() {
               password: 'password123',
             ),
             throwsA(
-              isA<ServerException>().having(
+              isA<supabase.AuthException>().having(
                 (e) => e.toString(),
                 'message',
                 contains('Email already exists'),
@@ -131,7 +131,7 @@ void main() {
               shouldCreateUser: true,
             ),
             throwsA(
-              isA<ServerException>().having(
+              isA<supabase.AuthException>().having(
                 (e) => e.toString(),
                 'message',
                 contains('Failed to send OTP'),
@@ -172,7 +172,7 @@ void main() {
                 type: supabase.OtpType.email,
               ),
               throwsA(
-                isA<ServerException>().having(
+                isA<supabase.AuthException>().having(
                   (e) => e.toString(),
                   'message',
                   contains('Invalid OTP code'),
@@ -209,7 +209,7 @@ void main() {
                 redirectTo: null,
               ),
               throwsA(
-                isA<ServerException>().having(
+                isA<supabase.AuthException>().having(
                   (e) => e.toString(),
                   'message',
                   contains('User not found'),

@@ -3,12 +3,16 @@ import 'package:construculator/libraries/auth/data/models/auth_state.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
 import 'package:construculator/libraries/auth/auth_manager_impl.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
@@ -19,25 +23,25 @@ void main() {
   late AuthManager authManager;
 
   setUp(() {
-    authNotifier = FakeAuthNotifier();
-    authRepository = FakeAuthRepository();
-    supabaseWrapper = FakeSupabaseWrapper();
-    authManager = AuthManagerImpl(
-      wrapper: supabaseWrapper,
-      authRepository: authRepository,
-      authNotifier: authNotifier,
-    );
-    // Modular.init(_TestAppModule());
-    // authNotifier = Modular.get<AuthNotifier>() as FakeAuthNotifier;
-    // authRepository = Modular.get<AuthRepository>() as FakeAuthRepository;
-    // supabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
-    // authManager = Modular.get<AuthManager>();
+    // authNotifier = FakeAuthNotifier();
+    // authRepository = FakeAuthRepository();
+    // supabaseWrapper = FakeSupabaseWrapper();
+    // authManager = AuthManagerImpl(
+    //   wrapper: supabaseWrapper,
+    //   authRepository: authRepository,
+    //   authNotifier: authNotifier,
+    // );
+    Modular.init(_TestAppModule());
+    authNotifier = Modular.get<AuthNotifier>() as FakeAuthNotifier;
+    authRepository = Modular.get<AuthRepository>() as FakeAuthRepository;
+    supabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+    authManager = Modular.get<AuthManager>();
   });
 
   tearDown(() {
-    // Modular.destroy();
-    authNotifier.dispose();
-    supabaseWrapper.dispose();
+    Modular.destroy();
+    // authNotifier.dispose();
+    // supabaseWrapper.dispose();
   });
 
   group('AuthManagerImpl', () {
@@ -75,7 +79,7 @@ void main() {
           authNotifier.stateChangedEvents[0].status,
           AuthStatus.authenticated,
         );
-        expect(authNotifier.stateChangedEvents[0].user?.email, testEmail);
+        expect(authNotifier.stateChangedEvents[0].user!.email, testEmail);
       });
 
       test('loginWithEmail should emit authenticated state on success', () async {
@@ -85,7 +89,7 @@ void main() {
             predicate<AuthState>(
               (state) =>
                   state.status == AuthStatus.authenticated &&
-                  state.user?.email == testEmail,
+                  state.user!.email == testEmail,
             ),
           ),
         );
@@ -221,7 +225,7 @@ void main() {
           testPassword,
         );
         expect(result.isSuccess, true);
-        expect(result.data?.email, testEmail);
+        expect(result.data!.email, testEmail);
         await loginEvent;
         expect(authNotifier.stateChangedEvents.length, 2);
         expect(
@@ -272,7 +276,7 @@ void main() {
         );
 
         expect(result.isSuccess, true);
-        expect(result.data?.email, testEmail);
+        expect(result.data!.email, testEmail);
         await registerEvent;
         expect(authNotifier.stateChangedEvents.length, 2);
         expect(
@@ -347,7 +351,7 @@ void main() {
         );
 
         expect(result.isSuccess, true);
-        expect(result.data?.email, testEmail);
+        expect(result.data!.email, testEmail);
         await verifyOtpEvent;
         expect(authNotifier.stateChangedEvents.length, 2);
         expect(
@@ -677,14 +681,14 @@ void main() {
       test('createUserProfile should create and notify on success', () async {
         final createUserProfileEvent = expectLater(
           authNotifier.onUserProfileChanged,
-          emits(predicate<User?>((user) => user?.email == testEmail)),
+          emits(predicate<User?>((user) => user!.email == testEmail)),
         );
         authRepository.setAuthResponse(succeed: true);
 
         final result = await authManager.createUserProfile(testUser);
 
         expect(result.isSuccess, true);
-        expect(result.data?.email, testEmail);
+        expect(result.data!.email, testEmail);
         expect(authRepository.createProfileCalls.length, 1);
         await createUserProfileEvent;
         expect(authNotifier.userProfileChangedEvents.length, 1);
@@ -706,14 +710,14 @@ void main() {
       test('getUserProfile should fetch and notify on success', () async {
         final getUserProfileEvent = expectLater(
           authNotifier.onUserProfileChanged,
-          emits(predicate<User?>((user) => user?.email == testEmail)),
+          emits(predicate<User?>((user) => user!.email == testEmail)),
         );
         authRepository.setUserProfile(testUser);
 
         final result = await authManager.getUserProfile(testUser.credentialId);
 
         expect(result.isSuccess, true);
-        expect(result.data?.email, testEmail);
+        expect(result.data!.email, testEmail);
         expect(authRepository.getUserProfileCalls.length, 1);
         await getUserProfileEvent;
         expect(authNotifier.userProfileChangedEvents.length, 1);
@@ -732,14 +736,14 @@ void main() {
       test('updateUserProfile should update and notify on success', () async {
         final updateUserProfileEvent = expectLater(
           authNotifier.onUserProfileChanged,
-          emits(predicate<User?>((user) => user?.email == testEmail)),
+          emits(predicate<User?>((user) => user!.email == testEmail)),
         );
         authRepository.setUserProfile(testUser);
 
         final result = await authManager.updateUserProfile(testUser);
 
         expect(result.isSuccess, true);
-        expect(result.data?.email, testEmail);
+        expect(result.data!.email, testEmail);
         expect(authRepository.updateProfileCalls.length, 1);
         await updateUserProfileEvent;
         expect(authNotifier.userProfileChangedEvents.length, 1);
@@ -770,7 +774,7 @@ void main() {
         final result = authManager.getCurrentCredentials();
 
         expect(result.isSuccess, true);
-        expect(result.data?.email, testEmail);
+        expect(result.data!.email, testEmail);
         expect(authRepository.getCurrentUserCallCount, 1);
       });
 
@@ -789,15 +793,15 @@ void main() {
   });
 }
 
-// class _TestAppModule extends Module {
-//   @override
-//   void binds(Injector i) {
-//     i.add<AuthNotifier>(() => FakeAuthNotifier());
-//     i.add<AuthRepository>(() => FakeAuthRepository());
-//     i.add<SupabaseWrapper>(() => FakeSupabaseWrapper());
-//     i.add<AuthManager>(
-//       () =>
-//           AuthManagerImpl(wrapper: i(), authRepository: i(), authNotifier: i()),
-//     );
-//   }
-// }
+class _TestAppModule extends Module {
+  @override
+  void binds(Injector i) {
+    i.addSingleton<AuthNotifier>(() => FakeAuthNotifier());
+    i.addSingleton<AuthRepository>(() => FakeAuthRepository());
+    i.addSingleton<SupabaseWrapper>(() => FakeSupabaseWrapper());
+    i.add<AuthManager>(
+      () =>
+          AuthManagerImpl(wrapper: i(), authRepository: i(), authNotifier: i()),
+    );
+  }
+}

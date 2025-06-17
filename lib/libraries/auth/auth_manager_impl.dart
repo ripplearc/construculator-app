@@ -85,7 +85,7 @@ class AuthManagerImpl implements AuthManager {
 
     if (error is supabase.AuthException) {
       final code = SupabaseAuthErrorCode.fromCode(error.code ?? 'unknown');
-      return AuthResult.failure(code.message, authErrorCodeToType(code));
+      return AuthResult.failure(code.message, code.toAuthErrorType());
     }
 
     if (error is TimeoutException) {
