@@ -14,6 +14,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 class SupabaseTestModule extends Module {
   @override
 <<<<<<< HEAD
+<<<<<<< HEAD
   List<Module> get imports => [ConfigTestModule()];
   @override
   void exportedBinds(Injector i) {
@@ -28,5 +29,11 @@ class SupabaseTestModule extends Module {
       () => FakeSupabaseWrapper(),
     );
 >>>>>>> c96cea6 (Add test supabase module)
+=======
+  List<Module> get imports => [ConfigTestModule()];
+  @override
+  void exportedBinds(Injector i) {
+    i.addSingleton<SupabaseWrapper>(() => FakeSupabaseWrapper());
+>>>>>>> 6f01cfb (Remove redundant injection)
   }
 }
