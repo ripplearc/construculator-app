@@ -15,12 +15,16 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_classes.
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 /// Fake implementation of SupabaseWrapper for testing
 class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Used to notify listeners of changes in the authentication state through [onAuthStateChange]
 =======
 /// Fake implementation of ISupabaseWrapper for testing
+=======
+/// Fake implementation of SupabaseWrapper for testing
+>>>>>>> 0836451 (Fix restack errors)
 class FakeSupabaseWrapper implements SupabaseWrapper {
 >>>>>>> 5b674ca (Refactor supabase library to be more consistent with conventions)
   final StreamController<supabase.AuthState> _authStateController = 
@@ -99,6 +103,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   String? updateErrorMessage;
   
 <<<<<<< HEAD
+<<<<<<< HEAD
   /// Used to specify the type of exception thrown when [signInWithPassword] is attempted
   SupabaseExceptionType? signInExceptionType;
 
@@ -118,11 +123,24 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   SupabaseAuthErrorCode? signInErrorCode;
 =======
   // Exception type configuration
+=======
+  /// Used to specify the type of exception thrown when [signInWithPassword] is attempted
+>>>>>>> 0836451 (Fix restack errors)
   String? signInExceptionType; // 'auth', 'postgrest', 'socket', 'timeout', 'type'
+
+  /// Used to specify the type of exception thrown when [signUp] is attempted
   String? signUpExceptionType;
+
+  /// Used to specify the type of exception thrown when [selectSingle] is attempted
   String? selectExceptionType;
+
+  /// Used to specify the type of exception thrown when [insert] is attempted
   String? insertExceptionType;
+
+  /// Used to specify the type of exception thrown when [update] is attempted
   String? updateExceptionType;
+
+  /// Used to specify the error code thrown when [signInWithPassword] is attempted
   String? signInErrorCode;
 >>>>>>> 1f92bb4 (Refactor)
   
@@ -133,7 +151,11 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   String? insertErrorCode;
 
   /// Used to specify the error code thrown during [selectSingle], [insert], and [update]
+<<<<<<< HEAD
   PostgresErrorCode? postgrestErrorCode;
+=======
+  String? postgrestErrorCode;
+>>>>>>> 0836451 (Fix restack errors)
 
   /// Used to specify the error code thrown when [update] is attempted
   String? updateErrorCode;
@@ -452,7 +474,11 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return FakeAuthState(event: event, session: session);
   }
 
+<<<<<<< HEAD
   void _throwConfiguredException(SupabaseExceptionType? exceptionType, String message) {
+=======
+  void _throwConfiguredException(String? exceptionType, String message) {
+>>>>>>> 0836451 (Fix restack errors)
     switch (exceptionType) {
 <<<<<<< HEAD
       case SupabaseExceptionType.auth:
@@ -477,7 +503,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     }
   }
 
+<<<<<<< HEAD
   /// Adds data to a specific table
+=======
+>>>>>>> 0836451 (Fix restack errors)
   void addTableData(String table, List<Map<String, dynamic>> data) {
     _tables[table] = data;
   }
@@ -514,6 +543,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     _authStateController.close();
   }
 
+<<<<<<< HEAD
   /// Sets an auth stream error
   void setAuthStreamError(String errorMessage,{Exception? exception}) {
     var ex = Exception(errorMessage);
@@ -521,6 +551,11 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       ex = exception;
     }
     _authStateController.addError(ServerException(Trace.current(), ex));
+=======
+  /// Simulates an auth stream error
+  void simulateAuthStreamError(String errorMessage) {
+    _authStateController.addError(Exception(errorMessage));
+>>>>>>> 0836451 (Fix restack errors)
   }
   
   /// Emits an auth state error
@@ -535,7 +570,11 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     throw UnimplementedError();
   }
 <<<<<<< HEAD
+<<<<<<< HEAD
 }
 =======
 }
 >>>>>>> d7a8e6a (Separate supabase fake classes from main wrapper class)
+=======
+}
+>>>>>>> 0836451 (Fix restack errors)
