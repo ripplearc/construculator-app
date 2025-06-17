@@ -40,14 +40,13 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
 =======
 // coverage:ignore-file 
 import 'dart:async';
-import 'package:construculator/core/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
-/// Concrete implementation of ISupabaseWrapper that wraps the actual Supabase client
-class SupabaseWrapperImpl implements ISupabaseWrapper {
+class DefaultSupabaseWrapper implements SupabaseWrapper {
   final supabase.SupabaseClient _client;
 
-  SupabaseWrapperImpl(this._client);
+  DefaultSupabaseWrapper(this._client);
 
   @override
   Stream<supabase.AuthState> get onAuthStateChange => _client.auth.onAuthStateChange;

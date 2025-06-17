@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 /// Interface that wraps Supabase client functionality
 /// This allows for easier testing by providing a clean abstraction layer
 <<<<<<< HEAD
+<<<<<<< HEAD
 /// Functions will grow as needed based on the project's requirements
 abstract class SupabaseWrapper {
   /// Streams authentication state changes
@@ -24,6 +25,9 @@ abstract class SupabaseWrapper {
   /// [password] The password of the user
 =======
 abstract class ISupabaseWrapper {
+=======
+abstract class SupabaseWrapper {
+>>>>>>> 5b674ca (Refactor supabase library to be more consistent with conventions)
   // Auth-related methods
   Stream<supabase.AuthState> get onAuthStateChange;
   supabase.User? get currentUser;

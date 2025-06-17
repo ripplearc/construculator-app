@@ -10,10 +10,15 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dar
 import 'package:stack_trace/stack_trace.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
+<<<<<<< HEAD
 /// Fake implementation of SupabaseWrapper for testing
 class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Used to notify listeners of changes in the authentication state through [onAuthStateChange]
+=======
+/// Fake implementation of ISupabaseWrapper for testing
+class FakeSupabaseWrapper implements SupabaseWrapper {
+>>>>>>> 5b674ca (Refactor supabase library to be more consistent with conventions)
   final StreamController<supabase.AuthState> _authStateController = 
       StreamController<supabase.AuthState>.broadcast();
   
