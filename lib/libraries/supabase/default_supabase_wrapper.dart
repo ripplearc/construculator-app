@@ -44,19 +44,23 @@ import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.da
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 class DefaultSupabaseWrapper implements SupabaseWrapper {
-  final supabase.SupabaseClient _client;
+  final supabase.SupabaseClient supabaseClient;
 
-  DefaultSupabaseWrapper(this._client);
-
-  @override
-  Stream<supabase.AuthState> get onAuthStateChange => _client.auth.onAuthStateChange;
+  DefaultSupabaseWrapper({required this.supabaseClient});
 
   @override
-  supabase.User? get currentUser => _client.auth.currentUser;
+  Stream<supabase.AuthState> get onAuthStateChange => supabaseClient.auth.onAuthStateChange;
 
   @override
+  supabase.User? get currentUser => supabaseClient.auth.currentUser;
+
+  @override
+<<<<<<< HEAD
   bool get isAuthenticated => _client.auth.currentUser != null;
 >>>>>>> 5777a70 (Fix restack errors)
+=======
+  bool get isAuthenticated => supabaseClient.auth.currentUser != null;
+>>>>>>> 3915f4d (Fix restack errors)
 
   @override
   Future<supabase.AuthResponse> signInWithPassword({
@@ -64,10 +68,14 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
     required String password,
   }) async {
 <<<<<<< HEAD
+<<<<<<< HEAD
     return await _supabaseClient.auth.signInWithPassword(
 =======
     return await _client.auth.signInWithPassword(
 >>>>>>> 5777a70 (Fix restack errors)
+=======
+    return await supabaseClient.auth.signInWithPassword(
+>>>>>>> 3915f4d (Fix restack errors)
       email: email,
       password: password,
     );
@@ -79,9 +87,13 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
     required String password,
   }) async {
 <<<<<<< HEAD
+<<<<<<< HEAD
     return await _supabaseClient.auth.signUp(email: email, password: password);
 =======
     return await _client.auth.signUp(
+=======
+    return await supabaseClient.auth.signUp(
+>>>>>>> 3915f4d (Fix restack errors)
       email: email,
       password: password,
     );
@@ -95,10 +107,14 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
     bool shouldCreateUser = false,
   }) async {
 <<<<<<< HEAD
+<<<<<<< HEAD
     await _supabaseClient.auth.signInWithOtp(
 =======
     await _client.auth.signInWithOtp(
 >>>>>>> 5777a70 (Fix restack errors)
+=======
+    await supabaseClient.auth.signInWithOtp(
+>>>>>>> 3915f4d (Fix restack errors)
       email: email,
       phone: phone,
       shouldCreateUser: shouldCreateUser,
@@ -113,10 +129,14 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
     required supabase.OtpType type,
   }) async {
 <<<<<<< HEAD
+<<<<<<< HEAD
     return await _supabaseClient.auth.verifyOTP(
 =======
     return await _client.auth.verifyOTP(
 >>>>>>> 5777a70 (Fix restack errors)
+=======
+    return await supabaseClient.auth.verifyOTP(
+>>>>>>> 3915f4d (Fix restack errors)
       email: email,
       phone: phone,
       token: token,
@@ -127,6 +147,7 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
   @override
   Future<void> resetPasswordForEmail(String email, {String? redirectTo}) async {
 <<<<<<< HEAD
+<<<<<<< HEAD
     await _supabaseClient.auth.resetPasswordForEmail(
       email,
       redirectTo: redirectTo,
@@ -134,15 +155,22 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
 =======
     await _client.auth.resetPasswordForEmail(email, redirectTo: redirectTo);
 >>>>>>> 5777a70 (Fix restack errors)
+=======
+    await supabaseClient.auth.resetPasswordForEmail(email, redirectTo: redirectTo);
+>>>>>>> 3915f4d (Fix restack errors)
   }
 
   @override
   Future<void> signOut() async {
 <<<<<<< HEAD
+<<<<<<< HEAD
     await _supabaseClient.auth.signOut();
 =======
     await _client.auth.signOut();
 >>>>>>> 5777a70 (Fix restack errors)
+=======
+    await supabaseClient.auth.signOut();
+>>>>>>> 3915f4d (Fix restack errors)
   }
 
   @override
@@ -153,10 +181,14 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
     required dynamic filterValue,
   }) async {
 <<<<<<< HEAD
+<<<<<<< HEAD
     return await _supabaseClient
 =======
     return await _client
 >>>>>>> 5777a70 (Fix restack errors)
+=======
+    return await supabaseClient
+>>>>>>> 3915f4d (Fix restack errors)
         .from(table)
         .select(columns)
         .eq(filterColumn, filterValue)
@@ -169,9 +201,13 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
     required Map<String, dynamic> data,
   }) async {
 <<<<<<< HEAD
+<<<<<<< HEAD
     return await _supabaseClient.from(table).insert(data).select().single();
 =======
     return await _client
+=======
+    return await supabaseClient
+>>>>>>> 3915f4d (Fix restack errors)
         .from(table)
         .insert(data)
         .select()
@@ -187,10 +223,14 @@ class DefaultSupabaseWrapper implements SupabaseWrapper {
     required dynamic filterValue,
   }) async {
 <<<<<<< HEAD
+<<<<<<< HEAD
     return await _supabaseClient
 =======
     return await _client
 >>>>>>> 5777a70 (Fix restack errors)
+=======
+    return await supabaseClient
+>>>>>>> 3915f4d (Fix restack errors)
         .from(table)
         .update(data)
         .eq(filterColumn, filterValue)

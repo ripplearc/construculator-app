@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 /// This allows for easier testing by providing a clean abstraction layer
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 /// Functions will grow as needed based on the project's requirements
 abstract class SupabaseWrapper {
   /// Streams authentication state changes
@@ -29,6 +30,10 @@ abstract class ISupabaseWrapper {
 abstract class SupabaseWrapper {
 >>>>>>> 5b674ca (Refactor supabase library to be more consistent with conventions)
   // Auth-related methods
+=======
+/// Functions will grow as needed based on the project's requirements
+abstract class SupabaseWrapper {
+>>>>>>> 3915f4d (Fix restack errors)
   Stream<supabase.AuthState> get onAuthStateChange;
   supabase.User? get currentUser;
   bool get isAuthenticated;
