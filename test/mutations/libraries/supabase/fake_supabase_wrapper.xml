@@ -148,6 +148,7 @@
     <commands>
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
            <command group="fake_supabase_wrapper_auth_methods" expected-return="0">flutter test test/units/libraries/supabase/fakes/fake_supabase_wrapper_test.dart</command>
             </commands>
 =======
@@ -161,6 +162,10 @@
 >>>>>>> 94ceeb9 (Update mutation config rules)
     </commands>
 >>>>>>> de6d043 (Move supabase wrapper mutation config from core to libraries)
+=======
+           <command group="fake_supabase_wrapper_auth_methods" expected-return="0">flutter test test/units/libraries/supabase/fakes/fake_supabase_wrapper_test.dart</command>
+            </commands>
+>>>>>>> bd5c05b (Refactor supabase tests)
 
     <threshold failure="85">
         <rating over="85" name="A"/>
