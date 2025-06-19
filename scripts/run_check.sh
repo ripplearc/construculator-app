@@ -15,11 +15,16 @@ ARC_CODE_COVERAGE_TARGET=${ARC_CODE_COVERAGE_TARGET:-95}
 # Functions
 check_dependencies() {
   local missing=()
-  for cmd in git flutter dart; do
+  for cmd in git fvm; do
     if ! command -v $cmd &>/dev/null; then
       missing+=("$cmd")
     fi
   done
+
+  if ! command -v fvm &>/dev/null; then
+    echo "FVM is not installed. Please install FVM (https://fvm.app/docs/getting_started/installation) and try again."
+    exit 1
+  fi
 
   if [[ "$RUN_MUTATIONS" == true || "$RUN_COMPREHENSIVE" == true ]] && [[ -z "$(command -v lcov)" ]]; then
     missing+=("lcov")
@@ -41,7 +46,7 @@ pre_check() {
   fi
 
   # Install dependencies
-  flutter pub get
+  fvm flutter pub get
 
   # Get base commit
   git fetch origin "$TARGET_BRANCH"
@@ -53,7 +58,7 @@ pre_check() {
     echo "✅ No Dart files changed"
   else
     echo "🔍 Analyzing changed files..."
-    flutter analyze --fatal-infos --fatal-warnings $changed_dart_files
+    fvm flutter analyze --fatal-infos --fatal-warnings $changed_dart_files
   fi
 
   # Changed tests
@@ -62,7 +67,7 @@ pre_check() {
     echo "✅ No tests changed"
   else
     echo "🧪 Running changed tests..."
-    flutter test $changed_tests --update-goldens --coverage
+    fvm flutter test $changed_tests --update-goldens --coverage
 
     # Process coverage
     if [[ -f "coverage/lcov.info" ]]; then
@@ -159,17 +164,17 @@ comprehensive_check() {
   echo "🚀 Running Comprehensive Check..."
 
   # Install dependencies
-  flutter pub get
+  fvm flutter pub get
 
   # Full code analysis
   echo "🔍 Full code analysis..."
-  flutter analyze --fatal-infos --fatal-warnings .
+  fvm flutter analyze --fatal-infos --fatal-warnings .
 
   # Unit tests with coverage
   if [ -d "test/units" ] && [ "$(ls -A test/units)" ]; then
     echo "🧪 Unit tests with coverage..."
     mkdir -p test-results
-    flutter test test/units --coverage --machine > test-results/flutter.json
+    fvm flutter test test/units --coverage --machine > test-results/flutter.json
 
     # Process coverage
     if [[ -f "coverage/lcov.info" ]]; then
@@ -184,10 +189,6 @@ comprehensive_check() {
       fi
     else
       echo "⚠️ Coverage file missing after running unit tests. This might indicate an issue with test execution or setup."
-      # Optionally, decide if this should be an exit 1 or just a warning.
-      # For now, it's a warning, as the original script exits.
-      # If skipping unit tests is fine, then missing coverage if tests didn't run is also fine.
-      # However, if tests RAN and coverage is STILL missing, that's an error.
       exit 1
     fi
   else
@@ -197,7 +198,7 @@ comprehensive_check() {
   # Widget tests
   if [ -d "test/widgets" ] && [ "$(ls -A test/widgets)" ]; then
     echo "📱 Widget tests..."
-    flutter test test/widgets
+    fvm flutter test test/widgets
   else
     echo "⏩ Skipping widget tests: test/widgets directory not found."
   fi
@@ -205,14 +206,14 @@ comprehensive_check() {
   # Screenshot tests
   if [ -d "test/screenshots" ] && [ "$(ls -A test/screenshots)" ]; then
     echo "🖼️ Screenshot tests..."
-    flutter test test/screenshots --update-goldens
+    fvm flutter test test/screenshots --update-goldens
   else
     echo "⏩ Skipping screenshot tests: test/screenshots directory not found."
   fi
 
   # Build Android
   echo "🤖 Building Android..."
-  flutter build apk --debug
+  fvm flutter build apk --debug
 
   if [[ "$(uname)" == "Darwin" ]]; then
     echo "🍏 Building iOS..."
@@ -221,7 +222,7 @@ comprehensive_check() {
       pod install
       cd ..
     fi
-    flutter build ios --debug --no-codesign
+    fvm flutter build ios --debug --no-codesign
   else
     echo "Skipping iOS build because the system is not macOS."
   fi
@@ -262,7 +263,7 @@ fi
 if $RUN_MUTATIONS; then
   # Install dependencies if not already done
   if ! $RUN_PRE && ! $RUN_COMPREHENSIVE; then
-    flutter pub get
+    fvm flutter pub get
   fi
   
   if ! run_mutation_tests; then
