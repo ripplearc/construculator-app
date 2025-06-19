@@ -5,7 +5,8 @@ workflows:
     environment:
       groups:
         - notification_emails
-      flutter: 3.29.2
+      # See https://docs.flutter.dev/install/archive#stable-channel for mapping between Dart and Flutter SDK versions
+      flutter: 3.32.0
     triggering:
       events:
         - pull_request
@@ -159,7 +160,7 @@ workflows:
       groups:
         - notification_emails
         - ripple_arc
-      flutter: 3.29.2
+      flutter: 3.32.0
     cache:
       cache_paths:
         - ~/.gradle/caches
@@ -313,7 +314,7 @@ workflows:
       groups:
         - notification_emails
         - ripple_arc
-      flutter: 3.29.2
+      flutter: 3.32.0
       ubuntu: 24.04
     cache:
       cache_paths:
@@ -457,7 +458,7 @@ workflows:
       groups:
         - notification_emails
         - ripple_arc
-      flutter: 3.29.2
+      flutter: 3.32.0
     cache:
       cache_paths:
         - ~/.pub-cache
