@@ -6,7 +6,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: 3.7.2
+  sdk: '3.8.0'
 
 dependencies:
   flutter:
@@ -36,6 +36,8 @@ dev_dependencies:
   flutter_native_splash: 2.4.6
   build_runner: 2.4.15
   mutation_test: 1.7.0
+  custom_lint: 0.7.5
+  ripplearc_flutter_lint: 0.1.0
 
 
 flutter:
