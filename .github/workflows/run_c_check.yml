@@ -1,8 +1,7 @@
 name: Trigger Comprehensive Check
-
 on:
   issue_comment:
-    types: [created,edited]
+    types: [created, edited]
 jobs:
   trigger:
     runs-on: ubuntu-latest
@@ -23,12 +22,12 @@ jobs:
           BRANCH_NAME=$(echo "$PR_JSON" | jq -r '.head.ref')
           echo "BRANCH: $BRANCH_NAME"
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
       - name: Trigger Codemagic on Source Branch
         env:
           CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
           CODEMAGIC_APP_ID: ${{ secrets.CODEMAGIC_APP_ID }}
         run: |
-          # Capture the actual response body for debugging
           FULL_RESPONSE=$(curl -s \
             -X POST \
             -H "Content-Type: application/json" \
@@ -36,25 +35,23 @@ jobs:
             -d '{
               "appId": "'"$CODEMAGIC_APP_ID"'",
               "workflowId": "comprehensive-check",
-              "branch": "'"${{ steps.extract-branch.outputs.branch_name }}"'"
+              "branch": "'"${{ steps.extract-branch.outputs.branch_name }}"'",
+              "environment": {
+                "variables": {
+                  "FORCE_FAIL": "false"
+                }
+              }
             }' \
             "https://api.codemagic.io/builds"
           )
 
           echo "Full API response: $FULL_RESPONSE"
 
-          if [ "$RESPONSE" -ne 200 ]; then
-            echo "Error: Received HTTP status $RESPONSE from Codemagic API."
-            exit 1
-          else
-            echo "Codemagic triggered successfully with HTTP status $RESPONSE."
-          fi
-      - name: Trigger Ios Debug Build on Source Branch
+      - name: Trigger iOS Debug Build on Source Branch
         env:
           CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
           CODEMAGIC_APP_ID: ${{ secrets.CODEMAGIC_APP_ID }}
         run: |
-          # Capture the actual response body for debugging
           FULL_RESPONSE=$(curl -s \
             -X POST \
             -H "Content-Type: application/json" \
@@ -62,16 +59,14 @@ jobs:
             -d '{
               "appId": "'"$CODEMAGIC_APP_ID"'",
               "workflowId": "ios-debug-build",
-              "branch": "'"${{ steps.extract-branch.outputs.branch_name }}"'"
+              "branch": "'"${{ steps.extract-branch.outputs.branch_name }}"'",
+              "environment": {
+                "variables": {
+                  "FORCE_FAIL": "false"
+                }
+              }
             }' \
             "https://api.codemagic.io/builds"
           )
 
           echo "Full API response: $FULL_RESPONSE"
-
-          if [ "$RESPONSE" -ne 200 ]; then
-            echo "Error: Received HTTP status $RESPONSE from Codemagic API."
-            exit 1
-          else
-            echo "Codemagic triggered successfully with HTTP status $RESPONSE."
-          fi
