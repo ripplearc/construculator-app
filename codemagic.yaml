@@ -166,6 +166,12 @@ workflows:
         - ~/.pub-cache
         - $FLUTTER_ROOT/.pub-cache
     scripts:
+      - name: Check for FORCE_FAIL
+        script: |
+          if [ "$FORCE_FAIL" = "true" ]; then
+            echo "FORCE_FAIL is true. Failing the workflow."
+            exit 1
+          fi
       - name: Clone and Checkout
         script: |
           git clone $CM_REPO_URL .
@@ -240,50 +246,37 @@ workflows:
 
       - name: Run Widget Tests
         script: |
-          flutter test test/widgets
+          if find test/widgets -type f -name "*.dart" | grep -q .; then
+            flutter test test/widgets
+          else
+            echo "No widget tests found. Skipping."
+          fi
 
       - name: Run Screenshot Tests
         script: |
-          flutter test test/screenshots
+          if find test/screenshots -type f -name "*.dart" | grep -q .; then
+            flutter test test/screenshots
+          else
+            echo "No screenshot tests found. Skipping."
+          fi
 
       - name: Mutation Testing
         script: |
           BASE_COMMIT=$(git merge-base HEAD origin/$BASE_BRANCH)
           
-          echo "🧬 Running mutation tests..."
-          # Get changed mutation config files from test/mutations/
-          CHANGED_MUTATION_CONFIGS=$(git diff --name-only --diff-filter=d "$BASE_COMMIT" HEAD -- "test/mutations/*.xml")
+          echo "🧬 Checking for changed mutation config files..."
+          CHANGED_FILES=$(git diff --name-only --diff-filter=d "$BASE_COMMIT" HEAD -- "test/mutations/*.xml")
           
-          if [ -z "$CHANGED_MUTATION_CONFIGS" ]; then
-            echo "✅ No changed mutation config files (test/mutations/*.xml) detected. Skipping mutation tests."
-            exit 0
-          else
-            echo "Found changed mutation config files:"
-            echo "$CHANGED_MUTATION_CONFIGS"
-            FAILED_MUTATION_TESTS=0
-            # Ensure IFS is set to newline for the loop to handle filenames with spaces correctly, though git diff usually doesn't produce them.
-            OLD_IFS="$IFS"
-            IFS=$'\n'
-            for CONFIG_FILE in $CHANGED_MUTATION_CONFIGS; do
-              IFS="$OLD_IFS" # Restore IFS for commands within the loop
-              echo "🏃 Running mutation test with config: $CONFIG_FILE"
-              if ! dart run mutation_test "$CONFIG_FILE" --no-builtin; then
-                echo "❌ Mutation test failed for config: $CONFIG_FILE"
-                FAILED_MUTATION_TESTS=$((FAILED_MUTATION_TESTS + 1))
-              else
-                echo "✅ Mutation test passed for config: $CONFIG_FILE"
-              fi
-              IFS=$'\n' # Re-set IFS for the next iteration
-            done
-            IFS="$OLD_IFS" # Restore IFS after the loop
-
-            if [ "$FAILED_MUTATION_TESTS" -gt 0 ]; then
-              echo "❌ $FAILED_MUTATION_TESTS mutation test(s) failed."
-              exit 1
-            else
-              echo "✅ All mutation tests passed."
-            fi
+          if [ -z "$CHANGED_FILES" ]; then
+          echo "✅ No changed mutation config files detected. Skipping mutation tests."
+          exit 0
           fi
+          
+          echo "Found changed mutation config files:"
+          echo "$CHANGED_FILES"
+          
+          echo "🧪 Running mutation tests..."
+          dart run mutation_test $CHANGED_FILES --no-builtin
 
       - name: Build Android Debug
         script: |
@@ -349,7 +342,7 @@ workflows:
           fi
           HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
           mkdir -p test-results
-          flutter test --tags=units --coverage --machine > test-results/flutter.json
+          flutter test test/units --coverage --machine > test-results/flutter.json
           
           # Compute coverage
           if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
@@ -400,23 +393,33 @@ workflows:
 
       - name: Run Widget Tests
         script: |
-          flutter test test/widgets
+          if find test/widgets -type f -name "*.dart" | grep -q .; then
+            flutter test test/widgets
+          else
+            echo "No widget tests found. Skipping."
+          fi
 
       - name: Run Screenshot Tests
         script: |
-          flutter test test/screenshots
+          if find test/screenshots -type f -name "*.dart" | grep -q .; then
+            flutter test test/screenshots
+          else
+            echo "No screenshot tests found. Skipping."
+          fi
 
       - name: Mutation Testing
         script: |
-          CHANGED_FILES=$(git diff --name-only  --diff-filter=d HEAD HEAD~1 | grep -v "^test" | grep ".dart$" | tr '\n' ' ')
-          # Check if CHANGED_FILES is empty
-          if [ -z "$CHANGED_FILES" ]; then
-            echo "No changed Dart files detected. Skipping mutation tests."
+          echo "🧬 Looking for mutation configs in test/mutations/..."
+
+          CONFIG_FILES=$(find test/mutations -type f -name "*.xml" | tr '\n' ' ')
+
+          if [ -z "$CONFIG_FILES" ]; then
+            echo "✅ No mutation config files found. Skipping mutation tests."
             exit 0
-          else
-            echo "Running mutation tests on: $CHANGED_FILES"
-            dart run mutation_test $CHANGED_FILES --rules=mutation_test_rules.xml
           fi
+
+          echo "🧪 Running mutation tests on: $CONFIG_FILES"
+          dart run mutation_test $CONFIG_FILES --no-builtin
 
       - name: Build Android Debug
         script: |
@@ -456,6 +459,12 @@ workflows:
         - $FLUTTER_ROOT/.pub-cache
         - /usr/local/Homebrew
     scripts:
+      - name: Check for FORCE_FAIL
+        script: |
+          if [ "$FORCE_FAIL" = "true" ]; then
+            echo "FORCE_FAIL is true. Failing the workflow."
+            exit 1
+          fi
       - name: Clone and Checkout
         script: |
           git clone "$CM_REPO_URL" .
