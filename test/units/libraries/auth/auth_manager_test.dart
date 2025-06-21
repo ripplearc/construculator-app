@@ -23,14 +23,6 @@ void main() {
   late AuthManager authManager;
 
   setUp(() {
-    // authNotifier = FakeAuthNotifier();
-    // authRepository = FakeAuthRepository();
-    // supabaseWrapper = FakeSupabaseWrapper();
-    // authManager = AuthManagerImpl(
-    //   wrapper: supabaseWrapper,
-    //   authRepository: authRepository,
-    //   authNotifier: authNotifier,
-    // );
     Modular.init(_TestAppModule());
     authNotifier = Modular.get<AuthNotifier>() as FakeAuthNotifier;
     authRepository = Modular.get<AuthRepository>() as FakeAuthRepository;
@@ -40,8 +32,6 @@ void main() {
 
   tearDown(() {
     Modular.destroy();
-    // authNotifier.dispose();
-    // supabaseWrapper.dispose();
   });
 
   group('AuthManagerImpl', () {
@@ -488,7 +478,7 @@ void main() {
 
         expect(result.isSuccess, false);
         expect(result.errorType, AuthErrorType.invalidCredentials);
-        expect(result.errorMessage, 'Please enter a valid email address');
+        expect(result.errorMessage, AuthValidationErrorType.invalidEmail.message);
       });
 
       test('loginWithEmail should reject empty email', () async {
@@ -496,7 +486,7 @@ void main() {
 
         expect(result.isSuccess, false);
         expect(result.errorType, AuthErrorType.invalidCredentials);
-        expect(result.errorMessage, 'Email is required');
+        expect(result.errorMessage, AuthValidationErrorType.emailRequired.message);
       });
 
       test('loginWithEmail should reject weak password', () async {
@@ -509,7 +499,7 @@ void main() {
         expect(result.errorType, AuthErrorType.invalidCredentials);
         expect(
           result.errorMessage,
-          'Password must be at least 8 characters long',
+          AuthValidationErrorType.passwordTooShort.message,
         );
       });
 
@@ -523,7 +513,7 @@ void main() {
         expect(result.errorType, AuthErrorType.invalidCredentials);
         expect(
           result.errorMessage,
-          'Password must contain at least one uppercase letter',
+          AuthValidationErrorType.passwordMissingUppercase.message,
         );
       });
 
@@ -535,7 +525,7 @@ void main() {
 
         expect(result.isSuccess, false);
         expect(result.errorType, AuthErrorType.invalidCredentials);
-        expect(result.errorMessage, 'Please enter a valid email address');
+        expect(result.errorMessage, AuthValidationErrorType.invalidEmail.message);
       });
 
       test('registerWithEmail should reject password without special character', () async {
@@ -548,7 +538,7 @@ void main() {
         expect(result.errorType, AuthErrorType.invalidCredentials);
         expect(
           result.errorMessage,
-          'Password must contain at least one special character (!@#\$&*~)',
+          AuthValidationErrorType.passwordMissingSpecialChar.message,
         );
       });
 
@@ -560,7 +550,7 @@ void main() {
 
         expect(result.isSuccess, false);
         expect(result.errorType, AuthErrorType.invalidCredentials);
-        expect(result.errorMessage, 'Please enter a valid email address');
+        expect(result.errorMessage, AuthValidationErrorType.invalidEmail.message);
       });
 
       test('sendOtp should reject invalid phone for phone receiver', () async {
@@ -573,7 +563,7 @@ void main() {
         expect(result.errorType, AuthErrorType.invalidCredentials);
         expect(
           result.errorMessage,
-          'Please enter a valid phone number in international format (e.g., +1234567890)',
+          AuthValidationErrorType.invalidPhone.message,
         );
       });
 
@@ -586,7 +576,7 @@ void main() {
 
         expect(result.isSuccess, false);
         expect(result.errorType, AuthErrorType.invalidCredentials);
-        expect(result.errorMessage, 'OTP must be exactly 6 digits');
+        expect(result.errorMessage, AuthValidationErrorType.invalidOtp.message);
       });
 
       test('verifyOtp should reject non-numeric OTP', () async {
@@ -598,7 +588,7 @@ void main() {
 
         expect(result.isSuccess, false);
         expect(result.errorType, AuthErrorType.invalidCredentials);
-        expect(result.errorMessage, 'OTP must be exactly 6 digits');
+        expect(result.errorMessage, AuthValidationErrorType.invalidOtp.message);
       });
 
       test('resetPassword should reject invalid email format', () async {
@@ -606,7 +596,7 @@ void main() {
 
         expect(result.isSuccess, false);
         expect(result.errorType, AuthErrorType.invalidCredentials);
-        expect(result.errorMessage, 'Please enter a valid email address');
+        expect(result.errorMessage, AuthValidationErrorType.invalidEmail.message);
       });
 
       test('isEmailRegistered should reject invalid email format', () async {
@@ -614,7 +604,7 @@ void main() {
 
         expect(result.isSuccess, false);
         expect(result.errorType, AuthErrorType.invalidCredentials);
-        expect(result.errorMessage, 'Please enter a valid email address');
+        expect(result.errorMessage, AuthValidationErrorType.invalidEmail.message);
       });
 
       test('loginWithEmail should accept valid credentials', () async {

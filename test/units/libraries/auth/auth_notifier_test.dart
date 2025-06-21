@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_state.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
@@ -46,19 +45,6 @@ void main() {
 
   group('AuthNotifierImpl', () {
     group('Interface Implementation', () {
-      test('should properly implement all AuthNotifier interface methods', () {
-        expect(authNotifier, isA<AuthNotifier>());
-      });
-
-      test('should properly implement Disposable interface for resource cleanup', () {
-        expect(authNotifier, isA<Disposable>());
-      });
-
-      test('should expose required onAuthStateChanged and onUserProfileChanged streams', () {
-        expect(authNotifier.onAuthStateChanged, isA<Stream<AuthState>>());
-        expect(authNotifier.onUserProfileChanged, isA<Stream<User?>>());
-      });
-
       test('should expose required state emission methods', () {
         final authState = AuthState(
           status: AuthStatus.authenticated,

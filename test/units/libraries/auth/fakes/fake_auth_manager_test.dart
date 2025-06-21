@@ -15,7 +15,7 @@ void main() {
   late FakeAuthRepository authRepository;
 
   const testEmail = 'test@example.com';
-  const testPassword = 'password123';
+  const testPassword = '5i2Un@D8Y9!';
   const testUserId = 'test-test';
 
   setUp(() {
@@ -47,7 +47,7 @@ void main() {
 
           expect(result.isSuccess, false);
           expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(result.errorMessage, 'Please enter a valid email address');
+          expect(result.errorMessage, AuthValidationErrorType.emailRequired.message);
           expect(authManager.loginAttempts.length, 1);
           expect(authManager.loginAttempts.first.email, '');
         });
@@ -83,7 +83,7 @@ void main() {
 
           expect(result.isSuccess, false);
           expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(result.errorMessage, 'Password cannot be empty');
+          expect(result.errorMessage, AuthValidationErrorType.passwordRequired.message);
           expect(authManager.loginAttempts.length, 1);
           expect(authManager.loginAttempts.first.password, '');
         });
@@ -109,7 +109,7 @@ void main() {
           expect(result.errorType, AuthErrorType.invalidCredentials);
           expect(
             result.errorMessage,
-            'Please enter a valid 6-digit verification code',
+            AuthValidationErrorType.otpRequired.message,
           );
           expect(authManager.otpVerificationAttempts.length, 1);
           expect(authManager.otpVerificationAttempts.first.otp, '');
@@ -126,7 +126,7 @@ void main() {
           expect(result.errorType, AuthErrorType.invalidCredentials);
           expect(
             result.errorMessage,
-            'Please enter a valid 6-digit verification code',
+            AuthValidationErrorType.invalidOtp.message,
           );
           expect(authManager.otpVerificationAttempts.length, 1);
           expect(authManager.otpVerificationAttempts.first.otp, '12345');
@@ -143,7 +143,7 @@ void main() {
           expect(result.errorType, AuthErrorType.invalidCredentials);
           expect(
             result.errorMessage,
-            'Please enter a valid 6-digit verification code',
+            AuthValidationErrorType.invalidOtp.message,
           );
           expect(authManager.otpVerificationAttempts.length, 1);
           expect(authManager.otpVerificationAttempts.first.otp, '1234567');
@@ -174,7 +174,7 @@ void main() {
           expect(result.errorType, AuthErrorType.invalidCredentials);
           expect(
             result.errorMessage,
-            'Please enter a valid 6-digit verification code',
+            AuthValidationErrorType.invalidOtp.message,
           );
           expect(authManager.otpVerificationAttempts.length, 1);
           expect(authManager.otpVerificationAttempts.first.otp, '12a456');
@@ -245,7 +245,7 @@ void main() {
 
           expect(result.isSuccess, false);
           expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(result.errorMessage, 'Password cannot be empty');
+          expect(result.errorMessage, AuthValidationErrorType.passwordRequired.message);
           expect(authManager.registrationAttempts.length, 1);
           expect(authManager.registrationAttempts.first.password, '');
         });

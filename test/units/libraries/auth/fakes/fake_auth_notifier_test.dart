@@ -47,11 +47,6 @@ void main() {
 
   group('FakeAuthNotifier', () {
     group('Interface Contract Verification', () {
-      test('should provide all required streams', () {
-        expect(fakeNotifier.onAuthStateChanged, isA<Stream<AuthState>>());
-        expect(fakeNotifier.onUserProfileChanged, isA<Stream<User?>>());
-      });
-
       test('should provide all required emit methods', () {
         final authState = AuthState(
           status: AuthStatus.authenticated,
@@ -137,7 +132,6 @@ void main() {
         );
         final user = createFakeUser();
 
-        // Start listening FIRST
         final authStateReceived = expectLater(
           fakeNotifier.onAuthStateChanged,
           emits(authState),

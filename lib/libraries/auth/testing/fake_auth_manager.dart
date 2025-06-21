@@ -3,6 +3,7 @@ import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_state.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
@@ -42,12 +43,6 @@ class FakeAuthManager implements AuthManager {
   /// List of logout attempts
   final List<void> logoutAttempts = [];
 
-  // Validation patterns
-  static final RegExp _emailRegex = RegExp(
-    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-  );
-  static final RegExp _otpRegex = RegExp(r'^\d{6}$');
-
   FakeAuthManager({
     required AuthNotifier authNotifier,
     required AuthRepository authRepository,
@@ -85,15 +80,10 @@ class FakeAuthManager implements AuthManager {
 
   /// Validate email format
   AuthResult<void> _validateEmail(String email) {
-    if (email.isEmpty) {
+    final emailValidation = AuthValidation.validateEmail(email);
+    if (emailValidation != null) {
       return AuthResult.failure(
-        'Please enter a valid email address',
-        AuthErrorType.invalidCredentials,
-      );
-    }
-    if (!_emailRegex.hasMatch(email)) {
-      return AuthResult.failure(
-        'Please enter a valid email address',
+        emailValidation.message,
         AuthErrorType.invalidCredentials,
       );
     }
@@ -102,9 +92,10 @@ class FakeAuthManager implements AuthManager {
 
   /// Validate password
   AuthResult<void> _validatePassword(String password) {
-    if (password.isEmpty) {
+     final passwordValidation = AuthValidation.validatePassword(password);
+    if (passwordValidation != null) {
       return AuthResult.failure(
-        'Password cannot be empty',
+        passwordValidation.message,
         AuthErrorType.invalidCredentials,
       );
     }
@@ -113,9 +104,10 @@ class FakeAuthManager implements AuthManager {
 
   /// Validate OTP format
   AuthResult<void> _validateOtp(String otp) {
-    if (!_otpRegex.hasMatch(otp)) {
+     final otpValidation = AuthValidation.validateOtp(otp);
+    if (otpValidation != null) {
       return AuthResult.failure(
-        'Please enter a valid 6-digit verification code',
+        otpValidation.message,
         AuthErrorType.invalidCredentials,
       );
     }
@@ -138,11 +130,10 @@ class FakeAuthManager implements AuthManager {
       );
     }
 
-    final passwordValidation = _validatePassword(password);
-    if (!passwordValidation.isSuccess) {
+    if(password.isEmpty) {
       return AuthResult.failure(
-        passwordValidation.errorMessage!,
-        passwordValidation.errorType!,
+        AuthValidationErrorType.passwordRequired.message,
+        AuthErrorType.invalidCredentials,
       );
     }
 

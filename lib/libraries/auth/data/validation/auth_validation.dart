@@ -1,3 +1,5 @@
+import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+
 /// Utility class for validating authentication inputs
 class AuthValidation {
   // Email validation regex pattern
@@ -19,14 +21,14 @@ class AuthValidation {
 
   /// Validates an email address
   /// 
-  /// Returns a [String?] with an error message if validation fails, null otherwise
-  static String? validateEmail(String? email) {
+  /// Returns an [AuthValidationErrorType?] with an error type if validation fails, null otherwise
+  static AuthValidationErrorType? validateEmail(String? email) {
     if (email == null || email.isEmpty) {
-      return 'Email is required';
+      return AuthValidationErrorType.emailRequired;
     }
 
     if (!_emailRegex.hasMatch(email)) {
-      return 'Please enter a valid email address';
+      return AuthValidationErrorType.invalidEmail;
     }
 
     return null;
@@ -41,30 +43,30 @@ class AuthValidation {
   /// - Contains at least one number
   /// - Contains at least one special character (!@#$&*~)
   /// 
-  /// Returns a [String?] with an error message if validation fails, null otherwise
-  static String? validatePassword(String? password) {
+  /// Returns an [AuthValidationErrorType?] with an error type if validation fails, null otherwise
+  static AuthValidationErrorType? validatePassword(String? password) {
     if (password == null || password.isEmpty) {
-      return 'Password is required';
+      return AuthValidationErrorType.passwordRequired;
     }
 
     if (password.length < 8) {
-      return 'Password must be at least 8 characters long';
+      return AuthValidationErrorType.passwordTooShort;
     }
 
     if (!_uppercaseRegex.hasMatch(password)) {
-      return 'Password must contain at least one uppercase letter';
+      return AuthValidationErrorType.passwordMissingUppercase;
     }
 
     if (!_lowercaseRegex.hasMatch(password)) {
-      return 'Password must contain at least one lowercase letter';
+      return AuthValidationErrorType.passwordMissingLowercase;
     }
 
     if (!_numberRegex.hasMatch(password)) {
-      return 'Password must contain at least one number';
+      return AuthValidationErrorType.passwordMissingNumber;
     }
 
     if (!_specialCharRegex.hasMatch(password)) {
-      return 'Password must contain at least one special character (!@#\$&*~)';
+      return AuthValidationErrorType.passwordMissingSpecialChar;
     }
 
     return null;
@@ -75,14 +77,14 @@ class AuthValidation {
   /// OTP requirements:
   /// - Must be exactly 6 digits
   /// 
-  /// Returns a [String?] with an error message if validation fails, null otherwise
-  static String? validateOtp(String? otp) {
+  /// Returns an [AuthValidationErrorType?] with an error type if validation fails, null otherwise
+  static AuthValidationErrorType? validateOtp(String? otp) {
     if (otp == null || otp.isEmpty) {
-      return 'OTP is required';
+      return AuthValidationErrorType.otpRequired;
     }
 
     if (!_otpRegex.hasMatch(otp)) {
-      return 'OTP must be exactly 6 digits';
+      return AuthValidationErrorType.invalidOtp;
     }
 
     return null;
@@ -94,14 +96,14 @@ class AuthValidation {
   /// - Must be in international format (+XXX...)
   /// - Must be between 8 and 15 digits (including country code)
   /// 
-  /// Returns a [String?] with an error message if validation fails, null otherwise
-  static String? validatePhone(String? phone) {
+  /// Returns an [AuthValidationErrorType?] with an error type if validation fails, null otherwise
+  static AuthValidationErrorType? validatePhone(String? phone) {
     if (phone == null || phone.isEmpty) {
-      return 'Phone number is required';
+      return AuthValidationErrorType.phoneRequired;
     }
 
     if (!_phoneRegex.hasMatch(phone)) {
-      return 'Please enter a valid phone number in international format (e.g., +1234567890)';
+      return AuthValidationErrorType.invalidPhone;
     }
 
     return null;
