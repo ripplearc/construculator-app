@@ -280,7 +280,7 @@ workflows:
 
       - name: Build Android Debug
         script: |
-          flutter build apk --debug
+          flutter build apk --flavor dogfood
 
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
@@ -423,7 +423,7 @@ workflows:
 
       - name: Build Android Debug
         script: |
-          flutter build apk --debug
+          flutter build apk --flavor dogfood
 
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
