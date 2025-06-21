@@ -263,9 +263,13 @@ workflows:
       - name: Mutation Testing
         script: |
           echo "🧬 Cloning origin branch..."
+          git fetch --unshallow || true
           git fetch origin $BASE_BRANCH:refs/remotes/origin/$BASE_BRANCH
           BASE_COMMIT=$(git merge-base HEAD origin/$BASE_BRANCH)
-          
+          if [ -z "$BASE_COMMIT" ]; then
+          echo "⚠️ Warning: Unable to determine base commit. Skipping mutation tests to avoid false negatives."
+          exit 0
+          fi
           echo "🧬 Checking for changed mutation config files..."
           CHANGED_FILES=$(git diff --name-only --diff-filter=d "$BASE_COMMIT" -- "test/mutations/*.xml")
           
