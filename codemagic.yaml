@@ -262,6 +262,8 @@ workflows:
 
       - name: Mutation Testing
         script: |
+          echo "🧬 Cloning origin branch..."
+          git fetch origin $BASE_BRANCH
           BASE_COMMIT=$(git merge-base HEAD origin/$BASE_BRANCH)
           
           echo "🧬 Checking for changed mutation config files..."

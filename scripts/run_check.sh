@@ -125,7 +125,7 @@ run_mutation_tests() {
     logfile="$tmpdir/${clean_name}.log"
 
     echo "🏃 Running mutation test: $mutation_file"
-    if ! mutation_test "$mutation_file" --no-builtin > "$logfile" 2>&1; then
+    if ! dart run mutation_test "$mutation_file" --no-builtin > "$logfile" 2>&1; then
       echo "❌ Mutation test failed for: $mutation_file"
       cat "$logfile"
       exit 1
