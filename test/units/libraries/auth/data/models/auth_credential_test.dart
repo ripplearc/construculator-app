@@ -61,13 +61,22 @@ void main() {
         },
       );
 
-      test('should create empty credential with mutable metadata', () {
-        final credential = UserCredential.empty();
+      test('fromJson should create credential from json data', () {
+        final credential = UserCredential(
+          id: '123',
+          email: 'test@example.com',
+          metadata: {'test_key': 'test_value'},
+          createdAt: DateTime.now(),
+        );
 
-        credential.metadata['test_key'] = 'test_value';
+        final json = credential.toJson();
 
-        expect(credential.metadata['test_key'], 'test_value');
-        expect(credential.metadata, hasLength(1));
+        final credentialFromJson = UserCredential.fromJson(json);
+
+        expect(credentialFromJson.id, credential.id);
+        expect(credentialFromJson.email, credential.email);
+        expect(credentialFromJson.metadata, credential.metadata);
+        expect(credentialFromJson.createdAt, credential.createdAt);
       });
     });
   });
