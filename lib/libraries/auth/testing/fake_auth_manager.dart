@@ -1,0 +1,409 @@
+import 'dart:async';
+import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
+import 'package:construculator/libraries/auth/data/models/auth_state.dart';
+import 'package:construculator/libraries/auth/data/models/auth_user.dart';
+import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
+
+class FakeAuthManager implements AuthManager {
+  final AuthNotifierController _authNotifier;
+  final AuthRepository _authRepository;
+  
+  // Flag to control if auth operations should succeed
+  bool _authShouldSucceed = true;
+  
+  // Error message and type to be returned on failure
+  String? _errorMessage;
+  AuthErrorType _errorType = AuthErrorType.serverError;
+  
+  // Currently authenticated user credential
+  UserCredential? _currentCredential;
+  
+  /// List of login attempts
+  final List<({String email, String password})> loginAttempts = [];
+  
+  /// List of registration attempts
+  final List<({String email, String password})> registrationAttempts = [];
+  
+  /// List of OTP send attempts
+  final List<({String address, OtpReceiver receiver})> otpSendAttempts = [];
+  
+  /// List of OTP verification attempts
+  final List<({String address, String otp, OtpReceiver receiver})> otpVerificationAttempts = [];
+  
+  /// List of password reset attempts
+  final List<String> passwordResetAttempts = [];
+  
+  /// List of email registration check attempts
+  final List<String> emailCheckAttempts = [];
+  
+  /// List of logout attempts
+  final List<void> logoutAttempts = [];
+
+  FakeAuthManager({
+    required AuthNotifierController authNotifier,
+    required AuthRepository authRepository,
+  })  : _authNotifier = authNotifier,
+        _authRepository = authRepository {
+    // Initialize with unauthenticated state
+    _authNotifier.emitAuthStateChanged(
+      AuthState(status: AuthStatus.unauthenticated, user: null),
+    );
+  }
+
+  /// Configure the auth response behavior
+  void setAuthResponse({
+    bool succeed = true, 
+    String? errorMessage,
+    AuthErrorType errorType = AuthErrorType.serverError,
+  }) {
+    _authShouldSucceed = succeed;
+    _errorMessage = errorMessage;
+    _errorType = errorType;
+  }
+
+  /// Set the current user credential
+  void setCurrentCredential(UserCredential? credential) {
+    _currentCredential = credential;
+    _authNotifier.emitAuthStateChanged(
+      AuthState(
+        status: credential != null 
+          ? AuthStatus.authenticated 
+          : AuthStatus.unauthenticated,
+        user: credential,
+      ),
+    );
+  }
+
+  /// Validate email format
+  AuthResult<void> _validateEmail(String email) {
+    final emailValidation = AuthValidation.validateEmail(email);
+    if (emailValidation != null) {
+      return AuthResult.failure(
+        emailValidation.message,
+        AuthErrorType.invalidCredentials,
+      );
+    }
+    return AuthResult.success(null);
+  }
+
+  /// Validate password
+  AuthResult<void> _validatePassword(String password) {
+     final passwordValidation = AuthValidation.validatePassword(password);
+    if (passwordValidation != null) {
+      return AuthResult.failure(
+        passwordValidation.message,
+        AuthErrorType.invalidCredentials,
+      );
+    }
+    return AuthResult.success(null);
+  }
+
+  /// Validate OTP format
+  AuthResult<void> _validateOtp(String otp) {
+     final otpValidation = AuthValidation.validateOtp(otp);
+    if (otpValidation != null) {
+      return AuthResult.failure(
+        otpValidation.message,
+        AuthErrorType.invalidCredentials,
+      );
+    }
+    return AuthResult.success(null);
+  }
+
+  @override
+  Future<AuthResult<UserCredential>> loginWithEmail(
+    String email,
+    String password,
+  ) async {
+    loginAttempts.add((email: email, password: password));
+    
+    // Validate inputs
+    final emailValidation = _validateEmail(email);
+    if (!emailValidation.isSuccess) {
+      return AuthResult.failure(
+        emailValidation.errorMessage!,
+        emailValidation.errorType!,
+      );
+    }
+
+    if(password.isEmpty) {
+      return AuthResult.failure(
+        AuthValidationErrorType.passwordRequired.message,
+        AuthErrorType.invalidCredentials,
+      );
+    }
+
+    if (!_authShouldSucceed) {
+      return AuthResult.failure(
+        _errorMessage ?? 'Login failed',
+        _errorType,
+      );
+    }
+
+    final credential = UserCredential(
+      id: 'test-${email.split('@')[0]}',
+      email: email,
+      metadata: {},
+      createdAt: DateTime.now(),
+    );
+    
+    setCurrentCredential(credential);
+    return AuthResult.success(credential);
+  }
+
+  @override
+  Future<AuthResult<UserCredential>> registerWithEmail(
+    String email,
+    String password,
+  ) async {
+    registrationAttempts.add((email: email, password: password));
+    
+    // Validate inputs
+    final emailValidation = _validateEmail(email);
+    if (!emailValidation.isSuccess) {
+      return AuthResult.failure(
+        emailValidation.errorMessage!,
+        emailValidation.errorType!,
+      );
+    }
+
+    final passwordValidation = _validatePassword(password);
+    if (!passwordValidation.isSuccess) {
+      return AuthResult.failure(
+        passwordValidation.errorMessage!,
+        passwordValidation.errorType!,
+      );
+    }
+
+    if (!_authShouldSucceed) {
+      return AuthResult.failure(
+        _errorMessage ?? 'Registration failed',
+        _errorType,
+      );
+    }
+
+    final credential = UserCredential(
+      id: 'test-${email.split('@')[0]}',
+      email: email,
+      metadata: {},
+      createdAt: DateTime.now(),
+    );
+    
+    setCurrentCredential(credential);
+    return AuthResult.success(credential);
+  }
+
+  @override
+  Future<AuthResult> sendOtp(String address, OtpReceiver receiver) async {
+    otpSendAttempts.add((address: address, receiver: receiver));
+    
+    // Validate address based on receiver type
+    if (receiver == OtpReceiver.email) {
+      final validation = _validateEmail(address);
+      if (!validation.isSuccess) {
+        return AuthResult.failure(
+          validation.errorMessage!,
+          validation.errorType!,
+        );
+      }
+    }
+    
+    if (!_authShouldSucceed) {
+      return AuthResult.failure(
+        _errorMessage ?? 'Failed to send OTP',
+        _errorType,
+      );
+    }
+    
+    return AuthResult.success(null);
+  }
+
+  @override
+  Future<AuthResult<UserCredential>> verifyOtp(
+    String address,
+    String otp,
+    OtpReceiver receiver,
+  ) async {
+    otpVerificationAttempts.add((
+      address: address,
+      otp: otp,
+      receiver: receiver,
+    ));
+    
+    // Validate address based on receiver type
+    if (receiver == OtpReceiver.email) {
+      final validation = _validateEmail(address);
+      if (!validation.isSuccess) {
+        return AuthResult.failure(
+          validation.errorMessage!,
+          validation.errorType!,
+        );
+      }
+    }
+
+    // Validate OTP
+    final otpValidation = _validateOtp(otp);
+    if (!otpValidation.isSuccess) {
+      return AuthResult.failure(
+        otpValidation.errorMessage!,
+        otpValidation.errorType!,
+      );
+    }
+    
+    if (!_authShouldSucceed) {
+      return AuthResult.failure(
+        _errorMessage ?? 'Invalid verification code',
+        _errorType,
+      );
+    }
+
+    final credential = UserCredential(
+      id: 'test-${address.split('@')[0]}',
+      email: receiver == OtpReceiver.email ? address : '',
+      metadata: {},
+      createdAt: DateTime.now(),
+    );
+    
+    setCurrentCredential(credential);
+    return AuthResult.success(credential);
+  }
+
+  @override
+  Future<AuthResult<bool>> resetPassword(String email) async {
+    passwordResetAttempts.add(email);
+    
+    // Validate email
+    final validation = _validateEmail(email);
+    if (!validation.isSuccess) {
+      return AuthResult.failure(
+        validation.errorMessage!,
+        validation.errorType!,
+      );
+    }
+    
+    if (!_authShouldSucceed) {
+      return AuthResult.failure(
+        _errorMessage ?? 'Password reset failed',
+        _errorType,
+      );
+    }
+    
+    return AuthResult.success(true);
+  }
+
+  @override
+  Future<AuthResult<bool>> isEmailRegistered(String email) async {
+    emailCheckAttempts.add(email);
+    
+    // Validate email
+    final validation = _validateEmail(email);
+    if (!validation.isSuccess) {
+      return AuthResult.failure(
+        validation.errorMessage!,
+        validation.errorType!,
+      );
+    }
+    
+    if (!_authShouldSucceed) {
+      return AuthResult.failure(
+        _errorMessage ?? 'Email check failed',
+        _errorType,
+      );
+    }
+    
+    return AuthResult.success(true);
+  }
+
+  @override
+  Future<AuthResult<void>> logout() async {
+    logoutAttempts.add(null);
+    
+    if (!_authShouldSucceed) {
+      return AuthResult.failure(
+        _errorMessage ?? 'Logout failed',
+        _errorType,
+      );
+    }
+    
+    setCurrentCredential(null);
+    return AuthResult.success(null);
+  }
+
+  @override
+  bool isAuthenticated() {
+    return _currentCredential != null;
+  }
+
+  @override
+  Future<AuthResult<User?>> createUserProfile(User user) async {
+    if (!_authShouldSucceed) {
+      return AuthResult.failure(
+        _errorMessage ?? 'Failed to create user profile',
+        _errorType,
+      );
+    }
+    
+    final result = await _authRepository.createUserProfile(user);
+    _authNotifier.emitUserProfileChanged(result);
+    return AuthResult.success(result);
+  }
+
+  @override
+  AuthResult<UserCredential?> getCurrentCredentials() {
+    if (!_authShouldSucceed) {
+      return AuthResult.failure(
+        _errorMessage ?? 'Failed to get current credentials',
+        _errorType,
+      );
+    }
+    
+    return AuthResult.success(_currentCredential);
+  }
+
+  @override
+  Future<AuthResult<User?>> getUserProfile(String credentialId) async {
+    if (!_authShouldSucceed) {
+      return AuthResult.failure(
+        _errorMessage ?? 'Failed to get user profile',
+        _errorType,
+      );
+    }
+    
+    final result = await _authRepository.getUserProfile(credentialId);
+    _authNotifier.emitUserProfileChanged(result);
+    return AuthResult.success(result);
+  }
+
+  @override
+  Future<AuthResult<User?>> updateUserProfile(User user) async {
+    if (!_authShouldSucceed) {
+      return AuthResult.failure(
+        _errorMessage ?? 'Failed to update user profile',
+        _errorType,
+      );
+    }
+    
+    final result = await _authRepository.updateUserProfile(user);
+    _authNotifier.emitUserProfileChanged(result);
+    return AuthResult.success(result);
+  }
+
+  /// Reset all tracking lists and state
+  void reset() {
+    loginAttempts.clear();
+    registrationAttempts.clear();
+    otpSendAttempts.clear();
+    otpVerificationAttempts.clear();
+    passwordResetAttempts.clear();
+    emailCheckAttempts.clear();
+    logoutAttempts.clear();
+    _authShouldSucceed = true;
+    _errorMessage = null;
+    _errorType = AuthErrorType.serverError;
+    setCurrentCredential(null);
+  }
+} 

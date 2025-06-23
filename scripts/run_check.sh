@@ -63,6 +63,7 @@ pre_check() {
   else
     echo "🧪 Running changed tests..."
     flutter test $changed_tests --update-goldens --coverage
+    lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' -o coverage/lcov.info
 
     # Process coverage
     if [[ -f "coverage/lcov.info" ]]; then

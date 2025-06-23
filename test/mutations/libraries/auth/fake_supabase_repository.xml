@@ -7,24 +7,6 @@
         <file>lib/libraries/auth/testing/fake_auth_repository.dart</file>
     </files>
 
-    <exclude>
-        <!-- Exclude abstract classes and interfaces -->
-        <regex pattern="abstract\s+class\s+\w+.*?{.*?}" dotAll="true"/>
-        <regex pattern="abstract\s+class\s+\w+[^{]*{" dotAll="true"/>
-        
-        <!-- Exclude logging statements -->
-        <regex pattern="print\s*\(" dotAll="false"/>
-        <regex pattern="debugPrint\s*\(" dotAll="false"/>
-        <regex pattern="log\s*\(" dotAll="false"/>
-        
-        <!-- Exclude fake implementation boilerplate -->
-        <regex pattern="@override" dotAll="false"/>
-        
-        <!-- Exclude simple return statements in fakes (often just test data) -->
-        <regex pattern="return\s+\[\]" dotAll="false"/>
-        <regex pattern="return\s+{}" dotAll="false"/>
-    </exclude>
-
     <rules>
         <!-- Fake implementation logic mutations -->
         <literal text="&amp;&amp;" id="and-to-or">
@@ -71,7 +53,7 @@
        <command group="fake-auth-repository" expected-return="0">flutter test test/units/libraries/auth/fakes/fake_auth_repository_test.dart</command>
     </commands>
 
-    <threshold failure="75">
+    <threshold failure="85">
         <rating over="85" name="A"/>
         <rating over="75" name="B"/>
         <rating over="65" name="C"/>

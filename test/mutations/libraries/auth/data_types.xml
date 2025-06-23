@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mutations version="1.0">
-    <!-- AUTH DATA MUTATION TESTING -->
-    <!-- Targets: All files in data folder (models, types, etc.) -->
-    
-    <directories>
-        <directory>lib/libraries/auth/data/models
-            <matching pattern="\.dart$"/>
-        </directory>
-    </directories>
+      <files>
+        <file>lib/libraries/auth/data/models/auth_user.dart</file>
+        <file>lib/libraries/auth/data/models/auth_credential.dart</file>
+    </files>
 
     <exclude>
         <!-- Exclude abstract classes and interfaces -->
@@ -87,11 +83,11 @@
        </commands>
 
     <threshold failure="85">
-        <rating over="90" name="A"/>
-        <rating over="80" name="B"/>
-        <rating over="70" name="C"/>
-        <rating over="60" name="D"/>
-        <rating over="40" name="E"/>
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
         <rating over="0" name="F"/>
     </threshold>
 </mutations> 

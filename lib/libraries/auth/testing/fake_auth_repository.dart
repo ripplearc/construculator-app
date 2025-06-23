@@ -59,6 +59,9 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   UserCredential? getCurrentCredentials() {
+    if(!_authShouldSucceed) {
+      throw ServerException(Trace.current(), Exception(exceptionMessage));
+    }
     getCurrentUserCallCount++;
     return _currentUser;
   }
