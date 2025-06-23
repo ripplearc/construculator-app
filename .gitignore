@@ -21,6 +21,12 @@ migrate_working_dir/
 # is commented out by default.
 .vscode/
 
+# Pubspec lock backups/variants
+pubspec_*.lock
+pubspec.lock.bak
+pubspec.lock.backup
+*.lock.bak
+
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id
@@ -30,6 +36,20 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+
+# Kotlin compiler cache
+**/.kotlin/
+android/.kotlin/
+*.salive
+
+# iOS build artifacts (add these lines)
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/
+**/ios/Runner.xcworkspace/
+**/ios/Runner.xcodeproj/
+scripts/build/ios/
+**/build/
 
 # Symbolication related
 app.*.symbols

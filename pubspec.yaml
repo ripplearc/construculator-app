@@ -39,13 +39,10 @@ dev_dependencies:
   flutter_native_splash: 2.4.6
   build_runner: 2.4.15
   mutation_test: 1.7.0
-<<<<<<< HEAD
   freezed: 3.0.6
   json_serializable: 6.9.5
-=======
   custom_lint: 0.7.5
   ripplearc_flutter_lint: 0.1.0
->>>>>>> 867a57e (Integrate custom lint to the construculator-app project)
 
 
 flutter:
