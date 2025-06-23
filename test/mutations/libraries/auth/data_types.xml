@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mutations version="1.0">
-    <!-- AUTH DATA MUTATION TESTING -->
-    <!-- Targets: All files in data folder (models, types, etc.) -->
-    
-    <directories>
-        <directory>lib/libraries/auth/data/models
-            <matching pattern="\.dart$"/>
-        </directory>
-    </directories>
+      <files>
+        <file>lib/libraries/auth/data/models/auth_user.dart</file>
+        <file>lib/libraries/auth/data/models/auth_credential.dart</file>
+    </files>
 
     <exclude>
         <!-- Exclude abstract classes and interfaces -->
