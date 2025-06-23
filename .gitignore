@@ -19,7 +19,13 @@ migrate_working_dir/
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line
 # is commented out by default.
-#.vscode/
+.vscode/
+
+# Pubspec lock backups/variants
+pubspec_*.lock
+pubspec.lock.bak
+pubspec.lock.backup
+*.lock.bak
 
 # Flutter/Dart/Pub related
 **/doc/api/
@@ -30,6 +36,20 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+
+# Kotlin compiler cache
+**/.kotlin/
+android/.kotlin/
+*.salive
+
+# iOS build artifacts (add these lines)
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/
+**/ios/Runner.xcworkspace/
+**/ios/Runner.xcodeproj/
+scripts/build/ios/
+**/build/
 
 # Symbolication related
 app.*.symbols
@@ -55,3 +75,4 @@ android/build/
 devtools_options.yaml
 # Cursor editor
 .cursor/
+.fvm/
