@@ -5,7 +5,7 @@ import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -14,14 +14,14 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 class AuthManagerImpl implements AuthManager {
   final SupabaseWrapper _wrapper;
-  final AuthNotifier _authNotifier;
+  final AuthNotifierController _authNotifier;
   final AuthRepository _authRepository;
   final _logger = AppLogger().tag('AuthManagerImpl');
 
   AuthManagerImpl({
     required SupabaseWrapper wrapper,
     required AuthRepository authRepository,
-    required AuthNotifier authNotifier,
+    required AuthNotifierController authNotifier,
   }) : _wrapper = wrapper,
        _authRepository = authRepository,
        _authNotifier = authNotifier {
@@ -184,7 +184,7 @@ class AuthManagerImpl implements AuthManager {
     // Validate address based on receiver type
     final addressError = receiver == OtpReceiver.email
         ? AuthValidation.validateEmail(address)
-        : AuthValidation.validatePhone(address);
+        : AuthValidation.validatePhoneNumber(address);
     
     if (addressError != null) {
       return AuthResult.failure(addressError.message, AuthErrorType.invalidCredentials);
@@ -215,7 +215,7 @@ class AuthManagerImpl implements AuthManager {
     // Validate address based on receiver type
     final addressError = receiver == OtpReceiver.email
         ? AuthValidation.validateEmail(address)
-        : AuthValidation.validatePhone(address);
+        : AuthValidation.validatePhoneNumber(address);
     
     if (addressError != null) {
       return AuthResult.failure(addressError.message, AuthErrorType.invalidCredentials);

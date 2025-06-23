@@ -97,7 +97,7 @@ class AuthValidation {
   /// - Must be between 8 and 15 digits (including country code)
   /// 
   /// Returns an [AuthValidationErrorType?] with an error type if validation fails, null otherwise
-  static AuthValidationErrorType? validatePhone(String? phone) {
+  static AuthValidationErrorType? validatePhoneNumber(String? phone) {
     if (phone == null || phone.isEmpty) {
       return AuthValidationErrorType.phoneRequired;
     }

@@ -3,7 +3,7 @@ import 'package:construculator/libraries/auth/data/models/auth_state.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
@@ -24,7 +24,7 @@ void main() {
 
   setUp(() {
     Modular.init(_TestAppModule());
-    authNotifier = Modular.get<AuthNotifier>() as FakeAuthNotifier;
+    authNotifier = Modular.get<AuthNotifierController>() as FakeAuthNotifier;
     authRepository = Modular.get<AuthRepository>() as FakeAuthRepository;
     supabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     authManager = Modular.get<AuthManager>();
@@ -786,7 +786,7 @@ void main() {
 class _TestAppModule extends Module {
   @override
   void binds(Injector i) {
-    i.addSingleton<AuthNotifier>(() => FakeAuthNotifier());
+    i.addSingleton<AuthNotifierController>(() => FakeAuthNotifier());
     i.addSingleton<AuthRepository>(() => FakeAuthRepository());
     i.addSingleton<SupabaseWrapper>(() => FakeSupabaseWrapper());
     i.add<AuthManager>(

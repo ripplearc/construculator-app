@@ -5,11 +5,11 @@ import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 
 class FakeAuthManager implements AuthManager {
-  final AuthNotifier _authNotifier;
+  final AuthNotifierController _authNotifier;
   final AuthRepository _authRepository;
   
   // Flag to control if auth operations should succeed
@@ -44,7 +44,7 @@ class FakeAuthManager implements AuthManager {
   final List<void> logoutAttempts = [];
 
   FakeAuthManager({
-    required AuthNotifier authNotifier,
+    required AuthNotifierController authNotifier,
     required AuthRepository authRepository,
   })  : _authNotifier = authNotifier,
         _authRepository = authRepository {

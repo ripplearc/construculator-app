@@ -4,7 +4,7 @@ import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 
 /// Interface for shared auth library, provides functionality 
 /// for user authentication and basic profile management.
-abstract class AuthManager {
+abstract class AuthManager{
   /// Used to get the current user's credentials
   /// 
   /// Returns an [AuthResult] of [UserCredential] with the current user's credentials.

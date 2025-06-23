@@ -77,29 +77,29 @@ void main() {
       });
     });
 
-    group('validatePhone', () {
+    group('validatePhoneNumber', () {
       test('should return null for valid phone numbers', () {
-        expect(AuthValidation.validatePhone('+1234567890'), isNull);
-        expect(AuthValidation.validatePhone('+44123456789'), isNull);
-        expect(AuthValidation.validatePhone('+919876543210'), isNull);
+        expect(AuthValidation.validatePhoneNumber('+1234567890'), isNull);
+        expect(AuthValidation.validatePhoneNumber('+44123456789'), isNull);
+        expect(AuthValidation.validatePhoneNumber('+919876543210'), isNull);
       });
 
       test('should return error message for null or empty phone number', () {
-        expect(AuthValidation.validatePhone(null), AuthValidationErrorType.phoneRequired);
-        expect(AuthValidation.validatePhone(''), AuthValidationErrorType.phoneRequired);
+        expect(AuthValidation.validatePhoneNumber(null), AuthValidationErrorType.phoneRequired);
+        expect(AuthValidation.validatePhoneNumber(''), AuthValidationErrorType.phoneRequired);
       });
 
       test('should return error message for invalid phone numbers', () {
         expect(
-          AuthValidation.validatePhone('1234567890'), 
+          AuthValidation.validatePhoneNumber('1234567890'), 
           AuthValidationErrorType.invalidPhone
         );
         expect(
-          AuthValidation.validatePhone('abc1234567890'), 
+          AuthValidation.validatePhoneNumber('abc1234567890'), 
           AuthValidationErrorType.invalidPhone
         );
         expect(
-          AuthValidation.validatePhone('+abc1234567890'), 
+          AuthValidation.validatePhoneNumber('+abc1234567890'), 
           AuthValidationErrorType.invalidPhone
         );
       });
