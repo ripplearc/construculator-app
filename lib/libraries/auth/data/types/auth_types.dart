@@ -1,6 +1,8 @@
 // coverage:ignore-file
 
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:flutter/widgets.dart';
 
 /// Tracks the authentication status of a user
 ///
@@ -32,20 +34,6 @@ enum UserProfileStatus { active, inactive }
 /// [rateLimited] is used when the rate limit is exceeded, eg. when token is requested multiple times in a short period of time
 /// [connectionError] is used when the connection to the server is lost
 /// [timeout] is used when the operation times out
-enum AuthErrorType {
-  userNotFound,
-  invalidCredentials,
-  unknownError,
-  serverError,
-  registrationFailure,
-  networkError,
-  rateLimited,
-  connectionError,
-  timeout,
-}
-
-/// Error type for authentication validation operations
-///
 /// [emailRequired] is used when email is missing or empty
 /// [invalidEmail] is used when email format is invalid
 /// [passwordRequired] is used when password is missing or empty
@@ -58,7 +46,17 @@ enum AuthErrorType {
 /// [invalidOtp] is used when OTP format is invalid
 /// [phoneRequired] is used when phone number is missing or empty
 /// [invalidPhone] is used when phone number format is invalid
-enum AuthValidationErrorType {
+/// [samePassword] is used when new password is same as current password
+enum AuthErrorType {
+  userNotFound,
+  invalidCredentials,
+  unknownError,
+  serverError,
+  registrationFailure,
+  networkError,
+  rateLimited,
+  connectionError,
+  timeout,
   emailRequired,
   invalidEmail,
   passwordRequired,
@@ -71,60 +69,60 @@ enum AuthValidationErrorType {
   invalidOtp,
   phoneRequired,
   invalidPhone,
+  uniqueViolation,
+  samePassword,
 }
 
 extension AuthErrorTypeExtension on AuthErrorType {
-  String get message {
+  String? localizedMessage(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     switch (this) {
       case AuthErrorType.userNotFound:
-        return 'User not found';
+        return l10n?.userNotFoundError;
       case AuthErrorType.invalidCredentials:
-        return 'Invalid credentials';
+        return l10n?.invalidCredentialsError;
       case AuthErrorType.unknownError:
-        return 'Unknown error occurred';
+        return l10n?.unknownError;
       case AuthErrorType.serverError:
-        return 'Server error';
+        return l10n?.serverError;
       case AuthErrorType.registrationFailure:
-        return 'Registration failed';
+        return l10n?.registrationFailedError;
       case AuthErrorType.networkError:
-        return 'Network error';
+        return l10n?.networkError;
       case AuthErrorType.rateLimited:
-        return 'Rate limit exceeded';
+        return l10n?.rateLimitError;
       case AuthErrorType.connectionError:
-        return 'Connection error';
+        return l10n?.connectionError;
       case AuthErrorType.timeout:
-        return 'Request timeout';
-    }
-  }
-}
-
-extension AuthValidationErrorTypeExtension on AuthValidationErrorType {
-  String get message {
-    switch (this) {
-      case AuthValidationErrorType.emailRequired:
-        return 'Email is required';
-      case AuthValidationErrorType.invalidEmail:
-        return 'Please enter a valid email address';
-      case AuthValidationErrorType.passwordRequired:
-        return 'Password is required';
-      case AuthValidationErrorType.passwordTooShort:
-        return 'Password must be at least 8 characters long';
-      case AuthValidationErrorType.passwordMissingUppercase:
-        return 'Password must contain at least one uppercase letter';
-      case AuthValidationErrorType.passwordMissingLowercase:
-        return 'Password must contain at least one lowercase letter';
-      case AuthValidationErrorType.passwordMissingNumber:
-        return 'Password must contain at least one number';
-      case AuthValidationErrorType.passwordMissingSpecialChar:
-        return 'Password must contain at least one special character (!@#\$&*~)';
-      case AuthValidationErrorType.otpRequired:
-        return 'OTP is required';
-      case AuthValidationErrorType.invalidOtp:
-        return 'OTP must be exactly 6 digits';
-      case AuthValidationErrorType.phoneRequired:
-        return 'Phone number is required';
-      case AuthValidationErrorType.invalidPhone:
-        return 'Please enter a valid phone number in international format (e.g., +1234567890)';
+        return l10n?.timeoutError;
+      case AuthErrorType.emailRequired:
+        return l10n?.emailRequiredError;
+      case AuthErrorType.invalidEmail:
+        return l10n?.invalidEmailError;
+      case AuthErrorType.passwordRequired:
+        return l10n?.passwordRequiredError;
+      case AuthErrorType.passwordTooShort:
+        return l10n?.passwordTooShortError;
+      case AuthErrorType.passwordMissingUppercase:
+        return l10n?.passwordMissingUppercaseError;
+      case AuthErrorType.passwordMissingLowercase:
+        return l10n?.passwordMissingLowercaseError;
+      case AuthErrorType.passwordMissingNumber:
+        return l10n?.passwordMissingNumberError;
+      case AuthErrorType.passwordMissingSpecialChar:
+        return l10n?.passwordMissingSpecialCharError;
+      case AuthErrorType.otpRequired:
+        return l10n?.otpRequiredError;
+      case AuthErrorType.invalidOtp:
+        return l10n?.invalidOtpError;
+      case AuthErrorType.phoneRequired:
+        return l10n?.phoneRequiredError;
+      case AuthErrorType.invalidPhone:
+        return l10n?.invalidPhoneError;
+      case AuthErrorType.uniqueViolation:
+        return l10n?.duplicateErrorMessage;
+      case AuthErrorType.samePassword:
+        return l10n?.samePasswordErrorMessage;
     }
   }
 }
@@ -141,6 +139,8 @@ extension SupabaseAuthErrorCodeExtension on SupabaseAuthErrorCode {
         return AuthErrorType.rateLimited;
       case SupabaseAuthErrorCode.timeout:
         return AuthErrorType.timeout;
+      case SupabaseAuthErrorCode.samePassword:
+        return AuthErrorType.samePassword;
       case SupabaseAuthErrorCode.unknown:
         return AuthErrorType.unknownError;
     }
@@ -151,7 +151,7 @@ extension PostgresErrorCodeExtension on PostgresErrorCode {
   AuthErrorType toAuthErrorType() {
     switch (this) {
       case PostgresErrorCode.uniqueViolation:
-        return AuthErrorType.invalidCredentials;
+        return AuthErrorType.uniqueViolation;
       case PostgresErrorCode.unableToConnect:
       case PostgresErrorCode.connectionFailure:
       case PostgresErrorCode.connectionDoesNotExist:
@@ -167,20 +167,12 @@ class AuthResult<T> {
   /// The data returned from the operation
   final T? data;
 
-  /// The error message returned from the operation
-  final String? errorMessage;
-
   /// The type of error returned from the operation
   final AuthErrorType? errorType;
 
   /// Indicates if the operation was successful
   final bool isSuccess;
 
-  AuthResult.success(this.data)
-    : isSuccess = true,
-      errorMessage = null,
-      errorType = null;
-  AuthResult.failure(this.errorMessage, this.errorType)
-    : isSuccess = false,
-      data = null;
+  AuthResult.success(this.data) : isSuccess = true, errorType = null;
+  AuthResult.failure(this.errorType) : isSuccess = false, data = null;
 }

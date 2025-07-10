@@ -1,0 +1,491 @@
+{
+  "@@locale": "en",
+  "agreeAndContinueButton": "Agree and continue",
+  "@agreeAndContinueButton": {
+    "description": "Label for agree and continue button"
+  },
+  "alreadyHaveAccount": "Already have an account?",
+  "@alreadyHaveAccount": {
+    "description": "Text for already have an account"
+  },
+  "andAcknowledge": "and acknowledge",
+  "@andAcknowledge": {
+    "description": "Text connecting terms and privacy policy"
+  },
+  "authenticationCode": "Authentication Code",
+  "@authenticationCode": {
+    "description": "Text for authentication code"
+  },
+  "authenticationCodeTitle": "Authentication Code",
+  "@authenticationCodeTitle": {
+    "description": "Title for authentication code section"
+  },
+  "authErrorMessages": "Authentication Error Messages",
+  "@authErrorMessages": {
+    "description": "Error messages for authentication operations"
+  },
+  "checkingAvailabilityButton": "Checking...",
+  "@checkingAvailabilityButton": {
+    "description": "Label for checking availability button"
+  },
+  "closeLabel": "Close",
+  "@closeLabel": {
+    "description": "Label for close button"
+  },
+  "confirmPasswordHint": "Enter Password Confirmation",
+  "@confirmPasswordHint": {
+    "description": "Hint text for confirm password input field"
+  },
+  "confirmPasswordLabel": "Confirm Password*",
+  "@confirmPasswordLabel": {
+    "description": "Label for confirm password input field"
+  },
+  "confirmPasswordRequired": "Confirm password is required",
+  "@confirmPasswordRequired": {
+    "description": "Error message shown when confirm password is required"
+  },
+  "connectionError": "Connection error",
+  "@connectionError": {
+    "description": "Error message for connection errors"
+  },
+  "continueButton": "Continue",
+  "@continueButton": {
+    "description": "Label for login button"
+  },
+  "continueWithApple": "Continue with Apple",
+  "@continueWithApple": {
+    "description": "Text for continue with apple"
+  },
+  "continueWithEmail": "Continue with Email",
+  "@continueWithEmail": {
+    "description": "Text for continue with email"
+  },
+  "continueWithGoogle": "Continue with Google",
+  "@continueWithGoogle": {
+    "description": "Text for continue with google"
+  },
+  "continueWithMicrosoft": "Continue with Microsoft",
+  "@continueWithMicrosoft": {
+    "description": "Text for continue with microsoft"
+  },
+  "continueWithPhone": "Continue with Phone",
+  "@continueWithPhone": {
+    "description": "Text for continue with phone"
+  },
+  "createAccountSubtitle": "Email you entered is not registered with us, to create your construculator account enter details below",
+  "@createAccountSubtitle": {
+    "description": "Subtitle for create account page"
+  },
+  "createAccountSuccessMessage": "You have successfully registered with Construculator",
+  "@createAccountSuccessMessage": {
+    "description": "Success message shown after registration"
+  },
+  "createAccountTitle": "Create your Account",
+  "@createAccountTitle": {
+    "description": "Title for the create account page"
+  },
+  "createYourAccount": "Create your Account",
+  "@createYourAccount": {
+    "description": "Title for create account page"
+  },
+  "creatingAccountButton": "Creating Account...",
+  "@creatingAccountButton": {
+    "description": "Label for button while account is being created"
+  },
+  "didNotReceiveCode": "Did not receive code?",
+  "@didNotReceiveCode": {
+    "description": "Text asking if user did not receive code"
+  },
+  "dontHaveAndAccountText": "Don't have an account?",
+  "@dontHaveAndAccountText": {
+    "description": "Text for don't have an account"
+  },
+  "duplicateErrorMessage": "Duplicate Error",
+  "@duplicateErrorMessage": {
+    "description": "Generic duplicate error message"
+  },
+  "emailAlreadyRegistered": "Email ID already registered with us. Please ",
+  "@emailAlreadyRegistered": {
+    "description": "Message shown when email is registered and user needs to login"
+  },
+  "emailDuplicateErrorMessage": "Email exists",
+  "@emailDuplicateErrorMessage": {
+    "description": "Error message when email is a duplicate"
+  },
+  "emailHint": "Email ID*",
+  "@emailHint": {
+    "description": "Hint text for email input field"
+  },
+  "emailLabel": "Email ID",
+  "@emailLabel": {
+    "description": "Label for email input field"
+  },
+  "emailNotRegistered": "Email ID not registered with us. Please ",
+  "@emailNotRegistered": {
+    "description": "Message shown when email is not registered and user needs to create an account"
+  },
+  "emailNotRegisteredMessage": "Email you entered is not registered with us, to create your construculator account enter details below",
+  "@emailNotRegisteredMessage": {
+    "description": "Message shown when email is not registered and user needs to create an account"
+  },
+  "emailRequiredError": "Email is required",
+  "@emailRequiredError": {
+    "description": "Error message when email is required"
+  },
+  "enterEmailHint": "Enter your email",
+  "@enterEmailHint": {
+    "description": "Hint text for email input field on forgot password page"
+  },
+  "enterEmailIDHint": "Enter your Email ID",
+  "@enterEmailIDHint": {
+    "description": "Hint text for email input field on login with email page"
+  },
+  "enterEmailLabel": "Email ID",
+  "@enterEmailLabel": {
+    "description": "Label for email input field on forgot password page"
+  },
+  "enterPasswordDescription": "Enter your password for this account. Your email id is",
+  "@enterPasswordDescription": {
+    "description": "Description text on enter password page"
+  },
+  "enterPasswordTitle": "Enter your password",
+  "@enterPasswordTitle": {
+    "description": "Title for enter password page"
+  },
+  "enterYourEmailIdToLoginToYourAccount": "Enter your email id to login to your account",
+  "@enterYourEmailIdToLoginToYourAccount": {
+    "description": "Text for enter your email id to login to your account"
+  },
+  "firstNameHint": "First name",
+  "@firstNameHint": {
+    "description": "Hint text for first name input field"
+  },
+  "firstNameLabel": "First name*",
+  "@firstNameLabel": {
+    "description": "Label for first name input field"
+  },
+  "firstNameRequired": "First name is required",
+  "@firstNameRequired": {
+    "description": "Error message shown when first name is required"
+  },
+  "forgotPasswordDescription": "An OTP will be sent to your registered email ID to reset your password",
+  "@forgotPasswordDescription": {
+    "description": "Description text on forgot password page"
+  },
+  "forgotPasswordLink": "Forgot password?",
+  "@forgotPasswordLink": {
+    "description": "Link text for forgot password"
+  },
+  "forgotPasswordTitle": "Forgot Password?",
+  "@forgotPasswordTitle": {
+    "description": "Title for forgot password page"
+  },
+  "heyEnterYourDetailsToRegisterWithUs": "Hey, Enter your details to Register with us",
+  "@heyEnterYourDetailsToRegisterWithUs": {
+    "description": "Text for hey enter your details to register with us"
+  },
+  "invalidCredentialsError": "Invalid credentials",
+  "@invalidCredentialsError": {
+    "description": "Error message for invalid credentials"
+  },
+  "invalidEmailError": "Please enter a valid email address",
+  "@invalidEmailError": {
+    "description": "Error message when email is invalid"
+  },
+  "invalidOtpError": "OTP must be exactly 6 digits",
+  "@invalidOtpError": {
+    "description": "Error message when OTP is invalid"
+  },
+  "invalidPhoneError": "Please enter a valid phone number in international format (e.g., +1234567890)",
+  "@invalidPhoneError": {
+    "description": "Error message when phone number is invalid"
+  },
+  "invalidVerificationCode": "Invalid verification code",
+  "@invalidVerificationCode": {
+    "description": "Error message shown when the verification code is invalid"
+  },
+  "lastNameHint": "Last name",
+  "@lastNameHint": {
+    "description": "Hint text for last name input field"
+  },
+  "lastNameLabel": "Last name*",
+  "@lastNameLabel": {
+    "description": "Label for last name input field"
+  },
+  "lastNameRequired": "Last name is required",
+  "@lastNameRequired": {
+    "description": "Error message shown when last name is required"
+  },
+  "letsGetStarted": "Let's Get Started",
+  "@letsGetStarted": {
+    "description": "Label for new registration"
+  },
+  "loggingInButton": "Logging in...",
+  "@loggingInButton": {
+    "description": "Label for button while logging in"
+  },
+  "logginLink": "Log in",
+  "@logginLink": {
+    "description": "Label for log in"
+  },
+  "loginFailedInvalidCredentials": "Login failed - invalid credentials",
+  "@loginFailedInvalidCredentials": {
+    "description": "Error message shown when login fails due to invalid credentials"
+  },
+  "loginSuccessMessage": "You have successfully logged in with Construculator",
+  "@loginSuccessMessage": {
+    "description": "Success message shown after login"
+  },
+  "mobileNumberHint": "Enter Mobile Number",
+  "@mobileNumberHint": {
+    "description": "Hint text for mobile number input field"
+  },
+  "mobileNumberLabel": "Mobile number",
+  "@mobileNumberLabel": {
+    "description": "Label for mobile number input field"
+  },
+  "networkError": "Network error",
+  "@networkError": {
+    "description": "Error message for network errors"
+  },
+  "newPasswordHint": "Enter New Password",
+  "@newPasswordHint": {
+    "description": "Hint text for new password input field"
+  },
+  "newPasswordLabel": "New Password*",
+  "@newPasswordLabel": {
+    "description": "Label for new password input field"
+  },
+  "or": "or",
+  "@or": {
+    "description": "Text for or"
+  },
+  "otpIncompleteError": "Please enter the complete 6-digit OTP.",
+  "@otpIncompleteError": {
+    "description": "Error message shown when OTP is incomplete"
+  },
+  "otpPhoneVerificationNote": "Enter 6 digit code we just texted to your phone number",
+  "@otpPhoneVerificationNote": {
+    "description": "Note text on OTP verification screen for phone number"
+  },
+  "otpRequiredError": "OTP is required",
+  "@otpRequiredError": {
+    "description": "Error message when OTP is required"
+  },
+  "otpResendSuccess": "OTP Resent!",
+  "@otpResendSuccess": {
+    "description": "Success message shown after OTP is resent"
+  },
+  "otpVerificationNote": "Enter 6 digit code we just texted to your email ID",
+  "@otpVerificationNote": {
+    "description": "Note text on OTP verification screen"
+  },
+  "passwordHint": "Enter Password",
+  "@passwordHint": {
+    "description": "Hint text for password input field"
+  },
+  "passwordLabel": "Password*",
+  "@passwordLabel": {
+    "description": "Label for password input field"
+  },
+  "passwordMissingLowercaseError": "Password must contain at least one lowercase letter",
+  "@passwordMissingLowercaseError": {
+    "description": "Error message when password is missing lowercase letter"
+  },
+  "passwordMissingNumberError": "Password must contain at least one number",
+  "@passwordMissingNumberError": {
+    "description": "Error message when password is missing number"
+  },
+  "passwordMissingSpecialCharError": "Password must contain at least one special character (!@#$&*~)",
+  "@passwordMissingSpecialCharError": {
+    "description": "Error message when password is missing special character"
+  },
+  "passwordMissingUppercaseError": "Password must contain at least one uppercase letter",
+  "@passwordMissingUppercaseError": {
+    "description": "Error message when password is missing uppercase letter"
+  },
+  "passwordRequiredError": "Password is required",
+  "@passwordRequiredError": {
+    "description": "Error message when password is required"
+  },
+  "passwordResetSuccessMessage": "Your password has been reset successfully!",
+  "@passwordResetSuccessMessage": {
+    "description": "Success message shown after password reset"
+  },
+  "passwordsDoNotMatchError": "Passwords do not match",
+  "@passwordsDoNotMatchError": {
+    "description": "Error message when passwords do not match"
+  },
+  "passwordStrengthLabel": "Password strength: ",
+  "@passwordStrengthLabel": {
+    "description": "Label for password strength indicator"
+  },
+  "passwordStrengthMedium": "Medium",
+  "@passwordStrengthMedium": {
+    "description": "Text indicating medium password strength"
+  },
+  "passwordStrengthStrong": "Strong",
+  "@passwordStrengthStrong": {
+    "description": "Text indicating strong password strength"
+  },
+  "passwordStrengthWeak": "Weak",
+  "@passwordStrengthWeak": {
+    "description": "Text indicating weak password strength"
+  },
+  "passwordTooShortError": "Password must be at least 8 characters long",
+  "@passwordTooShortError": {
+    "description": "Error message when password is too short"
+  },
+  "phoneDuplicateErrorMessage": "Phone number exists",
+  "@phoneDuplicateErrorMessage": {
+    "description": "Error message when phone is a duplicate"
+  },
+  "phoneRequiredError": "Phone number is required",
+  "@phoneRequiredError": {
+    "description": "Error message when phone number is required"
+  },
+  "privacyPolicyLink": "privacy policy",
+  "@privacyPolicyLink": {
+    "description": "Link text for privacy policy"
+  },
+  "rateLimitError": "Rate limit exceeded",
+  "@rateLimitError": {
+    "description": "Error message when rate limit is exceeded"
+  },
+  "register": "Register",
+  "@register": {
+    "description": "Text for register button"
+  },
+  "registrationFailedError": "Registration failed",
+  "@registrationFailedError": {
+    "description": "Error message when registration fails"
+  },
+  "registrationFailedTryAgain": "Registration failed - please try again",
+  "@registrationFailedTryAgain": {
+    "description": "Error message shown when user registration fails"
+  },
+  "registrationSuccessMessage": "You have successfully registered with Construculator",
+  "@registrationSuccessMessage": {
+    "description": "Success message shown after registration"
+  },
+  "requestTimedOut": "Request timed out. Please try again.",
+  "@requestTimedOut": {
+    "description": "Error message shown when a request times out"
+  },
+  "resendButton": "Resend",
+  "@resendButton": {
+    "description": "Label for resend button"
+  },
+  "resendingButtonLabel": "Resending...",
+  "@resendingButtonLabel": {
+    "description": "Label for resending button"
+  },
+  "roleHint": "Role",
+  "@roleHint": {
+    "description": "Hint text for role selection field"
+  },
+  "roleLabel": "Role*",
+  "@roleLabel": {
+    "description": "Label for role selection field"
+  },
+  "roleRequiredError": "Professional role is required.",
+  "@roleRequiredError": {
+    "description": "Error message shown user does not select professional role"
+  },
+  "rolesLoadingError": "Error loading roles. Please try again.",
+  "@rolesLoadingError": {
+    "description": "Error message shown when roles cannot be loaded"
+  },
+  "samePasswordErrorMessage": "Password is the same as current one, please change it.",
+  "@samePasswordErrorMessage": {
+    "description": "Error message when new password is same is current password"
+  },
+  "selectCountryCode": "Select Country Code",
+  "@selectCountryCode": {
+    "description": "Title for contry code selector"
+  },
+  "selectRoleTitle": "Select Role",
+  "@selectRoleTitle": {
+    "description": "Title for role selection modal"
+  },
+  "sendingOtpButton": "Sending Otp...",
+  "@sendingOtpButton": {
+    "description": "Label for button while sending otp"
+  },
+  "sendingOtpFailed": "Sending Otp Failed, Please try again.",
+  "@sendingOtpFailed": {
+    "description": "Error message when sending otp fails"
+  },
+  "sendResetLinkButton": "Send Otp Code",
+  "@sendResetLinkButton": {
+    "description": "Label for send reset link button"
+  },
+  "serverError": "Server error",
+  "@serverError": {
+    "description": "Error message for server errors"
+  },
+  "setNewPasswordDescription": "Your password must minimum of 8 characters, with upper and lowercase and a number or a symbol",
+  "@setNewPasswordDescription": {
+    "description": "Description text on set new password page"
+  },
+  "setNewPasswordTitle": "Set new password",
+  "@setNewPasswordTitle": {
+    "description": "Title for set new password page"
+  },
+  "setPasswordButton": "Set Password",
+  "@setPasswordButton": {
+    "description": "Label for set password button"
+  },
+  "settingPasswordButton": "Setting Password...",
+  "@settingPasswordButton": {
+    "description": "Label for button while setting password"
+  },
+  "termsAndConditionsText": "By selecting agree and continue. I agree to\n",
+  "@termsAndConditionsText": {
+    "description": "Text for terms and conditions agreement"
+  },
+  "termsAndServicesLink": "Constructulator terms & services",
+  "@termsAndServicesLink": {
+    "description": "Link text for terms and services"
+  },
+  "timeoutError": "Request timeout",
+  "@timeoutError": {
+    "description": "Error message for request timeouts"
+  },
+  "tooManyAttempts": "Too many attempts, please try again in a minute.",
+  "@tooManyAttempts": {
+    "description": "Error message when too many attempts"
+  },
+  "unexpectedErrorMessage": "An unexpected error occurred, try again or contact support.",
+  "@unexpectedErrorMessage": {
+    "description": "Generic error message for unexpected errors"
+  },
+  "unknownError": "Unknown error occurred",
+  "@unknownError": {
+    "description": "Error message for unknown errors"
+  },
+  "userNotFoundError": "User not found",
+  "@userNotFoundError": {
+    "description": "Error message when user is not found"
+  },
+  "validationErrorMessages": "Validation Error Messages",
+  "@validationErrorMessages": {
+    "description": "Error messages for input validation"
+  },
+  "verifyButtonLabel": "Verify",
+  "@verifyButtonLabel": {
+    "description": "Label for verify button"
+  },
+  "verifyingButtonLabel": "Verifying...",
+  "@verifyingButtonLabel": {
+    "description": "Label for verifying button"
+  },
+  "verifyOtpButton": "Verify",
+  "@verifyOtpButton": {
+    "description": "Label for verify OTP button"
+  },
+  "welcomeBack": "Welcome Back",
+  "@welcomeBack": {
+    "description": "Text for welcome back"
+  }
+}
