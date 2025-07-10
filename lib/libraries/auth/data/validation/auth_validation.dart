@@ -20,92 +20,94 @@ class AuthValidation {
   static final RegExp _phoneRegex = RegExp(r'^\+[1-9]\d{1,14}$');
 
   /// Validates an email address
-  /// 
-  /// Returns an [AuthValidationErrorType?] with an error type if validation fails, null otherwise
-  static AuthValidationErrorType? validateEmail(String? email) {
+  ///
+  /// Returns an [AuthErrorType?] with an error type if validation fails, null otherwise
+  static AuthErrorType? validateEmail(String? email) {
     if (email == null || email.isEmpty) {
-      return AuthValidationErrorType.emailRequired;
+      return AuthErrorType.emailRequired;
     }
 
     if (!_emailRegex.hasMatch(email)) {
-      return AuthValidationErrorType.invalidEmail;
+      return AuthErrorType.invalidEmail;
     }
 
     return null;
   }
 
   /// Validates a password
-  /// 
+  ///
   /// Password requirements:
   /// - At least 8 characters long
   /// - Contains at least one uppercase letter
   /// - Contains at least one lowercase letter
   /// - Contains at least one number
   /// - Contains at least one special character (!@#$&*~)
-  /// 
-  /// Returns an [AuthValidationErrorType?] with an error type if validation fails, null otherwise
-  static AuthValidationErrorType? validatePassword(String? password) {
+  ///
+  /// Returns an [AuthErrorType?] with an error type if validation fails, null otherwise
+  static AuthErrorType? validatePassword(String? password) {
     if (password == null || password.isEmpty) {
-      return AuthValidationErrorType.passwordRequired;
+      return AuthErrorType.passwordRequired;
     }
 
     if (password.length < 8) {
-      return AuthValidationErrorType.passwordTooShort;
+      return AuthErrorType.passwordTooShort;
     }
 
     if (!_uppercaseRegex.hasMatch(password)) {
-      return AuthValidationErrorType.passwordMissingUppercase;
+      return AuthErrorType.passwordMissingUppercase;
     }
 
     if (!_lowercaseRegex.hasMatch(password)) {
-      return AuthValidationErrorType.passwordMissingLowercase;
+      return AuthErrorType.passwordMissingLowercase;
     }
 
     if (!_numberRegex.hasMatch(password)) {
-      return AuthValidationErrorType.passwordMissingNumber;
+      return AuthErrorType.passwordMissingNumber;
     }
 
     if (!_specialCharRegex.hasMatch(password)) {
-      return AuthValidationErrorType.passwordMissingSpecialChar;
+      return AuthErrorType.passwordMissingSpecialChar;
     }
 
     return null;
   }
 
   /// Validates an OTP (One-Time Password)
-  /// 
+  ///
   /// OTP requirements:
   /// - Must be exactly 6 digits
-  /// 
-  /// Returns an [AuthValidationErrorType?] with an error type if validation fails, null otherwise
-  static AuthValidationErrorType? validateOtp(String? otp) {
+  ///
+  /// Returns an [AuthErrorType?] with an error type if validation fails, null otherwise
+  static AuthErrorType? validateOtp(String? otp) {
     if (otp == null || otp.isEmpty) {
-      return AuthValidationErrorType.otpRequired;
+      return AuthErrorType.otpRequired;
     }
 
     if (!_otpRegex.hasMatch(otp)) {
-      return AuthValidationErrorType.invalidOtp;
+      return AuthErrorType.invalidOtp;
     }
 
     return null;
   }
 
   /// Validates a phone number
-  /// 
+  ///
   /// Phone number requirements:
   /// - Must be in international format (+XXX...)
   /// - Must be between 8 and 15 digits (including country code)
-  /// 
-  /// Returns an [AuthValidationErrorType?] with an error type if validation fails, null otherwise
-  static AuthValidationErrorType? validatePhoneNumber(String? phone) {
+  ///
+  /// Returns an [AuthErrorType?] with an error type if validation fails, null otherwise
+  static AuthErrorType? validatePhoneNumber(String? phone) {
     if (phone == null || phone.isEmpty) {
-      return AuthValidationErrorType.phoneRequired;
+      return AuthErrorType.phoneRequired;
     }
-
+    if (phone.length < 8 || phone.length > 15) {
+      return AuthErrorType.invalidPhone;
+    }
     if (!_phoneRegex.hasMatch(phone)) {
-      return AuthValidationErrorType.invalidPhone;
+      return AuthErrorType.invalidPhone;
     }
 
     return null;
   }
-} 
+}
