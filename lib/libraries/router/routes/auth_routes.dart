@@ -1,0 +1,13 @@
+const String authBaseRoute = '/auth';
+const String loginWithEmailRoute = '/login-with-email';
+const String registerWithEmailRoute = '/register-with-email';
+const String enterPasswordRoute = '/enter-password';
+const String forgotPasswordRoute = '/forgot-password';
+const String setNewPasswordRoute = '/set-new-password';
+const String createAccountRoute = '/create-account';
+const String fullLoginRoute = '$authBaseRoute$loginWithEmailRoute';
+const String fullRegisterRoute = '$authBaseRoute$registerWithEmailRoute';
+const String fullEnterPasswordRoute = '$authBaseRoute$enterPasswordRoute';
+const String fullForgotPasswordRoute = '$authBaseRoute$forgotPasswordRoute';
+const String fullSetNewPasswordRoute = '$authBaseRoute$setNewPasswordRoute';
+const String fullCreateAccountRoute = '$authBaseRoute$createAccountRoute';
