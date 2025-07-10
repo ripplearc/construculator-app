@@ -16,6 +16,7 @@ sealed class User with _$User {
   /// - [credentialId]: The unique identifier for the user's credential
   /// - [email]: The email of the user
   /// - [phone]: The phone number of the user
+  /// - [countryCode]: This is the country code used in combination with the phone
   /// - [firstName]: The first name of the user
   /// - [lastName]: The last name of the user
   /// - [professionalRole]: The professional role of the user
@@ -29,6 +30,7 @@ sealed class User with _$User {
     required String credentialId,
     required String email,
     String? phone,
+    String? countryCode,
     required String firstName,
     required String lastName,
     required String professionalRole,
@@ -44,6 +46,9 @@ sealed class User with _$User {
 
   /// Full name derived from first and last names
   String get fullName => '$firstName $lastName';
+  
+  /// The full usable phone number
+  String get phoneNumber => '$countryCode$phone';
 
   /// Create an empty user
   static User empty() => User(
