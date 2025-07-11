@@ -1,6 +1,5 @@
 import 'package:construculator/features/auth/testing/auth_test_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -15,18 +14,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:construculator/features/auth/presentation/pages/login_with_email_page.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/features/auth/presentation/bloc/login_with_email_bloc/login_with_email_bloc.dart';
-import 'package:construculator/features/auth/domain/usecases/check_email_availability_usecase.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
-  late AuthManager authManager;
   late FakeAppRouter router;
   BuildContext? buildContext;
 
   Widget makeTestableWidget({required Widget child}) {
-    final loginBloc = LoginWithEmailBloc(
-      checkEmailAvailabilityUseCase: CheckEmailAvailabilityUseCase(authManager),
-    );
+    final loginBloc = Modular.get<LoginWithEmailBloc>();
     return BlocProvider<LoginWithEmailBloc>.value(
       value: loginBloc,
       child: MaterialApp(
@@ -52,7 +47,6 @@ void main() {
     Modular.init(AuthTestModule());
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     router = Modular.get<AppRouter>() as FakeAppRouter;
-    authManager = Modular.get<AuthManager>();
   });
 
   tearDown(() {
