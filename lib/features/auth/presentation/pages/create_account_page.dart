@@ -436,7 +436,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
-                          SizedBox(width: CoreSpacing.space2),
+                          SizedBox(width: CoreSpacing.space3),
                           const CoreIconWidget(
                             icon: CoreIcons.error,
                             size: 16,
