@@ -116,18 +116,6 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> selectAll(String table,{
-    String columns = '*', 
-    String orderByColumn = 'id',
-    String orderByDirection = 'asc',
-  }) async {
-    return await _supabaseClient
-        .from(table)
-        .select(columns)
-        .order(orderByColumn, ascending: orderByDirection == 'asc');
-  }
-
-  @override
   Future<Map<String, dynamic>> insert({
     required String table,
     required Map<String, dynamic> data,
@@ -148,12 +136,5 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
         .eq(filterColumn, filterValue)
         .select()
         .single();
-  }
-
-  @override
-  Future<supabase.UserResponse> updateUser(
-    supabase.UserAttributes userAttributes,
-  ) async {
-    return await _supabaseClient.auth.updateUser(userAttributes);
   }
 }

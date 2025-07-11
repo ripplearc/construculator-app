@@ -85,20 +85,6 @@ abstract class SupabaseWrapper {
     required dynamic filterValue,
   });
 
-  /// Select all rows from a table based on a filter
-  ///
-  /// [table] The table to select from
-  /// [filterColumn] The column to filter by
-  /// [filterValue] The value to filter by
-  /// [orderByColumn] The column to order by
-  /// [orderByDirection] The direction to order by, defaults to 'asc'
-  Future<List<Map<String, dynamic>>> selectAll(
-    String table, {
-    String columns,
-    String orderByColumn,
-    String orderByDirection,
-  });
-
   /// Insert a row into a table
   ///
   /// [table] The table to insert into
@@ -120,11 +106,4 @@ abstract class SupabaseWrapper {
     required String filterColumn,
     required dynamic filterValue,
   });
-
-  /// Update supabase user,can be used to update the user's email as well as password.
-  ///
-  /// [userAttributes] The user details to update, this is the [supabase.UserAttributes] object from the supabase client
-  Future<supabase.UserResponse> updateUser(
-    supabase.UserAttributes userAttributes,
-  );
 }
