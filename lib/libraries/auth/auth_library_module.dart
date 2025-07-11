@@ -13,7 +13,9 @@ class AuthLibraryModule extends Module {
   final ModuleParam moduleParam;
   AuthLibraryModule(this.moduleParam);
   @override
-  List<Module> get imports => [SupabaseModule(moduleParam)];
+  List<Module> get imports => [
+    SupabaseModule(moduleParam),
+  ];
   final AuthNotifierController authNotifierImpl = AuthNotifierImpl();
   @override
   void binds(Injector i) {
