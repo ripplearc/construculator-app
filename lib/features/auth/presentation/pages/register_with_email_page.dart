@@ -68,7 +68,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
                 otp = state.otp;
               }
               if (state is OtpVerificationSuccess) {
-                _router.navigate(fullCreateAccountRoute, arguments: email);
+                _router.pushNamed(fullCreateAccountRoute, arguments: email);
               }
               if (state is OtpVerificationFailure) {
                 _handleFailure(state.failure);
@@ -180,7 +180,10 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
                     errorText: l10n?.emailAlreadyRegistered,
                     linkText: l10n?.logginLink,
                     onPressed: () {
-                      _router.navigate(
+                      // remove current register page before moving to login
+                      // prevents stacking of register pages when user goes back and forth
+                      _router.pop();
+                      _router.pushNamed(
                         fullLoginRoute,
                         arguments: _emailController.text,
                       );
@@ -286,7 +289,10 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
             text: '${l10n?.alreadyHaveAccount}',
             actionText: '${l10n?.logginLink}',
             onPressed: () {
-              _router.navigate(fullLoginRoute);
+              // remove current register page before moving to login
+              // prevents stacking of register pages when user goes back and forth
+              _router.pop();
+              _router.pushNamed(fullLoginRoute);
             },
           ),
         ],
