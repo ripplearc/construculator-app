@@ -91,10 +91,7 @@ class AuthModule extends Module {
       guards: [NoAuthGuard()],
       child:
           (context) => BlocProvider(
-            create:
-                (context) => EnterPasswordBloc(
-                  loginUseCase: Modular.get<LoginUseCase>(),
-                ),
+            create: (context) => Modular.get<EnterPasswordBloc>(),
             child: EnterPasswordPage(email: r.args.data as String),
           ),
     );
@@ -139,6 +136,9 @@ class AuthModule extends Module {
 
     i.add<LoginWithEmailBloc>(
       () => LoginWithEmailBloc(checkEmailAvailabilityUseCase: i()),
+    );
+    i.addSingleton<EnterPasswordBloc>(
+      () => EnterPasswordBloc(loginUseCase: i()),
     );
   }
 }
