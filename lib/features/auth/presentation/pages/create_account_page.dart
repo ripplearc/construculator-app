@@ -431,12 +431,25 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                     ),
                   if (_roleError != null)
                     Padding(
-                      padding: const EdgeInsets.only(top: CoreSpacing.space1),
-                      child: Text(
-                        '$_roleError',
-                        style: CoreTypography.bodySmallRegular(
-                          color: CoreTextColors.error,
-                        ),
+                      padding: const EdgeInsets.only(
+                        top: CoreSpacing.space1,
+                        left: CoreSpacing.space1,
+                      ),
+                      child: Row(
+                        children: [
+                          const CoreIconWidget(
+                            icon: CoreIcons.error,
+                            size: 16,
+                            color: CoreIconColors.red,
+                          ),
+                          const SizedBox(width: CoreSpacing.space1),
+                          Text(
+                            '$_roleError',
+                            style: CoreTypography.bodySmallRegular(
+                              color: CoreTextColors.error,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   const SizedBox(height: CoreSpacing.space6),
