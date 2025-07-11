@@ -133,7 +133,7 @@ class AuthModule extends Module {
       ),
     );
 
-    i.addSingleton<LoginWithEmailBloc>(
+    i.add<LoginWithEmailBloc>(
       () => LoginWithEmailBloc(checkEmailAvailabilityUseCase: i()),
     );
   }
