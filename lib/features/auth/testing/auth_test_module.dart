@@ -14,6 +14,7 @@ import 'package:construculator/features/auth/presentation/bloc/forgot_password_b
 import 'package:construculator/features/auth/presentation/bloc/login_with_email_bloc/login_with_email_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
+import 'package:construculator/features/auth/presentation/bloc/set_new_password_bloc/set_new_password_bloc.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
@@ -70,6 +71,9 @@ class AuthTestModule extends Module {
     );
     i.add<ForgotPasswordBloc>(
       () => ForgotPasswordBloc(resetPasswordUseCase: i()),
+    );
+    i.add<SetNewPasswordBloc>(
+      () => SetNewPasswordBloc(setNewPasswordUseCase: i()),
     );
   }
 }
