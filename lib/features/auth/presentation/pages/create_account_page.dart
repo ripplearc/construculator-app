@@ -168,6 +168,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   }
 
   void _onSubmit(BuildContext context) {
+    final phone = widget.phone ?? _mobileNumberController.text;
     BlocProvider.of<CreateAccountBloc>(context).add(
       CreateAccountSubmitted(
         email: widget.email ?? _emailController.text,
@@ -176,8 +177,8 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
         password: _passwordController.text,
         confirmPassword: _confirmPasswordController.text,
         role: _selectedRole?.id ?? '',
-        phonePrefix: _selectedPhonePrefix,
-        mobileNumber: widget.phone ?? _mobileNumberController.text,
+        phonePrefix: phone.isNotEmpty ? _selectedPhonePrefix : '',
+        mobileNumber: phone,
       ),
     );
   }
