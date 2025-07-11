@@ -64,20 +64,12 @@ class AuthModule extends Module {
           (context) => MultiBlocProvider(
             providers: [
               BlocProvider(
-                create:
-                    (context) => CreateAccountBloc(
-                      createAccountUseCase: Modular.get<CreateAccountUseCase>(),
-                      getProfessionalRolesUseCase:
-                          Modular.get<GetProfessionalRolesUseCase>(),
-                      sendOtpUseCase: Modular.get<SendOtpUseCase>(),
-                    ),
+                create: (context) => Modular.get<CreateAccountBloc>(),
               ),
               BlocProvider<OtpVerificationBloc>(
                 create:
-                    (BuildContext context) => OtpVerificationBloc(
-                      verifyOtpUseCase: Modular.get<VerifyOtpUseCase>(),
-                      sendOtpUseCase: Modular.get<SendOtpUseCase>(),
-                    ),
+                    (BuildContext context) =>
+                        Modular.get<OtpVerificationBloc>(),
               ),
             ],
             child: CreateAccountPage(email: r.args.data as String),
@@ -90,7 +82,9 @@ class AuthModule extends Module {
     i.addSingleton<AuthRemoteDataSource>(
       () => AuthRemoteDataSourceImpl(supabaseWrapper: i()),
     );
-    i.addSingleton<AuthRepository>(() => AuthRepositoryImpl(remoteDataSource: i()));
+    i.addSingleton<AuthRepository>(
+      () => AuthRepositoryImpl(remoteDataSource: i()),
+    );
     i.addSingleton<ResetPasswordUseCase>(() => ResetPasswordUseCase(i()));
     i.addSingleton<GetProfessionalRolesUseCase>(
       () => GetProfessionalRolesUseCase(i()),
@@ -111,9 +105,20 @@ class AuthModule extends Module {
       ),
     );
 
+<<<<<<< HEAD
     i.add<OtpVerificationBloc>(
       () => OtpVerificationBloc(
         verifyOtpUseCase: i(),
+=======
+    i.addSingleton<OtpVerificationBloc>(
+      () => OtpVerificationBloc(verifyOtpUseCase: i(), sendOtpUseCase: i()),
+    );
+
+    i.addSingleton<CreateAccountBloc>(
+      () => CreateAccountBloc(
+        createAccountUseCase: i(),
+        getProfessionalRolesUseCase: i(),
+>>>>>>> e7c3fc28 (Refactor direct instantiation)
         sendOtpUseCase: i(),
       ),
     );
