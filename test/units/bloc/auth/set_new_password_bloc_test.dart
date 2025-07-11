@@ -24,11 +24,10 @@ void main() {
     setUp(() {
       Modular.init(AuthTestModule());
       fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
-      bloc = SetNewPasswordBloc(setNewPasswordUseCase: Modular.get());
+      bloc = Modular.get<SetNewPasswordBloc>();
     });
 
     tearDown(() {
-      bloc.close();
       fakeSupabase.reset();
       Modular.destroy();
     });
