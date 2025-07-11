@@ -3,6 +3,7 @@ import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/auth_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/auth/repositories/supabase_repository_impl.dart';
@@ -35,12 +36,11 @@ void main() {
 
       test('getCurrentCredentials should return user if user is already logged in', () async {
         fakeSupabaseWrapper.setCurrentUser(
-          supabase.User(
+          FakeUser(
             id: 'currentuser123',
             email: 'currentuser@example.com',
             appMetadata: {},
             userMetadata: {},
-            aud: 'test',
             createdAt: DateTime.now().toIso8601String(),
           ),
         );
@@ -60,12 +60,11 @@ void main() {
         final userMetadata = {'name': 'John Doe', 'theme': 'dark'};
         
         fakeSupabaseWrapper.setCurrentUser(
-          supabase.User(
+          FakeUser(
             id: 'user123',
             email: 'user@example.com',
             appMetadata: appMetadata,
             userMetadata: userMetadata,
-            aud: 'test',
             createdAt: now.toIso8601String(),
           ),
         );
@@ -86,12 +85,11 @@ void main() {
 
       test('getCurrentCredentials should handle empty metadata', () async {
         fakeSupabaseWrapper.setCurrentUser(
-          supabase.User(
+          FakeUser(
             id: 'user123',
             email: 'user@example.com',
             appMetadata: {},
             userMetadata: null,
-            aud: 'test',
             createdAt: DateTime.now().toIso8601String(),
           ),
         );
