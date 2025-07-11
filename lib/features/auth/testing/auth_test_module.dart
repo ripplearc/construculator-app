@@ -11,6 +11,7 @@ import 'package:construculator/features/auth/domain/usecases/send_otp_usecase.da
 import 'package:construculator/features/auth/domain/usecases/verify_otp_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/login_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/set_new_password_usecase.dart';
+import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
@@ -34,7 +35,7 @@ class AuthTestModule extends Module {
   ];
 
   @override
-  void binds(Injector i) {/// - VerifyOtpUseCase: Lazy singleton instance.
+  void binds(Injector i) {
     i.add<AuthRemoteDataSource>(
       () => AuthRemoteDataSourceImpl(supabaseWrapper: i()),
     );
@@ -51,5 +52,14 @@ class AuthTestModule extends Module {
     i.add<VerifyOtpUseCase>(() => VerifyOtpUseCase(i()));
     i.add<LoginUseCase>(() => LoginUseCase(i()));
     i.add<SetNewPasswordUseCase>(() => SetNewPasswordUseCase(i()));
+<<<<<<< HEAD
+=======
+    i.add<OtpVerificationBloc>(
+      () => OtpVerificationBloc(
+        verifyOtpUseCase: i(),
+        sendOtpUseCase: i(),
+      ),
+    );
+>>>>>>> b50b518 (Refactor direct instantiation)
   }
 }
