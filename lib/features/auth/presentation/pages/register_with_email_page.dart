@@ -68,7 +68,6 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
                 otp = state.otp;
               }
               if (state is OtpVerificationSuccess) {
-                Navigator.pop(context);
                 _router.navigate(fullCreateAccountRoute, arguments: email);
               }
               if (state is OtpVerificationFailure) {
@@ -181,7 +180,6 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
                     errorText: l10n?.emailAlreadyRegistered,
                     linkText: l10n?.logginLink,
                     onPressed: () {
-                      Navigator.pop(context);
                       _router.navigate(
                         fullLoginRoute,
                         arguments: _emailController.text,
