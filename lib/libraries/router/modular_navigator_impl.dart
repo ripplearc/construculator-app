@@ -11,7 +11,11 @@ class ModularRouterImpl implements AppRouter {
 
   @override
   void navigate(String route, {Object? arguments}) {
-    Modular.to.navigate(route, arguments: arguments);
+    Modular.to.pushNamedAndRemoveUntil(
+      route,
+      (_) => false,
+      arguments: arguments,
+    );
   }
 
   @override
