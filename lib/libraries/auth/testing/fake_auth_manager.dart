@@ -15,8 +15,8 @@ class FakeAuthManager implements AuthManager {
   
   // Flag to control if auth operations should succeed
   bool _authShouldSucceed = true;
-
-  // Error type to return when auth operations fail
+  
+  // Error type to be returned on exceptions
   AuthErrorType _errorType = AuthErrorType.serverError;
 
   // Currently authenticated user credential
@@ -364,6 +364,18 @@ class FakeAuthManager implements AuthManager {
     
     final result = await _authRepository.updateUserProfile(user);
     _authNotifier.emitUserProfileChanged(result);
+    return AuthResult.success(result);
+  }
+  
+  @override
+  Future<AuthResult<UserCredential?>> updateUserCredentials(String? email, String? password) async {
+    if (!_authShouldSucceed) {
+      return AuthResult.failure(
+        _errorType,
+      );
+    }
+    final result = await _authRepository.updateUserCredentials(email, password);
+    _authNotifier.emitAuthStateChanged(AuthState(status: AuthStatus.authenticated, user: result));
     return AuthResult.success(result);
   }
   /// Reset all tracking lists and state
