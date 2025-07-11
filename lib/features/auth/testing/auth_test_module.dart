@@ -34,22 +34,22 @@ class AuthTestModule extends Module {
   ];
 
   @override
-  void binds(Injector i) {
-    i.addSingleton<AuthRemoteDataSource>(
+  void binds(Injector i) {/// - VerifyOtpUseCase: Lazy singleton instance.
+    i.add<AuthRemoteDataSource>(
       () => AuthRemoteDataSourceImpl(supabaseWrapper: i()),
     );
     i.add<AuthRepository>(() => AuthRepositoryImpl(remoteDataSource: i()));
-    i.addLazySingleton<ResetPasswordUseCase>(() => ResetPasswordUseCase(i()));
-    i.addLazySingleton<GetProfessionalRolesUseCase>(
+    i.add<ResetPasswordUseCase>(() => ResetPasswordUseCase(i()));
+    i.add<GetProfessionalRolesUseCase>(
       () => GetProfessionalRolesUseCase(i()),
     );
-    i.addLazySingleton<CheckEmailAvailabilityUseCase>(
+    i.add<CheckEmailAvailabilityUseCase>(
       () => CheckEmailAvailabilityUseCase(i()),
     );
-    i.addLazySingleton<CreateAccountUseCase>(() => CreateAccountUseCase(i()));
-    i.addLazySingleton<SendOtpUseCase>(() => SendOtpUseCase(i()));
-    i.addLazySingleton<VerifyOtpUseCase>(() => VerifyOtpUseCase(i()));
-    i.addLazySingleton<LoginUseCase>(() => LoginUseCase(i()));
-    i.addLazySingleton<SetNewPasswordUseCase>(() => SetNewPasswordUseCase(i()));
+    i.add<CreateAccountUseCase>(() => CreateAccountUseCase(i()));
+    i.add<SendOtpUseCase>(() => SendOtpUseCase(i()));
+    i.add<VerifyOtpUseCase>(() => VerifyOtpUseCase(i()));
+    i.add<LoginUseCase>(() => LoginUseCase(i()));
+    i.add<SetNewPasswordUseCase>(() => SetNewPasswordUseCase(i()));
   }
 }
