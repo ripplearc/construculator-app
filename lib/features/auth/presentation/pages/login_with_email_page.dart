@@ -103,7 +103,6 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
                     errorText: l10n?.emailNotRegistered,
                     linkText: l10n?.register,
                     onPressed: () {
-                      Navigator.pop(context);
                       _router.pushNamed(
                         fullRegisterRoute,
                         arguments: _emailController.text,
