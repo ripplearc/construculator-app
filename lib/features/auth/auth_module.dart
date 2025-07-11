@@ -37,7 +37,7 @@ class AuthModule extends Module {
       registerWithEmailRoute,
       guards: [NoAuthGuard()],
       child: (context) {
-        final email = r.args.data ?? "";
+        final email = r.args.data ?? '';
         return MultiBlocProvider(
           providers: [
             BlocProvider<RegisterWithEmailBloc>(
