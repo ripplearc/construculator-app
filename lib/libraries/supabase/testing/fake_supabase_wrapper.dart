@@ -405,75 +405,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       Exception('Record not found for update'),
     );
   }
-
-  @override
-  Future<supabase.UserResponse> updateUser(
-    supabase.UserAttributes userAttributes,
-  ) async {
-    _methodCalls.add({
-      'method': 'updateUser',
-      'userAttributes': userAttributes,
-    });
-
-    if (shouldThrowOnUpdate) {
-      _throwConfiguredException(
-        updateExceptionType,
-        updateErrorMessage ?? 'Update failed',
-      );
-    }
-    if (userAttributes.email != null) {
-      _currentUser = _currentUser?.copyWith(email: userAttributes.email);
-    }
-    if (userAttributes.password != null) {
-      _currentUser = _currentUser?.copyWith(
-        userMetadata: {'password': userAttributes.password},
-      );
-    }
-    return FakeUserResponse(user: _currentUser);
-  }
-
-  @override
-  Future<List<Map<String, dynamic>>> selectAll(
-    String table, {
-    String columns = '*',
-    String orderByColumn = 'id',
-    String orderByDirection = 'asc',
-  }) async {
-    _methodCalls.add({
-      'method': 'selectAll',
-      'table': table,
-      'columns': columns,
-      'orderByColumn': orderByColumn,
-      'orderByDirection': orderByDirection,
-    });
-
-    if (shouldThrowOnSelect) {
-      _throwConfiguredException(
-        selectExceptionType,
-        selectErrorMessage ?? 'Select failed',
-      );
-    }
-
-    if (shouldReturnNullOnSelect) {
-      return [];
-    }
-
-    final tableData = _tables[table] ?? [];
-    if (orderByColumn.isNotEmpty) {
-      tableData.sort((a, b) {
-        final aValue = a[orderByColumn];
-        final bValue = b[orderByColumn];
-        if (aValue is Comparable && bValue is Comparable) {
-          return orderByDirection == 'asc'
-              ? aValue.compareTo(bValue)
-              : bValue.compareTo(aValue);
-        }
-        return 0;
-      });
-    }
-    return tableData;
-  }
-
+  
   @override
   Future<void> initialize() {
     // No need to implement this method, fake supabase wrapper does not need
