@@ -16,10 +16,7 @@ void main() {
   setUp(() {
     Modular.init(AuthTestModule());
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
-    bloc = RegisterWithEmailBloc(
-      checkEmailAvailabilityUseCase: Modular.get(),
-      sendOtpUseCase: Modular.get(),
-    );
+    bloc = Modular.get<RegisterWithEmailBloc>();
   });
 
   tearDown(() {
