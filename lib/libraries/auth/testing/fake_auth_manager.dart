@@ -16,7 +16,6 @@ class FakeAuthManager implements AuthManager {
   bool _authShouldSucceed = true;
   
   // Error message and type to be returned on failure
-  String? _errorMessage;
   AuthErrorType _errorType = AuthErrorType.serverError;
   
   // Currently authenticated user credential
@@ -61,7 +60,6 @@ class FakeAuthManager implements AuthManager {
     AuthErrorType errorType = AuthErrorType.serverError,
   }) {
     _authShouldSucceed = succeed;
-    _errorMessage = errorMessage;
     _errorType = errorType;
   }
 
@@ -379,7 +377,6 @@ class FakeAuthManager implements AuthManager {
     emailCheckAttempts.clear();
     logoutAttempts.clear();
     _authShouldSucceed = true;
-    _errorMessage = null;
     _errorType = AuthErrorType.serverError;
     setCurrentCredential(null);
   }
