@@ -11,7 +11,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/auth/repositories/supabase_repository_impl.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 void main() {
   late FakeSupabaseWrapper fakeSupabaseWrapper;
