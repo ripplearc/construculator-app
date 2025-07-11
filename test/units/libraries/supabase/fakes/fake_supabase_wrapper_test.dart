@@ -845,8 +845,7 @@ void main() {
           expect(
             fakeWrapper.getMethodCallsFor('signInWithPassword'),
             isEmpty,
-            reason:
-                "Initially, calls for 'signInWithPassword' should be empty.",
+            reason: 'Initially, calls for signInWithPassword should be empty.',
           );
           fakeWrapper.addTableData('users', [
             {'id': '1', 'name': 'User 1'},
@@ -881,7 +880,7 @@ void main() {
           expect(
             signInCalls,
             hasLength(3),
-            reason: "Should have 3 'signInWithPassword' calls.",
+            reason: 'Should have 3 signInWithPassword calls.',
           );
           expect(signInCalls[0]['email'], equals('user1@example.com'));
           expect(signInCalls[1]['email'], equals('user2@example.com'));
