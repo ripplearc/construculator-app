@@ -16,6 +16,7 @@ import 'package:construculator/features/auth/presentation/pages/register_with_em
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/app/module_param.dart';
 import 'package:construculator/libraries/guards/no_auth_guard.dart';
+import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -33,7 +34,7 @@ class AuthModule extends Module {
   @override
   void routes(RouteManager r) {
     r.child(
-      '/register',
+      registerWithEmailRoute,
       guards: [NoAuthGuard()],
       child: (context) {
         final email = r.args.data ?? "";
