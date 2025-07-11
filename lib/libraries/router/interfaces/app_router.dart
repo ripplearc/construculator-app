@@ -6,11 +6,7 @@ abstract class AppRouter {
   /// Returns a [Future] that emits an [void].
   Future<void> pushNamed(String route, {Object? arguments});
 
-  /// Sets the provided [route] as the root and replaces all, does not close bloc
-  /// Accepts a route and an optional [arguments] as parameters.
-  // void pushNamedRemoveAll(String route, {Object? arguments});
-
-    /// Sets the provided [route] as the root and replaces all, closes bloc
+    /// Sets the provided [route] as the root and replaces all
   /// Accepts a route and an optional [arguments] as parameters.
   void navigate(String route, {Object? arguments});
 
