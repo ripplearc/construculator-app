@@ -431,12 +431,12 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                     ),
                   if (_roleError != null)
                     Padding(
-                      padding: const EdgeInsets.only(
-                        top: CoreSpacing.space1,
-                        left: CoreSpacing.space1,
-                      ),
+                      padding: const EdgeInsets.only(top: CoreSpacing.space1),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.start,
                         children: [
+                          SizedBox(width: CoreSpacing.space2),
                           const CoreIconWidget(
                             icon: CoreIcons.error,
                             size: 16,
