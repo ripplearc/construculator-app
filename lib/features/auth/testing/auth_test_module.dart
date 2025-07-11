@@ -52,14 +52,11 @@ class AuthTestModule extends Module {
     i.add<VerifyOtpUseCase>(() => VerifyOtpUseCase(i()));
     i.add<LoginUseCase>(() => LoginUseCase(i()));
     i.add<SetNewPasswordUseCase>(() => SetNewPasswordUseCase(i()));
-<<<<<<< HEAD
-=======
     i.add<OtpVerificationBloc>(
       () => OtpVerificationBloc(
         verifyOtpUseCase: i(),
         sendOtpUseCase: i(),
       ),
     );
->>>>>>> b50b518 (Refactor direct instantiation)
   }
 }
