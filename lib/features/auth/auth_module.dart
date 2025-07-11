@@ -83,11 +83,7 @@ class AuthModule extends Module {
       child: (context) {
         final email = r.args.data ?? '';
         return BlocProvider(
-          create:
-              (context) => LoginWithEmailBloc(
-                checkEmailAvailabilityUseCase:
-                    Modular.get<CheckEmailAvailabilityUseCase>(),
-              ),
+          create: (context) => Modular.get<LoginWithEmailBloc>(),
           child: LoginWithEmailPage(email: email),
         );
       },
@@ -135,6 +131,10 @@ class AuthModule extends Module {
         getProfessionalRolesUseCase: i(),
         sendOtpUseCase: i(),
       ),
+    );
+
+    i.addSingleton<LoginWithEmailBloc>(
+      () => LoginWithEmailBloc(checkEmailAvailabilityUseCase: i()),
     );
   }
 }
