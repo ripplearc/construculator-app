@@ -1,40 +1,9 @@
 import 'package:construculator/app/app.dart';
 import 'package:construculator/app/app_module.dart';
-import 'package:construculator/libraries/config/app_config_impl.dart';
-import 'package:construculator/libraries/config/env_constants.dart';
-import 'package:construculator/libraries/config/env_loader_impl.dart';
-import 'package:construculator/app/module_param.dart';
-import 'package:construculator/libraries/supabase/supabase_wrapper_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  final String envName = const String.fromEnvironment(
-    'ENVIRONMENT',
-    defaultValue: devEnv,
-  );
-
-  final Environment env = _getEnvironmentFromString(envName);
-  final envLoader = EnvLoaderImpl();
-  final config = AppConfigImpl(envLoader: envLoader);
-  await config.initialize(env);
-  final wrapper = SupabaseWrapperImpl(envLoader: envLoader);
-  await wrapper.initialize();
-  final params = ModuleParam(config: config, envLoader: envLoader, supabaseWrapper: wrapper);
-  runApp(ModularApp(module: AppModule(params), child: const AppWidget()));
-}
-
-Environment _getEnvironmentFromString(String? envName) {
-  switch (envName?.toLowerCase()) {
-    case prodEnv:
-      return Environment.prod;
-    case qaEnv:
-      return Environment.qa;
-    case devEnv:
-      return Environment.dev;
-    default:
-      return Environment.dev;
-  }
+  runApp(ModularApp(module: AppModule(), child: const AppWidget()));
 }
