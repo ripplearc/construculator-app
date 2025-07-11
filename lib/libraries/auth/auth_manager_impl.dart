@@ -85,17 +85,16 @@ class AuthManagerImpl implements AuthManager {
 
     if (error is supabase.AuthException) {
       final code = SupabaseAuthErrorCode.fromCode(error.code ?? 'unknown');
-      return AuthResult.failure(code.toString(), code.toAuthErrorType());
+      return AuthResult.failure( code.toAuthErrorType());
     }
 
     if (error is TimeoutException) {
       return AuthResult.failure(
-        'Request timed out. Please try again.',
         AuthErrorType.timeout,
       );
     }
 
-    return AuthResult.failure(error.toString(), AuthErrorType.serverError);
+    return AuthResult.failure( AuthErrorType.serverError);
   }
 
   @override
@@ -108,13 +107,13 @@ class AuthManagerImpl implements AuthManager {
     // Validate email
     final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
-      return AuthResult.failure(emailError.message, AuthErrorType.invalidCredentials);
+      return AuthResult.failure(AuthErrorType.invalidCredentials);
     }
 
     // Validate password
     final passwordError = AuthValidation.validatePassword(password);
     if (passwordError != null) {
-      return AuthResult.failure(passwordError.message, AuthErrorType.invalidCredentials);
+      return AuthResult.failure(AuthErrorType.invalidCredentials);
     }
 
     try {
@@ -126,7 +125,6 @@ class AuthManagerImpl implements AuthManager {
       if (user == null) {
         _logger.warning('Login failed for user: $email - No user returned');
         return AuthResult.failure(
-          'Login failed - invalid credentials',
           AuthErrorType.invalidCredentials,
         );
       }
@@ -148,13 +146,13 @@ class AuthManagerImpl implements AuthManager {
     // Validate email
     final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
-      return AuthResult.failure(emailError.message, AuthErrorType.invalidCredentials);
+      return AuthResult.failure(AuthErrorType.invalidCredentials);
     }
 
     // Validate password
     final passwordError = AuthValidation.validatePassword(password);
     if (passwordError != null) {
-      return AuthResult.failure(passwordError.message, AuthErrorType.invalidCredentials);
+      return AuthResult.failure(AuthErrorType.invalidCredentials);
     }
 
     try {
@@ -165,7 +163,6 @@ class AuthManagerImpl implements AuthManager {
           'Registration failed for user: $email - No user returned',
         );
         return AuthResult.failure(
-          'Registration failed - please try again',
           AuthErrorType.registrationFailure,
         );
       }
@@ -187,7 +184,7 @@ class AuthManagerImpl implements AuthManager {
         : AuthValidation.validatePhoneNumber(address);
     
     if (addressError != null) {
-      return AuthResult.failure(addressError.message, AuthErrorType.invalidCredentials);
+      return AuthResult.failure(AuthErrorType.invalidCredentials);
     }
 
     try {
@@ -218,13 +215,13 @@ class AuthManagerImpl implements AuthManager {
         : AuthValidation.validatePhoneNumber(address);
     
     if (addressError != null) {
-      return AuthResult.failure(addressError.message, AuthErrorType.invalidCredentials);
+      return AuthResult.failure(AuthErrorType.invalidCredentials);
     }
 
     // Validate OTP
     final otpError = AuthValidation.validateOtp(otp);
     if (otpError != null) {
-      return AuthResult.failure(otpError.message, AuthErrorType.invalidCredentials);
+      return AuthResult.failure(AuthErrorType.invalidCredentials);
     }
 
     try {
@@ -243,7 +240,6 @@ class AuthManagerImpl implements AuthManager {
           'OTP verification failed for: $address - No user returned',
         );
         return AuthResult.failure(
-          'Invalid verification code',
           AuthErrorType.invalidCredentials,
         );
       }
@@ -262,7 +258,7 @@ class AuthManagerImpl implements AuthManager {
     // Validate email
     final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
-      return AuthResult.failure(emailError.message, AuthErrorType.invalidCredentials);
+      return AuthResult.failure(AuthErrorType.invalidCredentials);
     }
 
     try {
@@ -282,7 +278,7 @@ class AuthManagerImpl implements AuthManager {
     // Validate email
     final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
-      return AuthResult.failure(emailError.message, AuthErrorType.invalidCredentials);
+      return AuthResult.failure(AuthErrorType.invalidCredentials);
     }
 
     try {
