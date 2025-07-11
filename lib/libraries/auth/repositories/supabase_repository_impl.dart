@@ -123,26 +123,4 @@ class SupabaseRepositoryImpl implements AuthRepository {
       rethrow;
     }
   }
-
-  @override
-  Future<UserCredential?> updateUserCredentials(String? email, String? password) async {
-    _logger.info('Updating user credentials for: $email');
-    try {
-      final response = await supabaseWrapper.updateUser(
-        supabase.UserAttributes(
-          email: email,
-          password: password,
-        ),
-      );
-      final user = response.user;
-      if(user == null){
-        _logger.warning('No user found for email: $email');
-        return null;
-      }
-      return _mapSupabaseUserToCredential(user);
-    } catch (e) {
-      _logger.error('Error updating user credentials: $e');
-      rethrow;
-    }
-  }
 }
