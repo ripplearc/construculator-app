@@ -8,6 +8,7 @@ import 'package:construculator/features/auth/domain/usecases/send_otp_usecase.da
 import 'package:construculator/features/auth/domain/usecases/verify_otp_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/login_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/set_new_password_usecase.dart';
+import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
@@ -53,6 +54,13 @@ class AuthTestModule extends Module {
     i.add<RegisterWithEmailBloc>(
       () => RegisterWithEmailBloc(
         checkEmailAvailabilityUseCase: i(),
+        sendOtpUseCase: i(),
+      ),
+    );
+    i.add<CreateAccountBloc>(
+      () => CreateAccountBloc(
+        createAccountUseCase: i(),
+        getProfessionalRolesUseCase: i(),
         sendOtpUseCase: i(),
       ),
     );

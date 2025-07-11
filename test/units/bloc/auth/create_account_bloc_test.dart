@@ -25,16 +25,11 @@ void main() {
   setUp(() {
     Modular.init(AuthTestModule());
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
-    bloc = CreateAccountBloc(
-      createAccountUseCase: Modular.get(),
-      getProfessionalRolesUseCase: Modular.get(),
-      sendOtpUseCase: Modular.get(),
-    );
+    bloc = Modular.get<CreateAccountBloc>();
   });
 
   tearDown(() {
     fakeSupabase.reset();
-    bloc.close();
     Modular.destroy();
   });
 
