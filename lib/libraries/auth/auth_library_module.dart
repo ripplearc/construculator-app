@@ -5,37 +5,30 @@ import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/repositories/supabase_repository_impl.dart';
+import 'package:construculator/app/module_param.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class AuthLibraryModule extends Module {
+  final ModuleParam moduleParam;
+  AuthLibraryModule(this.moduleParam);
   @override
-  List<Module> get imports => [
-    SupabaseModule(),
-  ];
+  List<Module> get imports => [SupabaseModule(moduleParam)];
   final AuthNotifierController authNotifierImpl = AuthNotifierImpl();
   @override
   void binds(Injector i) {
-    i.addLazySingleton<AuthNotifierController>(
-      () => authNotifierImpl,
-    );
+    i.addLazySingleton<AuthNotifierController>(() => authNotifierImpl);
     i.addLazySingleton<AuthRepository>(
-      () => SupabaseRepositoryImpl(
-        supabaseWrapper: i(),
-      ),
+      () => SupabaseRepositoryImpl(supabaseWrapper: i()),
     );
   }
+
   @override
   void exportedBinds(Injector i) {
-    i.addLazySingleton<AuthNotifier>(
-      () => authNotifierImpl,
-    );
+    i.addLazySingleton<AuthNotifier>(() => authNotifierImpl);
     i.addLazySingleton<AuthManager>(
-      () => AuthManagerImpl(
-        wrapper: i(),
-        authRepository: i(),
-        authNotifier: i(),
-      ),
+      () =>
+          AuthManagerImpl(wrapper: i(), authRepository: i(), authNotifier: i()),
     );
   }
 }
