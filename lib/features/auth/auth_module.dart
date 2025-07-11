@@ -10,12 +10,15 @@ import 'package:construculator/features/auth/domain/usecases/send_otp_usecase.da
 import 'package:construculator/features/auth/domain/usecases/verify_otp_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/login_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/set_new_password_usecase.dart';
+import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
+import 'package:construculator/features/auth/presentation/pages/create_account_page.dart';
 import 'package:construculator/features/auth/presentation/pages/register_with_email_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/app/module_param.dart';
 import 'package:construculator/libraries/guards/no_auth_guard.dart';
+import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter/material.dart';
@@ -53,6 +56,32 @@ class AuthModule extends Module {
           child: RegisterWithEmailPage(email: email),
         );
       },
+    );
+    r.child(
+      createAccountRoute,
+      guards: [AuthGuard()],
+      child:
+          (context) => MultiBlocProvider(
+            providers: [
+              BlocProvider(
+                create:
+                    (context) => CreateAccountBloc(
+                      createAccountUseCase: Modular.get<CreateAccountUseCase>(),
+                      getProfessionalRolesUseCase:
+                          Modular.get<GetProfessionalRolesUseCase>(),
+                      sendOtpUseCase: Modular.get<SendOtpUseCase>(),
+                    ),
+              ),
+              BlocProvider<OtpVerificationBloc>(
+                create:
+                    (BuildContext context) => OtpVerificationBloc(
+                      verifyOtpUseCase: Modular.get<VerifyOtpUseCase>(),
+                      sendOtpUseCase: Modular.get<SendOtpUseCase>(),
+                    ),
+              ),
+            ],
+            child: CreateAccountPage(email: r.args.data as String),
+          ),
     );
   }
 
