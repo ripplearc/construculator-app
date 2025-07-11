@@ -7,6 +7,15 @@ abstract class AuthRepository {
   /// Used to get the current user's credentials
   UserCredential? getCurrentCredentials();
 
+  /// Used to update the user's credentials
+  /// 
+  /// [email] - The user's email to update.
+  /// [password] - The user's password to update.
+  /// 
+  /// It updates the user's email or password depending on which is provided.
+  /// Returns an [UserCredential] with the updated user credentials.
+  Future<UserCredential?> updateUserCredentials(String? email, String? password);
+
   /// Used to get the user profile
   /// 
   /// [credentialId] - The credential ID of the user.
