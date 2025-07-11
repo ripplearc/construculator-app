@@ -1,4 +1,3 @@
-import 'package:construculator/app/module_param.dart';
 import 'package:construculator/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:construculator/features/auth/data/datasources/auth_remote_data_source_impl.dart';
 import 'package:construculator/features/auth/data/repositories/auth_repository_impl.dart';
@@ -19,6 +18,7 @@ import 'package:construculator/features/auth/presentation/bloc/otp_verification_
 import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/set_new_password_bloc/set_new_password_bloc.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/app/module_param.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
