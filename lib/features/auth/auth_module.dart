@@ -147,7 +147,8 @@ class AuthModule extends Module {
     i.add<LoginWithEmailBloc>(
       () => LoginWithEmailBloc(checkEmailAvailabilityUseCase: i()),
     );
-    i.addSingleton<EnterPasswordBloc>(
+    
+    i.add<EnterPasswordBloc>(
       () => EnterPasswordBloc(loginUseCase: i()),
     );
   }
