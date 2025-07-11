@@ -20,7 +20,6 @@ void main() {
   });
 
   tearDown(() {
-    bloc.close();
     fakeSupabase.reset();
     Modular.destroy();
   });
