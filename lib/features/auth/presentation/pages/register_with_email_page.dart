@@ -68,7 +68,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
                 otp = state.otp;
               }
               if (state is OtpVerificationSuccess) {
-                _router.pushNamed(fullCreateAccountRoute, arguments: email);
+                _router.navigate(fullCreateAccountRoute, arguments: email);
               }
               if (state is OtpVerificationFailure) {
                 _handleFailure(state.failure);
