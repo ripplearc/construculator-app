@@ -104,17 +104,10 @@ class AuthModule extends Module {
           (context) => MultiBlocProvider(
             providers: [
               BlocProvider(
-                create:
-                    (context) => ForgotPasswordBloc(
-                      resetPasswordUseCase: Modular.get<ResetPasswordUseCase>(),
-                    ),
+                create: (context) => Modular.get<ForgotPasswordBloc>(),
               ),
               BlocProvider(
-                create:
-                    (context) => OtpVerificationBloc(
-                      verifyOtpUseCase: Modular.get<VerifyOtpUseCase>(),
-                      sendOtpUseCase: Modular.get<SendOtpUseCase>(),
-                    ),
+                create: (context) => Modular.get<OtpVerificationBloc>(),
               ),
             ],
             child: ForgotPasswordPage(),
@@ -165,6 +158,9 @@ class AuthModule extends Module {
     
     i.add<EnterPasswordBloc>(
       () => EnterPasswordBloc(loginUseCase: i()),
+    );
+    i.addSingleton<ForgotPasswordBloc>(
+      () => ForgotPasswordBloc(resetPasswordUseCase: i()),
     );
   }
 }
