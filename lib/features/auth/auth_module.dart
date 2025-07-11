@@ -105,20 +105,17 @@ class AuthModule extends Module {
       ),
     );
 
-<<<<<<< HEAD
     i.add<OtpVerificationBloc>(
       () => OtpVerificationBloc(
         verifyOtpUseCase: i(),
-=======
-    i.addSingleton<OtpVerificationBloc>(
-      () => OtpVerificationBloc(verifyOtpUseCase: i(), sendOtpUseCase: i()),
+        sendOtpUseCase: i(),
+      ),
     );
 
-    i.addSingleton<CreateAccountBloc>(
+    i.add<CreateAccountBloc>(
       () => CreateAccountBloc(
         createAccountUseCase: i(),
         getProfessionalRolesUseCase: i(),
->>>>>>> e7c3fc28 (Refactor direct instantiation)
         sendOtpUseCase: i(),
       ),
     );
