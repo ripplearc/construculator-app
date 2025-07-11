@@ -170,7 +170,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 otp = state.otp;
               }
               if (state is OtpVerificationSuccess) {
-                _router.pushNamed(fullSetNewPasswordRoute, arguments: email);
+                _router.navigate(fullSetNewPasswordRoute, arguments: email);
               }
               if (state is OtpVerificationFailure) {
                 _handleFailure(state.failure);
