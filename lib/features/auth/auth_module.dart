@@ -121,10 +121,7 @@ class AuthModule extends Module {
       child: (context) {
         final email = r.args.data ?? '';
         return BlocProvider(
-          create:
-              (context) => SetNewPasswordBloc(
-                setNewPasswordUseCase: Modular.get<SetNewPasswordUseCase>(),
-              ),
+          create: (context) => Modular.get<SetNewPasswordBloc>(),
           child: SetNewPasswordPage(email: email),
         );
       },
@@ -178,6 +175,9 @@ class AuthModule extends Module {
     
     i.add<ForgotPasswordBloc>(
       () => ForgotPasswordBloc(resetPasswordUseCase: i()),
+    );
+    i.addSingleton<SetNewPasswordBloc>(
+      () => SetNewPasswordBloc(setNewPasswordUseCase: i()),
     );
   }
 }

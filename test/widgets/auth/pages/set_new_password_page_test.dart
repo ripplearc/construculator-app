@@ -39,7 +39,7 @@ void main() {
   });
 
   Widget makeTestableWidget({required Widget child}) {
-    final bloc = SetNewPasswordBloc(setNewPasswordUseCase: Modular.get());
+    final bloc = Modular.get<SetNewPasswordBloc>();
     return BlocProvider<SetNewPasswordBloc>.value(
       value: bloc,
       child: MaterialApp(
