@@ -15,11 +15,10 @@ void main() {
     setUp(() {
       Modular.init(AuthTestModule());
       fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
-      bloc = LoginWithEmailBloc(checkEmailAvailabilityUseCase: Modular.get());
+      bloc = Modular.get<LoginWithEmailBloc>();
     });
 
     tearDown(() {
-      bloc.close();
       fakeSupabase.reset();
       Modular.destroy();
     });
