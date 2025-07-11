@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/auth_test_module.dart';
