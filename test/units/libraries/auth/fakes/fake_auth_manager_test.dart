@@ -690,6 +690,81 @@ void main() {
       });
     });
 
+    group('User Credentials Update', () {
+      test(
+        'updateUserCredentials should update both email and password successfully',
+        () async {
+          authRepository.setCurrentCredentials(createTestCredentials());
+          final initialEvent = expectLater(
+            authNotifier.onAuthStateChanged,
+            emits(
+              predicate<AuthState>(
+                (state) => state.status == AuthStatus.authenticated,
+              ),
+            ),
+          );
+          final result = await authManager.updateUserCredentials(
+            'new@example.com',
+            'newpassword123',
+          );
+
+          expect(result.isSuccess, true);
+          expect(result.data, isNotNull);
+          expect(result.data!.email, equals('new@example.com'));
+          await initialEvent;
+          expect(authNotifier.stateChangedEvents.length, 2);
+          expect(
+            authNotifier.stateChangedEvents.last.status,
+            AuthStatus.authenticated,
+          );
+        },
+      );
+
+      test(
+        'updateUserCredentials should update only email when password is null',
+        () async {
+          authRepository.setCurrentCredentials(createTestCredentials());
+
+          final result = await authManager.updateUserCredentials(
+            'new@example.com',
+            null,
+          );
+
+          expect(result.isSuccess, true);
+          expect(result.data, isNotNull);
+          expect(result.data!.email, equals('new@example.com'));
+        },
+      );
+
+      test(
+        'updateUserCredentials should update only password when email is null',
+        () async {
+          authRepository.setCurrentCredentials(createTestCredentials());
+          final result = await authManager.updateUserCredentials(
+            null,
+            'newpassword123',
+          );
+
+          expect(result.isSuccess, true);
+          expect(result.data, isNotNull);
+        },
+      );
+
+      test(
+        'updateUserCredentials should return error when configured to fail',
+        () async {
+          authManager.setAuthResponse(succeed: false);
+          final result = await authManager.updateUserCredentials(
+            'new@example.com',
+            'newpassword123',
+          );
+
+          expect(result.isSuccess, false);
+          expect(result.errorType, AuthErrorType.serverError);
+        },
+      );
+    });
+
     test('reset should clear all tracking and state', () async {
       await authManager.loginWithEmail(testEmail, testPassword);
       await authManager.sendOtp(testEmail, OtpReceiver.email);

@@ -365,4 +365,18 @@ class AuthManagerImpl implements AuthManager {
       return _handleException(e, 'Update user profile');
     }
   }
+  
+  @override
+  Future<AuthResult<UserCredential?>> updateUserCredentials(String? email, String? password) async {
+    try {
+      final result = await _authRepository.updateUserCredentials(email, password);
+      if (result == null) {
+        return AuthResult.failure(AuthErrorType.invalidCredentials);
+      }
+      _authNotifier.emitAuthStateChanged(AuthState(status: AuthStatus.authenticated, user: result));
+      return AuthResult.success(result);
+    } catch (e) {
+      return _handleException(e, 'Update user credentials');
+    }
+  }
 }

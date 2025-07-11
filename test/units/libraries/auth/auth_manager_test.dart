@@ -74,6 +74,7 @@ void main() {
           expect(authNotifier.stateChangedEvents[0].user!.email, testEmail);
         },
       );
+
       test(
         'loginWithEmail should emit authenticated state on success',
         () async {
@@ -654,6 +655,131 @@ void main() {
     });
 
     group('User Profile Management', () {
+      group('updateUserCredentials', () {
+        test('should update email and password successfully', () async {
+          final credential = UserCredential(
+            id: 'test-id',
+            email: 'old@example.com',
+            metadata: {},
+            createdAt: DateTime.now(),
+          );
+          authRepository.setCurrentCredentials(credential);
+          authRepository.setAuthResponse(succeed: true);
+
+          final result = await authManager.updateUserCredentials(
+            'new@example.com',
+            'newpass123',
+          );
+
+          expect(result.isSuccess, true);
+          expect(result.data!.email, 'new@example.com');
+          expect(result.data!.metadata['password'], 'newpass123');
+          expect(authRepository.createProfileCalls.length, 0);
+          expect(authRepository.updateProfileCalls.length, 0);
+        });
+
+        test('should update only email when password is null', () async {
+          final credential = UserCredential(
+            id: 'test-id',
+            email: 'old@example.com',
+            metadata: {},
+            createdAt: DateTime.now(),
+          );
+          authRepository.setCurrentCredentials(credential);
+          authRepository.setAuthResponse(succeed: true);
+
+          final result = await authManager.updateUserCredentials(
+            'new@example.com',
+            null,
+          );
+
+          expect(result.isSuccess, true);
+          expect(result.data!.email, 'new@example.com');
+          expect(authRepository.createProfileCalls.length, 0);
+          expect(authRepository.updateProfileCalls.length, 0);
+        });
+
+        test('should update only password when email is null', () async {
+          final credential = UserCredential(
+            id: 'test-id',
+            email: 'old@example.com',
+            metadata: {},
+            createdAt: DateTime.now(),
+          );
+          authRepository.setCurrentCredentials(credential);
+          authRepository.setAuthResponse(succeed: true);
+
+          final result = await authManager.updateUserCredentials(
+            null,
+            'newpass123',
+          );
+
+          expect(result.isSuccess, true);
+          expect(result.data!.metadata['password'], 'newpass123');
+          expect(authRepository.createProfileCalls.length, 0);
+          expect(authRepository.updateProfileCalls.length, 0);
+        });
+
+        test('should handle update failure', () async {
+          authRepository.setAuthResponse(succeed: false);
+          authRepository.exceptionMessage = 'Update failed';
+
+          final result = await authManager.updateUserCredentials(
+            'new@example.com',
+            'newpass123',
+          );
+
+          expect(result.isSuccess, false);
+          expect(result.errorType, AuthErrorType.serverError);
+        });
+
+        test('should handle errors when credentials does not exist', () async {
+          authRepository.setAuthResponse(succeed: false);
+          final result = await authManager.updateUserCredentials(
+            'new@example.com',
+            'newpass123',
+          );
+
+          expect(result.isSuccess, false);
+          expect(result.errorType, AuthErrorType.serverError);
+        });
+
+        test('should emit auth state change on success', () async {
+          final credential = UserCredential(
+            id: 'test-id',
+            email: 'old@example.com',
+            metadata: {},
+            createdAt: DateTime.now(),
+          );
+          authRepository.setCurrentCredentials(credential);
+          authRepository.setAuthResponse(succeed: true);
+
+          final stateChangeEvent = expectLater(
+            authNotifier.onAuthStateChanged,
+            emits(
+              predicate<AuthState>(
+                (state) => 
+                  state.status == AuthStatus.authenticated &&
+                  state.user!.email == 'new@example.com',
+              ),
+            ),
+          );
+
+          final result = await authManager.updateUserCredentials(
+            'new@example.com',
+            'newpass123',
+          );
+
+          expect(result.isSuccess, true);
+          await stateChangeEvent;
+          expect(authNotifier.stateChangedEvents.length, 2);
+          expect(
+            authNotifier.stateChangedEvents[1].user!.email,
+            'new@example.com',
+          );
+        });
+      });
+
       final testUser = User(
         id: 'test-id',
         credentialId: 'test-cred-id',
