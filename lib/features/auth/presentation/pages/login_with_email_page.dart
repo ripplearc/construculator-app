@@ -193,7 +193,8 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
             text: '${l10n?.dontHaveAndAccountText}',
             actionText: '${l10n?.register}',
             onPressed: () {
-              _router.navigate(fullRegisterRoute);
+              _router.pop();
+              _router.pushNamed(fullRegisterRoute);
             },
           ),
         ],
