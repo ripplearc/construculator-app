@@ -122,8 +122,8 @@ class AuthManagerImpl implements AuthManager {
         email: email,
         password: password,
       );
-
-      if (response.user == null) {
+      final user = response.user;
+      if (user == null) {
         _logger.warning('Login failed for user: $email - No user returned');
         return AuthResult.failure(
           'Login failed - invalid credentials',
@@ -132,7 +132,7 @@ class AuthManagerImpl implements AuthManager {
       }
 
       _logger.info('Login successful for user: $email');
-      return AuthResult.success(_mapSupabaseUserToCredential(response.user!));
+      return AuthResult.success(_mapSupabaseUserToCredential(user));
     } catch (e) {
       return _handleException(e, 'Login');
     }
@@ -159,8 +159,8 @@ class AuthManagerImpl implements AuthManager {
 
     try {
       final response = await _wrapper.signUp(email: email, password: password);
-
-      if (response.user == null) {
+      final user = response.user;
+      if (user == null) {
         _logger.warning(
           'Registration failed for user: $email - No user returned',
         );
@@ -171,7 +171,7 @@ class AuthManagerImpl implements AuthManager {
       }
 
       _logger.info('Registration successful for user: $email');
-      return AuthResult.success(_mapSupabaseUserToCredential(response.user!));
+      return AuthResult.success(_mapSupabaseUserToCredential(user));
     } catch (e) {
       return _handleException(e, 'Registration');
     }
@@ -237,8 +237,8 @@ class AuthManagerImpl implements AuthManager {
                 ? supabase.OtpType.email
                 : supabase.OtpType.sms,
       );
-
-      if (response.user == null) {
+      final user = response.user;
+      if (user == null) {
         _logger.warning(
           'OTP verification failed for: $address - No user returned',
         );
@@ -249,7 +249,7 @@ class AuthManagerImpl implements AuthManager {
       }
 
       _logger.info('OTP verification successful for: $address');
-      return AuthResult.success(_mapSupabaseUserToCredential(response.user!));
+      return AuthResult.success(_mapSupabaseUserToCredential(user));
     } catch (e) {
       return _handleException(e, 'OTP verification');
     }
