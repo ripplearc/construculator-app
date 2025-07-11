@@ -42,21 +42,15 @@ class AuthModule extends Module {
           providers: [
             BlocProvider<RegisterWithEmailBloc>(
               create:
-                  (BuildContext context) => RegisterWithEmailBloc(
-                    checkEmailAvailabilityUseCase:
-                        Modular.get<CheckEmailAvailabilityUseCase>(),
-                    sendOtpUseCase: Modular.get<SendOtpUseCase>(),
-                  ),
+                  (BuildContext context) =>
+                      Modular.get<RegisterWithEmailBloc>(),
             ),
             BlocProvider<OtpVerificationBloc>(
               create:
-                  (BuildContext context) => OtpVerificationBloc(
-                    verifyOtpUseCase: Modular.get<VerifyOtpUseCase>(),
-                    sendOtpUseCase: Modular.get<SendOtpUseCase>(),
-                  ),
+                  (BuildContext context) => Modular.get<OtpVerificationBloc>(),
             ),
           ],
-          child: RegisterWithEmailPage(email: email,),
+          child: RegisterWithEmailPage(email: email),
         );
       },
     );
@@ -64,19 +58,35 @@ class AuthModule extends Module {
 
   @override
   void binds(Injector i) {
-    i.addSingleton<AuthRemoteDataSource>(() => AuthRemoteDataSourceImpl(supabaseWrapper: i()));
-    i.add<AuthRepository>(() => AuthRepositoryImpl(remoteDataSource: i()));
-    i.addLazySingleton<ResetPasswordUseCase>(() => ResetPasswordUseCase(i()));
-    i.addLazySingleton<GetProfessionalRolesUseCase>(
+    i.addSingleton<AuthRemoteDataSource>(
+      () => AuthRemoteDataSourceImpl(supabaseWrapper: i()),
+    );
+    i.addSingleton<AuthRepository>(() => AuthRepositoryImpl(remoteDataSource: i()));
+    i.addSingleton<ResetPasswordUseCase>(() => ResetPasswordUseCase(i()));
+    i.addSingleton<GetProfessionalRolesUseCase>(
       () => GetProfessionalRolesUseCase(i()),
     );
-    i.addLazySingleton<CheckEmailAvailabilityUseCase>(
+    i.addSingleton<CheckEmailAvailabilityUseCase>(
       () => CheckEmailAvailabilityUseCase(i()),
     );
-    i.addLazySingleton<CreateAccountUseCase>(() => CreateAccountUseCase(i()));
-    i.addLazySingleton<SendOtpUseCase>(() => SendOtpUseCase(i()));
-    i.addLazySingleton<VerifyOtpUseCase>(() => VerifyOtpUseCase(i()));
-    i.addLazySingleton<LoginUseCase>(() => LoginUseCase(i()));
-    i.addLazySingleton<SetNewPasswordUseCase>(() => SetNewPasswordUseCase(i()));
+    i.addSingleton<CreateAccountUseCase>(() => CreateAccountUseCase(i()));
+    i.addSingleton<SendOtpUseCase>(() => SendOtpUseCase(i()));
+    i.addSingleton<VerifyOtpUseCase>(() => VerifyOtpUseCase(i()));
+    i.addSingleton<LoginUseCase>(() => LoginUseCase(i()));
+    i.addSingleton<SetNewPasswordUseCase>(() => SetNewPasswordUseCase(i()));
+
+    i.addSingleton<RegisterWithEmailBloc>(
+      () => RegisterWithEmailBloc(
+        checkEmailAvailabilityUseCase: i(),
+        sendOtpUseCase: i(),
+      ),
+    );
+
+    i.addSingleton<OtpVerificationBloc>(
+      () => OtpVerificationBloc(
+        verifyOtpUseCase: i(),
+        sendOtpUseCase: i(),
+      ),
+    );
   }
 }
