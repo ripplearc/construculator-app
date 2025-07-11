@@ -24,16 +24,10 @@ void main() {
     return MultiBlocProvider(
       providers: [
         BlocProvider<RegisterWithEmailBloc>.value(
-          value: RegisterWithEmailBloc(
-            checkEmailAvailabilityUseCase: Modular.get(),
-            sendOtpUseCase: Modular.get(),
-          ),
+          value: Modular.get<RegisterWithEmailBloc>(),
         ),
         BlocProvider<OtpVerificationBloc>.value(
-          value: OtpVerificationBloc(
-            verifyOtpUseCase: Modular.get(),
-            sendOtpUseCase: Modular.get(),
-          ),
+          value: Modular.get<OtpVerificationBloc>(),
         ),
       ],
       child: MaterialApp(
