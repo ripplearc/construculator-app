@@ -180,13 +180,8 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
                     errorText: l10n?.emailAlreadyRegistered,
                     linkText: l10n?.logginLink,
                     onPressed: () {
-                      // remove current register page before moving to login
-                      // prevents stacking of register pages when user goes back and forth
+                      // remove current register page
                       _router.pop();
-                      _router.pushNamed(
-                        fullLoginRoute,
-                        arguments: _emailController.text,
-                      );
                     },
                   ),
                 ];
@@ -289,10 +284,8 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
             text: '${l10n?.alreadyHaveAccount}',
             actionText: '${l10n?.logginLink}',
             onPressed: () {
-              // remove current register page before moving to login
-              // prevents stacking of register pages when user goes back and forth
+              // remove current register page
               _router.pop();
-              _router.pushNamed(fullLoginRoute);
             },
           ),
         ],
