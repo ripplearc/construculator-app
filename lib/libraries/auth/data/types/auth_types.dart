@@ -139,6 +139,8 @@ extension SupabaseAuthErrorCodeExtension on SupabaseAuthErrorCode {
         return AuthErrorType.rateLimited;
       case SupabaseAuthErrorCode.timeout:
         return AuthErrorType.timeout;
+      case SupabaseAuthErrorCode.samePassword:
+        return AuthErrorType.samePassword;
       case SupabaseAuthErrorCode.unknown:
         return AuthErrorType.unknownError;
     }
