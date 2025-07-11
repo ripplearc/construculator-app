@@ -30,7 +30,7 @@ class _DashboardPageState extends State<DashboardPage> {
     notifier.onUserProfileChanged.listen((event) {
       if (event == null) {
         final cred = authManager.getCurrentCredentials();
-        _router.pushNamed(
+        _router.navigate(
           fullCreateAccountRoute,
           arguments: cred.data?.email,
         );
@@ -38,7 +38,7 @@ class _DashboardPageState extends State<DashboardPage> {
     });
     final cred = authManager.getCurrentCredentials();
     if (cred.data?.id == null) {
-      _router.pushNamed(fullLoginRoute);
+      _router.navigate(fullLoginRoute);
     } else {
       authManager
           .getUserProfile(cred.data?.id ?? '')
