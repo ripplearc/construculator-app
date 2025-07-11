@@ -75,14 +75,14 @@ class AuthModule extends Module {
     i.addSingleton<LoginUseCase>(() => LoginUseCase(i()));
     i.addSingleton<SetNewPasswordUseCase>(() => SetNewPasswordUseCase(i()));
 
-    i.addSingleton<RegisterWithEmailBloc>(
+    i.add<RegisterWithEmailBloc>(
       () => RegisterWithEmailBloc(
         checkEmailAvailabilityUseCase: i(),
         sendOtpUseCase: i(),
       ),
     );
 
-    i.addSingleton<OtpVerificationBloc>(
+    i.add<OtpVerificationBloc>(
       () => OtpVerificationBloc(
         verifyOtpUseCase: i(),
         sendOtpUseCase: i(),
