@@ -176,7 +176,8 @@ class AuthModule extends Module {
     i.add<ForgotPasswordBloc>(
       () => ForgotPasswordBloc(resetPasswordUseCase: i()),
     );
-    i.addSingleton<SetNewPasswordBloc>(
+    
+    i.add<SetNewPasswordBloc>(
       () => SetNewPasswordBloc(setNewPasswordUseCase: i()),
     );
   }
