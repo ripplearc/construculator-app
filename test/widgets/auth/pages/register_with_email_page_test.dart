@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/auth/testing/auth_test_module.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
@@ -239,6 +241,35 @@ void main() {
       },
     );
 
+    testWidgets('disables continue button when email is submited', (
+      WidgetTester tester,
+    ) async {
+      fakeSupabase.shouldDelayOperations = true;
+      fakeSupabase.completer = Completer<void>();
+      fakeSupabase.clearTableData('users');
+
+      await tester.pumpWidget(
+        makeTestableWidget(child: const RegisterWithEmailPage(email: '')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(CoreTextField), 'newuser@example.com');
+      await tester.pumpAndSettle();
+
+      final continueButton = find.widgetWithText(
+        CoreButton,
+        AppLocalizations.of(buildContext!)!.continueButton,
+      );
+      await tester.tap(continueButton);
+      await tester.pump();
+      final loadingButton = find.widgetWithText(
+        CoreButton,
+        AppLocalizations.of(buildContext!)!.sendingOtpButton,
+      );
+      expect(tester.widget<CoreButton>(loadingButton).isDisabled, isTrue);
+      fakeSupabase.completer!.complete();
+    });
+
     testWidgets('displays OTP bottom sheet when continue button is pressed', (
       WidgetTester tester,
     ) async {
@@ -295,6 +326,42 @@ void main() {
         AppLocalizations.of(buildContext!)!.verifyButtonLabel,
       );
       expect(tester.widget<CoreButton>(verifyButton).isDisabled, isFalse);
+    });
+
+    testWidgets('disables verify button when OTP is submitted', (
+      WidgetTester tester,
+    ) async {
+      fakeSupabase.clearTableData('users');
+
+      await tester.pumpWidget(
+        makeTestableWidget(child: const RegisterWithEmailPage(email: '')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(CoreTextField), 'newuser@example.com');
+      await tester.pumpAndSettle();
+      final continueButton = find.widgetWithText(
+        CoreButton,
+        AppLocalizations.of(buildContext!)!.continueButton,
+      );
+      
+      await tester.tap(continueButton);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(Key('pin_input')), '123456');
+      await tester.pumpAndSettle();
+
+      final verifyButton = find.widgetWithText(
+        CoreButton,
+        AppLocalizations.of(buildContext!)!.verifyButtonLabel,
+      );
+
+      fakeSupabase.shouldDelayOperations = true;
+      fakeSupabase.completer = Completer<void>();
+
+      await tester.tap(verifyButton);
+      await tester.pump();
+      expect(tester.widget<CoreButton>(verifyButton).isDisabled, isTrue);
+      fakeSupabase.completer!.complete();
     });
     testWidgets('footer login link pops page on tap', (
       WidgetTester tester,
