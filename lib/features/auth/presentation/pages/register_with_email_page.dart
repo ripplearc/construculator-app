@@ -180,8 +180,11 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
                     errorText: l10n?.emailAlreadyRegistered,
                     linkText: l10n?.logginLink,
                     onPressed: () {
-                      // remove current register page
-                      _router.pop();
+                       // navigate to the login page with the currently entered email
+                      _router.navigate(
+                        fullLoginRoute,
+                        arguments: _emailController.text,
+                      );
                     },
                   ),
                 ];
