@@ -53,7 +53,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
     String email,
   ) {
     String otp = '';
-    bool otpValid = false;
+    bool otpInvalid = true;
     showModalBottomSheet(
       context: callingContext,
       isScrollControlled: true,
@@ -68,7 +68,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
               if (state is OtpVerificationOtpChangeUpdated) {
                 otp = state.otp;
                 final otpValidator = AuthValidation.validateOtp(otp);
-                otpValid = otpValidator == null;
+                otpInvalid = otpValidator != null;
               }
               if (state is OtpVerificationSuccess) {
                 _router.navigate(fullCreateAccountRoute, arguments: email);
@@ -90,7 +90,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
                 isResending: state is OtpVerificationResendLoading,
                 isVerifying: state is OtpVerificationLoading,
                 verifyButtonDisabled:
-                    otpValid ||
+                    otpInvalid ||
                     state is OtpVerificationLoading ||
                     state is OtpVerificationResendLoading,
                 onResend: () {
