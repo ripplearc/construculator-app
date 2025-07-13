@@ -164,7 +164,8 @@ void main() {
         );
       },
     );
-    testWidgets('already registered login link navigates to login page with registered email',
+    testWidgets(
+      'already registered login link navigates to login page with registered email',
       (WidgetTester tester) async {
         fakeSupabase.addTableData('users', [
           {
@@ -305,7 +306,7 @@ void main() {
       await tester.tap(loginLink);
       await tester.pumpAndSettle();
 
-      expect(router.popCalls, 1);
+      expect(router.navigationHistory.first.route, fullLoginRoute);
     });
   });
 }
