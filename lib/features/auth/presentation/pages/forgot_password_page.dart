@@ -155,6 +155,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     String email,
   ) {
     String otp = '';
+    bool otpInvalid = true;
     showModalBottomSheet(
       context: callingContext,
       isScrollControlled: true,
@@ -168,6 +169,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             listener: (context, state) {
               if (state is OtpVerificationOtpChangeUpdated) {
                 otp = state.otp;
+                final otpValidator = AuthValidation.validateOtp(otp);
+                otpInvalid = otpValidator != null;
               }
               if (state is OtpVerificationSuccess) {
                 _router.navigate(fullSetNewPasswordRoute, arguments: email);
@@ -210,12 +213,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   ).add(OtpVerificationSubmitted(contact: email, otp: otp));
                 },
                 onChanged: (otp) {
-                  final otpValidator = AuthValidation.validateOtp(otp);
-                  if (otpValidator == null) {
-                    BlocProvider.of<OtpVerificationBloc>(
-                      context,
-                    ).add(OtpVerificationOtpChanged(otp: otp));
-                  }
+                  BlocProvider.of<OtpVerificationBloc>(
+                    context,
+                  ).add(OtpVerificationOtpChanged(otp: otp));
                 },
               );
             },
