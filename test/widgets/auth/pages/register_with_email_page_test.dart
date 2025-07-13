@@ -56,6 +56,7 @@ void main() {
   });
 
   tearDown(() {
+    router.reset();
     fakeSupabase.reset();
     Modular.destroy();
   });
