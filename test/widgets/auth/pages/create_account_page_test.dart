@@ -21,6 +21,7 @@ void main() {
   late FakeAppRouter router;
   const testEmail = 'test@example.com';
   const testRole = 'Engineer';
+  const defaultCountryCode = '+1';
   BuildContext? buildContext;
 
   FakeUser createFakeUser(String email) {
@@ -174,6 +175,56 @@ void main() {
       );
       expect(continueButton, findsOneWidget);
       expect(tester.widget<CoreButton>(continueButton).isDisabled, isTrue);
+    });
+    testWidgets('password visibility toggles work', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(child: const CreateAccountPage(email: '')),
+      );
+      final iconButton = find.descendant(
+        of: find.widgetWithText(
+          CoreTextField,
+          AppLocalizations.of(buildContext!)!.passwordLabel,
+        ),
+        matching: find.byType(IconButton),
+      );
+
+      expect(iconButton, findsOneWidget);
+      await tester.ensureVisible(iconButton);
+      await tester.tap(iconButton);
+      await tester.pumpAndSettle();
+
+      final coreIcon = find.descendant(
+        of: iconButton,
+        matching: find.byType(CoreIconWidget),
+      );
+      expect(tester.widget<CoreIconWidget>(coreIcon).icon, CoreIcons.eye);
+    });
+    testWidgets('confirm password visibility toggles work', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(child: const CreateAccountPage(email: '')),
+      );
+      final iconButton = find.descendant(
+        of: find.widgetWithText(
+          CoreTextField,
+          AppLocalizations.of(buildContext!)!.confirmPasswordLabel,
+        ),
+        matching: find.byType(IconButton),
+      );
+
+      expect(iconButton, findsOneWidget);
+      await tester.ensureVisible(iconButton);
+      await tester.tap(iconButton);
+      await tester.pumpAndSettle();
+
+      final coreIcon = find.descendant(
+        of: iconButton,
+        matching: find.byType(CoreIconWidget),
+      );
+      expect(tester.widget<CoreIconWidget>(coreIcon).icon, CoreIcons.eye);
     });
     testWidgets(
       'shows validation errors with disabled agree and continue button when input fields are invalid',
@@ -485,6 +536,22 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text(testRole));
 
+      final prefixButtonFinder = find.descendant(
+        of: find.widgetWithText(
+          CoreTextField,
+          AppLocalizations.of(buildContext!)!.mobileNumberLabel,
+        ),
+        matching: find.byType(TextButton),
+      );
+      // select country code
+      await tester.ensureVisible(prefixButtonFinder);
+      await tester.pumpAndSettle();
+      await tester.tap(prefixButtonFinder);
+
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ListTile, defaultCountryCode));
+      await tester.pumpAndSettle();
+
       await tester.enterText(
         find.widgetWithText(
           CoreTextField,
@@ -718,6 +785,16 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+    testWidgets('shows error when professional roles fails to load', (
+      tester,
+    ) async {
+      fakeSupabase.shouldThrowOnSelect = true;
+      await tester.pumpWidget(
+        makeTestableWidget(child: const CreateAccountPage(email: testEmail)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text(AppLocalizations.of(buildContext!)!.rolesLoadingError), findsOneWidget);
     });
 
     testWidgets('terms and privacy links are present and tappable', (

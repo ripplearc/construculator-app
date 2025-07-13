@@ -353,16 +353,6 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
           if (state is CreateAccountGetProfessionalRolesFailure) {
             _handleFailure(state.failure);
           }
-          if (state is CreateAccountEditContactSuccess) {
-            // when edit contact is triggered from otp verification
-            // hide bottom sheet and auto focus depending on the type of registration
-            Navigator.pop(context);
-            if (isEmailRegistration) {
-              _emailFocusNode.requestFocus();
-            } else {
-              _phoneFocusNode.requestFocus();
-            }
-          }
           if (state is CreateAccountOtpSendingFailure) {
             _handleFailure(state.failure);
           }

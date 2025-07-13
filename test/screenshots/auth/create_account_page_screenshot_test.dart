@@ -321,10 +321,10 @@ void main() {
           'Doe',
         );
 
-      await tester.tap(find.byType(SingleItemSelector<String>));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Engineer'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byType(SingleItemSelector<String>));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Engineer'));
+        await tester.pumpAndSettle();
 
         await tester.enterText(
           find.widgetWithText(
@@ -341,7 +341,7 @@ void main() {
           'Password123!',
         );
         await tester.pumpAndSettle();
-        
+
         final continueButton = find.widgetWithText(
           CoreButton,
           AppLocalizations.of(buildContext!)!.agreeAndContinueButton,
@@ -484,6 +484,22 @@ void main() {
         find.byType(MaterialApp),
         matchesGoldenFile(
           'goldens/create_account/${size.width}x${size.height}/create_account_enabled_agree_and_continue_button.png',
+        ),
+      );
+    });
+
+    testWidgets('displays error when professional roles fails to load', (
+      tester,
+    ) async {
+      fakeSupabase.shouldThrowOnSelect = true;
+      await tester.pumpWidget(
+        makeTestableWidget(child: const CreateAccountPage(email: testEmail)),
+      );
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/create_account/${size.width}x${size.height}/create_account_professional_roles_loading_failed.png',
         ),
       );
     });
