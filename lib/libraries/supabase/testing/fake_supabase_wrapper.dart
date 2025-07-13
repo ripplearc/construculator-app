@@ -244,6 +244,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       'type': type,
     });
 
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
     if (shouldThrowOnVerifyOtp) {
       _throwConfiguredException(
         SupabaseExceptionType.auth,
