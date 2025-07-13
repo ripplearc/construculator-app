@@ -344,7 +344,7 @@ void main() {
         CoreButton,
         AppLocalizations.of(buildContext!)!.continueButton,
       );
-      
+
       await tester.tap(continueButton);
       await tester.pumpAndSettle();
       await tester.enterText(find.byKey(Key('pin_input')), '123456');
@@ -360,7 +360,12 @@ void main() {
 
       await tester.tap(verifyButton);
       await tester.pump();
-      expect(tester.widget<CoreButton>(verifyButton).isDisabled, isTrue);
+      final loadingButton = find.widgetWithText(
+        CoreButton,
+        AppLocalizations.of(buildContext!)!.verifyingButtonLabel,
+      );
+
+      expect(tester.widget<CoreButton>(loadingButton).isDisabled, isTrue);
       fakeSupabase.completer!.complete();
     });
     testWidgets('footer login link pops page on tap', (
