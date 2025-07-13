@@ -192,7 +192,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 isResending: state is OtpVerificationResendLoading,
                 isVerifying: state is OtpVerificationLoading,
                 verifyButtonDisabled:
-                    otp.isEmpty ||
+                    otpInvalid ||
                     state is OtpVerificationLoading ||
                     state is OtpVerificationResendLoading,
                 onResend: () {
