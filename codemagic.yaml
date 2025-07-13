@@ -7,13 +7,6 @@ workflows:
         - notification_emails
       # See https://docs.flutter.dev/install/archive#stable-channel for mapping between Dart and Flutter SDK versions
       flutter: 3.32.0
-    triggering:
-      events:
-        - pull_request
-      branch_patterns:
-        - pattern: "*"
-          include: true
-          source: false
     cache:
       cache_paths:
         - .fvm/
