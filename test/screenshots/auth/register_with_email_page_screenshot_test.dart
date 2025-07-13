@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/auth/testing/auth_test_module.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:flutter/material.dart';
@@ -96,7 +98,6 @@ void main() {
           findsOneWidget,
         );
 
-        // Take screenshot of default state
         await expectLater(
           find.byType(MaterialApp),
           matchesGoldenFile(
@@ -122,7 +123,6 @@ void main() {
       );
       expect(tester.widget<CoreButton>(continueButton).isDisabled, isTrue);
 
-      // Take screenshot of disabled button state
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile(
@@ -151,7 +151,6 @@ void main() {
           findsOneWidget,
         );
 
-        // Take screenshot of invalid email state
         await expectLater(
           find.byType(MaterialApp),
           matchesGoldenFile(
@@ -181,7 +180,6 @@ void main() {
         findsNothing,
       );
 
-      // Take screenshot of invalid email state
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile(
@@ -189,7 +187,36 @@ void main() {
         ),
       );
     });
+    testWidgets('displays disabled continue button when email is submited', (
+      WidgetTester tester,
+    ) async {
+      fakeSupabase.shouldDelayOperations = true;
+      fakeSupabase.completer = Completer<void>();
+      fakeSupabase.clearTableData('users');
 
+      await tester.pumpWidget(
+        makeTestableWidget(child: const RegisterWithEmailPage(email: '')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(CoreTextField), 'newuser@example.com');
+      await tester.pumpAndSettle();
+
+      final continueButton = find.widgetWithText(
+        CoreButton,
+        AppLocalizations.of(buildContext!)!.continueButton,
+      );
+      await tester.tap(continueButton);
+      await tester.pump();
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/register_with_email/${size.width}x${size.height}/register_with_email_button_loading_state.png',
+        ),
+      );
+      fakeSupabase.completer!.complete();
+    });
     testWidgets('displays otp bottom sheet when valid email is submited', (
       WidgetTester tester,
     ) async {
@@ -264,6 +291,47 @@ void main() {
           'goldens/register_with_email/${size.width}x${size.height}/register_with_email_otp_filled_state.png',
         ),
       );
+    });
+
+    testWidgets('displays disabled verify button when OTP is submitted', (
+      WidgetTester tester,
+    ) async {
+      fakeSupabase.clearTableData('users');
+
+      await tester.pumpWidget(
+        makeTestableWidget(child: const RegisterWithEmailPage(email: '')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(CoreTextField), 'newuser@example.com');
+      await tester.pumpAndSettle();
+      final continueButton = find.widgetWithText(
+        CoreButton,
+        AppLocalizations.of(buildContext!)!.continueButton,
+      );
+
+      await tester.tap(continueButton);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(Key('pin_input')), '123456');
+      await tester.pumpAndSettle();
+
+      final verifyButton = find.widgetWithText(
+        CoreButton,
+        AppLocalizations.of(buildContext!)!.verifyButtonLabel,
+      );
+
+      fakeSupabase.shouldDelayOperations = true;
+      fakeSupabase.completer = Completer<void>();
+
+      await tester.tap(verifyButton);
+      await tester.pump();
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/register_with_email/${size.width}x${size.height}/register_with_email_otp_submitted_loading_state.png',
+        ),
+      );
+      fakeSupabase.completer!.complete();
     });
 
     testWidgets(
