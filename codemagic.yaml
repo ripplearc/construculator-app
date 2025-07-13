@@ -16,11 +16,16 @@ workflows:
           source: false
     cache:
       cache_paths:
+        - .fvm/
         - ~/.gradle/caches
         - ~/.pub-cache
         - ios/Pods
         - $FLUTTER_ROOT/.pub-cache
     scripts:
+      - name: Install FVM
+        script: dart pub global activate fvm
+      - name: Install Flutter version via FVM
+        script: fvm install
       - name: Block skip-checks
         script: |
           # Fail if commit message contains "[skip ci]"
@@ -35,10 +40,12 @@ workflows:
 
       - name: Install Dependencies
         script: |
-          flutter pub get
+          export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
+          fvm flutter pub get
 
       - name: Run Code Analysis
         script: |
+          export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           echo "Linux version: $(uname -a)"
           echo "Triggered By: $CM_BUILD_STARTED_BY"
           echo "🛠️ Running Flutter analysis..."
@@ -54,10 +61,11 @@ workflows:
           fi
           echo "🛠️ Analyzing changed files:"
           echo "$CHANGED_DART_FILES"
-          flutter analyze --fatal-infos --fatal-warnings $CHANGED_DART_FILES
+          fvm flutter analyze --fatal-infos --fatal-warnings $CHANGED_DART_FILES
 
       - name: Run Unit Tests With Coverage
         script: |
+          export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           # Find the common ancestor commit between source and target branches
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
 
@@ -127,6 +135,7 @@ workflows:
         test_report: test-results/flutter.json
       - name: Run Changed Tests
         script: |
+          export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           # Find the common ancestor commit between source and target branches
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
           
@@ -139,7 +148,7 @@ workflows:
           fi
           echo "🔍 Running tests for changed files:"
           echo "$CHANGED_TESTS"
-          flutter test $CHANGED_TESTS --exclude-tags=units
+          fvm flutter test $CHANGED_TESTS --exclude-tags=units
     publishing:
       email:
         recipients:
@@ -163,6 +172,7 @@ workflows:
       flutter: 3.32.0
     cache:
       cache_paths:
+        - .fvm/
         - ~/.gradle/caches
         - ~/.pub-cache
         - $FLUTTER_ROOT/.pub-cache
@@ -173,6 +183,10 @@ workflows:
             echo "FORCE_FAIL is true. Failing the workflow."
             exit 1
           fi
+      - name: Install FVM
+        script: dart pub global activate fvm
+      - name: Install Flutter version via FVM
+        script: fvm install
       - name: Clone and Checkout
         script: |
           git clone $CM_REPO_URL .
@@ -180,15 +194,18 @@ workflows:
 
       - name: Install Dependencies
         script: |
-          flutter pub get
+          export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
+          fvm flutter pub get
 
       - name: Run Code Analysis
         script: |
+          export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           echo "🛠️ Running Flutter analysis..."
-          flutter analyze --fatal-infos --fatal-warnings .
+          fvm flutter analyze --fatal-infos --fatal-warnings .
 
       - name: Run Unit Tests With Coverage Report
         script: |
+          export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           TARGET=$ARC_CODE_COVERAGE_TARGET
           if git log -1 --pretty=%B | grep -Eq "#DeltaCoverageLow|DCL"; then
             TARGET=$CODE_COVERAGE_MINIMUM
@@ -318,6 +335,7 @@ workflows:
       ubuntu: 24.04
     cache:
       cache_paths:
+        - .fvm/
         - ~/.gradle/caches
         - ~/.pub-cache
         - ios/Pods
@@ -325,6 +343,10 @@ workflows:
         - /usr/local/Homebrew
         - /usr/local/bin/lcov
     scripts:
+      - name: Install FVM
+        script: dart pub global activate fvm
+      - name: Install Flutter version via FVM
+        script: fvm install
       - name: Clone and Checkout
         script: |
           git clone $CM_REPO_URL .
@@ -332,16 +354,18 @@ workflows:
 
       - name: Install Dependencies
         script: |
-          echo "Downloading Dependencies..."
-          flutter pub get
+          export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
+          fvm flutter pub get
 
       - name: Run Code Analysis
         script: |
+          export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           echo "🛠️ Running Flutter analysis..."
-          flutter analyze --fatal-infos --fatal-warnings .
+          fvm flutter analyze --fatal-infos --fatal-warnings .
 
       - name: Run Unit Tests With Coverage Report
         script: |
+          export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           TARGET=$ARC_CODE_COVERAGE_TARGET
           if git log -1 --pretty=%B | grep -Eq "#DeltaCoverageLow|DCL"; then
             TARGET=$CODE_COVERAGE_MINIMUM
@@ -461,6 +485,7 @@ workflows:
       flutter: 3.32.0
     cache:
       cache_paths:
+        - .fvm/
         - ~/.pub-cache
         - ios/Pods
         - $FLUTTER_ROOT/.pub-cache
@@ -472,6 +497,10 @@ workflows:
             echo "FORCE_FAIL is true. Failing the workflow."
             exit 1
           fi
+      - name: Install FVM
+        script: dart pub global activate fvm
+      - name: Install Flutter version via FVM
+        script: fvm install
       - name: Clone and Checkout
         script: |
           git clone "$CM_REPO_URL" .
@@ -479,11 +508,19 @@ workflows:
 
       - name: Install Dependencies
         script: |
-          echo "Downloading Dependencies..."
-          flutter pub get
+          export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
+          fvm flutter pub get
+      - name: Install iOS Dependencies
+        script: |
+          cd ios
+          pod install
+          cd ..
       - name: Build Ios Debug
         script: |
-          flutter build ios --debug --no-codesign
+          export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
+          echo "📦 Pre-caching iOS artifacts..."
+          fvm flutter precache --ios
+          fvm flutter build ios --debug --no-codesign
     artifacts:
       - build/ios/iphoneos/*.app
     publishing:

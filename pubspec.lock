@@ -852,10 +852,10 @@ packages:
     dependency: "direct dev"
     description:
       name: ripplearc_flutter_lint
-      sha256: "946b57bac6451a3833f510c639cf468fc23e1418cf3138c2b9d6a3b0c7136e57"
+      sha256: b41d7b26bdfea64c4f9944d1cd1ce4d9c7896a85156d17ddbeb7b13e6c1000b5
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.0"
+    version: "0.2.2"
   rxdart:
     dependency: "direct main"
     description:

@@ -41,7 +41,7 @@ pre_check() {
   fi
 
   # Install dependencies
-  flutter pub get
+  fvm flutter pub get
 
   # Get base commit
   git fetch origin "$TARGET_BRANCH"
@@ -53,7 +53,7 @@ pre_check() {
     echo "✅ No Dart files changed"
   else
     echo "🔍 Analyzing changed files..."
-    flutter analyze --fatal-infos --fatal-warnings $changed_dart_files
+    fvm flutter analyze --fatal-infos --fatal-warnings $changed_dart_files
   fi
 
   # Changed tests
@@ -62,7 +62,7 @@ pre_check() {
     echo "✅ No tests changed"
   else
     echo "🧪 Running changed tests..."
-    flutter test $changed_tests --update-goldens --coverage
+    fvm flutter test $changed_tests --update-goldens --coverage
     lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' -o coverage/lcov.info
 
     # Process coverage
@@ -110,17 +110,17 @@ comprehensive_check() {
   echo "🚀 Running Comprehensive Check..."
 
   # Install dependencies
-  flutter pub get
+  fvm flutter pub get
 
   # Full code analysis
   echo "🔍 Full code analysis..."
-  flutter analyze --fatal-infos --fatal-warnings .
+  fvm flutter analyze --fatal-infos --fatal-warnings .
 
   # Unit tests with coverage
   if [ -d "test/units" ] && [ "$(ls -A test/units)" ]; then
     echo "🧪 Unit tests with coverage..."
     mkdir -p test-results
-    flutter test test/units --coverage --machine > test-results/flutter.json
+    fvm flutter test test/units --coverage --machine > test-results/flutter.json
 
     # Process coverage
     if [[ -f "coverage/lcov.info" ]]; then
@@ -148,7 +148,7 @@ comprehensive_check() {
   # Widget tests
   if [ -d "test/widgets" ] && [ "$(ls -A test/widgets)" ]; then
     echo "📱 Widget tests..."
-    flutter test test/widgets
+    fvm flutter test test/widgets
   else
     echo "⏩ Skipping widget tests: test/widgets directory not found."
   fi
@@ -156,23 +156,54 @@ comprehensive_check() {
   # Screenshot tests
   if [ -d "test/screenshots" ] && [ "$(ls -A test/screenshots)" ]; then
     echo "🖼️ Screenshot tests..."
-    flutter test test/screenshots --update-goldens
+    fvm flutter test test/screenshots --update-goldens
   else
     echo "⏩ Skipping screenshot tests: test/screenshots directory not found."
   fi
 
   # Build Android
   echo "🤖 Building Android..."
-  flutter build apk --debug
+  # Check if product flavors are configured
+  if grep -q "productFlavors" android/app/build.gradle; then
+    echo "📱 Product flavors detected. Building for 'fishfood' flavor..."
+    fvm flutter build apk --debug --flavor fishfood
+    
+    # Check for APK in flavor-specific location
+    APK_PATH="build/app/outputs/flutter-apk/app-fishfood-debug.apk"
+    if [[ -f "$APK_PATH" ]]; then
+      echo "✅ APK built successfully: $APK_PATH"
+    else
+      echo "❌ APK not found at $APK_PATH"
+      echo "🔍 Checking other possible locations..."
+      find build/app/outputs/flutter-apk -name "*.apk" 2>/dev/null || echo "No APK files found"
+      exit 1
+    fi
+  else
+    fvm flutter build apk --debug
+    
+    # Check for default APK
+    APK_PATH="build/app/outputs/flutter-apk/app-debug.apk"
+    if [[ -f "$APK_PATH" ]]; then
+      echo "✅ APK built successfully: $APK_PATH"
+    else
+      echo "❌ APK not found at $APK_PATH"
+      exit 1
+    fi
+  fi
 
   if [[ "$(uname)" == "Darwin" ]]; then
     echo "🍏 Building iOS..."
+    
+    # Ensure iOS artifacts are available
+    echo "📦 Pre-caching iOS artifacts..."
+    fvm flutter precache --ios
+    
     if [[ -d "ios" ]]; then
       cd ios
       pod install
       cd ..
     fi
-    flutter build ios --debug --no-codesign
+    fvm flutter build ios --debug --no-codesign
   else
     echo "Skipping iOS build because the system is not macOS."
   fi
@@ -213,7 +244,7 @@ fi
 if $RUN_MUTATIONS; then
   # Install dependencies if not already done
   if ! $RUN_PRE && ! $RUN_COMPREHENSIVE; then
-    flutter pub get
+    fvm flutter pub get
   fi
   
   if ! run_mutation_tests; then

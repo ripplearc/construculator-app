@@ -42,8 +42,7 @@ dev_dependencies:
   freezed: 3.0.6
   json_serializable: 6.9.5
   custom_lint: 0.7.5
-  ripplearc_flutter_lint: 0.1.0
-
+  ripplearc_flutter_lint: 0.2.2
 
 flutter:
 

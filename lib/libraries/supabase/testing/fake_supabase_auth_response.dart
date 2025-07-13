@@ -1,7 +1,9 @@
 // coverage:ignore-file
 
+import 'package:construculator/libraries/annotations/data_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
+@dataModel
 class FakeAuthResponse implements supabase.AuthResponse {
   @override
   final supabase.User? user;
