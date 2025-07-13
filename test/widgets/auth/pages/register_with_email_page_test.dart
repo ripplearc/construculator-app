@@ -164,8 +164,7 @@ void main() {
         );
       },
     );
-    testWidgets(
-      'already registered login link pops page on tap',
+    testWidgets('already registered login link navigates to login page with registered email',
       (WidgetTester tester) async {
         fakeSupabase.addTableData('users', [
           {
@@ -190,7 +189,8 @@ void main() {
         await tester.tap(loginLink);
         await tester.pumpAndSettle();
 
-        expect(router.popCalls, 1);
+        expect(router.navigationHistory.first.route, fullLoginRoute);
+        expect(router.navigationHistory.first.arguments, enteredEmail);
       },
     );
 
