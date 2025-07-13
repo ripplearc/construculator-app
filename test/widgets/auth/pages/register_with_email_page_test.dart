@@ -164,7 +164,7 @@ void main() {
       },
     );
     testWidgets(
-      'already registered login link navigates to login page on tap',
+      'already registered login link pops page on tap',
       (WidgetTester tester) async {
         fakeSupabase.addTableData('users', [
           {
@@ -189,8 +189,7 @@ void main() {
         await tester.tap(loginLink);
         await tester.pumpAndSettle();
 
-        expect(router.navigationHistory.first.route, fullLoginRoute);
-        expect(router.navigationHistory.first.arguments, enteredEmail);
+        expect(router.popCalls, 1);
       },
     );
 
@@ -295,7 +294,7 @@ void main() {
       );
       expect(tester.widget<CoreButton>(verifyButton).isDisabled, isFalse);
     });
-    testWidgets('footer login link navigates to login page', (
+    testWidgets('footer login link pops page on tap', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -305,7 +304,7 @@ void main() {
       await tester.tap(loginLink);
       await tester.pumpAndSettle();
 
-      expect(router.navigationHistory.first.route, fullLoginRoute);
+      expect(router.popCalls, 1);
     });
   });
 }
