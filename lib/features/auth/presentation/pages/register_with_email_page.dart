@@ -180,7 +180,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
                     errorText: l10n?.emailAlreadyRegistered,
                     linkText: l10n?.logginLink,
                     onPressed: () {
-                       // navigate to the login page with the currently entered email
+                      // navigate to the login page with the currently entered email
                       _router.navigate(
                         fullLoginRoute,
                         arguments: _emailController.text,
@@ -245,7 +245,8 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
                       },
                       isDisabled:
                           !_canPressContinue ||
-                          state is RegisterWithEmailOtpSendingLoading,
+                          state is RegisterWithEmailOtpSendingLoading ||
+                          state is RegisterWithEmailEmailCheckLoading,
                       label:
                           state is RegisterWithEmailOtpSendingLoading
                               ? '${l10n?.sendingOtpButton}'
@@ -287,8 +288,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
             text: '${l10n?.alreadyHaveAccount}',
             actionText: '${l10n?.logginLink}',
             onPressed: () {
-              // remove current register page
-              _router.pop();
+              _router.navigate(fullLoginRoute);
             },
           ),
         ],
