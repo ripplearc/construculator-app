@@ -67,7 +67,7 @@ pre_check() {
 
     # Process coverage
     if [[ -f "coverage/lcov.info" ||  ! -s "coverage/lcov.info" ]]; then
-      lcov --remove coverage/lcov.info "**/*.g.dart" "**/l10n/**" -o coverage/lcov.info
+      lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info
       local lf=$(grep '^LF:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
       local lh=$(grep '^LH:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
       local coverage=$(echo "scale=2; $lh*100/$lf" | bc)
@@ -125,7 +125,7 @@ comprehensive_check() {
 
     # Process coverage
     if [[ -f "coverage/lcov.info" ||  ! -s "coverage/lcov.info" ]]; then
-      lcov --remove coverage/lcov.info "**/*.g.dart" "**/l10n/**" -o coverage/lcov.info
+      lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info
       local lf=$(grep '^LF:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
       local lh=$(grep '^LH:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
       local coverage=$(echo "scale=2; $lh*100/$lf" | bc)

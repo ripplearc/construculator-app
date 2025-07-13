@@ -30,7 +30,7 @@ dependencies:
   core_ui:
     git:
       url: https://github.com/ripplearc/coreui.git
-      ref: refactor/ui-components
+      ref: main
   pinput: 5.0.1
   dartz: 0.10.1
 
@@ -56,7 +56,6 @@ dev_dependencies:
 
 
 flutter:
-  generate: true
   uses-material-design: true
   
   assets:

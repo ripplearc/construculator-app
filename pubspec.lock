@@ -261,8 +261,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "refactor/ui-components"
-      resolved-ref: "487a8fe2dae5b868f96f957eea1860cf6bf42f6b"
+      ref: main
+      resolved-ref: "33ceab0035932c163f46969d2b1152c71ea6d472"
       url: "https://github.com/ripplearc/coreui.git"
     source: git
     version: "0.0.1"
