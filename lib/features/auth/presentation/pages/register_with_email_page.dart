@@ -259,7 +259,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
                     Row(
                       children: [
                         Expanded(
-                          child: Divider(color: Colors.grey, thickness: 1),
+                          child: Divider(color: CoreBorderColors.lineLight, thickness: 1),
                         ),
                         Padding(
                           padding: EdgeInsets.symmetric(
@@ -267,11 +267,11 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
                           ),
                           child: Text(
                             '${l10n?.or}',
-                            style: TextStyle(color: Colors.grey),
+                            style: TextStyle(color: CoreTextColors.body),
                           ),
                         ),
                         Expanded(
-                          child: Divider(color: Colors.grey, thickness: 1),
+                          child: Divider(color: CoreBorderColors.lineLight, thickness: 1),
                         ),
                       ],
                     ),
