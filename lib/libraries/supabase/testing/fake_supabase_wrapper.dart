@@ -112,8 +112,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Controls whether operations should be delayed
   bool shouldDelayOperations = false;
 
-  /// The delay duration in milliseconds for operations
-  int operationDelayMs = 100;
+  /// Controlls when a delayed future is completed
+  Completer? completer;
 
   /// Controls whether stream errors should be emitted
   bool shouldEmitStreamErrors = false;
@@ -145,7 +145,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required String password,
   }) async {
     if (shouldDelayOperations) {
-      await Future.delayed(Duration(milliseconds: operationDelayMs));
+      await completer?.future;
     }
     _methodCalls.add({
       'method': 'signInWithPassword',
@@ -216,6 +216,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       'phone': phone,
       'shouldCreateUser': shouldCreateUser,
     });
+
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
 
     if (shouldThrowOnOtp) {
       _throwConfiguredException(
@@ -402,7 +406,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       Exception('Record not found for update'),
     );
   }
-  
+
   @override
   Future<void> initialize() {
     // No need to implement this method, fake supabase wrapper does not need
@@ -541,7 +545,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     shouldReturnNullOnSelect = false;
 
     shouldDelayOperations = false;
-    operationDelayMs = 100;
+    completer = null;
     shouldEmitStreamErrors = false;
     shouldReturnUser = false;
     shouldThrowOnGetUserProfile = false;
