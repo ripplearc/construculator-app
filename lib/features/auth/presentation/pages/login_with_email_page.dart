@@ -103,7 +103,8 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
                     errorText: l10n?.emailNotRegistered,
                     linkText: l10n?.register,
                     onPressed: () {
-                      _router.pushNamed(
+                      // navitage to the register page with the entered email
+                      _router.navigate(
                         fullRegisterRoute,
                         arguments: _emailController.text,
                       );
@@ -145,7 +146,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
                     ),
                     const SizedBox(height: CoreSpacing.space6),
                     CoreButton(
-                      isDisabled: !_canPressContinue,
+                      isDisabled: !_canPressContinue || state is LoginWithEmailAvailabilityLoading,
                       onPressed: () {
                         _router.pushNamed(
                           fullEnterPasswordRoute,
@@ -193,7 +194,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
             text: '${l10n?.dontHaveAndAccountText}',
             actionText: '${l10n?.register}',
             onPressed: () {
-              _router.pushNamed(fullRegisterRoute);
+              _router.navigate(fullRegisterRoute);
             },
           ),
         ],
