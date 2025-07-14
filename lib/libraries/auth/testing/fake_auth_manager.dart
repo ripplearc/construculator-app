@@ -78,7 +78,7 @@ class FakeAuthManager implements AuthManager {
     );
   }
 
-  /// Validate email format
+  // Validate email format
   AuthResult<void> _validateEmail(String email) {
     final emailValidation = AuthValidation.validateEmail(email);
     if (emailValidation != null) {
@@ -90,7 +90,7 @@ class FakeAuthManager implements AuthManager {
     return AuthResult.success(null);
   }
 
-  /// Validate password
+  // Validate password
   AuthResult<void> _validatePassword(String password) {
      final passwordValidation = AuthValidation.validatePassword(password);
     if (passwordValidation != null) {
@@ -102,7 +102,7 @@ class FakeAuthManager implements AuthManager {
     return AuthResult.success(null);
   }
 
-  /// Validate OTP format
+  // Validate OTP format
   AuthResult<void> _validateOtp(String otp) {
      final otpValidation = AuthValidation.validateOtp(otp);
     if (otpValidation != null) {
