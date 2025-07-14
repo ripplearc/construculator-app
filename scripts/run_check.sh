@@ -66,7 +66,8 @@ pre_check() {
     lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' -o coverage/lcov.info
 
     # Process coverage
-    if [[ -f "coverage/lcov.info" ]]; then
+    if [[ -f "coverage/lcov.info" ||  ! -s "coverage/lcov.info" ]]; then
+      lcov --remove coverage/lcov.info "**/*.g.dart" "**/l10n/**" -o coverage/lcov.info
       local lf=$(grep '^LF:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
       local lh=$(grep '^LH:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
       local coverage=$(echo "scale=2; $lh*100/$lf" | bc)
@@ -123,7 +124,8 @@ comprehensive_check() {
     fvm flutter test test/units --coverage --machine > test-results/flutter.json
 
     # Process coverage
-    if [[ -f "coverage/lcov.info" ]]; then
+    if [[ -f "coverage/lcov.info" ||  ! -s "coverage/lcov.info" ]]; then
+      lcov --remove coverage/lcov.info "**/*.g.dart" "**/l10n/**" -o coverage/lcov.info
       local lf=$(grep '^LF:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
       local lh=$(grep '^LH:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
       local coverage=$(echo "scale=2; $lh*100/$lf" | bc)
@@ -179,7 +181,7 @@ comprehensive_check() {
       exit 1
     fi
   else
-    fvm flutter build apk --debug
+    fvm flutter build apk --flavor fishfood
     
     # Check for default APK
     APK_PATH="build/app/outputs/flutter-apk/app-debug.apk"
