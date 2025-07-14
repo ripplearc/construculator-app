@@ -27,10 +27,7 @@ dependencies:
   rxdart: 0.28.0
   freezed_annotation: 3.0.0
   json_annotation: 4.9.0
-  core_ui:
-    git:
-      url: https://github.com/ripplearc/coreui.git
-      ref: main
+  core_ui: 0.0.1
   pinput: 5.0.1
   dartz: 0.10.1
 

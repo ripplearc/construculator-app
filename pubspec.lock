@@ -260,11 +260,10 @@ packages:
   core_ui:
     dependency: "direct main"
     description:
-      path: "."
-      ref: main
-      resolved-ref: "33ceab0035932c163f46969d2b1152c71ea6d472"
-      url: "https://github.com/ripplearc/coreui.git"
-    source: git
+      name: core_ui
+      sha256: "0caf5cf214cca2770dd8c4e3e5e6970a701bab5b5a01f698e0e92568be15497e"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.0.1"
   coverage:
     dependency: transitive
