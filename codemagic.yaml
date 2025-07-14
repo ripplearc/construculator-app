@@ -69,8 +69,12 @@ workflows:
           # Find the common ancestor commit between source and target branches
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
 
-          # Get changed test files since branching from target
-          CHANGED_TESTS=$(git diff --name-only  --diff-filter=d $BASE_COMMIT HEAD -- "test/units/*.dart")
+          # Find changed test files
+          CHANGED_UNIT_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/units/*.dart")
+          CHANGED_WIDGET_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/widgets/*.dart")
+
+          # Combine all changed tests
+          CHANGED_TESTS="$CHANGED_UNIT_TESTS $CHANGED_WIDGET_TESTS"
 
           if [ -z "$CHANGED_TESTS" ]; then
             echo "✅ No test files modified. Skipping tests..."
@@ -139,9 +143,13 @@ workflows:
           # Find the common ancestor commit between source and target branches
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
           
-          # Get changed test files since branching from target
-          CHANGED_TESTS=$(git diff --name-only  --diff-filter=d $BASE_COMMIT HEAD -- "test/*.dart")
-          
+          # Find changed test files
+          CHANGED_UNIT_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/units/*.dart")
+          CHANGED_WIDGET_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/widgets/*.dart")
+
+          # Combine all changed tests
+          CHANGED_TESTS="$CHANGED_UNIT_TESTS $CHANGED_WIDGET_TESTS"
+
           if [ -z "$CHANGED_TESTS" ]; then
             echo "✅ No test files modified. Skipping tests..."
             exit 0

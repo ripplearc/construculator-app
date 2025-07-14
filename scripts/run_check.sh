@@ -121,7 +121,7 @@ comprehensive_check() {
   if [ -d "test/units" ] && [ "$(ls -A test/units)" ]; then
     echo "🧪 Unit tests with coverage..."
     mkdir -p test-results
-    fvm flutter test test/units --coverage --machine > test-results/flutter.json
+    fvm flutter test test/units test/widgets --coverage --machine > test-results/flutter.json
 
     # Process coverage
     if [[ -f "coverage/lcov.info" ||  ! -s "coverage/lcov.info" ]]; then
@@ -145,14 +145,6 @@ comprehensive_check() {
     fi
   else
     echo "⏩ Skipping unit tests: test/units directory not found."
-  fi
-
-  # Widget tests
-  if [ -d "test/widgets" ] && [ "$(ls -A test/widgets)" ]; then
-    echo "📱 Widget tests..."
-    fvm flutter test test/widgets
-  else
-    echo "⏩ Skipping widget tests: test/widgets directory not found."
   fi
 
   # Screenshot tests
