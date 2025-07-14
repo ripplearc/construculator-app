@@ -1,7 +1,9 @@
 // coverage:ignore-file
 
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
+import 'package:construculator/libraries/annotations/data_model.dart';
 
+@dataModel
 class FakeSession implements supabase.Session {
   @override
   final supabase.User user;
