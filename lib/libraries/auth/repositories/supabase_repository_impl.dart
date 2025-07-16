@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
@@ -48,7 +49,27 @@ class SupabaseRepositoryImpl implements AuthRepository {
 
       _logger.debug('Successfully retrieved user profile');
 
-      final user = User.fromJson(response);
+      final userPreferences = _parseJsonBToMap(
+        response['user_preferences'],
+      );
+
+      final user = User(
+        id: response['id'].toString(),
+        credentialId: response['credential_id'],
+        email: response['email'],
+        phone: response['phone'],
+        firstName: response['first_name'],
+        lastName: response['last_name'],
+        professionalRole: response['professional_role'],
+        profilePhotoUrl: response['profile_photo_url'],
+        createdAt: DateTime.parse(response['created_at']),
+        updatedAt: DateTime.parse(response['updated_at']),
+        userStatus:
+            response['user_status'] == 'active'
+                ? UserProfileStatus.active
+                : UserProfileStatus.inactive,
+        userPreferences: userPreferences,
+      );
 
       return user;
     } catch (e) {
@@ -61,11 +82,10 @@ class SupabaseRepositoryImpl implements AuthRepository {
   Future<User?> createUserProfile(User user) async {
     _logger.info('Creating user profile for: ${user.email}');
     try {
-       final userData = {
+      final userData = {
         'credential_id': user.credentialId,
         'email': user.email,
         'phone': user.phone,
-        'country_code': user.countryCode,
         'first_name': user.firstName,
         'last_name': user.lastName,
         'professional_role': user.professionalRole,
@@ -74,6 +94,7 @@ class SupabaseRepositoryImpl implements AuthRepository {
             user.userStatus == UserProfileStatus.active ? 'active' : 'inactive',
         'user_preferences': user.userPreferences,
       };
+
       final response = await supabaseWrapper.insert(
         table: 'users',
         data: userData,
@@ -81,7 +102,27 @@ class SupabaseRepositoryImpl implements AuthRepository {
 
       _logger.info('User profile created successfully');
 
-      final createdUser = User.fromJson(response);
+      final createdUser = User(
+        id: response['id'].toString(),
+        credentialId: response['credential_id'],
+        email: response['email'],
+        phone: response['phone'],
+        firstName: response['first_name'],
+        lastName: response['last_name'],
+        professionalRole: response['professional_role'],
+        profilePhotoUrl: response['profile_photo_url'],
+        createdAt: DateTime.parse(response['created_at']),
+        updatedAt: DateTime.parse(response['updated_at']),
+        userStatus:
+            response['user_status'] == 'active'
+                ? UserProfileStatus.active
+                : UserProfileStatus.inactive,
+        userPreferences:
+            response['user_preferences'] is Map
+                ? Map<String, dynamic>.from(response['user_preferences'])
+                : {},
+      );
+
       return createdUser;
     } catch (e) {
       _logger.error('Error creating user profile: $e');
@@ -96,7 +137,6 @@ class SupabaseRepositoryImpl implements AuthRepository {
       final userData = {
         'email': user.email,
         'phone': user.phone,
-        'country_code': user.countryCode,
         'first_name': user.firstName,
         'last_name': user.lastName,
         'professional_role': user.professionalRole,
@@ -115,7 +155,26 @@ class SupabaseRepositoryImpl implements AuthRepository {
 
       _logger.info('User profile updated successfully');
 
-      final updatedUser = User.fromJson(response);
+      final updatedUser = User(
+        id: response['id'].toString(),
+        credentialId: response['credential_id'],
+        email: response['email'],
+        phone: response['phone'],
+        firstName: response['first_name'],
+        lastName: response['last_name'],
+        professionalRole: response['professional_role'],
+        profilePhotoUrl: response['profile_photo_url'],
+        createdAt: DateTime.parse(response['created_at']),
+        updatedAt: DateTime.parse(response['updated_at']),
+        userStatus:
+            response['user_status'] == 'active'
+                ? UserProfileStatus.active
+                : UserProfileStatus.inactive,
+        userPreferences:
+            response['user_preferences'] is Map
+                ? Map<String, dynamic>.from(response['user_preferences'])
+                : {},
+      );
 
       return updatedUser;
     } catch (e) {
@@ -144,5 +203,17 @@ class SupabaseRepositoryImpl implements AuthRepository {
       _logger.error('Error updating user credentials: $e');
       rethrow;
     }
+  }
+
+  Map<String, dynamic> _parseJsonBToMap(jsonB) {
+    Map<String, dynamic> jsonMap = {};
+    if (jsonB != null) {
+      if (jsonB is Map) {
+        jsonMap = Map<String, dynamic>.from(jsonB);
+      } else if (jsonB is String) {
+        jsonMap = jsonDecode(jsonB);
+      }
+    }
+    return jsonMap;
   }
 }

@@ -38,7 +38,10 @@ class AuthManagerImpl implements AuthManager {
         if (state.event == supabase.AuthChangeEvent.signedIn) {
           final user = state.session?.user;
           if (user != null) {
-            _emitAuthStateChanged(AuthStatus.authenticated, _mapSupabaseUserToCredential(user));
+            _emitAuthStateChanged(
+              AuthStatus.authenticated,
+              _mapSupabaseUserToCredential(user),
+            );
           } else {
             _emitAuthStateChanged(AuthStatus.unauthenticated, null);
           }
@@ -62,7 +65,10 @@ class AuthManagerImpl implements AuthManager {
     if (_wrapper.isAuthenticated) {
       final user = _wrapper.currentUser;
       if (user != null) {
-        _emitAuthStateChanged(AuthStatus.authenticated, _mapSupabaseUserToCredential(user));
+        _emitAuthStateChanged(
+          AuthStatus.authenticated,
+          _mapSupabaseUserToCredential(user),
+        );
       } else {
         _emitAuthStateChanged(AuthStatus.unauthenticated, null);
       }
@@ -85,16 +91,17 @@ class AuthManagerImpl implements AuthManager {
 
     if (error is supabase.AuthException) {
       final code = SupabaseAuthErrorCode.fromCode(error.code ?? 'unknown');
-      return AuthResult.failure( code.toAuthErrorType());
+      return AuthResult.failure(code.toAuthErrorType());
     }
 
     if (error is TimeoutException) {
-      return AuthResult.failure(
-        AuthErrorType.timeout,
-      );
+      return AuthResult.failure(AuthErrorType.timeout);
     }
-
-    return AuthResult.failure( AuthErrorType.serverError);
+     if (error is supabase.PostgrestException) {
+      final code = PostgresErrorCode.fromCode(error.code ?? 'unknown');
+      return AuthResult.failure(code.toAuthErrorType());
+    }
+    return AuthResult.failure(AuthErrorType.serverError);
   }
 
   @override
@@ -107,13 +114,13 @@ class AuthManagerImpl implements AuthManager {
     // Validate email
     final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
-      return AuthResult.failure(AuthErrorType.invalidCredentials);
+      return AuthResult.failure(emailError);
     }
 
     // Validate password
     final passwordError = AuthValidation.validatePassword(password);
     if (passwordError != null) {
-      return AuthResult.failure(AuthErrorType.invalidCredentials);
+      return AuthResult.failure(passwordError);
     }
 
     try {
@@ -124,9 +131,7 @@ class AuthManagerImpl implements AuthManager {
       final user = response.user;
       if (user == null) {
         _logger.warning('Login failed for user: $email - No user returned');
-        return AuthResult.failure(
-          AuthErrorType.invalidCredentials,
-        );
+        return AuthResult.failure(AuthErrorType.invalidCredentials);
       }
 
       _logger.info('Login successful for user: $email');
@@ -146,13 +151,13 @@ class AuthManagerImpl implements AuthManager {
     // Validate email
     final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
-      return AuthResult.failure(AuthErrorType.invalidCredentials);
+      return AuthResult.failure(emailError);
     }
 
     // Validate password
     final passwordError = AuthValidation.validatePassword(password);
     if (passwordError != null) {
-      return AuthResult.failure(AuthErrorType.invalidCredentials);
+      return AuthResult.failure(passwordError);
     }
 
     try {
@@ -162,9 +167,7 @@ class AuthManagerImpl implements AuthManager {
         _logger.warning(
           'Registration failed for user: $email - No user returned',
         );
-        return AuthResult.failure(
-          AuthErrorType.registrationFailure,
-        );
+        return AuthResult.failure(AuthErrorType.registrationFailure);
       }
 
       _logger.info('Registration successful for user: $email');
@@ -178,13 +181,12 @@ class AuthManagerImpl implements AuthManager {
   Future<AuthResult> sendOtp(String address, OtpReceiver receiver) async {
     _logger.info('Sending OTP to: $address');
 
-    // Validate address based on receiver type
-    final addressError = receiver == OtpReceiver.email
-        ? AuthValidation.validateEmail(address)
-        : AuthValidation.validatePhoneNumber(address);
-    
+    final addressError =
+        receiver == OtpReceiver.email
+            ? AuthValidation.validateEmail(address)
+            : AuthValidation.validatePhoneNumber(address);
     if (addressError != null) {
-      return AuthResult.failure(AuthErrorType.invalidCredentials);
+      return AuthResult.failure(addressError);
     }
 
     try {
@@ -209,19 +211,19 @@ class AuthManagerImpl implements AuthManager {
   ) async {
     _logger.info('Verifying OTP for: $address');
 
-    // Validate address based on receiver type
-    final addressError = receiver == OtpReceiver.email
-        ? AuthValidation.validateEmail(address)
-        : AuthValidation.validatePhoneNumber(address);
-    
+    final addressError =
+        receiver == OtpReceiver.email
+            ? AuthValidation.validateEmail(address)
+            : AuthValidation.validatePhoneNumber(address);
+
     if (addressError != null) {
-      return AuthResult.failure(AuthErrorType.invalidCredentials);
+      return AuthResult.failure(addressError);
     }
 
     // Validate OTP
     final otpError = AuthValidation.validateOtp(otp);
     if (otpError != null) {
-      return AuthResult.failure(AuthErrorType.invalidCredentials);
+      return AuthResult.failure(otpError);
     }
 
     try {
@@ -239,9 +241,7 @@ class AuthManagerImpl implements AuthManager {
         _logger.warning(
           'OTP verification failed for: $address - No user returned',
         );
-        return AuthResult.failure(
-          AuthErrorType.invalidCredentials,
-        );
+        return AuthResult.failure(AuthErrorType.invalidCredentials);
       }
 
       _logger.info('OTP verification successful for: $address');
@@ -258,7 +258,7 @@ class AuthManagerImpl implements AuthManager {
     // Validate email
     final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
-      return AuthResult.failure(AuthErrorType.invalidCredentials);
+      return AuthResult.failure(emailError);
     }
 
     try {
@@ -278,7 +278,7 @@ class AuthManagerImpl implements AuthManager {
     // Validate email
     final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
-      return AuthResult.failure(AuthErrorType.invalidCredentials);
+      return AuthResult.failure(emailError);
     }
 
     try {
@@ -320,6 +320,15 @@ class AuthManagerImpl implements AuthManager {
   @override
   Future<AuthResult<User?>> createUserProfile(User user) async {
     try {
+      final credentialResult = getCurrentCredentials();
+      if (!credentialResult.isSuccess) {
+        return AuthResult.failure(AuthErrorType.serverError);
+      }
+      final credentialId = credentialResult.data?.id;
+      if (credentialId == null || credentialId.isEmpty) {
+        return AuthResult.failure(AuthErrorType.invalidCredentials);
+      }
+      user = user.copyWith(credentialId: credentialId);
       final result = await _authRepository.createUserProfile(user);
       _authNotifier.emitUserProfileChanged(result);
       return AuthResult.success(result);
@@ -331,7 +340,7 @@ class AuthManagerImpl implements AuthManager {
   @override
   AuthResult<UserCredential?> getCurrentCredentials() {
     try {
-      final result =  _authRepository.getCurrentCredentials();
+      final result = _authRepository.getCurrentCredentials();
       return AuthResult.success(result);
     } catch (e) {
       return _handleException(e, 'Get current credentials');
@@ -357,6 +366,20 @@ class AuthManagerImpl implements AuthManager {
       return AuthResult.success(result);
     } catch (e) {
       return _handleException(e, 'Update user profile');
+    }
+  }
+  
+  @override
+  Future<AuthResult<UserCredential?>> updateUserCredentials(String? email, String? password) async {
+    try {
+      final result = await _authRepository.updateUserCredentials(email, password);
+      if (result == null) {
+        return AuthResult.failure(AuthErrorType.invalidCredentials);
+      }
+      _authNotifier.emitAuthStateChanged(AuthState(status: AuthStatus.authenticated, user: result));
+      return AuthResult.success(result);
+    } catch (e) {
+      return _handleException(e, 'Update user credentials');
     }
   }
 }
