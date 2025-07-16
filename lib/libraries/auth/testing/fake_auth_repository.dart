@@ -65,7 +65,33 @@ class FakeAuthRepository implements AuthRepository {
     getCurrentUserCallCount++;
     return _currentUser;
   }
-  
+
+  @override
+  Future<UserCredential?> updateUserCredentials(String? email, String? password) async {
+    if (!_authShouldSucceed) {
+      throw ServerException(Trace.current(), Exception(_errorMessage));
+    }
+
+    if (_currentUser == null) {
+      return null;
+    }
+
+    final metadata = Map<String, dynamic>.from(_currentUser?.metadata ?? {});
+    if (password != null) {
+      metadata['password'] = password;
+    }
+
+    final updatedCredential = UserCredential(
+      id: _currentUser?.id ?? '',
+      email: email ?? '',
+      metadata: metadata,
+      createdAt: _currentUser?.createdAt ?? DateTime.now(),
+    );
+
+    _currentUser = updatedCredential;
+    return updatedCredential;
+  }
+
   @override
   Future<User?> getUserProfile(String userId) async {
     getUserProfileCalls.add(userId);
@@ -138,4 +164,5 @@ class FakeAuthRepository implements AuthRepository {
     _userProfiles[user.credentialId] = updatedUser;
     return updatedUser;
   }
-} 
+  
+}
