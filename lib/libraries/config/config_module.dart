@@ -7,7 +7,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 class ConfigModule extends Module {
   @override
   void exportedBinds(Injector i) {
-    i.addLazySingleton<EnvLoader>(() => EnvLoaderImpl());
-    i.addLazySingleton<Config>(() => AppConfigImpl(envLoader: i()));
+    i.addSingleton<EnvLoader>(() => EnvLoaderImpl());
+    i.addSingleton<Config>(() => AppConfigImpl(envLoader: i()));
   }
 }

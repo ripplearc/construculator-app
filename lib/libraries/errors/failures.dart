@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:equatable/equatable.dart';
 
 /// Failure represents specific, anticipated error conditions or alternative outcomes of an operation (e.g., a use case or repository method).
@@ -11,8 +12,6 @@ import 'package:equatable/equatable.dart';
 ///    - `AppException`: Represents *unexpected/exceptional* events that disrupt normal flow.
 ///      Handled using `try-catch` blocks.
 abstract class Failure extends Equatable {
-  const Failure();
-
   @override
   List<Object?> get props => [];
 }
@@ -21,19 +20,36 @@ abstract class Failure extends Equatable {
 /// 
 /// Return this failure when a method call throws a [ServerException] 
 class ServerFailure extends Failure {
-  final String message;
-  const ServerFailure(this.message);
 }
 /// Failure thrown when a network error occurs.
 /// 
 /// Return this failure if an active network is required but none is available.
-class NetworkFailure extends Failure {}
+class NetworkFailure extends Failure {
+}
 
 /// Failure thrown when a client error occurs.
 /// 
 /// Return this failure if a method call throws a [ClientException]
 /// The UI can extract the message from this failure and display it to the user.
 class ClientFailure extends Failure {
-  final String message;
-  const ClientFailure(this.message);
+}
+
+/// Failure thrown when a rate limit error occurs.
+class RateLimitFailure extends Failure {
+}
+
+/// Failure thrown when a user is not found.
+class UserNotFoundFailure extends Failure {
+}
+
+/// Failure thrown when an unexpected error occurs.
+class UnexpectedFailure extends Failure {
+}
+
+/// Failure thrown when an authentication error occurs.
+class AuthFailure extends Failure {
+
+  /// The type of authentication error that occurred.
+  final AuthErrorType errorType;
+  AuthFailure({required this.errorType});
 }
