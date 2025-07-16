@@ -12,6 +12,7 @@ import 'package:construculator/features/auth/domain/usecases/verify_otp_usecase.
 import 'package:construculator/features/auth/domain/usecases/login_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/set_new_password_usecase.dart';
 import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
+import 'package:construculator/features/auth/presentation/bloc/login_with_email_bloc/login_with_email_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
@@ -43,9 +44,7 @@ class AuthTestModule extends Module {
     );
     i.add<AuthRepository>(() => AuthRepositoryImpl(remoteDataSource: i()));
     i.add<ResetPasswordUseCase>(() => ResetPasswordUseCase(i()));
-    i.add<GetProfessionalRolesUseCase>(
-      () => GetProfessionalRolesUseCase(i()),
-    );
+    i.add<GetProfessionalRolesUseCase>(() => GetProfessionalRolesUseCase(i()));
     i.add<CheckEmailAvailabilityUseCase>(
       () => CheckEmailAvailabilityUseCase(i()),
     );
@@ -55,10 +54,7 @@ class AuthTestModule extends Module {
     i.add<LoginUseCase>(() => LoginUseCase(i()));
     i.add<SetNewPasswordUseCase>(() => SetNewPasswordUseCase(i()));
     i.add<OtpVerificationBloc>(
-      () => OtpVerificationBloc(
-        verifyOtpUseCase: i(),
-        sendOtpUseCase: i(),
-      ),
+      () => OtpVerificationBloc(verifyOtpUseCase: i(), sendOtpUseCase: i()),
     );
     i.add<RegisterWithEmailBloc>(
       () => RegisterWithEmailBloc(
@@ -72,6 +68,9 @@ class AuthTestModule extends Module {
         getProfessionalRolesUseCase: i(),
         sendOtpUseCase: i(),
       ),
+    );
+    i.add<LoginWithEmailBloc>(
+      () => LoginWithEmailBloc(checkEmailAvailabilityUseCase: i()),
     );
   }
 }
