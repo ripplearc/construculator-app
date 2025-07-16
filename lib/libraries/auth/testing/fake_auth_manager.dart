@@ -78,7 +78,7 @@ class FakeAuthManager implements AuthManager {
     );
   }
 
-  /// Validate email format
+  // Validate email format
   AuthResult<void> _validateEmail(String email) {
     final emailValidation = AuthValidation.validateEmail(email);
     if (emailValidation != null) {
@@ -90,7 +90,7 @@ class FakeAuthManager implements AuthManager {
     return AuthResult.success(null);
   }
 
-  /// Validate password
+  // Validate password
   AuthResult<void> _validatePassword(String password) {
      final passwordValidation = AuthValidation.validatePassword(password);
     if (passwordValidation != null) {
@@ -102,7 +102,7 @@ class FakeAuthManager implements AuthManager {
     return AuthResult.success(null);
   }
 
-  /// Validate OTP format
+  // Validate OTP format
   AuthResult<void> _validateOtp(String otp) {
      final otpValidation = AuthValidation.validateOtp(otp);
     if (otpValidation != null) {
@@ -125,8 +125,8 @@ class FakeAuthManager implements AuthManager {
     final emailValidation = _validateEmail(email);
     if (!emailValidation.isSuccess) {
       return AuthResult.failure(
-        emailValidation.errorMessage!,
-        emailValidation.errorType!,
+        emailValidation.errorMessage,
+        emailValidation.errorType,
       );
     }
 
@@ -166,16 +166,16 @@ class FakeAuthManager implements AuthManager {
     final emailValidation = _validateEmail(email);
     if (!emailValidation.isSuccess) {
       return AuthResult.failure(
-        emailValidation.errorMessage!,
-        emailValidation.errorType!,
+        emailValidation.errorMessage,
+        emailValidation.errorType,
       );
     }
 
     final passwordValidation = _validatePassword(password);
     if (!passwordValidation.isSuccess) {
       return AuthResult.failure(
-        passwordValidation.errorMessage!,
-        passwordValidation.errorType!,
+        passwordValidation.errorMessage,
+        passwordValidation.errorType,
       );
     }
 
@@ -206,8 +206,8 @@ class FakeAuthManager implements AuthManager {
       final validation = _validateEmail(address);
       if (!validation.isSuccess) {
         return AuthResult.failure(
-          validation.errorMessage!,
-          validation.errorType!,
+          validation.errorMessage,
+          validation.errorType,
         );
       }
     }
@@ -239,8 +239,8 @@ class FakeAuthManager implements AuthManager {
       final validation = _validateEmail(address);
       if (!validation.isSuccess) {
         return AuthResult.failure(
-          validation.errorMessage!,
-          validation.errorType!,
+          validation.errorMessage,
+          validation.errorType,
         );
       }
     }
@@ -249,8 +249,8 @@ class FakeAuthManager implements AuthManager {
     final otpValidation = _validateOtp(otp);
     if (!otpValidation.isSuccess) {
       return AuthResult.failure(
-        otpValidation.errorMessage!,
-        otpValidation.errorType!,
+        otpValidation.errorMessage,
+        otpValidation.errorType,
       );
     }
     
@@ -280,8 +280,8 @@ class FakeAuthManager implements AuthManager {
     final validation = _validateEmail(email);
     if (!validation.isSuccess) {
       return AuthResult.failure(
-        validation.errorMessage!,
-        validation.errorType!,
+        validation.errorMessage,
+        validation.errorType,
       );
     }
     
@@ -303,8 +303,8 @@ class FakeAuthManager implements AuthManager {
     final validation = _validateEmail(email);
     if (!validation.isSuccess) {
       return AuthResult.failure(
-        validation.errorMessage!,
-        validation.errorType!,
+        validation.errorMessage,
+        validation.errorType,
       );
     }
     

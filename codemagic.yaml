@@ -7,13 +7,6 @@ workflows:
         - notification_emails
       # See https://docs.flutter.dev/install/archive#stable-channel for mapping between Dart and Flutter SDK versions
       flutter: 3.32.0
-    triggering:
-      events:
-        - pull_request
-      branch_patterns:
-        - pattern: "*"
-          include: true
-          source: false
     cache:
       cache_paths:
         - .fvm/
@@ -69,8 +62,12 @@ workflows:
           # Find the common ancestor commit between source and target branches
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
 
-          # Get changed test files since branching from target
-          CHANGED_TESTS=$(git diff --name-only  --diff-filter=d $BASE_COMMIT HEAD -- "test/units/*.dart")
+          # Find changed test files
+          CHANGED_UNIT_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/units/*.dart")
+          CHANGED_WIDGET_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/widgets/*.dart")
+
+          # Combine all changed tests
+          CHANGED_TESTS="$CHANGED_UNIT_TESTS $CHANGED_WIDGET_TESTS"
 
           if [ -z "$CHANGED_TESTS" ]; then
             echo "✅ No test files modified. Skipping tests..."
@@ -86,7 +83,7 @@ workflows:
           HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
           mkdir -p test-results
           flutter test $CHANGED_TESTS --coverage --machine > test-results/flutter.json
-          lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' -o coverage/lcov.info
+          lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info
           # Compute coverage
           if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
             echo "❌ Coverage file coverage/lcov.info is missing or empty."
@@ -139,9 +136,13 @@ workflows:
           # Find the common ancestor commit between source and target branches
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
           
-          # Get changed test files since branching from target
-          CHANGED_TESTS=$(git diff --name-only  --diff-filter=d $BASE_COMMIT HEAD -- "test/*.dart")
-          
+          # Find changed test files
+          CHANGED_UNIT_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/units/*.dart")
+          CHANGED_WIDGET_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/widgets/*.dart")
+
+          # Combine all changed tests
+          CHANGED_TESTS="$CHANGED_UNIT_TESTS $CHANGED_WIDGET_TESTS"
+
           if [ -z "$CHANGED_TESTS" ]; then
             echo "✅ No test files modified. Skipping tests..."
             exit 0
@@ -214,7 +215,7 @@ workflows:
           sudo apt-get install -y lcov
           mkdir -p test-results
           flutter test test/units --coverage --machine > test-results/flutter.json
-          lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' -o coverage/lcov.info
+          lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info
           # Compute coverage
           if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
             echo "❌ Coverage file coverage/lcov.info is missing or empty."
@@ -374,7 +375,7 @@ workflows:
           HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
           mkdir -p test-results
           flutter test test/units --coverage --machine > test-results/flutter.json
-          lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' -o coverage/lcov.info
+          lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info
           # Compute coverage
           if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
             echo "❌ Coverage file coverage/lcov.info is missing or empty."

@@ -230,7 +230,7 @@ void main() {
           expect(
             fakeWrapper.isAuthenticated,
             isTrue,
-            reason: "User should be authenticated before sign out",
+            reason: 'User should be authenticated before sign out',
           );
 
           await fakeWrapper.signOut();
@@ -278,7 +278,7 @@ void main() {
         expect(
           fakeWrapper.isAuthenticated,
           isFalse,
-          reason: "Should not be authenticated initially",
+          reason: 'Should not be authenticated initially',
         );
 
         await fakeWrapper.signInWithPassword(
@@ -288,14 +288,14 @@ void main() {
         expect(
           fakeWrapper.isAuthenticated,
           isTrue,
-          reason: "Should be authenticated after sign-in",
+          reason: 'Should be authenticated after sign-in',
         );
 
         await fakeWrapper.signOut();
         expect(
           fakeWrapper.isAuthenticated,
           isFalse,
-          reason: "Should not be authenticated after sign-out",
+          reason: 'Should not be authenticated after sign-out',
         );
       });
 
@@ -306,7 +306,7 @@ void main() {
           emitsInOrder([
             predicate<supabase.AuthState>((state) {
               return state.event == supabase.AuthChangeEvent.signedIn &&
-                  state.session?.user.email == 'user@example.com';
+                  state.session!.user.email == 'user@example.com';
             }),
             predicate<supabase.AuthState>((state) {
               return state.event == supabase.AuthChangeEvent.signedOut &&
@@ -336,7 +336,7 @@ void main() {
           () => fakeWrapper.setAuthStreamError('This should fail'),
           throwsA(isA<StateError>()),
           reason:
-              "Simulating auth stream error after dispose should throw StateError because the controller is closed.",
+              'Simulating auth stream error after dispose should throw StateError because the controller is closed.',
         );
         await subscription.cancel();
       });
@@ -529,7 +529,7 @@ void main() {
           expect(
             result['updated_at'],
             isNot(equals(initialTime)),
-            reason: "updated_at should change after update",
+            reason: 'updated_at should change after update',
           );
         });
 
@@ -602,12 +602,12 @@ void main() {
             expect(
               user.appMetadata,
               isEmpty,
-              reason: "Default appMetadata should be empty",
+              reason: 'Default appMetadata should be empty',
             );
             expect(
               user.userMetadata,
               isNull,
-              reason: "Default userMetadata should be null",
+              reason: 'Default userMetadata should be null',
             );
           },
         );
@@ -685,12 +685,12 @@ void main() {
             expect(
               session.accessToken,
               equals('fake-access-token'),
-              reason: "Should use default access token",
+              reason: 'Should use default access token',
             );
             expect(
               session.refreshToken,
               equals('fake-refresh-token'),
-              reason: "Should use default refresh token",
+              reason: 'Should use default refresh token',
             );
           },
         );
@@ -715,7 +715,7 @@ void main() {
           expect(
             user1,
             isNotNull,
-            reason: "User 1 should be found after addTableData",
+            reason: 'User 1 should be found after addTableData',
           );
           expect(user1!['name'], equals('User 1'));
 
@@ -729,7 +729,7 @@ void main() {
           expect(
             user1,
             isNull,
-            reason: "User 1 should be null after clearTableData",
+            reason: 'User 1 should be null after clearTableData',
           );
         },
       );
@@ -753,12 +753,12 @@ void main() {
           expect(
             fakeWrapper.currentUser,
             isNull,
-            reason: "Current user should be null after clearAllData",
+            reason: 'Current user should be null after clearAllData',
           );
           expect(
             fakeWrapper.isAuthenticated,
             isFalse,
-            reason: "Should not be authenticated after clearAllData",
+            reason: 'Should not be authenticated after clearAllData',
           );
 
           final userResult = await fakeWrapper.selectSingle(
@@ -766,14 +766,14 @@ void main() {
             filterColumn: 'id',
             filterValue: '1',
           );
-          expect(userResult, isNull, reason: "User data should be cleared");
+          expect(userResult, isNull, reason: 'User data should be cleared');
 
           final postResult = await fakeWrapper.selectSingle(
             table: 'posts',
             filterColumn: 'id',
             filterValue: 'p1',
           );
-          expect(postResult, isNull, reason: "Post data should be cleared");
+          expect(postResult, isNull, reason: 'Post data should be cleared');
         },
       );
     });
@@ -785,7 +785,7 @@ void main() {
           expect(
             fakeWrapper.getMethodCalls(),
             isEmpty,
-            reason: "Initially, method calls should be empty.",
+            reason: 'Initially, method calls should be empty.',
           );
 
           await fakeWrapper.signInWithPassword(
@@ -906,7 +906,7 @@ void main() {
           expect(
             fakeWrapper.getMethodCallsFor('nonExistentMethod'),
             isEmpty,
-            reason: "Calls for a non-existent method should be empty.",
+            reason: 'Calls for a non-existent method should be empty.',
           );
         },
       );

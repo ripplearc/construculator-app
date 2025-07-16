@@ -6,7 +6,7 @@ import 'package:construculator/libraries/logging/app_logger.dart';
 class AppConfigImpl implements Config {
   AppConfigImpl({required EnvLoader envLoader})
     : _envLoader = envLoader,
-      _logger = AppLogger().tag("AppConfig");
+      _logger = AppLogger().tag('AppConfig');
 
   final EnvLoader _envLoader;
   final AppLogger _logger;
@@ -31,7 +31,7 @@ class AppConfigImpl implements Config {
         envFileName = '.env.prod';
         break;
     }
-    await _envLoader.load(fileName: "assets/env/$envFileName");
+    await _envLoader.load(fileName: 'assets/env/$envFileName');
     _logger.info('Loaded environment-specific config: $envFileName');
 
     _baseAppName = _envLoader.get('APP_NAME') ?? 'Construculator';
