@@ -16,7 +16,6 @@ class FakeAuthManager implements AuthManager {
   bool _authShouldSucceed = true;
   
   // Error message and type to be returned on failure
-  String? _errorMessage;
   AuthErrorType _errorType = AuthErrorType.serverError;
   
   // Currently authenticated user credential
@@ -61,7 +60,6 @@ class FakeAuthManager implements AuthManager {
     AuthErrorType errorType = AuthErrorType.serverError,
   }) {
     _authShouldSucceed = succeed;
-    _errorMessage = errorMessage;
     _errorType = errorType;
   }
 
@@ -83,7 +81,6 @@ class FakeAuthManager implements AuthManager {
     final emailValidation = AuthValidation.validateEmail(email);
     if (emailValidation != null) {
       return AuthResult.failure(
-        emailValidation.message,
         AuthErrorType.invalidCredentials,
       );
     }
@@ -95,7 +92,6 @@ class FakeAuthManager implements AuthManager {
      final passwordValidation = AuthValidation.validatePassword(password);
     if (passwordValidation != null) {
       return AuthResult.failure(
-        passwordValidation.message,
         AuthErrorType.invalidCredentials,
       );
     }
@@ -107,7 +103,6 @@ class FakeAuthManager implements AuthManager {
      final otpValidation = AuthValidation.validateOtp(otp);
     if (otpValidation != null) {
       return AuthResult.failure(
-        otpValidation.message,
         AuthErrorType.invalidCredentials,
       );
     }
@@ -125,21 +120,18 @@ class FakeAuthManager implements AuthManager {
     final emailValidation = _validateEmail(email);
     if (!emailValidation.isSuccess) {
       return AuthResult.failure(
-        emailValidation.errorMessage,
         emailValidation.errorType,
       );
     }
 
     if(password.isEmpty) {
       return AuthResult.failure(
-        AuthValidationErrorType.passwordRequired.message,
         AuthErrorType.invalidCredentials,
       );
     }
 
     if (!_authShouldSucceed) {
       return AuthResult.failure(
-        _errorMessage ?? 'Login failed',
         _errorType,
       );
     }
@@ -166,7 +158,6 @@ class FakeAuthManager implements AuthManager {
     final emailValidation = _validateEmail(email);
     if (!emailValidation.isSuccess) {
       return AuthResult.failure(
-        emailValidation.errorMessage,
         emailValidation.errorType,
       );
     }
@@ -174,14 +165,12 @@ class FakeAuthManager implements AuthManager {
     final passwordValidation = _validatePassword(password);
     if (!passwordValidation.isSuccess) {
       return AuthResult.failure(
-        passwordValidation.errorMessage,
         passwordValidation.errorType,
       );
     }
 
     if (!_authShouldSucceed) {
       return AuthResult.failure(
-        _errorMessage ?? 'Registration failed',
         _errorType,
       );
     }
@@ -206,7 +195,6 @@ class FakeAuthManager implements AuthManager {
       final validation = _validateEmail(address);
       if (!validation.isSuccess) {
         return AuthResult.failure(
-          validation.errorMessage,
           validation.errorType,
         );
       }
@@ -214,7 +202,6 @@ class FakeAuthManager implements AuthManager {
     
     if (!_authShouldSucceed) {
       return AuthResult.failure(
-        _errorMessage ?? 'Failed to send OTP',
         _errorType,
       );
     }
@@ -239,7 +226,6 @@ class FakeAuthManager implements AuthManager {
       final validation = _validateEmail(address);
       if (!validation.isSuccess) {
         return AuthResult.failure(
-          validation.errorMessage,
           validation.errorType,
         );
       }
@@ -249,14 +235,12 @@ class FakeAuthManager implements AuthManager {
     final otpValidation = _validateOtp(otp);
     if (!otpValidation.isSuccess) {
       return AuthResult.failure(
-        otpValidation.errorMessage,
         otpValidation.errorType,
       );
     }
     
     if (!_authShouldSucceed) {
       return AuthResult.failure(
-        _errorMessage ?? 'Invalid verification code',
         _errorType,
       );
     }
@@ -280,14 +264,12 @@ class FakeAuthManager implements AuthManager {
     final validation = _validateEmail(email);
     if (!validation.isSuccess) {
       return AuthResult.failure(
-        validation.errorMessage,
         validation.errorType,
       );
     }
     
     if (!_authShouldSucceed) {
       return AuthResult.failure(
-        _errorMessage ?? 'Password reset failed',
         _errorType,
       );
     }
@@ -303,14 +285,12 @@ class FakeAuthManager implements AuthManager {
     final validation = _validateEmail(email);
     if (!validation.isSuccess) {
       return AuthResult.failure(
-        validation.errorMessage,
         validation.errorType,
       );
     }
     
     if (!_authShouldSucceed) {
       return AuthResult.failure(
-        _errorMessage ?? 'Email check failed',
         _errorType,
       );
     }
@@ -324,7 +304,6 @@ class FakeAuthManager implements AuthManager {
     
     if (!_authShouldSucceed) {
       return AuthResult.failure(
-        _errorMessage ?? 'Logout failed',
         _errorType,
       );
     }
@@ -342,7 +321,6 @@ class FakeAuthManager implements AuthManager {
   Future<AuthResult<User?>> createUserProfile(User user) async {
     if (!_authShouldSucceed) {
       return AuthResult.failure(
-        _errorMessage ?? 'Failed to create user profile',
         _errorType,
       );
     }
@@ -356,7 +334,6 @@ class FakeAuthManager implements AuthManager {
   AuthResult<UserCredential?> getCurrentCredentials() {
     if (!_authShouldSucceed) {
       return AuthResult.failure(
-        _errorMessage ?? 'Failed to get current credentials',
         _errorType,
       );
     }
@@ -368,7 +345,6 @@ class FakeAuthManager implements AuthManager {
   Future<AuthResult<User?>> getUserProfile(String credentialId) async {
     if (!_authShouldSucceed) {
       return AuthResult.failure(
-        _errorMessage ?? 'Failed to get user profile',
         _errorType,
       );
     }
@@ -382,7 +358,6 @@ class FakeAuthManager implements AuthManager {
   Future<AuthResult<User?>> updateUserProfile(User user) async {
     if (!_authShouldSucceed) {
       return AuthResult.failure(
-        _errorMessage ?? 'Failed to update user profile',
         _errorType,
       );
     }
@@ -402,7 +377,6 @@ class FakeAuthManager implements AuthManager {
     emailCheckAttempts.clear();
     logoutAttempts.clear();
     _authShouldSucceed = true;
-    _errorMessage = null;
     _errorType = AuthErrorType.serverError;
     setCurrentCredential(null);
   }
