@@ -23,8 +23,12 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
         debug: _envLoader.get('DEBUG_MODE') == 'true',
       );
       _supabaseClient = supabase.Supabase.instance.client;
+      return;
     }
-    throw ClientException(Trace.current(), 'SUPABASE_URL and SUPABASE_ANON_KEY variables are required');
+    throw ClientException(
+      Trace.current(),
+      'SUPABASE_URL and SUPABASE_ANON_KEY variables are required',
+    );
   }
 
   @override
