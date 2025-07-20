@@ -370,7 +370,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                 children: [
                   const SizedBox(height: CoreSpacing.space6),
                   Text(
-                    '${l10n?.createYourAccount}',
+                    '${l10n?.createAccountTitle}',
                     style: CoreTypography.headlineLargeSemiBold(),
                   ),
                   const SizedBox(height: CoreSpacing.space3),
