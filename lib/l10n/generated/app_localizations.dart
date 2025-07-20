@@ -112,13 +112,7 @@ abstract class AppLocalizations {
   /// **'and acknowledge'**
   String get andAcknowledge;
 
-  /// Text for authentication code
-  ///
-  /// In en, this message translates to:
-  /// **'Authentication Code'**
-  String get authenticationCode;
-
-  /// Title for authentication code section
+  /// Title for authentication code bottom sheet
   ///
   /// In en, this message translates to:
   /// **'Authentication Code'**
@@ -136,7 +130,7 @@ abstract class AppLocalizations {
   /// **'Checking...'**
   String get checkingAvailabilityButton;
 
-  /// Label for close button
+  /// Label for close button on toast notification
   ///
   /// In en, this message translates to:
   /// **'Close'**
@@ -220,12 +214,6 @@ abstract class AppLocalizations {
   /// **'Create your Account'**
   String get createAccountTitle;
 
-  /// Title for create account page
-  ///
-  /// In en, this message translates to:
-  /// **'Create your Account'**
-  String get createYourAccount;
-
   /// Label for button while account is being created
   ///
   /// In en, this message translates to:
@@ -238,7 +226,7 @@ abstract class AppLocalizations {
   /// **'Did not receive code?'**
   String get didNotReceiveCode;
 
-  /// Text for don't have an account
+  /// Text for auth footer on login page
   ///
   /// In en, this message translates to:
   /// **'Don\'t have an account?'**
@@ -280,35 +268,11 @@ abstract class AppLocalizations {
   /// **'Email ID not registered with us. Please '**
   String get emailNotRegistered;
 
-  /// Message shown when email is not registered and user needs to create an account
-  ///
-  /// In en, this message translates to:
-  /// **'Email you entered is not registered with us, to create your construculator account enter details below'**
-  String get emailNotRegisteredMessage;
-
   /// Error message when email is required
   ///
   /// In en, this message translates to:
   /// **'Email is required'**
   String get emailRequiredError;
-
-  /// Hint text for email input field on forgot password page
-  ///
-  /// In en, this message translates to:
-  /// **'Enter your email'**
-  String get enterEmailHint;
-
-  /// Hint text for email input field on login with email page
-  ///
-  /// In en, this message translates to:
-  /// **'Enter your Email ID'**
-  String get enterEmailIDHint;
-
-  /// Label for email input field on forgot password page
-  ///
-  /// In en, this message translates to:
-  /// **'Email ID'**
-  String get enterEmailLabel;
 
   /// Description text on enter password page
   ///
@@ -322,10 +286,10 @@ abstract class AppLocalizations {
   /// **'Enter your password'**
   String get enterPasswordTitle;
 
-  /// Text for enter your email id to login to your account
+  /// Text displayed on login page, instructing user to enter details to login to their account
   ///
   /// In en, this message translates to:
-  /// **'Enter your email id to login to your account'**
+  /// **'Hey, Enter your details to log in to your account'**
   String get enterYourEmailIdToLoginToYourAccount;
 
   /// Hint text for first name input field
@@ -430,7 +394,7 @@ abstract class AppLocalizations {
   /// **'Logging in...'**
   String get loggingInButton;
 
-  /// Label for log in
+  /// Label for log in link
   ///
   /// In en, this message translates to:
   /// **'Log in'**
@@ -451,7 +415,7 @@ abstract class AppLocalizations {
   /// Hint text for mobile number input field
   ///
   /// In en, this message translates to:
-  /// **'Enter Mobile Number'**
+  /// **'Mobile Number'**
   String get mobileNumberHint;
 
   /// Label for mobile number input field
@@ -469,7 +433,7 @@ abstract class AppLocalizations {
   /// Hint text for new password input field
   ///
   /// In en, this message translates to:
-  /// **'Enter New Password'**
+  /// **'New Password'**
   String get newPasswordHint;
 
   /// Label for new password input field
@@ -478,7 +442,7 @@ abstract class AppLocalizations {
   /// **'New Password*'**
   String get newPasswordLabel;
 
-  /// Text for or
+  /// Text for or under login/register form, providing options to continue with other methods
   ///
   /// In en, this message translates to:
   /// **'or'**
@@ -517,7 +481,7 @@ abstract class AppLocalizations {
   /// Hint text for password input field
   ///
   /// In en, this message translates to:
-  /// **'Enter Password'**
+  /// **'Password'**
   String get passwordHint;
 
   /// Label for password input field
@@ -567,30 +531,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Passwords do not match'**
   String get passwordsDoNotMatchError;
-
-  /// Label for password strength indicator
-  ///
-  /// In en, this message translates to:
-  /// **'Password strength: '**
-  String get passwordStrengthLabel;
-
-  /// Text indicating medium password strength
-  ///
-  /// In en, this message translates to:
-  /// **'Medium'**
-  String get passwordStrengthMedium;
-
-  /// Text indicating strong password strength
-  ///
-  /// In en, this message translates to:
-  /// **'Strong'**
-  String get passwordStrengthStrong;
-
-  /// Text indicating weak password strength
-  ///
-  /// In en, this message translates to:
-  /// **'Weak'**
-  String get passwordStrengthWeak;
 
   /// Error message when password is too short
   ///
@@ -718,12 +658,6 @@ abstract class AppLocalizations {
   /// **'Sending Otp Failed, Please try again.'**
   String get sendingOtpFailed;
 
-  /// Label for send reset link button
-  ///
-  /// In en, this message translates to:
-  /// **'Send Otp Code'**
-  String get sendResetLinkButton;
-
   /// Error message for server errors
   ///
   /// In en, this message translates to:
@@ -795,18 +729,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'User not found'**
   String get userNotFoundError;
-
-  /// Error messages for input validation
-  ///
-  /// In en, this message translates to:
-  /// **'Validation Error Messages'**
-  String get validationErrorMessages;
-
-  /// Label for verify button
-  ///
-  /// In en, this message translates to:
-  /// **'Verify'**
-  String get verifyButtonLabel;
 
   /// Label for verifying button
   ///

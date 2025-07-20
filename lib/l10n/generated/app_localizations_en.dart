@@ -18,9 +18,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get andAcknowledge => 'and acknowledge';
 
   @override
-  String get authenticationCode => 'Authentication Code';
-
-  @override
   String get authenticationCodeTitle => 'Authentication Code';
 
   @override
@@ -74,9 +71,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createAccountTitle => 'Create your Account';
 
   @override
-  String get createYourAccount => 'Create your Account';
-
-  @override
   String get creatingAccountButton => 'Creating Account...';
 
   @override
@@ -105,20 +99,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emailNotRegistered => 'Email ID not registered with us. Please ';
 
   @override
-  String get emailNotRegisteredMessage =>
-      'Email you entered is not registered with us, to create your construculator account enter details below';
-
-  @override
   String get emailRequiredError => 'Email is required';
-
-  @override
-  String get enterEmailHint => 'Enter your email';
-
-  @override
-  String get enterEmailIDHint => 'Enter your Email ID';
-
-  @override
-  String get enterEmailLabel => 'Email ID';
 
   @override
   String get enterPasswordDescription =>
@@ -129,7 +110,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get enterYourEmailIdToLoginToYourAccount =>
-      'Enter your email id to login to your account';
+      'Hey, Enter your details to log in to your account';
 
   @override
   String get firstNameHint => 'First name';
@@ -197,7 +178,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'You have successfully logged in with Construculator';
 
   @override
-  String get mobileNumberHint => 'Enter Mobile Number';
+  String get mobileNumberHint => 'Mobile Number';
 
   @override
   String get mobileNumberLabel => 'Mobile number';
@@ -206,7 +187,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get networkError => 'Network error';
 
   @override
-  String get newPasswordHint => 'Enter New Password';
+  String get newPasswordHint => 'New Password';
 
   @override
   String get newPasswordLabel => 'New Password*';
@@ -232,7 +213,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enter 6 digit code we just texted to your email ID';
 
   @override
-  String get passwordHint => 'Enter Password';
+  String get passwordHint => 'Password';
 
   @override
   String get passwordLabel => 'Password*';
@@ -262,18 +243,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get passwordsDoNotMatchError => 'Passwords do not match';
-
-  @override
-  String get passwordStrengthLabel => 'Password strength: ';
-
-  @override
-  String get passwordStrengthMedium => 'Medium';
-
-  @override
-  String get passwordStrengthStrong => 'Strong';
-
-  @override
-  String get passwordStrengthWeak => 'Weak';
 
   @override
   String get passwordTooShortError =>
@@ -343,9 +312,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sendingOtpFailed => 'Sending Otp Failed, Please try again.';
 
   @override
-  String get sendResetLinkButton => 'Send Otp Code';
-
-  @override
   String get serverError => 'Server error';
 
   @override
@@ -384,12 +350,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get userNotFoundError => 'User not found';
-
-  @override
-  String get validationErrorMessages => 'Validation Error Messages';
-
-  @override
-  String get verifyButtonLabel => 'Verify';
 
   @override
   String get verifyingButtonLabel => 'Verifying...';
