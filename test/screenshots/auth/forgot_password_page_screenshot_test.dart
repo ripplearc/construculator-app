@@ -84,7 +84,7 @@ void main() {
       expect(
         find.widgetWithText(
           CoreButton,
-          AppLocalizations.of(buildContext!)!.sendResetLinkButton,
+          AppLocalizations.of(buildContext!)!.continueButton,
         ),
         findsOneWidget,
       );
@@ -145,7 +145,7 @@ void main() {
       await tester.tap(
         find.widgetWithText(
           CoreButton,
-          AppLocalizations.of(buildContext!)!.sendResetLinkButton,
+          AppLocalizations.of(buildContext!)!.continueButton,
         ),
       );
       await tester.pumpAndSettle();
@@ -179,7 +179,7 @@ void main() {
       await tester.tap(
         find.widgetWithText(
           CoreButton,
-          AppLocalizations.of(buildContext!)!.sendResetLinkButton,
+          AppLocalizations.of(buildContext!)!.continueButton,
         ),
       );
       await tester.pumpAndSettle();
@@ -201,7 +201,7 @@ void main() {
 
       final verifyButtonFinder = find.widgetWithText(
         CoreButton,
-        AppLocalizations.of(buildContext!)!.verifyButtonLabel,
+        AppLocalizations.of(buildContext!)!.verifyOtpButton,
       );
       final CoreButton verifyButton = tester.widget(verifyButtonFinder);
       expect(verifyButton.isDisabled, isFalse);
@@ -230,7 +230,7 @@ void main() {
       await tester.tap(
         find.widgetWithText(
           CoreButton,
-          AppLocalizations.of(buildContext!)!.sendResetLinkButton,
+          AppLocalizations.of(buildContext!)!.continueButton,
         ),
       );
       await tester.pumpAndSettle();
@@ -245,7 +245,7 @@ void main() {
 
       final verifyButton = find.widgetWithText(
         CoreButton,
-        AppLocalizations.of(buildContext!)!.verifyButtonLabel,
+        AppLocalizations.of(buildContext!)!.verifyOtpButton,
       );
       await tester.tap(verifyButton);
       await tester.pumpAndSettle();
@@ -283,7 +283,7 @@ void main() {
       await tester.tap(
         find.widgetWithText(
           CoreButton,
-          AppLocalizations.of(buildContext!)!.sendResetLinkButton,
+          AppLocalizations.of(buildContext!)!.continueButton,
         ),
       );
       await tester.pumpAndSettle();
