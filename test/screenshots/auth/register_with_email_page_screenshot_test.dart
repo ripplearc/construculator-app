@@ -239,7 +239,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.textContaining(
-          AppLocalizations.of(buildContext!)!.authenticationCode,
+          AppLocalizations.of(buildContext!)!.authenticationCodeTitle,
         ),
         findsOneWidget,
       );
@@ -274,7 +274,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.textContaining(
-          AppLocalizations.of(buildContext!)!.authenticationCode,
+          AppLocalizations.of(buildContext!)!.authenticationCodeTitle,
         ),
         findsOneWidget,
       );
@@ -317,7 +317,7 @@ void main() {
 
       final verifyButton = find.widgetWithText(
         CoreButton,
-        AppLocalizations.of(buildContext!)!.verifyButtonLabel,
+        AppLocalizations.of(buildContext!)!.verifyOtpButton,
       );
 
       fakeSupabase.shouldDelayOperations = true;
