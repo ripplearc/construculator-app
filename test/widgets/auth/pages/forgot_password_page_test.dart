@@ -72,7 +72,7 @@ void main() {
       );
       final sendLinkButtonFinder = find.widgetWithText(
         CoreButton,
-        AppLocalizations.of(buildContext!)!.sendResetLinkButton,
+        AppLocalizations.of(buildContext!)!.continueButton,
       );
       expect(sendLinkButtonFinder, findsOneWidget);
       final CoreButton sendLinkButton = tester.widget(sendLinkButtonFinder);
@@ -88,7 +88,7 @@ void main() {
       );
       final sendCodeButton = find.widgetWithText(
         CoreButton,
-        AppLocalizations.of(buildContext!)!.sendResetLinkButton,
+        AppLocalizations.of(buildContext!)!.continueButton,
       );
       await tester.enterText(find.byType(CoreTextField), '');
       await tester.pumpAndSettle();
@@ -119,7 +119,7 @@ void main() {
       await tester.pumpAndSettle();
       final sendCodeButton = find.widgetWithText(
         CoreButton,
-        AppLocalizations.of(buildContext!)!.sendResetLinkButton,
+        AppLocalizations.of(buildContext!)!.continueButton,
       );
       expect(tester.widget<CoreButton>(sendCodeButton).isDisabled, isFalse);
       await tester.tap(sendCodeButton);
@@ -143,7 +143,7 @@ void main() {
       await tester.tap(
         find.widgetWithText(
           CoreButton,
-          AppLocalizations.of(buildContext!)!.sendResetLinkButton,
+          AppLocalizations.of(buildContext!)!.continueButton,
         ),
       );
       await tester.pumpAndSettle();
@@ -156,7 +156,7 @@ void main() {
       );
       final verifyButtonFinder = find.widgetWithText(
         CoreButton,
-        AppLocalizations.of(buildContext!)!.verifyButtonLabel,
+        AppLocalizations.of(buildContext!)!.verifyOtpButton,
       );
       final CoreButton verifyButton = tester.widget(verifyButtonFinder);
       expect(verifyButton.isDisabled, isTrue);
@@ -171,7 +171,7 @@ void main() {
 
       final verifyButtonFinderAfter = find.widgetWithText(
         CoreButton,
-        AppLocalizations.of(buildContext!)!.verifyButtonLabel,
+        AppLocalizations.of(buildContext!)!.verifyOtpButton,
       );
       final CoreButton verifyButtonAfter = tester.widget(
         verifyButtonFinderAfter,
@@ -191,7 +191,7 @@ void main() {
       await tester.tap(
         find.widgetWithText(
           CoreButton,
-          AppLocalizations.of(buildContext!)!.sendResetLinkButton,
+          AppLocalizations.of(buildContext!)!.continueButton,
         ),
       );
       await tester.pumpAndSettle();
@@ -206,7 +206,7 @@ void main() {
 
       final verifyButton = find.widgetWithText(
         CoreButton,
-        AppLocalizations.of(buildContext!)!.verifyButtonLabel,
+        AppLocalizations.of(buildContext!)!.verifyOtpButton,
       );
       await tester.tap(verifyButton);
       await tester.pumpAndSettle();
@@ -233,7 +233,7 @@ void main() {
       await tester.tap(
         find.widgetWithText(
           CoreButton,
-          AppLocalizations.of(buildContext!)!.sendResetLinkButton,
+          AppLocalizations.of(buildContext!)!.continueButton,
         ),
       );
       await tester.pumpAndSettle();
