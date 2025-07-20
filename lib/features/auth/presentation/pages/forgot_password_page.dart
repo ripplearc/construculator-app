@@ -125,7 +125,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   focusNode: focusNode,
                   controller: _emailController,
                   label: '${l10n?.emailLabel}',
-                  hintText: '${l10n?.enterEmailHint}',
+                  hintText: '${l10n?.emailHint}',
                   keyboardType: TextInputType.emailAddress,
                   errorTextList: _emailErrorList,
                 ),
@@ -139,7 +139,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   label:
                       state is ForgotPasswordLoading
                           ? '${l10n?.sendingOtpButton}'
-                          : '${l10n?.sendResetLinkButton}',
+                          : '${l10n?.continueButton}',
                   centerAlign: true,
                 ),
               ],
