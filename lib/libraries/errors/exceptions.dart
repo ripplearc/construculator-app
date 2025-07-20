@@ -19,11 +19,16 @@ import 'package:stack_trace/stack_trace.dart' as trace;
 /// 4. Clarity of Intent: Clearly distinguishes application-defined exceptions from
 //    generic Dart or third-party exceptions.
 abstract class AppException implements Exception {
+  /// The stack trace of the exception
   final trace.Trace stackTrace;
+
+  /// The original exception that was caught and wrapped by this [AppException]
   final Object exception;
 
+  /// Creates a new [AppException] with the given stack trace and exception
   AppException(this.stackTrace, this.exception);
 
+  /// Returns a string representation of the exception
   @override
   String toString() {
     final message = exception.toString();
