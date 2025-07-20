@@ -296,7 +296,7 @@ void main() {
       );
       final verifyButton = find.widgetWithText(
         CoreButton,
-        AppLocalizations.of(buildContext!)!.verifyButtonLabel,
+        AppLocalizations.of(buildContext!)!.verifyOtpButton,
       );
       expect(tester.widget<CoreButton>(verifyButton).isDisabled, isTrue);
     });
@@ -323,7 +323,7 @@ void main() {
       await tester.pumpAndSettle();
       final verifyButton = find.widgetWithText(
         CoreButton,
-        AppLocalizations.of(buildContext!)!.verifyButtonLabel,
+        AppLocalizations.of(buildContext!)!.verifyOtpButton,
       );
       expect(tester.widget<CoreButton>(verifyButton).isDisabled, isFalse);
     });
@@ -352,7 +352,7 @@ void main() {
 
       final verifyButton = find.widgetWithText(
         CoreButton,
-        AppLocalizations.of(buildContext!)!.verifyButtonLabel,
+        AppLocalizations.of(buildContext!)!.verifyOtpButton,
       );
 
       fakeSupabase.shouldDelayOperations = true;
