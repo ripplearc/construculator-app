@@ -139,7 +139,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
                     CoreTextField(
                       controller: _emailController,
                       label: '${l10n?.emailLabel}',
-                      hintText: '${l10n?.enterEmailIDHint}',
+                      hintText: '${l10n?.emailHint}',
                       errorWidgetList: _emailErrorWidgetList,
                       errorTextList: _emailErrorList,
                       keyboardType: TextInputType.emailAddress,
