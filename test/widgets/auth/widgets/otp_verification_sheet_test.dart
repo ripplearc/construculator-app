@@ -57,10 +57,10 @@ void main() {
     ) async {
       await pumpOtpSheet(tester: tester, onChanged: (_) {});
 
-      expect(find.text(AppLocalizations.of(buildContext!)!.authenticationCode), findsOneWidget);
+      expect(find.text(AppLocalizations.of(buildContext!)!.authenticationCodeTitle), findsOneWidget);
       expect(find.textContaining(AppLocalizations.of(buildContext!)!.didNotReceiveCode), findsOneWidget);
       expect(find.text(AppLocalizations.of(buildContext!)!.resendButton), findsOneWidget);
-      expect(find.text(AppLocalizations.of(buildContext!)!.verifyButtonLabel), findsOneWidget);
+      expect(find.text(AppLocalizations.of(buildContext!)!.verifyOtpButton), findsOneWidget);
     });
 
     testWidgets('renders note and contact correctly inside RichText', (
@@ -136,7 +136,7 @@ void main() {
         onVerify: () => tapped = true,
       );
 
-      await tester.tap(find.text(AppLocalizations.of(buildContext!)!.verifyButtonLabel));
+      await tester.tap(find.text(AppLocalizations.of(buildContext!)!.verifyOtpButton));
       await tester.pump();
       expect(tapped, isTrue);
     });
