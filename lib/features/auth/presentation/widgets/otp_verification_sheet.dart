@@ -67,7 +67,7 @@ class OtpVerificationBottomSheet extends StatelessWidget {
             ),
             const SizedBox(height: CoreSpacing.space6),
             Text(
-              '${AppLocalizations.of(context)?.authenticationCode}',
+              '${AppLocalizations.of(context)?.authenticationCodeTitle}',
               style: CoreTypography.headlineMediumSemiBold(),
             ),
             const SizedBox(height: CoreSpacing.space2),
@@ -154,7 +154,7 @@ class OtpVerificationBottomSheet extends StatelessWidget {
               label:
                   isVerifying
                       ? '${AppLocalizations.of(context)?.verifyingButtonLabel}'
-                      : '${AppLocalizations.of(context)?.verifyButtonLabel}',
+                      : '${AppLocalizations.of(context)?.verifyOtpButton}',
               isDisabled: verifyButtonDisabled,
               spaceOut: true,
               trailing: true,
