@@ -21,3 +21,11 @@ class FakeAuthResponse implements supabase.AuthResponse {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
+
+class FakeUserResponse implements supabase.UserResponse {
+  @override
+  final supabase.User? user;
+  FakeUserResponse({this.user});
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}

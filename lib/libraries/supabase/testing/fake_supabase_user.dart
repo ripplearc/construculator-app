@@ -35,6 +35,22 @@ class FakeUser implements supabase.User {
     this.userMetadata,
   });
 
+  FakeUser copyWith({
+    String? id,
+    String? email,
+    String? createdAt,
+    Map<String, dynamic>? appMetadata,
+    Map<String, dynamic>? userMetadata,
+  }) {
+    return FakeUser(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      createdAt: createdAt ?? this.createdAt,
+      appMetadata: appMetadata ?? this.appMetadata,
+      userMetadata: userMetadata ?? this.userMetadata,
+    );
+  }
+  
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
