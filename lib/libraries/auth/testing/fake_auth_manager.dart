@@ -8,6 +8,7 @@ import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 
+/// A fake implementation of [AuthManager] for testing purposes
 class FakeAuthManager implements AuthManager {
   final AuthNotifierController _authNotifier;
   final AuthRepository _authRepository;
@@ -43,6 +44,7 @@ class FakeAuthManager implements AuthManager {
   /// List of logout attempts
   final List<void> logoutAttempts = [];
 
+  /// Creates a new [FakeAuthManager]
   FakeAuthManager({
     required AuthNotifierController authNotifier,
     required AuthRepository authRepository,

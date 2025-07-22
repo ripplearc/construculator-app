@@ -124,8 +124,11 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Controls whether [signInWithPassword] throws an exception when getting the user profile
   bool shouldThrowOnGetUserProfile = false;
+
+  /// The event that occurs when a user signs in
   supabase.AuthChangeEvent signInEvent = supabase.AuthChangeEvent.signedIn;
 
+  /// Sets the current user
   void setCurrentUser(supabase.User? user) {
     _currentUser = user;
   }

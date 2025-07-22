@@ -8,8 +8,10 @@ abstract class SupabaseWrapper {
   /// Streams authentication state changes
   Stream<supabase.AuthState> get onAuthStateChange;
   
+  /// The current user
   supabase.User? get currentUser;
 
+  /// Whether the user is authenticated
   bool get isAuthenticated;
   
   /// Initialize the Supabase client
