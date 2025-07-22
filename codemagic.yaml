@@ -82,7 +82,7 @@ workflows:
           fi
           HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
           mkdir -p test-results
-          flutter test $CHANGED_TESTS --coverage --machine > test-results/flutter.json
+          fvm flutter test $CHANGED_TESTS --coverage --machine > test-results/flutter.json
           lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info
           # Compute coverage
           if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
@@ -214,7 +214,7 @@ workflows:
           fi
           sudo apt-get install -y lcov
           mkdir -p test-results
-          flutter test test/units --coverage --machine > test-results/flutter.json
+          fvm flutter test test/units --coverage --machine > test-results/flutter.json
           lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info
           # Compute coverage
           if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
@@ -266,7 +266,7 @@ workflows:
       - name: Run Widget Tests
         script: |
           if find test/widgets -type f -name "*.dart" | grep -q .; then
-            flutter test test/widgets
+            fvm flutter test test/widgets
           else
             echo "No widget tests found. Skipping."
           fi
@@ -274,7 +274,7 @@ workflows:
       - name: Run Screenshot Tests
         script: |
           if find test/screenshots -type f -name "*.dart" | grep -q .; then
-            flutter test test/screenshots
+            fvm flutter test test/screenshots
           else
             echo "No screenshot tests found. Skipping."
           fi
@@ -301,11 +301,11 @@ workflows:
           echo "$CHANGED_FILES"
           
           echo "🧪 Running mutation tests..."
-          dart run mutation_test $CHANGED_FILES --no-builtin
+          fvm dart run mutation_test $CHANGED_FILES --no-builtin
 
       - name: Build Android Debug
         script: |
-          flutter build apk --flavor fishfood
+          fvm flutter build apk --flavor fishfood
 
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
@@ -374,7 +374,7 @@ workflows:
           fi
           HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
           mkdir -p test-results
-          flutter test test/units --coverage --machine > test-results/flutter.json
+          fvm flutter test test/units --coverage --machine > test-results/flutter.json
           lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info
           # Compute coverage
           if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
@@ -426,7 +426,7 @@ workflows:
       - name: Run Widget Tests
         script: |
           if find test/widgets -type f -name "*.dart" | grep -q .; then
-            flutter test test/widgets
+            fvm flutter test test/widgets
           else
             echo "No widget tests found. Skipping."
           fi
@@ -434,7 +434,7 @@ workflows:
       - name: Run Screenshot Tests
         script: |
           if find test/screenshots -type f -name "*.dart" | grep -q .; then
-            flutter test test/screenshots
+            fvm flutter test test/screenshots
           else
             echo "No screenshot tests found. Skipping."
           fi
@@ -451,11 +451,11 @@ workflows:
           fi
 
           echo "🧪 Running mutation tests on: $CONFIG_FILES"
-          dart run mutation_test $CONFIG_FILES --no-builtin
+          fvm dart run mutation_test $CONFIG_FILES --no-builtin
 
       - name: Build Android Debug
         script: |
-          flutter build apk --flavor fishfood
+          fvm flutter build apk --flavor fishfood
 
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
