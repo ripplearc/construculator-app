@@ -1,0 +1,548 @@
+{
+  "@@locale": "en",
+  "agreeAndContinueButton": "Agree and continue",
+  "@agreeAndContinueButton": {
+    "description": "Label for agree and continue button",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6349&t=5k007hIiUTEekp28-4"
+  },
+  "alreadyHaveAccount": "Already have an account?",
+  "@alreadyHaveAccount": {
+    "description": "Text for already have an account",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6040&t=pw3dv6eSByz56kJ9-4"
+  },
+  "andAcknowledge": "and acknowledge",
+  "@andAcknowledge": {
+    "description": "Text connecting terms and privacy policy",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6346&t=pw3dv6eSByz56kJ9-4"
+  },
+  "authenticationCodeTitle": "Authentication Code",
+  "@authenticationCodeTitle": {
+    "description": "Title for authentication code bottom sheet",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=263-6393&t=pw3dv6eSByz56kJ9-4"
+  },
+  "authErrorMessages": "Authentication Error Messages",
+  "@authErrorMessages": {
+    "description": "Error messages for authentication operations",
+    "context": "N/A"
+  },
+  "checkingAvailabilityButton": "Checking...",
+  "@checkingAvailabilityButton": {
+    "description": "Label for checking availability button",
+    "context": "N/A"
+  },
+  "closeLabel": "Close",
+  "@closeLabel": {
+    "description": "Label for close button on toast notification",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=263-6189&t=pw3dv6eSByz56kJ9-4"
+  },
+  "confirmPasswordHint": "Enter Password Confirmation",
+  "@confirmPasswordHint": {
+    "description": "Hint text for confirm password input field",
+    "context": "N/A"
+  },
+  "confirmPasswordLabel": "Confirm Password*",
+  "@confirmPasswordLabel": {
+    "description": "Label for confirm password input field",
+    "context": "N/A"
+  },
+  "confirmPasswordRequired": "Confirm password is required",
+  "@confirmPasswordRequired": {
+    "description": "Error message shown when confirm password is required",
+    "context": "N/A"
+  },
+  "connectionError": "Connection error",
+  "@connectionError": {
+    "description": "Error message for connection errors",
+    "context": "N/A"
+  },
+  "continueButton": "Continue",
+  "@continueButton": {
+    "description": "Label for login button",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6022&t=pw3dv6eSByz56kJ9-4"
+  },
+  "continueWithApple": "Continue with Apple",
+  "@continueWithApple": {
+    "description": "Text for continue with apple",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=85-5522&t=pw3dv6eSByz56kJ9-4"
+  },
+  "continueWithEmail": "Continue with Email",
+  "@continueWithEmail": {
+    "description": "Text for continue with email",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=85-5576&t=pw3dv6eSByz56kJ9-4"
+  },
+  "continueWithGoogle": "Continue with Google",
+  "@continueWithGoogle": {
+    "description": "Text for continue with google",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=85-5521&t=pw3dv6eSByz56kJ9-4"
+  },
+  "continueWithMicrosoft": "Continue with Microsoft",
+  "@continueWithMicrosoft": {
+    "description": "Text for continue with microsoft",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=85-5523&t=pw3dv6eSByz56kJ9-4"
+  },
+  "continueWithPhone": "Continue with Phone",
+  "@continueWithPhone": {
+    "description": "Text for continue with phone",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=85-5524&t=pw3dv6eSByz56kJ9-4"
+  },
+  "createAccountSubtitle": "Email you entered is not registered with us, to create your construculator account enter details below",
+  "@createAccountSubtitle": {
+    "description": "Subtitle for create account page",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6338&t=pw3dv6eSByz56kJ9-4"
+  },
+  "createAccountSuccessMessage": "You have successfully registered with Construculator",
+  "@createAccountSuccessMessage": {
+    "description": "Success message shown after registration",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=105-4539&t=pw3dv6eSByz56kJ9-4"
+  },
+  "createAccountTitle": "Create your Account",
+  "@createAccountTitle": {
+    "description": "Title for the create account page",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=151-4589&t=pw3dv6eSByz56kJ9-4"
+  },
+  "creatingAccountButton": "Creating Account...",
+  "@creatingAccountButton": {
+    "description": "Label for button while account is being created",
+    "context": "N/A"
+  },
+  "didNotReceiveCode": "Did not receive code?",
+  "@didNotReceiveCode": {
+    "description": "Text asking if user did not receive code",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=258-5705&t=pw3dv6eSByz56kJ9-4"
+  },
+  "dontHaveAndAccountText": "Don't have an account?",
+  "@dontHaveAndAccountText": {
+    "description": "Text for auth footer on login page",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58010-37336&t=pw3dv6eSByz56kJ9-4"
+  },
+  "duplicateErrorMessage": "Duplicate Error",
+  "@duplicateErrorMessage": {
+    "description": "Generic duplicate error message",
+    "context": "N/A"
+  },
+  "emailAlreadyRegistered": "Email ID already registered with us. Please ",
+  "@emailAlreadyRegistered": {
+    "description": "Message shown when email is registered and user needs to login",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=105-2860&t=pw3dv6eSByz56kJ9-4"
+  },
+  "emailDuplicateErrorMessage": "Email exists",
+  "@emailDuplicateErrorMessage": {
+    "description": "Error message when email is a duplicate",
+    "context": "N/A"
+  },
+  "emailHint": "Email ID*",
+  "@emailHint": {
+    "description": "Hint text for email input field",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6344&t=pw3dv6eSByz56kJ9-4"
+  },
+  "emailLabel": "Email ID",
+  "@emailLabel": {
+    "description": "Label for email input field",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6278&t=pw3dv6eSByz56kJ9-4"
+  },
+  "emailNotRegistered": "Email ID not registered with us. Please ",
+  "@emailNotRegistered": {
+    "description": "Message shown when email is not registered and user needs to create an account",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=66-5141&t=pw3dv6eSByz56kJ9-4"
+  },
+  "emailRequiredError": "Email is required",
+  "@emailRequiredError": {
+    "description": "Error message when email is required",
+    "context": "N/A"
+  },
+  "enterPasswordDescription": "Enter your password for this account. Your email id is",
+  "@enterPasswordDescription": {
+    "description": "Description text on enter password page",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-5858&t=pw3dv6eSByz56kJ9-4"
+  },
+  "enterPasswordTitle": "Enter your password",
+  "@enterPasswordTitle": {
+    "description": "Title for enter password page",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=254-4285&t=pw3dv6eSByz56kJ9-4"
+  },
+  "enterYourEmailIdToLoginToYourAccount": "Hey, Enter your details to log in to your account",
+  "@enterYourEmailIdToLoginToYourAccount": {
+    "description": "Text displayed on login page, instructing user to enter details to login to their account",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-5656&t=u7FRWeWPXiomVzNr-4"
+  },
+  "firstNameHint": "First name",
+  "@firstNameHint": {
+    "description": "Hint text for first name input field",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6342&t=u7FRWeWPXiomVzNr-4"
+  },
+  "firstNameLabel": "First name*",
+  "@firstNameLabel": {
+    "description": "Label for first name input field",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6342&t=u7FRWeWPXiomVzNr-4"
+  },
+  "firstNameRequired": "First name is required",
+  "@firstNameRequired": {
+    "description": "Error message shown when first name is required",
+    "context": "N/A"
+  },
+  "forgotPasswordDescription": "An OTP will be sent to your registered email ID to reset your password",
+  "@forgotPasswordDescription": {
+    "description": "Description text on forgot password page",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=254-13349&t=u7FRWeWPXiomVzNr-4"
+  },
+  "forgotPasswordLink": "Forgot password?",
+  "@forgotPasswordLink": {
+    "description": "Link text for forgot password",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=254-4290&t=u7FRWeWPXiomVzNr-4"
+  },
+  "forgotPasswordTitle": "Forgot Password?",
+  "@forgotPasswordTitle": {
+    "description": "Title for forgot password page",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=254-13349&t=u7FRWeWPXiomVzNr-4"
+  },
+  "heyEnterYourDetailsToRegisterWithUs": "Hey, Enter your details to Register with us",
+  "@heyEnterYourDetailsToRegisterWithUs": {
+    "description": "Text for hey enter your details to register with us",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6016&t=u7FRWeWPXiomVzNr-4"
+  },
+  "invalidCredentialsError": "Invalid credentials",
+  "@invalidCredentialsError": {
+    "description": "Error message for invalid credentials",
+    "context": "N/A"
+  },
+  "invalidEmailError": "Please enter a valid email address",
+  "@invalidEmailError": {
+    "description": "Error message when email is invalid",
+    "context": "N/A"
+  },
+  "invalidOtpError": "OTP must be exactly 6 digits",
+  "@invalidOtpError": {
+    "description": "Error message when OTP is invalid",
+    "context": "N/A"
+  },
+  "invalidPhoneError": "Please enter a valid phone number in international format (e.g., +1234567890)",
+  "@invalidPhoneError": {
+    "description": "Error message when phone number is invalid",
+    "context": "N/A"
+  },
+  "invalidVerificationCode": "Invalid verification code",
+  "@invalidVerificationCode": {
+    "description": "Error message shown when the verification code is invalid",
+    "context": "N/A"
+  },
+  "lastNameHint": "Last name",
+  "@lastNameHint": {
+    "description": "Hint text for last name input field",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57492-15035&t=u7FRWeWPXiomVzNr-4"
+  },
+  "lastNameLabel": "Last name*",
+  "@lastNameLabel": {
+    "description": "Label for last name input field",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57492-15035&t=u7FRWeWPXiomVzNr-4"
+  },
+  "lastNameRequired": "Last name is required",
+  "@lastNameRequired": {
+    "description": "Error message shown when last name is required",
+    "context": "N/A"
+  },
+  "letsGetStarted": "Let's Get Started",
+  "@letsGetStarted": {
+    "description": "Label for new registration",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6274&t=u7FRWeWPXiomVzNr-4"
+  },
+  "loggingInButton": "Logging in...",
+  "@loggingInButton": {
+    "description": "Label for button while logging in",
+    "context": "N/A"
+  },
+  "logginLink": "Log in",
+  "@logginLink": {
+    "description": "Label for log in link",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6040&t=u7FRWeWPXiomVzNr-4"
+  },
+  "loginFailedInvalidCredentials": "Login failed - invalid credentials",
+  "@loginFailedInvalidCredentials": {
+    "description": "Error message shown when login fails due to invalid credentials",
+    "context": "N/A"
+  },
+  "loginSuccessMessage": "You have successfully logged in with Construculator",
+  "@loginSuccessMessage": {
+    "description": "Success message shown after login",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=105-4524&t=u7FRWeWPXiomVzNr-4"
+  },
+  "mobileNumberHint": "Mobile Number",
+  "@mobileNumberHint": {
+    "description": "Hint text for mobile number input field",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6427&t=u7FRWeWPXiomVzNr-4"
+  },
+  "mobileNumberLabel": "Mobile number",
+  "@mobileNumberLabel": {
+    "description": "Label for mobile number input field",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6427&t=u7FRWeWPXiomVzNr-4"
+  },
+  "networkError": "Network error",
+  "@networkError": {
+    "description": "Error message for network errors",
+    "context": "N/A"
+  },
+  "newPasswordHint": "New Password",
+  "@newPasswordHint": {
+    "description": "Hint text for new password input field",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=254-14211&t=u7FRWeWPXiomVzNr-4"
+  },
+  "newPasswordLabel": "New Password*",
+  "@newPasswordLabel": {
+    "description": "Label for new password input field",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=254-14211&t=u7FRWeWPXiomVzNr-4"
+  },
+  "or": "or",
+  "@or": {
+    "description": "Text for or under login/register form, providing options to continue with other methods",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-5662&t=u7FRWeWPXiomVzNr-4"
+  },
+  "otpIncompleteError": "Please enter the complete 6-digit OTP.",
+  "@otpIncompleteError": {
+    "description": "Error message shown when OTP is incomplete",
+    "context": "N/A"
+  },
+  "otpPhoneVerificationNote": "Enter 6 digit code we just texted to your phone number",
+  "@otpPhoneVerificationNote": {
+    "description": "Note text on OTP verification screen for phone number",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=258-5261&t=u7FRWeWPXiomVzNr-4"
+  },
+  "otpRequiredError": "OTP is required",
+  "@otpRequiredError": {
+    "description": "Error message when OTP is required",
+    "context": "N/A"
+  },
+  "otpResendSuccess": "OTP Resent!",
+  "@otpResendSuccess": {
+    "description": "Success message shown after OTP is resent",
+    "context": "N/A"
+  },
+  "otpVerificationNote": "Enter 6 digit code we just texted to your email ID",
+  "@otpVerificationNote": {
+    "description": "Note text on OTP verification screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=263-6393&t=u7FRWeWPXiomVzNr-4"
+  },
+  "passwordHint": "Password",
+  "@passwordHint": {
+    "description": "Hint text for password input field",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6347&t=u7FRWeWPXiomVzNr-4"
+  },
+  "passwordLabel": "Password*",
+  "@passwordLabel": {
+    "description": "Label for password input field",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6347&t=u7FRWeWPXiomVzNr-4"
+  },
+  "passwordMissingLowercaseError": "Password must contain at least one lowercase letter",
+  "@passwordMissingLowercaseError": {
+    "description": "Error message when password is missing lowercase letter",
+    "context": "N/A"
+  },
+  "passwordMissingNumberError": "Password must contain at least one number",
+  "@passwordMissingNumberError": {
+    "description": "Error message when password is missing number",
+    "context": "N/A"
+  },
+  "passwordMissingSpecialCharError": "Password must contain at least one special character (!@#$&*~)",
+  "@passwordMissingSpecialCharError": {
+    "description": "Error message when password is missing special character",
+    "context": "N/A"
+  },
+  "passwordMissingUppercaseError": "Password must contain at least one uppercase letter",
+  "@passwordMissingUppercaseError": {
+    "description": "Error message when password is missing uppercase letter",
+    "context": "N/A"
+  },
+  "passwordRequiredError": "Password is required",
+  "@passwordRequiredError": {
+    "description": "Error message when password is required",
+    "context": "N/A"
+  },
+  "passwordResetSuccessMessage": "Your password has been reset successfully!",
+  "@passwordResetSuccessMessage": {
+    "description": "Success message shown after password reset",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=254-14257&t=u7FRWeWPXiomVzNr-4"
+  },
+  "passwordsDoNotMatchError": "Passwords do not match",
+  "@passwordsDoNotMatchError": {
+    "description": "Error message when passwords do not match",
+    "context": "N/A"
+  },
+  "passwordTooShortError": "Password must be at least 8 characters long",
+  "@passwordTooShortError": {
+    "description": "Error message when password is too short",
+    "context": "N/A"
+  },
+  "phoneDuplicateErrorMessage": "Phone number exists",
+  "@phoneDuplicateErrorMessage": {
+    "description": "Error message when phone is a duplicate",
+    "context": "N/A"
+  },
+  "phoneRequiredError": "Phone number is required",
+  "@phoneRequiredError": {
+    "description": "Error message when phone number is required",
+    "context": "N/A"
+  },
+  "privacyPolicyLink": "privacy policy",
+  "@privacyPolicyLink": {
+    "description": "Link text for privacy policy",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6379&t=u7FRWeWPXiomVzNr-4"
+  },
+  "rateLimitError": "Rate limit exceeded",
+  "@rateLimitError": {
+    "description": "Error message when rate limit is exceeded",
+    "context": "N/A"
+  },
+  "register": "Register",
+  "@register": {
+    "description": "Text for register button",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-5679&t=u7FRWeWPXiomVzNr-4"
+  },
+  "registrationFailedError": "Registration failed",
+  "@registrationFailedError": {
+    "description": "Error message when registration fails",
+    "context": "N/A"
+  },
+  "registrationFailedTryAgain": "Registration failed - please try again",
+  "@registrationFailedTryAgain": {
+    "description": "Error message shown when user registration fails",
+    "context": "N/A"
+  },
+  "registrationSuccessMessage": "You have successfully registered with Construculator",
+  "@registrationSuccessMessage": {
+    "description": "Success message shown after registration",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=105-4747&t=u7FRWeWPXiomVzNr-4"
+  },
+  "requestTimedOut": "Request timed out. Please try again.",
+  "@requestTimedOut": {
+    "description": "Error message shown when a request times out",
+    "context": "N/A"
+  },
+  "resendButton": "Resend",
+  "@resendButton": {
+    "description": "Label for resend button",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=139-3287&t=u7FRWeWPXiomVzNr-4"
+  },
+  "resendingButtonLabel": "Resending...",
+  "@resendingButtonLabel": {
+    "description": "Label for resending button",
+    "context": "N/A"
+  },
+  "roleHint": "Role",
+  "@roleHint": {
+    "description": "Hint text for role selection field",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6425&t=u7FRWeWPXiomVzNr-4"
+  },
+  "roleLabel": "Role*",
+  "@roleLabel": {
+    "description": "Label for role selection field",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6425&t=u7FRWeWPXiomVzNr-4"
+  },
+  "roleRequiredError": "Professional role is required.",
+  "@roleRequiredError": {
+    "description": "Error message shown user does not select professional role",
+    "context": "N/A"
+  },
+  "rolesLoadingError": "Error loading roles. Please try again.",
+  "@rolesLoadingError": {
+    "description": "Error message shown when roles cannot be loaded",
+    "context": "N/A"
+  },
+  "samePasswordErrorMessage": "Password is the same as current one, please change it.",
+  "@samePasswordErrorMessage": {
+    "description": "Error message when new password is same is current password",
+    "context": "N/A"
+  },
+  "selectCountryCode": "Select Country Code",
+  "@selectCountryCode": {
+    "description": "Title for contry code selector",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=254-14763&t=u7FRWeWPXiomVzNr-4"
+  },
+  "selectRoleTitle": "Select Role",
+  "@selectRoleTitle": {
+    "description": "Title for role selection modal",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=151-5032&t=u7FRWeWPXiomVzNr-4"
+  },
+  "sendingOtpButton": "Sending Otp...",
+  "@sendingOtpButton": {
+    "description": "Label for button while sending otp",
+    "context": "N/A"
+  },
+  "sendingOtpFailed": "Sending Otp Failed, Please try again.",
+  "@sendingOtpFailed": {
+    "description": "Error message when sending otp fails",
+    "context": "N/A"
+  },
+  "serverError": "Server error",
+  "@serverError": {
+    "description": "Error message for server errors",
+    "context": "N/A"
+  },
+  "setNewPasswordDescription": "Your password must minimum of 8 characters, with upper and lowercase and a number or a symbol",
+  "@setNewPasswordDescription": {
+    "description": "Description text on set new password page",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=254-14041&t=u7FRWeWPXiomVzNr-4"
+  },
+  "setNewPasswordTitle": "Set new password",
+  "@setNewPasswordTitle": {
+    "description": "Title for set new password page",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=254-14041&t=u7FRWeWPXiomVzNr-4"
+  },
+  "setPasswordButton": "Set Password",
+  "@setPasswordButton": {
+    "description": "Label for set password button",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=254-14046&t=u7FRWeWPXiomVzNr-4"
+  },
+  "settingPasswordButton": "Setting Password...",
+  "@settingPasswordButton": {
+    "description": "Label for button while setting password",
+    "context": "N/A"
+  },
+  "termsAndConditionsText": "By selecting agree and continue. I agree to\n",
+  "@termsAndConditionsText": {
+    "description": "Text for terms and conditions agreement",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6428&t=u7FRWeWPXiomVzNr-4"
+  },
+  "termsAndServicesLink": "Constructulator terms & services",
+  "@termsAndServicesLink": {
+    "description": "Link text for terms and services",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6428&t=u7FRWeWPXiomVzNr-4"
+  },
+  "timeoutError": "Request timeout",
+  "@timeoutError": {
+    "description": "Error message for request timeouts",
+    "context": "N/A"
+  },
+  "tooManyAttempts": "Too many attempts, please try again in a minute.",
+  "@tooManyAttempts": {
+    "description": "Error message when too many attempts",
+    "context": "N/A"
+  },
+  "unexpectedErrorMessage": "An unexpected error occurred, try again or contact support.",
+  "@unexpectedErrorMessage": {
+    "description": "Generic error message for unexpected errors",
+    "context": "N/A"
+  },
+  "unknownError": "Unknown error occurred",
+  "@unknownError": {
+    "description": "Error message for unknown errors",
+    "context": "N/A"
+  },
+  "userNotFoundError": "User not found",
+  "@userNotFoundError": {
+    "description": "Error message when user is not found",
+    "context": "N/A"
+  },
+  "verifyingButtonLabel": "Verifying...",
+  "@verifyingButtonLabel": {
+    "description": "Label for verifying button",
+    "context": "N/A"
+  },
+  "verifyOtpButton": "Verify",
+  "@verifyOtpButton": {
+    "description": "Label for verify OTP button",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=263-6409&t=u7FRWeWPXiomVzNr-4"
+  },
+  "welcomeBack": "Welcome Back",
+  "@welcomeBack": {
+    "description": "Text for welcome back",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-5656&t=u7FRWeWPXiomVzNr-4"
+  }
+}
