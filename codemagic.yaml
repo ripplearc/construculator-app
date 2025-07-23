@@ -7,13 +7,6 @@ workflows:
         - notification_emails
       # See https://docs.flutter.dev/install/archive#stable-channel for mapping between Dart and Flutter SDK versions
       flutter: 3.32.0
-    triggering:
-      events:
-        - pull_request
-      branch_patterns:
-        - pattern: "*"
-          include: true
-          source: false
     cache:
       cache_paths:
         - .fvm/
@@ -69,8 +62,12 @@ workflows:
           # Find the common ancestor commit between source and target branches
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
 
-          # Get changed test files since branching from target
-          CHANGED_TESTS=$(git diff --name-only  --diff-filter=d $BASE_COMMIT HEAD -- "test/units/*.dart")
+          # Find changed test files
+          CHANGED_UNIT_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/units/*.dart")
+          CHANGED_WIDGET_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/widgets/*.dart")
+
+          # Combine all changed tests
+          CHANGED_TESTS="$CHANGED_UNIT_TESTS $CHANGED_WIDGET_TESTS"
 
           if [ -z "$CHANGED_TESTS" ]; then
             echo "✅ No test files modified. Skipping tests..."
@@ -85,8 +82,8 @@ workflows:
           fi
           HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
           mkdir -p test-results
-          flutter test $CHANGED_TESTS --coverage --machine > test-results/flutter.json
-          lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' -o coverage/lcov.info
+          fvm flutter test $CHANGED_TESTS --coverage --machine > test-results/flutter.json
+          lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info
           # Compute coverage
           if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
             echo "❌ Coverage file coverage/lcov.info is missing or empty."
@@ -139,9 +136,13 @@ workflows:
           # Find the common ancestor commit between source and target branches
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
           
-          # Get changed test files since branching from target
-          CHANGED_TESTS=$(git diff --name-only  --diff-filter=d $BASE_COMMIT HEAD -- "test/*.dart")
-          
+          # Find changed test files
+          CHANGED_UNIT_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/units/*.dart")
+          CHANGED_WIDGET_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/widgets/*.dart")
+
+          # Combine all changed tests
+          CHANGED_TESTS="$CHANGED_UNIT_TESTS $CHANGED_WIDGET_TESTS"
+
           if [ -z "$CHANGED_TESTS" ]; then
             echo "✅ No test files modified. Skipping tests..."
             exit 0
@@ -213,8 +214,8 @@ workflows:
           fi
           sudo apt-get install -y lcov
           mkdir -p test-results
-          flutter test test/units --coverage --machine > test-results/flutter.json
-          lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' -o coverage/lcov.info
+          fvm flutter test test/units --coverage --machine > test-results/flutter.json
+          lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info
           # Compute coverage
           if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
             echo "❌ Coverage file coverage/lcov.info is missing or empty."
@@ -265,7 +266,7 @@ workflows:
       - name: Run Widget Tests
         script: |
           if find test/widgets -type f -name "*.dart" | grep -q .; then
-            flutter test test/widgets
+            fvm flutter test test/widgets
           else
             echo "No widget tests found. Skipping."
           fi
@@ -273,7 +274,7 @@ workflows:
       - name: Run Screenshot Tests
         script: |
           if find test/screenshots -type f -name "*.dart" | grep -q .; then
-            flutter test test/screenshots
+            fvm flutter test test/screenshots
           else
             echo "No screenshot tests found. Skipping."
           fi
@@ -300,11 +301,11 @@ workflows:
           echo "$CHANGED_FILES"
           
           echo "🧪 Running mutation tests..."
-          dart run mutation_test $CHANGED_FILES --no-builtin
+          fvm dart run mutation_test $CHANGED_FILES --no-builtin
 
       - name: Build Android Debug
         script: |
-          flutter build apk --flavor fishfood
+          fvm flutter build apk --flavor fishfood
 
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
@@ -373,8 +374,8 @@ workflows:
           fi
           HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
           mkdir -p test-results
-          flutter test test/units --coverage --machine > test-results/flutter.json
-          lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' -o coverage/lcov.info
+          fvm flutter test test/units --coverage --machine > test-results/flutter.json
+          lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info
           # Compute coverage
           if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
             echo "❌ Coverage file coverage/lcov.info is missing or empty."
@@ -425,7 +426,7 @@ workflows:
       - name: Run Widget Tests
         script: |
           if find test/widgets -type f -name "*.dart" | grep -q .; then
-            flutter test test/widgets
+            fvm flutter test test/widgets
           else
             echo "No widget tests found. Skipping."
           fi
@@ -433,7 +434,7 @@ workflows:
       - name: Run Screenshot Tests
         script: |
           if find test/screenshots -type f -name "*.dart" | grep -q .; then
-            flutter test test/screenshots
+            fvm flutter test test/screenshots
           else
             echo "No screenshot tests found. Skipping."
           fi
@@ -450,11 +451,11 @@ workflows:
           fi
 
           echo "🧪 Running mutation tests on: $CONFIG_FILES"
-          dart run mutation_test $CONFIG_FILES --no-builtin
+          fvm dart run mutation_test $CONFIG_FILES --no-builtin
 
       - name: Build Android Debug
         script: |
-          flutter build apk --flavor fishfood
+          fvm flutter build apk --flavor fishfood
 
     artifacts:
       - build/app/outputs/flutter-apk/*.apk

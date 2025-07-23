@@ -180,7 +180,7 @@ void main() {
         expect(
           createdUser,
           isNotNull,
-          reason: "Pre-condition: Create profile failed",
+          reason: 'Pre-condition: Create profile failed',
         );
 
         final updatedUser = originalUser.copyWith(firstName: 'UpdatedName');

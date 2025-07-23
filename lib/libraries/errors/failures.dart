@@ -11,8 +11,10 @@ import 'package:equatable/equatable.dart';
 ///    - `AppException`: Represents *unexpected/exceptional* events that disrupt normal flow.
 ///      Handled using `try-catch` blocks.
 abstract class Failure extends Equatable {
+  /// Creates a new [Failure]
   const Failure();
 
+  /// The properties of the failure
   @override
   List<Object?> get props => [];
 }

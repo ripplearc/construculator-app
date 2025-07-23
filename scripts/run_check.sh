@@ -66,7 +66,8 @@ pre_check() {
     lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' -o coverage/lcov.info
 
     # Process coverage
-    if [[ -f "coverage/lcov.info" ]]; then
+    if [[ -f "coverage/lcov.info" ||  ! -s "coverage/lcov.info" ]]; then
+      lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info
       local lf=$(grep '^LF:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
       local lh=$(grep '^LH:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
       local coverage=$(echo "scale=2; $lh*100/$lf" | bc)
@@ -120,10 +121,11 @@ comprehensive_check() {
   if [ -d "test/units" ] && [ "$(ls -A test/units)" ]; then
     echo "🧪 Unit tests with coverage..."
     mkdir -p test-results
-    fvm flutter test test/units --coverage --machine > test-results/flutter.json
+    fvm flutter test test/units test/widgets --coverage --machine > test-results/flutter.json
 
     # Process coverage
-    if [[ -f "coverage/lcov.info" ]]; then
+    if [[ -f "coverage/lcov.info" ||  ! -s "coverage/lcov.info" ]]; then
+      lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info
       local lf=$(grep '^LF:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
       local lh=$(grep '^LH:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
       local coverage=$(echo "scale=2; $lh*100/$lf" | bc)
@@ -143,14 +145,6 @@ comprehensive_check() {
     fi
   else
     echo "⏩ Skipping unit tests: test/units directory not found."
-  fi
-
-  # Widget tests
-  if [ -d "test/widgets" ] && [ "$(ls -A test/widgets)" ]; then
-    echo "📱 Widget tests..."
-    fvm flutter test test/widgets
-  else
-    echo "⏩ Skipping widget tests: test/widgets directory not found."
   fi
 
   # Screenshot tests
@@ -179,7 +173,7 @@ comprehensive_check() {
       exit 1
     fi
   else
-    fvm flutter build apk --debug
+    fvm flutter build apk --flavor fishfood
     
     # Check for default APK
     APK_PATH="build/app/outputs/flutter-apk/app-debug.apk"

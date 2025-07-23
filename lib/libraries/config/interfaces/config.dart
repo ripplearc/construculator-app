@@ -14,10 +14,13 @@ abstract class Config {
   /// [isAlias] is a flag to determine whether to return the name or alias of the environment.
   String getEnvironmentName(Environment env, {bool isAlias = false});
 
+  /// Whether the current environment is development
   bool get isDev;
 
+  /// Whether the current environment is quality assurance
   bool get isQa;
 
+  /// Whether the current environment is production
   bool get isProd;
 
 

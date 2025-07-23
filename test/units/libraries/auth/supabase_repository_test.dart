@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/auth_test_module.dart';
@@ -161,11 +159,11 @@ void main() {
               'created_at': '2023-01-15T08:30:00Z',
               'updated_at': '2023-12-01T14:22:00Z',
               'user_status': 'active',
-              'user_preferences': jsonEncode({
+              'user_preferences': {
                 'theme': 'light',
                 'notifications': true,
                 'language': 'en',
-              }),
+              },
             },
           ]);
 
@@ -200,7 +198,11 @@ void main() {
               'user_status': 'inactive',
               'created_at': '2022-06-01T00:00:00Z',
               'updated_at': '2023-08-15T00:00:00Z',
-              'user_preferences': null,
+              'user_preferences': {
+                'theme': 'light',
+                'notifications': true,
+                'language': 'en',
+              },
             },
           ]);
 
@@ -208,7 +210,7 @@ void main() {
 
           expect(result, isNotNull);
           expect(result!.userStatus, equals(UserProfileStatus.inactive));
-          expect(result.userPreferences, isEmpty);
+          expect(result.userPreferences, isNotEmpty);
           expect(result.phone, isNull);
           expect(result.profilePhotoUrl, isNull);
         });
