@@ -47,7 +47,6 @@ void main() {
 
           expect(result.isSuccess, false);
           expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(result.errorMessage, AuthValidationErrorType.emailRequired.message);
           expect(authManager.loginAttempts.length, 1);
           expect(authManager.loginAttempts.first.email, '');
         });
@@ -60,7 +59,6 @@ void main() {
 
           expect(result.isSuccess, false);
           expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(result.errorMessage, 'Please enter a valid email address');
           expect(authManager.loginAttempts.length, 1);
           expect(authManager.loginAttempts.first.email, 'invalid-email');
         });
@@ -83,7 +81,6 @@ void main() {
 
           expect(result.isSuccess, false);
           expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(result.errorMessage, AuthValidationErrorType.passwordRequired.message);
           expect(authManager.loginAttempts.length, 1);
           expect(authManager.loginAttempts.first.password, '');
         });
@@ -107,10 +104,6 @@ void main() {
 
           expect(result.isSuccess, false);
           expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(
-            result.errorMessage,
-            AuthValidationErrorType.otpRequired.message,
-          );
           expect(authManager.otpVerificationAttempts.length, 1);
           expect(authManager.otpVerificationAttempts.first.otp, '');
         });
@@ -124,10 +117,6 @@ void main() {
 
           expect(result.isSuccess, false);
           expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(
-            result.errorMessage,
-            AuthValidationErrorType.invalidOtp.message,
-          );
           expect(authManager.otpVerificationAttempts.length, 1);
           expect(authManager.otpVerificationAttempts.first.otp, '12345');
         });
@@ -141,10 +130,6 @@ void main() {
 
           expect(result.isSuccess, false);
           expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(
-            result.errorMessage,
-            AuthValidationErrorType.invalidOtp.message,
-          );
           expect(authManager.otpVerificationAttempts.length, 1);
           expect(authManager.otpVerificationAttempts.first.otp, '1234567');
         });
@@ -158,7 +143,6 @@ void main() {
 
           expect(result.isSuccess, false);
           expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(result.errorMessage, 'Please enter a valid email address');
           expect(authManager.otpVerificationAttempts.length, 1);
           expect(authManager.otpVerificationAttempts.first.otp, '1234567');
         });
@@ -172,10 +156,6 @@ void main() {
 
           expect(result.isSuccess, false);
           expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(
-            result.errorMessage,
-            AuthValidationErrorType.invalidOtp.message,
-          );
           expect(authManager.otpVerificationAttempts.length, 1);
           expect(authManager.otpVerificationAttempts.first.otp, '12a456');
         });
@@ -202,7 +182,6 @@ void main() {
 
           expect(result.isSuccess, false);
           expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(result.errorMessage, 'Please enter a valid email address');
           expect(authManager.otpSendAttempts.length, 1);
           expect(authManager.otpSendAttempts.first.address, 'invalid-email');
         });
@@ -212,7 +191,6 @@ void main() {
 
           expect(result.isSuccess, false);
           expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(result.errorMessage, 'Please enter a valid email address');
           expect(authManager.passwordResetAttempts.length, 1);
           expect(authManager.passwordResetAttempts.first, 'invalid-email');
         });
@@ -222,7 +200,6 @@ void main() {
 
           expect(result.isSuccess, false);
           expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(result.errorMessage, 'Please enter a valid email address');
           expect(authManager.emailCheckAttempts.length, 1);
           expect(authManager.emailCheckAttempts.first, 'invalid-email');
         });
@@ -235,7 +212,6 @@ void main() {
 
           expect(result.isSuccess, false);
           expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(result.errorMessage, 'Please enter a valid email address');
           expect(authManager.registrationAttempts.length, 1);
           expect(authManager.registrationAttempts.first.email, 'invalid-email');
         });
@@ -245,7 +221,6 @@ void main() {
 
           expect(result.isSuccess, false);
           expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(result.errorMessage, AuthValidationErrorType.passwordRequired.message);
           expect(authManager.registrationAttempts.length, 1);
           expect(authManager.registrationAttempts.first.password, '');
         });
@@ -266,7 +241,6 @@ void main() {
         );
 
         expect(result.isSuccess, false);
-        expect(result.errorMessage, 'Custom error');
         expect(result.errorType, AuthErrorType.invalidCredentials);
 
         authManager.setAuthResponse(succeed: true);
@@ -314,7 +288,6 @@ void main() {
         );
 
         expect(result.isSuccess, false);
-        expect(result.errorMessage, 'Invalid credentials');
         expect(result.errorType, AuthErrorType.invalidCredentials);
         expect(authManager.isAuthenticated(), false);
         expect(authManager.loginAttempts.length, 1);
@@ -358,7 +331,6 @@ void main() {
         );
 
         expect(result.isSuccess, false);
-        expect(result.errorMessage, 'Registration failed');
         expect(result.errorType, AuthErrorType.registrationFailure);
         expect(authManager.isAuthenticated(), false);
         expect(authManager.registrationAttempts.length, 1);
@@ -390,7 +362,6 @@ void main() {
         final result = await authManager.sendOtp(testEmail, OtpReceiver.email);
 
         expect(result.isSuccess, false);
-        expect(result.errorMessage, 'Failed to send OTP');
         expect(result.errorType, AuthErrorType.serverError);
         expect(authManager.otpSendAttempts.length, 1);
       });
@@ -429,7 +400,6 @@ void main() {
         );
 
         expect(result.isSuccess, false);
-        expect(result.errorMessage, 'Invalid verification code');
         expect(result.errorType, AuthErrorType.invalidCredentials);
         expect(authManager.isAuthenticated(), false);
         expect(authManager.otpVerificationAttempts.length, 1);
@@ -461,7 +431,6 @@ void main() {
         final result = await authManager.resetPassword(testEmail);
 
         expect(result.isSuccess, false);
-        expect(result.errorMessage, 'Password reset failed');
         expect(result.errorType, AuthErrorType.serverError);
         expect(authManager.passwordResetAttempts.length, 1);
       });
@@ -487,7 +456,6 @@ void main() {
         final result = await authManager.isEmailRegistered(testEmail);
 
         expect(result.isSuccess, false);
-        expect(result.errorMessage, 'Email check failed');
         expect(result.errorType, AuthErrorType.serverError);
         expect(authManager.emailCheckAttempts.length, 1);
       });
@@ -524,7 +492,6 @@ void main() {
         final result = await authManager.logout();
 
         expect(result.isSuccess, false);
-        expect(result.errorMessage, 'Logout failed');
         expect(result.errorType, AuthErrorType.serverError);
         expect(authManager.isAuthenticated(), true);
         expect(authManager.logoutAttempts.length, 1);

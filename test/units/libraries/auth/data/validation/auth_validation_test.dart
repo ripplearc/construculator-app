@@ -8,19 +8,34 @@ void main() {
       test('should return null for valid email addresses', () {
         expect(AuthValidation.validateEmail('test@example.com'), isNull);
         expect(AuthValidation.validateEmail('user.name@domain.co.uk'), isNull);
-        expect(AuthValidation.validateEmail('user123@subdomain.domain.com'), isNull);
+        expect(
+          AuthValidation.validateEmail('user123@subdomain.domain.com'),
+          isNull,
+        );
       });
 
       test('should return error message for null or empty email', () {
-        expect(AuthValidation.validateEmail(null), AuthValidationErrorType.emailRequired);
-        expect(AuthValidation.validateEmail(''), AuthValidationErrorType.emailRequired);
+        expect(AuthValidation.validateEmail(null), AuthErrorType.emailRequired);
+        expect(AuthValidation.validateEmail(''), AuthErrorType.emailRequired);
       });
 
       test('should return error message for invalid email addresses', () {
-        expect(AuthValidation.validateEmail('test'), AuthValidationErrorType.invalidEmail);
-        expect(AuthValidation.validateEmail('test@'), AuthValidationErrorType.invalidEmail);
-        expect(AuthValidation.validateEmail('@domain.com'), AuthValidationErrorType.invalidEmail);
-        expect(AuthValidation.validateEmail('test@domain'), AuthValidationErrorType.invalidEmail);
+        expect(
+          AuthValidation.validateEmail('test'),
+          AuthErrorType.invalidEmail,
+        );
+        expect(
+          AuthValidation.validateEmail('test@'),
+          AuthErrorType.invalidEmail,
+        );
+        expect(
+          AuthValidation.validateEmail('@domain.com'),
+          AuthErrorType.invalidEmail,
+        );
+        expect(
+          AuthValidation.validateEmail('test@domain'),
+          AuthErrorType.invalidEmail,
+        );
       });
     });
 
@@ -32,29 +47,62 @@ void main() {
       });
 
       test('should return error message for null or empty password', () {
-        expect(AuthValidation.validatePassword(null), AuthValidationErrorType.passwordRequired);
-        expect(AuthValidation.validatePassword(''), AuthValidationErrorType.passwordRequired);
+        expect(
+          AuthValidation.validatePassword(null),
+          AuthErrorType.passwordRequired,
+        );
+        expect(
+          AuthValidation.validatePassword(''),
+          AuthErrorType.passwordRequired,
+        );
       });
 
-      test('should return error message for password less than 8 characters', () {
-        expect(AuthValidation.validatePassword('Abc1!'), AuthValidationErrorType.passwordTooShort);
-      });
+      test(
+        'should return error message for password less than 8 characters',
+        () {
+          expect(
+            AuthValidation.validatePassword('Abc1!'),
+            AuthErrorType.passwordTooShort,
+          );
+        },
+      );
 
-      test('should return error message for password without uppercase letter', () {
-        expect(AuthValidation.validatePassword('test123!@#'), AuthValidationErrorType.passwordMissingUppercase);
-      });
+      test(
+        'should return error message for password without uppercase letter',
+        () {
+          expect(
+            AuthValidation.validatePassword('test123!@#'),
+            AuthErrorType.passwordMissingUppercase,
+          );
+        },
+      );
 
-      test('should return error message for password without lowercase letter', () {
-        expect(AuthValidation.validatePassword('TEST123!@#'), AuthValidationErrorType.passwordMissingLowercase);
-      });
+      test(
+        'should return error message for password without lowercase letter',
+        () {
+          expect(
+            AuthValidation.validatePassword('TEST123!@#'),
+            AuthErrorType.passwordMissingLowercase,
+          );
+        },
+      );
 
       test('should return error message for password without number', () {
-        expect(AuthValidation.validatePassword('TestPass!@#'), AuthValidationErrorType.passwordMissingNumber);
+        expect(
+          AuthValidation.validatePassword('TestPass!@#'),
+          AuthErrorType.passwordMissingNumber,
+        );
       });
 
-      test('should return error message for password without special character', () {
-        expect(AuthValidation.validatePassword('TestPass123'), AuthValidationErrorType.passwordMissingSpecialChar);
-      });
+      test(
+        'should return error message for password without special character',
+        () {
+          expect(
+            AuthValidation.validatePassword('TestPass123'),
+            AuthErrorType.passwordMissingSpecialChar,
+          );
+        },
+      );
     });
 
     group('validateOtp', () {
@@ -65,15 +113,15 @@ void main() {
       });
 
       test('should return error message for null or empty OTP', () {
-        expect(AuthValidation.validateOtp(null), AuthValidationErrorType.otpRequired);
-        expect(AuthValidation.validateOtp(''), AuthValidationErrorType.otpRequired);
+        expect(AuthValidation.validateOtp(null), AuthErrorType.otpRequired);
+        expect(AuthValidation.validateOtp(''), AuthErrorType.otpRequired);
       });
 
       test('should return error message for invalid OTP', () {
-        expect(AuthValidation.validateOtp('12345'), AuthValidationErrorType.invalidOtp);
-        expect(AuthValidation.validateOtp('1234567'), AuthValidationErrorType.invalidOtp);
-        expect(AuthValidation.validateOtp('12345a'), AuthValidationErrorType.invalidOtp);
-        expect(AuthValidation.validateOtp('abc123'), AuthValidationErrorType.invalidOtp);
+        expect(AuthValidation.validateOtp('12345'), AuthErrorType.invalidOtp);
+        expect(AuthValidation.validateOtp('1234567'), AuthErrorType.invalidOtp);
+        expect(AuthValidation.validateOtp('12345a'), AuthErrorType.invalidOtp);
+        expect(AuthValidation.validateOtp('abc123'), AuthErrorType.invalidOtp);
       });
     });
 
@@ -85,22 +133,36 @@ void main() {
       });
 
       test('should return error message for null or empty phone number', () {
-        expect(AuthValidation.validatePhoneNumber(null), AuthValidationErrorType.phoneRequired);
-        expect(AuthValidation.validatePhoneNumber(''), AuthValidationErrorType.phoneRequired);
+        expect(
+          AuthValidation.validatePhoneNumber(null),
+          AuthErrorType.phoneRequired,
+        );
+        expect(
+          AuthValidation.validatePhoneNumber(''),
+          AuthErrorType.phoneRequired,
+        );
       });
 
       test('should return error message for invalid phone numbers', () {
         expect(
-          AuthValidation.validatePhoneNumber('1234567890'), 
-          AuthValidationErrorType.invalidPhone
+          AuthValidation.validatePhoneNumber('+1234'),
+          AuthErrorType.invalidPhone,
         );
         expect(
-          AuthValidation.validatePhoneNumber('abc1234567890'), 
-          AuthValidationErrorType.invalidPhone
+          AuthValidation.validatePhoneNumber('+12349029398384747473746'),
+          AuthErrorType.invalidPhone,
         );
         expect(
-          AuthValidation.validatePhoneNumber('+abc1234567890'), 
-          AuthValidationErrorType.invalidPhone
+          AuthValidation.validatePhoneNumber('1234567890'),
+          AuthErrorType.invalidPhone,
+        );
+        expect(
+          AuthValidation.validatePhoneNumber('abc1234567890'),
+          AuthErrorType.invalidPhone,
+        );
+        expect(
+          AuthValidation.validatePhoneNumber('+abc1234567890'),
+          AuthErrorType.invalidPhone,
         );
       });
     });
