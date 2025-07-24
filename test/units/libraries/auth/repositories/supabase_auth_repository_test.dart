@@ -197,7 +197,7 @@ void main() {
 
         test('should get user profile for inactive user', () async {
           const credentialId = 'cred-456-inactive-user';
-          final Map<String,dynamic> pref = {};
+          final Map<String, dynamic> pref = {};
           fakeSupabaseWrapper.addTableData('users', [
             {
               'id': '456',
@@ -412,27 +412,28 @@ void main() {
     });
 
     group('User Credentials Update', () {
-      test('should update email and password successfully', () async {
-        final fakeUser = FakeUser(
-          id: 'user-1',
-          email: 'old@example.com',
-          appMetadata: {'role': 'user'},
-          userMetadata: {},
-          createdAt: DateTime.now().toIso8601String(),
-        );
-        fakeSupabaseWrapper.setCurrentUser(fakeUser);
-        fakeSupabaseWrapper.shouldReturnNullUser = false;
-        final result = await authRepository.updateUserCredentials(
-          'new@example.com',
-          'newpass123',
-        );
-        expect(result, isNotNull);
-        expect(result!.email, equals('new@example.com'));
-        expect(result.metadata['password'], equals('newpass123'));
-        expect(result.metadata['role'], equals('user'));
-      });
+      test(
+        'should update both email and password when both are provided',
+        () async {
+          final fakeUser = FakeUser(
+            id: 'user-1',
+            email: 'old@example.com',
+            appMetadata: {'role': 'user'},
+            userMetadata: {},
+            createdAt: DateTime.now().toIso8601String(),
+          );
+          fakeSupabaseWrapper.setCurrentUser(fakeUser);
+          fakeSupabaseWrapper.shouldReturnNullUser = false;
+          final result = await authRepository.updateUserEmail(
+            'new@example.com',
+          );
+          expect(result, isNotNull);
+          expect(result!.email, equals('new@example.com'));
+          expect(result.metadata['role'], equals('user'));
+        },
+      );
 
-      test('should update only email if password is null', () async {
+      test('should update only email', () async {
         final fakeUser = FakeUser(
           id: 'user-2',
           email: 'old@example.com',
@@ -442,16 +443,13 @@ void main() {
         );
         fakeSupabaseWrapper.setCurrentUser(fakeUser);
         fakeSupabaseWrapper.shouldReturnNullUser = false;
-        final result = await authRepository.updateUserCredentials(
-          'new@example.com',
-          null,
-        );
+        final result = await authRepository.updateUserEmail('new@example.com');
         expect(result, isNotNull);
         expect(result!.email, equals('new@example.com'));
         expect(result.metadata['role'], equals('user'));
       });
 
-      test('should update only password if email is null', () async {
+      test('should update only password', () async {
         final fakeUser = FakeUser(
           id: 'user-3',
           email: 'old@example.com',
@@ -461,37 +459,54 @@ void main() {
         );
         fakeSupabaseWrapper.setCurrentUser(fakeUser);
         fakeSupabaseWrapper.shouldReturnNullUser = false;
-        final result = await authRepository.updateUserCredentials(
-          null,
-          'newpass123',
-        );
+        final result = await authRepository.updateUserPassword('newpass123');
         expect(result, isNotNull);
         expect(result!.email, equals('old@example.com'));
         expect(result.metadata['role'], equals('user'));
       });
 
-      test('should return null if wrapper returns null user', () async {
-        fakeSupabaseWrapper.shouldReturnNullUser = true;
-        final result = await authRepository.updateUserCredentials(
-          'any@example.com',
-          'pass',
-        );
-        expect(result, isNull);
-      });
+      test(
+        'should return null if wrapper returns null user for email update',
+        () async {
+          fakeSupabaseWrapper.shouldReturnNullUser = true;
+          final result = await authRepository.updateUserEmail(
+            'any@example.com',
+          );
+          expect(result, isNull);
+        },
+      );
 
-      test('should throw if wrapper throws', () async {
+      test(
+        'should return null if wrapper returns null user for password update',
+        () async {
+          fakeSupabaseWrapper.shouldReturnNullUser = true;
+          final result = await authRepository.updateUserPassword('pass');
+          expect(result, isNull);
+        },
+      );
+
+      test('should throw if wrapper throws for email update', () async {
         fakeSupabaseWrapper.shouldThrowOnUpdate = true;
         fakeSupabaseWrapper.updateExceptionType = SupabaseExceptionType.auth;
         fakeSupabaseWrapper.updateErrorMessage = 'Update failed';
         expect(
-          () =>
-              authRepository.updateUserCredentials('fail@example.com', 'fail'),
+          () => authRepository.updateUserEmail('fail@example.com'),
+          throwsException,
+        );
+      });
+
+      test('should throw if wrapper throws for password update', () async {
+        fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+        fakeSupabaseWrapper.updateExceptionType = SupabaseExceptionType.auth;
+        fakeSupabaseWrapper.updateErrorMessage = 'Update failed';
+        expect(
+          () => authRepository.updateUserPassword('fail'),
           throwsException,
         );
       });
 
       test(
-        'should call updateUser on the wrapper with correct attributes',
+        'should call updateUser on the wrapper with correct attributes for email',
         () async {
           final fakeUser = FakeUser(
             id: 'user-4',
@@ -502,14 +517,32 @@ void main() {
           );
           fakeSupabaseWrapper.setCurrentUser(fakeUser);
           fakeSupabaseWrapper.shouldReturnNullUser = false;
-          await authRepository.updateUserCredentials(
-            'new@example.com',
-            'newpass123',
-          );
+          await authRepository.updateUserEmail('new@example.com');
           final calls = fakeSupabaseWrapper.getMethodCallsFor('updateUser');
           expect(calls, isNotEmpty);
           final attrs = calls.last['userAttributes'];
           expect(attrs.email, equals('new@example.com'));
+          expect(attrs.password, isNull);
+        },
+      );
+
+      test(
+        'should call updateUser on the wrapper with correct attributes for password',
+        () async {
+          final fakeUser = FakeUser(
+            id: 'user-5',
+            email: 'old@example.com',
+            appMetadata: {'role': 'user'},
+            userMetadata: {},
+            createdAt: DateTime.now().toIso8601String(),
+          );
+          fakeSupabaseWrapper.setCurrentUser(fakeUser);
+          fakeSupabaseWrapper.shouldReturnNullUser = false;
+          await authRepository.updateUserPassword('newpass123');
+          final calls = fakeSupabaseWrapper.getMethodCallsFor('updateUser');
+          expect(calls, isNotEmpty);
+          final attrs = calls.last['userAttributes'];
+          expect(attrs.email, isNull);
           expect(attrs.password, equals('newpass123'));
         },
       );

@@ -61,7 +61,7 @@ class SupabaseRepositoryImpl implements AuthRepository {
   Future<User?> createUserProfile(User user) async {
     _logger.info('Creating user profile for: ${user.email}');
     try {
-       final userData = {
+      final userData = {
         'credential_id': user.credentialId,
         'email': user.email,
         'phone': user.phone,
@@ -70,8 +70,9 @@ class SupabaseRepositoryImpl implements AuthRepository {
         'last_name': user.lastName,
         'professional_role': user.professionalRole,
         'profile_photo_url': user.profilePhotoUrl,
-        'user_status':
-            user.userStatus == UserProfileStatus.active ? 'active' : 'inactive',
+        'user_status': user.userStatus == UserProfileStatus.active
+            ? 'active'
+            : 'inactive',
         'user_preferences': user.userPreferences,
       };
       final response = await supabaseWrapper.insert(
@@ -101,8 +102,9 @@ class SupabaseRepositoryImpl implements AuthRepository {
         'last_name': user.lastName,
         'professional_role': user.professionalRole,
         'profile_photo_url': user.profilePhotoUrl,
-        'user_status':
-            user.userStatus == UserProfileStatus.active ? 'active' : 'inactive',
+        'user_status': user.userStatus == UserProfileStatus.active
+            ? 'active'
+            : 'inactive',
         'user_preferences': user.userPreferences,
       };
 
@@ -125,23 +127,39 @@ class SupabaseRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<UserCredential?> updateUserCredentials(String? email, String? password) async {
-    _logger.info('Updating user credentials for: $email');
+  Future<UserCredential?> updateUserEmail(String email) async {
+    _logger.info('Updating user email to: $email');
     try {
       final response = await supabaseWrapper.updateUser(
-        supabase.UserAttributes(
-          email: email,
-          password: password,
-        ),
+        supabase.UserAttributes(email: email),
       );
       final user = response.user;
-      if(user == null){
-        _logger.warning('No user found for email: $email');
+      if (user == null) {
+        _logger.warning('No user found for email update: $email');
         return null;
       }
       return _mapSupabaseUserToCredential(user);
     } catch (e) {
-      _logger.error('Error updating user credentials: $e');
+      _logger.error('Error updating user email: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<UserCredential?> updateUserPassword(String password) async {
+    _logger.info('Updating user password');
+    try {
+      final response = await supabaseWrapper.updateUser(
+        supabase.UserAttributes(password: password),
+      );
+      final user = response.user;
+      if (user == null) {
+        _logger.warning('No user found for password update');
+        return null;
+      }
+      return _mapSupabaseUserToCredential(user);
+    } catch (e) {
+      _logger.error('Error updating user password: $e');
       rethrow;
     }
   }
