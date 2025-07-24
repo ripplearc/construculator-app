@@ -1,3 +1,5 @@
+import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
+import 'package:construculator/libraries/auth/data/models/auth_state.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
@@ -18,6 +20,15 @@ void main() {
   const testPassword = '5i2Un@D8Y9!';
   const testUserId = 'test-test';
 
+  createTestCredentials() {
+    return UserCredential(
+      id: testUserId,
+      email: testEmail,
+      metadata: {},
+      createdAt: DateTime.now(),
+    );
+  }
+
   setUp(() {
     Modular.init(_TestAppModule());
     authNotifier = Modular.get<AuthNotifierController>() as FakeAuthNotifier;
@@ -30,38 +41,47 @@ void main() {
   });
 
   group('FakeAuthManager', () {
-    test('getCurrentCredentials should return null and isAuthenticated should be false on initialization', () {
-      expect(authManager.isAuthenticated(), false);
-      expect(authManager.getCurrentCredentials().data, null);
-      expect(authNotifier.stateChangedEvents.length, 1);
-      expect(
-        authNotifier.stateChangedEvents.first.status,
-        AuthStatus.unauthenticated,
-      );
-    });
+    test(
+      'getCurrentCredentials should return null and isAuthenticated should be false on initialization',
+      () {
+        expect(authManager.isAuthenticated(), false);
+        expect(authManager.getCurrentCredentials().data, null);
+        expect(authNotifier.stateChangedEvents.length, 1);
+        expect(
+          authNotifier.stateChangedEvents.first.status,
+          AuthStatus.unauthenticated,
+        );
+      },
+    );
 
     group('Input Validation', () {
       group('loginWithEmail validation', () {
-        test('loginWithEmail should reject empty email with invalidCredentials error', () async {
-          final result = await authManager.loginWithEmail('', testPassword);
+        test(
+          'loginWithEmail should reject empty email with invalidCredentials error',
+          () async {
+            final result = await authManager.loginWithEmail('', testPassword);
 
-          expect(result.isSuccess, false);
-          expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(authManager.loginAttempts.length, 1);
-          expect(authManager.loginAttempts.first.email, '');
-        });
+            expect(result.isSuccess, false);
+            expect(result.errorType, AuthErrorType.emailRequired);
+            expect(authManager.loginAttempts.length, 1);
+            expect(authManager.loginAttempts.first.email, '');
+          },
+        );
 
-        test('loginWithEmail should reject invalid email format with invalidCredentials error', () async {
-          final result = await authManager.loginWithEmail(
-            'invalid-email',
-            testPassword,
-          );
+        test(
+          'loginWithEmail should reject invalid email format with invalidCredentials error',
+          () async {
+            final result = await authManager.loginWithEmail(
+              'invalid-email',
+              testPassword,
+            );
 
-          expect(result.isSuccess, false);
-          expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(authManager.loginAttempts.length, 1);
-          expect(authManager.loginAttempts.first.email, 'invalid-email');
-        });
+            expect(result.isSuccess, false);
+            expect(result.errorType, AuthErrorType.invalidEmail);
+            expect(authManager.loginAttempts.length, 1);
+            expect(authManager.loginAttempts.first.email, 'invalid-email');
+          },
+        );
 
         test('loginWithEmail should succeed with valid email format', () async {
           final result = await authManager.loginWithEmail(
@@ -76,14 +96,17 @@ void main() {
       });
 
       group('password validation', () {
-        test('loginWithEmail should reject empty password with invalidCredentials error', () async {
-          final result = await authManager.loginWithEmail(testEmail, '');
+        test(
+          'loginWithEmail should reject empty password with invalidCredentials error',
+          () async {
+            final result = await authManager.loginWithEmail(testEmail, '');
 
-          expect(result.isSuccess, false);
-          expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(authManager.loginAttempts.length, 1);
-          expect(authManager.loginAttempts.first.password, '');
-        });
+            expect(result.isSuccess, false);
+            expect(result.errorType, AuthErrorType.passwordRequired);
+            expect(authManager.loginAttempts.length, 1);
+            expect(authManager.loginAttempts.first.password, '');
+          },
+        );
 
         test('loginWithEmail should accept any non-empty password', () async {
           final result = await authManager.loginWithEmail(testEmail, 'a');
@@ -95,70 +118,85 @@ void main() {
       });
 
       group('OTP validation', () {
-        test('verifyOtp should reject empty OTP with invalidCredentials error', () async {
-          final result = await authManager.verifyOtp(
-            testEmail,
-            '',
-            OtpReceiver.email,
-          );
+        test(
+          'verifyOtp should reject empty OTP with otpRequired error',
+          () async {
+            final result = await authManager.verifyOtp(
+              testEmail,
+              '',
+              OtpReceiver.email,
+            );
 
-          expect(result.isSuccess, false);
-          expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(authManager.otpVerificationAttempts.length, 1);
-          expect(authManager.otpVerificationAttempts.first.otp, '');
-        });
+            expect(result.isSuccess, false);
+            expect(result.errorType, AuthErrorType.otpRequired);
+            expect(authManager.otpVerificationAttempts.length, 1);
+            expect(authManager.otpVerificationAttempts.first.otp, '');
+          },
+        );
 
-        test('verifyOtp should reject short OTP with invalidCredentials error', () async {
-          final result = await authManager.verifyOtp(
-            testEmail,
-            '12345',
-            OtpReceiver.email,
-          );
+        test(
+          'verifyOtp should reject short OTP with invalidOtp error',
+          () async {
+            final result = await authManager.verifyOtp(
+              testEmail,
+              '12345',
+              OtpReceiver.email,
+            );
 
-          expect(result.isSuccess, false);
-          expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(authManager.otpVerificationAttempts.length, 1);
-          expect(authManager.otpVerificationAttempts.first.otp, '12345');
-        });
+            expect(result.isSuccess, false);
+            expect(result.errorType, AuthErrorType.invalidOtp);
+            expect(authManager.otpVerificationAttempts.length, 1);
+            expect(authManager.otpVerificationAttempts.first.otp, '12345');
+          },
+        );
 
-        test('verifyOtp should reject long OTP with invalidCredentials error', () async {
-          final result = await authManager.verifyOtp(
-            testEmail,
-            '1234567',
-            OtpReceiver.email,
-          );
+        test(
+          'verifyOtp should reject long OTP with invalidOtp error',
+          () async {
+            final result = await authManager.verifyOtp(
+              testEmail,
+              '1234567',
+              OtpReceiver.email,
+            );
 
-          expect(result.isSuccess, false);
-          expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(authManager.otpVerificationAttempts.length, 1);
-          expect(authManager.otpVerificationAttempts.first.otp, '1234567');
-        });
+            expect(result.isSuccess, false);
+            expect(result.errorType, AuthErrorType.invalidOtp);
+            expect(authManager.otpVerificationAttempts.length, 1);
+            expect(authManager.otpVerificationAttempts.first.otp, '1234567');
+          },
+        );
 
-        test('verifyOtp should reject invalid email with invalidCredentials error', () async {
-          final result = await authManager.verifyOtp(
-            'invalid-email',
-            '1234567',
-            OtpReceiver.email,
-          );
+        test(
+          'verifyOtp should reject invalid email with invalidEmail error',
+          () async {
+            final result = await authManager.verifyOtp(
+              'invalid-email',
+              '1234567',
+              OtpReceiver.email,
+            );
 
-          expect(result.isSuccess, false);
-          expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(authManager.otpVerificationAttempts.length, 1);
-          expect(authManager.otpVerificationAttempts.first.otp, '1234567');
-        });
+            expect(result.isSuccess, false);
+            expect(result.errorType, AuthErrorType.invalidEmail);
+            expect(authManager.otpVerificationAttempts.length, 1);
+            expect(authManager.otpVerificationAttempts.first.otp, '1234567');
+          },
+        );
 
-        test('verifyOtp should reject non-numeric OTP with invalidCredentials error', () async {
-          final result = await authManager.verifyOtp(
-            testEmail,
-            '12a456',
-            OtpReceiver.email,
-          );
+        test(
+          'verifyOtp should reject non-numeric OTP with invalidOtp error',
+          () async {
+            final result = await authManager.verifyOtp(
+              testEmail,
+              '12a456',
+              OtpReceiver.email,
+            );
 
-          expect(result.isSuccess, false);
-          expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(authManager.otpVerificationAttempts.length, 1);
-          expect(authManager.otpVerificationAttempts.first.otp, '12a456');
-        });
+            expect(result.isSuccess, false);
+            expect(result.errorType, AuthErrorType.invalidOtp);
+            expect(authManager.otpVerificationAttempts.length, 1);
+            expect(authManager.otpVerificationAttempts.first.otp, '12a456');
+          },
+        );
 
         test('verifyOtp should accept valid OTP format', () async {
           final result = await authManager.verifyOtp(
@@ -174,172 +212,205 @@ void main() {
       });
 
       group('validation across operations', () {
-        test('sendOtp should reject invalid email with invalidCredentials error', () async {
-          final result = await authManager.sendOtp(
-            'invalid-email',
-            OtpReceiver.email,
+        test(
+          'sendOtp should reject invalid email with invalidEmail error',
+          () async {
+            final result = await authManager.sendOtp(
+              'invalid-email',
+              OtpReceiver.email,
+            );
+
+            expect(result.isSuccess, false);
+            expect(result.errorType, AuthErrorType.invalidEmail);
+            expect(authManager.otpSendAttempts.length, 1);
+            expect(authManager.otpSendAttempts.first.address, 'invalid-email');
+          },
+        );
+
+        test(
+          'resetPassword should reject invalid email with invalidEmail error',
+          () async {
+            final result = await authManager.resetPassword('invalid-email');
+
+            expect(result.isSuccess, false);
+            expect(result.errorType, AuthErrorType.invalidEmail);
+            expect(authManager.passwordResetAttempts.length, 1);
+            expect(authManager.passwordResetAttempts.first, 'invalid-email');
+          },
+        );
+
+        test(
+          'isEmailRegistered should reject invalid email with invalidEmail error',
+          () async {
+            final result = await authManager.isEmailRegistered('invalid-email');
+
+            expect(result.isSuccess, false);
+            expect(result.errorType, AuthErrorType.invalidEmail);
+            expect(authManager.emailCheckAttempts.length, 1);
+            expect(authManager.emailCheckAttempts.first, 'invalid-email');
+          },
+        );
+
+        test(
+          'registerWithEmail should reject invalid email with invalidEmail error',
+          () async {
+            final result = await authManager.registerWithEmail(
+              'invalid-email',
+              testPassword,
+            );
+
+            expect(result.isSuccess, false);
+            expect(result.errorType, AuthErrorType.invalidEmail);
+            expect(authManager.registrationAttempts.length, 1);
+            expect(
+              authManager.registrationAttempts.first.email,
+              'invalid-email',
+            );
+          },
+        );
+
+        test(
+          'registerWithEmail should reject empty password with passwordRequired error',
+          () async {
+            final result = await authManager.registerWithEmail(testEmail, '');
+
+            expect(result.isSuccess, false);
+            expect(result.errorType, AuthErrorType.passwordRequired);
+            expect(authManager.registrationAttempts.length, 1);
+            expect(authManager.registrationAttempts.first.password, '');
+          },
+        );
+      });
+    });
+
+    group('setAuthResponse configuration', () {
+      test(
+        'setAuthResponse should properly configure authentication response behavior',
+        () async {
+          authManager.setAuthResponse(
+            succeed: false,
+            errorMessage: 'Custom error',
+            errorType: AuthErrorType.invalidCredentials,
           );
 
-          expect(result.isSuccess, false);
-          expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(authManager.otpSendAttempts.length, 1);
-          expect(authManager.otpSendAttempts.first.address, 'invalid-email');
-        });
-
-        test('resetPassword should reject invalid email with invalidCredentials error', () async {
-          final result = await authManager.resetPassword('invalid-email');
-
-          expect(result.isSuccess, false);
-          expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(authManager.passwordResetAttempts.length, 1);
-          expect(authManager.passwordResetAttempts.first, 'invalid-email');
-        });
-
-        test('isEmailRegistered should reject invalid email with invalidCredentials error', () async {
-          final result = await authManager.isEmailRegistered('invalid-email');
-
-          expect(result.isSuccess, false);
-          expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(authManager.emailCheckAttempts.length, 1);
-          expect(authManager.emailCheckAttempts.first, 'invalid-email');
-        });
-
-        test('registerWithEmail should reject invalid email with invalidCredentials error', () async {
-          final result = await authManager.registerWithEmail(
-            'invalid-email',
+          final result = await authManager.loginWithEmail(
+            testEmail,
             testPassword,
           );
 
           expect(result.isSuccess, false);
           expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(authManager.registrationAttempts.length, 1);
-          expect(authManager.registrationAttempts.first.email, 'invalid-email');
-        });
 
-        test('registerWithEmail should reject empty password with invalidCredentials error', () async {
-          final result = await authManager.registerWithEmail(testEmail, '');
+          authManager.setAuthResponse(succeed: true);
 
-          expect(result.isSuccess, false);
-          expect(result.errorType, AuthErrorType.invalidCredentials);
-          expect(authManager.registrationAttempts.length, 1);
-          expect(authManager.registrationAttempts.first.password, '');
-        });
-      });
-    });
+          final successResult = await authManager.loginWithEmail(
+            testEmail,
+            testPassword,
+          );
 
-    group('setAuthResponse configuration', () {
-      test('setAuthResponse should properly configure authentication response behavior', () async {
-        authManager.setAuthResponse(
-          succeed: false,
-          errorMessage: 'Custom error',
-          errorType: AuthErrorType.invalidCredentials,
-        );
-
-        final result = await authManager.loginWithEmail(
-          testEmail,
-          testPassword,
-        );
-
-        expect(result.isSuccess, false);
-        expect(result.errorType, AuthErrorType.invalidCredentials);
-
-        authManager.setAuthResponse(succeed: true);
-
-        final successResult = await authManager.loginWithEmail(
-          testEmail,
-          testPassword,
-        );
-
-        expect(successResult.isSuccess, true);
-      });
+          expect(successResult.isSuccess, true);
+        },
+      );
     });
 
     group('Authentication Operations', () {
-      test('loginWithEmail should update state and track attempt on success', () async {
-        final result = await authManager.loginWithEmail(
-          testEmail,
-          testPassword,
-        );
+      test(
+        'loginWithEmail should update state and track attempt on success',
+        () async {
+          final result = await authManager.loginWithEmail(
+            testEmail,
+            testPassword,
+          );
 
-        expect(result.isSuccess, true);
-        expect(result.data!.email, testEmail);
-        expect(result.data!.id, 'test-test');
-        expect(authManager.isAuthenticated(), true);
-        expect(authManager.loginAttempts.length, 1);
-        expect(authManager.loginAttempts.first.email, testEmail);
-        expect(authManager.loginAttempts.first.password, testPassword);
-        expect(authNotifier.stateChangedEvents.length, 2);
-        expect(
-          authNotifier.stateChangedEvents.last.status,
-          AuthStatus.authenticated,
-        );
-      });
+          expect(result.isSuccess, true);
+          expect(result.data!.email, testEmail);
+          expect(result.data!.id, 'test-test');
+          expect(authManager.isAuthenticated(), true);
+          expect(authManager.loginAttempts.length, 1);
+          expect(authManager.loginAttempts.first.email, testEmail);
+          expect(authManager.loginAttempts.first.password, testPassword);
+          expect(authNotifier.stateChangedEvents.length, 2);
+          expect(
+            authNotifier.stateChangedEvents.last.status,
+            AuthStatus.authenticated,
+          );
+        },
+      );
 
-      test('loginWithEmail should return error and not update state on failure', () async {
-        authManager.setAuthResponse(
-          succeed: false,
-          errorMessage: 'Invalid credentials',
-          errorType: AuthErrorType.invalidCredentials,
-        );
+      test(
+        'loginWithEmail should return error and not update state on failure',
+        () async {
+          authManager.setAuthResponse(
+            succeed: false,
+            errorMessage: 'Invalid credentials',
+            errorType: AuthErrorType.invalidCredentials,
+          );
 
-        final result = await authManager.loginWithEmail(
-          testEmail,
-          testPassword,
-        );
+          final result = await authManager.loginWithEmail(
+            testEmail,
+            testPassword,
+          );
 
-        expect(result.isSuccess, false);
-        expect(result.errorType, AuthErrorType.invalidCredentials);
-        expect(authManager.isAuthenticated(), false);
-        expect(authManager.loginAttempts.length, 1);
-        expect(authNotifier.stateChangedEvents.length, 1);
-        expect(
-          authNotifier.stateChangedEvents.last.status,
-          AuthStatus.unauthenticated,
-        );
-      });
+          expect(result.isSuccess, false);
+          expect(result.errorType, AuthErrorType.invalidCredentials);
+          expect(authManager.isAuthenticated(), false);
+          expect(authManager.loginAttempts.length, 1);
+          expect(authNotifier.stateChangedEvents.length, 1);
+          expect(
+            authNotifier.stateChangedEvents.last.status,
+            AuthStatus.unauthenticated,
+          );
+        },
+      );
 
-      test('registerWithEmail should update state and track attempt on success', () async {
-        final result = await authManager.registerWithEmail(
-          testEmail,
-          testPassword,
-        );
+      test(
+        'registerWithEmail should update state and track attempt on success',
+        () async {
+          final result = await authManager.registerWithEmail(
+            testEmail,
+            testPassword,
+          );
 
-        expect(result.isSuccess, true);
-        expect(result.data!.email, testEmail);
-        expect(result.data!.id, 'test-test');
-        expect(authManager.isAuthenticated(), true);
-        expect(authManager.registrationAttempts.length, 1);
-        expect(authManager.registrationAttempts.first.email, testEmail);
-        expect(authManager.registrationAttempts.first.password, testPassword);
-        expect(authNotifier.stateChangedEvents.length, 2);
-        expect(
-          authNotifier.stateChangedEvents.last.status,
-          AuthStatus.authenticated,
-        );
-      });
+          expect(result.isSuccess, true);
+          expect(result.data!.email, testEmail);
+          expect(result.data!.id, 'test-test');
+          expect(authManager.isAuthenticated(), true);
+          expect(authManager.registrationAttempts.length, 1);
+          expect(authManager.registrationAttempts.first.email, testEmail);
+          expect(authManager.registrationAttempts.first.password, testPassword);
+          expect(authNotifier.stateChangedEvents.length, 2);
+          expect(
+            authNotifier.stateChangedEvents.last.status,
+            AuthStatus.authenticated,
+          );
+        },
+      );
 
-      test('registerWithEmail should return error and not update state on failure', () async {
-        authManager.setAuthResponse(
-          succeed: false,
-          errorMessage: 'Registration failed',
-          errorType: AuthErrorType.registrationFailure,
-        );
+      test(
+        'registerWithEmail should return error and not update state on failure',
+        () async {
+          authManager.setAuthResponse(
+            succeed: false,
+            errorMessage: 'Registration failed',
+            errorType: AuthErrorType.registrationFailure,
+          );
 
-        final result = await authManager.registerWithEmail(
-          testEmail,
-          testPassword,
-        );
+          final result = await authManager.registerWithEmail(
+            testEmail,
+            testPassword,
+          );
 
-        expect(result.isSuccess, false);
-        expect(result.errorType, AuthErrorType.registrationFailure);
-        expect(authManager.isAuthenticated(), false);
-        expect(authManager.registrationAttempts.length, 1);
-        expect(authNotifier.stateChangedEvents.length, 1);
-        expect(
-          authNotifier.stateChangedEvents.last.status,
-          AuthStatus.unauthenticated,
-        );
-      });
+          expect(result.isSuccess, false);
+          expect(result.errorType, AuthErrorType.registrationFailure);
+          expect(authManager.isAuthenticated(), false);
+          expect(authManager.registrationAttempts.length, 1);
+          expect(authNotifier.stateChangedEvents.length, 1);
+          expect(
+            authNotifier.stateChangedEvents.last.status,
+            AuthStatus.unauthenticated,
+          );
+        },
+      );
     });
 
     group('OTP Operations', () {
@@ -366,49 +437,55 @@ void main() {
         expect(authManager.otpSendAttempts.length, 1);
       });
 
-      test('verifyOtp should update state and track attempt on success', () async {
-        final result = await authManager.verifyOtp(
-          testEmail,
-          '123456',
-          OtpReceiver.email,
-        );
+      test(
+        'verifyOtp should update state and track attempt on success',
+        () async {
+          final result = await authManager.verifyOtp(
+            testEmail,
+            '123456',
+            OtpReceiver.email,
+          );
 
-        expect(result.isSuccess, true);
-        expect(result.data!.email, testEmail);
-        expect(authManager.isAuthenticated(), true);
-        expect(authManager.otpVerificationAttempts.length, 1);
-        expect(authManager.otpVerificationAttempts.first.address, testEmail);
-        expect(authManager.otpVerificationAttempts.first.otp, '123456');
-        expect(authNotifier.stateChangedEvents.length, 2);
-        expect(
-          authNotifier.stateChangedEvents.last.status,
-          AuthStatus.authenticated,
-        );
-      });
+          expect(result.isSuccess, true);
+          expect(result.data!.email, testEmail);
+          expect(authManager.isAuthenticated(), true);
+          expect(authManager.otpVerificationAttempts.length, 1);
+          expect(authManager.otpVerificationAttempts.first.address, testEmail);
+          expect(authManager.otpVerificationAttempts.first.otp, '123456');
+          expect(authNotifier.stateChangedEvents.length, 2);
+          expect(
+            authNotifier.stateChangedEvents.last.status,
+            AuthStatus.authenticated,
+          );
+        },
+      );
 
-      test('verifyOtp should return error and not update state on failure', () async {
-        authManager.setAuthResponse(
-          succeed: false,
-          errorMessage: 'Invalid verification code',
-          errorType: AuthErrorType.invalidCredentials,
-        );
+      test(
+        'verifyOtp should return error and not update state on failure',
+        () async {
+          authManager.setAuthResponse(
+            succeed: false,
+            errorMessage: 'Invalid verification code',
+            errorType: AuthErrorType.invalidCredentials,
+          );
 
-        final result = await authManager.verifyOtp(
-          testEmail,
-          '123456',
-          OtpReceiver.email,
-        );
+          final result = await authManager.verifyOtp(
+            testEmail,
+            '123456',
+            OtpReceiver.email,
+          );
 
-        expect(result.isSuccess, false);
-        expect(result.errorType, AuthErrorType.invalidCredentials);
-        expect(authManager.isAuthenticated(), false);
-        expect(authManager.otpVerificationAttempts.length, 1);
-        expect(authNotifier.stateChangedEvents.length, 1);
-        expect(
-          authNotifier.stateChangedEvents.last.status,
-          AuthStatus.unauthenticated,
-        );
-      });
+          expect(result.isSuccess, false);
+          expect(result.errorType, AuthErrorType.invalidCredentials);
+          expect(authManager.isAuthenticated(), false);
+          expect(authManager.otpVerificationAttempts.length, 1);
+          expect(authNotifier.stateChangedEvents.length, 1);
+          expect(
+            authNotifier.stateChangedEvents.last.status,
+            AuthStatus.unauthenticated,
+          );
+        },
+      );
     });
 
     group('Password Reset', () {
@@ -437,14 +514,17 @@ void main() {
     });
 
     group('Email Registration Check', () {
-      test('isEmailRegistered should track attempt and return success', () async {
-        final result = await authManager.isEmailRegistered(testEmail);
+      test(
+        'isEmailRegistered should track attempt and return success',
+        () async {
+          final result = await authManager.isEmailRegistered(testEmail);
 
-        expect(result.isSuccess, true);
-        expect(result.data, true);
-        expect(authManager.emailCheckAttempts.length, 1);
-        expect(authManager.emailCheckAttempts.first, testEmail);
-      });
+          expect(result.isSuccess, true);
+          expect(result.data, true);
+          expect(authManager.emailCheckAttempts.length, 1);
+          expect(authManager.emailCheckAttempts.first, testEmail);
+        },
+      );
 
       test('isEmailRegistered should return error on failure', () async {
         authManager.setAuthResponse(
@@ -479,24 +559,27 @@ void main() {
         );
       });
 
-      test('logout should return error and maintain state on failure', () async {
-        await authManager.loginWithEmail(testEmail, testPassword);
-        authNotifier.stateChangedEvents.clear();
+      test(
+        'logout should return error and maintain state on failure',
+        () async {
+          await authManager.loginWithEmail(testEmail, testPassword);
+          authNotifier.stateChangedEvents.clear();
 
-        authManager.setAuthResponse(
-          succeed: false,
-          errorMessage: 'Logout failed',
-          errorType: AuthErrorType.serverError,
-        );
+          authManager.setAuthResponse(
+            succeed: false,
+            errorMessage: 'Logout failed',
+            errorType: AuthErrorType.serverError,
+          );
 
-        final result = await authManager.logout();
+          final result = await authManager.logout();
 
-        expect(result.isSuccess, false);
-        expect(result.errorType, AuthErrorType.serverError);
-        expect(authManager.isAuthenticated(), true);
-        expect(authManager.logoutAttempts.length, 1);
-        expect(authNotifier.stateChangedEvents.isEmpty, true);
-      });
+          expect(result.isSuccess, false);
+          expect(result.errorType, AuthErrorType.serverError);
+          expect(authManager.isAuthenticated(), true);
+          expect(authManager.logoutAttempts.length, 1);
+          expect(authNotifier.stateChangedEvents.isEmpty, true);
+        },
+      );
     });
 
     group('User Profile Management', () {
@@ -517,17 +600,20 @@ void main() {
         authRepository.setUserProfile(testUser);
       });
 
-      test('createUserProfile should create and return profile on success', () async {
-        final result = await authManager.createUserProfile(testUser);
+      test(
+        'createUserProfile should create and return profile on success',
+        () async {
+          final result = await authManager.createUserProfile(testUser);
 
-        expect(result.isSuccess, true);
-        expect(result.data!.credentialId, testUser.credentialId);
-        expect(result.data!.email, testUser.email);
-        expect(result.data!.firstName, testUser.firstName);
-        expect(result.data!.lastName, testUser.lastName);
-        expect(result.data!.professionalRole, testUser.professionalRole);
-        expect(authRepository.createProfileCalls.length, 1);
-      });
+          expect(result.isSuccess, true);
+          expect(result.data!.credentialId, testUser.credentialId);
+          expect(result.data!.email, testUser.email);
+          expect(result.data!.firstName, testUser.firstName);
+          expect(result.data!.lastName, testUser.lastName);
+          expect(result.data!.professionalRole, testUser.professionalRole);
+          expect(authRepository.createProfileCalls.length, 1);
+        },
+      );
 
       test('createUserProfile should return error on failure', () async {
         authManager.setAuthResponse(
@@ -544,14 +630,19 @@ void main() {
         expect(authNotifier.userProfileChangedEvents.isEmpty, true);
       });
 
-      test('getUserProfile should return user profile by credentialId', () async {
-        authRepository.setUserProfile(testUser);
-        final result = await authManager.getUserProfile(testUser.credentialId);
+      test(
+        'getUserProfile should return user profile by credentialId',
+        () async {
+          authRepository.setUserProfile(testUser);
+          final result = await authManager.getUserProfile(
+            testUser.credentialId,
+          );
 
-        expect(result.isSuccess, true);
-        expect(result.data!.id, testUser.id);
-        expect(authRepository.getUserProfileCalls.length, 1);
-      });
+          expect(result.isSuccess, true);
+          expect(result.data!.id, testUser.id);
+          expect(authRepository.getUserProfileCalls.length, 1);
+        },
+      );
 
       test('getUserProfile should return error on failure', () async {
         authManager.setAuthResponse(
@@ -568,17 +659,20 @@ void main() {
         expect(authNotifier.userProfileChangedEvents.isEmpty, true);
       });
 
-      test('updateUserProfile should update and return profile on success', () async {
-        final result = await authManager.updateUserProfile(testUser);
+      test(
+        'updateUserProfile should update and return profile on success',
+        () async {
+          final result = await authManager.updateUserProfile(testUser);
 
-        expect(result.isSuccess, true);
-        expect(result.data!.credentialId, testUser.credentialId);
-        expect(result.data!.email, testUser.email);
-        expect(result.data!.firstName, testUser.firstName);
-        expect(result.data!.lastName, testUser.lastName);
-        expect(result.data!.professionalRole, testUser.professionalRole);
-        expect(authRepository.updateProfileCalls.length, 1);
-      });
+          expect(result.isSuccess, true);
+          expect(result.data!.credentialId, testUser.credentialId);
+          expect(result.data!.email, testUser.email);
+          expect(result.data!.firstName, testUser.firstName);
+          expect(result.data!.lastName, testUser.lastName);
+          expect(result.data!.professionalRole, testUser.professionalRole);
+          expect(authRepository.updateProfileCalls.length, 1);
+        },
+      );
 
       test('updateUserProfile should return error on failure', () async {
         authManager.setAuthResponse(
@@ -622,9 +716,8 @@ class _TestAppModule extends Module {
   void binds(Injector i) {
     i.addSingleton<AuthNotifierController>(() => FakeAuthNotifier());
     i.addSingleton<AuthRepository>(() => FakeAuthRepository());
-    i.add<AuthManager>(() => FakeAuthManager(
-      authNotifier: i(),
-      authRepository: i(),
-    ));
+    i.add<AuthManager>(
+      () => FakeAuthManager(authNotifier: i(), authRepository: i()),
+    );
   }
 }
