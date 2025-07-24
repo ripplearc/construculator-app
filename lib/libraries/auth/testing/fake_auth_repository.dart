@@ -110,15 +110,10 @@ class FakeAuthRepository implements AuthRepository {
     metadata['password'] = password;
 
     final updatedCredential = UserCredential(
-<<<<<<< HEAD
       id: _currentUser?.id ?? '',
       email: _currentUser?.email ?? '',
-=======
-      id: _currentUser?.id??'',
-      email: email ?? _currentUser?.email??'',
->>>>>>> 712b66d4 (fix restack errors)
       metadata: metadata,
-      createdAt: _currentUser?.createdAt??DateTime.now(),
+      createdAt: _currentUser?.createdAt ?? DateTime.now(),
     );
 
     _currentUser = updatedCredential;
@@ -147,13 +142,8 @@ class FakeAuthRepository implements AuthRepository {
     if (!_authShouldSucceed) {
       throw ServerException(Trace.current(), Exception(_errorMessage));
     }
-<<<<<<< HEAD
 
-    final createdUser = User(
-=======
-        
     final createdUser = user.copyWith(
->>>>>>> 712b66d4 (fix restack errors)
       id: 'profile-${user.email.split('@')[0]}',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -174,24 +164,8 @@ class FakeAuthRepository implements AuthRepository {
     if (!_userProfiles.containsKey(user.credentialId)) {
       return null;
     }
-<<<<<<< HEAD
 
-    final updatedUser = User(
-      id: user.id,
-      credentialId: user.credentialId,
-      email: user.email,
-      phone: user.phone,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      professionalRole: user.professionalRole,
-      profilePhotoUrl: user.profilePhotoUrl,
-      createdAt: user.createdAt,
-=======
-    
-    final updatedUser = user.copyWith(
->>>>>>> 712b66d4 (fix restack errors)
-      updatedAt: DateTime.now(),
-    );
+    final updatedUser = user.copyWith(updatedAt: DateTime.now());
 
     _userProfiles[user.credentialId] = updatedUser;
     return updatedUser;
