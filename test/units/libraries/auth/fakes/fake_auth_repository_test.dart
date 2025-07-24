@@ -73,6 +73,68 @@ void main() {
       expect(credentials.email, equals('test@example.com'));
       expect(credentials.metadata['role'], equals('user'));
     });
+    test(
+      'updateUserCredentials should update only email if password is null',
+      () async {
+        final testCredential = UserCredential(
+          id: 'test-id',
+          email: 'old@example.com',
+          metadata: {'role': 'user'},
+          createdAt: DateTime.now(),
+        );
+        fakeRepository.setCurrentCredentials(testCredential);
+        final result = await fakeRepository.updateUserEmail('new@example.com');
+        expect(result, isNotNull);
+        expect(result!.email, equals('new@example.com'));
+        expect(result.metadata.containsKey('password'), isFalse);
+        expect(result.metadata['role'], equals('user'));
+      },
+    );
+
+    test(
+      'updateUserCredentials should update only password if email is null',
+      () async {
+        final testCredential = UserCredential(
+          id: 'test-id',
+          email: 'old@example.com',
+          metadata: {'role': 'user'},
+          createdAt: DateTime.now(),
+        );
+        fakeRepository.setCurrentCredentials(testCredential);
+        final result = await fakeRepository.updateUserPassword('newpass123');
+        expect(result, isNotNull);
+        expect(result!.email, equals('old@example.com'));
+        expect(result.metadata['password'], equals('newpass123'));
+        expect(result.metadata['role'], equals('user'));
+      },
+    );
+
+    test(
+      'updateUserCredentials should return null if no current user',
+      () async {
+        fakeRepository.setAuthResponse(succeed: true);
+        final result = await fakeRepository.updateUserEmail('any@example.com');
+        expect(result, isNull);
+      },
+    );
+
+    test('updateUserCredentials should throw if configured to fail', () async {
+      final testCredential = UserCredential(
+        id: 'test-id',
+        email: 'old@example.com',
+        metadata: {'role': 'user'},
+        createdAt: DateTime.now(),
+      );
+      fakeRepository.setCurrentCredentials(testCredential);
+      fakeRepository.setAuthResponse(
+        succeed: false,
+        errorMessage: 'Update failed',
+      );
+      expect(
+        () => fakeRepository.updateUserEmail('fail@example.com'),
+        throwsA(isA<ServerException>()),
+      );
+    });
   });
 
   group('Database Operations - User Profiles', () {
