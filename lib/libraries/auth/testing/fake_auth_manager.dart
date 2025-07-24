@@ -15,10 +15,10 @@ class FakeAuthManager implements AuthManager {
   
   // Flag to control if auth operations should succeed
   bool _authShouldSucceed = true;
-  
-  // Error message and type to be returned on failure
+
+  // Error type to return when auth operations fail
   AuthErrorType _errorType = AuthErrorType.serverError;
-  
+
   // Currently authenticated user credential
   UserCredential? _currentCredential;
   
@@ -83,7 +83,7 @@ class FakeAuthManager implements AuthManager {
     final emailValidation = AuthValidation.validateEmail(email);
     if (emailValidation != null) {
       return AuthResult.failure(
-        AuthErrorType.invalidCredentials,
+        emailValidation
       );
     }
     return AuthResult.success(null);
@@ -94,7 +94,7 @@ class FakeAuthManager implements AuthManager {
      final passwordValidation = AuthValidation.validatePassword(password);
     if (passwordValidation != null) {
       return AuthResult.failure(
-        AuthErrorType.invalidCredentials,
+        passwordValidation
       );
     }
     return AuthResult.success(null);
@@ -105,7 +105,7 @@ class FakeAuthManager implements AuthManager {
      final otpValidation = AuthValidation.validateOtp(otp);
     if (otpValidation != null) {
       return AuthResult.failure(
-        AuthErrorType.invalidCredentials,
+        otpValidation
       );
     }
     return AuthResult.success(null);
@@ -121,20 +121,18 @@ class FakeAuthManager implements AuthManager {
     // Validate inputs
     final emailValidation = _validateEmail(email);
     if (!emailValidation.isSuccess) {
-      return AuthResult.failure(
-        emailValidation.errorType,
-      );
+      return AuthResult.failure(emailValidation.errorType);
     }
 
     if(password.isEmpty) {
       return AuthResult.failure(
-        AuthErrorType.invalidCredentials,
+        AuthErrorType.passwordRequired
       );
     }
 
     if (!_authShouldSucceed) {
       return AuthResult.failure(
-        _errorType,
+        _errorType
       );
     }
 
@@ -368,7 +366,6 @@ class FakeAuthManager implements AuthManager {
     _authNotifier.emitUserProfileChanged(result);
     return AuthResult.success(result);
   }
-
   /// Reset all tracking lists and state
   void reset() {
     loginAttempts.clear();

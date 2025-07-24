@@ -30,7 +30,7 @@ abstract class AuthManager{
   /// 
   /// Returns an [AuthResult] of [User] with the updated user profile.
   Future<AuthResult<User?>> updateUserProfile(User user);
-
+  
   /// Logs in a user with email and password.
   /// 
   /// [email] - The email of the user.
