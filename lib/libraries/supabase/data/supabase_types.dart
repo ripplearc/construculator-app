@@ -1,7 +1,7 @@
 // coverage:ignore-file
 
 /// Postgres error codes
-/// 
+///
 /// [uniqueViolation] corresponds to the error code 23505 and is used when a unique constraint is violated
 /// [unableToConnect] corresponds to the error code 08001 and is used when the connection to the server is lost
 /// [connectionFailure] corresponds to the error code 08006 and is used when the connection to the server is lost
@@ -28,9 +28,10 @@ enum PostgresErrorCode {
         return PostgresErrorCode.unknownError;
     }
   }
+
   @override
-  String toString(){
-    switch(this){
+  String toString() {
+    switch (this) {
       case PostgresErrorCode.uniqueViolation:
         return '23505';
       case PostgresErrorCode.unableToConnect:
@@ -61,12 +62,13 @@ enum PostgresErrorCode {
 }
 
 /// Supabase auth error codes, grouped by error type
-/// 
+///
 /// [invalidCredentials] corresponds to the error code invalid_credentials and is used when the credentials are invalid, eg. wrong email and password combination
 /// [emailExists] corresponds to the error code email_exists and is used when the email already exists
 /// [rateLimited] corresponds to the error code over_request_rate_limit and is used when the rate limit is exceeded, eg. when token is requested multiple times in a short period of time
 /// [registrationFailure] corresponds to the error code signup_disabled and is used when user registration fails
 /// [timeout] corresponds to the error code request_timeout and is used when the operation times out
+/// [samePassword] corresponds to a user cedential update that uses the same password as the current one
 /// [unknown] is used when the error is unknown
 enum SupabaseAuthErrorCode {
   invalidCredentials,
@@ -115,45 +117,29 @@ enum SupabaseAuthErrorCode {
   }
 
   @override
-  String toString(){
-    switch(this){
+  String toString() {
+    switch (this) {
       case SupabaseAuthErrorCode.invalidCredentials:
         return 'invalid_credentials';
       case SupabaseAuthErrorCode.emailExists:
         return 'email_exists';
       case SupabaseAuthErrorCode.rateLimited:
         return 'over_request_rate_limit';
-      case SupabaseAuthErrorCode.registrationFailure:
-        return 'signup_disabled';
       case SupabaseAuthErrorCode.timeout:
         return 'request_timeout';
+      case SupabaseAuthErrorCode.registrationFailure:
+        return 'signup_disabled';
       case SupabaseAuthErrorCode.unknown:
         return 'unknown';
     }
   }
+}
 
-  String get message {
-    switch (this) {
-      case SupabaseAuthErrorCode.invalidCredentials:
-        return 'Invalid email or password';
-      case SupabaseAuthErrorCode.emailExists:
-        return 'Email already exists';
-      case SupabaseAuthErrorCode.rateLimited:
-        return 'Too many attempts. Please try again later.';
-      case SupabaseAuthErrorCode.registrationFailure:
-        return 'Registration is currently disabled';
-      case SupabaseAuthErrorCode.timeout:
-        return 'Request timed out. Please try again.';
-      case SupabaseAuthErrorCode.unknown:
-        return 'An unknown error occurred';
-    }
-  }
-}
-enum SupabaseExceptionType{
-  auth,
-  postgrest,
-  socket,
-  timeout,
-  type,
-  unknown
-}
+/// Supabase exception types
+/// [auth] corresponds to the authentication related errors
+/// [postgrest] corresponds to the postgrest error code, specifically database level errors
+/// [socket] corresponds to the socket error code when the connection to the server is lost
+/// [timeout] corresponds to the timeout error code
+/// [type] corresponds to the type error code when there is type mismatch
+/// [unknown] corresponds to the unknown error code
+enum SupabaseExceptionType { auth, postgrest, socket, timeout, type, unknown }
