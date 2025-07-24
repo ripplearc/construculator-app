@@ -12,20 +12,19 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 /// Fake implementation of SupabaseWrapper for testing
 class FakeSupabaseWrapper implements SupabaseWrapper {
-
   /// Used to notify listeners of changes in the authentication state through [onAuthStateChange]
-  final StreamController<supabase.AuthState> _authStateController = 
+  final StreamController<supabase.AuthState> _authStateController =
       StreamController<supabase.AuthState>.broadcast();
-  
+
   /// Tracks the currently authenticated user
-  supabase.User? _currentUser;
+  FakeUser? _currentUser;
 
   /// Tracks table data for assertions during [selectSingle], [insert], and [update]
   final Map<String, List<Map<String, dynamic>>> _tables = {};
-  
+
   /// Tracks method calls for assertions
   final List<Map<String, dynamic>> _methodCalls = [];
-  
+
   /// Controls whether [signInWithPassword] throws an exception
   bool shouldThrowOnSignIn = false;
 
@@ -103,18 +102,18 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Used to specify the error code thrown during [selectSingle], [insert], and [update]
   PostgresErrorCode? postgrestErrorCode;
-  
+
   /// Controls whether [signInWithPassword] returns a null user
   bool shouldReturnNullUser = false;
 
   /// Controls whether [selectSingle] returns a null user
   bool shouldReturnNullOnSelect = false;
-  
+
   /// Controls whether operations should be delayed
   bool shouldDelayOperations = false;
 
-  /// The delay duration in milliseconds for operations
-  int operationDelayMs = 100;
+  /// Controlls when a delayed future is completed
+  Completer? completer;
 
   /// Controls whether stream errors should be emitted
   bool shouldEmitStreamErrors = false;
@@ -129,7 +128,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   supabase.AuthChangeEvent signInEvent = supabase.AuthChangeEvent.signedIn;
 
   /// Sets the current user
-  void setCurrentUser(supabase.User? user) {
+  void setCurrentUser(FakeUser? user) {
     _currentUser = user;
   }
 
@@ -149,7 +148,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required String password,
   }) async {
     if (shouldDelayOperations) {
-      await Future.delayed(Duration(milliseconds: operationDelayMs));
+      await completer?.future;
     }
     _methodCalls.add({
       'method': 'signInWithPassword',
@@ -221,6 +220,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       'shouldCreateUser': shouldCreateUser,
     });
 
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
     if (shouldThrowOnOtp) {
       _throwConfiguredException(
         SupabaseExceptionType.auth,
@@ -243,6 +246,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       'token': token,
       'type': type,
     });
+
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
 
     if (shouldThrowOnVerifyOtp) {
       _throwConfiguredException(
@@ -273,7 +280,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       'email': email,
       'redirectTo': redirectTo,
     });
-
     if (shouldThrowOnResetPassword) {
       _throwConfiguredException(
         SupabaseExceptionType.auth,
@@ -284,12 +290,13 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   @override
   Future<void> signOut() async {
-    _methodCalls.add({
-      'method': 'signOut',
-    });
-    
+    _methodCalls.add({'method': 'signOut'});
+
     if (shouldThrowOnSignOut) {
-      throw ServerException(Trace.current(), Exception(signOutErrorMessage ?? 'Sign out failed'));
+      throw ServerException(
+        Trace.current(),
+        Exception(signOutErrorMessage ?? 'Sign out failed'),
+      );
     }
 
     _currentUser = null;
@@ -312,7 +319,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       'filterColumn': filterColumn,
       'filterValue': filterValue,
     });
-
     if (shouldThrowOnSelect) {
       _throwConfiguredException(
         selectExceptionType,
@@ -331,7 +337,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
         return Map<String, dynamic>.from(row);
       }
     }
-
     return null;
   }
 
@@ -354,7 +359,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     }
 
     final tableData = _tables[table] ?? [];
-    
+
     final insertData = Map<String, dynamic>.from(data);
     insertData['id'] = (tableData.length + 1).toString();
     insertData['created_at'] = DateTime.now().toIso8601String();
@@ -403,10 +408,20 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       }
     }
 
-    throw ServerException(Trace.current(), Exception('Record not found for update'));
+    throw ServerException(
+      Trace.current(),
+      Exception('Record not found for update'),
+    );
   }
 
-  supabase.User _createFakeUser(String email) {
+  @override
+  Future<void> initialize() {
+    // No need to implement this method, fake supabase wrapper does not need
+    // to initialize any dependencies
+    throw UnimplementedError();
+  }
+
+  FakeUser _createFakeUser(String email) {
     return FakeUser(
       id: 'fake-user-${email.hashCode}',
       email: email,
@@ -422,7 +437,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return FakeAuthResponse(user: user, session: session);
   }
 
-  supabase.AuthState _createAuthState(supabase.AuthChangeEvent event, supabase.User? user) {
+  supabase.AuthState _createAuthState(
+    supabase.AuthChangeEvent event,
+    supabase.User? user,
+  ) {
     supabase.Session? session;
     if (user != null) {
       session = FakeSession(user: user);
@@ -430,12 +448,18 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return FakeAuthState(event: event, session: session);
   }
 
-  void _throwConfiguredException(SupabaseExceptionType? exceptionType, String message) {
+  void _throwConfiguredException(
+    SupabaseExceptionType? exceptionType,
+    String message,
+  ) {
     switch (exceptionType) {
       case SupabaseExceptionType.auth:
         throw supabase.AuthException(message, code: authErrorCode.toString());
       case SupabaseExceptionType.postgrest:
-        throw supabase.PostgrestException(code: postgrestErrorCode.toString(), message: message);
+        throw supabase.PostgrestException(
+          code: postgrestErrorCode.toString(),
+          message: message,
+        );
       case SupabaseExceptionType.socket:
         throw SocketException(message);
       case SupabaseExceptionType.timeout:
@@ -466,10 +490,11 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Returns a list of all method calls
   List<Map<String, dynamic>> getMethodCalls() => List.from(_methodCalls);
-  
+
   /// Returns the last method call
-  Map<String, dynamic>? getLastMethodCall() => _methodCalls.isEmpty ? null : _methodCalls.last;
-  
+  Map<String, dynamic>? getLastMethodCall() =>
+      _methodCalls.isEmpty ? null : _methodCalls.last;
+
   /// Returns a list of all method calls for a given method name
   List<Map<String, dynamic>> getMethodCallsFor(String methodName) {
     return _methodCalls.where((call) => call['method'] == methodName).toList();
@@ -479,22 +504,23 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   void clearMethodCalls() {
     _methodCalls.clear();
   }
+
   /// Closes the auth state controller
   void dispose() {
     _authStateController.close();
   }
 
   /// Sets an auth stream error
-  void setAuthStreamError(String errorMessage,{Exception? exception}) {
+  void setAuthStreamError(String errorMessage, {Exception? exception}) {
     exception ??= ServerException(Trace.current(), Exception(errorMessage));
     _authStateController.addError(exception);
   }
-  
+
   /// Emits an auth state error
   void emitAuthStateError(String errorMessage) {
     setAuthStreamError(errorMessage);
   }
-  
+
   /// Resets all fake configurations, clears data, and auth state
   void reset() {
     shouldThrowOnSignIn = false;
@@ -526,20 +552,12 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     shouldReturnNullOnSelect = false;
 
     shouldDelayOperations = false;
-    operationDelayMs = 100;
+    completer = null;
     shouldEmitStreamErrors = false;
     shouldReturnUser = false;
     shouldThrowOnGetUserProfile = false;
 
     clearAllData();
     clearMethodCalls();
-  }
-
-
-  @override
-  Future<void> initialize() {
-    // No need to implement this method, fake supabase wrapper does not need 
-    // to initialize any dependencies
-    throw UnimplementedError();
   }
 }
