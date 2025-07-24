@@ -38,7 +38,10 @@ class AuthManagerImpl implements AuthManager {
         if (state.event == supabase.AuthChangeEvent.signedIn) {
           final user = state.session?.user;
           if (user != null) {
-            _emitAuthStateChanged(AuthStatus.authenticated, _mapSupabaseUserToCredential(user));
+            _emitAuthStateChanged(
+              AuthStatus.authenticated,
+              _mapSupabaseUserToCredential(user),
+            );
           } else {
             _emitAuthStateChanged(AuthStatus.unauthenticated, null);
           }
@@ -62,7 +65,10 @@ class AuthManagerImpl implements AuthManager {
     if (_wrapper.isAuthenticated) {
       final user = _wrapper.currentUser;
       if (user != null) {
-        _emitAuthStateChanged(AuthStatus.authenticated, _mapSupabaseUserToCredential(user));
+        _emitAuthStateChanged(
+          AuthStatus.authenticated,
+          _mapSupabaseUserToCredential(user),
+        );
       } else {
         _emitAuthStateChanged(AuthStatus.unauthenticated, null);
       }
@@ -85,16 +91,14 @@ class AuthManagerImpl implements AuthManager {
 
     if (error is supabase.AuthException) {
       final code = SupabaseAuthErrorCode.fromCode(error.code ?? 'unknown');
-      return AuthResult.failure( code.toAuthErrorType());
+      return AuthResult.failure(code.toAuthErrorType());
     }
 
     if (error is TimeoutException) {
-      return AuthResult.failure(
-        AuthErrorType.timeout,
-      );
+      return AuthResult.failure(AuthErrorType.timeout);
     }
 
-    return AuthResult.failure( AuthErrorType.serverError);
+    return AuthResult.failure(AuthErrorType.serverError);
   }
 
   @override
@@ -124,9 +128,7 @@ class AuthManagerImpl implements AuthManager {
       final user = response.user;
       if (user == null) {
         _logger.warning('Login failed for user: $email - No user returned');
-        return AuthResult.failure(
-          AuthErrorType.invalidCredentials,
-        );
+        return AuthResult.failure(AuthErrorType.invalidCredentials);
       }
 
       _logger.info('Login successful for user: $email');
@@ -162,9 +164,7 @@ class AuthManagerImpl implements AuthManager {
         _logger.warning(
           'Registration failed for user: $email - No user returned',
         );
-        return AuthResult.failure(
-          AuthErrorType.registrationFailure,
-        );
+        return AuthResult.failure(AuthErrorType.registrationFailure);
       }
 
       _logger.info('Registration successful for user: $email');
@@ -182,7 +182,7 @@ class AuthManagerImpl implements AuthManager {
     final addressError = receiver == OtpReceiver.email
         ? AuthValidation.validateEmail(address)
         : AuthValidation.validatePhoneNumber(address);
-    
+
     if (addressError != null) {
       return AuthResult.failure(AuthErrorType.invalidCredentials);
     }
@@ -213,7 +213,7 @@ class AuthManagerImpl implements AuthManager {
     final addressError = receiver == OtpReceiver.email
         ? AuthValidation.validateEmail(address)
         : AuthValidation.validatePhoneNumber(address);
-    
+
     if (addressError != null) {
       return AuthResult.failure(AuthErrorType.invalidCredentials);
     }
@@ -229,19 +229,16 @@ class AuthManagerImpl implements AuthManager {
         email: receiver == OtpReceiver.email ? address : null,
         phone: receiver == OtpReceiver.phone ? address : null,
         token: otp,
-        type:
-            receiver == OtpReceiver.email
-                ? supabase.OtpType.email
-                : supabase.OtpType.sms,
+        type: receiver == OtpReceiver.email
+            ? supabase.OtpType.email
+            : supabase.OtpType.sms,
       );
       final user = response.user;
       if (user == null) {
         _logger.warning(
           'OTP verification failed for: $address - No user returned',
         );
-        return AuthResult.failure(
-          AuthErrorType.invalidCredentials,
-        );
+        return AuthResult.failure(AuthErrorType.invalidCredentials);
       }
 
       _logger.info('OTP verification successful for: $address');
@@ -331,7 +328,7 @@ class AuthManagerImpl implements AuthManager {
   @override
   AuthResult<UserCredential?> getCurrentCredentials() {
     try {
-      final result =  _authRepository.getCurrentCredentials();
+      final result = _authRepository.getCurrentCredentials();
       return AuthResult.success(result);
     } catch (e) {
       return _handleException(e, 'Get current credentials');
