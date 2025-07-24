@@ -212,11 +212,11 @@ void main() {
               'user_status': 'inactive',
               'created_at': '2022-06-01T00:00:00Z',
               'updated_at': '2023-08-15T00:00:00Z',
-              'user_preferences':{
-                  'theme': 'light',
-                  'notifications': true,
-                  'language': 'en',
-                },
+              'user_preferences': {
+                'theme': 'light',
+                'notifications': true,
+                'language': 'en',
+              },
             },
           ]);
 
@@ -428,13 +428,9 @@ void main() {
         );
         fakeSupabaseWrapper.setCurrentUser(fakeUser);
         fakeSupabaseWrapper.shouldReturnNullUser = false;
-        final result = await authRepository.updateUserCredentials(
-          'new@example.com',
-          'newpass123',
-        );
+        final result = await authRepository.updateUserEmail('new@example.com');
         expect(result, isNotNull);
         expect(result!.email, equals('new@example.com'));
-        expect(result.metadata['password'], equals('newpass123'));
         expect(result.metadata['role'], equals('user'));
       });
 
@@ -448,10 +444,7 @@ void main() {
         );
         fakeSupabaseWrapper.setCurrentUser(fakeUser);
         fakeSupabaseWrapper.shouldReturnNullUser = false;
-        final result = await authRepository.updateUserCredentials(
-          'new@example.com',
-          null,
-        );
+        final result = await authRepository.updateUserEmail('new@example.com');
         expect(result, isNotNull);
         expect(result!.email, equals('new@example.com'));
         expect(result.metadata['role'], equals('user'));
@@ -467,10 +460,7 @@ void main() {
         );
         fakeSupabaseWrapper.setCurrentUser(fakeUser);
         fakeSupabaseWrapper.shouldReturnNullUser = false;
-        final result = await authRepository.updateUserCredentials(
-          null,
-          'newpass123',
-        );
+        final result = await authRepository.updateUserPassword('newpass123');
         expect(result, isNotNull);
         expect(result!.email, equals('old@example.com'));
         expect(result.metadata['role'], equals('user'));
@@ -478,10 +468,7 @@ void main() {
 
       test('should return null if wrapper returns null user', () async {
         fakeSupabaseWrapper.shouldReturnNullUser = true;
-        final result = await authRepository.updateUserCredentials(
-          'any@example.com',
-          'pass',
-        );
+        final result = await authRepository.updateUserPassword('pass');
         expect(result, isNull);
       });
 
@@ -490,8 +477,7 @@ void main() {
         fakeSupabaseWrapper.updateExceptionType = SupabaseExceptionType.auth;
         fakeSupabaseWrapper.updateErrorMessage = 'Update failed';
         expect(
-          () =>
-              authRepository.updateUserCredentials('fail@example.com', 'fail'),
+          () => authRepository.updateUserEmail('fail@example.com'),
           throwsException,
         );
       });
@@ -508,15 +494,11 @@ void main() {
           );
           fakeSupabaseWrapper.setCurrentUser(fakeUser);
           fakeSupabaseWrapper.shouldReturnNullUser = false;
-          await authRepository.updateUserCredentials(
-            'new@example.com',
-            'newpass123',
-          );
+          await authRepository.updateUserEmail('new@example.com');
           final calls = fakeSupabaseWrapper.getMethodCallsFor('updateUser');
           expect(calls, isNotEmpty);
           final attrs = calls.last['userAttributes'];
           expect(attrs.email, equals('new@example.com'));
-          expect(attrs.password, equals('newpass123'));
         },
       );
     });
