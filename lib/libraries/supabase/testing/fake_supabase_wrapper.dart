@@ -128,7 +128,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   supabase.AuthChangeEvent signInEvent = supabase.AuthChangeEvent.signedIn;
 
   /// Sets the current user
-  void setCurrentUser(supabase.User? user) {
+  void setCurrentUser(FakeUser? user) {
     _currentUser = user;
   }
 
