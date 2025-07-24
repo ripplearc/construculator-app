@@ -35,6 +35,7 @@ class FakeUser implements supabase.User {
     this.userMetadata,
   });
 
+  /// Creates a new [FakeUser] with the given properties
   FakeUser copyWith({
     String? id,
     String? email,
