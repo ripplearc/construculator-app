@@ -5,15 +5,15 @@ import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/repositories/supabase_repository_impl.dart';
-import 'package:construculator/app/module_param.dart';
+import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class AuthLibraryModule extends Module {
-  final ModuleParam moduleParam;
-  AuthLibraryModule(this.moduleParam);
+  final AppBootstrap appBootstrap;
+  AuthLibraryModule(this.appBootstrap);
   @override
-  List<Module> get imports => [SupabaseModule(moduleParam)];
+  List<Module> get imports => [SupabaseModule(appBootstrap)];
   final AuthNotifierController authNotifierImpl = AuthNotifierImpl();
   @override
   void binds(Injector i) {

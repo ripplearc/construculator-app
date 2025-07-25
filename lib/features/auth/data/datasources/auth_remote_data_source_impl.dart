@@ -11,10 +11,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<List<ProfessionalRoleModel>> getProfessionalRoles() async {
     try {
-      final rolesData = await supabaseWrapper.selectAll(
-        'professional_roles',
-        columns: 'id, name',
-      );
+      final rolesData = await supabaseWrapper.selectProfessionalRoles();
       return rolesData
           .map((roleMap) => ProfessionalRoleModel.fromJson(roleMap))
           .toList();
