@@ -3,7 +3,7 @@ import 'package:construculator/app/app_module.dart';
 import 'package:construculator/libraries/config/app_config_impl.dart';
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/config/env_loader_impl.dart';
-import 'package:construculator/app/module_param.dart';
+import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/supabase/supabase_wrapper_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -22,8 +22,8 @@ Future<void> main() async {
   await config.initialize(env);
   final wrapper = SupabaseWrapperImpl(envLoader: envLoader);
   await wrapper.initialize();
-  final params = ModuleParam(config: config, envLoader: envLoader, supabaseWrapper: wrapper);
-  runApp(ModularApp(module: AppModule(params), child: const AppWidget()));
+  final appBootstrap = AppBootstrap(config: config, envLoader: envLoader, supabaseWrapper: wrapper);
+  runApp(ModularApp(module: AppModule(appBootstrap), child: const AppWidget()));
 }
 
 Environment _getEnvironmentFromString(String? envName) {
