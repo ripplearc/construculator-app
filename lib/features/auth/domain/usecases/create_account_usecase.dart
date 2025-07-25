@@ -17,8 +17,7 @@ class CreateAccountUseCase {
   /// Returns a [Future] that emits an [Either] containing a [Failure] or an [AuthResult<bool>].
   Future<Either<Failure, void>> call(CreateAccountUseCaseParams params) async {
     // update only the user password
-    final updatePasswordResult = await authManager.updateUserCredentials(
-      null,
+    final updatePasswordResult = await authManager.updateUserPassword(
       params.password,
     );
     if (!updatePasswordResult.isSuccess) {
