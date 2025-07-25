@@ -1,4 +1,4 @@
-import 'package:construculator/app/module_param.dart';
+import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:construculator/features/auth/data/datasources/auth_remote_data_source_impl.dart';
 import 'package:construculator/features/auth/data/repositories/auth_repository_impl.dart';
@@ -23,7 +23,7 @@ class AuthTestModule extends Module {
   @override
   List<Module> get imports => [
     AuthLibraryModule(
-      ModuleParam(
+      AppBootstrap(
         envLoader: FakeEnvLoader(),
         config: FakeAppConfig(),
         supabaseWrapper: FakeSupabaseWrapper(),
