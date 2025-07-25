@@ -29,6 +29,7 @@ import 'package:construculator/libraries/router/guards/no_auth_guard.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
+import 'package:construculator/libraries/toast/toast_module.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -91,6 +92,43 @@ class AuthModule extends Module {
         return BlocProvider(
           create: (context) => Modular.get<LoginWithEmailBloc>(),
           child: LoginWithEmailPage(email: email),
+        );
+      },
+    );
+    r.child(
+      forgotPasswordRoute,
+      guards: [NoAuthGuard()],
+      child:
+          (context) => MultiBlocProvider(
+            providers: [
+              BlocProvider(
+                create:
+                    (context) => ForgotPasswordBloc(
+                      resetPasswordUseCase: Modular.get<ResetPasswordUseCase>(),
+                    ),
+              ),
+              BlocProvider(
+                create:
+                    (context) => OtpVerificationBloc(
+                      verifyOtpUseCase: Modular.get<VerifyOtpUseCase>(),
+                      sendOtpUseCase: Modular.get<SendOtpUseCase>(),
+                    ),
+              ),
+            ],
+            child: ForgotPasswordPage(),
+          ),
+    );
+    r.child(
+      setNewPasswordRoute,
+      guards: [AuthGuard()],
+      child: (context) {
+        final email = r.args.data ?? '';
+        return BlocProvider(
+          create:
+              (context) => SetNewPasswordBloc(
+                setNewPasswordUseCase: Modular.get<SetNewPasswordUseCase>(),
+              ),
+          child: SetNewPasswordPage(email: email),
         );
       },
     );
