@@ -655,7 +655,7 @@ void main() {
     });
 
     group('User Profile Management', () {
-      group('updateUserCredentials', () {
+      group('updateUserEmail', () {
         test('should update email and password successfully', () async {
           final credential = UserCredential(
             id: 'test-id',
@@ -666,14 +666,12 @@ void main() {
           authRepository.setCurrentCredentials(credential);
           authRepository.setAuthResponse(succeed: true);
 
-          final result = await authManager.updateUserCredentials(
+          final result = await authManager.updateUserEmail(
             'new@example.com',
-            'newpass123',
           );
 
           expect(result.isSuccess, true);
           expect(result.data!.email, 'new@example.com');
-          expect(result.data!.metadata['password'], 'newpass123');
           expect(authRepository.createProfileCalls.length, 0);
           expect(authRepository.updateProfileCalls.length, 0);
         });
@@ -688,13 +686,11 @@ void main() {
           authRepository.setCurrentCredentials(credential);
           authRepository.setAuthResponse(succeed: true);
 
-          final result = await authManager.updateUserCredentials(
-            'new@example.com',
-            null,
+          final result = await authManager.updateUserPassword(
+            'newpass123',
           );
 
           expect(result.isSuccess, true);
-          expect(result.data!.email, 'new@example.com');
           expect(authRepository.createProfileCalls.length, 0);
           expect(authRepository.updateProfileCalls.length, 0);
         });
@@ -709,8 +705,7 @@ void main() {
           authRepository.setCurrentCredentials(credential);
           authRepository.setAuthResponse(succeed: true);
 
-          final result = await authManager.updateUserCredentials(
-            null,
+          final result = await authManager.updateUserPassword(
             'newpass123',
           );
 
@@ -724,9 +719,8 @@ void main() {
           authRepository.setAuthResponse(succeed: false);
           authRepository.exceptionMessage = 'Update failed';
 
-          final result = await authManager.updateUserCredentials(
+          final result = await authManager.updateUserEmail(
             'new@example.com',
-            'newpass123',
           );
 
           expect(result.isSuccess, false);
@@ -735,9 +729,8 @@ void main() {
 
         test('should handle errors when credentials does not exist', () async {
           authRepository.setAuthResponse(succeed: false);
-          final result = await authManager.updateUserCredentials(
+          final result = await authManager.updateUserPassword(
             'new@example.com',
-            'newpass123',
           );
 
           expect(result.isSuccess, false);
@@ -765,9 +758,8 @@ void main() {
             ),
           );
 
-          final result = await authManager.updateUserCredentials(
+          final result = await authManager.updateUserEmail(
             'new@example.com',
-            'newpass123',
           );
 
           expect(result.isSuccess, true);

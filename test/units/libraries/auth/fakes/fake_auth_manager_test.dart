@@ -692,7 +692,7 @@ void main() {
 
     group('User Credentials Update', () {
       test(
-        'updateUserCredentials should update both email and password successfully',
+        'updateUserEmail should update both email and password successfully',
         () async {
           authRepository.setCurrentCredentials(createTestCredentials());
           final initialEvent = expectLater(
@@ -703,9 +703,8 @@ void main() {
               ),
             ),
           );
-          final result = await authManager.updateUserCredentials(
+          final result = await authManager.updateUserEmail(
             'new@example.com',
-            'newpassword123',
           );
 
           expect(result.isSuccess, true);
@@ -721,13 +720,12 @@ void main() {
       );
 
       test(
-        'updateUserCredentials should update only email when password is null',
+        'updateUserEmail should update only email when password is null',
         () async {
           authRepository.setCurrentCredentials(createTestCredentials());
 
-          final result = await authManager.updateUserCredentials(
+          final result = await authManager.updateUserEmail(
             'new@example.com',
-            null,
           );
 
           expect(result.isSuccess, true);
@@ -737,11 +735,10 @@ void main() {
       );
 
       test(
-        'updateUserCredentials should update only password when email is null',
+        'updateUserPassword should update only password when email is null',
         () async {
           authRepository.setCurrentCredentials(createTestCredentials());
-          final result = await authManager.updateUserCredentials(
-            null,
+          final result = await authManager.updateUserPassword(
             'newpassword123',
           );
 
@@ -751,12 +748,11 @@ void main() {
       );
 
       test(
-        'updateUserCredentials should return error when configured to fail',
+        'updateUserEmail should return error when configured to fail',
         () async {
           authManager.setAuthResponse(succeed: false);
-          final result = await authManager.updateUserCredentials(
+          final result = await authManager.updateUserEmail(
             'new@example.com',
-            'newpassword123',
           );
 
           expect(result.isSuccess, false);
