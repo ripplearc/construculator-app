@@ -86,7 +86,7 @@ abstract class SupabaseWrapper {
   });
 
   /// Select all professional roles from the database
-  Future<List<Map<String, dynamic>>> selectProfessionalRoles();
+  Future<List<Map<String, dynamic>>> selectAllProfessionalRoles();
 
   /// Insert a row into a table
   ///

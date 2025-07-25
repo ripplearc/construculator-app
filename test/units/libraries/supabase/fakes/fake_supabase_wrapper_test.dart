@@ -451,7 +451,7 @@ void main() {
             {'id': '1', 'name': 'Test Role'},
           ]);
 
-          final result = await fakeWrapper.selectProfessionalRoles();
+          final result = await fakeWrapper.selectAllProfessionalRoles();
           expect(result, isNotNull);
           expect(result.length, equals(1));
           expect(result[0]['id'], equals('1'));
@@ -461,7 +461,7 @@ void main() {
           fakeWrapper.shouldThrowOnSelect = true;
           fakeWrapper.authErrorCode = SupabaseAuthErrorCode.unknown;
           expect(
-            () async => await fakeWrapper.selectProfessionalRoles(),
+            () async => await fakeWrapper.selectAllProfessionalRoles(),
             throwsA(
               isA<ServerException>().having(
                 (e) => e.toString(),

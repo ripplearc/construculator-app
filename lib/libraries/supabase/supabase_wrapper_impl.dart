@@ -116,7 +116,7 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> selectProfessionalRoles() async {
+  Future<List<Map<String, dynamic>>> selectAllProfessionalRoles() async {
     return await _supabaseClient
         .from('professional_roles')
         .select('*');

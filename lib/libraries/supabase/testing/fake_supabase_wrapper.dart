@@ -441,9 +441,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> selectProfessionalRoles() async {
+  Future<List<Map<String, dynamic>>> selectAllProfessionalRoles() async {
     _methodCalls.add({
-      'method': 'selectProfessionalRoles',
+      'method': 'selectAllProfessionalRoles',
     });
 
     if (shouldThrowOnSelect) {
