@@ -13,7 +13,7 @@ class SetNewPasswordUseCase {
   /// 
   /// Returns a [Future] that emits an [Either] containing a [Failure] or an [void].
   Future<Either<Failure, void>> call(String email,String newPassword) async {
-    final result = await authManager.updateUserCredentials(email, newPassword);
+    final result = await authManager.updateUserPassword(newPassword);
     if (!result.isSuccess) {
       final errorType = result.errorType;
       if (errorType == null) {
