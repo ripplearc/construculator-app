@@ -441,18 +441,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> selectAll(
-    String table, {
-    String columns = '*',
-    String orderByColumn = 'id',
-    String orderByDirection = 'asc',
-  }) async {
+  Future<List<Map<String, dynamic>>> selectProfessionalRoles() async {
     _methodCalls.add({
-      'method': 'selectAll',
-      'table': table,
-      'columns': columns,
-      'orderByColumn': orderByColumn,
-      'orderByDirection': orderByDirection,
+      'method': 'selectProfessionalRoles',
     });
 
     if (shouldThrowOnSelect) {
@@ -466,19 +457,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       return [];
     }
 
-    final tableData = _tables[table] ?? [];
-    if (orderByColumn.isNotEmpty) {
-      tableData.sort((a, b) {
-        final aValue = a[orderByColumn];
-        final bValue = b[orderByColumn];
-        if (aValue is Comparable && bValue is Comparable) {
-          return orderByDirection == 'asc'
-              ? aValue.compareTo(bValue)
-              : bValue.compareTo(aValue);
-        }
-        return 0;
-      });
-    }
+    final tableData = _tables['professional_roles'] ?? [];
     return tableData;
   }
   

@@ -85,19 +85,8 @@ abstract class SupabaseWrapper {
     required dynamic filterValue,
   });
 
-  /// Select all rows from a table based on a filter
-  ///
-  /// [table] The table to select from
-  /// [filterColumn] The column to filter by
-  /// [filterValue] The value to filter by
-  /// [orderByColumn] The column to order by
-  /// [orderByDirection] The direction to order by, defaults to 'asc'
-  Future<List<Map<String, dynamic>>> selectAll(
-    String table, {
-    String columns,
-    String orderByColumn,
-    String orderByDirection,
-  });
+  /// Select all professional roles from the database
+  Future<List<Map<String, dynamic>>> selectProfessionalRoles();
 
   /// Insert a row into a table
   ///

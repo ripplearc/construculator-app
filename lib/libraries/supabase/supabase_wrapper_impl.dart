@@ -116,15 +116,10 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> selectAll(String table,{
-    String columns = '*', 
-    String orderByColumn = 'id',
-    String orderByDirection = 'asc',
-  }) async {
+  Future<List<Map<String, dynamic>>> selectProfessionalRoles() async {
     return await _supabaseClient
-        .from(table)
-        .select(columns)
-        .order(orderByColumn, ascending: orderByDirection == 'asc');
+        .from('professional_roles')
+        .select('*');
   }
 
   @override
