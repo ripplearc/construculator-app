@@ -95,6 +95,43 @@ class AuthModule extends Module {
       },
     );
     r.child(
+      forgotPasswordRoute,
+      guards: [NoAuthGuard()],
+      child:
+          (context) => MultiBlocProvider(
+            providers: [
+              BlocProvider(
+                create:
+                    (context) => ForgotPasswordBloc(
+                      resetPasswordUseCase: Modular.get<ResetPasswordUseCase>(),
+                    ),
+              ),
+              BlocProvider(
+                create:
+                    (context) => OtpVerificationBloc(
+                      verifyOtpUseCase: Modular.get<VerifyOtpUseCase>(),
+                      sendOtpUseCase: Modular.get<SendOtpUseCase>(),
+                    ),
+              ),
+            ],
+            child: ForgotPasswordPage(),
+          ),
+    );
+    r.child(
+      setNewPasswordRoute,
+      guards: [AuthGuard()],
+      child: (context) {
+        final email = r.args.data ?? '';
+        return BlocProvider(
+          create:
+              (context) => SetNewPasswordBloc(
+                setNewPasswordUseCase: Modular.get<SetNewPasswordUseCase>(),
+              ),
+          child: SetNewPasswordPage(email: email),
+        );
+      },
+    );
+    r.child(
       enterPasswordRoute,
       guards: [NoAuthGuard()],
       child:
