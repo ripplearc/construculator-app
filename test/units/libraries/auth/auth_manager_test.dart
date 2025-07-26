@@ -39,58 +39,64 @@ void main() {
     const testPassword = '5i2Un@D8Y9!';
 
     group('Initialization and State Management', () {
-      test('should initialize with authenticated state when user exists', () async {
-        supabaseWrapper = FakeSupabaseWrapper();
-        authNotifier = FakeAuthNotifier();
-        supabaseWrapper.setCurrentUser(
-          FakeUser(
-            email: testEmail,
-            id: 'test-id',
-            createdAt: DateTime.now().toIso8601String(),
-            appMetadata: {},
-          ),
-        );
-        final initialEvent = expectLater(
-          authNotifier.onAuthStateChanged,
-          emits(
-            predicate<AuthState>(
-              (state) => state.status == AuthStatus.authenticated,
+      test(
+        'should initialize with authenticated state when user exists',
+        () async {
+          supabaseWrapper = FakeSupabaseWrapper();
+          authNotifier = FakeAuthNotifier();
+          supabaseWrapper.setCurrentUser(
+            FakeUser(
+              email: testEmail,
+              id: 'test-id',
+              createdAt: DateTime.now().toIso8601String(),
+              appMetadata: {},
             ),
-          ),
-        );
-        AuthManagerImpl(
-          wrapper: supabaseWrapper,
-          authRepository: authRepository,
-          authNotifier: authNotifier,
-        );
-        await initialEvent;
-        expect(authNotifier.stateChangedEvents.length, 1);
-        expect(
-          authNotifier.stateChangedEvents[0].status,
-          AuthStatus.authenticated,
-        );
-        expect(authNotifier.stateChangedEvents[0].user!.email, testEmail);
-      });
-
-      test('loginWithEmail should emit authenticated state on success', () async {
-        final loginEvent = expectLater(
-          authNotifier.onAuthStateChanged,
-          emits(
-            predicate<AuthState>(
-              (state) =>
-                  state.status == AuthStatus.authenticated &&
-                  state.user!.email == testEmail,
+          );
+          final initialEvent = expectLater(
+            authNotifier.onAuthStateChanged,
+            emits(
+              predicate<AuthState>(
+                (state) => state.status == AuthStatus.authenticated,
+              ),
             ),
-          ),
-        );
+          );
+          AuthManagerImpl(
+            wrapper: supabaseWrapper,
+            authRepository: authRepository,
+            authNotifier: authNotifier,
+          );
+          await initialEvent;
+          expect(authNotifier.stateChangedEvents.length, 1);
+          expect(
+            authNotifier.stateChangedEvents[0].status,
+            AuthStatus.authenticated,
+          );
+          expect(authNotifier.stateChangedEvents[0].user!.email, testEmail);
+        },
+      );
 
-        final result = await authManager.loginWithEmail(
-          testEmail,
-          testPassword,
-        );
-        expect(result.isSuccess, true);
-        await loginEvent;
-      });
+      test(
+        'loginWithEmail should emit authenticated state on success',
+        () async {
+          final loginEvent = expectLater(
+            authNotifier.onAuthStateChanged,
+            emits(
+              predicate<AuthState>(
+                (state) =>
+                    state.status == AuthStatus.authenticated &&
+                    state.user!.email == testEmail,
+              ),
+            ),
+          );
+
+          final result = await authManager.loginWithEmail(
+            testEmail,
+            testPassword,
+          );
+          expect(result.isSuccess, true);
+          await loginEvent;
+        },
+      );
 
       test('loginWithEmail should fail when user is not found', () async {
         supabaseWrapper.shouldReturnNullUser = true;
@@ -201,36 +207,39 @@ void main() {
     });
 
     group('Authentication Operations', () {
-      test('loginWithEmail should authenticate and update state on success', () async {
-        final loginEvent = expectLater(
-          authNotifier.onAuthStateChanged,
-          emits(
-            predicate<AuthState>(
-              (state) => state.status == AuthStatus.authenticated,
+      test(
+        'loginWithEmail should authenticate and update state on success',
+        () async {
+          final loginEvent = expectLater(
+            authNotifier.onAuthStateChanged,
+            emits(
+              predicate<AuthState>(
+                (state) => state.status == AuthStatus.authenticated,
+              ),
             ),
-          ),
-        );
-        final result = await authManager.loginWithEmail(
-          testEmail,
-          testPassword,
-        );
-        expect(result.isSuccess, true);
-        expect(result.data!.email, testEmail);
-        await loginEvent;
-        expect(authNotifier.stateChangedEvents.length, 2);
-        expect(
-          authNotifier.stateChangedEvents[0].status,
-          AuthStatus.unauthenticated,
-        );
-        expect(
-          authNotifier.stateChangedEvents[1].status,
-          AuthStatus.authenticated,
-        );
-        expect(
-          supabaseWrapper.getMethodCallsFor('signInWithPassword').length,
-          1,
-        );
-      });
+          );
+          final result = await authManager.loginWithEmail(
+            testEmail,
+            testPassword,
+          );
+          expect(result.isSuccess, true);
+          expect(result.data!.email, testEmail);
+          await loginEvent;
+          expect(authNotifier.stateChangedEvents.length, 2);
+          expect(
+            authNotifier.stateChangedEvents[0].status,
+            AuthStatus.unauthenticated,
+          );
+          expect(
+            authNotifier.stateChangedEvents[1].status,
+            AuthStatus.authenticated,
+          );
+          expect(
+            supabaseWrapper.getMethodCallsFor('signInWithPassword').length,
+            1,
+          );
+        },
+      );
 
       test('loginWithEmail should handle authentication failure', () async {
         supabaseWrapper.shouldThrowOnSignIn = true;
@@ -251,34 +260,37 @@ void main() {
         );
       });
 
-      test('registerWithEmail should create account and authenticate on success', () async {
-        final registerEvent = expectLater(
-          authNotifier.onAuthStateChanged,
-          emits(
-            predicate<AuthState>(
-              (state) => state.status == AuthStatus.authenticated,
+      test(
+        'registerWithEmail should create account and authenticate on success',
+        () async {
+          final registerEvent = expectLater(
+            authNotifier.onAuthStateChanged,
+            emits(
+              predicate<AuthState>(
+                (state) => state.status == AuthStatus.authenticated,
+              ),
             ),
-          ),
-        );
-        final result = await authManager.registerWithEmail(
-          testEmail,
-          testPassword,
-        );
+          );
+          final result = await authManager.registerWithEmail(
+            testEmail,
+            testPassword,
+          );
 
-        expect(result.isSuccess, true);
-        expect(result.data!.email, testEmail);
-        await registerEvent;
-        expect(authNotifier.stateChangedEvents.length, 2);
-        expect(
-          authNotifier.stateChangedEvents[0].status,
-          AuthStatus.unauthenticated,
-        );
-        expect(
-          authNotifier.stateChangedEvents[1].status,
-          AuthStatus.authenticated,
-        );
-        expect(supabaseWrapper.getMethodCallsFor('signUp').length, 1);
-      });
+          expect(result.isSuccess, true);
+          expect(result.data!.email, testEmail);
+          await registerEvent;
+          expect(authNotifier.stateChangedEvents.length, 2);
+          expect(
+            authNotifier.stateChangedEvents[0].status,
+            AuthStatus.unauthenticated,
+          );
+          expect(
+            authNotifier.stateChangedEvents[1].status,
+            AuthStatus.authenticated,
+          );
+          expect(supabaseWrapper.getMethodCallsFor('signUp').length, 1);
+        },
+      );
 
       test('registerWithEmail should handle registration failure', () async {
         supabaseWrapper.shouldThrowOnSignUp = true;
@@ -325,35 +337,38 @@ void main() {
         expect(result.errorType, AuthErrorType.timeout);
       });
 
-      test('verifyOtp should authenticate user on successful verification', () async {
-        final verifyOtpEvent = expectLater(
-          authNotifier.onAuthStateChanged,
-          emits(
-            predicate<AuthState>(
-              (state) => state.status == AuthStatus.authenticated,
+      test(
+        'verifyOtp should authenticate user on successful verification',
+        () async {
+          final verifyOtpEvent = expectLater(
+            authNotifier.onAuthStateChanged,
+            emits(
+              predicate<AuthState>(
+                (state) => state.status == AuthStatus.authenticated,
+              ),
             ),
-          ),
-        );
-        final result = await authManager.verifyOtp(
-          testEmail,
-          '123456',
-          OtpReceiver.email,
-        );
+          );
+          final result = await authManager.verifyOtp(
+            testEmail,
+            '123456',
+            OtpReceiver.email,
+          );
 
-        expect(result.isSuccess, true);
-        expect(result.data!.email, testEmail);
-        await verifyOtpEvent;
-        expect(authNotifier.stateChangedEvents.length, 2);
-        expect(
-          authNotifier.stateChangedEvents[0].status,
-          AuthStatus.unauthenticated,
-        );
-        expect(
-          authNotifier.stateChangedEvents[1].status,
-          AuthStatus.authenticated,
-        );
-        expect(supabaseWrapper.getMethodCallsFor('verifyOTP').length, 1);
-      });
+          expect(result.isSuccess, true);
+          expect(result.data!.email, testEmail);
+          await verifyOtpEvent;
+          expect(authNotifier.stateChangedEvents.length, 2);
+          expect(
+            authNotifier.stateChangedEvents[0].status,
+            AuthStatus.unauthenticated,
+          );
+          expect(
+            authNotifier.stateChangedEvents[1].status,
+            AuthStatus.authenticated,
+          );
+          expect(supabaseWrapper.getMethodCallsFor('verifyOTP').length, 1);
+        },
+      );
 
       test('verifyOtp should handle invalid verification code', () async {
         supabaseWrapper.shouldThrowOnVerifyOtp = true;
@@ -384,15 +399,18 @@ void main() {
         expect(result.errorType, AuthErrorType.invalidCredentials);
       });
 
-      test('resetPassword should successfully initiate password reset', () async {
-        final result = await authManager.resetPassword(testEmail);
+      test(
+        'resetPassword should successfully initiate password reset',
+        () async {
+          final result = await authManager.resetPassword(testEmail);
 
-        expect(result.isSuccess, true);
-        expect(
-          supabaseWrapper.getMethodCallsFor('resetPasswordForEmail').length,
-          1,
-        );
-      });
+          expect(result.isSuccess, true);
+          expect(
+            supabaseWrapper.getMethodCallsFor('resetPasswordForEmail').length,
+            1,
+          );
+        },
+      );
 
       test('resetPassword should handle reset failure', () async {
         supabaseWrapper.shouldThrowOnResetPassword = true;
@@ -461,12 +479,15 @@ void main() {
         expect(result.data, true);
       });
 
-      test('isEmailRegistered should return false for non-existing email', () async {
-        final result = await authManager.isEmailRegistered(testEmail);
+      test(
+        'isEmailRegistered should return false for non-existing email',
+        () async {
+          final result = await authManager.isEmailRegistered(testEmail);
 
-        expect(result.isSuccess, true);
-        expect(result.data, false);
-      });
+          expect(result.isSuccess, true);
+          expect(result.data, false);
+        },
+      );
     });
 
     group('Input Validation', () {
@@ -477,14 +498,14 @@ void main() {
         );
 
         expect(result.isSuccess, false);
-        expect(result.errorType, AuthErrorType.invalidCredentials);
+        expect(result.errorType, AuthErrorType.invalidEmail);
       });
 
       test('loginWithEmail should reject empty email', () async {
         final result = await authManager.loginWithEmail('', 'Password123!');
 
         expect(result.isSuccess, false);
-        expect(result.errorType, AuthErrorType.invalidCredentials);
+        expect(result.errorType, AuthErrorType.emailRequired);
       });
 
       test('loginWithEmail should reject weak password', () async {
@@ -494,7 +515,7 @@ void main() {
         );
 
         expect(result.isSuccess, false);
-        expect(result.errorType, AuthErrorType.invalidCredentials);
+        expect(result.errorType, AuthErrorType.passwordTooShort);
       });
 
       test('loginWithEmail should reject password without uppercase', () async {
@@ -504,7 +525,7 @@ void main() {
         );
 
         expect(result.isSuccess, false);
-        expect(result.errorType, AuthErrorType.invalidCredentials);
+        expect(result.errorType, AuthErrorType.passwordMissingUppercase);
       });
 
       test('registerWithEmail should reject invalid email format', () async {
@@ -514,18 +535,21 @@ void main() {
         );
 
         expect(result.isSuccess, false);
-        expect(result.errorType, AuthErrorType.invalidCredentials);
+        expect(result.errorType, AuthErrorType.invalidEmail);
       });
 
-      test('registerWithEmail should reject password without special character', () async {
-        final result = await authManager.registerWithEmail(
-          'test@example.com',
-          'Password123',
-        );
+      test(
+        'registerWithEmail should reject password without special character',
+        () async {
+          final result = await authManager.registerWithEmail(
+            'test@example.com',
+            'Password123',
+          );
 
-        expect(result.isSuccess, false);
-        expect(result.errorType, AuthErrorType.invalidCredentials);
-      });
+          expect(result.isSuccess, false);
+          expect(result.errorType, AuthErrorType.passwordMissingSpecialChar);
+        },
+      );
 
       test('sendOtp should reject invalid email for email receiver', () async {
         final result = await authManager.sendOtp(
@@ -534,7 +558,7 @@ void main() {
         );
 
         expect(result.isSuccess, false);
-        expect(result.errorType, AuthErrorType.invalidCredentials);
+        expect(result.errorType, AuthErrorType.invalidEmail);
       });
 
       test('sendOtp should reject invalid phone for phone receiver', () async {
@@ -544,7 +568,7 @@ void main() {
         );
 
         expect(result.isSuccess, false);
-        expect(result.errorType, AuthErrorType.invalidCredentials);
+        expect(result.errorType, AuthErrorType.invalidPhone);
       });
 
       test('verifyOtp should reject invalid OTP format', () async {
@@ -555,7 +579,7 @@ void main() {
         );
 
         expect(result.isSuccess, false);
-        expect(result.errorType, AuthErrorType.invalidCredentials);
+        expect(result.errorType, AuthErrorType.invalidOtp);
       });
 
       test('verifyOtp should reject non-numeric OTP', () async {
@@ -566,21 +590,21 @@ void main() {
         );
 
         expect(result.isSuccess, false);
-        expect(result.errorType, AuthErrorType.invalidCredentials);
+        expect(result.errorType, AuthErrorType.invalidOtp);
       });
 
       test('resetPassword should reject invalid email format', () async {
         final result = await authManager.resetPassword('invalid-email');
 
         expect(result.isSuccess, false);
-        expect(result.errorType, AuthErrorType.invalidCredentials);
+        expect(result.errorType, AuthErrorType.invalidEmail);
       });
 
       test('isEmailRegistered should reject invalid email format', () async {
         final result = await authManager.isEmailRegistered('invalid-email');
 
         expect(result.isSuccess, false);
-        expect(result.errorType, AuthErrorType.invalidCredentials);
+        expect(result.errorType, AuthErrorType.invalidEmail);
       });
 
       test('loginWithEmail should accept valid credentials', () async {
@@ -631,6 +655,123 @@ void main() {
     });
 
     group('User Profile Management', () {
+      group('updateUserEmail', () {
+        test('should update email and password successfully', () async {
+          final credential = UserCredential(
+            id: 'test-id',
+            email: 'old@example.com',
+            metadata: {},
+            createdAt: DateTime.now(),
+          );
+          authRepository.setCurrentCredentials(credential);
+          authRepository.setAuthResponse(succeed: true);
+
+          final result = await authManager.updateUserEmail(
+            'new@example.com',
+          );
+
+          expect(result.isSuccess, true);
+          expect(result.data!.email, 'new@example.com');
+          expect(authRepository.createProfileCalls.length, 0);
+          expect(authRepository.updateProfileCalls.length, 0);
+        });
+
+        test('should update only email when password is null', () async {
+          final credential = UserCredential(
+            id: 'test-id',
+            email: 'old@example.com',
+            metadata: {},
+            createdAt: DateTime.now(),
+          );
+          authRepository.setCurrentCredentials(credential);
+          authRepository.setAuthResponse(succeed: true);
+
+          final result = await authManager.updateUserPassword(
+            'newpass123',
+          );
+
+          expect(result.isSuccess, true);
+          expect(authRepository.createProfileCalls.length, 0);
+          expect(authRepository.updateProfileCalls.length, 0);
+        });
+
+        test('should update only password when email is null', () async {
+          final credential = UserCredential(
+            id: 'test-id',
+            email: 'old@example.com',
+            metadata: {},
+            createdAt: DateTime.now(),
+          );
+          authRepository.setCurrentCredentials(credential);
+          authRepository.setAuthResponse(succeed: true);
+
+          final result = await authManager.updateUserPassword(
+            'newpass123',
+          );
+
+          expect(result.isSuccess, true);
+          expect(result.data!.metadata['password'], 'newpass123');
+          expect(authRepository.createProfileCalls.length, 0);
+          expect(authRepository.updateProfileCalls.length, 0);
+        });
+
+        test('should handle update failure', () async {
+          authRepository.setAuthResponse(succeed: false);
+          authRepository.exceptionMessage = 'Update failed';
+
+          final result = await authManager.updateUserEmail(
+            'new@example.com',
+          );
+
+          expect(result.isSuccess, false);
+          expect(result.errorType, AuthErrorType.serverError);
+        });
+
+        test('should handle errors when credentials does not exist', () async {
+          authRepository.setAuthResponse(succeed: false);
+          final result = await authManager.updateUserPassword(
+            'new@example.com',
+          );
+
+          expect(result.isSuccess, false);
+          expect(result.errorType, AuthErrorType.serverError);
+        });
+
+        test('should emit auth state change on success', () async {
+          final credential = UserCredential(
+            id: 'test-id',
+            email: 'old@example.com',
+            metadata: {},
+            createdAt: DateTime.now(),
+          );
+          authRepository.setCurrentCredentials(credential);
+          authRepository.setAuthResponse(succeed: true);
+
+          final stateChangeEvent = expectLater(
+            authNotifier.onAuthStateChanged,
+            emits(
+              predicate<AuthState>(
+                (state) => 
+                  state.status == AuthStatus.authenticated &&
+                  state.user!.email == 'new@example.com',
+              ),
+            ),
+          );
+
+          final result = await authManager.updateUserEmail(
+            'new@example.com',
+          );
+
+          expect(result.isSuccess, true);
+          await stateChangeEvent;
+          expect(authNotifier.stateChangedEvents.length, 2);
+          expect(
+            authNotifier.stateChangedEvents[1].user!.email,
+            'new@example.com',
+          );
+        });
+      });
+
       final testUser = User(
         id: 'test-id',
         credentialId: 'test-cred-id',
@@ -650,7 +791,8 @@ void main() {
           emits(predicate<User?>((user) => user!.email == testEmail)),
         );
         authRepository.setAuthResponse(succeed: true);
-
+        authRepository.setCurrentCredentials(UserCredential(id: 'test-id', email: testEmail, metadata: {}, createdAt: DateTime.now()));
+        
         final result = await authManager.createUserProfile(testUser);
 
         expect(result.isSuccess, true);
@@ -672,7 +814,14 @@ void main() {
         expect(result.isSuccess, false);
         expect(result.errorType, AuthErrorType.serverError);
       });
+      test('createUserProfile should fail if current user is not found', () async {
+        supabaseWrapper.setCurrentUser(null);
 
+        final result = await authManager.createUserProfile(testUser);
+
+        expect(result.isSuccess, false);
+        expect(result.errorType, AuthErrorType.invalidCredentials);
+      });
       test('getUserProfile should fetch and notify on success', () async {
         final getUserProfileEvent = expectLater(
           authNotifier.onUserProfileChanged,
@@ -728,21 +877,24 @@ void main() {
         expect(result.errorType, AuthErrorType.serverError);
       });
 
-      test('getCurrentCredentials should return current user credentials', () async {
-        final credential = UserCredential(
-          id: 'test-id',
-          email: testEmail,
-          metadata: {},
-          createdAt: DateTime.now(),
-        );
-        authRepository.setCurrentCredentials(credential);
+      test(
+        'getCurrentCredentials should return current user credentials',
+        () async {
+          final credential = UserCredential(
+            id: 'test-id',
+            email: testEmail,
+            metadata: {},
+            createdAt: DateTime.now(),
+          );
+          authRepository.setCurrentCredentials(credential);
 
-        final result = authManager.getCurrentCredentials();
+          final result = authManager.getCurrentCredentials();
 
-        expect(result.isSuccess, true);
-        expect(result.data!.email, testEmail);
-        expect(authRepository.getCurrentUserCallCount, 1);
-      });
+          expect(result.isSuccess, true);
+          expect(result.data!.email, testEmail);
+          expect(authRepository.getCurrentUserCallCount, 1);
+        },
+      );
 
       test('getCurrentCredentials should handle retrieval failure', () async {
         authRepository.setAuthResponse(

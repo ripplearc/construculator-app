@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
-import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
@@ -47,7 +46,6 @@ class SupabaseRepositoryImpl implements AuthRepository {
       }
 
       _logger.debug('Successfully retrieved user profile');
-
       final user = User.fromJson(response);
 
       return user;
@@ -61,28 +59,15 @@ class SupabaseRepositoryImpl implements AuthRepository {
   Future<User?> createUserProfile(User user) async {
     _logger.info('Creating user profile for: ${user.email}');
     try {
-      final userData = {
-        'credential_id': user.credentialId,
-        'email': user.email,
-        'phone': user.phone,
-        'country_code': user.countryCode,
-        'first_name': user.firstName,
-        'last_name': user.lastName,
-        'professional_role': user.professionalRole,
-        'profile_photo_url': user.profilePhotoUrl,
-        'user_status': user.userStatus == UserProfileStatus.active
-            ? 'active'
-            : 'inactive',
-        'user_preferences': user.userPreferences,
-      };
       final response = await supabaseWrapper.insert(
         table: 'users',
-        data: userData,
+        data: user.toJson(),
       );
 
       _logger.info('User profile created successfully');
 
       final createdUser = User.fromJson(response);
+
       return createdUser;
     } catch (e) {
       _logger.error('Error creating user profile: $e');
@@ -94,32 +79,16 @@ class SupabaseRepositoryImpl implements AuthRepository {
   Future<User?> updateUserProfile(User user) async {
     _logger.info('Updating user profile for: ${user.email}');
     try {
-      final userData = {
-        'email': user.email,
-        'phone': user.phone,
-        'country_code': user.countryCode,
-        'first_name': user.firstName,
-        'last_name': user.lastName,
-        'professional_role': user.professionalRole,
-        'profile_photo_url': user.profilePhotoUrl,
-        'user_status': user.userStatus == UserProfileStatus.active
-            ? 'active'
-            : 'inactive',
-        'user_preferences': user.userPreferences,
-      };
-
       final response = await supabaseWrapper.update(
         table: 'users',
-        data: userData,
+        data: user.toJson(),
         filterColumn: 'credential_id',
         filterValue: user.credentialId,
       );
 
       _logger.info('User profile updated successfully');
 
-      final updatedUser = User.fromJson(response);
-
-      return updatedUser;
+      return User.fromJson(response);
     } catch (e) {
       _logger.error('Error updating user profile: $e');
       rethrow;
