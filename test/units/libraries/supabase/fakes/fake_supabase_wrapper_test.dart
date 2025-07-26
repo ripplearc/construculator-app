@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/errors/exceptions.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_response.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_session.dart';
@@ -385,7 +386,7 @@ void main() {
     });
 
     group('FakeSupabaseWrapper Database Operations', () {
-      group('selectSingle', () {
+      group('select', () {
         test('returns data when a matching record exists', () async {
           fakeWrapper.addTableData('users', [
             {'id': '1', 'email': 'test@example.com', 'name': 'Test User'},
@@ -444,6 +445,31 @@ void main() {
             filterValue: '1',
           );
           expect(result, isNull);
+        });
+        test('selectProfessionalRoles returns roles list of professional roles', () async {
+          fakeWrapper.addTableData('professional_roles', [
+            {'id': '1', 'name': 'Test Role'},
+          ]);
+
+          final result = await fakeWrapper.selectAllProfessionalRoles();
+          expect(result, isNotNull);
+          expect(result.length, equals(1));
+          expect(result[0]['id'], equals('1'));
+          expect(result[0]['name'], equals('Test Role'));
+        });
+        test('selectProfessionalRoles throws exception when configured to fail', () async {
+          fakeWrapper.shouldThrowOnSelect = true;
+          fakeWrapper.authErrorCode = SupabaseAuthErrorCode.unknown;
+          expect(
+            () async => await fakeWrapper.selectAllProfessionalRoles(),
+            throwsA(
+              isA<ServerException>().having(
+                (e) => e.toString(),
+                'message',
+                contains('Select failed'),
+              ),
+            ),
+          );
         });
       });
 

@@ -415,6 +415,53 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   }
 
   @override
+  Future<supabase.UserResponse> updateUser(
+    supabase.UserAttributes userAttributes,
+  ) async {
+    _methodCalls.add({
+      'method': 'updateUser',
+      'userAttributes': userAttributes,
+    });
+
+    if (shouldThrowOnUpdate) {
+      _throwConfiguredException(
+        updateExceptionType,
+        updateErrorMessage ?? 'Update failed',
+      );
+    }
+    if (userAttributes.email != null) {
+      _currentUser = _currentUser?.copyWith(email: userAttributes.email);
+    }
+    if (userAttributes.password != null) {
+      _currentUser = _currentUser?.copyWith(
+        userMetadata: {'password': userAttributes.password},
+      );
+    }
+    return FakeUserResponse(user: _currentUser);
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> selectAllProfessionalRoles() async {
+    _methodCalls.add({
+      'method': 'selectAllProfessionalRoles',
+    });
+
+    if (shouldThrowOnSelect) {
+      _throwConfiguredException(
+        selectExceptionType,
+        selectErrorMessage ?? 'Select failed',
+      );
+    }
+
+    if (shouldReturnNullOnSelect) {
+      return [];
+    }
+
+    final tableData = _tables['professional_roles'] ?? [];
+    return tableData;
+  }
+  
+  @override
   Future<void> initialize() {
     // No need to implement this method, fake supabase wrapper does not need
     // to initialize any dependencies

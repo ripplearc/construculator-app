@@ -266,6 +266,112 @@ void main() {
       expect(result2.id, testUser2.id);
     });
   });
+
+  group('Email Update Operations', () {
+    test('updateUserEmail should succeed when configured to succeed', () async {
+      final testCredential = UserCredential(
+        id: 'test-id',
+        email: 'old@example.com',
+        metadata: {'role': 'user'},
+        createdAt: DateTime.now(),
+      );
+      fakeRepository.setCurrentCredentials(testCredential);
+      fakeRepository.setAuthResponse(succeed: true);
+
+      final result = await fakeRepository.updateUserEmail('new@example.com');
+
+      expect(result, isNotNull);
+      expect(result!.email, equals('new@example.com'));
+      expect(result.id, equals('test-id'));
+      expect(result.metadata['role'], equals('user'));
+      expect(fakeRepository.updateEmailCalls, contains('new@example.com'));
+    });
+
+    test('updateUserEmail should throw when configured to fail', () async {
+      final testCredential = UserCredential(
+        id: 'test-id',
+        email: 'old@example.com',
+        metadata: {'role': 'user'},
+        createdAt: DateTime.now(),
+      );
+      fakeRepository.setCurrentCredentials(testCredential);
+      fakeRepository.setAuthResponse(
+        succeed: false,
+        errorMessage: 'Email update failed',
+      );
+
+      expect(
+        () => fakeRepository.updateUserEmail('new@example.com'),
+        throwsA(isA<ServerException>()),
+      );
+      expect(fakeRepository.updateEmailCalls, contains('new@example.com'));
+    });
+
+    test('updateUserEmail should return null if no current user', () async {
+      fakeRepository.setAuthResponse(succeed: true);
+
+      final result = await fakeRepository.updateUserEmail('new@example.com');
+
+      expect(result, isNull);
+      expect(fakeRepository.updateEmailCalls, contains('new@example.com'));
+    });
+  });
+
+  group('Password Update Operations', () {
+    test(
+      'updateUserPassword should succeed when configured to succeed',
+      () async {
+        final testCredential = UserCredential(
+          id: 'test-id',
+          email: 'test@example.com',
+          metadata: {'role': 'user'},
+          createdAt: DateTime.now(),
+        );
+        fakeRepository.setCurrentCredentials(testCredential);
+        fakeRepository.setAuthResponse(succeed: true);
+
+        final result = await fakeRepository.updateUserPassword(
+          'newpassword123',
+        );
+
+        expect(result, isNotNull);
+        expect(result!.email, equals('test@example.com'));
+        expect(result.id, equals('test-id'));
+        expect(result.metadata['password'], equals('newpassword123'));
+        expect(result.metadata['role'], equals('user'));
+        expect(fakeRepository.updatePasswordCalls, contains('newpassword123'));
+      },
+    );
+
+    test('updateUserPassword should throw when configured to fail', () async {
+      final testCredential = UserCredential(
+        id: 'test-id',
+        email: 'test@example.com',
+        metadata: {'role': 'user'},
+        createdAt: DateTime.now(),
+      );
+      fakeRepository.setCurrentCredentials(testCredential);
+      fakeRepository.setAuthResponse(
+        succeed: false,
+        errorMessage: 'Password update failed',
+      );
+
+      expect(
+        () => fakeRepository.updateUserPassword('newpassword123'),
+        throwsA(isA<ServerException>()),
+      );
+      expect(fakeRepository.updatePasswordCalls, contains('newpassword123'));
+    });
+
+    test('updateUserPassword should return null if no current user', () async {
+      fakeRepository.setAuthResponse(succeed: true);
+
+      final result = await fakeRepository.updateUserPassword('newpassword123');
+
+      expect(result, isNull);
+      expect(fakeRepository.updatePasswordCalls, contains('newpassword123'));
+    });
+  });
 }
 
 class _TestAppModule extends Module {

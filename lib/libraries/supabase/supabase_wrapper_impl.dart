@@ -116,6 +116,13 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
   }
 
   @override
+  Future<List<Map<String, dynamic>>> selectAllProfessionalRoles() async {
+    return await _supabaseClient
+        .from('professional_roles')
+        .select('*');
+  }
+
+  @override
   Future<Map<String, dynamic>> insert({
     required String table,
     required Map<String, dynamic> data,
@@ -136,5 +143,12 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
         .eq(filterColumn, filterValue)
         .select()
         .single();
+  }
+
+  @override
+  Future<supabase.UserResponse> updateUser(
+    supabase.UserAttributes userAttributes,
+  ) async {
+    return await _supabaseClient.auth.updateUser(userAttributes);
   }
 }

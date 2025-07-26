@@ -85,6 +85,9 @@ abstract class SupabaseWrapper {
     required dynamic filterValue,
   });
 
+  /// Select all professional roles from the database
+  Future<List<Map<String, dynamic>>> selectAllProfessionalRoles();
+
   /// Insert a row into a table
   ///
   /// [table] The table to insert into
@@ -106,4 +109,11 @@ abstract class SupabaseWrapper {
     required String filterColumn,
     required dynamic filterValue,
   });
+
+  /// Update supabase user,can be used to update the user's email as well as password.
+  ///
+  /// [userAttributes] The user details to update, this is the [supabase.UserAttributes] object from the supabase client
+  Future<supabase.UserResponse> updateUser(
+    supabase.UserAttributes userAttributes,
+  );
 }
