@@ -143,19 +143,10 @@ class FakeAuthRepository implements AuthRepository {
       throw ServerException(Trace.current(), Exception(_errorMessage));
     }
 
-    final createdUser = User(
+    final createdUser = user.copyWith(
       id: 'profile-${user.email.split('@')[0]}',
-      credentialId: user.credentialId,
-      email: user.email,
-      phone: user.phone,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      professionalRole: user.professionalRole,
-      profilePhotoUrl: user.profilePhotoUrl,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
-      userStatus: user.userStatus,
-      userPreferences: user.userPreferences,
     );
 
     _userProfiles[user.credentialId] = createdUser;
@@ -174,20 +165,7 @@ class FakeAuthRepository implements AuthRepository {
       return null;
     }
 
-    final updatedUser = User(
-      id: user.id,
-      credentialId: user.credentialId,
-      email: user.email,
-      phone: user.phone,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      professionalRole: user.professionalRole,
-      profilePhotoUrl: user.profilePhotoUrl,
-      createdAt: user.createdAt,
-      updatedAt: DateTime.now(),
-      userStatus: user.userStatus,
-      userPreferences: user.userPreferences,
-    );
+    final updatedUser = user.copyWith(updatedAt: DateTime.now());
 
     _userProfiles[user.credentialId] = updatedUser;
     return updatedUser;

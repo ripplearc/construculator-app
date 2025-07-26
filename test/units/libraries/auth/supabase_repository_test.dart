@@ -17,7 +17,9 @@ void main() {
   setUp(() {
     Modular.init(_TestAppModule());
     fakeSupabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
-    authRepository = Modular.get<AuthRepository>(key: 'authRepositoryWithFakeDep') as SupabaseRepositoryImpl;
+    authRepository =
+        Modular.get<AuthRepository>(key: 'authRepositoryWithFakeDep')
+            as SupabaseRepositoryImpl;
   });
 
   tearDown(() {
@@ -33,37 +35,44 @@ void main() {
         expect(credentials, isNull);
       });
 
-      test('getCurrentCredentials should return user if user is already logged in', () async {
-        fakeSupabaseWrapper.setCurrentUser(
-          FakeUser(
-            id: 'currentuser123',
-            email: 'currentuser@example.com',
-            appMetadata: {},
-            userMetadata: {},
-            createdAt: DateTime.now().toIso8601String(),
-          ),
-        );
-        expect(
-          authRepository.getCurrentCredentials()!.email,
-          equals('currentuser@example.com'),
-        );
-        expect(
-          authRepository.getCurrentCredentials()!.id,
-          equals('currentuser123'),
-        );
-      });
+      test(
+        'getCurrentCredentials should return user if user is already logged in',
+        () async {
+          fakeSupabaseWrapper.setCurrentUser(
+            FakeUser(
+              id: 'currentuser123',
+              email: 'currentuser@example.com',
+              appMetadata: {},
+              userMetadata: {},
+              createdAt: DateTime.now().toIso8601String(),
+            ),
+          );
+          expect(
+            authRepository.getCurrentCredentials()!.email,
+            equals('currentuser@example.com'),
+          );
+          expect(
+            authRepository.getCurrentCredentials()!.id,
+            equals('currentuser123'),
+          );
+        },
+      );
 
       test('getCurrentCredentials should map metadata correctly', () async {
         final now = DateTime.now();
-        final appMetadata = {'role': 'admin', 'permissions': ['read', 'write']};
+        final appMetadata = {
+          'role': 'admin',
+          'permissions': ['read', 'write'],
+        };
         final userMetadata = {'name': 'John Doe', 'theme': 'dark'};
-        
+
         fakeSupabaseWrapper.setCurrentUser(
           FakeUser(
             id: 'user123',
             email: 'user@example.com',
             appMetadata: appMetadata,
             userMetadata: userMetadata,
+
             createdAt: now.toIso8601String(),
           ),
         );
@@ -89,6 +98,7 @@ void main() {
             email: 'user@example.com',
             appMetadata: {},
             userMetadata: null,
+
             createdAt: DateTime.now().toIso8601String(),
           ),
         );
@@ -134,51 +144,58 @@ void main() {
           expect(result.userStatus, equals(UserProfileStatus.active));
           expect(result.userPreferences['theme'], equals('light'));
 
-          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('selectSingle');
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
+            'selectSingle',
+          );
           expect(methodCalls.first['table'], equals('users'));
           expect(methodCalls.first['filterColumn'], equals('credential_id'));
           expect(methodCalls.first['filterValue'], equals(credentialId));
         });
 
-        test('should get complete user profile for active user with string preferences', () async {
-          const credentialId = 'cred-123-active-user';
-          fakeSupabaseWrapper.addTableData('users', [
-            {
-              'id': '123',
-              'credential_id': credentialId,
-              'email': 'project.manager@construction.com',
-              'phone': '+1-555-123-4567',
-              'first_name': 'Sarah',
-              'last_name': 'Johnson',
-              'professional_role': 'Project Manager',
-              'profile_photo_url':
-                  'https://storage.example.com/photos/sarah.jpg',
-              'created_at': '2023-01-15T08:30:00Z',
-              'updated_at': '2023-12-01T14:22:00Z',
-              'user_status': 'active',
-              'user_preferences': {
-                'theme': 'light',
-                'notifications': true,
-                'language': 'en',
+        test(
+          'should get complete user profile for active user with string preferences',
+          () async {
+            const credentialId = 'cred-123-active-user';
+            fakeSupabaseWrapper.addTableData('users', [
+              {
+                'id': '123',
+                'credential_id': credentialId,
+                'email': 'project.manager@construction.com',
+                'phone': '+1-555-123-4567',
+                'first_name': 'Sarah',
+                'last_name': 'Johnson',
+                'professional_role': 'Project Manager',
+                'profile_photo_url':
+                    'https://storage.example.com/photos/sarah.jpg',
+                'created_at': '2023-01-15T08:30:00Z',
+                'updated_at': '2023-12-01T14:22:00Z',
+                'user_status': 'active',
+                'user_preferences': {
+                  'theme': 'light',
+                  'notifications': true,
+                  'language': 'en',
+                },
               },
-            },
-          ]);
+            ]);
 
-          final result = await authRepository.getUserProfile(credentialId);
+            final result = await authRepository.getUserProfile(credentialId);
 
-          expect(result, isNotNull);
-          expect(result!.email, equals('project.manager@construction.com'));
-          expect(result.firstName, equals('Sarah'));
-          expect(result.lastName, equals('Johnson'));
-          expect(result.professionalRole, equals('Project Manager'));
-          expect(result.userStatus, equals(UserProfileStatus.active));
-          expect(result.userPreferences['theme'], equals('light'));
+            expect(result, isNotNull);
+            expect(result!.email, equals('project.manager@construction.com'));
+            expect(result.firstName, equals('Sarah'));
+            expect(result.lastName, equals('Johnson'));
+            expect(result.professionalRole, equals('Project Manager'));
+            expect(result.userStatus, equals(UserProfileStatus.active));
+            expect(result.userPreferences['theme'], equals('light'));
 
-          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('selectSingle');
-          expect(methodCalls.first['table'], equals('users'));
-          expect(methodCalls.first['filterColumn'], equals('credential_id'));
-          expect(methodCalls.first['filterValue'], equals(credentialId));
-        });
+            final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
+              'selectSingle',
+            );
+            expect(methodCalls.first['table'], equals('users'));
+            expect(methodCalls.first['filterColumn'], equals('credential_id'));
+            expect(methodCalls.first['filterValue'], equals(credentialId));
+          },
+        );
 
         test('should get user profile for inactive user', () async {
           const credentialId = 'cred-456-inactive-user';
@@ -215,7 +232,9 @@ void main() {
         test('should return null for non-existent user profile', () async {
           const nonExistentCredentialId = 'cred-999-not-found';
 
-          final result = await authRepository.getUserProfile(nonExistentCredentialId);
+          final result = await authRepository.getUserProfile(
+            nonExistentCredentialId,
+          );
 
           expect(result, isNull);
         });
@@ -223,8 +242,10 @@ void main() {
         group('Exception Handling', () {
           test('should throw on network connection failures', () async {
             fakeSupabaseWrapper.shouldThrowOnSelect = true;
-            fakeSupabaseWrapper.selectExceptionType = SupabaseExceptionType.socket;
-            fakeSupabaseWrapper.selectErrorMessage = 'Network connection failed';
+            fakeSupabaseWrapper.selectExceptionType =
+                SupabaseExceptionType.socket;
+            fakeSupabaseWrapper.selectErrorMessage =
+                'Network connection failed';
 
             expect(
               () => authRepository.getUserProfile('any-id'),
@@ -234,7 +255,8 @@ void main() {
 
           test('should throw on request timeouts', () async {
             fakeSupabaseWrapper.shouldThrowOnSelect = true;
-            fakeSupabaseWrapper.selectExceptionType = SupabaseExceptionType.timeout;
+            fakeSupabaseWrapper.selectExceptionType =
+                SupabaseExceptionType.timeout;
             fakeSupabaseWrapper.selectErrorMessage = 'Request timed out';
 
             expect(
@@ -245,7 +267,8 @@ void main() {
 
           test('should throw on Supabase auth errors', () async {
             fakeSupabaseWrapper.shouldThrowOnSelect = true;
-            fakeSupabaseWrapper.authErrorCode = SupabaseAuthErrorCode.invalidCredentials;
+            fakeSupabaseWrapper.authErrorCode =
+                SupabaseAuthErrorCode.invalidCredentials;
             fakeSupabaseWrapper.selectErrorMessage = 'Invalid credentials';
 
             expect(
@@ -256,8 +279,10 @@ void main() {
 
           test('should throw on Postgres database errors', () async {
             fakeSupabaseWrapper.shouldThrowOnSelect = true;
-            fakeSupabaseWrapper.selectExceptionType = SupabaseExceptionType.postgrest;
-            fakeSupabaseWrapper.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
+            fakeSupabaseWrapper.selectExceptionType =
+                SupabaseExceptionType.postgrest;
+            fakeSupabaseWrapper.postgrestErrorCode =
+                PostgresErrorCode.uniqueViolation;
             fakeSupabaseWrapper.selectErrorMessage = 'Unique violation';
 
             expect(
@@ -268,7 +293,8 @@ void main() {
 
           test('should throw on unknown errors', () async {
             fakeSupabaseWrapper.shouldThrowOnSelect = true;
-            fakeSupabaseWrapper.selectExceptionType = SupabaseExceptionType.type;
+            fakeSupabaseWrapper.selectExceptionType =
+                SupabaseExceptionType.type;
             fakeSupabaseWrapper.selectErrorMessage = 'Unknown error';
 
             expect(
@@ -390,12 +416,96 @@ void main() {
         });
       });
     });
+
+    group('User Credentials Update', () {
+      test('should update email and password successfully', () async {
+        final fakeUser = FakeUser(
+          id: 'user-1',
+          email: 'old@example.com',
+          appMetadata: {'role': 'user'},
+          userMetadata: {},
+          createdAt: DateTime.now().toIso8601String(),
+        );
+        fakeSupabaseWrapper.setCurrentUser(fakeUser);
+        fakeSupabaseWrapper.shouldReturnNullUser = false;
+        final result = await authRepository.updateUserEmail('new@example.com');
+        expect(result, isNotNull);
+        expect(result!.email, equals('new@example.com'));
+        expect(result.metadata['role'], equals('user'));
+      });
+
+      test('should update only email if password is null', () async {
+        final fakeUser = FakeUser(
+          id: 'user-2',
+          email: 'old@example.com',
+          appMetadata: {'role': 'user'},
+          userMetadata: {},
+          createdAt: DateTime.now().toIso8601String(),
+        );
+        fakeSupabaseWrapper.setCurrentUser(fakeUser);
+        fakeSupabaseWrapper.shouldReturnNullUser = false;
+        final result = await authRepository.updateUserEmail('new@example.com');
+        expect(result, isNotNull);
+        expect(result!.email, equals('new@example.com'));
+        expect(result.metadata['role'], equals('user'));
+      });
+
+      test('should update only password if email is null', () async {
+        final fakeUser = FakeUser(
+          id: 'user-3',
+          email: 'old@example.com',
+          appMetadata: {'role': 'user'},
+          userMetadata: {},
+          createdAt: DateTime.now().toIso8601String(),
+        );
+        fakeSupabaseWrapper.setCurrentUser(fakeUser);
+        fakeSupabaseWrapper.shouldReturnNullUser = false;
+        final result = await authRepository.updateUserPassword('newpass123');
+        expect(result, isNotNull);
+        expect(result!.email, equals('old@example.com'));
+        expect(result.metadata['role'], equals('user'));
+      });
+
+      test('should return null if wrapper returns null user', () async {
+        fakeSupabaseWrapper.shouldReturnNullUser = true;
+        final result = await authRepository.updateUserPassword('pass');
+        expect(result, isNull);
+      });
+
+      test('should throw if wrapper throws', () async {
+        fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+        fakeSupabaseWrapper.updateExceptionType = SupabaseExceptionType.auth;
+        fakeSupabaseWrapper.updateErrorMessage = 'Update failed';
+        expect(
+          () => authRepository.updateUserEmail('fail@example.com'),
+          throwsException,
+        );
+      });
+
+      test(
+        'should call updateUser on the wrapper with correct attributes',
+        () async {
+          final fakeUser = FakeUser(
+            id: 'user-4',
+            email: 'old@example.com',
+            appMetadata: {'role': 'user'},
+            userMetadata: {},
+            createdAt: DateTime.now().toIso8601String(),
+          );
+          fakeSupabaseWrapper.setCurrentUser(fakeUser);
+          fakeSupabaseWrapper.shouldReturnNullUser = false;
+          await authRepository.updateUserEmail('new@example.com');
+          final calls = fakeSupabaseWrapper.getMethodCallsFor('updateUser');
+          expect(calls, isNotEmpty);
+          final attrs = calls.last['userAttributes'];
+          expect(attrs.email, equals('new@example.com'));
+        },
+      );
+    });
   });
 }
 
 class _TestAppModule extends Module {
   @override
-  List<Module> get imports => [
-    AuthTestModule(),
-  ];
+  List<Module> get imports => [AuthTestModule()];
 }
