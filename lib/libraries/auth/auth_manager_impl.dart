@@ -97,7 +97,10 @@ class AuthManagerImpl implements AuthManager {
     if (error is TimeoutException) {
       return AuthResult.failure(AuthErrorType.timeout);
     }
-
+    if (error is supabase.PostgrestException) {
+      final code = PostgresErrorCode.fromCode(error.code ?? 'unknown');
+      return AuthResult.failure(code.toAuthErrorType());
+    }
     return AuthResult.failure(AuthErrorType.serverError);
   }
 
@@ -111,13 +114,13 @@ class AuthManagerImpl implements AuthManager {
     // Validate email
     final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
-      return AuthResult.failure(AuthErrorType.invalidCredentials);
+      return AuthResult.failure(emailError);
     }
 
     // Validate password
     final passwordError = AuthValidation.validatePassword(password);
     if (passwordError != null) {
-      return AuthResult.failure(AuthErrorType.invalidCredentials);
+      return AuthResult.failure(passwordError);
     }
 
     try {
@@ -148,13 +151,13 @@ class AuthManagerImpl implements AuthManager {
     // Validate email
     final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
-      return AuthResult.failure(AuthErrorType.invalidCredentials);
+      return AuthResult.failure(emailError);
     }
 
     // Validate password
     final passwordError = AuthValidation.validatePassword(password);
     if (passwordError != null) {
-      return AuthResult.failure(AuthErrorType.invalidCredentials);
+      return AuthResult.failure(passwordError);
     }
 
     try {
@@ -178,13 +181,11 @@ class AuthManagerImpl implements AuthManager {
   Future<AuthResult> sendOtp(String address, OtpReceiver receiver) async {
     _logger.info('Sending OTP to: $address');
 
-    // Validate address based on receiver type
     final addressError = receiver == OtpReceiver.email
         ? AuthValidation.validateEmail(address)
         : AuthValidation.validatePhoneNumber(address);
-
     if (addressError != null) {
-      return AuthResult.failure(AuthErrorType.invalidCredentials);
+      return AuthResult.failure(addressError);
     }
 
     try {
@@ -209,19 +210,18 @@ class AuthManagerImpl implements AuthManager {
   ) async {
     _logger.info('Verifying OTP for: $address');
 
-    // Validate address based on receiver type
     final addressError = receiver == OtpReceiver.email
         ? AuthValidation.validateEmail(address)
         : AuthValidation.validatePhoneNumber(address);
 
     if (addressError != null) {
-      return AuthResult.failure(AuthErrorType.invalidCredentials);
+      return AuthResult.failure(addressError);
     }
 
     // Validate OTP
     final otpError = AuthValidation.validateOtp(otp);
     if (otpError != null) {
-      return AuthResult.failure(AuthErrorType.invalidCredentials);
+      return AuthResult.failure(otpError);
     }
 
     try {
@@ -255,7 +255,7 @@ class AuthManagerImpl implements AuthManager {
     // Validate email
     final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
-      return AuthResult.failure(AuthErrorType.invalidCredentials);
+      return AuthResult.failure(emailError);
     }
 
     try {
@@ -275,7 +275,7 @@ class AuthManagerImpl implements AuthManager {
     // Validate email
     final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
-      return AuthResult.failure(AuthErrorType.invalidCredentials);
+      return AuthResult.failure(emailError);
     }
 
     try {
@@ -317,6 +317,15 @@ class AuthManagerImpl implements AuthManager {
   @override
   Future<AuthResult<User?>> createUserProfile(User user) async {
     try {
+      final credentialResult = getCurrentCredentials();
+      if (!credentialResult.isSuccess) {
+        return AuthResult.failure(AuthErrorType.serverError);
+      }
+      final credentialId = credentialResult.data?.id;
+      if (credentialId == null || credentialId.isEmpty) {
+        return AuthResult.failure(AuthErrorType.invalidCredentials);
+      }
+      user = user.copyWith(credentialId: credentialId);
       final result = await _authRepository.createUserProfile(user);
       _authNotifier.emitUserProfileChanged(result);
       return AuthResult.success(result);
@@ -354,6 +363,40 @@ class AuthManagerImpl implements AuthManager {
       return AuthResult.success(result);
     } catch (e) {
       return _handleException(e, 'Update user profile');
+    }
+  }
+
+  @override
+  Future<AuthResult<UserCredential?>> updateUserPassword(
+    String password,
+  ) async {
+    try {
+      final result = await _authRepository.updateUserPassword(password);
+      if (result == null) {
+        return AuthResult.failure(AuthErrorType.invalidCredentials);
+      }
+      _authNotifier.emitAuthStateChanged(
+        AuthState(status: AuthStatus.authenticated, user: result),
+      );
+      return AuthResult.success(result);
+    } catch (e) {
+      return _handleException(e, 'Update user password');
+    }
+  }
+
+  @override
+  Future<AuthResult<UserCredential?>> updateUserEmail(String email) async {
+    try {
+      final result = await _authRepository.updateUserEmail(email);
+      if (result == null) {
+        return AuthResult.failure(AuthErrorType.invalidCredentials);
+      }
+      _authNotifier.emitAuthStateChanged(
+        AuthState(status: AuthStatus.authenticated, user: result),
+      );
+      return AuthResult.success(result);
+    } catch (e) {
+      return _handleException(e, 'Update user email');
     }
   }
 }
