@@ -2,7 +2,7 @@
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
-/// This is the implementation of the app router using Modular.
+/// Implementation of the [AppRouter] using Modular.
 class ModularRouterImpl implements AppRouter {
   @override
   Future<void> pushNamed(String route, {Object? arguments}) {
@@ -15,7 +15,7 @@ class ModularRouterImpl implements AppRouter {
   }
 
   @override
-  void pop<T extends Object?>([T? result]) {
+  void pop() {
     Modular.to.pop();
   }
 }

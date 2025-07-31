@@ -1,6 +1,6 @@
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 
-// This class is used to store the route and arguments for a navigation call.
+/// A class to store the route and arguments for a navigation call.
 class RouteCall {
   /// The route that was called.
   final String route;
@@ -11,7 +11,7 @@ class RouteCall {
   RouteCall(this.route, this.arguments);
 }
 
-/// This is a fake implementation of the app router.
+/// A fake implementation of the [AppRouter].
 class FakeAppRouter implements AppRouter {
   /// The history of navigation calls.
   final List<RouteCall> navigationHistory = [];
@@ -25,7 +25,7 @@ class FakeAppRouter implements AppRouter {
   }
 
   @override
-  void pop<T extends Object?>([T? result]) {
+  void pop() {
     popCalls++;
   }
 
