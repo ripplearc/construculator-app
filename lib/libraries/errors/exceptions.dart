@@ -70,3 +70,8 @@ class ConfigException extends AppException {
     return message;
   }
 }
+
+/// Exception thrown when a network error occurs.
+class NetworkException extends AppException {
+  NetworkException(super.stackTrace,super.exception);
+}
