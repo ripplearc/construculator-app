@@ -16,11 +16,13 @@ import 'package:construculator/features/auth/presentation/bloc/forgot_password_b
 import 'package:construculator/features/auth/presentation/bloc/login_with_email_bloc/login_with_email_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
+import 'package:construculator/features/auth/presentation/bloc/set_new_password_bloc/set_new_password_bloc.dart';
 import 'package:construculator/features/auth/presentation/pages/create_account_page.dart';
 import 'package:construculator/features/auth/presentation/pages/enter_password_page.dart';
 import 'package:construculator/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:construculator/features/auth/presentation/pages/login_with_email_page.dart';
 import 'package:construculator/features/auth/presentation/pages/register_with_email_page.dart';
+import 'package:construculator/features/auth/presentation/pages/set_new_password_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/router/guards/no_auth_guard.dart';
@@ -117,6 +119,17 @@ class AuthModule extends Module {
             child: ForgotPasswordPage(),
           ),
     );
+    r.child(
+      setNewPasswordRoute,
+      guards: [AuthGuard()],
+      child: (context) {
+        final email = r.args.data ?? '';
+        return BlocProvider(
+          create: (context) => Modular.get<SetNewPasswordBloc>(),
+          child: SetNewPasswordPage(email: email),
+        );
+      },
+    );
   }
 
   @override
@@ -172,6 +185,10 @@ class AuthModule extends Module {
     
     i.add<ForgotPasswordBloc>(
       () => ForgotPasswordBloc(resetPasswordUseCase: i()),
+    );
+    
+    i.add<SetNewPasswordBloc>(
+      () => SetNewPasswordBloc(setNewPasswordUseCase: i()),
     );
   }
 }
