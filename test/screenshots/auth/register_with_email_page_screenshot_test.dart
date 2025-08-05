@@ -58,6 +58,7 @@ void main() {
   }
 
   setUp(() async {
+    CoreToast.disableTimers();
     Modular.init(AuthTestModule());
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     await loadAppFonts();
@@ -66,6 +67,7 @@ void main() {
   tearDown(() {
     fakeSupabase.reset();
     Modular.destroy();
+    CoreToast.enableTimers();
   });
 
   group('RegisterWithEmailPage Screenshot Tests', () {

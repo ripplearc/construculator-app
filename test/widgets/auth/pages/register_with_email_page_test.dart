@@ -52,6 +52,7 @@ void main() {
   }
 
   setUp(() {
+    CoreToast.disableTimers();
     Modular.init(AuthTestModule());
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     router = Modular.get<AppRouter>() as FakeAppRouter;
@@ -61,6 +62,7 @@ void main() {
     router.reset();
     fakeSupabase.reset();
     Modular.destroy();
+    CoreToast.enableTimers();
   });
   group('RegisterWithEmailPage', () {
     testWidgets('renders all page elements correctly', (
