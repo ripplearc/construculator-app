@@ -43,6 +43,7 @@ void main() {
   }
 
   setUp(() async {
+    CoreToast.disableTimers();
     Modular.init(AuthTestModule());
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     authManager = Modular.get<AuthManager>();
@@ -57,6 +58,7 @@ void main() {
   tearDown(() {
     fakeSupabase.reset();
     Modular.destroy();
+    CoreToast.enableTimers();
   });
 
   Widget makeTestableWidget({required Widget child}) {
