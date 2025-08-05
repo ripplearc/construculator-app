@@ -9,7 +9,6 @@ import 'package:construculator/libraries/auth/data/validation/auth_validation.da
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
-import 'package:construculator/libraries/toast/toast.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -33,18 +32,17 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
 
   bool _canPressContinue = false;
   AppLocalizations? l10n;
-  final CToast _toast = Modular.get<CToast>();
   final AppRouter _router = Modular.get<AppRouter>();
 
   void _handleFailure(Failure failure) {
     if (failure is AuthFailure) {
       if (failure.errorType == AuthErrorType.rateLimited) {
-        _toast.showError(context, l10n?.tooManyAttempts);
+        CoreToast.showError(context, l10n?.tooManyAttempts);
       } else {
-        _toast.showError(context, failure.errorType.localizedMessage(context));
+        CoreToast.showError(context, failure.errorType.localizedMessage(context));
       }
     } else {
-      _toast.showError(context, l10n?.unexpectedErrorMessage);
+      CoreToast.showError(context, l10n?.unexpectedErrorMessage);
     }
   }
 
@@ -77,7 +75,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
                 _handleFailure(state.failure);
               }
               if (state is OtpVerificationOtpResent) {
-                _toast.showSuccess(context, l10n?.otpResendSuccess);
+                CoreToast.showSuccess(context, l10n?.otpResendSuccess);
               }
               if (state is OtpVerificationResendFailure) {
                 _handleFailure(state.failure);
@@ -159,7 +157,6 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
     super.dispose();
     _emailController.dispose();
     _emailTextFieldFocusNode.dispose();
-    _toast.dispose();
   }
 
   @override
