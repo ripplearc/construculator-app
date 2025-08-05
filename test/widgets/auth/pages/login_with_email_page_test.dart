@@ -44,6 +44,7 @@ void main() {
   }
 
   setUp(() {
+    CoreToast.disableTimers();
     Modular.init(AuthTestModule());
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     router = Modular.get<AppRouter>() as FakeAppRouter;
@@ -53,6 +54,7 @@ void main() {
     fakeSupabase.reset();
     router.reset();
     Modular.destroy();
+    CoreToast.enableTimers();
   });
   group('LoginWithEmailPage', () {
     testWidgets('renders email input, continue button, and register link', (
