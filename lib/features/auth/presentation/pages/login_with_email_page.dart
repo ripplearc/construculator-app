@@ -8,7 +8,6 @@ import 'package:construculator/libraries/auth/data/validation/auth_validation.da
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
-import 'package:construculator/libraries/toast/toast.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -28,14 +27,13 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
   List<String>? _emailErrorList;
   List<Widget>? _emailErrorWidgetList;
   AppLocalizations? l10n;
-  final CToast _toast = Modular.get<CToast>();
   final AppRouter _router = Modular.get<AppRouter>();
 
   _handleFailure(Failure failure) {
     if (failure is AuthFailure) {
-      _toast.showError(context, failure.errorType.localizedMessage(context));
+      CoreToast.showError(context, failure.errorType.localizedMessage(context));
     } else {
-      _toast.showError(context, l10n?.unexpectedErrorMessage);
+      CoreToast.showError(context, l10n?.unexpectedErrorMessage);
     }
   }
 
@@ -43,7 +41,6 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
   void dispose() {
     _emailController.dispose();
     super.dispose();
-    _toast.dispose();
   }
 
   @override
