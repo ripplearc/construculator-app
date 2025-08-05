@@ -4,8 +4,6 @@ import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
-import 'package:construculator/libraries/toast/toast.dart';
-import 'package:construculator/libraries/widgets/success_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,7 +25,6 @@ class _EnterPasswordPageState extends State<EnterPasswordPage> {
   bool _canPressContinue = false;
   List<String>? _passwordErrorList;
   AppLocalizations? l10n;
-  final CToast _toast = Modular.get<CToast>();
   final AppRouter _router = Modular.get<AppRouter>();
 
   void _togglePasswordVisibility() {
@@ -59,7 +56,6 @@ class _EnterPasswordPageState extends State<EnterPasswordPage> {
   @override
   void dispose() {
     _passwordController.dispose();
-    _toast.dispose();
     super.dispose();
   }
 
@@ -85,12 +81,12 @@ class _EnterPasswordPageState extends State<EnterPasswordPage> {
           if (state is EnterPasswordSubmitFailure) {
             final failure = state.failure;
             if (failure is AuthFailure) {
-              _toast.showError(
+              CoreToast.showError(
                 context,
                 failure.errorType.localizedMessage(context),
               );
             } else {
-              _toast.showError(context, l10n?.unexpectedErrorMessage);
+              CoreToast.showError(context, l10n?.unexpectedErrorMessage);
             }
           }
           if (state is EnterPasswordSubmitSuccess) {
