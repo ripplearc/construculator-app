@@ -2,7 +2,6 @@ import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
-import 'package:construculator/libraries/toast/toast.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -18,11 +17,9 @@ class _DashboardPageState extends State<DashboardPage> {
   final notifier = Modular.get<AuthNotifier>();
   final authManager = Modular.get<AuthManager>();
   String userInfo = '...';
-  final CToast _toast = Modular.get<CToast>();
   final AppRouter _router = Modular.get<AppRouter>();
   @override
   void dispose() {
-    _toast.dispose();
     super.dispose();
   }
   @override
@@ -51,7 +48,7 @@ class _DashboardPageState extends State<DashboardPage> {
           })
           .catchError((error) {
             if (!mounted) return;
-            _toast.showError(context, 'Failed to load profile');
+            CoreToast.showError(context, 'Failed to load profile');
           });
     }
     super.initState();
