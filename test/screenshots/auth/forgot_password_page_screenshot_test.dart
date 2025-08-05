@@ -26,6 +26,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() async {
+    CoreToast.disableTimers();
     Modular.init(AuthTestModule());
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     router = Modular.get<AppRouter>() as FakeAppRouter;
@@ -34,6 +35,7 @@ void main() {
 
   tearDown(() {
     Modular.destroy();
+    CoreToast.enableTimers();
   });
 
   Widget makeTestableWidget({required Widget child}) {
