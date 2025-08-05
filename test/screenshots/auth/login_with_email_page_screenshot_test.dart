@@ -52,6 +52,7 @@ void main() {
   }
 
   setUp(() async {
+    CoreToast.disableTimers();
     Modular.init(AuthTestModule());
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     router = Modular.get<AppRouter>() as FakeAppRouter;
@@ -64,6 +65,7 @@ void main() {
     fakeSupabase.reset();
     router.reset();
     Modular.destroy();
+    CoreToast.enableTimers();
   });
 
   group('LoginWithEmailPage Screenshot Tests', () {
