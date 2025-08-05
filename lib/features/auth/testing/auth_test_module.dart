@@ -16,7 +16,6 @@ import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
-import 'package:construculator/libraries/toast/toast_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class AuthTestModule extends Module {
@@ -29,7 +28,6 @@ class AuthTestModule extends Module {
         supabaseWrapper: FakeSupabaseWrapper(),
       ),
     ),
-    ToastModule(),
     RouterTestModule(),
   ];
 
