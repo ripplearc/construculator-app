@@ -30,6 +30,7 @@ void main() {
   }
 
   setUp(() async {
+    CoreToast.disableTimers();
     Modular.init(AuthTestModule());
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     await loadAppFonts();
@@ -37,6 +38,7 @@ void main() {
 
   tearDown(() {
     Modular.destroy();
+    CoreToast.enableTimers();
   });
 
   Widget makeTestableWidget({required Widget child}) {

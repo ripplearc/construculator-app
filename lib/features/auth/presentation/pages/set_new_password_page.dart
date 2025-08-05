@@ -3,9 +3,7 @@ import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
-import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
-import 'package:construculator/libraries/toast/toast.dart';
-import 'package:construculator/libraries/widgets/success_modal.dart';
+import 'package:construculator/libraries/router/routes/dashboard_routes.dart';  
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -30,7 +28,6 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   AppLocalizations? l10n;
-  final CToast _toast = Modular.get<CToast>();
   final AppRouter _router = Modular.get<AppRouter>();
 
   void _togglePasswordVisibility() {
@@ -112,7 +109,6 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
   void dispose() {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _toast.dispose();
     super.dispose();
   }
 
@@ -138,12 +134,12 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
           if (state is SetNewPasswordFailure) {
             final failure = state.failure;
             if (failure is AuthFailure) {
-              _toast.showError(
+              CoreToast.showError(
                 context,
                 failure.errorType.localizedMessage(context),
               );
             } else {
-              _toast.showError(context, l10n?.unexpectedErrorMessage);
+              CoreToast.showError(context, l10n?.unexpectedErrorMessage);
             }
           }
           if (state is SetNewPasswordSuccess) {
