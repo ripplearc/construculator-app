@@ -95,11 +95,14 @@ class AuthModule extends Module {
       ),
     );
 
-    i.addSingleton<OtpVerificationBloc>(
-      () => OtpVerificationBloc(verifyOtpUseCase: i(), sendOtpUseCase: i()),
+    i.add<OtpVerificationBloc>(
+      () => OtpVerificationBloc(
+        verifyOtpUseCase: i(),
+        sendOtpUseCase: i(),
+      ),
     );
 
-    i.addSingleton<CreateAccountBloc>(
+    i.add<CreateAccountBloc>(
       () => CreateAccountBloc(
         createAccountUseCase: i(),
         getProfessionalRolesUseCase: i(),
