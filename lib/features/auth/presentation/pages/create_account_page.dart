@@ -1,4 +1,5 @@
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/auth/data/models/professional_role.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
 import 'package:construculator/libraries/errors/failures.dart';
@@ -9,7 +10,6 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
-import 'package:construculator/features/auth/domain/entities/professional_role.dart';
 
 class CreateAccountPage extends StatefulWidget {
   final String? email;

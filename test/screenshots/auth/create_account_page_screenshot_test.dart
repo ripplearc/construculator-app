@@ -1,4 +1,3 @@
-import 'package:construculator/features/auth/domain/repositories/auth_repository.dart';
 import 'package:construculator/features/auth/domain/usecases/send_otp_usecase.dart';
 import 'package:construculator/features/auth/testing/auth_test_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
@@ -26,7 +25,6 @@ import '../await_images_extension.dart';
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
   late AuthManager authManager;
-  late AuthRepository repository;
   late FakeAppRouter router;
   const testEmail = 'test@example.com';
   BuildContext? buildContext;
@@ -47,7 +45,6 @@ void main() {
     Modular.init(AuthTestModule());
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     authManager = Modular.get<AuthManager>();
-    repository = Modular.get<AuthRepository>();
     router = Modular.get<AppRouter>() as FakeAppRouter;
     await loadAppFonts();
     fakeSupabase.addTableData('professional_roles', [
@@ -64,7 +61,7 @@ void main() {
   Widget makeTestableWidget({required Widget child}) {
     final bloc = CreateAccountBloc(
       createAccountUseCase: CreateAccountUseCase(authManager),
-      getProfessionalRolesUseCase: GetProfessionalRolesUseCase(repository),
+      getProfessionalRolesUseCase: GetProfessionalRolesUseCase(authManager),
       sendOtpUseCase: SendOtpUseCase(authManager),
     );
     return BlocProvider.value(
