@@ -1,18 +1,30 @@
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/errors/failures.dart';
-import 'package:construculator/features/auth/domain/entities/professional_role.dart';
-import 'package:construculator/features/auth/domain/repositories/auth_repository.dart';
+import 'package:construculator/libraries/auth/data/models/professional_role.dart';
 import 'package:dartz/dartz.dart';
 
 /// This is the use case for getting a list of professional roles.
 class GetProfessionalRolesUseCase {
-  final AuthRepository repository;
+  final AuthManager authManager;
 
-  GetProfessionalRolesUseCase(this.repository);
+  GetProfessionalRolesUseCase(this.authManager);
 
   /// Retrieves a list of professional roles using the auth repository.
   /// 
   /// Returns a [Future] that emits an [Either] containing a [Failure] or a list of [ProfessionalRole].
   Future<Either<Failure, List<ProfessionalRole>>> call() async {
-    return await repository.getProfessionalRoles();
+    final rolesResult = await authManager.getProfessionalRoles();
+    if (!rolesResult.isSuccess) {
+      final errorType = rolesResult.errorType;
+      if (errorType == null) {
+        return Left(UnexpectedFailure());
+      }
+      return Left(AuthFailure(errorType: errorType));
+    }
+    final roles = rolesResult.data;
+    if (roles == null) {
+      return Left(UnexpectedFailure());
+    }
+    return Right(roles);
   }
 } 

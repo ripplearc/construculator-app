@@ -1,5 +1,6 @@
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
+import 'package:construculator/libraries/auth/data/models/professional_role.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 
 /// Interface for shared auth library, provides functionality
@@ -107,4 +108,7 @@ abstract class AuthManager {
 
   /// Checks if a user is currently authenticated.
   bool isAuthenticated();
+
+  /// Returns an [AuthResult] of [List<ProfessionalRole>] with the list of professional roles.
+  Future<AuthResult<List<ProfessionalRole>>> getProfessionalRoles();
 }

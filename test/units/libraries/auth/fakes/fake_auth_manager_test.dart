@@ -8,6 +8,8 @@ import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_manager.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -15,6 +17,7 @@ void main() {
   late FakeAuthManager authManager;
   late FakeAuthNotifier authNotifier;
   late FakeAuthRepository authRepository;
+  late FakeSupabaseWrapper wrapper;
 
   const testEmail = 'test@example.com';
   const testPassword = '5i2Un@D8Y9!';
@@ -34,6 +37,7 @@ void main() {
     authNotifier = Modular.get<AuthNotifierController>() as FakeAuthNotifier;
     authRepository = Modular.get<AuthRepository>() as FakeAuthRepository;
     authManager = Modular.get<AuthManager>() as FakeAuthManager;
+    wrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
   });
 
   tearDown(() {
@@ -761,6 +765,23 @@ void main() {
       );
     });
 
+    group('Professional Roles', () {
+      test('getProfessionalRoles should return success', () async {
+        wrapper.addTableData(
+          'professional_roles',
+          [
+            {'id': '1', 'name': 'Developer'},
+          ],
+        );
+        final result = await authManager.getProfessionalRoles();
+        expect(result.isSuccess, true);
+        expect(result.data, isNotEmpty);
+        expect(result.data!.length, 1);
+        expect(result.data!.first.id, '1');
+        expect(result.data!.first.name, 'Developer');
+      });
+    });
+
     test('reset should clear all tracking and state', () async {
       await authManager.loginWithEmail(testEmail, testPassword);
       await authManager.sendOtp(testEmail, OtpReceiver.email);
@@ -787,8 +808,13 @@ class _TestAppModule extends Module {
   void binds(Injector i) {
     i.addSingleton<AuthNotifierController>(() => FakeAuthNotifier());
     i.addSingleton<AuthRepository>(() => FakeAuthRepository());
+    i.addSingleton<SupabaseWrapper>(() => FakeSupabaseWrapper());
     i.add<AuthManager>(
-      () => FakeAuthManager(authNotifier: i(), authRepository: i()),
+      () => FakeAuthManager(
+        authNotifier: i(),
+        authRepository: i(),
+        wrapper: i(),
+      ),
     );
   }
 }

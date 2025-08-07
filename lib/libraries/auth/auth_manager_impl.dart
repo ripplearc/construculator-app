@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_state.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
+import 'package:construculator/libraries/auth/data/models/professional_role.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
@@ -397,6 +398,19 @@ class AuthManagerImpl implements AuthManager {
       return AuthResult.success(result);
     } catch (e) {
       return _handleException(e, 'Update user email');
+    }
+  }
+  @override
+  Future<AuthResult<List<ProfessionalRole>>> getProfessionalRoles() async {
+    try {
+      final rolesData = await _wrapper.selectAllProfessionalRoles();
+      return AuthResult.success(
+        rolesData
+            .map((roleMap) => ProfessionalRole.fromJson(roleMap))
+            .toList(),
+      );
+    } catch (e) {
+      return _handleException(e, 'Get professional roles');
     }
   }
 }
