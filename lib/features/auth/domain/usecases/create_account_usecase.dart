@@ -2,7 +2,7 @@ import 'package:construculator/features/auth/domain/usecases/params/create_accou
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
-import 'package:dartz/dartz.dart';
+import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 
 /// This is the use case for creating a new user account.

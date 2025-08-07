@@ -1,6 +1,6 @@
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
-import 'package:dartz/dartz.dart';
+import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 
 /// This is the use case for sending an OTP to the specified address.
