@@ -1,7 +1,3 @@
-import 'package:construculator/features/auth/data/datasources/auth_remote_data_source.dart';
-import 'package:construculator/features/auth/data/datasources/auth_remote_data_source_impl.dart';
-import 'package:construculator/features/auth/data/repositories/auth_repository_impl.dart';
-import 'package:construculator/features/auth/domain/repositories/auth_repository.dart';
 import 'package:construculator/features/auth/domain/usecases/check_email_availability_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/create_account_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/get_professional_roles_usecase.dart';
@@ -58,10 +54,6 @@ class AuthModule extends Module {
 
   @override
   void binds(Injector i) {
-    i.addSingleton<AuthRemoteDataSource>(
-      () => AuthRemoteDataSourceImpl(supabaseWrapper: i()),
-    );
-    i.addSingleton<AuthRepository>(() => AuthRepositoryImpl(remoteDataSource: i()));
     i.addSingleton<ResetPasswordUseCase>(() => ResetPasswordUseCase(i()));
     i.addSingleton<GetProfessionalRolesUseCase>(
       () => GetProfessionalRolesUseCase(i()),
