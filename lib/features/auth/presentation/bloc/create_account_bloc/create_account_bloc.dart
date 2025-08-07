@@ -1,4 +1,3 @@
-import 'package:construculator/features/auth/domain/entities/professional_role.dart';
 import 'package:construculator/features/auth/domain/usecases/create_account_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/get_professional_roles_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/params/create_account_usecase_params.dart';
