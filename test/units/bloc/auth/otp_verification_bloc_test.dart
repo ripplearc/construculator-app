@@ -15,10 +15,7 @@ void main() {
     setUp(() {
       Modular.init(AuthTestModule());
       fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
-      bloc = OtpVerificationBloc(
-        verifyOtpUseCase: Modular.get(),
-        sendOtpUseCase: Modular.get(),
-      );
+      bloc = Modular.get<OtpVerificationBloc>();
     });
 
     tearDown(() {
