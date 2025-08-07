@@ -8,10 +8,9 @@ part of 'auth_state.dart';
 
 _AuthState _$AuthStateFromJson(Map<String, dynamic> json) => _AuthState(
   status: $enumDecode(_$AuthStatusEnumMap, json['status']),
-  user:
-      json['user'] == null
-          ? null
-          : UserCredential.fromJson(json['user'] as Map<String, dynamic>),
+  user: json['user'] == null
+      ? null
+      : UserCredential.fromJson(json['user'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$AuthStateToJson(_AuthState instance) =>
