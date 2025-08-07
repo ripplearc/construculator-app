@@ -1,5 +1,5 @@
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
-import 'package:dartz/dartz.dart';
+import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 
 /// This is the use case for setting a new password.
