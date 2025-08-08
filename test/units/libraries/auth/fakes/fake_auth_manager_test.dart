@@ -639,7 +639,7 @@ void main() {
         () async {
           authRepository.setUserProfile(testUser);
           final result = await authManager.getUserProfile(
-            testUser.credentialId,
+            testUser.credentialId!,
           );
 
           expect(result.isSuccess, true);

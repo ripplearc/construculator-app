@@ -59,7 +59,11 @@ class FakeAuthRepository implements AuthRepository {
 
   /// Sets up fake user profiles for testing
   void setUserProfile(User user) {
-    _userProfiles[user.credentialId] = user;
+    final credentialId = user.credentialId;
+    if (credentialId == null) {
+      throw ServerException(Trace.current(), Exception('Credential ID is required'));
+    }
+    _userProfiles[credentialId] = user;
   }
 
   @override
@@ -149,7 +153,11 @@ class FakeAuthRepository implements AuthRepository {
       updatedAt: DateTime.now(),
     );
 
-    _userProfiles[user.credentialId] = createdUser;
+    final credentialId = user.credentialId;
+    if (credentialId == null) {
+      throw ServerException(Trace.current(), Exception('Credential ID is required'));
+    }
+    _userProfiles[credentialId] = createdUser;
     return createdUser;
   }
 
@@ -167,7 +175,11 @@ class FakeAuthRepository implements AuthRepository {
 
     final updatedUser = user.copyWith(updatedAt: DateTime.now());
 
-    _userProfiles[user.credentialId] = updatedUser;
+    final credentialId = user.credentialId;
+    if (credentialId == null) {
+      throw ServerException(Trace.current(), Exception('Credential ID is required'));
+    }
+    _userProfiles[credentialId] = updatedUser;
     return updatedUser;
   }
 }

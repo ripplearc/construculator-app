@@ -143,14 +143,14 @@ void main() {
       await fakeRepository.createUserProfile(fakeUser);
       fakeRepository.setAuthResponse(succeed: true);
 
-      final result = await fakeRepository.getUserProfile(fakeUser.credentialId);
+      final result = await fakeRepository.getUserProfile(fakeUser.credentialId!);
 
       expect(result, isNotNull);
       expect(result!.email, fakeUser.email);
       expect(result.credentialId, fakeUser.credentialId);
       expect(
         fakeRepository.getUserProfileCalls,
-        contains(fakeUser.credentialId),
+        contains(fakeUser.credentialId!),
       );
     });
 
@@ -205,7 +205,7 @@ void main() {
         expect(fakeRepository.createProfileCalls, contains(fakeUser));
 
         final fetchResult = await fakeRepository.getUserProfile(
-          fakeUser.credentialId,
+          fakeUser.credentialId!,
         );
         expect(fetchResult, isNotNull);
         expect(fetchResult!.email, fakeUser.email);
@@ -256,7 +256,7 @@ void main() {
 
         // Verify the update is reflected
         final fetchResult = await fakeRepository.getUserProfile(
-          originalUser.credentialId,
+          originalUser.credentialId!,
         );
         expect(fetchResult, isNotNull);
         expect(fetchResult!.firstName, 'UpdatedName');
@@ -314,14 +314,14 @@ void main() {
       fakeRepository.setAuthResponse(succeed: true);
 
       final result1 = await fakeRepository.getUserProfile(
-        testUser1.credentialId,
+        testUser1.credentialId!,
       );
       expect(result1, isNotNull);
       expect(result1!.email, 'user1@test.com');
       expect(result1.id, testUser1.id);
 
       final result2 = await fakeRepository.getUserProfile(
-        testUser2.credentialId,
+        testUser2.credentialId!,
       );
       expect(result2, isNotNull);
       expect(result2!.email, 'user2@test.com');
