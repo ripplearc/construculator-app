@@ -7,8 +7,8 @@ part of 'auth_user.dart';
 // **************************************************************************
 
 _User _$UserFromJson(Map<String, dynamic> json) => _User(
-  id: json['id'] as String,
-  credentialId: json['credential_id'] as String,
+  id: json['id'] as String?,
+  credentialId: json['credential_id'] as String?,
   email: json['email'] as String,
   phone: json['phone'] as String?,
   countryCode: json['country_code'] as String?,
