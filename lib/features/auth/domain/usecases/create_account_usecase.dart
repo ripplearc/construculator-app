@@ -31,8 +31,6 @@ class CreateAccountUseCase {
     }
     final userResult = await authManager.createUserProfile(
       User(
-        id: '',
-        credentialId: '',
         email: params.email ?? '',
         phone: params.phone,
         countryCode: params.countryCode,
