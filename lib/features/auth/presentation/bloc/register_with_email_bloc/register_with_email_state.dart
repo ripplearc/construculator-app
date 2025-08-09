@@ -19,10 +19,10 @@ class RegisterWithEmailEmailCheckLoading extends RegisterWithEmailState {
 }
 
 /// State when email availability check returns successfully
-class RegisterWithEmailEmailCheckSuccess extends RegisterWithEmailState {
+class RegisterWithEmailEmailCheckCompleted extends RegisterWithEmailState {
   /// [isEmailRegistered] indicates whether the email is taken or or not
   final bool isEmailRegistered;
-  const RegisterWithEmailEmailCheckSuccess({required this.isEmailRegistered});
+  const RegisterWithEmailEmailCheckCompleted({required this.isEmailRegistered});
 
   @override
   List<Object?> get props => [isEmailRegistered];

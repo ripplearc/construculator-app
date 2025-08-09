@@ -46,7 +46,7 @@ void main() {
             bloc.stream,
             emitsInOrder([
               RegisterWithEmailEmailCheckLoading(),
-              RegisterWithEmailEmailCheckSuccess(isEmailRegistered: false),
+              RegisterWithEmailEmailCheckCompleted(isEmailRegistered: false),
             ]),
           );
         },
@@ -67,7 +67,7 @@ void main() {
             bloc.stream,
             emitsInOrder([
               RegisterWithEmailEmailCheckLoading(),
-              RegisterWithEmailEmailCheckSuccess(isEmailRegistered: true),
+              RegisterWithEmailEmailCheckCompleted(isEmailRegistered: true),
             ]),
           );
         },

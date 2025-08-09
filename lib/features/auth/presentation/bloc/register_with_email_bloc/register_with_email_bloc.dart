@@ -1,5 +1,6 @@
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:equatable/equatable.dart';
 import 'package:construculator/features/auth/domain/usecases/check_email_availability_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/send_otp_usecase.dart';
@@ -9,6 +10,8 @@ import 'package:rxdart/rxdart.dart';
 part 'register_with_email_event.dart';
 part 'register_with_email_state.dart';
 
+/// Bloc for registering with email
+/// provides functionality to check if email is available and send otp to email
 class RegisterWithEmailBloc
     extends Bloc<RegisterWithEmailEvent, RegisterWithEmailState> {
   final CheckEmailAvailabilityUseCase _checkEmailAvailabilityUseCase;
@@ -24,7 +27,7 @@ class RegisterWithEmailBloc
       _onEmailChanged,
       transformer: (events, mapper) {
         return events
-            .debounceTime(const Duration(milliseconds: 300))
+            .debounceTime(debounceTime)
             .asyncExpand(mapper);
       },
     );
@@ -48,7 +51,7 @@ class RegisterWithEmailBloc
     result.fold(
       (failure) => emit(RegisterWithEmailEmailCheckFailure(failure: failure)),
       (result) {
-        emit(RegisterWithEmailEmailCheckSuccess(isEmailRegistered: result.data ?? false));
+        emit(RegisterWithEmailEmailCheckCompleted(isEmailRegistered: result.data ?? false));
       },
     );
   }
