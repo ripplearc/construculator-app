@@ -15,3 +15,5 @@ enum Environment {
   qa,
   prod,
 }
+
+const Duration debounceTime = Duration(milliseconds: 300);
