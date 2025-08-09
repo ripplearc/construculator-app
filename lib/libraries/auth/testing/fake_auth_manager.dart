@@ -2,16 +2,19 @@ import 'dart:async';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_state.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
+import 'package:construculator/libraries/auth/data/models/professional_role.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 
 /// A fake implementation of [AuthManager] for testing purposes
 class FakeAuthManager implements AuthManager {
   final AuthNotifierController _authNotifier;
   final AuthRepository _authRepository;
+  final SupabaseWrapper _wrapper;
 
   // Flag to control if auth operations should succeed
   bool _authShouldSucceed = true;
@@ -48,8 +51,10 @@ class FakeAuthManager implements AuthManager {
   FakeAuthManager({
     required AuthNotifierController authNotifier,
     required AuthRepository authRepository,
-  }) : _authNotifier = authNotifier,
-       _authRepository = authRepository {
+    required SupabaseWrapper wrapper,
+  })  : _authNotifier = authNotifier,
+        _authRepository = authRepository,
+        _wrapper = wrapper {
     // Initialize with unauthenticated state
     _authNotifier.emitAuthStateChanged(
       AuthState(status: AuthStatus.unauthenticated, user: null),
@@ -348,6 +353,19 @@ class FakeAuthManager implements AuthManager {
       AuthState(status: AuthStatus.authenticated, user: result),
     );
     return AuthResult.success(result);
+  }
+
+  @override
+  Future<AuthResult<List<ProfessionalRole>>> getProfessionalRoles() async {
+    if (!_authShouldSucceed) {
+      return AuthResult.failure(_errorType);
+    }
+    final rolesData = await _wrapper.selectAllProfessionalRoles();
+    return AuthResult.success(
+      rolesData
+          .map((roleMap) => ProfessionalRole.fromJson(roleMap))
+          .toList(),
+    );
   }
 
   /// Reset all tracking lists and state

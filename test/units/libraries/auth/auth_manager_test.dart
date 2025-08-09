@@ -829,7 +829,7 @@ void main() {
         );
         authRepository.setUserProfile(testUser);
 
-        final result = await authManager.getUserProfile(testUser.credentialId);
+        final result = await authManager.getUserProfile(testUser.credentialId!);
 
         expect(result.isSuccess, true);
         expect(result.data!.email, testEmail);
@@ -842,7 +842,7 @@ void main() {
       test('getUserProfile should handle fetch failure', () async {
         authRepository.shouldThrowOnGetUserProfile = true;
 
-        final result = await authManager.getUserProfile(testUser.credentialId);
+        final result = await authManager.getUserProfile(testUser.credentialId!);
 
         expect(result.isSuccess, false);
         expect(result.errorType, AuthErrorType.serverError);
