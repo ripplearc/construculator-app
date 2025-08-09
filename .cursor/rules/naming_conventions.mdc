@@ -1,0 +1,132 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Construculator Naming Convention
+
+## Description
+Ensures all components follow the Construculator architecture naming patterns.  
+This rule enforces suffixes, casing, and naming patterns for UseCases, Services, Managers, Repositories, DataSources, Factories, Helpers/Utils, and BLoCs (including Events and States).
+
+## Patterns
+
+### UseCase
+- **Pattern:** `VerbNounUseCase`
+- **Suffix:** `UseCase`
+- **Notes:** Verb must be PascalCase, followed by Noun in PascalCase.
+- **Examples:**
+  - ✅ `CreateProjectUseCase`
+  - ✅ `GetDashboardSummaryUseCase`
+  - ❌ `ProjectCreator`
+  - ❌ `ProjectUse`
+
+### Service
+- **Pattern:** `NounService`
+- **Suffix:** `Service`
+- **Examples:**
+  - ✅ `CalculationService`
+  - ✅ `AuthenticationService`
+  - ❌ `CalculateProject`
+  - ❌ `ServiceCalculation`
+
+### Manager
+- **Pattern:** `NounManager`
+- **Suffix:** `Manager`
+- **Examples:**
+  - ✅ `AuthenticationManager`
+  - ✅ `OfflineSyncManager`
+  - ❌ `ProjectCoordinator`
+  - ❌ `ManagerAuth`
+
+### Repository
+- **Pattern:** `NounRepository`
+- **Suffix:** `Repository`
+- **Examples:**
+  - ✅ `ProjectRepository`
+  - ✅ `UserRepository`
+  - ❌ `RepoUser`
+  - ❌ `ProjectData`
+
+### DataSource
+- **Pattern:** `(Local|Remote)NounDataSource`
+- **Suffix:** `DataSource`
+- **Prefix:** `Local` or `Remote`
+- **Examples:**
+  - ✅ `RemoteProjectDataSource`
+  - ✅ `LocalUserDataSource`
+  - ❌ `ProjectDataSource` (missing prefix)
+  - ❌ `ProjectSource`
+
+### Factory
+- **Pattern:** `NounFactory`
+- **Suffix:** `Factory`
+- **Examples:**
+  - ✅ `HttpClientFactory`
+  - ✅ `DatabaseFactory`
+  - ❌ `FactoryDatabase`
+  - ❌ `HttpFactoryClient`
+
+### Helper / Util
+- **Pattern:** `NounHelper` or `NounUtil`
+- **Suffix:** `Helper` or `Util`
+- **Examples:**
+  - ✅ `UnitConversionHelper`
+  - ✅ `DateUtil`
+  - ❌ `HelperDate`
+  - ❌ `Utils`
+
+### BLoC
+- **Pattern:** `NounBloc`
+- **Suffix:** `Bloc`
+- **Examples:**
+  - ✅ `ProjectBloc`
+  - ✅ `DashboardBloc`
+  - ❌ `BlocProject`
+  - ❌ `ProjectController`
+
+### BLoC Events
+- **Pattern:** `NounEvent`
+- **Suffix:** `Event`
+- **Examples:**
+  - ✅ `ProjectEvent`
+  - ✅ `LoginEvent`
+  - ❌ `EventProject`
+  - ❌ `ProjectEvt`
+
+### BLoC States
+- **Pattern:** `NounState`
+- **Suffix:** `State`
+- **Examples:**
+  - ✅ `ProjectState`
+  - ✅ `LoadingState`
+  - ❌ `StateProject`
+  - ❌ `ProjectSt`
+
+---
+
+## General Rules
+1. **Suffixes are mandatory** for all components.
+2. **PascalCase** is required for all names.
+3. **Entity name consistency:**  
+   - Same entity noun should be used across layers (e.g., `ProjectBloc` → `CreateProjectUseCase` → `ProjectRepository` → `RemoteProjectDataSource`).
+4. **UseCases must start with a verb** (Create, Get, Add, Invite, Upload, Export, etc.).
+5. **Non-UseCases must start with a noun**.
+6. **DataSources must be prefixed with `Local` or `Remote`**.
+
+---
+
+## Anti-Patterns
+- ❌ Vague names (`DataManager`, `ProjectLogic`, `StuffHandler`)
+- ❌ Incorrect suffix (`ProjectCreator` instead of `CreateProjectUseCase`)
+- ❌ Missing prefix for DataSource
+- ❌ Mixing layers in names (`ProjectService` for a UseCase)
+
+---
+
+## Validation Checklist
+Before creating a new component:
+- Does the name follow the required **suffix** for its type?
+- Is the **verb/noun rule** applied correctly?
+- Is the **entity name** consistent across layers?
+- For DataSources, is the correct **prefix** (`Local`/`Remote`) used?

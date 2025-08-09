@@ -76,6 +76,6 @@ mutation_test_rules.xml
 android/build/
 devtools_options.yaml
 # Cursor editor
-.cursor/
+# .cursor/
 .fvm/
 test/**/failures
