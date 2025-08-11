@@ -3,130 +3,77 @@ description:
 globs: 
 alwaysApply: true
 ---
-# Construculator Naming Convention
+# Construculator Class Naming & Usage Rules
 
-## Description
-Ensures all components follow the Construculator architecture naming patterns.  
-This rule enforces suffixes, casing, and naming patterns for UseCases, Services, Managers, Repositories, DataSources, Factories, Helpers/Utils, and BLoCs (including Events and States).
+## Purpose
+Ensure consistent naming across the architecture and guide engineers on **when to create each type of class**.
 
-## Patterns
+---
 
-### UseCase
+## UseCase
 - **Pattern:** `VerbNounUseCase`
-- **Suffix:** `UseCase`
-- **Notes:** Verb must be PascalCase, followed by Noun in PascalCase.
-- **Examples:**
-  - ✅ `CreateProjectUseCase`
-  - ✅ `GetDashboardSummaryUseCase`
-  - ❌ `ProjectCreator`
-  - ❌ `ProjectUse`
+- **When to Use:** One specific business operation matching a user's intent. Stateless, single responsibility, no persistent state.
+- **Example:** `CreateProjectUseCase`
+- **Skip If:** Simple CRUD or direct repository calls.
 
-### Service
+## Service
 - **Pattern:** `NounService`
-- **Suffix:** `Service`
-- **Examples:**
-  - ✅ `CalculationService`
-  - ✅ `AuthenticationService`
-  - ❌ `CalculateProject`
-  - ❌ `ServiceCalculation`
+- **When to Use:** Complex domain logic or infrastructure operations (e.g., calculations, external integrations). Stateless.
+- **Example:** `CalculationService`
+- **Skip If:** Single business transaction → UseCase instead.
 
-### Manager
+## Manager
 - **Pattern:** `NounManager`
-- **Suffix:** `Manager`
-- **Examples:**
-  - ✅ `AuthenticationManager`
-  - ✅ `OfflineSyncManager`
-  - ❌ `ProjectCoordinator`
-  - ❌ `ManagerAuth`
+- **When to Use:** Stateful coordination between multiple services, complex workflows, lifecycle/state management.
+- **Example:** `AuthenticationManager`
+- **Skip If:** Stateless → use Service.
 
-### Repository
+## Repository
 - **Pattern:** `NounRepository`
-- **Suffix:** `Repository`
-- **Examples:**
-  - ✅ `ProjectRepository`
-  - ✅ `UserRepository`
-  - ❌ `RepoUser`
-  - ❌ `ProjectData`
+- **When to Use:** Data access abstraction for an entity. Coordinates local & remote sources.
+- **Example:** `ProjectRepository`
+- **Skip If:** No entity or direct API call without abstraction.
 
-### DataSource
+## DataSource
 - **Pattern:** `(Local|Remote)NounDataSource`
-- **Suffix:** `DataSource`
-- **Prefix:** `Local` or `Remote`
-- **Examples:**
-  - ✅ `RemoteProjectDataSource`
-  - ✅ `LocalUserDataSource`
-  - ❌ `ProjectDataSource` (missing prefix)
-  - ❌ `ProjectSource`
+- **When to Use:** Direct persistence or fetching (API, DB, FS). Returns data models.
+- **Example:** `RemoteProjectDataSource`
+- **Skip If:** Always use Repository above it.
 
-### Factory
+## Factory
 - **Pattern:** `NounFactory`
-- **Suffix:** `Factory`
-- **Examples:**
-  - ✅ `HttpClientFactory`
-  - ✅ `DatabaseFactory`
-  - ❌ `FactoryDatabase`
-  - ❌ `HttpFactoryClient`
+- **When to Use:** Create configured instances with dependencies and runtime params.
+- **Example:** `HttpClientFactory`
+- **Skip If:** Simple constructor call works.
 
-### Helper / Util
-- **Pattern:** `NounHelper` or `NounUtil`
-- **Suffix:** `Helper` or `Util`
-- **Examples:**
-  - ✅ `UnitConversionHelper`
-  - ✅ `DateUtil`
-  - ❌ `HelperDate`
-  - ❌ `Utils`
+## Helper / Util
+- **Pattern:** `NounHelper` / `NounUtil`
+- **When to Use:** Stateless utility functions used across layers.
+- **Example:** `UnitConversionHelper`
+- **Skip If:** One-off inline logic.
 
-### BLoC
-- **Pattern:** `NounBloc`
-- **Suffix:** `Bloc`
-- **Examples:**
-  - ✅ `ProjectBloc`
-  - ✅ `DashboardBloc`
-  - ❌ `BlocProject`
-  - ❌ `ProjectController`
-
-### BLoC Events
-- **Pattern:** `NounEvent`
-- **Suffix:** `Event`
-- **Examples:**
-  - ✅ `ProjectEvent`
-  - ✅ `LoginEvent`
-  - ❌ `EventProject`
-  - ❌ `ProjectEvt`
-
-### BLoC States
-- **Pattern:** `NounState`
-- **Suffix:** `State`
-- **Examples:**
-  - ✅ `ProjectState`
-  - ✅ `LoadingState`
-  - ❌ `StateProject`
-  - ❌ `ProjectSt`
+## BLoC
+- **Pattern:** `NounBloc` (+ `NounEvent`, `NounState`)
+- **When to Use:** UI state management for a feature.
+- **Example:** `ProjectBloc`, `ProjectEvent`, `ProjectState`
+- **Skip If:** Static screens.
 
 ---
 
 ## General Rules
-1. **Suffixes are mandatory** for all components.
-2. **PascalCase** is required for all names.
-3. **Entity name consistency:**  
-   - Same entity noun should be used across layers (e.g., `ProjectBloc` → `CreateProjectUseCase` → `ProjectRepository` → `RemoteProjectDataSource`).
-4. **UseCases must start with a verb** (Create, Get, Add, Invite, Upload, Export, etc.).
-5. **Non-UseCases must start with a noun**.
-6. **DataSources must be prefixed with `Local` or `Remote`**.
+1. **PascalCase** for all names.
+2. **Suffix is mandatory** for each type.
+3. **Entity name stays consistent across layers** (`ProjectBloc` → `CreateProjectUseCase` → `ProjectRepository` → `RemoteProjectDataSource`).
+4. **DataSources must be prefixed with `Local` or `Remote`**.
 
 ---
 
-## Anti-Patterns
-- ❌ Vague names (`DataManager`, `ProjectLogic`, `StuffHandler`)
-- ❌ Incorrect suffix (`ProjectCreator` instead of `CreateProjectUseCase`)
-- ❌ Missing prefix for DataSource
-- ❌ Mixing layers in names (`ProjectService` for a UseCase)
-
----
-
-## Validation Checklist
-Before creating a new component:
-- Does the name follow the required **suffix** for its type?
-- Is the **verb/noun rule** applied correctly?
-- Is the **entity name** consistent across layers?
-- For DataSources, is the correct **prefix** (`Local`/`Remote`) used?
+## Quick Decision Flow
+- Handling UI state? → **BLoC**
+- One user action/business op? → **UseCase**
+- Complex stateless logic/integration? → **Service**
+- Stateful multi-service coordination? → **Manager**
+- Entity data abstraction? → **Repository**
+- Raw persistence/fetch? → **DataSource**
+- Creating configured instances? → **Factory**
+- Stateless shared logic? → **Helper/Util**
