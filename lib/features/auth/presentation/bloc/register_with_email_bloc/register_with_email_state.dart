@@ -1,9 +1,12 @@
 // coverage:ignore-file
 part of 'register_with_email_bloc.dart';
 
+/// Abstract class for register with email states
 abstract class RegisterWithEmailState extends Equatable {
+  /// Constructor for register with email states
   const RegisterWithEmailState();
 
+  /// List of properties that will be used to compare states
   @override
   List<Object?> get props => [];
 }
