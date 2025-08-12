@@ -35,7 +35,7 @@ class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
     CreateAccountEditContact event,
     Emitter<CreateAccountState> emit,
   ) async {
-    emit(CreateAccountEditContactSuccess());
+    emit(CreateAccountEditContactTriggered());
   }
 
   Future<void> _onOtpVerified(

@@ -24,6 +24,7 @@ class CreateAccountSuccess extends CreateAccountState {
 
 /// Failure state for create account, triggered when user account creation fails
 class CreateAccountFailure extends CreateAccountState {
+  /// The failure that occurred when creating the account
   final Failure failure;
   CreateAccountFailure({required this.failure});
 
@@ -39,6 +40,7 @@ class CreateAccountGetProfessionalRolesLoading extends CreateAccountState {
 
 /// Success state for getting professional roles, triggered when professional roles are fetched successfully
 class CreateAccountGetProfessionalRolesSuccess extends CreateAccountState {
+  /// The list of professional roles, when successfully loaded
   final List<ProfessionalRole> professionalRolesList;
   CreateAccountGetProfessionalRolesSuccess({
     required this.professionalRolesList,
@@ -50,6 +52,7 @@ class CreateAccountGetProfessionalRolesSuccess extends CreateAccountState {
 
 /// Failure state for getting professional roles, triggered when getting professional roles fails
 class CreateAccountGetProfessionalRolesFailure extends CreateAccountState {
+  /// The failure that occurred when getting professional roles
   final Failure failure;
   CreateAccountGetProfessionalRolesFailure({required this.failure});
 
@@ -65,6 +68,7 @@ class CreateAccountOtpSending extends CreateAccountState {
 
 /// Failure state for sending OTP, triggered when sending OTP fails
 class CreateAccountOtpSendingFailure extends CreateAccountState {
+  /// The failure that occurred when sending OTP
   final Failure failure;
   CreateAccountOtpSendingFailure({required this.failure});
   @override
@@ -80,14 +84,14 @@ class CreateAccountOtpSendingSuccess extends CreateAccountState {
   List<Object?> get props => [contact];
 }
 
-/// Success state for verifying contact, triggered when contact is verified successfully
+/// State for verifying contact, triggered after user taps on verify contact button on bottom sheet
 class CreateAccountContactVerified extends CreateAccountState {
   @override
   List<Object?> get props => [];
 }
 
-/// Success state for editing contact, triggered when user taps on edit contact button
-class CreateAccountEditContactSuccess extends CreateAccountState {
+/// State for editing contact, triggered after user taps on edit contact button on bottom sheet
+class CreateAccountEditContactTriggered extends CreateAccountState {
   @override
   List<Object?> get props => [];
 }
