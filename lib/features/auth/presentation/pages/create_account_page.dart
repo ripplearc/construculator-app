@@ -1,7 +1,7 @@
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/professional_role.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
-import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
+
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
@@ -39,7 +39,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
 
   List<String>? _firstNameErrorList;
   List<String>? _lastNameErrorList;
-  String? _roleError;
+  List<String>? _roleErrorList;
   List<String>? _mobileNumberErrorList;
   List<String>? _emailErrorList;
   List<String>? _passwordErrorList;
@@ -63,16 +63,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   void _onItemSelectorOpened() {
     // remove focus from any textfield
     FocusManager.instance.primaryFocus?.unfocus();
-    _validateRole();
     _validateForm();
-  }
-
-  void _validateRole() {
-    if (_selectedRole != null) {
-      _roleError = null;
-    } else {
-      _roleError = l10n?.roleRequiredError;
-    }
   }
 
   void _handleFailure(Failure failure) {
@@ -98,7 +89,15 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
         _selectedRole = null;
       });
     }
-    _validateRole();
+
+    // Validate role using bloc
+    BlocProvider.of<CreateAccountBloc>(context).add(
+      CreateAccountFormFieldChanged(
+        field: CreateAccountFormField.role,
+        value: selectedName ?? '',
+        isEmailRegistration: isEmailRegistration,
+      ),
+    );
   }
 
   void _togglePasswordVisibility() {
@@ -125,7 +124,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
       _selectedPhonePrefix = '+1';
       _firstNameErrorList = null;
       _lastNameErrorList = null;
-      _roleError = null;
+      _roleErrorList = null;
       _mobileNumberErrorList = null;
       _emailErrorList = null;
       _passwordErrorList = null;
@@ -138,7 +137,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     final valid =
         _firstNameErrorList == null &&
         _lastNameErrorList == null &&
-        _roleError == null &&
+        _roleErrorList == null &&
         _mobileNumberErrorList == null &&
         _emailErrorList == null &&
         _passwordErrorList == null &&
@@ -180,6 +179,50 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     );
   }
 
+  void _handleFieldValidation(CreateAccountFormFieldValidated state) {
+    setState(() {
+      List<String>? errorList;
+      
+      if (!state.isValid) {
+        if (state.validator != null) {
+          // Field has AuthValidation error
+          final errorMessage = state.validator?.localizedMessage(context);
+          errorList = errorMessage != null ? [errorMessage] : null;
+        }
+      } else {
+        errorList = null;
+      }
+
+      // Update the appropriate error list
+      switch (state.field) {
+        case CreateAccountFormField.firstName:
+          _firstNameErrorList = errorList;
+          break;
+        case CreateAccountFormField.lastName:
+          _lastNameErrorList = errorList;
+          break;
+        case CreateAccountFormField.role:
+          _roleErrorList = errorList;
+          break;
+        case CreateAccountFormField.mobileNumber:
+          _mobileNumberErrorList = errorList;
+          break;
+        case CreateAccountFormField.email:
+          _emailErrorList = errorList;
+          break;
+        case CreateAccountFormField.password:
+          _passwordErrorList = errorList;
+          break;
+        case CreateAccountFormField.confirmPassword:
+          _confirmPasswordErrorList = errorList;
+          break;
+      }
+
+      // Validate form after updating errors
+      _validateForm();
+    });
+  }
+
   @override
   void initState() {
     _emailController.text = widget.email ?? '';
@@ -187,123 +230,69 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     BlocProvider.of<CreateAccountBloc>(
       context,
     ).add(const LoadProfessionalRoles());
+
     _firstNameController.addListener(() {
-      if (_firstNameController.text.isEmpty) {
-        setState(() {
-          final error = l10n?.firstNameRequired;
-          if (error != null) {
-            _firstNameErrorList = [error];
-          }
-        });
-      } else {
-        setState(() {
-          _firstNameErrorList = null;
-        });
-      }
-      _validateForm();
+      BlocProvider.of<CreateAccountBloc>(context).add(
+        CreateAccountFormFieldChanged(
+          field: CreateAccountFormField.firstName,
+          value: _firstNameController.text,
+          isEmailRegistration: isEmailRegistration,
+        ),
+      );
     });
+
     _lastNameController.addListener(() {
-      if (_lastNameController.text.isEmpty) {
-        setState(() {
-          final error = l10n?.lastNameRequired;
-          if (error != null) {
-            _lastNameErrorList = [error];
-          }
-        });
-      } else {
-        setState(() {
-          _lastNameErrorList = null;
-        });
-      }
-      _validateForm();
+      BlocProvider.of<CreateAccountBloc>(context).add(
+        CreateAccountFormFieldChanged(
+          field: CreateAccountFormField.lastName,
+          value: _lastNameController.text,
+          isEmailRegistration: isEmailRegistration,
+        ),
+      );
     });
+
     _emailController.addListener(() {
-      final emailValidator = AuthValidation.validateEmail(
-        _emailController.text,
+      BlocProvider.of<CreateAccountBloc>(context).add(
+        CreateAccountFormFieldChanged(
+          field: CreateAccountFormField.email,
+          value: _emailController.text,
+          isEmailRegistration: isEmailRegistration,
+        ),
       );
-      if (emailValidator != null) {
-        setState(() {
-          final error = emailValidator.localizedMessage(context);
-          if (error != null) {
-            _emailErrorList = [error];
-          }
-        });
-      } else {
-        setState(() {
-          _emailErrorList = null;
-        });
-      }
-      _validateForm();
     });
+
     _mobileNumberController.addListener(() {
-      // phone is optional for email registration
-      // do not validate when phone is empty
-      if (isEmailRegistration && _mobileNumberController.text.isEmpty) {
-        setState(() {
-          _mobileNumberErrorList = null;
-        });
-        return;
-      }
-      final phoneValidator = AuthValidation.validatePhoneNumber(
-        '$_selectedPhonePrefix${_mobileNumberController.text}',
+      BlocProvider.of<CreateAccountBloc>(context).add(
+        CreateAccountFormFieldChanged(
+          field: CreateAccountFormField.mobileNumber,
+          value: _mobileNumberController.text,
+          isEmailRegistration: isEmailRegistration,
+          phonePrefix: _selectedPhonePrefix,
+        ),
       );
-      if (phoneValidator != null) {
-        setState(() {
-          final error = phoneValidator.localizedMessage(context);
-          if (error != null) {
-            _mobileNumberErrorList = [error];
-          }
-        });
-      } else {
-        setState(() {
-          _mobileNumberErrorList = null;
-        });
-      }
-      _validateForm();
     });
+
     _passwordController.addListener(() {
-      final passwordValidator = AuthValidation.validatePassword(
-        _passwordController.text,
+      BlocProvider.of<CreateAccountBloc>(context).add(
+        CreateAccountFormFieldChanged(
+          field: CreateAccountFormField.password,
+          value: _passwordController.text,
+          isEmailRegistration: isEmailRegistration,
+        ),
       );
-      if (passwordValidator != null) {
-        setState(() {
-          final error = passwordValidator.localizedMessage(context);
-          if (error != null) {
-            _passwordErrorList = [error];
-          }
-        });
-      } else {
-        setState(() {
-          _passwordErrorList = null;
-        });
-      }
-      _validateForm();
     });
+
     _confirmPasswordController.addListener(() {
-      if (_confirmPasswordController.text.isEmpty) {
-        setState(() {
-          final error = l10n?.confirmPasswordRequired;
-          if (error != null) {
-            _confirmPasswordErrorList = [error];
-          }
-        });
-      } else {
-        if (_confirmPasswordController.text != _passwordController.text) {
-          setState(() {
-            final error =
-                AppLocalizations.of(context)?.passwordsDoNotMatchError;
-            if (error != null) {
-              _confirmPasswordErrorList = [error];
-            }
-          });
-        } else {
-          setState(() {
-            _confirmPasswordErrorList = null;
-          });
-        }
-      }
-      _validateForm();
+      BlocProvider.of<CreateAccountBloc>(context).add(
+        CreateAccountFormFieldChanged(
+          field: CreateAccountFormField.confirmPassword,
+          value: _confirmPasswordController.text,
+          isEmailRegistration: isEmailRegistration,
+          passwordValue: _passwordController.text,
+        ),
+      );
     });
+
     super.initState();
   }
 
@@ -355,6 +344,9 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
           if (state is CreateAccountOtpVerified) {
             // hide bottomsheet otp from contact verification is verified
             Navigator.pop(context);
+          }
+          if (state is CreateAccountFormFieldValidated) {
+            _handleFieldValidation(state);
           }
         },
         builder: (context, state) {
@@ -408,14 +400,13 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                       hintText: '${l10n?.roleHint}',
                       onOpen: _onItemSelectorOpened,
                       selectedItem: _selectedRole?.name,
-                      items:
-                          _professionalRolesList
-                              .map((role) => role.name)
-                              .toList(),
+                      items: _professionalRolesList
+                          .map((role) => role.name)
+                          .toList(),
                       onItemSelected: _onRoleSelected,
                       modalTitle: '${l10n?.selectRoleTitle}',
                     ),
-                  if (_roleError != null)
+                  if (_roleErrorList?.isNotEmpty ?? false)
                     Padding(
                       padding: const EdgeInsets.only(top: CoreSpacing.space1),
                       child: Row(
@@ -430,7 +421,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                           ),
                           const SizedBox(width: CoreSpacing.space1),
                           Text(
-                            '$_roleError',
+                            '${_roleErrorList?.first}',
                             style: CoreTypography.bodySmallRegular(
                               color: CoreTextColors.error,
                             ),
@@ -460,14 +451,24 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                     focusNode: _phoneFocusNode,
                     isPhoneNumber: true,
                     phonePrefixes: _phonePrefixes,
-                    countryCodePickerTitle:
-                        AppLocalizations.of(context)?.selectCountryCode,
+                    countryCodePickerTitle: AppLocalizations.of(
+                      context,
+                    )?.selectCountryCode,
                     phonePrefix: _selectedPhonePrefix,
                     onPhonePrefixChanged: (prefix) {
                       if (prefix != null) {
                         setState(() {
                           _selectedPhonePrefix = prefix;
                         });
+                        // Re-validate mobile number when prefix changes
+                        BlocProvider.of<CreateAccountBloc>(context).add(
+                          CreateAccountFormFieldChanged(
+                            field: CreateAccountFormField.mobileNumber,
+                            value: _mobileNumberController.text,
+                            isEmailRegistration: isEmailRegistration,
+                            phonePrefix: prefix,
+                          ),
+                        );
                       }
                     },
                     errorTextList: _mobileNumberErrorList,
@@ -480,10 +481,9 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                     obscureText: !_isPasswordVisible,
                     suffix: IconButton(
                       icon: CoreIconWidget(
-                        icon:
-                            _isPasswordVisible
-                                ? CoreIcons.eye
-                                : CoreIcons.eyeOff,
+                        icon: _isPasswordVisible
+                            ? CoreIcons.eye
+                            : CoreIcons.eyeOff,
                         size: CoreSpacing.space6,
                         color: CoreTextColors.dark,
                       ),
@@ -499,10 +499,9 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                     obscureText: !_isConfirmPasswordVisible,
                     suffix: IconButton(
                       icon: CoreIconWidget(
-                        icon:
-                            _isConfirmPasswordVisible
-                                ? CoreIcons.eye
-                                : CoreIcons.eyeOff,
+                        icon: _isConfirmPasswordVisible
+                            ? CoreIcons.eye
+                            : CoreIcons.eyeOff,
                         size: CoreSpacing.space6,
                         color: CoreTextColors.dark,
                       ),
@@ -552,10 +551,9 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                     onPressed: () {
                       _onSubmit(context);
                     },
-                    label:
-                        state is CreateAccountLoading
-                            ? '${l10n?.creatingAccountButton}'
-                            : '${l10n?.agreeAndContinueButton}',
+                    label: state is CreateAccountLoading
+                        ? '${l10n?.creatingAccountButton}'
+                        : '${l10n?.agreeAndContinueButton}',
                   ),
                   const SizedBox(height: 32),
                 ],
