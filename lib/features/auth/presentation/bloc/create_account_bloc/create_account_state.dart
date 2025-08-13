@@ -91,7 +91,7 @@ class CreateAccountContactVerified extends CreateAccountState {
 }
 
 /// State for editing contact, triggered after user taps on edit contact button on bottom sheet
-class CreateAccountEditContactTriggered extends CreateAccountState {
+class CreateAccountEditContactSuccess extends CreateAccountState {
   @override
   List<Object?> get props => [];
 }

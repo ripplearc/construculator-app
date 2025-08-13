@@ -63,12 +63,12 @@ class LoadProfessionalRoles extends CreateAccountEvent {
 }
 
 /// Event for sending OTP to the user
-class CreateAccountSendOtp extends CreateAccountEvent{
+class CreateAccountSendOtpRequested extends CreateAccountEvent{
   /// The address of the user, can be an email address or a phone number
   final String address;
   /// Whether the user is registering with an email address or a phone number
   final bool isEmailRegistration;
-  const CreateAccountSendOtp({required this.address,required this.isEmailRegistration});
+  const CreateAccountSendOtpRequested({required this.address,required this.isEmailRegistration});
 
   @override
   List<Object> get props => [address,isEmailRegistration];
@@ -88,4 +88,4 @@ class CreateAccountOtpVerified extends CreateAccountEvent{
 
 /// Event for editing the contact address, triggered after user taps on edit contact button on bottom sheet
 /// This allows the UI to hide the bottom sheet and focus on the contact input field
-class CreateAccountEditContact extends CreateAccountEvent{}
+class CreateAccountEditContactPressed extends CreateAccountEvent{}

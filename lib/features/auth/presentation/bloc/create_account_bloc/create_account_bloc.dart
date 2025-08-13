@@ -26,16 +26,16 @@ class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
        super(CreateAccountInitial()) {
     on<CreateAccountSubmitted>(_onSubmitted);
     on<LoadProfessionalRoles>(_onLoadProfessionalRoles);
-    on<CreateAccountSendOtp>(_onSendOtp);
+    on<CreateAccountSendOtpRequested>(_onSendOtp);
     on<CreateAccountOtpVerified>(_onOtpVerified);
-    on<CreateAccountEditContact>(_onEditContact);
+    on<CreateAccountEditContactPressed>(_onEditContact);
   }
 
   Future<void> _onEditContact(
-    CreateAccountEditContact event,
+    CreateAccountEditContactPressed event,
     Emitter<CreateAccountState> emit,
   ) async {
-    emit(CreateAccountEditContactTriggered());
+    emit(CreateAccountEditContactSuccess());
   }
 
   Future<void> _onOtpVerified(
@@ -61,7 +61,7 @@ class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
   }
 
   Future<void> _onSendOtp(
-    CreateAccountSendOtp event,
+    CreateAccountSendOtpRequested event,
     Emitter<CreateAccountState> emit,
   ) async {
     emit(CreateAccountOtpSending());

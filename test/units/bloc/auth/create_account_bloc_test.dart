@@ -59,7 +59,7 @@ void main() {
       build: () => bloc,
       act:
           (bloc) => bloc.add(
-            const CreateAccountSendOtp(
+            const CreateAccountSendOtpRequested(
               address: testPhone,
               isEmailRegistration: true,
             ),
@@ -83,7 +83,7 @@ void main() {
       },
       act:
           (bloc) => bloc.add(
-            const CreateAccountSendOtp(
+            const CreateAccountSendOtpRequested(
               address: testEmail,
               isEmailRegistration: true,
             ),
@@ -110,9 +110,9 @@ void main() {
     );
 
     blocTest<CreateAccountBloc, CreateAccountState>(
-      'emits [CreateAccountEditContactSuccess] on CreateAccountEditContact',
+      'emits [CreateAccountEditContactTriggered] on CreateAccountEditContactPressed',
       build: () => bloc,
-      act: (bloc) => bloc.add(CreateAccountEditContact()),
+      act: (bloc) => bloc.add(CreateAccountEditContactPressed()),
       expect: () => [isA<CreateAccountEditContactSuccess>()],
     );
 
