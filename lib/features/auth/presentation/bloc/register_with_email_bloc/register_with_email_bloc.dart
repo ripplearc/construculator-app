@@ -32,11 +32,11 @@ class RegisterWithEmailBloc
       },
     );
     on<RegisterWithEmailContinuePressed>(_onContinuePressed);
-    on<RegisterWithEmailEditEmail>(_onEditEmail);
+    on<RegisterWithEmailEmailEditRequested>(_onEditEmail);
   }
 
   Future<void> _onEditEmail(
-    RegisterWithEmailEditEmail event,
+    RegisterWithEmailEmailEditRequested event,
     Emitter<RegisterWithEmailState> emit,
   ) async {
     emit(RegisterWithEmailEditUserEmail());

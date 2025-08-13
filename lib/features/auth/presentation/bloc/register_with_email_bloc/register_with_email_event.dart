@@ -34,9 +34,9 @@ class RegisterWithEmailContinuePressed extends RegisterWithEmailEvent {
 } 
 
 /// Event for editing email, triggered when user presses the edit button on the otp bottom sheet
-class RegisterWithEmailEditEmail extends RegisterWithEmailEvent {
+class RegisterWithEmailEmailEditRequested extends RegisterWithEmailEvent {
 
-  const RegisterWithEmailEditEmail();
+  const RegisterWithEmailEmailEditRequested();
 
   @override
   List<Object> get props => [];

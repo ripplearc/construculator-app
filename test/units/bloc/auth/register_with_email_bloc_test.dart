@@ -123,7 +123,7 @@ void main() {
       test(
         'emits [RegisterWithEmailEditUserEmail] when edit email is triggered',
         () async {
-          bloc.add(RegisterWithEmailEditEmail());
+          bloc.add(RegisterWithEmailEmailEditRequested());
           await expectLater(
             bloc.stream,
             emitsInOrder([isA<RegisterWithEmailEditUserEmail>()]),
