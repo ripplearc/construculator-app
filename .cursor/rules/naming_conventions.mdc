@@ -60,6 +60,37 @@ Ensure consistent naming across the architecture and guide engineers on **when t
 
 ---
 
+## Event
+- **Pattern:** `NounAction` (past tense)  
+  - Base sealed class: `NounEvent`  
+  - Concrete events describe **what has already happened** from the Bloc’s perspective.
+- **When to Use:** Represents a completed action that triggers state changes.
+- **Special Case:** Initial load events end with `Started` (e.g., `CounterStarted`).
+- **Example Base Class:** `CounterEvent`
+- **Example Concrete:**  
+  - `CounterStarted`
+  - `CounterIncrementPressed`
+  - `CounterDecrementPressed`
+  - `CounterIncrementRetried`
+- **Skip If:** No actions are needed to change the state (static data).
+
+---
+
+## State
+- **Pattern:** `NounCondition`  
+  - Base sealed class: `NounState`  
+  - Concrete states describe **current condition** of the UI or feature.
+- **When to Use:** Represents the system's condition after processing events.
+- **Special Case:** Use `Initial`, `InProgress`, `Success`, `Failure` for common phases.
+- **Example Base Class:** `CounterState`
+- **Example Concrete:**  
+  - `CounterInitial`
+  - `CounterLoadInProgress`
+  - `CounterLoadSuccess`
+  - `CounterLoadComplete`
+  - `CounterLoadFailure`
+- **Skip If:** State can be represented by a single primitive value.
+
 ## General Rules
 1. **PascalCase** for all names.
 2. **Suffix is mandatory** for each type.
