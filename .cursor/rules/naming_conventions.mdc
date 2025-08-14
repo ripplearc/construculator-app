@@ -1,0 +1,110 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Construculator Class Naming & Usage Rules
+
+## Purpose
+Ensure consistent naming across the architecture and guide engineers on **when to create each type of class**.
+
+---
+
+## UseCase
+- **Pattern:** `VerbNounUseCase`
+- **When to Use:** One specific business operation matching a user's intent. Stateless, single responsibility, no persistent state.
+- **Example:** `CreateProjectUseCase`
+- **Skip If:** Simple CRUD or direct repository calls.
+
+## Service
+- **Pattern:** `NounService`
+- **When to Use:** Complex domain logic or infrastructure operations (e.g., calculations, external integrations). Stateless.
+- **Example:** `CalculationService`
+- **Skip If:** Single business transaction → UseCase instead.
+
+## Manager
+- **Pattern:** `NounManager`
+- **When to Use:** Stateful coordination between multiple services, complex workflows, lifecycle/state management.
+- **Example:** `AuthenticationManager`
+- **Skip If:** Stateless → use Service.
+
+## Repository
+- **Pattern:** `NounRepository`
+- **When to Use:** Data access abstraction for an entity. Coordinates local & remote sources.
+- **Example:** `ProjectRepository`
+- **Skip If:** No entity or direct API call without abstraction.
+
+## DataSource
+- **Pattern:** `(Local|Remote)NounDataSource`
+- **When to Use:** Direct persistence or fetching (API, DB, FS). Returns data models.
+- **Example:** `RemoteProjectDataSource`
+- **Skip If:** Always use Repository above it.
+
+## Factory
+- **Pattern:** `NounFactory`
+- **When to Use:** Create configured instances with dependencies and runtime params.
+- **Example:** `HttpClientFactory`
+- **Skip If:** Simple constructor call works.
+
+## Helper / Util
+- **Pattern:** `NounHelper` / `NounUtil`
+- **When to Use:** Stateless utility functions used across layers.
+- **Example:** `UnitConversionHelper`
+- **Skip If:** One-off inline logic.
+
+## BLoC
+- **Pattern:** `NounBloc` (+ `NounEvent`, `NounState`)
+- **When to Use:** UI state management for a feature.
+- **Example:** `ProjectBloc`, `ProjectEvent`, `ProjectState`
+- **Skip If:** Static screens.
+
+---
+
+## Event
+- **Pattern:** `NounAction` (past tense)  
+  - Base sealed class: `NounEvent`  
+  - Concrete events describe **what has already happened** from the Bloc’s perspective.
+- **When to Use:** Represents a completed action that triggers state changes.
+- **Special Case:** Initial load events end with `Started` (e.g., `CounterStarted`).
+- **Example Base Class:** `CounterEvent`
+- **Example Concrete:**  
+  - `CounterStarted`
+  - `CounterIncrementPressed`
+  - `CounterDecrementPressed`
+  - `CounterIncrementRetried`
+- **Skip If:** No actions are needed to change the state (static data).
+
+---
+
+## State
+- **Pattern:** `NounCondition`  
+  - Base sealed class: `NounState`  
+  - Concrete states describe **current condition** of the UI or feature.
+- **When to Use:** Represents the system's condition after processing events.
+- **Special Case:** Use `Initial`, `InProgress`, `Success`, `Failure` for common phases.
+- **Example Base Class:** `CounterState`
+- **Example Concrete:**  
+  - `CounterInitial`
+  - `CounterLoadInProgress`
+  - `CounterLoadSuccess`
+  - `CounterLoadComplete`
+  - `CounterLoadFailure`
+- **Skip If:** State can be represented by a single primitive value.
+
+## General Rules
+1. **PascalCase** for all names.
+2. **Suffix is mandatory** for each type.
+3. **Entity name stays consistent across layers** (`ProjectBloc` → `CreateProjectUseCase` → `ProjectRepository` → `RemoteProjectDataSource`).
+4. **DataSources must be prefixed with `Local` or `Remote`**.
+
+---
+
+## Quick Decision Flow
+- Handling UI state? → **BLoC**
+- One user action/business op? → **UseCase**
+- Complex stateless logic/integration? → **Service**
+- Stateful multi-service coordination? → **Manager**
+- Entity data abstraction? → **Repository**
+- Raw persistence/fetch? → **DataSource**
+- Creating configured instances? → **Factory**
+- Stateless shared logic? → **Helper/Util**
