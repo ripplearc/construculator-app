@@ -15,7 +15,7 @@ void main() {
     return MaterialApp(
       home: Scaffold(
         body: Center(
-          child: buildErrorWidget(
+          child: buildErrorWidgetWithLink(
             errorText: error,
             linkText: link,
             onPressed: onPressed,
