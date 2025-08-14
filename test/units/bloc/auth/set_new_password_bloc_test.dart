@@ -6,6 +6,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:construculator/features/auth/testing/auth_test_module.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 
 void main() {
   group('SetNewPasswordBloc Tests', () {
@@ -30,6 +31,196 @@ void main() {
     tearDown(() {
       fakeSupabase.reset();
       Modular.destroy();
+    });
+
+    group('SetNewPasswordPasswordValidationRequested', () {
+      group('Password field validation', () {
+        blocTest<SetNewPasswordBloc, SetNewPasswordState>(
+          'emits [SetNewPasswordPasswordValidated] with isValid=true when password is valid',
+          build: () => bloc,
+          act: (bloc) => bloc.add(
+            const SetNewPasswordPasswordValidationRequested(
+              field: SetNewPasswordFormField.password,
+              value: '@Password123!',
+            ),
+          ),
+          expect: () => [
+            const SetNewPasswordPasswordValidated(
+              field: SetNewPasswordFormField.password,
+              isValid: true,
+              validator: null,
+            ),
+          ],
+        );
+
+        blocTest<SetNewPasswordBloc, SetNewPasswordState>(
+          'emits [SetNewPasswordPasswordValidated] with isValid=false when password is too short',
+          build: () => bloc,
+          act: (bloc) => bloc.add(
+            const SetNewPasswordPasswordValidationRequested(
+              field: SetNewPasswordFormField.password,
+              value: 'short',
+            ),
+          ),
+          expect: () => [
+            const SetNewPasswordPasswordValidated(
+              field: SetNewPasswordFormField.password,
+              isValid: false,
+              validator: AuthErrorType.passwordTooShort,
+            ),
+          ],
+        );
+
+        blocTest<SetNewPasswordBloc, SetNewPasswordState>(
+          'emits [SetNewPasswordPasswordValidated] with isValid=false when password is empty',
+          build: () => bloc,
+          act: (bloc) => bloc.add(
+            const SetNewPasswordPasswordValidationRequested(
+              field: SetNewPasswordFormField.password,
+              value: '',
+            ),
+          ),
+          expect: () => [
+            const SetNewPasswordPasswordValidated(
+              field: SetNewPasswordFormField.password,
+              isValid: false,
+              validator: AuthErrorType.passwordRequired,
+            ),
+          ],
+        );
+
+        blocTest<SetNewPasswordBloc, SetNewPasswordState>(
+          'emits [SetNewPasswordPasswordValidated] with isValid=false when password missing uppercase',
+          build: () => bloc,
+          act: (bloc) => bloc.add(
+            const SetNewPasswordPasswordValidationRequested(
+              field: SetNewPasswordFormField.password,
+              value: 'password123!',
+            ),
+          ),
+          expect: () => [
+            const SetNewPasswordPasswordValidated(
+              field: SetNewPasswordFormField.password,
+              isValid: false,
+              validator: AuthErrorType.passwordMissingUppercase,
+            ),
+          ],
+        );
+
+        blocTest<SetNewPasswordBloc, SetNewPasswordState>(
+          'emits [SetNewPasswordPasswordValidated] with isValid=false when password missing number',
+          build: () => bloc,
+          act: (bloc) => bloc.add(
+            const SetNewPasswordPasswordValidationRequested(
+              field: SetNewPasswordFormField.password,
+              value: 'Password!',
+            ),
+          ),
+          expect: () => [
+            const SetNewPasswordPasswordValidated(
+              field: SetNewPasswordFormField.password,
+              isValid: false,
+              validator: AuthErrorType.passwordMissingNumber,
+            ),
+          ],
+        );
+
+        blocTest<SetNewPasswordBloc, SetNewPasswordState>(
+          'emits [SetNewPasswordPasswordValidated] with isValid=false when password missing special character',
+          build: () => bloc,
+          act: (bloc) => bloc.add(
+            const SetNewPasswordPasswordValidationRequested(
+              field: SetNewPasswordFormField.password,
+              value: 'Password123',
+            ),
+          ),
+          expect: () => [
+            const SetNewPasswordPasswordValidated(
+              field: SetNewPasswordFormField.password,
+              isValid: false,
+              validator: AuthErrorType.passwordMissingSpecialChar,
+            ),
+          ],
+        );
+      });
+
+      group('Password confirmation field validation', () {
+        blocTest<SetNewPasswordBloc, SetNewPasswordState>(
+          'emits [SetNewPasswordPasswordValidated] with isValid=true when passwords match',
+          build: () => bloc,
+          act: (bloc) => bloc.add(
+            const SetNewPasswordPasswordValidationRequested(
+              field: SetNewPasswordFormField.passwordConfirmation,
+              value: '@Password123!',
+              passwordValue: '@Password123!',
+            ),
+          ),
+          expect: () => [
+            const SetNewPasswordPasswordValidated(
+              field: SetNewPasswordFormField.passwordConfirmation,
+              isValid: true,
+              validator: null,
+            ),
+          ],
+        );
+
+        blocTest<SetNewPasswordBloc, SetNewPasswordState>(
+          'emits [SetNewPasswordPasswordValidated] with isValid=false when passwords do not match',
+          build: () => bloc,
+          act: (bloc) => bloc.add(
+            const SetNewPasswordPasswordValidationRequested(
+              field: SetNewPasswordFormField.passwordConfirmation,
+              value: '@Password123!',
+              passwordValue: 'DifferentPassword123!',
+            ),
+          ),
+          expect: () => [
+            const SetNewPasswordPasswordValidated(
+              field: SetNewPasswordFormField.passwordConfirmation,
+              isValid: false,
+              validator: AuthErrorType.passwordsDoNotMatch,
+            ),
+          ],
+        );
+
+        blocTest<SetNewPasswordBloc, SetNewPasswordState>(
+          'emits [SetNewPasswordPasswordValidated] with isValid=false when confirm password is empty',
+          build: () => bloc,
+          act: (bloc) => bloc.add(
+            const SetNewPasswordPasswordValidationRequested(
+              field: SetNewPasswordFormField.passwordConfirmation,
+              value: '',
+              passwordValue: '@Password123!',
+            ),
+          ),
+          expect: () => [
+            const SetNewPasswordPasswordValidated(
+              field: SetNewPasswordFormField.passwordConfirmation,
+              isValid: false,
+              validator: AuthErrorType.passwordRequired,
+            ),
+          ],
+        );
+
+        blocTest<SetNewPasswordBloc, SetNewPasswordState>(
+          'emits [SetNewPasswordPasswordValidated] with isValid=false when passwordValue is null',
+          build: () => bloc,
+          act: (bloc) => bloc.add(
+            const SetNewPasswordPasswordValidationRequested(
+              field: SetNewPasswordFormField.passwordConfirmation,
+              value: '@Password123!',
+              passwordValue: null,
+            ),
+          ),
+          expect: () => [
+            const SetNewPasswordPasswordValidated(
+              field: SetNewPasswordFormField.passwordConfirmation,
+              isValid: true,
+              validator: null,
+            ),
+          ],
+        );
+      });
     });
 
     group('SetNewPasswordSubmitted', () {
