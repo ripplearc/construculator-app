@@ -260,12 +260,11 @@ packages:
   core_ui:
     dependency: "direct main"
     description:
-      path: "."
-      ref: "feature/toast-display"
-      resolved-ref: "57a9d8f6896f31efad70cfc31c49209a481d3d89"
-      url: "https://github.com/ripplearc/coreui.git"
-    source: git
-    version: "0.1.0"
+      name: core_ui
+      sha256: d931bcf9d06550f8276a9aea034a31abd1b54a23916bb254ed8ca554286221a4
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.0"
   coverage:
     dependency: transitive
     description:
