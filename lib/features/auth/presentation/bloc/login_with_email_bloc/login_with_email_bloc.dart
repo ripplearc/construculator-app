@@ -15,7 +15,6 @@ class LoginWithEmailBloc
   }) : _checkEmailAvailabilityUseCase = checkEmailAvailabilityUseCase,
        super(LoginWithEmailInitial()) {
     on<LoginEmailChanged>(_onEmailChanged,);
-    on<LoginEmailSubmitted>(_onEmailSubmitted);
   }
 
   Future<void> _onEmailChanged(
@@ -30,26 +29,10 @@ class LoginWithEmailBloc
       },
       (authResult) {
         emit(
-          LoginWithEmailAvailabilitySuccess(
+          LoginWithEmailAvailabilityLoaded(
             isEmailRegistered: authResult.data ?? true,
           ),
         );
-      },
-    );
-  }
-
-  Future<void> _onEmailSubmitted(
-    LoginEmailSubmitted event,
-    Emitter<LoginWithEmailState> emit,
-  ) async {
-    emit(LoginWithEmailLoading());
-    final result = await _checkEmailAvailabilityUseCase(event.email);
-    result.fold(
-      (failure) {
-        emit(LoginWithEmailFailure(failure: failure));
-      },
-      (authResult) {
-        emit(LoginWithEmailSuccess());
       },
     );
   }

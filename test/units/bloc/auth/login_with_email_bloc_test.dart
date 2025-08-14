@@ -40,7 +40,7 @@ void main() {
         expect:
             () => [
               LoginWithEmailAvailabilityLoading(),
-              LoginWithEmailAvailabilitySuccess(isEmailRegistered: true),
+              LoginWithEmailAvailabilityLoaded(isEmailRegistered: true),
             ],
       );
 
@@ -54,7 +54,7 @@ void main() {
         expect:
             () => [
               LoginWithEmailAvailabilityLoading(),
-              LoginWithEmailAvailabilitySuccess(isEmailRegistered: false),
+              LoginWithEmailAvailabilityLoaded(isEmailRegistered: false),
             ],
       );
 
@@ -72,27 +72,6 @@ void main() {
             ],
       );
     });
-
-    group('LoginEmailSubmitted', () {
-      blocTest<LoginWithEmailBloc, LoginWithEmailState>(
-        'emits [LoginWithEmailLoading, LoginWithEmailSuccess] when email submission succeeds',
-        build: () {
-          return bloc;
-        },
-        act: (bloc) => bloc.add(LoginEmailSubmitted(testEmail)),
-        expect: () => [LoginWithEmailLoading(), LoginWithEmailSuccess()],
-      );
-
-      blocTest<LoginWithEmailBloc, LoginWithEmailState>(
-        'emits [LoginWithEmailLoading, LoginWithEmailFailure] when email submission fails',
-        build: () {
-          fakeSupabase.shouldThrowOnSelect = true;
-          return bloc;
-        },
-        act: (bloc) => bloc.add(LoginEmailSubmitted(testEmail)),
-        expect: () => [LoginWithEmailLoading(), isA<LoginWithEmailFailure>()],
-      );
-    });
     group('Email Registration Status', () {
       blocTest<LoginWithEmailBloc, LoginWithEmailState>(
         'correctly identifies unregistered email',
@@ -103,7 +82,7 @@ void main() {
         expect:
             () => [
               LoginWithEmailAvailabilityLoading(),
-              LoginWithEmailAvailabilitySuccess(isEmailRegistered: false),
+              LoginWithEmailAvailabilityLoaded(isEmailRegistered: false),
             ],
       );
     });
