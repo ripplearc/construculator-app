@@ -11,6 +11,31 @@ abstract class CreateAccountEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+/// Event for form field changes that triggers validation
+class CreateAccountFormFieldChanged extends CreateAccountEvent {
+  /// The field that changed
+  final CreateAccountFormField field;
+  /// The new value of the field
+  final String value;
+  /// Whether this is an email registration (affects validation logic)
+  final bool isEmailRegistration;
+  /// The password value for confirm password validation
+  final String? passwordValue;
+  /// The phone prefix for mobile number validation
+  final String? phonePrefix;
+
+  const CreateAccountFormFieldChanged({
+    required this.field,
+    required this.value,
+    required this.isEmailRegistration,
+    this.passwordValue,
+    this.phonePrefix,
+  });
+
+  @override
+  List<Object?> get props => [field, value, isEmailRegistration, passwordValue, phonePrefix];
+}
+
 /// Event for submitting the create account form
 class CreateAccountSubmitted extends CreateAccountEvent {
   /// The email address of the user, can be null if the user is registering with a mobile number
