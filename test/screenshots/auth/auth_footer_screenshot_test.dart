@@ -44,7 +44,7 @@ void main() {
 
       await expectLater(
         find.byType(AuthFooter),
-        matchesGoldenFile('goldens/auth_footer/auth_footer_register.png'),
+        matchesGoldenFile('goldens/auth_footer/${size.width}x${size.height}/auth_footer_register.png'),
       );
     });
 
@@ -59,7 +59,7 @@ void main() {
 
       await expectLater(
         find.byType(AuthFooter),
-        matchesGoldenFile('goldens/auth_footer/auth_footer_login.png'),
+        matchesGoldenFile('goldens/auth_footer/${size.width}x${size.height}/auth_footer_login.png'),
       );
     });
   });
