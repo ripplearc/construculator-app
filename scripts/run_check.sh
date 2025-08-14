@@ -126,11 +126,31 @@ comprehensive_check() {
     # Process coverage
     if [[ -f "coverage/lcov.info" ||  ! -s "coverage/lcov.info" ]]; then
       lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info
+      
+      # Show individual file coverage
+      echo "📊 Individual file coverage:"
+      echo "----------------------------------------"
+      grep '^SF:' coverage/lcov.info | while read -r line; do
+        local file_path=$(echo "$line" | cut -d: -f2-)
+        local file_name=$(basename "$file_path")
+        
+        # Get coverage for this specific file
+        local file_lf=$(grep -A 1000 "^SF:$file_path" coverage/lcov.info | grep '^LF:' | head -1 | cut -d: -f2)
+        local file_lh=$(grep -A 1000 "^SF:$file_path" coverage/lcov.info | grep '^LH:' | head -1 | cut -d: -f2)
+        
+        if [[ -n "$file_lf" && -n "$file_lh" && "$file_lf" -gt 0 ]]; then
+          local file_coverage=$(echo "scale=1; $file_lh*100/$file_lf" | bc)
+          printf "%-40s %6s%%\n" "$file_name" "$file_coverage"
+        fi
+      done
+      echo "----------------------------------------"
+      
+      # Calculate overall coverage
       local lf=$(grep '^LF:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
       local lh=$(grep '^LH:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
       local coverage=$(echo "scale=2; $lh*100/$lf" | bc)
 
-      echo "📊 Coverage: $coverage% (Target: ${ARC_CODE_COVERAGE_TARGET}%)"
+      echo "📊 Overall Coverage: $coverage% (Target: ${ARC_CODE_COVERAGE_TARGET}%)"
       if (( $(echo "$coverage < $ARC_CODE_COVERAGE_TARGET" | bc -l) )); then
         echo "❌ Low coverage"
         exit 1

@@ -1,3 +1,4 @@
+// coverage:ignore-file
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/auth/domain/usecases/check_email_availability_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/create_account_usecase.dart';

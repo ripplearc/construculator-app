@@ -54,6 +54,7 @@ void main() {
           credentialId: '456',
           email: 'test@example.com',
           phone: '1234567890',
+          countryCode: '+1',
           firstName: 'John',
           lastName: 'Doe',
           professionalRole: 'Developer',
@@ -72,11 +73,112 @@ void main() {
         expect(userFromJson.credentialId, user.credentialId);
         expect(userFromJson.email, user.email);
         expect(userFromJson.phone, user.phone);
+        expect(userFromJson.countryCode, user.countryCode);
         expect(userFromJson.firstName, user.firstName);
         expect(userFromJson.lastName, user.lastName);
         expect(userFromJson.professionalRole, user.professionalRole);
         expect(userFromJson.profilePhotoUrl, user.profilePhotoUrl);
         expect(userFromJson.userStatus, user.userStatus);
+      });
+    });
+
+    group('getters', () {
+      test('fullName should combine firstName and lastName', () {
+        final user = User(
+          id: '123',
+          credentialId: '456',
+          email: 'test@example.com',
+          phone: '1234567890',
+          firstName: 'John',
+          lastName: 'Doe',
+          professionalRole: 'Developer',
+          profilePhotoUrl: 'https://example.com/photo.jpg',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          userStatus: UserProfileStatus.active,
+          userPreferences: {'theme': 'dark'},
+        );
+
+        expect(user.fullName, equals('John Doe'));
+      });
+
+      test('fullName should handle empty names', () {
+        final user = User(
+          id: '123',
+          credentialId: '456',
+          email: 'test@example.com',
+          phone: '1234567890',
+          firstName: '',
+          lastName: '',
+          professionalRole: 'Developer',
+          profilePhotoUrl: 'https://example.com/photo.jpg',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          userStatus: UserProfileStatus.active,
+          userPreferences: {'theme': 'dark'},
+        );
+
+        expect(user.fullName, equals(' '));
+      });
+
+      test('phoneNumber should combine countryCode and phone', () {
+        final user = User(
+          id: '123',
+          credentialId: '456',
+          email: 'test@example.com',
+          phone: '1234567890',
+          countryCode: '+1',
+          firstName: 'John',
+          lastName: 'Doe',
+          professionalRole: 'Developer',
+          profilePhotoUrl: 'https://example.com/photo.jpg',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          userStatus: UserProfileStatus.active,
+          userPreferences: {'theme': 'dark'},
+        );
+
+        expect(user.phoneNumber, equals('+11234567890'));
+      });
+
+      test('phoneNumber should handle null countryCode', () {
+        final user = User(
+          id: '123',
+          credentialId: '456',
+          email: 'test@example.com',
+          phone: '1234567890',
+          countryCode: null,
+          firstName: 'John',
+          lastName: 'Doe',
+          professionalRole: 'Developer',
+          profilePhotoUrl: 'https://example.com/photo.jpg',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          userStatus: UserProfileStatus.active,
+          userPreferences: {'theme': 'dark'},
+        );
+
+        expect(user.phoneNumber, equals('null1234567890'));
+      });
+
+      test('phoneNumber should handle null phone', () {
+        final user = User(
+          id: '123',
+          credentialId: '456',
+          email: 'test@example.com',
+          phone: null,
+          countryCode: '+1',
+          firstName: 'John',
+          lastName: 'Doe',
+          professionalRole: 'Developer',
+          profilePhotoUrl: 'https://example.com/photo.jpg',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          userStatus: UserProfileStatus.active,
+          userPreferences: {'theme': 'dark'},
+        );
+
+        expect(user.phoneNumber, equals('+1null'));
       });
     });
   });

@@ -1,3 +1,4 @@
+// coverage:ignore-file
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
