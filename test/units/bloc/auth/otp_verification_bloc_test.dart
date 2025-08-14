@@ -88,5 +88,46 @@ void main() {
             ],
       );
     });
+
+    group('OtpVerificationOtpChanged', () {
+      blocTest<OtpVerificationBloc, OtpVerificationState>(
+        'emits [OtpVerificationOtpChangeUpdated] when OTP input changes',
+        build: () {
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          OtpVerificationOtpChanged(otp: '123456'),
+        ),
+        expect: () => [
+          OtpVerificationOtpChangeUpdated(otp: '123456'),
+        ],
+      );
+
+      blocTest<OtpVerificationBloc, OtpVerificationState>(
+        'emits [OtpVerificationOtpChangeUpdated] when OTP input changes to empty string',
+        build: () {
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          OtpVerificationOtpChanged(otp: ''),
+        ),
+        expect: () => [
+          OtpVerificationOtpChangeUpdated(otp: ''),
+        ],
+      );
+
+      blocTest<OtpVerificationBloc, OtpVerificationState>(
+        'emits [OtpVerificationOtpChangeUpdated] when OTP input changes to partial value',
+        build: () {
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          OtpVerificationOtpChanged(otp: '123'),
+        ),
+        expect: () => [
+          OtpVerificationOtpChangeUpdated(otp: '123'),
+        ],
+      );
+    });
  });
 }
