@@ -1,6 +1,8 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 
+/// A widget that displays a footer with a text and an action text
+/// Meant to be resused on login and register pages
 class AuthFooter extends StatelessWidget {
   const AuthFooter({
     super.key,
@@ -8,8 +10,11 @@ class AuthFooter extends StatelessWidget {
     required this.actionText,
     required this.onPressed,
   });
+  /// The text to display
   final String text;
+  /// The text of the action to display
   final String actionText;
+  /// The callback to be called when the action is pressed
   final VoidCallback onPressed;
 
   @override
