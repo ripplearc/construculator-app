@@ -42,6 +42,10 @@ enum UserProfileStatus { active, inactive }
 /// [passwordMissingLowercase] is used when password lacks lowercase letters
 /// [passwordMissingNumber] is used when password lacks numbers
 /// [passwordMissingSpecialChar] is used when password lacks special characters
+/// [passwordsDoNotMatch] is used when passwords do not match
+/// [roleRequired] is used when role is missing or empty
+/// [firstNameRequired] is used when first name is missing or empty
+/// [lastNameRequired] is used when last name is missing or empty
 /// [otpRequired] is used when OTP is missing or empty
 /// [invalidOtp] is used when OTP format is invalid
 /// [phoneRequired] is used when phone number is missing or empty
@@ -65,6 +69,10 @@ enum AuthErrorType {
   passwordMissingLowercase,
   passwordMissingNumber,
   passwordMissingSpecialChar,
+  passwordsDoNotMatch,
+  roleRequired,
+  firstNameRequired,
+  lastNameRequired,
   otpRequired,
   invalidOtp,
   phoneRequired,
@@ -111,6 +119,14 @@ extension AuthErrorTypeExtension on AuthErrorType {
         return l10n?.passwordMissingNumberError;
       case AuthErrorType.passwordMissingSpecialChar:
         return l10n?.passwordMissingSpecialCharError;
+      case AuthErrorType.passwordsDoNotMatch:
+        return l10n?.passwordsDoNotMatchError;
+      case AuthErrorType.roleRequired:
+        return l10n?.roleRequiredError;
+      case AuthErrorType.firstNameRequired:
+        return l10n?.firstNameRequired;
+      case AuthErrorType.lastNameRequired:
+        return l10n?.lastNameRequired;
       case AuthErrorType.otpRequired:
         return l10n?.otpRequiredError;
       case AuthErrorType.invalidOtp:
@@ -139,6 +155,8 @@ extension SupabaseAuthErrorCodeExtension on SupabaseAuthErrorCode {
         return AuthErrorType.rateLimited;
       case SupabaseAuthErrorCode.timeout:
         return AuthErrorType.timeout;
+      case SupabaseAuthErrorCode.samePassword:
+        return AuthErrorType.samePassword;
       case SupabaseAuthErrorCode.unknown:
         return AuthErrorType.unknownError;
     }
