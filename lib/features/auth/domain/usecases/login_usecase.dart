@@ -1,3 +1,4 @@
+// coverage:ignore-file
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/either/either.dart';

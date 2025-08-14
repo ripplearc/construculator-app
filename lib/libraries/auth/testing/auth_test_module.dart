@@ -1,3 +1,4 @@
+// coverage:ignore-file
 import 'package:construculator/libraries/auth/auth_manager_impl.dart';
 import 'package:construculator/libraries/auth/auth_notifier_impl.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
