@@ -9,8 +9,6 @@ void main() {
   final ratio = 1.0;
   TestWidgetsFlutterBinding.ensureInitialized();
 
-
-
   setUp(() async {
     await loadAppFonts();
   });
@@ -35,7 +33,9 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('renders register footer correctly', (tester) async {
+    testWidgets('renders register footer correctly', (tester) async {   
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
       await pumpAuthFooter(
         tester: tester,
         text: "Don't have an account?",
@@ -44,11 +44,13 @@ void main() {
 
       await expectLater(
         find.byType(AuthFooter),
-        matchesGoldenFile('goldens/auth_footer_register.png'),
+        matchesGoldenFile('goldens/auth_footer/auth_footer_register.png'),
       );
     });
 
     testWidgets('renders login footer correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
       await pumpAuthFooter(
         tester: tester,
         text: 'Already have an account?',
@@ -57,8 +59,8 @@ void main() {
 
       await expectLater(
         find.byType(AuthFooter),
-        matchesGoldenFile('goldens/auth_footer_login.png'),
+        matchesGoldenFile('goldens/auth_footer/auth_footer_login.png'),
       );
     });
   });
-} 
+}
