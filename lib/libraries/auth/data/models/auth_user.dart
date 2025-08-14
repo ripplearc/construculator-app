@@ -26,8 +26,8 @@ sealed class User with _$User {
   /// - [userStatus]: The status of the user
   /// - [userPreferences]: A map of user preferences
   const factory User({
-    required String id,
-    required String credentialId,
+    String? id,
+    String? credentialId,
     required String email,
     String? phone,
     String? countryCode,
