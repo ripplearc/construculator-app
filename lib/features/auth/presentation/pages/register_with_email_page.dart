@@ -169,7 +169,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
         backgroundColor: CoreBackgroundColors.pageBackground,
         body: BlocConsumer<RegisterWithEmailBloc, RegisterWithEmailState>(
           listener: (context, state) {
-            if (state is RegisterWithEmailEmailCheckSuccess) {
+            if (state is RegisterWithEmailEmailCheckCompleted) {
               if (state.isEmailRegistered) {
                 _emailErrorTextList = null;
                 _emailErrorWidgetList = [
