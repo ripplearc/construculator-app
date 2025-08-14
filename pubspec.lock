@@ -261,10 +261,10 @@ packages:
     dependency: "direct main"
     description:
       name: core_ui
-      sha256: "0caf5cf214cca2770dd8c4e3e5e6970a701bab5b5a01f698e0e92568be15497e"
+      sha256: d931bcf9d06550f8276a9aea034a31abd1b54a23916bb254ed8ca554286221a4
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.1"
+    version: "0.2.0"
   coverage:
     dependency: transitive
     description:
