@@ -20,7 +20,7 @@ class ForgotPasswordBloc extends Bloc<ForgotPasswordEvent, ForgotPasswordState> 
     ForgotPasswordEditEmail event,
     Emitter<ForgotPasswordState> emit,
   ) async {
-    emit(ForgotPasswordInitial());
+    emit(ForgotPasswordEditEmailSuccess());
   }
 
   Future<void> _onSubmitted(ForgotPasswordSubmitted event, Emitter<ForgotPasswordState> emit) async {
