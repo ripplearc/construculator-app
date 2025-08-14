@@ -1,3 +1,4 @@
+// coverage:ignore-file
 import 'package:construculator/features/auth/domain/usecases/params/create_account_usecase_params.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';

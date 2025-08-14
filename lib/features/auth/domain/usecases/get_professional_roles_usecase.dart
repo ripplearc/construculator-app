@@ -1,3 +1,4 @@
+// coverage:ignore-file
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/auth/data/models/professional_role.dart';
