@@ -32,7 +32,7 @@ void main() {
         builder: (context) {
           buildContext = context;
           return Scaffold(
-          body: OtpVerificationBottomSheet(
+          body: OtpVerificationQuickSheet(
             note: AppLocalizations.of(buildContext!)!.didNotReceiveCode,
             contact: contact,
             onChanged: onChanged,
