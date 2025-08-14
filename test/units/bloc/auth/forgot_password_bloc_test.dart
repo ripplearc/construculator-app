@@ -93,7 +93,7 @@ void main() {
           return bloc;
         },
         act: (bloc) => bloc.add(ForgotPasswordEditEmail()),
-        expect: () => [ForgotPasswordInitial()],
+        expect: () => [ForgotPasswordEditEmailSuccess()],
       );
     });
   });
