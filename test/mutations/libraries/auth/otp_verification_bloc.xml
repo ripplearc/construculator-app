@@ -4,7 +4,7 @@
     <!-- Targets: All files in fakes folder -->
     
     <files>
-        <file>lib/features/auth/presentation/blocs/otp_verification_bloc.dart</file>
+        <file>lib/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart</file>
     </files>
 
     <rules>
