@@ -1,4 +1,4 @@
-import 'package:construculator/features/auth/presentation/widgets/auth_methods.dart';
+import 'package:construculator/features/auth/presentation/widgets/auth_provider_buttons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -24,7 +24,7 @@ void main() {
           builder: (context) {
             buildContext = context;
             return Scaffold(
-              body: AuthMethods(onPressed: onPressed, isEmailAuth: isEmailAuth),
+              body: AuthProviderButtons(onPressed: onPressed, isEmailAuth: isEmailAuth),
             );
           },
         ),

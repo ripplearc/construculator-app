@@ -1,6 +1,13 @@
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:core_ui/core_ui.dart';
+
+/// Enum for the different auth methods
+/// [google] - Google auth
+/// [apple] - Apple auth
+/// [microsoft] - Microsoft auth
+/// [phone] - Phone auth
+/// [email] - Email auth
 enum AuthMethod {
   google,
   apple,
@@ -8,9 +15,15 @@ enum AuthMethod {
   phone,
   email,
 }
-class AuthMethods extends StatelessWidget {
-  const AuthMethods({super.key, required this.onPressed, this.isEmailAuth = true});
+
+/// A widget that displays the auth provider buttons
+class AuthProviderButtons extends StatelessWidget {
+  /// Constructor for the AuthProviderButtons widget
+  const AuthProviderButtons({super.key, required this.onPressed, this.isEmailAuth = true});
+  /// The callback to be called when the button is pressed
   final Function(AuthMethod) onPressed;
+  /// Whether the auth is email auth or phone auth, if true, renders the phone auth button, 
+  /// otherwise renders the email auth button
   final bool isEmailAuth;
 
   @override
