@@ -1,6 +1,5 @@
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
-import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/dashboard_routes.dart';  
@@ -42,59 +41,51 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
     });
   }
 
+  void _handlePasswordValidation(SetNewPasswordPasswordValidated state) {
+    setState(() {
+      List<String>? errorList;
+      
+      if (!state.isValid) {
+        if (state.validator != null) {
+          // Field has AuthValidation error
+          final errorMessage = state.validator?.localizedMessage(context);
+          errorList = errorMessage != null ? [errorMessage] : null;
+        }
+      } else {
+        errorList = null;
+      }
+
+      // Update the appropriate error list
+      switch (state.field) {
+        case SetNewPasswordFormField.password:
+          _passwordErrorList = errorList;
+          break;
+        case SetNewPasswordFormField.passwordConfirmation:
+          _confirmPasswordErrorList = errorList;
+          break;
+      }
+    });
+  }
+
   @override
   void initState() {
     _passwordController.addListener(() {
-      final passwordValidationResult = AuthValidation.validatePassword(
-        _passwordController.text,
+      BlocProvider.of<SetNewPasswordBloc>(context).add(
+        SetNewPasswordPasswordValidationRequested(
+          field: SetNewPasswordFormField.password,
+          value: _passwordController.text,
+        ),
       );
-      if (passwordValidationResult != null) {
-        setState(() {
-          final error = passwordValidationResult.localizedMessage(context);
-          if (error != null) {
-            setState(() {
-              _passwordErrorList = [error];
-            });
-          }
-        });
-      } else {
-        setState(() {
-          _passwordErrorList = null;
-        });
-      }
     });
+
     _confirmPasswordController.addListener(() {
-      final confirmPasswordValidationResult = AuthValidation.validatePassword(
-        _confirmPasswordController.text,
+      BlocProvider.of<SetNewPasswordBloc>(context).add(
+        SetNewPasswordPasswordValidationRequested(
+          field: SetNewPasswordFormField.passwordConfirmation,
+          value: _confirmPasswordController.text,
+          passwordValue: _passwordController.text,
+        ),
       );
-      if (confirmPasswordValidationResult != null) {
-        setState(() {
-          final error = confirmPasswordValidationResult.localizedMessage(
-            context,
-          );
-          if (error != null) {
-            setState(() {
-              _confirmPasswordErrorList = [error];
-            });
-          }
-        });
-      } else {
-        if (_passwordController.text != _confirmPasswordController.text) {
-          setState(() {
-            final error =
-                AppLocalizations.of(context)?.passwordsDoNotMatchError;
-            if (error != null) {
-              setState(() {
-                _confirmPasswordErrorList = [error];
-              });
-            }
-          });
-        } else {
-          setState(() {
-            _confirmPasswordErrorList = null;
-          });
-        }
-      }
     });
     super.initState();
   }
@@ -131,6 +122,9 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
       ),
       body: BlocConsumer<SetNewPasswordBloc, SetNewPasswordState>(
         listener: (context, state) {
+          if (state is SetNewPasswordPasswordValidated) {
+            _handlePasswordValidation(state);
+          }
           if (state is SetNewPasswordFailure) {
             final failure = state.failure;
             if (failure is AuthFailure) {
