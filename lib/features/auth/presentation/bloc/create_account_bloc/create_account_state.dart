@@ -1,6 +1,18 @@
 // coverage:ignore-file
 part of 'create_account_bloc.dart';
 
+/// Enum for form fields that can be validated
+enum CreateAccountFormField {
+  firstName,
+  lastName,
+  role,
+  email,
+  mobileNumber,
+  password,
+  confirmPassword,
+}
+
+
 /// Base class for all create account states
 abstract class CreateAccountState extends Equatable {}
 
@@ -94,4 +106,23 @@ class CreateAccountContactVerified extends CreateAccountState {
 class CreateAccountEditContactSuccess extends CreateAccountState {
   @override
   List<Object?> get props => [];
+}
+
+/// State for form field validation results
+class CreateAccountFormFieldValidated extends CreateAccountState {
+  /// The field that was validated
+  final CreateAccountFormField field;
+  /// Whether the field is valid
+  final bool isValid;
+  /// The validation error type, null if field is valid or doesn't require AuthValidation
+  final AuthErrorType? validator;
+
+  CreateAccountFormFieldValidated({
+    required this.field,
+    required this.isValid,
+    this.validator,
+  });
+
+  @override
+  List<Object?> get props => [field, isValid, validator];
 }
