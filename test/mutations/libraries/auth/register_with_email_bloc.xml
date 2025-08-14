@@ -30,7 +30,7 @@
     </rules>
 
     <commands>
-       <command group="fake-register-with-email-bloc" expected-return="0">echo "Skipping test execution..."</command>
+       <command group="fake-register-with-email-bloc" expected-return="0">flutter test test/units/bloc/auth/register_with_email_bloc_test.dart</command>
     </commands>
 
     <threshold failure="85">
