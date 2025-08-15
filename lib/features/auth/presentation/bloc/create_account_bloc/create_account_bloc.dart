@@ -26,7 +26,7 @@ class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
        _sendOtpUseCase = sendOtpUseCase,
        super(CreateAccountInitial()) {
     on<CreateAccountSubmitted>(_onSubmitted);
-    on<LoadProfessionalRoles>(_onLoadProfessionalRoles);
+    on<LoadProfessionalRolesRequested>(_onLoadProfessionalRoles);
     on<CreateAccountSendOtpRequested>(_onSendOtp);
     on<CreateAccountOtpVerified>(_onOtpVerified);
     on<CreateAccountEditContactPressed>(_onEditContact);
@@ -155,7 +155,7 @@ class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
   }
 
   Future<void> _onLoadProfessionalRoles(
-    LoadProfessionalRoles event,
+    LoadProfessionalRolesRequested event,
     Emitter<CreateAccountState> emit,
   ) async {
     emit(CreateAccountGetProfessionalRolesLoading());

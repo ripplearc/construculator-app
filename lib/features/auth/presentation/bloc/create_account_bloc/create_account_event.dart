@@ -80,8 +80,8 @@ class CreateAccountSubmitted extends CreateAccountEvent {
 }
 
 /// Event for loading the professional roles
-class LoadProfessionalRoles extends CreateAccountEvent {
-  const LoadProfessionalRoles();
+class LoadProfessionalRolesRequested extends CreateAccountEvent {
+  const LoadProfessionalRolesRequested();
 
   @override
   List<Object?> get props => [];

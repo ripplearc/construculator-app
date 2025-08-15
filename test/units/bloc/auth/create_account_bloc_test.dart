@@ -579,7 +579,7 @@ void main() {
         ]);
         return bloc;
       },
-      act: (bloc) => bloc.add(const LoadProfessionalRoles()),
+      act: (bloc) => bloc.add(const LoadProfessionalRolesRequested()),
       expect:
           () => [
             isA<CreateAccountGetProfessionalRolesLoading>(),
