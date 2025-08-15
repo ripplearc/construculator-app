@@ -76,6 +76,7 @@ enum SupabaseAuthErrorCode {
   rateLimited,
   registrationFailure,
   timeout,
+  samePassword,
   unknown;
 
   static SupabaseAuthErrorCode fromCode(String code) {
@@ -111,6 +112,9 @@ enum SupabaseAuthErrorCode {
       case 'request_timeout':
         return SupabaseAuthErrorCode.timeout;
 
+      case 'same_password':
+        return SupabaseAuthErrorCode.samePassword;
+
       default:
         return SupabaseAuthErrorCode.unknown;
     }
@@ -129,6 +133,8 @@ enum SupabaseAuthErrorCode {
         return 'request_timeout';
       case SupabaseAuthErrorCode.registrationFailure:
         return 'signup_disabled';
+      case SupabaseAuthErrorCode.samePassword:
+        return 'same_password';
       case SupabaseAuthErrorCode.unknown:
         return 'unknown';
     }
