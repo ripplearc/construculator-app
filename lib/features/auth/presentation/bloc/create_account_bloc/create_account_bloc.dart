@@ -41,7 +41,6 @@ class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
       case CreateAccountFormField.firstName:
       case CreateAccountFormField.lastName:
       case CreateAccountFormField.role:
-        // Simple required validation - no AuthValidation needed
         final isValid = event.value.isNotEmpty;
         emit(
           CreateAccountFormFieldValidated(
