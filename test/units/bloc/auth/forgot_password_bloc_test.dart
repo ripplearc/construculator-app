@@ -92,7 +92,7 @@ void main() {
         build: () {
           return bloc;
         },
-        act: (bloc) => bloc.add(ForgotPasswordEditEmail()),
+        act: (bloc) => bloc.add(ForgotPasswordEditEmailRequested()),
         expect: () => [ForgotPasswordEditEmailSuccess()],
       );
     });

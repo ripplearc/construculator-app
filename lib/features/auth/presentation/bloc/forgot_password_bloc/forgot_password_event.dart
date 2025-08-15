@@ -22,6 +22,6 @@ class ForgotPasswordSubmitted extends ForgotPasswordEvent {
 } 
 
 /// Event triggered when the user presses the edit email button
-class ForgotPasswordEditEmail extends ForgotPasswordEvent {
-  const ForgotPasswordEditEmail();
+class ForgotPasswordEditEmailRequested extends ForgotPasswordEvent {
+  const ForgotPasswordEditEmailRequested();
 }

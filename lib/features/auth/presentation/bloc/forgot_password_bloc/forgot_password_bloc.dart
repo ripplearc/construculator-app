@@ -13,11 +13,11 @@ class ForgotPasswordBloc extends Bloc<ForgotPasswordEvent, ForgotPasswordState> 
       : _resetPasswordUseCase = resetPasswordUseCase,
         super(ForgotPasswordInitial()) {
     on<ForgotPasswordSubmitted>(_onSubmitted);
-    on<ForgotPasswordEditEmail>(_onEditEmail);
+    on<ForgotPasswordEditEmailRequested>(_onEditEmail);
   }
 
   Future<void> _onEditEmail(
-    ForgotPasswordEditEmail event,
+    ForgotPasswordEditEmailRequested event,
     Emitter<ForgotPasswordState> emit,
   ) async {
     emit(ForgotPasswordEditEmailSuccess());
