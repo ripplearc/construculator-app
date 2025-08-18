@@ -7,6 +7,8 @@ import 'package:construculator/features/auth/domain/usecases/set_new_password_us
 part 'set_new_password_event.dart';
 part 'set_new_password_state.dart';
 
+/// Bloc for setting a new password
+/// Validates the new password and confirms it with the password confirmation field
 class SetNewPasswordBloc extends Bloc<SetNewPasswordEvent, SetNewPasswordState> {
   final SetNewPasswordUseCase _setNewPasswordUseCase;
 
