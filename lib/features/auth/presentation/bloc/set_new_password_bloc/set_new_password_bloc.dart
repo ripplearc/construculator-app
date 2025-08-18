@@ -27,7 +27,7 @@ class SetNewPasswordBloc extends Bloc<SetNewPasswordEvent, SetNewPasswordState> 
         final validator = AuthValidation.validatePassword(event.value);
         final isValid = validator == null;
         emit(
-          SetNewPasswordPasswordValidated(
+          SetNewPasswordPasswordSuccess(
             field: event.field,
             isValid: isValid,
             validator: validator,
@@ -39,7 +39,7 @@ class SetNewPasswordBloc extends Bloc<SetNewPasswordEvent, SetNewPasswordState> 
         // Confirm password validation - check if matches password
         if (event.value.isEmpty) {
           emit(
-            SetNewPasswordPasswordValidated(
+            SetNewPasswordPasswordSuccess(
               field: event.field,
               isValid: false,
               validator: AuthErrorType.passwordRequired,
@@ -48,7 +48,7 @@ class SetNewPasswordBloc extends Bloc<SetNewPasswordEvent, SetNewPasswordState> 
         } else if (event.passwordValue != null &&
             event.value != event.passwordValue) {
           emit(
-            SetNewPasswordPasswordValidated(
+            SetNewPasswordPasswordSuccess(
               field: event.field,
               isValid: false,
               validator: AuthErrorType.passwordsDoNotMatch,
@@ -56,7 +56,7 @@ class SetNewPasswordBloc extends Bloc<SetNewPasswordEvent, SetNewPasswordState> 
           );
         } else {
           emit(
-            SetNewPasswordPasswordValidated(
+            SetNewPasswordPasswordSuccess(
               field: event.field,
               isValid: true,
               validator: null,

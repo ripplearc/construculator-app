@@ -46,7 +46,7 @@ class SetNewPasswordFailure extends SetNewPasswordState {
 }
 
 /// State for password validation results
-class SetNewPasswordPasswordValidated extends SetNewPasswordState {
+class SetNewPasswordPasswordSuccess extends SetNewPasswordState {
   /// The field that was validated
   final SetNewPasswordFormField field;
   /// Whether the field is valid
@@ -54,7 +54,7 @@ class SetNewPasswordPasswordValidated extends SetNewPasswordState {
   /// The validation error type, null if field is valid
   final AuthErrorType? validator;
 
-  const SetNewPasswordPasswordValidated({
+  const SetNewPasswordPasswordSuccess({
     required this.field,
     required this.isValid,
     this.validator,

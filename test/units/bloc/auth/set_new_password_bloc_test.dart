@@ -36,7 +36,7 @@ void main() {
     group('SetNewPasswordPasswordValidationRequested', () {
       group('Password field validation', () {
         blocTest<SetNewPasswordBloc, SetNewPasswordState>(
-          'emits [SetNewPasswordPasswordValidated] with isValid=true when password is valid',
+          'emits [SetNewPasswordPasswordSuccess] with isValid=true when password is valid',
           build: () => bloc,
           act: (bloc) => bloc.add(
             const SetNewPasswordPasswordValidationRequested(
@@ -45,7 +45,7 @@ void main() {
             ),
           ),
           expect: () => [
-            const SetNewPasswordPasswordValidated(
+            const SetNewPasswordPasswordSuccess(
               field: SetNewPasswordFormField.password,
               isValid: true,
               validator: null,
@@ -54,7 +54,7 @@ void main() {
         );
 
         blocTest<SetNewPasswordBloc, SetNewPasswordState>(
-          'emits [SetNewPasswordPasswordValidated] with isValid=false when password is too short',
+          'emits [SetNewPasswordPasswordSuccess] with isValid=false when password is too short',
           build: () => bloc,
           act: (bloc) => bloc.add(
             const SetNewPasswordPasswordValidationRequested(
@@ -63,7 +63,7 @@ void main() {
             ),
           ),
           expect: () => [
-            const SetNewPasswordPasswordValidated(
+            const SetNewPasswordPasswordSuccess(
               field: SetNewPasswordFormField.password,
               isValid: false,
               validator: AuthErrorType.passwordTooShort,
@@ -72,7 +72,7 @@ void main() {
         );
 
         blocTest<SetNewPasswordBloc, SetNewPasswordState>(
-          'emits [SetNewPasswordPasswordValidated] with isValid=false when password is empty',
+          'emits [SetNewPasswordPasswordSuccess] with isValid=false when password is empty',
           build: () => bloc,
           act: (bloc) => bloc.add(
             const SetNewPasswordPasswordValidationRequested(
@@ -81,7 +81,7 @@ void main() {
             ),
           ),
           expect: () => [
-            const SetNewPasswordPasswordValidated(
+            const SetNewPasswordPasswordSuccess(
               field: SetNewPasswordFormField.password,
               isValid: false,
               validator: AuthErrorType.passwordRequired,
@@ -90,7 +90,7 @@ void main() {
         );
 
         blocTest<SetNewPasswordBloc, SetNewPasswordState>(
-          'emits [SetNewPasswordPasswordValidated] with isValid=false when password missing uppercase',
+          'emits [SetNewPasswordPasswordSuccess] with isValid=false when password missing uppercase',
           build: () => bloc,
           act: (bloc) => bloc.add(
             const SetNewPasswordPasswordValidationRequested(
@@ -99,7 +99,7 @@ void main() {
             ),
           ),
           expect: () => [
-            const SetNewPasswordPasswordValidated(
+            const SetNewPasswordPasswordSuccess(
               field: SetNewPasswordFormField.password,
               isValid: false,
               validator: AuthErrorType.passwordMissingUppercase,
@@ -108,7 +108,7 @@ void main() {
         );
 
         blocTest<SetNewPasswordBloc, SetNewPasswordState>(
-          'emits [SetNewPasswordPasswordValidated] with isValid=false when password missing number',
+          'emits [SetNewPasswordPasswordSuccess] with isValid=false when password missing number',
           build: () => bloc,
           act: (bloc) => bloc.add(
             const SetNewPasswordPasswordValidationRequested(
@@ -117,7 +117,7 @@ void main() {
             ),
           ),
           expect: () => [
-            const SetNewPasswordPasswordValidated(
+            const SetNewPasswordPasswordSuccess(
               field: SetNewPasswordFormField.password,
               isValid: false,
               validator: AuthErrorType.passwordMissingNumber,
@@ -126,7 +126,7 @@ void main() {
         );
 
         blocTest<SetNewPasswordBloc, SetNewPasswordState>(
-          'emits [SetNewPasswordPasswordValidated] with isValid=false when password missing special character',
+          'emits [SetNewPasswordPasswordSuccess] with isValid=false when password missing special character',
           build: () => bloc,
           act: (bloc) => bloc.add(
             const SetNewPasswordPasswordValidationRequested(
@@ -135,7 +135,7 @@ void main() {
             ),
           ),
           expect: () => [
-            const SetNewPasswordPasswordValidated(
+            const SetNewPasswordPasswordSuccess(
               field: SetNewPasswordFormField.password,
               isValid: false,
               validator: AuthErrorType.passwordMissingSpecialChar,
@@ -146,7 +146,7 @@ void main() {
 
       group('Password confirmation field validation', () {
         blocTest<SetNewPasswordBloc, SetNewPasswordState>(
-          'emits [SetNewPasswordPasswordValidated] with isValid=true when passwords match',
+          'emits [SetNewPasswordPasswordSuccess] with isValid=true when passwords match',
           build: () => bloc,
           act: (bloc) => bloc.add(
             const SetNewPasswordPasswordValidationRequested(
@@ -156,7 +156,7 @@ void main() {
             ),
           ),
           expect: () => [
-            const SetNewPasswordPasswordValidated(
+            const SetNewPasswordPasswordSuccess(
               field: SetNewPasswordFormField.passwordConfirmation,
               isValid: true,
               validator: null,
@@ -165,7 +165,7 @@ void main() {
         );
 
         blocTest<SetNewPasswordBloc, SetNewPasswordState>(
-          'emits [SetNewPasswordPasswordValidated] with isValid=false when passwords do not match',
+          'emits [SetNewPasswordPasswordSuccess] with isValid=false when passwords do not match',
           build: () => bloc,
           act: (bloc) => bloc.add(
             const SetNewPasswordPasswordValidationRequested(
@@ -175,7 +175,7 @@ void main() {
             ),
           ),
           expect: () => [
-            const SetNewPasswordPasswordValidated(
+            const SetNewPasswordPasswordSuccess(
               field: SetNewPasswordFormField.passwordConfirmation,
               isValid: false,
               validator: AuthErrorType.passwordsDoNotMatch,
@@ -184,7 +184,7 @@ void main() {
         );
 
         blocTest<SetNewPasswordBloc, SetNewPasswordState>(
-          'emits [SetNewPasswordPasswordValidated] with isValid=false when confirm password is empty',
+          'emits [SetNewPasswordPasswordSuccess] with isValid=false when confirm password is empty',
           build: () => bloc,
           act: (bloc) => bloc.add(
             const SetNewPasswordPasswordValidationRequested(
@@ -194,7 +194,7 @@ void main() {
             ),
           ),
           expect: () => [
-            const SetNewPasswordPasswordValidated(
+            const SetNewPasswordPasswordSuccess(
               field: SetNewPasswordFormField.passwordConfirmation,
               isValid: false,
               validator: AuthErrorType.passwordRequired,
@@ -203,7 +203,7 @@ void main() {
         );
 
         blocTest<SetNewPasswordBloc, SetNewPasswordState>(
-          'emits [SetNewPasswordPasswordValidated] with isValid=false when passwordValue is null',
+          'emits [SetNewPasswordPasswordSuccess] with isValid=false when passwordValue is null',
           build: () => bloc,
           act: (bloc) => bloc.add(
             const SetNewPasswordPasswordValidationRequested(
@@ -213,7 +213,7 @@ void main() {
             ),
           ),
           expect: () => [
-            const SetNewPasswordPasswordValidated(
+            const SetNewPasswordPasswordSuccess(
               field: SetNewPasswordFormField.passwordConfirmation,
               isValid: true,
               validator: null,
