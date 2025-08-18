@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../font_loader.dart';
 
 void main() {
-  final size = const Size(390, 844);
+  final size = const Size(390, 64);
   final ratio = 1.0;
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -21,8 +21,8 @@ void main() {
     }) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: AuthFooter(
+          home: Material(
+            child: AuthFooter(
               text: text,
               actionText: actionText,
               onPressed: () {},
@@ -33,7 +33,7 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('renders register footer correctly', (tester) async {   
+    testWidgets('renders register footer correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       await pumpAuthFooter(
@@ -44,7 +44,9 @@ void main() {
 
       await expectLater(
         find.byType(AuthFooter),
-        matchesGoldenFile('goldens/auth_footer/${size.width}x${size.height}/auth_footer_register.png'),
+        matchesGoldenFile(
+          'goldens/auth_footer/${size.width}x${size.height}/auth_footer_register.png',
+        ),
       );
     });
 
@@ -59,7 +61,9 @@ void main() {
 
       await expectLater(
         find.byType(AuthFooter),
-        matchesGoldenFile('goldens/auth_footer/${size.width}x${size.height}/auth_footer_login.png'),
+        matchesGoldenFile(
+          'goldens/auth_footer/${size.width}x${size.height}/auth_footer_login.png',
+        ),
       );
     });
   });

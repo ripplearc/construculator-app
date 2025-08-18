@@ -22,7 +22,6 @@ class AuthFooter extends StatelessWidget {
     return SafeArea(
       child: Container(
         height: CoreSpacing.space16,
-        margin: EdgeInsets.only(bottom: CoreSpacing.space8),
         width: double.infinity,
         color: CoreBackgroundColors.backgroundBlueLight,
         child: Center(
