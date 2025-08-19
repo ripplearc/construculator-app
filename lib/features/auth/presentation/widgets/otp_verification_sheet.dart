@@ -93,7 +93,7 @@ class OtpVerificationQuickSheet extends StatelessWidget {
                     style: CoreTypography.bodyLargeRegular(),
                   ),
                   WidgetSpan(
-                    child: InkWell(
+                    child: GestureDetector(
                       key: Key('edit_contact_button'),
                       onTap: onEdit,
                       child: Row(
@@ -142,7 +142,7 @@ class OtpVerificationQuickSheet extends StatelessWidget {
 
                 children: [
                   WidgetSpan(
-                    child: InkWell(
+                    child: GestureDetector(
                       onTap: onResend,
                       child: Text(
                         isResending
