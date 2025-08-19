@@ -84,7 +84,7 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets('builds inside a Row with Flexible and InkWell correctly', (tester) async {
+    testWidgets('builds inside a Row with Flexible and GestureDetector correctly', (tester) async {
       await tester.pumpWidget(pumpErrorBuilder(
         error: errorText,
         link: linkText,
@@ -93,7 +93,7 @@ void main() {
 
       expect(find.byType(Row), findsOneWidget);
       expect(find.byType(Flexible), findsOneWidget);
-      expect(find.byType(InkWell), findsOneWidget);
+      expect(find.byType(GestureDetector), findsOneWidget);
     });
   });
 }

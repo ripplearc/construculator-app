@@ -22,7 +22,7 @@ Widget buildErrorWidgetWithLink({
         ),
       ),
       if (linkText != null)
-        InkWell(
+        GestureDetector(
           onTap: onPressed,
           key: Key(linkText),
           child: Text(
