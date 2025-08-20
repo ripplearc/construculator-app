@@ -7,7 +7,7 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import '../font_loader.dart';
 
 void main() {
-  final size = const Size(390, 844);
+  final size = const Size(390, 400);
   final ratio = 1.0;
   TestWidgetsFlutterBinding.ensureInitialized();
 
