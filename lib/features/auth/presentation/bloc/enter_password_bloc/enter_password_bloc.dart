@@ -6,6 +6,7 @@ import 'package:construculator/features/auth/domain/usecases/login_usecase.dart'
 part 'enter_password_event.dart';
 part 'enter_password_state.dart';
 
+/// Bloc for entering a password, submits the password to the server and logs the user in
 class EnterPasswordBloc extends Bloc<EnterPasswordEvent, EnterPasswordState> {
   final LoginUseCase _loginUseCase;
 

@@ -6,6 +6,7 @@ import 'package:construculator/features/auth/domain/usecases/check_email_availab
 part 'login_with_email_event.dart';
 part 'login_with_email_state.dart';
 
+/// Bloc for verifying email availability, checks if the email address is available
 class LoginWithEmailBloc
     extends Bloc<LoginWithEmailEvent, LoginWithEmailState> {
   final CheckEmailAvailabilityUseCase _checkEmailAvailabilityUseCase;
