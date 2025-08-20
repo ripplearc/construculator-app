@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 part 'otp_verification_event.dart';
 part 'otp_verification_state.dart';
 
+/// Bloc for verifying an OTP, verifies the OTP and sends the OTP to the user's contact
 class OtpVerificationBloc
     extends Bloc<OtpVerificationEvent, OtpVerificationState> {
   final VerifyOtpUseCase _verifyOtpUseCase;

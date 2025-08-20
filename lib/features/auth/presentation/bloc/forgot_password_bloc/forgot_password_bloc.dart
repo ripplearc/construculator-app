@@ -6,6 +6,8 @@ import 'package:construculator/features/auth/domain/usecases/reset_password_usec
 part 'forgot_password_event.dart';
 part 'forgot_password_state.dart';
 
+/// Bloc for resetting a password, orchestrates the flow of the reset password process
+/// Sends the reset password email to the user
 class ForgotPasswordBloc extends Bloc<ForgotPasswordEvent, ForgotPasswordState> {
   final ResetPasswordUseCase _resetPasswordUseCase;
 

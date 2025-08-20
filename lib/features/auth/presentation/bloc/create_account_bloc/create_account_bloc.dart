@@ -12,6 +12,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 part 'create_account_event.dart';
 part 'create_account_state.dart';
 
+/// Bloc for creating a new account, orchestrates the flow of the create account process
+/// Performs validation on the form fields and sends the OTP to the user's contact
 class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
   final CreateAccountUseCase _createAccountUseCase;
   final GetProfessionalRolesUseCase _getProfessionalRolesUseCase;
