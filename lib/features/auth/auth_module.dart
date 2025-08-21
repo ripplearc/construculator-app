@@ -121,4 +121,7 @@ void _registerDependencies(Injector i) {
       sendOtpUseCase: i(),
     ),
   );
+  i.add<LoginWithEmailBloc>(
+    () => LoginWithEmailBloc(checkEmailAvailabilityUseCase: i()),
+  );
 }
