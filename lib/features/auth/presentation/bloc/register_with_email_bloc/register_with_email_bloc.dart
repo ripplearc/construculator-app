@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:equatable/equatable.dart';
@@ -33,6 +34,7 @@ class RegisterWithEmailBloc
     );
     on<RegisterWithEmailContinuePressed>(_onContinuePressed);
     on<RegisterWithEmailEmailEditRequested>(_onEditEmail);
+    on<RegisterWithEmailFormFieldChanged>(_onFormFieldChanged);
   }
 
   Future<void> _onEditEmail(
@@ -68,5 +70,30 @@ class RegisterWithEmailBloc
         emit(RegisterWithEmailOtpSendingSuccess());
       },
     );
+  }
+
+  void _onFormFieldChanged(
+    RegisterWithEmailFormFieldChanged event,
+    Emitter<RegisterWithEmailState> emit,
+  ) {
+    switch (event.field) {
+      case RegisterWithEmailFormField.email:
+        // Email validation using AuthValidation
+        final validator = AuthValidation.validateEmail(event.value);
+        final isValid = validator == null;
+        emit(
+          RegisterWithEmailFormFieldValidated(
+            field: event.field,
+            isValid: isValid,
+            validator: validator,
+          ),
+        );
+        
+        // If email is valid, check availability
+        if (isValid && event.value.isNotEmpty) {
+          add(RegisterWithEmailEmailChanged(event.value));
+        }
+        break;
+    }
   }
 }

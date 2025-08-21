@@ -23,7 +23,158 @@ void main() {
     fakeSupabase.reset();
     Modular.destroy();
   });
+  
   group('RegisterWithEmailBloc Tests', () {
+    group('RegisterWithEmailFormFieldChanged', () {
+      blocTest<RegisterWithEmailBloc, RegisterWithEmailState>(
+        'emits [RegisterWithEmailFormFieldValidated] with isValid=false when email is empty',
+        build: () => bloc,
+        act: (bloc) => bloc.add(
+          const RegisterWithEmailFormFieldChanged(
+            field: RegisterWithEmailFormField.email,
+            value: '',
+          ),
+        ),
+        expect: () => [
+          isA<RegisterWithEmailFormFieldValidated>().having(
+            (state) => state.field,
+            'field',
+            RegisterWithEmailFormField.email,
+          ).having(
+            (state) => state.isValid,
+            'isValid',
+            false,
+          ).having(
+            (state) => state.validator,
+            'validator',
+            isNotNull,
+          ),
+        ],
+      );
+
+      blocTest<RegisterWithEmailBloc, RegisterWithEmailState>(
+        'emits [RegisterWithEmailFormFieldValidated] with isValid=false when email is invalid',
+        build: () => bloc,
+        act: (bloc) => bloc.add(
+          const RegisterWithEmailFormFieldChanged(
+            field: RegisterWithEmailFormField.email,
+            value: 'invalid-email',
+          ),
+        ),
+        expect: () => [
+          isA<RegisterWithEmailFormFieldValidated>().having(
+            (state) => state.field,
+            'field',
+            RegisterWithEmailFormField.email,
+          ).having(
+            (state) => state.isValid,
+            'isValid',
+            false,
+          ).having(
+            (state) => state.validator,
+            'validator',
+            isNotNull,
+          ),
+        ],
+      );
+
+      blocTest<RegisterWithEmailBloc, RegisterWithEmailState>(
+        'emits [RegisterWithEmailFormFieldValidated, RegisterWithEmailEmailCheckLoading, RegisterWithEmailEmailCheckCompleted] when email is valid and triggers availability check',
+        build: () => bloc,
+        act: (bloc) => bloc.add(
+          const RegisterWithEmailFormFieldChanged(
+            field: RegisterWithEmailFormField.email,
+            value: testEmail,
+          ),
+        ),
+        expect: () => [
+          isA<RegisterWithEmailFormFieldValidated>().having(
+            (state) => state.field,
+            'field',
+            RegisterWithEmailFormField.email,
+          ).having(
+            (state) => state.isValid,
+            'isValid',
+            true,
+          ).having(
+            (state) => state.validator,
+            'validator',
+            null,
+          ),
+          RegisterWithEmailEmailCheckLoading(),
+          RegisterWithEmailEmailCheckCompleted(isEmailRegistered: false),
+        ],
+      );
+
+      blocTest<RegisterWithEmailBloc, RegisterWithEmailState>(
+        'emits [RegisterWithEmailFormFieldValidated, RegisterWithEmailEmailCheckLoading, RegisterWithEmailEmailCheckCompleted] when valid email is already registered',
+        build: () {
+          fakeSupabase.addTableData('users', [
+            {
+              'id': '1',
+              'email': testEmail,
+              'created_at': DateTime.now().toIso8601String(),
+            },
+          ]);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          const RegisterWithEmailFormFieldChanged(
+            field: RegisterWithEmailFormField.email,
+            value: testEmail,
+          ),
+        ),
+        expect: () => [
+          isA<RegisterWithEmailFormFieldValidated>().having(
+            (state) => state.field,
+            'field',
+            RegisterWithEmailFormField.email,
+          ).having(
+            (state) => state.isValid,
+            'isValid',
+            true,
+          ).having(
+            (state) => state.validator,
+            'validator',
+            null,
+          ),
+          RegisterWithEmailEmailCheckLoading(),
+          RegisterWithEmailEmailCheckCompleted(isEmailRegistered: true),
+        ],
+      );
+
+      blocTest<RegisterWithEmailBloc, RegisterWithEmailState>(
+        'emits [RegisterWithEmailFormFieldValidated, RegisterWithEmailEmailCheckLoading, RegisterWithEmailEmailCheckFailure] when availability check fails',
+        build: () {
+          fakeSupabase.shouldThrowOnSelect = true;
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          const RegisterWithEmailFormFieldChanged(
+            field: RegisterWithEmailFormField.email,
+            value: testEmail,
+          ),
+        ),
+        expect: () => [
+          isA<RegisterWithEmailFormFieldValidated>().having(
+            (state) => state.field,
+            'field',
+            RegisterWithEmailFormField.email,
+          ).having(
+            (state) => state.isValid,
+            'isValid',
+            true,
+          ).having(
+            (state) => state.validator,
+            'validator',
+            null,
+          ),
+          RegisterWithEmailEmailCheckLoading(),
+          isA<RegisterWithEmailEmailCheckFailure>(),
+        ],
+      );
+    });
+
     group('RegisterWithEmailEmailChanged', () {
       test('emits [RegisterWithEmailInitial] when email is empty', () async {
         bloc.add(RegisterWithEmailEmailChanged(''));

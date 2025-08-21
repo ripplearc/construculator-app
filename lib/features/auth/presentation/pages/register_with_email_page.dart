@@ -5,7 +5,6 @@ import 'package:construculator/features/auth/presentation/widgets/error_widget_b
 import 'package:construculator/features/auth/presentation/widgets/otp_quick_sheet/otp_verification_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
-import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
@@ -58,6 +57,39 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
     }
   }
 
+  void _handleFieldValidation(RegisterWithEmailFormFieldValidated state) {
+    setState(() {
+      List<String>? errorList;
+
+      if (!state.isValid) {
+        if (state.validator != null) {
+          // Field has AuthValidation error
+          final errorMessage = state.validator?.localizedMessage(context);
+          errorList = errorMessage != null ? [errorMessage] : null;
+        }
+      } else {
+        errorList = null;
+      }
+
+      // Update the appropriate error list
+      switch (state.field) {
+        case RegisterWithEmailFormField.email:
+          _emailErrorTextList = errorList;
+          break;
+      }
+
+      // Validate form after updating errors
+      _validateForm();
+    });
+  }
+
+  void _validateForm() {
+    final valid = _emailErrorTextList == null && _emailController.text.isNotEmpty;
+    setState(() {
+      _canPressContinue = valid;
+    });
+  }
+
   Widget _buildOtpVerificationBottomSheet(BuildContext context, String email) {
     String otp = '';
     bool otpInvalid = true;
@@ -103,7 +135,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
             onEdit: () {
               BlocProvider.of<RegisterWithEmailBloc>(
                 context,
-              ).add(RegisterWithEmailEmailChanged(email));
+              ).add(RegisterWithEmailEmailEditRequested());
             },
             onVerify: () {
               BlocProvider.of<OtpVerificationBloc>(
@@ -139,28 +171,17 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
 
   @override
   void initState() {
-    _emailController.addListener(() {
-      final email = _emailController.text;
-      final emailValidator = AuthValidation.validateEmail(email);
-      if (emailValidator != null) {
-        final error = emailValidator.localizedMessage(context);
-        setState(() {
-          _emailErrorWidgetList = null;
-          if (error != null) {
-            _emailErrorTextList = [error];
-          }
-        });
-      } else {
-        setState(() {
-          _emailErrorWidgetList = null;
-          _emailErrorTextList = null;
-        });
-        BlocProvider.of<RegisterWithEmailBloc>(
-          context,
-        ).add(RegisterWithEmailEmailChanged(email));
-      }
-    });
     _emailController.text = widget.email;
+    
+    _emailController.addListener(() {
+      BlocProvider.of<RegisterWithEmailBloc>(context).add(
+        RegisterWithEmailFormFieldChanged(
+          field: RegisterWithEmailFormField.email,
+          value: _emailController.text,
+        ),
+      );
+    });
+
     super.initState();
   }
 
@@ -220,6 +241,9 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
               // close bottomsheet and focus on the email input
               Navigator.pop(context);
               _emailTextFieldFocusNode.requestFocus();
+            }
+            if (state is RegisterWithEmailFormFieldValidated) {
+              _handleFieldValidation(state);
             }
           },
           builder: (context, state) {
