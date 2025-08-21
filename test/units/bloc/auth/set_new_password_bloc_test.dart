@@ -48,7 +48,7 @@ void main() {
             ),
           ),
           expect: () => [
-            const SetNewPasswordPasswordSuccess(
+            const SetNewPasswordPasswordValidationSuccess(
               field: SetNewPasswordFormField.password,
               isValid: true,
               validator: null,
@@ -66,7 +66,7 @@ void main() {
             ),
           ),
           expect: () => [
-            const SetNewPasswordPasswordSuccess(
+            const SetNewPasswordPasswordValidationSuccess(
               field: SetNewPasswordFormField.password,
               isValid: false,
               validator: AuthErrorType.passwordTooShort,
@@ -84,7 +84,7 @@ void main() {
             ),
           ),
           expect: () => [
-            const SetNewPasswordPasswordSuccess(
+            const SetNewPasswordPasswordValidationSuccess(
               field: SetNewPasswordFormField.password,
               isValid: false,
               validator: AuthErrorType.passwordRequired,
@@ -102,7 +102,7 @@ void main() {
             ),
           ),
           expect: () => [
-            const SetNewPasswordPasswordSuccess(
+            const SetNewPasswordPasswordValidationSuccess(
               field: SetNewPasswordFormField.password,
               isValid: false,
               validator: AuthErrorType.passwordMissingUppercase,
@@ -120,7 +120,7 @@ void main() {
             ),
           ),
           expect: () => [
-            const SetNewPasswordPasswordSuccess(
+            const SetNewPasswordPasswordValidationSuccess(
               field: SetNewPasswordFormField.password,
               isValid: false,
               validator: AuthErrorType.passwordMissingNumber,
@@ -138,7 +138,7 @@ void main() {
             ),
           ),
           expect: () => [
-            const SetNewPasswordPasswordSuccess(
+            const SetNewPasswordPasswordValidationSuccess(
               field: SetNewPasswordFormField.password,
               isValid: false,
               validator: AuthErrorType.passwordMissingSpecialChar,
@@ -159,7 +159,7 @@ void main() {
             ),
           ),
           expect: () => [
-            const SetNewPasswordPasswordSuccess(
+            const SetNewPasswordPasswordValidationSuccess(
               field: SetNewPasswordFormField.passwordConfirmation,
               isValid: true,
               validator: null,
@@ -178,7 +178,7 @@ void main() {
             ),
           ),
           expect: () => [
-            const SetNewPasswordPasswordSuccess(
+            const SetNewPasswordPasswordValidationSuccess(
               field: SetNewPasswordFormField.passwordConfirmation,
               isValid: false,
               validator: AuthErrorType.passwordsDoNotMatch,
@@ -197,7 +197,7 @@ void main() {
             ),
           ),
           expect: () => [
-            const SetNewPasswordPasswordSuccess(
+            const SetNewPasswordPasswordValidationSuccess(
               field: SetNewPasswordFormField.passwordConfirmation,
               isValid: false,
               validator: AuthErrorType.passwordRequired,
@@ -216,7 +216,7 @@ void main() {
             ),
           ),
           expect: () => [
-            const SetNewPasswordPasswordSuccess(
+            const SetNewPasswordPasswordValidationSuccess(
               field: SetNewPasswordFormField.passwordConfirmation,
               isValid: true,
               validator: null,

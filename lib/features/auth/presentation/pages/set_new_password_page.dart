@@ -2,7 +2,7 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
-import 'package:construculator/libraries/router/routes/dashboard_routes.dart';  
+import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -41,10 +41,10 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
     });
   }
 
-  void _handlePasswordValidation(SetNewPasswordPasswordValidated state) {
+  void _handlePasswordValidation(SetNewPasswordPasswordValidationSuccess state) {
     setState(() {
       List<String>? errorList;
-      
+
       if (!state.isValid) {
         if (state.validator != null) {
           // Field has AuthValidation error
@@ -122,7 +122,7 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
       ),
       body: BlocConsumer<SetNewPasswordBloc, SetNewPasswordState>(
         listener: (context, state) {
-          if (state is SetNewPasswordPasswordValidated) {
+          if (state is SetNewPasswordPasswordValidationSuccess) {
             _handlePasswordValidation(state);
           }
           if (state is SetNewPasswordFailure) {
@@ -131,9 +131,14 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
               CoreToast.showError(
                 context,
                 failure.errorType.localizedMessage(context),
+                '${l10n?.closeLabel}',
               );
             } else {
-              CoreToast.showError(context, l10n?.unexpectedErrorMessage);
+              CoreToast.showError(
+                context,
+                l10n?.unexpectedErrorMessage,
+                '${l10n?.closeLabel}',
+              );
             }
           }
           if (state is SetNewPasswordSuccess) {
@@ -145,6 +150,7 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
               context,
               message: '${l10n?.passwordResetSuccessMessage}',
               onPressed: () => _router.navigate(dashboardRoute),
+              buttonLabel: '${l10n?.closeLabel}',
             );
           }
         },
@@ -177,8 +183,9 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
                   errorTextList: _passwordErrorList,
                   suffix: IconButton(
                     icon: CoreIconWidget(
-                      icon:
-                          _isPasswordVisible ? CoreIcons.eye : CoreIcons.eyeOff,
+                      icon: _isPasswordVisible
+                          ? CoreIcons.eye
+                          : CoreIcons.eyeOff,
                     ),
                     onPressed: () {
                       _togglePasswordVisibility();
@@ -194,10 +201,9 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
                   errorTextList: _confirmPasswordErrorList,
                   suffix: IconButton(
                     icon: CoreIconWidget(
-                      icon:
-                          _isConfirmPasswordVisible
-                              ? CoreIcons.eye
-                              : CoreIcons.eyeOff,
+                      icon: _isConfirmPasswordVisible
+                          ? CoreIcons.eye
+                          : CoreIcons.eyeOff,
                     ),
                     onPressed: () {
                       _toggleConfirmPasswordVisibility();
@@ -213,10 +219,9 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
                       _passwordController.text !=
                           _confirmPasswordController.text ||
                       state is SetNewPasswordLoading,
-                  label:
-                      state is SetNewPasswordLoading
-                          ? '${l10n?.settingPasswordButton}'
-                          : '${l10n?.setPasswordButton}',
+                  label: state is SetNewPasswordLoading
+                      ? '${l10n?.settingPasswordButton}'
+                      : '${l10n?.setPasswordButton}',
                   centerAlign: true,
                 ),
               ],
