@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../font_loader.dart';
 
 void main() {
-  final size = const Size(390, 150);
+  final size = const Size(390, 130);
   final ratio = 1.0;
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -13,11 +13,13 @@ void main() {
     await loadAppFonts();
   });
 
-  group('ForgotPasswordHeader Screenshot Tests', () {
-    Future<void> pumpForgotPasswordHeader({
+  group('AuthHeader Screenshot Tests', () {
+    Future<void> pumpAuthHeader({
       required WidgetTester tester,
       required String title,
       required String description,
+      String? contact,
+      VoidCallback? onContactPressed,
     }) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -27,6 +29,8 @@ void main() {
               child: AuthHeader(
                 title: title,
                 description: description,
+                contact: contact,
+                onContactPressed: onContactPressed,
               ),
             ),
           ),
@@ -35,20 +39,40 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('renders forgot password header correctly', (tester) async {
+    testWidgets('renders auth header without contact correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       
-      await pumpForgotPasswordHeader(
+      await pumpAuthHeader(
         tester: tester,
-        title: 'Forgot Password?',
-        description: 'An OTP will be sent to your registered email ID to reset your password',
+        title: 'Welcome Back',
+        description: 'Hey, Enter your details to log in to your account',
       );
 
       await expectLater(
         find.byType(AuthHeader),
         matchesGoldenFile(
-          'goldens/forgot_password_header/${size.width}x${size.height}/forgot_password_header.png',
+          'goldens/auth_header/${size.width}x${size.height}/auth_header_no_contact.png',
+        ),
+      );
+    });
+
+    testWidgets('renders auth header with contact correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      
+      await pumpAuthHeader(
+        tester: tester,
+        title: 'Enter your password',
+        description: 'Enter your password for this account. Your email id is ',
+        contact: 'user@example.com',
+        onContactPressed: () {},
+      );
+
+      await expectLater(
+        find.byType(AuthHeader),
+        matchesGoldenFile(
+          'goldens/auth_header/${size.width}x${size.height}/auth_header_with_contact.png',
         ),
       );
     });
