@@ -148,7 +148,7 @@ void _registerDependencies(Injector i) {
     () => LoginWithEmailBloc(checkEmailAvailabilityUseCase: i()),
   );
   i.add<EnterPasswordBloc>(() => EnterPasswordBloc(loginUseCase: i()));
-  i.addSingleton<ForgotPasswordBloc>(
+  i.add<ForgotPasswordBloc>(
     () => ForgotPasswordBloc(resetPasswordUseCase: i()),
   );
 }
