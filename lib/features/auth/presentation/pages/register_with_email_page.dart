@@ -60,12 +60,14 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
 
   Widget _buildOtpVerificationBottomSheet(BuildContext context, String email) {
     String otp = '';
+    bool otpInvalid = true;
     return BlocProvider.value(
       value: BlocProvider.of<OtpVerificationBloc>(context),
       child: BlocConsumer<OtpVerificationBloc, OtpVerificationState>(
         listener: (context, state) {
           if (state is OtpVerificationOtpChangeSuccess) {
             otp = state.otp;
+            otpInvalid = state.otpInvalid;
           }
           if (state is OtpVerificationSuccess) {
             _router.navigate(fullCreateAccountRoute, arguments: email);
@@ -90,9 +92,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
             contact: email,
             isResending: state is OtpVerificationResendLoading,
             isVerifying: state is OtpVerificationLoading,
-            verifyButtonDisabled:
-                (state is OtpVerificationOtpChangeSuccess &&
-                    state.otpInvalid) ||
+            verifyButtonDisabled: otpInvalid ||
                 state is OtpVerificationLoading ||
                 state is OtpVerificationResendLoading,
             onResend: () {
