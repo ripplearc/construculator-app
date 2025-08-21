@@ -1,3 +1,4 @@
+import 'package:construculator/features/auth/presentation/widgets/auth_header.dart';
 import 'package:construculator/features/auth/presentation/widgets/terms_and_conditions.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/professional_role.dart';
@@ -374,14 +375,9 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: CoreSpacing.space6),
-                  Text(
-                    '${l10n?.createAccountTitle}',
-                    style: CoreTypography.headlineLargeSemiBold(),
-                  ),
-                  const SizedBox(height: CoreSpacing.space3),
-                  Text(
-                    '${l10n?.createAccountSubtitle}',
-                    style: CoreTypography.bodyLargeRegular(),
+                  AuthHeader(
+                    title: '${l10n?.createAccountTitle}',
+                    description: '${l10n?.createAccountSubtitle}',
                   ),
                   const SizedBox(height: CoreSpacing.space8),
                   CoreTextField(
