@@ -82,4 +82,16 @@ void _registerDependencies(Injector i) {
       sendOtpUseCase: i(),
     ),
   );
+
+  i.add<OtpVerificationBloc>(
+    () => OtpVerificationBloc(verifyOtpUseCase: i(), sendOtpUseCase: i()),
+  );
+
+  i.add<CreateAccountBloc>(
+    () => CreateAccountBloc(
+      createAccountUseCase: i(),
+      getProfessionalRolesUseCase: i(),
+      sendOtpUseCase: i(),
+    ),
+  );
 }
