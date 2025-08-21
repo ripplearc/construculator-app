@@ -1,5 +1,6 @@
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
 import 'package:construculator/features/auth/presentation/widgets/auth_footer.dart';
+import 'package:construculator/features/auth/presentation/widgets/auth_header.dart';
 import 'package:construculator/features/auth/presentation/widgets/auth_provider_buttons.dart';
 import 'package:construculator/features/auth/presentation/widgets/error_widget_builder.dart';
 import 'package:construculator/features/auth/presentation/widgets/otp_quick_sheet/otp_verification_sheet.dart';
@@ -254,14 +255,9 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: CoreSpacing.space20),
-                    Text(
-                      '${l10n?.letsGetStarted}',
-                      style: CoreTypography.headlineLargeSemiBold(),
-                    ),
-                    const SizedBox(height: CoreSpacing.space4),
-                    Text(
-                      '${l10n?.heyEnterYourDetailsToRegisterWithUs}',
-                      style: CoreTypography.bodyLargeRegular(),
+                    AuthHeader(
+                      title: '${l10n?.letsGetStarted}',
+                      description: '${l10n?.heyEnterYourDetailsToRegisterWithUs}',
                     ),
                     const SizedBox(height: CoreSpacing.space10),
                     CoreTextField(
