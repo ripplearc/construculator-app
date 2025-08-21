@@ -10,12 +10,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:construculator/features/auth/presentation/pages/enter_password_page.dart';
 import 'package:construculator/features/auth/presentation/bloc/enter_password_bloc/enter_password_bloc.dart';
-import 'package:construculator/features/auth/domain/usecases/login_usecase.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:construculator/features/auth/testing/auth_test_module.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
@@ -33,9 +31,7 @@ void main() {
   });
 
   Widget makeTestableWidget({required Widget child}) {
-    final enterPasswordBloc = EnterPasswordBloc(
-      loginUseCase: LoginUseCase(Modular.get<AuthManager>()),
-    );
+    final enterPasswordBloc = Modular.get<EnterPasswordBloc>();
     return BlocProvider<EnterPasswordBloc>.value(
       value: enterPasswordBloc,
       child: MaterialApp(
