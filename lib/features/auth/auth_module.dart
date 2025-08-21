@@ -94,8 +94,7 @@ void _registerRoutes(RouteManager r) {
     enterPasswordRoute,
     guards: [NoAuthGuard()],
     child: (context) => BlocProvider(
-      create: (context) =>
-          EnterPasswordBloc(loginUseCase: Modular.get<LoginUseCase>()),
+      create: (context) => Modular.get<EnterPasswordBloc>(),
       child: EnterPasswordPage(email: r.args.data as String),
     ),
   );
@@ -116,9 +115,7 @@ void _registerRoutes(RouteManager r) {
     child: (context) {
       final email = r.args.data ?? '';
       return BlocProvider(
-        create: (context) => SetNewPasswordBloc(
-          setNewPasswordUseCase: Modular.get<SetNewPasswordUseCase>(),
-        ),
+        create: (context) => Modular.get<SetNewPasswordBloc>(),
         child: SetNewPasswordPage(email: email),
       );
     },
