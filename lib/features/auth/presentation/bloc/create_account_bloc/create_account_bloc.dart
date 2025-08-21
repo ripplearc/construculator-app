@@ -5,9 +5,11 @@ import 'package:construculator/features/auth/domain/usecases/send_otp_usecase.da
 import 'package:construculator/libraries/auth/data/models/professional_role.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
+import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rxdart/rxdart.dart';
 
 part 'create_account_event.dart';
 part 'create_account_state.dart';
@@ -28,11 +30,16 @@ class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
        _sendOtpUseCase = sendOtpUseCase,
        super(CreateAccountInitial()) {
     on<CreateAccountSubmitted>(_onSubmitted);
-    on<LoadProfessionalRolesRequested>(_onLoadProfessionalRoles);
+    on<CreateAccountGetProfessionalRolesRequested>(_onLoadProfessionalRoles);
     on<CreateAccountSendOtpRequested>(_onSendOtp);
     on<CreateAccountOtpVerified>(_onOtpVerified);
     on<CreateAccountEditContactPressed>(_onEditContact);
-    on<CreateAccountFormFieldChanged>(_onFormFieldChanged);
+    on<CreateAccountFormFieldChanged>(
+      _onFormFieldChanged,
+      transformer: (events, mapper) {
+        return events.debounceTime(debounceTime).asyncExpand(mapper);
+      },
+    );
   }
 
   void _onFormFieldChanged(
@@ -157,7 +164,7 @@ class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
   }
 
   Future<void> _onLoadProfessionalRoles(
-    LoadProfessionalRolesRequested event,
+    CreateAccountGetProfessionalRolesRequested event,
     Emitter<CreateAccountState> emit,
   ) async {
     emit(CreateAccountGetProfessionalRolesLoading());
