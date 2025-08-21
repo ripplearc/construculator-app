@@ -184,7 +184,7 @@ void main() {
       expect(router.navigationHistory.first.route, fullForgotPasswordRoute);
     });
 
-    testWidgets('email edit link is present and tappable', (
+    testWidgets('email edit link is goes back to login with email page', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(

@@ -84,9 +84,14 @@ class _EnterPasswordPageState extends State<EnterPasswordPage> {
               CoreToast.showError(
                 context,
                 failure.errorType.localizedMessage(context),
+                '${l10n?.continueButton}',
               );
             } else {
-              CoreToast.showError(context, l10n?.unexpectedErrorMessage);
+              CoreToast.showError(
+                context,
+                l10n?.unexpectedErrorMessage,
+                '${l10n?.continueButton}',
+              );
             }
           }
           if (state is EnterPasswordSubmitSuccess) {
@@ -98,6 +103,7 @@ class _EnterPasswordPageState extends State<EnterPasswordPage> {
               onPressed: () {
                 _router.navigate(dashboardRoute);
               },
+              buttonLabel: '${l10n?.continueButton}',
             );
           }
         },
