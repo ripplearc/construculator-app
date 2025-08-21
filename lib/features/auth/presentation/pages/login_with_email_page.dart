@@ -1,5 +1,6 @@
 import 'package:construculator/features/auth/presentation/bloc/login_with_email_bloc/login_with_email_bloc.dart';
 import 'package:construculator/features/auth/presentation/widgets/auth_footer.dart';
+import 'package:construculator/features/auth/presentation/widgets/auth_header.dart';
 import 'package:construculator/features/auth/presentation/widgets/auth_provider_buttons.dart';
 import 'package:construculator/features/auth/presentation/widgets/error_widget_builder.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -182,14 +183,9 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: CoreSpacing.space20),
-            Text(
-              '${l10n?.welcomeBack}',
-              style: CoreTypography.headlineLargeSemiBold(),
-            ),
-            const SizedBox(height: CoreSpacing.space4),
-            Text(
-              '${l10n?.enterYourEmailIdToLoginToYourAccount}',
-              style: CoreTypography.bodyLargeRegular(),
+            AuthHeader(
+              title: '${l10n?.welcomeBack}',
+              description: '${l10n?.enterYourEmailIdToLoginToYourAccount}',
             ),
             const SizedBox(height: CoreSpacing.space10),
             CoreTextField(
