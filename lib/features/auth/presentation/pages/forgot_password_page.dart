@@ -1,5 +1,6 @@
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
-import 'package:construculator/features/auth/presentation/widgets/otp_verification_sheet.dart';
+import 'package:construculator/features/auth/presentation/widgets/forgot_password_header.dart';
+import 'package:construculator/features/auth/presentation/widgets/otp_quick_sheet/otp_verification_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
@@ -29,36 +30,61 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   void _handleFailure(Failure failure) {
     if (failure is AuthFailure) {
       if (failure.errorType == AuthErrorType.rateLimited) {
-        CoreToast.showError(context, l10n?.tooManyAttempts);
+        CoreToast.showError(
+          context,
+          l10n?.tooManyAttempts,
+          '${l10n?.continueButton}',
+        );
       } else {
-        CoreToast.showError(context, failure.errorType.localizedMessage(context));
+        CoreToast.showError(
+          context,
+          failure.errorType.localizedMessage(context),
+          '${l10n?.continueButton}',
+        );
       }
     } else {
-      CoreToast.showError(context, l10n?.unexpectedErrorMessage);
+      CoreToast.showError(
+        context,
+        l10n?.unexpectedErrorMessage,
+        '${l10n?.continueButton}',
+      );
     }
+  }
+
+  void _handleFieldValidation(ForgotPasswordFormFieldValidated state) {
+    setState(() {
+      List<String>? errorList;
+
+      if (!state.isValid) {
+        if (state.validator != null) {
+          // Field has AuthValidation error
+          final errorMessage = state.validator?.localizedMessage(context);
+          errorList = errorMessage != null ? [errorMessage] : null;
+        }
+      } else {
+        errorList = null;
+      }
+
+      // Update the appropriate error list
+      switch (state.field) {
+        case ForgotPasswordFormField.email:
+          _emailErrorList = errorList;
+          break;
+      }
+    });
   }
 
   @override
   void initState() {
     super.initState();
+    
     _emailController.addListener(() {
-      final emailValidationResult = AuthValidation.validateEmail(
-        _emailController.text,
+      BlocProvider.of<ForgotPasswordBloc>(context).add(
+        ForgotPasswordFormFieldChanged(
+          field: ForgotPasswordFormField.email,
+          value: _emailController.text,
+        ),
       );
-      if (emailValidationResult != null) {
-        setState(() {
-          final error = emailValidationResult.localizedMessage(context);
-          if (error != null) {
-            setState(() {
-              _emailErrorList = [error];
-            });
-          }
-        });
-      } else {
-        setState(() {
-          _emailErrorList = null;
-        });
-      }
     });
   }
 
@@ -94,9 +120,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       body: BlocConsumer<ForgotPasswordBloc, ForgotPasswordState>(
         listener: (context, state) {
           if (state is ForgotPasswordSuccess) {
-            showEmailVerificationBottomSheet(context, _emailController.text);
+            _showEmailVerificationQuickSheet(context, _emailController.text);
           } else if (state is ForgotPasswordFailure) {
             _handleFailure(state.failure);
+          }
+          if (state is ForgotPasswordFormFieldValidated) {
+            _handleFieldValidation(state);
           }
         },
         builder: (context, state) {
@@ -108,14 +137,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '${l10n?.forgotPasswordTitle}',
-                  style: CoreTypography.headlineLargeSemiBold(),
-                ),
-                const SizedBox(height: CoreSpacing.space2),
-                Text(
-                  '${l10n?.forgotPasswordDescription}',
-                  style: CoreTypography.bodyLargeRegular(),
+                ForgotPasswordHeader(
+                  title: '${l10n?.forgotPasswordTitle}',
+                  description: '${l10n?.forgotPasswordDescription}',
                 ),
                 const SizedBox(height: CoreSpacing.space10),
                 CoreTextField(
@@ -133,10 +157,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       state is ForgotPasswordLoading ||
                       _emailController.text.isEmpty ||
                       _emailErrorList != null,
-                  label:
-                      state is ForgotPasswordLoading
-                          ? '${l10n?.sendingOtpButton}'
-                          : '${l10n?.continueButton}',
+                  label: state is ForgotPasswordLoading
+                      ? '${l10n?.sendingOtpButton}'
+                      : '${l10n?.continueButton}',
                   centerAlign: true,
                 ),
               ],
@@ -147,78 +170,84 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     );
   }
 
-  void showEmailVerificationBottomSheet(
+  Widget _buildOtpVerificationSheet(BuildContext context, String email) {
+    String otp = '';
+    bool otpInvalid = true;
+    return BlocProvider.value(
+      value: BlocProvider.of<OtpVerificationBloc>(context),
+      child: BlocConsumer<OtpVerificationBloc, OtpVerificationState>(
+        listener: (context, state) {
+          if (state is OtpVerificationOtpChangeSuccess) {
+            otp = state.otp;
+            final otpValidator = AuthValidation.validateOtp(otp);
+            otpInvalid = otpValidator != null;
+          }
+          if (state is OtpVerificationSuccess) {
+            _router.navigate(fullSetNewPasswordRoute, arguments: email);
+          }
+          if (state is OtpVerificationFailure) {
+            _handleFailure(state.failure);
+          }
+          if (state is OtpVerificationOtpResendSuccess) {
+            CoreToast.showSuccess(
+              context,
+              l10n?.otpResendSuccess,
+              '${l10n?.continueButton}',
+            );
+          }
+          if (state is OtpVerificationResendFailure) {
+            _handleFailure(state.failure);
+          }
+        },
+        builder: (context, state) {
+          return OtpVerificationQuickSheet(
+            note: '${l10n?.otpVerificationNote}',
+            contact: email,
+            isResending: state is OtpVerificationResendLoading,
+            isVerifying: state is OtpVerificationLoading,
+            verifyButtonDisabled:
+                otpInvalid ||
+                state is OtpVerificationLoading ||
+                state is OtpVerificationResendLoading,
+            onResend: () {
+              BlocProvider.of<OtpVerificationBloc>(
+                context,
+              ).add(OtpVerificationResendRequested(contact: email));
+            },
+            onEdit: () {
+              Navigator.pop(context);
+              BlocProvider.of<ForgotPasswordBloc>(
+                context,
+              ).add(ForgotPasswordEditEmailRequested());
+              focusNode.requestFocus();
+            },
+            onVerify: () {
+              BlocProvider.of<OtpVerificationBloc>(
+                context,
+              ).add(OtpVerificationSubmitted(contact: email, otp: otp));
+            },
+            onChanged: (otp) {
+              BlocProvider.of<OtpVerificationBloc>(
+                context,
+              ).add(OtpVerificationOtpChanged(otp: otp));
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  void _showEmailVerificationQuickSheet(
     BuildContext callingContext,
     String email,
   ) {
-    String otp = '';
-    bool otpInvalid = true;
     showModalBottomSheet(
       context: callingContext,
       isScrollControlled: true,
       isDismissible: false,
       enableDrag: false,
       backgroundColor: Colors.transparent,
-      builder: (bottomSheetContext) {
-        return BlocProvider.value(
-          value: BlocProvider.of<OtpVerificationBloc>(callingContext),
-          child: BlocConsumer<OtpVerificationBloc, OtpVerificationState>(
-            listener: (context, state) {
-              if (state is OtpVerificationOtpChangeUpdated) {
-                otp = state.otp;
-                final otpValidator = AuthValidation.validateOtp(otp);
-                otpInvalid = otpValidator != null;
-              }
-              if (state is OtpVerificationSuccess) {
-                _router.navigate(fullSetNewPasswordRoute, arguments: email);
-              }
-              if (state is OtpVerificationFailure) {
-                _handleFailure(state.failure);
-              }
-              if (state is OtpVerificationOtpResent) {
-                CoreToast.showSuccess(context, l10n?.otpResendSuccess);
-              }
-              if (state is OtpVerificationResendFailure) {
-                _handleFailure(state.failure);
-              }
-            },
-            builder: (context, state) {
-              return OtpVerificationBottomSheet(
-                note: '${l10n?.otpVerificationNote}',
-                contact: email,
-                isResending: state is OtpVerificationResendLoading,
-                isVerifying: state is OtpVerificationLoading,
-                verifyButtonDisabled:
-                    otpInvalid ||
-                    state is OtpVerificationLoading ||
-                    state is OtpVerificationResendLoading,
-                onResend: () {
-                  BlocProvider.of<OtpVerificationBloc>(
-                    context,
-                  ).add(OtpVerificationResendRequested(contact: email));
-                },
-                onEdit: () {
-                  Navigator.pop(context);
-                  BlocProvider.of<ForgotPasswordBloc>(
-                    callingContext,
-                  ).add(ForgotPasswordEditEmail());
-                  focusNode.requestFocus();
-                },
-                onVerify: () {
-                  BlocProvider.of<OtpVerificationBloc>(
-                    context,
-                  ).add(OtpVerificationSubmitted(contact: email, otp: otp));
-                },
-                onChanged: (otp) {
-                  BlocProvider.of<OtpVerificationBloc>(
-                    context,
-                  ).add(OtpVerificationOtpChanged(otp: otp));
-                },
-              );
-            },
-          ),
-        );
-      },
+      builder: (context) => _buildOtpVerificationSheet(context, email),
     );
   }
 }
