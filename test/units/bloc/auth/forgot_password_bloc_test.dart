@@ -10,6 +10,7 @@ void main() {
   group('ForgotPasswordBloc Tests', () {
     late FakeSupabaseWrapper fakeSupabase;
     late ForgotPasswordBloc bloc;
+    const testEmail = 'test@example.com';
 
     setUp(() {
       Modular.init(AuthTestModule());
@@ -20,6 +21,86 @@ void main() {
     tearDown(() {
       fakeSupabase.reset();
       Modular.destroy();
+    });
+
+    group('ForgotPasswordFormFieldChanged', () {
+      blocTest<ForgotPasswordBloc, ForgotPasswordState>(
+        'emits [ForgotPasswordFormFieldValidated] with isValid=false when email is empty',
+        build: () => bloc,
+        act: (bloc) => bloc.add(
+          const ForgotPasswordFormFieldChanged(
+            field: ForgotPasswordFormField.email,
+            value: '',
+          ),
+        ),
+        expect: () => [
+          isA<ForgotPasswordFormFieldValidated>().having(
+            (state) => state.field,
+            'field',
+            ForgotPasswordFormField.email,
+          ).having(
+            (state) => state.isValid,
+            'isValid',
+            false,
+          ).having(
+            (state) => state.validator,
+            'validator',
+            isNotNull,
+          ),
+        ],
+      );
+
+      blocTest<ForgotPasswordBloc, ForgotPasswordState>(
+        'emits [ForgotPasswordFormFieldValidated] with isValid=false when email is invalid',
+        build: () => bloc,
+        act: (bloc) => bloc.add(
+          const ForgotPasswordFormFieldChanged(
+            field: ForgotPasswordFormField.email,
+            value: 'invalid-email',
+          ),
+        ),
+        expect: () => [
+          isA<ForgotPasswordFormFieldValidated>().having(
+            (state) => state.field,
+            'field',
+            ForgotPasswordFormField.email,
+          ).having(
+            (state) => state.isValid,
+            'isValid',
+            false,
+          ).having(
+            (state) => state.validator,
+            'validator',
+            isNotNull,
+          ),
+        ],
+      );
+
+      blocTest<ForgotPasswordBloc, ForgotPasswordState>(
+        'emits [ForgotPasswordFormFieldValidated] with isValid=true when email is valid',
+        build: () => bloc,
+        act: (bloc) => bloc.add(
+          const ForgotPasswordFormFieldChanged(
+            field: ForgotPasswordFormField.email,
+            value: testEmail,
+          ),
+        ),
+        expect: () => [
+          isA<ForgotPasswordFormFieldValidated>().having(
+            (state) => state.field,
+            'field',
+            ForgotPasswordFormField.email,
+          ).having(
+            (state) => state.isValid,
+            'isValid',
+            true,
+          ).having(
+            (state) => state.validator,
+            'validator',
+            null,
+          ),
+        ],
+      );
     });
 
     group('ForgotPasswordSubmitted', () {
@@ -44,6 +125,7 @@ void main() {
         expect: () => [ForgotPasswordLoading(), isA<ForgotPasswordFailure>()],
       );
     });
+    
     group('Multiple Password Reset Attempts', () {
       blocTest<ForgotPasswordBloc, ForgotPasswordState>(
         'handles multiple consecutive password reset attempts',
@@ -83,6 +165,7 @@ void main() {
         ],
       );
     });
+    
     group('ForgotPasswordEditEmail', () {
       blocTest<ForgotPasswordBloc, ForgotPasswordState>(
         'emits [ForgotPasswordInitial] when edit email is triggered',
