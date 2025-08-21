@@ -188,6 +188,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(child: SetNewPasswordPage(email: email)),
       );
+      await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(
           CoreTextField,
@@ -195,6 +196,7 @@ void main() {
         ),
         '@Password123!',
       );
+      await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(
           CoreTextField,

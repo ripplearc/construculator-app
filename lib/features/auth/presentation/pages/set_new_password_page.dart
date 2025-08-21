@@ -41,7 +41,9 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
     });
   }
 
-  void _handlePasswordValidation(SetNewPasswordPasswordValidationSuccess state) {
+  void _handlePasswordValidation(
+    SetNewPasswordPasswordValidationSuccess state,
+  ) {
     setState(() {
       List<String>? errorList;
 
@@ -150,7 +152,7 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
               context,
               message: '${l10n?.passwordResetSuccessMessage}',
               onPressed: () => _router.navigate(dashboardRoute),
-              buttonLabel: '${l10n?.closeLabel}',
+              buttonLabel: '${l10n?.continueButton}',
             );
           }
         },
