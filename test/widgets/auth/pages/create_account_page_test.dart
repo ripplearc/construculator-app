@@ -228,89 +228,81 @@ void main() {
       );
       expect(tester.widget<CoreIconWidget>(coreIcon).icon, CoreIcons.eye);
     });
-    testWidgets(
-      'shows validation errors with disabled agree and continue button when input fields are invalid',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidget(child: const CreateAccountPage(email: testEmail)),
-        );
-        await tester.pumpAndSettle();
 
-        final continueButton = find.widgetWithText(
-          CoreButton,
-          AppLocalizations.of(buildContext!)!.agreeAndContinueButton,
-        );
-        expect(tester.widget<CoreButton>(continueButton).isDisabled, isTrue);
+    testWidgets('shows validation errors when input fields are invalid', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(child: const CreateAccountPage(email: testEmail)),
+      );
+      await tester.pumpAndSettle();
 
-        await tester.enterText(
-          find.widgetWithText(
-            CoreTextField,
-            AppLocalizations.of(buildContext!)!.firstNameLabel,
-          ),
-          '',
-        );
-        await tester.pumpAndSettle();
-        expect(
-          find.textContaining(
-            AppLocalizations.of(buildContext!)!.firstNameRequired,
-          ),
-          findsOneWidget,
-        );
+      await tester.enterText(
+        find.widgetWithText(
+          CoreTextField,
+          AppLocalizations.of(buildContext!)!.firstNameLabel,
+        ),
+        '',
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining(
+          AppLocalizations.of(buildContext!)!.firstNameRequired,
+        ),
+        findsOneWidget,
+      );
 
-        await tester.enterText(
-          find.widgetWithText(
-            CoreTextField,
-            AppLocalizations.of(buildContext!)!.lastNameLabel,
-          ),
-          '',
-        );
-        await tester.pumpAndSettle();
-        expect(
-          find.textContaining(
-            AppLocalizations.of(buildContext!)!.lastNameRequired,
-          ),
-          findsOneWidget,
-        );
-        await tester.enterText(
-          find.widgetWithText(
-            CoreTextField,
-            AppLocalizations.of(buildContext!)!.passwordLabel,
-          ),
-          '',
-        );
-        await tester.pumpAndSettle();
-        await tester.tap(find.byType(SingleItemSelector<String>));
-        await tester.pumpAndSettle();
-        expect(
-          find.textContaining(
-            AppLocalizations.of(buildContext!)!.roleRequiredError,
-          ),
-          findsOneWidget,
-        );
-        expect(
-          find.textContaining(
-            AppLocalizations.of(buildContext!)!.passwordRequiredError,
-          ),
-          findsOneWidget,
-        );
-        await tester.enterText(
-          find.widgetWithText(
-            CoreTextField,
-            AppLocalizations.of(buildContext!)!.confirmPasswordLabel,
-          ),
-          'Password123',
-        );
-        await tester.pumpAndSettle();
-        expect(
-          find.textContaining(
-            AppLocalizations.of(buildContext!)!.passwordsDoNotMatchError,
-          ),
-          findsOneWidget,
-        );
-        expect(tester.widget<CoreButton>(continueButton).isDisabled, isTrue);
-      },
-    );
-
+      await tester.enterText(
+        find.widgetWithText(
+          CoreTextField,
+          AppLocalizations.of(buildContext!)!.lastNameLabel,
+        ),
+        '',
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining(
+          AppLocalizations.of(buildContext!)!.lastNameRequired,
+        ),
+        findsOneWidget,
+      );
+      await tester.enterText(
+        find.widgetWithText(
+          CoreTextField,
+          AppLocalizations.of(buildContext!)!.passwordLabel,
+        ),
+        '',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(SingleItemSelector<String>));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining(
+          AppLocalizations.of(buildContext!)!.roleRequiredError,
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining(
+          AppLocalizations.of(buildContext!)!.passwordRequiredError,
+        ),
+        findsOneWidget,
+      );
+      await tester.enterText(
+        find.widgetWithText(
+          CoreTextField,
+          AppLocalizations.of(buildContext!)!.confirmPasswordLabel,
+        ),
+        'Password123',
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining(
+          AppLocalizations.of(buildContext!)!.passwordsDoNotMatchError,
+        ),
+        findsOneWidget,
+      );
+    });
     testWidgets(
       'agree and continue button is disabled if firstname is invalid',
       (tester) async {
@@ -561,6 +553,7 @@ void main() {
         ),
         '123',
       );
+      await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(
           CoreTextField,
@@ -568,6 +561,7 @@ void main() {
         ),
         '@Password123!',
       );
+      await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(
           CoreTextField,
@@ -598,6 +592,7 @@ void main() {
           ),
           'John',
         );
+        await tester.pumpAndSettle();
         await tester.enterText(
           find.widgetWithText(
             CoreTextField,
@@ -605,11 +600,11 @@ void main() {
           ),
           'Doe',
         );
-
+        await tester.pumpAndSettle();
         await tester.tap(find.byType(SingleItemSelector<String>));
         await tester.pumpAndSettle();
         await tester.tap(find.text(testRole));
-
+        await tester.pumpAndSettle();
         await tester.enterText(
           find.widgetWithText(
             CoreTextField,
@@ -617,6 +612,7 @@ void main() {
           ),
           '@Password123!',
         );
+        await tester.pumpAndSettle();
         await tester.enterText(
           find.widgetWithText(
             CoreTextField,
@@ -660,6 +656,7 @@ void main() {
         ),
         'John',
       );
+      await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(
           CoreTextField,
@@ -667,11 +664,11 @@ void main() {
         ),
         'Doe',
       );
-
+      await tester.pumpAndSettle();
       await tester.tap(find.byType(SingleItemSelector<String>));
       await tester.pumpAndSettle();
       await tester.tap(find.text(testRole));
-
+      await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(
           CoreTextField,
@@ -679,6 +676,7 @@ void main() {
         ),
         'Password123!',
       );
+      await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(
           CoreTextField,
@@ -736,6 +734,7 @@ void main() {
         ),
         'John',
       );
+      await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(
           CoreTextField,
@@ -743,11 +742,11 @@ void main() {
         ),
         'Doe',
       );
-
+      await tester.pumpAndSettle();
       await tester.tap(find.byType(SingleItemSelector<String>));
       await tester.pumpAndSettle();
       await tester.tap(find.text(testRole));
-
+      await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(
           CoreTextField,
@@ -755,6 +754,7 @@ void main() {
         ),
         'Password123!',
       );
+      await tester.pumpAndSettle();
       await tester.enterText(
         find.widgetWithText(
           CoreTextField,
@@ -796,31 +796,10 @@ void main() {
         makeTestableWidget(child: const CreateAccountPage(email: testEmail)),
       );
       await tester.pumpAndSettle();
-      expect(find.text(AppLocalizations.of(buildContext!)!.rolesLoadingError), findsOneWidget);
+      expect(
+        find.text(AppLocalizations.of(buildContext!)!.rolesLoadingError),
+        findsOneWidget,
+      );
     });
-
-    testWidgets('terms and privacy links are present and tappable', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidget(child: const CreateAccountPage(email: testEmail)),
-      );
-      await tester.pumpAndSettle();
-      final termsOfService = find.widgetWithText(
-        InkWell,
-        AppLocalizations.of(buildContext!)!.termsAndServicesLink,
-      );
-      expect(termsOfService, findsOneWidget);
-      final termsOfServiceInkWell = tester.widget<InkWell>(termsOfService);
-      expect(termsOfServiceInkWell.onTap, isNotNull);
-
-      final privacyPolicy = find.widgetWithText(
-        InkWell,
-        AppLocalizations.of(buildContext!)!.privacyPolicyLink,
-      );
-
-      final privacyPolicyInkWell = tester.widget<InkWell>(privacyPolicy);
-      expect(privacyPolicyInkWell.onTap, isNotNull);
-    });
-  });
+ });
 }

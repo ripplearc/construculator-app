@@ -329,10 +329,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get termsAndConditionsText =>
-      'By selecting agree and continue. I agree to\n';
+      'By selecting agree and continue. I agree to Construculator ';
 
   @override
-  String get termsAndServicesLink => 'Constructulator terms & services';
+  String get termsAndServicesLink => 'terms & services';
 
   @override
   String get timeoutError => 'Request timeout';

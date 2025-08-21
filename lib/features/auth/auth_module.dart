@@ -60,6 +60,19 @@ void _registerRoutes(RouteManager r) {
       );
     },
   );
+  r.child(
+    createAccountRoute,
+    guards: [AuthGuard()],
+    child: (context) => MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => Modular.get<CreateAccountBloc>()),
+        BlocProvider<OtpVerificationBloc>(
+          create: (BuildContext context) => Modular.get<OtpVerificationBloc>(),
+        ),
+      ],
+      child: CreateAccountPage(email: r.args.data as String),
+    ),
+  );
 }
 
 void _registerDependencies(Injector i) {
