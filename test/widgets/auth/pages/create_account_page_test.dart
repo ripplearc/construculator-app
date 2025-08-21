@@ -1,7 +1,4 @@
-import 'package:construculator/features/auth/domain/repositories/auth_repository.dart';
-import 'package:construculator/features/auth/domain/usecases/send_otp_usecase.dart';
 import 'package:construculator/features/auth/testing/auth_test_module.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -15,16 +12,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:construculator/features/auth/presentation/pages/create_account_page.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
-import 'package:construculator/features/auth/domain/usecases/create_account_usecase.dart';
-import 'package:construculator/features/auth/domain/usecases/get_professional_roles_usecase.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:core_ui/core_ui.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
-  late AuthManager authManager;
-  late AuthRepository repository;
   late FakeAppRouter router;
   const testEmail = 'test@example.com';
   const testRole = 'Engineer';
@@ -41,8 +34,6 @@ void main() {
   setUp(() {
     Modular.init(AuthTestModule());
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
-    authManager = Modular.get<AuthManager>();
-    repository = Modular.get<AuthRepository>();
     router = Modular.get<AppRouter>() as FakeAppRouter;
     fakeSupabase.addTableData('professional_roles', [
       {'id': 'uuid', 'name': testRole},
@@ -55,11 +46,7 @@ void main() {
   });
 
   Widget makeTestableWidget({required Widget child}) {
-    final bloc = CreateAccountBloc(
-      createAccountUseCase: CreateAccountUseCase(authManager),
-      getProfessionalRolesUseCase: GetProfessionalRolesUseCase(repository),
-      sendOtpUseCase: SendOtpUseCase(authManager),
-    );
+    final bloc = Modular.get<CreateAccountBloc>();
     return BlocProvider.value(
       value: bloc,
       child: MaterialApp(
