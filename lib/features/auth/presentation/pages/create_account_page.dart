@@ -1,3 +1,4 @@
+import 'package:construculator/features/auth/presentation/widgets/terms_and_conditions.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/professional_role.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
@@ -10,6 +11,8 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
+
+const usCountryCode = '+1';
 
 class CreateAccountPage extends StatefulWidget {
   final String? email;
@@ -34,8 +37,8 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
 
   List<ProfessionalRole> _professionalRolesList = <ProfessionalRole>[];
   ProfessionalRole? _selectedRole;
-  String _selectedPhonePrefix = '+1';
-  final List<String> _phonePrefixes = ['+1'];
+  String _selectedPhonePrefix = usCountryCode;
+  final List<String> _phonePrefixes = [usCountryCode];
 
   List<String>? _firstNameErrorList;
   List<String>? _lastNameErrorList;
@@ -61,16 +64,29 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   }
 
   void _onItemSelectorOpened() {
-    // remove focus from any textfield
     FocusManager.instance.primaryFocus?.unfocus();
-    _validateForm();
+    BlocProvider.of<CreateAccountBloc>(context).add(
+      CreateAccountFormFieldChanged(
+        field: CreateAccountFormField.role,
+        value: _selectedRole?.name ?? '',
+        isEmailRegistration: isEmailRegistration,
+      ),
+    );
   }
 
   void _handleFailure(Failure failure) {
     if (failure is AuthFailure) {
-      CoreToast.showError(context, failure.errorType.localizedMessage(context));
+      CoreToast.showError(
+        context,
+        failure.errorType.localizedMessage(context),
+        l10n?.closeLabel ?? '',
+      );
     } else {
-      CoreToast.showError(context, l10n?.unexpectedErrorMessage);
+      CoreToast.showError(
+        context,
+        l10n?.unexpectedErrorMessage ?? '',
+        l10n?.closeLabel ?? '',
+      );
     }
   }
 
@@ -121,7 +137,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
       _passwordController.clear();
       _confirmPasswordController.clear();
       _selectedRole = null;
-      _selectedPhonePrefix = '+1';
+      _selectedPhonePrefix = usCountryCode;
       _firstNameErrorList = null;
       _lastNameErrorList = null;
       _roleErrorList = null;
@@ -159,6 +175,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     SuccessModal.show(
       context,
       message: l10n?.createAccountSuccessMessage,
+      buttonLabel: l10n?.continueButton ?? '',
       onPressed: () => _router.navigate(dashboardRoute),
     );
   }
@@ -182,7 +199,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   void _handleFieldValidation(CreateAccountFormFieldValidated state) {
     setState(() {
       List<String>? errorList;
-      
+
       if (!state.isValid) {
         if (state.validator != null) {
           // Field has AuthValidation error
@@ -229,7 +246,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     _mobileNumberController.text = widget.phone ?? '';
     BlocProvider.of<CreateAccountBloc>(
       context,
-    ).add(const LoadProfessionalRoles());
+    ).add(const CreateAccountGetProfessionalRolesRequested());
 
     _firstNameController.addListener(() {
       BlocProvider.of<CreateAccountBloc>(context).add(
@@ -510,38 +527,13 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                     errorTextList: _confirmPasswordErrorList,
                   ),
                   const SizedBox(height: CoreSpacing.space6),
-                  Text.rich(
-                    TextSpan(
-                      text: '${l10n?.termsAndConditionsText}',
-                      style: CoreTypography.bodyMediumRegular(
-                        color: CoreTextColors.headline,
-                      ),
-                      children: [
-                        WidgetSpan(
-                          child: InkWell(
-                            onTap: () => _openLink(''),
-                            child: Text(
-                              '${l10n?.termsAndServicesLink}',
-                              style: CoreTypography.bodyMediumMedium(
-                                color: CoreTextColors.link,
-                              ).copyWith(decoration: TextDecoration.underline),
-                            ),
-                          ),
-                        ),
-                        TextSpan(text: ' ${l10n?.andAcknowledge} '),
-                        WidgetSpan(
-                          child: InkWell(
-                            onTap: () => _openLink(''),
-                            child: Text(
-                              '${l10n?.privacyPolicyLink}',
-                              style: CoreTypography.bodyMediumMedium(
-                                color: CoreTextColors.link,
-                              ).copyWith(decoration: TextDecoration.underline),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  TermsAndConditions(
+                    termsAndConditionsText: l10n?.termsAndConditionsText ?? '',
+                    termsAndServicesLink: l10n?.termsAndServicesLink ?? '',
+                    privacyPolicyLink: l10n?.privacyPolicyLink ?? '',
+                    andAcknowledge: l10n?.andAcknowledge ?? '',
+                    onTermsAndConditionsLinkPressed: () => _openLink(''),
+                    onPrivacyPolicyLinkPressed: () => _openLink(''),
                   ),
                   const SizedBox(height: 24),
                   CoreButton(

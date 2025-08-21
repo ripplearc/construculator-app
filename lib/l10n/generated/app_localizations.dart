@@ -691,13 +691,13 @@ abstract class AppLocalizations {
   /// Text for terms and conditions agreement
   ///
   /// In en, this message translates to:
-  /// **'By selecting agree and continue. I agree to\n'**
+  /// **'By selecting agree and continue. I agree to Construculator '**
   String get termsAndConditionsText;
 
   /// Link text for terms and services
   ///
   /// In en, this message translates to:
-  /// **'Constructulator terms & services'**
+  /// **'terms & services'**
   String get termsAndServicesLink;
 
   /// Error message for request timeouts
