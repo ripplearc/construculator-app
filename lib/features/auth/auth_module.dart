@@ -7,10 +7,12 @@ import 'package:construculator/features/auth/domain/usecases/verify_otp_usecase.
 import 'package:construculator/features/auth/domain/usecases/login_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/set_new_password_usecase.dart';
 import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
+import 'package:construculator/features/auth/presentation/bloc/enter_password_bloc/enter_password_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/login_with_email_bloc/login_with_email_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
 import 'package:construculator/features/auth/presentation/pages/create_account_page.dart';
+import 'package:construculator/features/auth/presentation/pages/enter_password_page.dart';
 import 'package:construculator/features/auth/presentation/pages/login_with_email_page.dart';
 import 'package:construculator/features/auth/presentation/pages/register_with_email_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
@@ -81,13 +83,19 @@ void _registerRoutes(RouteManager r) {
     child: (context) {
       final email = r.args.data ?? '';
       return BlocProvider(
-        create: (context) => LoginWithEmailBloc(
-          checkEmailAvailabilityUseCase:
-              Modular.get<CheckEmailAvailabilityUseCase>(),
-        ),
+        create: (context) => Modular.get<LoginWithEmailBloc>(),
         child: LoginWithEmailPage(email: email),
       );
     },
+  );
+  r.child(
+    enterPasswordRoute,
+    guards: [NoAuthGuard()],
+    child: (context) => BlocProvider(
+      create: (context) =>
+          EnterPasswordBloc(loginUseCase: Modular.get<LoginUseCase>()),
+      child: EnterPasswordPage(email: r.args.data as String),
+    ),
   );
 }
 
