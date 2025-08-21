@@ -134,4 +134,5 @@ void _registerDependencies(Injector i) {
   i.add<LoginWithEmailBloc>(
     () => LoginWithEmailBloc(checkEmailAvailabilityUseCase: i()),
   );
+  i.add<EnterPasswordBloc>(() => EnterPasswordBloc(loginUseCase: i()));
 }
