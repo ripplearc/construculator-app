@@ -115,9 +115,6 @@ enum SupabaseAuthErrorCode {
       case 'request_timeout':
         return SupabaseAuthErrorCode.timeout;
 
-      case 'same_password':
-        return SupabaseAuthErrorCode.samePassword;
-
       default:
         return SupabaseAuthErrorCode.unknown;
     }
@@ -138,8 +135,6 @@ enum SupabaseAuthErrorCode {
         return 'same_password';
       case SupabaseAuthErrorCode.registrationFailure:
         return 'signup_disabled';
-      case SupabaseAuthErrorCode.samePassword:
-        return 'same_password';
       case SupabaseAuthErrorCode.unknown:
         return 'unknown';
     }

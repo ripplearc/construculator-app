@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:equatable/equatable.dart';
 import 'package:construculator/features/auth/domain/usecases/send_otp_usecase.dart';
@@ -50,7 +51,7 @@ class OtpVerificationBloc
 
     result.fold(
       (failure) => emit(OtpVerificationResendFailure(failure)),
-      (_) => emit(OtpVerificationOtpResent()),
+      (_) => emit(OtpVerificationOtpResendSuccess()),
     );
   }
 
@@ -58,6 +59,8 @@ class OtpVerificationBloc
     OtpVerificationOtpChanged event,
     Emitter<OtpVerificationState> emit,
   ) async {
-    emit(OtpVerificationOtpChangeUpdated(otp: event.otp));
+    final otpValidator = AuthValidation.validateOtp(event.otp);
+    final otpInvalid = otpValidator != null;
+    emit(OtpVerificationOtpChangeSuccess(otp: event.otp, otpInvalid: otpInvalid));
   }
 }

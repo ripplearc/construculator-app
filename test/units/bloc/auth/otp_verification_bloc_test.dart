@@ -68,7 +68,7 @@ void main() {
               OtpVerificationResendRequested(contact: testEmail),
             ),
         expect:
-            () => [OtpVerificationResendLoading(), OtpVerificationOtpResent()],
+            () => [OtpVerificationResendLoading(), OtpVerificationOtpResendSuccess()],
       );
 
       blocTest<OtpVerificationBloc, OtpVerificationState>(
@@ -99,7 +99,7 @@ void main() {
           OtpVerificationOtpChanged(otp: '123456'),
         ),
         expect: () => [
-          OtpVerificationOtpChangeUpdated(otp: '123456'),
+          OtpVerificationOtpChangeSuccess(otp: '123456', otpInvalid: false),
         ],
       );
 
@@ -112,7 +112,7 @@ void main() {
           OtpVerificationOtpChanged(otp: ''),
         ),
         expect: () => [
-          OtpVerificationOtpChangeUpdated(otp: ''),
+          OtpVerificationOtpChangeSuccess(otp: '', otpInvalid: true),
         ],
       );
 
@@ -125,7 +125,7 @@ void main() {
           OtpVerificationOtpChanged(otp: '123'),
         ),
         expect: () => [
-          OtpVerificationOtpChangeUpdated(otp: '123'),
+          OtpVerificationOtpChangeSuccess(otp: '123', otpInvalid: true),
         ],
       );
     });

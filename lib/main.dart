@@ -11,6 +11,11 @@ import 'package:flutter_modular/flutter_modular.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  final appBootstrap = await _initializeApp();
+  runApp(ModularApp(module: AppModule(appBootstrap), child: const AppWidget()));
+}
+
+Future<AppBootstrap> _initializeApp() async {
   final String envName = const String.fromEnvironment(
     'ENVIRONMENT',
     defaultValue: devEnv,
@@ -22,8 +27,11 @@ Future<void> main() async {
   await config.initialize(env);
   final wrapper = SupabaseWrapperImpl(envLoader: envLoader);
   await wrapper.initialize();
-  final appBootstrap = AppBootstrap(config: config, envLoader: envLoader, supabaseWrapper: wrapper);
-  runApp(ModularApp(module: AppModule(appBootstrap), child: const AppWidget()));
+  return AppBootstrap(
+    config: config,
+    envLoader: envLoader,
+    supabaseWrapper: wrapper,
+  );
 }
 
 Environment _getEnvironmentFromString(String? envName) {

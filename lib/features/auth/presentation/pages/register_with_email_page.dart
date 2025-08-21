@@ -1,8 +1,8 @@
-import 'package:construculator/features/auth/presentation/widgets/error_widget_builder.dart';
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
 import 'package:construculator/features/auth/presentation/widgets/auth_footer.dart';
-import 'package:construculator/features/auth/presentation/widgets/auth_methods.dart';
-import 'package:construculator/features/auth/presentation/widgets/otp_verification_sheet.dart';
+import 'package:construculator/features/auth/presentation/widgets/auth_provider_buttons.dart';
+import 'package:construculator/features/auth/presentation/widgets/error_widget_builder.dart';
+import 'package:construculator/features/auth/presentation/widgets/otp_quick_sheet/otp_verification_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
@@ -37,21 +37,94 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
   void _handleFailure(Failure failure) {
     if (failure is AuthFailure) {
       if (failure.errorType == AuthErrorType.rateLimited) {
-        CoreToast.showError(context, l10n?.tooManyAttempts);
+        CoreToast.showError(
+          context,
+          l10n?.tooManyAttempts,
+          l10n?.closeLabel ?? '',
+        );
       } else {
-        CoreToast.showError(context, failure.errorType.localizedMessage(context));
+        CoreToast.showError(
+          context,
+          failure.errorType.localizedMessage(context),
+          l10n?.closeLabel ?? '',
+        );
       }
     } else {
-      CoreToast.showError(context, l10n?.unexpectedErrorMessage);
+      CoreToast.showError(
+        context,
+        l10n?.unexpectedErrorMessage,
+        l10n?.closeLabel ?? '',
+      );
     }
+  }
+
+  Widget _buildOtpVerificationBottomSheet(BuildContext context, String email) {
+    String otp = '';
+    return BlocProvider.value(
+      value: BlocProvider.of<OtpVerificationBloc>(context),
+      child: BlocConsumer<OtpVerificationBloc, OtpVerificationState>(
+        listener: (context, state) {
+          if (state is OtpVerificationOtpChangeSuccess) {
+            otp = state.otp;
+          }
+          if (state is OtpVerificationSuccess) {
+            _router.navigate(fullCreateAccountRoute, arguments: email);
+          }
+          if (state is OtpVerificationFailure) {
+            _handleFailure(state.failure);
+          }
+          if (state is OtpVerificationOtpResendSuccess) {
+            CoreToast.showSuccess(
+              context,
+              l10n?.otpResendSuccess,
+              l10n?.closeLabel ?? '',
+            );
+          }
+          if (state is OtpVerificationResendFailure) {
+            _handleFailure(state.failure);
+          }
+        },
+        builder: (context, state) {
+          return OtpVerificationQuickSheet(
+            note: '${l10n?.otpVerificationNote}',
+            contact: email,
+            isResending: state is OtpVerificationResendLoading,
+            isVerifying: state is OtpVerificationLoading,
+            verifyButtonDisabled:
+                (state is OtpVerificationOtpChangeSuccess &&
+                    state.otpInvalid) ||
+                state is OtpVerificationLoading ||
+                state is OtpVerificationResendLoading,
+            onResend: () {
+              BlocProvider.of<OtpVerificationBloc>(
+                context,
+              ).add(OtpVerificationResendRequested(contact: email));
+            },
+            onEdit: () {
+              BlocProvider.of<RegisterWithEmailBloc>(
+                context,
+              ).add(RegisterWithEmailEmailChanged(email));
+            },
+            onVerify: () {
+              BlocProvider.of<OtpVerificationBloc>(
+                context,
+              ).add(OtpVerificationSubmitted(contact: email, otp: otp));
+            },
+            onChanged: (otp) {
+              BlocProvider.of<OtpVerificationBloc>(
+                context,
+              ).add(OtpVerificationOtpChanged(otp: otp));
+            },
+          );
+        },
+      ),
+    );
   }
 
   void _showEmailVerificationBottomSheet(
     BuildContext callingContext,
     String email,
   ) {
-    String otp = '';
-    bool otpInvalid = true;
     showModalBottomSheet(
       context: callingContext,
       isScrollControlled: true,
@@ -59,62 +132,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
       enableDrag: false,
       backgroundColor: Colors.transparent,
       builder: (bottomSheetContext) {
-        return BlocProvider.value(
-          value: BlocProvider.of<OtpVerificationBloc>(callingContext),
-          child: BlocConsumer<OtpVerificationBloc, OtpVerificationState>(
-            listener: (context, state) {
-              if (state is OtpVerificationOtpChangeUpdated) {
-                otp = state.otp;
-                final otpValidator = AuthValidation.validateOtp(otp);
-                otpInvalid = otpValidator != null;
-              }
-              if (state is OtpVerificationSuccess) {
-                _router.navigate(fullCreateAccountRoute, arguments: email);
-              }
-              if (state is OtpVerificationFailure) {
-                _handleFailure(state.failure);
-              }
-              if (state is OtpVerificationOtpResent) {
-                CoreToast.showSuccess(context, l10n?.otpResendSuccess);
-              }
-              if (state is OtpVerificationResendFailure) {
-                _handleFailure(state.failure);
-              }
-            },
-            builder: (context, state) {
-              return OtpVerificationBottomSheet(
-                note: '${l10n?.otpVerificationNote}',
-                contact: email,
-                isResending: state is OtpVerificationResendLoading,
-                isVerifying: state is OtpVerificationLoading,
-                verifyButtonDisabled:
-                    otpInvalid ||
-                    state is OtpVerificationLoading ||
-                    state is OtpVerificationResendLoading,
-                onResend: () {
-                  BlocProvider.of<OtpVerificationBloc>(
-                    context,
-                  ).add(OtpVerificationResendRequested(contact: email));
-                },
-                onEdit: () {
-                  BlocProvider.of<RegisterWithEmailBloc>(
-                    callingContext,
-                  ).add(RegisterWithEmailEditEmail());
-                },
-                onVerify: () {
-                  BlocProvider.of<OtpVerificationBloc>(
-                    context,
-                  ).add(OtpVerificationSubmitted(contact: email, otp: otp));
-                },
-                onChanged: (otp) {
-                    BlocProvider.of<OtpVerificationBloc>(
-                      context,
-                    ).add(OtpVerificationOtpChanged(otp: otp));
-                },
-              );
-            },
-          ),
-        );
+        return _buildOtpVerificationBottomSheet(bottomSheetContext, email);
       },
     );
   }
@@ -169,11 +187,11 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
         backgroundColor: CoreBackgroundColors.pageBackground,
         body: BlocConsumer<RegisterWithEmailBloc, RegisterWithEmailState>(
           listener: (context, state) {
-            if (state is RegisterWithEmailEmailCheckSuccess) {
+            if (state is RegisterWithEmailEmailCheckCompleted) {
               if (state.isEmailRegistered) {
                 _emailErrorTextList = null;
                 _emailErrorWidgetList = [
-                  buildErrorWidget(
+                  buildErrorWidgetWithLink(
                     errorText: l10n?.emailAlreadyRegistered,
                     linkText: l10n?.logginLink,
                     onPressed: () {
@@ -244,19 +262,21 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
                           !_canPressContinue ||
                           state is RegisterWithEmailOtpSendingLoading ||
                           state is RegisterWithEmailEmailCheckLoading,
-                      label:
-                          state is RegisterWithEmailOtpSendingLoading
-                              ? '${l10n?.sendingOtpButton}'
-                              : state is RegisterWithEmailEmailCheckLoading
-                              ? '${l10n?.checkingAvailabilityButton}'
-                              : '${l10n?.continueButton}',
+                      label: state is RegisterWithEmailOtpSendingLoading
+                          ? '${l10n?.sendingOtpButton}'
+                          : state is RegisterWithEmailEmailCheckLoading
+                          ? '${l10n?.checkingAvailabilityButton}'
+                          : '${l10n?.continueButton}',
                       centerAlign: true,
                     ),
                     const SizedBox(height: CoreSpacing.space6),
                     Row(
                       children: [
                         Expanded(
-                          child: Divider(color: CoreBorderColors.lineLight, thickness: 1),
+                          child: Divider(
+                            color: CoreBorderColors.lineLight,
+                            thickness: 1,
+                          ),
                         ),
                         Padding(
                           padding: EdgeInsets.symmetric(
@@ -268,12 +288,15 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
                           ),
                         ),
                         Expanded(
-                          child: Divider(color: CoreBorderColors.lineLight, thickness: 1),
+                          child: Divider(
+                            color: CoreBorderColors.lineLight,
+                            thickness: 1,
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: CoreSpacing.space6),
-                    AuthMethods(onPressed: (method) {}),
+                    AuthProviderButtons(onPressed: (method) {}),
                   ],
                 ),
               ),

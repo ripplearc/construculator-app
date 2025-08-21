@@ -55,7 +55,7 @@ class OtpVerificationResendLoading extends OtpVerificationState{}
 /// This is the state class for the OTP verification OTP resent state.
 /// It is used to represent the OTP resent state of the OTP verification bloc
 /// when the OTP is resent successfully.
-class OtpVerificationOtpResent extends OtpVerificationState {}
+class OtpVerificationOtpResendSuccess extends OtpVerificationState {}
 
 /// This is the state class for the OTP verification resend failure state.
 /// It is used to represent the resend failure state of the OTP verification bloc
@@ -73,11 +73,13 @@ class OtpVerificationResendFailure extends OtpVerificationState {
 /// This is the state class for the OTP verification OTP change updated state.
 /// It is used to represent the OTP change updated state of the OTP verification bloc
 /// when the OTP input field is being edited.
-class OtpVerificationOtpChangeUpdated extends OtpVerificationState {
+class OtpVerificationOtpChangeSuccess extends OtpVerificationState {
   /// The current OTP value.
   final String otp;
-  const OtpVerificationOtpChangeUpdated({required this.otp});
+  /// Whether the OTP is invalid.
+  final bool otpInvalid;
+  const OtpVerificationOtpChangeSuccess({required this.otp, required this.otpInvalid});
 
   @override
-  List<Object> get props => [otp];
+  List<Object> get props => [otp, otpInvalid];
 }
