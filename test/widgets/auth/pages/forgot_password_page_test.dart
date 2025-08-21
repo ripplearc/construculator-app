@@ -31,11 +31,8 @@ void main() {
   });
 
   Widget makeTestableWidget({required Widget child}) {
-    final forgotBloc = ForgotPasswordBloc(resetPasswordUseCase: Modular.get());
-    final otpBloc = OtpVerificationBloc(
-      verifyOtpUseCase: Modular.get(),
-      sendOtpUseCase: Modular.get(),
-    );
+    final forgotBloc = Modular.get<ForgotPasswordBloc>();
+    final otpBloc = Modular.get<OtpVerificationBloc>();
     return MultiBlocProvider(
       providers: [
         BlocProvider.value(value: forgotBloc),

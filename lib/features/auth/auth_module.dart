@@ -99,29 +99,17 @@ void _registerRoutes(RouteManager r) {
       child: EnterPasswordPage(email: r.args.data as String),
     ),
   );
-   r.child(
-      forgotPasswordRoute,
-      guards: [NoAuthGuard()],
-      child:
-          (context) => MultiBlocProvider(
-            providers: [
-              BlocProvider(
-                create:
-                    (context) => ForgotPasswordBloc(
-                      resetPasswordUseCase: Modular.get<ResetPasswordUseCase>(),
-                    ),
-              ),
-              BlocProvider(
-                create:
-                    (context) => OtpVerificationBloc(
-                      verifyOtpUseCase: Modular.get<VerifyOtpUseCase>(),
-                      sendOtpUseCase: Modular.get<SendOtpUseCase>(),
-                    ),
-              ),
-            ],
-            child: ForgotPasswordPage(),
-          ),
-    );
+  r.child(
+    forgotPasswordRoute,
+    guards: [NoAuthGuard()],
+    child: (context) => MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => Modular.get<ForgotPasswordBloc>()),
+        BlocProvider(create: (context) => Modular.get<OtpVerificationBloc>()),
+      ],
+      child: ForgotPasswordPage(),
+    ),
+  );
 }
 
 void _registerDependencies(Injector i) {
@@ -160,4 +148,7 @@ void _registerDependencies(Injector i) {
     () => LoginWithEmailBloc(checkEmailAvailabilityUseCase: i()),
   );
   i.add<EnterPasswordBloc>(() => EnterPasswordBloc(loginUseCase: i()));
+  i.addSingleton<ForgotPasswordBloc>(
+    () => ForgotPasswordBloc(resetPasswordUseCase: i()),
+  );
 }
