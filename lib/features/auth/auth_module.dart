@@ -26,6 +26,7 @@ import 'package:construculator/libraries/router/guards/no_auth_guard.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
+import 'package:construculator/libraries/toast/toast_module.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
