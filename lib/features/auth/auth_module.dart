@@ -28,57 +28,53 @@ class AuthModule extends Module {
   ];
 
   @override
-  void routes(RouteManager r) {
-    r.child(
-      registerWithEmailRoute,
-      guards: [NoAuthGuard()],
-      child: (context) {
-        final email = r.args.data ?? '';
-        return MultiBlocProvider(
-          providers: [
-            BlocProvider<RegisterWithEmailBloc>(
-              create:
-                  (BuildContext context) =>
-                      Modular.get<RegisterWithEmailBloc>(),
-            ),
-            BlocProvider<OtpVerificationBloc>(
-              create:
-                  (BuildContext context) => Modular.get<OtpVerificationBloc>(),
-            ),
-          ],
-          child: RegisterWithEmailPage(email: email),
-        );
-      },
-    );
-  }
+  void routes(RouteManager r) => _registerRoutes(r);
 
   @override
-  void binds(Injector i) {
-    i.addSingleton<ResetPasswordUseCase>(() => ResetPasswordUseCase(i()));
-    i.addSingleton<GetProfessionalRolesUseCase>(
-      () => GetProfessionalRolesUseCase(i()),
-    );
-    i.addSingleton<CheckEmailAvailabilityUseCase>(
-      () => CheckEmailAvailabilityUseCase(i()),
-    );
-    i.addSingleton<CreateAccountUseCase>(() => CreateAccountUseCase(i()));
-    i.addSingleton<SendOtpUseCase>(() => SendOtpUseCase(i()));
-    i.addSingleton<VerifyOtpUseCase>(() => VerifyOtpUseCase(i()));
-    i.addSingleton<LoginUseCase>(() => LoginUseCase(i()));
-    i.addSingleton<SetNewPasswordUseCase>(() => SetNewPasswordUseCase(i()));
+  void binds(Injector i) => _registerDependencies(i);
+}
 
-    i.add<RegisterWithEmailBloc>(
-      () => RegisterWithEmailBloc(
-        checkEmailAvailabilityUseCase: i(),
-        sendOtpUseCase: i(),
-      ),
-    );
+void _registerRoutes(RouteManager r) {
+  r.child(
+    registerWithEmailRoute,
+    guards: [NoAuthGuard()],
+    child: (context) {
+      final email = r.args.data ?? '';
+      return MultiBlocProvider(
+        providers: [
+          BlocProvider<RegisterWithEmailBloc>(
+            create: (BuildContext context) =>
+                Modular.get<RegisterWithEmailBloc>(),
+          ),
+          BlocProvider<OtpVerificationBloc>(
+            create: (BuildContext context) =>
+                Modular.get<OtpVerificationBloc>(),
+          ),
+        ],
+        child: RegisterWithEmailPage(email: email),
+      );
+    },
+  );
+}
 
-    i.add<OtpVerificationBloc>(
-      () => OtpVerificationBloc(
-        verifyOtpUseCase: i(),
-        sendOtpUseCase: i(),
-      ),
-    );
-  }
+void _registerDependencies(Injector i) {
+  i.addSingleton<ResetPasswordUseCase>(() => ResetPasswordUseCase(i()));
+  i.addSingleton<GetProfessionalRolesUseCase>(
+    () => GetProfessionalRolesUseCase(i()),
+  );
+  i.addSingleton<CheckEmailAvailabilityUseCase>(
+    () => CheckEmailAvailabilityUseCase(i()),
+  );
+  i.addSingleton<CreateAccountUseCase>(() => CreateAccountUseCase(i()));
+  i.addSingleton<SendOtpUseCase>(() => SendOtpUseCase(i()));
+  i.addSingleton<VerifyOtpUseCase>(() => VerifyOtpUseCase(i()));
+  i.addSingleton<LoginUseCase>(() => LoginUseCase(i()));
+  i.addSingleton<SetNewPasswordUseCase>(() => SetNewPasswordUseCase(i()));
+
+  i.add<RegisterWithEmailBloc>(
+    () => RegisterWithEmailBloc(
+      checkEmailAvailabilityUseCase: i(),
+      sendOtpUseCase: i(),
+    ),
+  );
 }
