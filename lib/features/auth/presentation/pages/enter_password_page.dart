@@ -1,3 +1,4 @@
+import 'package:construculator/features/auth/presentation/widgets/auth_header.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/errors/failures.dart';
@@ -113,52 +114,11 @@ class _EnterPasswordPageState extends State<EnterPasswordPage> {
             child: ListView(
               children: [
                 const SizedBox(height: 16),
-                Text(
-                  '${l10n?.enterPasswordTitle}',
-                  style: CoreTypography.headlineLargeSemiBold(),
-                ),
-                const SizedBox(height: 12),
-                RichText(
-                  text: TextSpan(
-                    style: TextStyle(
-                      fontFamily:
-                          Theme.of(context).textTheme.bodyLarge?.fontFamily,
-                    ),
-                    children: [
-                      TextSpan(
-                        text: '${l10n?.enterPasswordDescription} ',
-                        style: CoreTypography.bodyLargeRegular(),
-                      ),
-                      WidgetSpan(
-                        child: InkWell(
-                          key: Key('edit_link'),
-                          onTap: () {
-                            _router.pop();
-                          },
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                widget.email,
-                                style: CoreTypography.bodyLargeSemiBold(
-                                  color: CoreTextColors.link,
-                                ),
-                              ),
-                              Padding(
-                                padding: EdgeInsets.only(left: 4.0),
-                                child: Icon(
-                                  Icons.edit_outlined,
-                                  size: 20,
-                                  color: CoreTextColors.link,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        alignment: PlaceholderAlignment.middle
-                      ),
-                    ],
-                  ),
+                AuthHeader(
+                  title: '${l10n?.enterPasswordTitle}',
+                  description: '${l10n?.enterPasswordDescription}',
+                  contact: widget.email,
+                  onContactPressed: () => _router.pop(),
                 ),
                 const SizedBox(height: 24),
                 CoreTextField(
