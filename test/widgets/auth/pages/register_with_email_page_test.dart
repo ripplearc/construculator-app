@@ -128,7 +128,7 @@ void main() {
     });
 
     testWidgets(
-      'shows error with login link when registered email is entered',
+      'shows error with login link when entered email is already registered.',
       (WidgetTester tester) async {
         fakeSupabase.addTableData('users', [
           {

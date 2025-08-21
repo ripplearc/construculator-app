@@ -58,18 +58,18 @@ void _registerRoutes(RouteManager r) {
 }
 
 void _registerDependencies(Injector i) {
-  i.addSingleton<ResetPasswordUseCase>(() => ResetPasswordUseCase(i()));
-  i.addSingleton<GetProfessionalRolesUseCase>(
+  i.addLazySingleton<ResetPasswordUseCase>(() => ResetPasswordUseCase(i()));
+  i.addLazySingleton<GetProfessionalRolesUseCase>(
     () => GetProfessionalRolesUseCase(i()),
   );
-  i.addSingleton<CheckEmailAvailabilityUseCase>(
+  i.addLazySingleton<CheckEmailAvailabilityUseCase>(
     () => CheckEmailAvailabilityUseCase(i()),
   );
-  i.addSingleton<CreateAccountUseCase>(() => CreateAccountUseCase(i()));
-  i.addSingleton<SendOtpUseCase>(() => SendOtpUseCase(i()));
-  i.addSingleton<VerifyOtpUseCase>(() => VerifyOtpUseCase(i()));
-  i.addSingleton<LoginUseCase>(() => LoginUseCase(i()));
-  i.addSingleton<SetNewPasswordUseCase>(() => SetNewPasswordUseCase(i()));
+  i.addLazySingleton<CreateAccountUseCase>(() => CreateAccountUseCase(i()));
+  i.addLazySingleton<SendOtpUseCase>(() => SendOtpUseCase(i()));
+  i.addLazySingleton<VerifyOtpUseCase>(() => VerifyOtpUseCase(i()));
+  i.addLazySingleton<LoginUseCase>(() => LoginUseCase(i()));
+  i.addLazySingleton<SetNewPasswordUseCase>(() => SetNewPasswordUseCase(i()));
 
   i.add<RegisterWithEmailBloc>(
     () => RegisterWithEmailBloc(
