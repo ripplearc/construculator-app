@@ -1,6 +1,11 @@
 // coverage:ignore-file
 part of 'forgot_password_bloc.dart';
 
+/// Enum for form fields that can be validated
+enum ForgotPasswordFormField {
+  email,
+}
+
 /// Abstract class for forgot password states
 abstract class ForgotPasswordState extends Equatable {
   /// Constructor for forgot password states
@@ -43,4 +48,23 @@ class ForgotPasswordFailure extends ForgotPasswordState {
 class ForgotPasswordEditEmailSuccess extends ForgotPasswordState {
   @override
   List<Object?> get props => [];
+}
+
+/// State when a form field is validated
+class ForgotPasswordFormFieldValidated extends ForgotPasswordState {
+  /// The field that was validated
+  final ForgotPasswordFormField field;
+  /// Whether the field is valid
+  final bool isValid;
+  /// The validation result, if any
+  final AuthErrorType? validator;
+
+  const ForgotPasswordFormFieldValidated({
+    required this.field,
+    required this.isValid,
+    this.validator,
+  });
+
+  @override
+  List<Object?> get props => [field, isValid, validator];
 }

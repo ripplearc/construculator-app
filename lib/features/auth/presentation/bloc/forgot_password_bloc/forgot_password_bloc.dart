@@ -1,4 +1,6 @@
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
+import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:construculator/features/auth/domain/usecases/reset_password_usecase.dart';
@@ -16,6 +18,7 @@ class ForgotPasswordBloc extends Bloc<ForgotPasswordEvent, ForgotPasswordState> 
         super(ForgotPasswordInitial()) {
     on<ForgotPasswordSubmitted>(_onSubmitted);
     on<ForgotPasswordEditEmailRequested>(_onEditEmail);
+    on<ForgotPasswordFormFieldChanged>(_onFormFieldChanged);
   }
 
   Future<void> _onEditEmail(
@@ -36,5 +39,25 @@ class ForgotPasswordBloc extends Bloc<ForgotPasswordEvent, ForgotPasswordState> 
         emit(ForgotPasswordSuccess());
       },
     );
+  }
+
+  void _onFormFieldChanged(
+    ForgotPasswordFormFieldChanged event,
+    Emitter<ForgotPasswordState> emit,
+  ) {
+    switch (event.field) {
+      case ForgotPasswordFormField.email:
+        // Email validation using AuthValidation
+        final validator = AuthValidation.validateEmail(event.value);
+        final isValid = validator == null;
+        emit(
+          ForgotPasswordFormFieldValidated(
+            field: event.field,
+            isValid: isValid,
+            validator: validator,
+          ),
+        );
+        break;
+    }
   }
 } 
