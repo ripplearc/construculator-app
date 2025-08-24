@@ -272,6 +272,29 @@ void main() {
       fakeSupabase.completer!.complete();
     });
 
+     testWidgets('disables continue button when an invalid email is entered', (
+      WidgetTester tester,
+    ) async {
+      fakeSupabase.shouldDelayOperations = true;
+      fakeSupabase.completer = Completer<void>();
+      fakeSupabase.clearTableData('users');
+
+      await tester.pumpWidget(
+        makeTestableWidget(child: const RegisterWithEmailPage(email: '')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(CoreTextField), 'newuserexample');
+      await tester.pumpAndSettle();
+
+      final continueButton = find.widgetWithText(
+        CoreButton,
+        AppLocalizations.of(buildContext!)!.continueButton,
+      );
+      expect(tester.widget<CoreButton>(continueButton).isDisabled, isTrue);
+      fakeSupabase.completer!.complete();
+    });
+
     testWidgets('displays OTP bottom sheet when continue button is pressed', (
       WidgetTester tester,
     ) async {
