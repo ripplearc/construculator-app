@@ -41,3 +41,19 @@ class RegisterWithEmailEmailEditRequested extends RegisterWithEmailEvent {
   @override
   List<Object> get props => [];
 }
+
+/// Event triggered when a form field changes, which triggers validation
+class RegisterWithEmailFormFieldChanged extends RegisterWithEmailEvent {
+  const RegisterWithEmailFormFieldChanged({
+    required this.field,
+    required this.value,
+  });
+
+  /// The field that changed
+  final RegisterWithEmailFormField field;
+  /// The new value of the field
+  final String value;
+
+  @override
+  List<Object> get props => [field, value];
+}

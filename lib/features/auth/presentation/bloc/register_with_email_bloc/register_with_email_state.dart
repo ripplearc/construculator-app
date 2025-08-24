@@ -1,6 +1,11 @@
 // coverage:ignore-file
 part of 'register_with_email_bloc.dart';
 
+/// Enum for form fields that can be validated
+enum RegisterWithEmailFormField {
+  email,
+}
+
 /// Abstract class for register with email states
 abstract class RegisterWithEmailState extends Equatable {
   /// Constructor for register with email states
@@ -69,3 +74,22 @@ class RegisterWithEmailOtpSendingFailure extends RegisterWithEmailState {
 
 /// State when user is editing email
 class RegisterWithEmailEditUserEmail extends RegisterWithEmailState {}
+
+/// State when a form field is validated
+class RegisterWithEmailFormFieldValidated extends RegisterWithEmailState {
+  /// The field that was validated
+  final RegisterWithEmailFormField field;
+  /// Whether the field is valid
+  final bool isValid;
+  /// The validation result, if any
+  final AuthErrorType? validator;
+
+  const RegisterWithEmailFormFieldValidated({
+    required this.field,
+    required this.isValid,
+    this.validator,
+  });
+
+  @override
+  List<Object?> get props => [field, isValid, validator];
+}
