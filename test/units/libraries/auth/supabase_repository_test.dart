@@ -1,6 +1,7 @@
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/auth_test_module.dart';
+import 'package:construculator/libraries/clock/interfaces/clock.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -13,6 +14,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.
 void main() {
   late FakeSupabaseWrapper fakeSupabaseWrapper;
   late SupabaseRepositoryImpl authRepository;
+  late Clock clock;
 
   setUp(() {
     Modular.init(_TestAppModule());
@@ -20,6 +22,7 @@ void main() {
     authRepository =
         Modular.get<AuthRepository>(key: 'authRepositoryWithFakeDep')
             as SupabaseRepositoryImpl;
+    clock = Modular.get<Clock>();
   });
 
   tearDown(() {
@@ -44,7 +47,7 @@ void main() {
               email: 'currentuser@example.com',
               appMetadata: {},
               userMetadata: {},
-              createdAt: DateTime.now().toIso8601String(),
+              createdAt: clock.now().toIso8601String(),
             ),
           );
           expect(
@@ -59,7 +62,7 @@ void main() {
       );
 
       test('getCurrentCredentials should map metadata correctly', () async {
-        final now = DateTime.now();
+        final now = clock.now();
         final appMetadata = {
           'role': 'admin',
           'permissions': ['read', 'write'],
@@ -99,7 +102,7 @@ void main() {
             appMetadata: {},
             userMetadata: null,
 
-            createdAt: DateTime.now().toIso8601String(),
+            createdAt: clock.now().toIso8601String(),
           ),
         );
 
@@ -316,8 +319,8 @@ void main() {
             lastName: 'Rodriguez',
             professionalRole: 'Site Engineer',
             profilePhotoUrl: 'https://storage.example.com/photos/alex.jpg',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: clock.now(),
+            updatedAt: clock.now(),
             userStatus: UserProfileStatus.active,
             userPreferences: {'theme': 'dark', 'units': 'metric'},
           );
@@ -351,8 +354,8 @@ void main() {
             lastName: 'Smith',
             professionalRole: 'Temporary Worker',
             profilePhotoUrl: null,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+            createdAt: clock.now(),
+            updatedAt: clock.now(),
             userStatus: UserProfileStatus.inactive,
             userPreferences: {},
           );
@@ -389,8 +392,8 @@ void main() {
             lastName: 'Name',
             professionalRole: 'Senior Project Manager',
             profilePhotoUrl: 'https://storage.example.com/photos/updated.jpg',
-            createdAt: DateTime.now().subtract(Duration(days: 365)),
-            updatedAt: DateTime.now(),
+            createdAt: clock.now().subtract(Duration(days: 365)),
+            updatedAt: clock.now(),
             userStatus: UserProfileStatus.active,
             userPreferences: {'theme': 'auto', 'notifications': false},
           );
@@ -424,7 +427,7 @@ void main() {
           email: 'old@example.com',
           appMetadata: {'role': 'user'},
           userMetadata: {},
-          createdAt: DateTime.now().toIso8601String(),
+          createdAt: clock.now().toIso8601String(),
         );
         fakeSupabaseWrapper.setCurrentUser(fakeUser);
         fakeSupabaseWrapper.shouldReturnNullUser = false;
@@ -440,7 +443,7 @@ void main() {
           email: 'old@example.com',
           appMetadata: {'role': 'user'},
           userMetadata: {},
-          createdAt: DateTime.now().toIso8601String(),
+          createdAt: clock.now().toIso8601String(),
         );
         fakeSupabaseWrapper.setCurrentUser(fakeUser);
         fakeSupabaseWrapper.shouldReturnNullUser = false;
@@ -456,7 +459,7 @@ void main() {
           email: 'old@example.com',
           appMetadata: {'role': 'user'},
           userMetadata: {},
-          createdAt: DateTime.now().toIso8601String(),
+          createdAt: clock.now().toIso8601String(),
         );
         fakeSupabaseWrapper.setCurrentUser(fakeUser);
         fakeSupabaseWrapper.shouldReturnNullUser = false;
@@ -490,7 +493,7 @@ void main() {
             email: 'old@example.com',
             appMetadata: {'role': 'user'},
             userMetadata: {},
-            createdAt: DateTime.now().toIso8601String(),
+            createdAt: clock.now().toIso8601String(),
           );
           fakeSupabaseWrapper.setCurrentUser(fakeUser);
           fakeSupabaseWrapper.shouldReturnNullUser = false;

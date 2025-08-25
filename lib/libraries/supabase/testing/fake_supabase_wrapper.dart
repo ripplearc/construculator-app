@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:construculator/libraries/clock/interfaces/clock.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -127,6 +128,11 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// The event that occurs when a user signs in
   supabase.AuthChangeEvent signInEvent = supabase.AuthChangeEvent.signedIn;
 
+  final Clock _clock;
+
+  /// Constructor for fake supabase wrapper
+  FakeSupabaseWrapper({required Clock clock}): _clock = clock;
+  
   /// Sets the current user
   void setCurrentUser(FakeUser? user) {
     _currentUser = user;
@@ -362,8 +368,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
     final insertData = Map<String, dynamic>.from(data);
     insertData['id'] = (tableData.length + 1).toString();
-    insertData['created_at'] = DateTime.now().toIso8601String();
-    insertData['updated_at'] = DateTime.now().toIso8601String();
+    insertData['created_at'] = _clock.now().toIso8601String();
+    insertData['updated_at'] = _clock.now().toIso8601String();
 
     tableData.add(insertData);
     _tables[table] = tableData;
@@ -399,7 +405,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       if (tableData[i][filterColumn] == filterValue) {
         final updatedData = Map<String, dynamic>.from(tableData[i]);
         updatedData.addAll(data);
-        updatedData['updated_at'] = DateTime.now().toIso8601String();
+        updatedData['updated_at'] = _clock.now().toIso8601String();
 
         tableData[i] = updatedData;
         _tables[table] = tableData;
@@ -472,7 +478,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return FakeUser(
       id: 'fake-user-${email.hashCode}',
       email: email,
-      createdAt: DateTime.now().toIso8601String(),
+      createdAt: _clock.now().toIso8601String(),
     );
   }
 

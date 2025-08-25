@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:construculator/libraries/clock/interfaces/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/features/auth/presentation/bloc/login_with_email_bloc/login_with_email_bloc.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -9,12 +10,14 @@ import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.da
 void main() {
   group('LoginWithEmailBloc Tests', () {
     late FakeSupabaseWrapper fakeSupabase;
+    late Clock clock;
     late LoginWithEmailBloc bloc;
     const testEmail = 'test@example.com';
 
     setUp(() {
       Modular.init(AuthTestModule());
       fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+      clock = Modular.get<Clock>();
       bloc = Modular.get<LoginWithEmailBloc>();
     });
 
@@ -31,17 +34,16 @@ void main() {
             {
               'id': '1',
               'email': testEmail,
-              'created_at': DateTime.now().toIso8601String(),
+              'created_at': clock.now().toIso8601String(),
             },
           ]);
           return bloc;
         },
         act: (bloc) => bloc.add(LoginEmailChanged(testEmail)),
-        expect:
-            () => [
-              LoginWithEmailAvailabilityLoading(),
-              LoginWithEmailAvailabilityLoaded(isEmailRegistered: true),
-            ],
+        expect: () => [
+          LoginWithEmailAvailabilityLoading(),
+          LoginWithEmailAvailabilityLoaded(isEmailRegistered: true),
+        ],
       );
 
       blocTest<LoginWithEmailBloc, LoginWithEmailState>(
@@ -51,11 +53,10 @@ void main() {
           return bloc;
         },
         act: (bloc) => bloc.add(LoginEmailChanged(testEmail)),
-        expect:
-            () => [
-              LoginWithEmailAvailabilityLoading(),
-              LoginWithEmailAvailabilityLoaded(isEmailRegistered: false),
-            ],
+        expect: () => [
+          LoginWithEmailAvailabilityLoading(),
+          LoginWithEmailAvailabilityLoaded(isEmailRegistered: false),
+        ],
       );
 
       blocTest<LoginWithEmailBloc, LoginWithEmailState>(
@@ -65,11 +66,10 @@ void main() {
           return bloc;
         },
         act: (bloc) => bloc.add(LoginEmailChanged(testEmail)),
-        expect:
-            () => [
-              LoginWithEmailAvailabilityLoading(),
-              isA<LoginWithEmailAvailabilityFailure>(),
-            ],
+        expect: () => [
+          LoginWithEmailAvailabilityLoading(),
+          isA<LoginWithEmailAvailabilityFailure>(),
+        ],
       );
     });
     group('Email Registration Status', () {
@@ -79,11 +79,10 @@ void main() {
           return bloc;
         },
         act: (bloc) => bloc.add(LoginEmailChanged(testEmail)),
-        expect:
-            () => [
-              LoginWithEmailAvailabilityLoading(),
-              LoginWithEmailAvailabilityLoaded(isEmailRegistered: false),
-            ],
+        expect: () => [
+          LoginWithEmailAvailabilityLoading(),
+          LoginWithEmailAvailabilityLoaded(isEmailRegistered: false),
+        ],
       );
     });
   });

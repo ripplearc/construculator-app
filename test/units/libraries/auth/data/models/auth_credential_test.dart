@@ -1,7 +1,18 @@
+import 'package:construculator/libraries/clock/interfaces/clock.dart';
+import 'package:construculator/libraries/clock/testing/clock_test_module.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 
 void main() {
+  late Clock clock;
+  setUp((){
+    Modular.init(_TestAppModule());
+    clock = Modular.get<Clock>();
+  });
+  tearDown((){
+    Modular.destroy();
+  });
   group('UserCredential Model', () {
     group('empty factory', () {
       test('should create empty UserCredential with default values', () {
@@ -15,11 +26,11 @@ void main() {
 
       test('should create empty UserCredential with recent timestamp', () {
 
-        final beforeCreation = DateTime.now();
+        final beforeCreation = clock.now();
 
         final credential = UserCredential.empty();
 
-        final afterCreation = DateTime.now();
+        final afterCreation = clock.now();
 
         expect(
           credential.createdAt.isAfter(
@@ -66,7 +77,7 @@ void main() {
           id: '123',
           email: 'test@example.com',
           metadata: {'test_key': 'test_value'},
-          createdAt: DateTime.now(),
+          createdAt: clock.now(),
         );
 
         final json = credential.toJson();
@@ -80,4 +91,12 @@ void main() {
       });
     });
   });
+}
+
+
+class _TestAppModule extends Module {
+  @override
+  List<Module> get imports => [
+    ClockTestModule(),
+  ];
 }

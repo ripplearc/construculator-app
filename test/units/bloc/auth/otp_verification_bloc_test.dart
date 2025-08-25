@@ -30,18 +30,13 @@ void main() {
           fakeSupabase.shouldThrowOnVerifyOtp = false;
           return bloc;
         },
-        act:
-            (bloc) => bloc.add(
-              OtpVerificationSubmitted(
-                contact: testEmail,
-                otp: '123456',
-              ),
-            ),
-        expect:
-            () => [
-              OtpVerificationLoading(),
-              OtpVerificationSuccess(email: testEmail),
-            ],
+        act: (bloc) => bloc.add(
+          OtpVerificationSubmitted(contact: testEmail, otp: '123456'),
+        ),
+        expect: () => [
+          OtpVerificationLoading(),
+          OtpVerificationSuccess(email: testEmail),
+        ],
       );
 
       blocTest<OtpVerificationBloc, OtpVerificationState>(
@@ -49,10 +44,8 @@ void main() {
         build: () {
           return bloc;
         },
-        act:
-            (bloc) => bloc.add(
-              OtpVerificationSubmitted(contact: testEmail, otp: '000'),
-            ),
+        act: (bloc) =>
+            bloc.add(OtpVerificationSubmitted(contact: testEmail, otp: '000')),
         expect: () => [OtpVerificationLoading(), isA<OtpVerificationFailure>()],
       );
     });
@@ -63,12 +56,12 @@ void main() {
         build: () {
           return bloc;
         },
-        act:
-            (bloc) => bloc.add(
-              OtpVerificationResendRequested(contact: testEmail),
-            ),
-        expect:
-            () => [OtpVerificationResendLoading(), OtpVerificationOtpResendSuccess()],
+        act: (bloc) =>
+            bloc.add(OtpVerificationResendRequested(contact: testEmail)),
+        expect: () => [
+          OtpVerificationResendLoading(),
+          OtpVerificationOtpResendSuccess(),
+        ],
       );
 
       blocTest<OtpVerificationBloc, OtpVerificationState>(
@@ -77,15 +70,12 @@ void main() {
           fakeSupabase.shouldThrowOnOtp = true;
           return bloc;
         },
-        act:
-            (bloc) => bloc.add(
-              OtpVerificationResendRequested(contact: testEmail),
-            ),
-        expect:
-            () => [
-              OtpVerificationResendLoading(),
-              isA<OtpVerificationResendFailure>(),
-            ],
+        act: (bloc) =>
+            bloc.add(OtpVerificationResendRequested(contact: testEmail)),
+        expect: () => [
+          OtpVerificationResendLoading(),
+          isA<OtpVerificationResendFailure>(),
+        ],
       );
     });
 
@@ -95,9 +85,7 @@ void main() {
         build: () {
           return bloc;
         },
-        act: (bloc) => bloc.add(
-          OtpVerificationOtpChanged(otp: '123456'),
-        ),
+        act: (bloc) => bloc.add(OtpVerificationOtpChanged(otp: '123456')),
         expect: () => [
           OtpVerificationOtpChangeSuccess(otp: '123456', otpInvalid: false),
         ],
@@ -108,9 +96,7 @@ void main() {
         build: () {
           return bloc;
         },
-        act: (bloc) => bloc.add(
-          OtpVerificationOtpChanged(otp: ''),
-        ),
+        act: (bloc) => bloc.add(OtpVerificationOtpChanged(otp: '')),
         expect: () => [
           OtpVerificationOtpChangeSuccess(otp: '', otpInvalid: true),
         ],
@@ -121,13 +107,11 @@ void main() {
         build: () {
           return bloc;
         },
-        act: (bloc) => bloc.add(
-          OtpVerificationOtpChanged(otp: '123'),
-        ),
+        act: (bloc) => bloc.add(OtpVerificationOtpChanged(otp: '123')),
         expect: () => [
           OtpVerificationOtpChangeSuccess(otp: '123', otpInvalid: true),
         ],
       );
     });
- });
+  });
 }
