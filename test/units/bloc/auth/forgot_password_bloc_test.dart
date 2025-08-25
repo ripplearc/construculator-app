@@ -39,9 +39,8 @@ void main() {
           fakeSupabase.shouldThrowOnResetPassword = true;
           return bloc;
         },
-        act:
-            (bloc) =>
-                bloc.add(ForgotPasswordSubmitted('nonexistent@example.com')),
+        act: (bloc) =>
+            bloc.add(ForgotPasswordSubmitted('nonexistent@example.com')),
         expect: () => [ForgotPasswordLoading(), isA<ForgotPasswordFailure>()],
       );
     });
@@ -56,13 +55,12 @@ void main() {
           bloc.add(ForgotPasswordSubmitted('user1@example.com'));
           bloc.add(ForgotPasswordSubmitted('user2@example.com'));
         },
-        expect:
-            () => [
-              ForgotPasswordLoading(),
-              ForgotPasswordSuccess(),
-              ForgotPasswordLoading(),
-              ForgotPasswordSuccess(),
-            ],
+        expect: () => [
+          ForgotPasswordLoading(),
+          ForgotPasswordSuccess(),
+          ForgotPasswordLoading(),
+          ForgotPasswordSuccess(),
+        ],
       );
       blocTest<ForgotPasswordBloc, ForgotPasswordState>(
         'handles rapid successive attempts for same email',
@@ -75,15 +73,14 @@ void main() {
           bloc.add(ForgotPasswordSubmitted('user@example.com'));
           bloc.add(ForgotPasswordSubmitted('user@example.com'));
         },
-        expect:
-            () => [
-              ForgotPasswordLoading(),
-              ForgotPasswordSuccess(),
-              ForgotPasswordLoading(),
-              ForgotPasswordSuccess(),
-              ForgotPasswordLoading(),
-              ForgotPasswordSuccess(),
-            ],
+        expect: () => [
+          ForgotPasswordLoading(),
+          ForgotPasswordSuccess(),
+          ForgotPasswordLoading(),
+          ForgotPasswordSuccess(),
+          ForgotPasswordLoading(),
+          ForgotPasswordSuccess(),
+        ],
       );
     });
     group('ForgotPasswordEditEmail', () {

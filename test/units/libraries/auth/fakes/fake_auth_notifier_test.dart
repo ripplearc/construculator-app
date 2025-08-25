@@ -5,18 +5,20 @@ import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/auth_test_module.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
+import 'package:construculator/libraries/clock/interfaces/clock.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   late FakeAuthNotifier fakeNotifier;
+  late Clock clock;
 
   UserCredential createFakeCredential({String? email}) {
     return UserCredential(
       id: 'fake-id',
       email: email ?? 'test@example.com',
       metadata: {'source': 'test'},
-      createdAt: DateTime.now(),
+      createdAt: clock.now(),
     );
   }
 
@@ -28,8 +30,8 @@ void main() {
       firstName: 'Test',
       lastName: 'User',
       professionalRole: 'Developer',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: clock.now(),
+      updatedAt: clock.now(),
       userStatus: UserProfileStatus.active,
       userPreferences: {},
     );
@@ -39,6 +41,7 @@ void main() {
     Modular.init(_TestAppModule());
     fakeNotifier =
         Modular.get<AuthNotifier>(key: 'fakeAuthNotifier') as FakeAuthNotifier;
+    clock = Modular.get<Clock>();
   });
 
   tearDown(() {
@@ -151,7 +154,7 @@ void main() {
 
         expect(fakeNotifier.stateChangedEvents, [authState]);
         expect(fakeNotifier.userProfileChangedEvents, [user]);
-        
+
         fakeNotifier.reset();
         expect(fakeNotifier.stateChangedEvents, isEmpty);
         expect(fakeNotifier.userProfileChangedEvents, isEmpty);

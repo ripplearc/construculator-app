@@ -1,3 +1,5 @@
+import 'package:construculator/libraries/clock/interfaces/clock.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'auth_credential.freezed.dart';
@@ -31,6 +33,6 @@ sealed class UserCredential with _$UserCredential {
     id: '',
     email: '',
     metadata: {},
-    createdAt: DateTime.now(),
+    createdAt: Modular.get<Clock>().now(),
   );
 }
