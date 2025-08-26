@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:stack_trace/stack_trace.dart';
 
@@ -45,6 +46,11 @@ class FakeAuthRepository implements AuthRepository {
 
   /// Count of get current user calls
   int getCurrentUserCallCount = 0;
+
+  final Clock _clock;
+
+  /// Constructor for fake auth repository
+  FakeAuthRepository({required Clock clock}): _clock = clock;
 
   /// Sets the current user credentials for testing
   void setCurrentCredentials(UserCredential credentials) {
@@ -91,7 +97,7 @@ class FakeAuthRepository implements AuthRepository {
       id: _currentUser?.id ?? '',
       email: email,
       metadata: _currentUser?.metadata ?? {},
-      createdAt: _currentUser?.createdAt ?? DateTime.now(),
+      createdAt: _currentUser?.createdAt ?? _clock.now(),
     );
 
     _currentUser = updatedCredential;
@@ -117,7 +123,7 @@ class FakeAuthRepository implements AuthRepository {
       id: _currentUser?.id ?? '',
       email: _currentUser?.email ?? '',
       metadata: metadata,
-      createdAt: _currentUser?.createdAt ?? DateTime.now(),
+      createdAt: _currentUser?.createdAt ?? _clock.now(),
     );
 
     _currentUser = updatedCredential;
@@ -149,8 +155,8 @@ class FakeAuthRepository implements AuthRepository {
 
     final createdUser = user.copyWith(
       id: 'profile-${user.email.split('@')[0]}',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: _clock.now(),
+      updatedAt: _clock.now(),
     );
 
     final credentialId = user.credentialId;
@@ -173,7 +179,7 @@ class FakeAuthRepository implements AuthRepository {
       return null;
     }
 
-    final updatedUser = user.copyWith(updatedAt: DateTime.now());
+    final updatedUser = user.copyWith(updatedAt: _clock.now());
 
     final credentialId = user.credentialId;
     if (credentialId == null) {

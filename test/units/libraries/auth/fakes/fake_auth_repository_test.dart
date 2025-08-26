@@ -1,5 +1,6 @@
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/auth_test_module.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
@@ -10,6 +11,7 @@ import 'package:construculator/libraries/errors/exceptions.dart';
 
 void main() {
   late FakeAuthRepository fakeRepository;
+  late Clock clock;
 
   User createFakeUser({String? credentialId, String? email, String? id}) {
     return User(
@@ -19,8 +21,8 @@ void main() {
       firstName: 'Test',
       lastName: 'User',
       professionalRole: 'fake-role-id',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: clock.now(),
+      updatedAt: clock.now(),
       userStatus: UserProfileStatus.active,
       userPreferences: {},
       profilePhotoUrl: null,
@@ -35,6 +37,7 @@ void main() {
             as FakeAuthRepository;
     // Default to successful responses unless a test configures otherwise
     fakeRepository.setAuthResponse(succeed: true);
+    clock = Modular.get<Clock>();
   });
 
   tearDown(() {
@@ -62,7 +65,7 @@ void main() {
         id: 'test-id',
         email: 'test@example.com',
         metadata: {'role': 'user'},
-        createdAt: DateTime.now(),
+        createdAt: clock.now(),
       );
 
       fakeRepository.setCurrentCredentials(testCredential);
@@ -80,7 +83,7 @@ void main() {
           id: 'test-id',
           email: 'old@example.com',
           metadata: {'role': 'user'},
-          createdAt: DateTime.now(),
+          createdAt: clock.now(),
         );
         fakeRepository.setCurrentCredentials(testCredential);
         final result = await fakeRepository.updateUserEmail('new@example.com');
@@ -98,7 +101,7 @@ void main() {
           id: 'test-id',
           email: 'old@example.com',
           metadata: {'role': 'user'},
-          createdAt: DateTime.now(),
+          createdAt: clock.now(),
         );
         fakeRepository.setCurrentCredentials(testCredential);
         final result = await fakeRepository.updateUserPassword('newpass123');
@@ -123,7 +126,7 @@ void main() {
         id: 'test-id',
         email: 'old@example.com',
         metadata: {'role': 'user'},
-        createdAt: DateTime.now(),
+        createdAt: clock.now(),
       );
       fakeRepository.setCurrentCredentials(testCredential);
       fakeRepository.setAuthResponse(
@@ -335,7 +338,7 @@ void main() {
         id: 'test-id',
         email: 'old@example.com',
         metadata: {'role': 'user'},
-        createdAt: DateTime.now(),
+        createdAt: clock.now(),
       );
       fakeRepository.setCurrentCredentials(testCredential);
       fakeRepository.setAuthResponse(succeed: true);
@@ -354,7 +357,7 @@ void main() {
         id: 'test-id',
         email: 'old@example.com',
         metadata: {'role': 'user'},
-        createdAt: DateTime.now(),
+        createdAt: clock.now(),
       );
       fakeRepository.setCurrentCredentials(testCredential);
       fakeRepository.setAuthResponse(
@@ -387,7 +390,7 @@ void main() {
           id: 'test-id',
           email: 'test@example.com',
           metadata: {'role': 'user'},
-          createdAt: DateTime.now(),
+          createdAt: clock.now(),
         );
         fakeRepository.setCurrentCredentials(testCredential);
         fakeRepository.setAuthResponse(succeed: true);
@@ -410,7 +413,7 @@ void main() {
         id: 'test-id',
         email: 'test@example.com',
         metadata: {'role': 'user'},
-        createdAt: DateTime.now(),
+        createdAt: clock.now(),
       );
       fakeRepository.setCurrentCredentials(testCredential);
       fakeRepository.setAuthResponse(

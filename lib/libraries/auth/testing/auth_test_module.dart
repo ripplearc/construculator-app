@@ -7,16 +7,17 @@ import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/repositories/supabase_repository_impl.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
+import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/supabase/testing/supabase_test_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class AuthTestModule extends Module {
   @override
-  List<Module> get imports => [SupabaseTestModule()];
+  List<Module> get imports => [SupabaseTestModule(),ClockTestModule()];
   @override
   void exportedBinds(Injector i) {
     i.add<AuthRepository>(
-      () => FakeAuthRepository(),
+      () => FakeAuthRepository(clock: i()),
       key: 'fakeAuthRepository',
     );
     i.add<AuthRepository>(

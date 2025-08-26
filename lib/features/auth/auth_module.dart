@@ -11,6 +11,7 @@ import 'package:construculator/features/auth/presentation/bloc/register_with_ema
 import 'package:construculator/features/auth/presentation/pages/register_with_email_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/libraries/time/clock_module.dart';
 import 'package:construculator/libraries/router/guards/no_auth_guard.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
@@ -25,6 +26,7 @@ class AuthModule extends Module {
   List<Module> get imports => [
     AuthLibraryModule(appBootstrap),
     SupabaseModule(appBootstrap),
+    ClockModule(),
   ];
 
   @override
@@ -65,7 +67,7 @@ void _registerDependencies(Injector i) {
   i.addLazySingleton<CheckEmailAvailabilityUseCase>(
     () => CheckEmailAvailabilityUseCase(i()),
   );
-  i.addLazySingleton<CreateAccountUseCase>(() => CreateAccountUseCase(i()));
+  i.addLazySingleton<CreateAccountUseCase>(() => CreateAccountUseCase(i(), i()));
   i.addLazySingleton<SendOtpUseCase>(() => SendOtpUseCase(i()));
   i.addLazySingleton<VerifyOtpUseCase>(() => VerifyOtpUseCase(i()));
   i.addLazySingleton<LoginUseCase>(() => LoginUseCase(i()));

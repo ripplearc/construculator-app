@@ -16,6 +16,8 @@ import 'package:construculator/features/auth/presentation/bloc/otp_verification_
 import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/set_new_password_bloc/set_new_password_bloc.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/time/testing/clock_test_module.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
@@ -25,11 +27,12 @@ import 'package:flutter_modular/flutter_modular.dart';
 class AuthTestModule extends Module {
   @override
   List<Module> get imports => [
+    ClockTestModule(),
     AuthLibraryModule(
       AppBootstrap(
         envLoader: FakeEnvLoader(),
         config: FakeAppConfig(),
-        supabaseWrapper: FakeSupabaseWrapper(),
+        supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
       ),
     ),
     RouterTestModule(),
@@ -42,7 +45,7 @@ class AuthTestModule extends Module {
     i.add<CheckEmailAvailabilityUseCase>(
       () => CheckEmailAvailabilityUseCase(i()),
     );
-    i.add<CreateAccountUseCase>(() => CreateAccountUseCase(i()));
+    i.add<CreateAccountUseCase>(() => CreateAccountUseCase(i(), i()));
     i.add<SendOtpUseCase>(() => SendOtpUseCase(i()));
     i.add<VerifyOtpUseCase>(() => VerifyOtpUseCase(i()));
     i.add<LoginUseCase>(() => LoginUseCase(i()));
@@ -66,9 +69,7 @@ class AuthTestModule extends Module {
     i.add<LoginWithEmailBloc>(
       () => LoginWithEmailBloc(checkEmailAvailabilityUseCase: i()),
     );
-    i.add<EnterPasswordBloc>(
-      () => EnterPasswordBloc(loginUseCase: i()),
-    );
+    i.add<EnterPasswordBloc>(() => EnterPasswordBloc(loginUseCase: i()));
     i.add<ForgotPasswordBloc>(
       () => ForgotPasswordBloc(resetPasswordUseCase: i()),
     );

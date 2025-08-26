@@ -5,17 +5,19 @@ import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/auth_notifier_impl.dart';
 import 'package:construculator/libraries/auth/testing/auth_test_module.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   late AuthNotifierImpl authNotifier;
+  late Clock clock;
   UserCredential createFakeCredential({String? email}) {
     return UserCredential(
-      id: 'fake-id-${DateTime.now().millisecondsSinceEpoch}',
+      id: 'fake-id-${clock.now().millisecondsSinceEpoch}',
       email: email ?? 'test@example.com',
       metadata: {'source': 'test'},
-      createdAt: DateTime.now(),
+      createdAt: clock.now(),
     );
   }
 
@@ -27,8 +29,8 @@ void main() {
       firstName: 'Test',
       lastName: 'User',
       professionalRole: 'Developer',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: clock.now(),
+      updatedAt: clock.now(),
       userStatus: UserProfileStatus.active,
       userPreferences: {},
     );
@@ -37,6 +39,7 @@ void main() {
   setUp(() {
     Modular.init(_TestAppModule());
     authNotifier = Modular.get<AuthNotifier>(key: 'authNotifier') as AuthNotifierImpl;
+    clock = Modular.get<Clock>();
   });
 
   tearDown(() {

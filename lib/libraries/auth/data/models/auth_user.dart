@@ -1,3 +1,5 @@
+import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 
@@ -60,8 +62,8 @@ sealed class User with _$User {
     lastName: '',
     professionalRole: '',
     profilePhotoUrl: '',
-    createdAt: DateTime.now(),
-    updatedAt: DateTime.now(),
+    createdAt: Modular.get<Clock>().now(),
+    updatedAt: Modular.get<Clock>().now(),
     userStatus: UserProfileStatus.inactive,
     userPreferences: {},
   );

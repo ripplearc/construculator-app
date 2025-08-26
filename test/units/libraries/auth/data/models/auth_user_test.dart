@@ -1,8 +1,19 @@
+import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:construculator/libraries/time/testing/clock_test_module.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 
 void main() {
+  late Clock clock;
+   setUp((){
+    Modular.init(_TestAppModule());
+    clock = Modular.get<Clock>();
+  });
+  tearDown((){
+    Modular.destroy();
+  });
   group('User Model', () {
      group('empty factory', () {
       test('should create empty User with default values', () {
@@ -22,11 +33,11 @@ void main() {
       });
 
       test('should create empty User with recent timestamps', () {
-        final beforeCreation = DateTime.now();
+        final beforeCreation = clock.now();
 
         final user = User.empty();
 
-        final afterCreation = DateTime.now();
+        final afterCreation = clock.now();
 
         expect(
           user.createdAt.isAfter(beforeCreation.subtract(Duration(seconds: 1))),
@@ -59,8 +70,8 @@ void main() {
           lastName: 'Doe',
           professionalRole: 'Developer',
           profilePhotoUrl: 'https://example.com/photo.jpg',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: clock.now(),
+          updatedAt: clock.now(),
           userStatus: UserProfileStatus.active,
           userPreferences: {'theme': 'dark'},
         );
@@ -93,8 +104,8 @@ void main() {
           lastName: 'Doe',
           professionalRole: 'Developer',
           profilePhotoUrl: 'https://example.com/photo.jpg',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: clock.now(),
+          updatedAt: clock.now(),
           userStatus: UserProfileStatus.active,
           userPreferences: {'theme': 'dark'},
         );
@@ -112,8 +123,8 @@ void main() {
           lastName: '',
           professionalRole: 'Developer',
           profilePhotoUrl: 'https://example.com/photo.jpg',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: clock.now(),
+          updatedAt: clock.now(),
           userStatus: UserProfileStatus.active,
           userPreferences: {'theme': 'dark'},
         );
@@ -132,8 +143,8 @@ void main() {
           lastName: 'Doe',
           professionalRole: 'Developer',
           profilePhotoUrl: 'https://example.com/photo.jpg',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: clock.now(),
+          updatedAt: clock.now(),
           userStatus: UserProfileStatus.active,
           userPreferences: {'theme': 'dark'},
         );
@@ -152,8 +163,8 @@ void main() {
           lastName: 'Doe',
           professionalRole: 'Developer',
           profilePhotoUrl: 'https://example.com/photo.jpg',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: clock.now(),
+          updatedAt: clock.now(),
           userStatus: UserProfileStatus.active,
           userPreferences: {'theme': 'dark'},
         );
@@ -172,8 +183,8 @@ void main() {
           lastName: 'Doe',
           professionalRole: 'Developer',
           profilePhotoUrl: 'https://example.com/photo.jpg',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: clock.now(),
+          updatedAt: clock.now(),
           userStatus: UserProfileStatus.active,
           userPreferences: {'theme': 'dark'},
         );
@@ -182,4 +193,10 @@ void main() {
       });
     });
   });
+}
+class _TestAppModule extends Module {
+  @override
+  List<Module> get imports => [
+    ClockTestModule(),
+  ];
 }

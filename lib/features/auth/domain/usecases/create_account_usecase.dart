@@ -3,14 +3,16 @@ import 'package:construculator/features/auth/domain/usecases/params/create_accou
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 
 /// This is the use case for creating a new user account.
 class CreateAccountUseCase {
   final AuthManager authManager;
+  final Clock clock;
 
-  CreateAccountUseCase(this.authManager);
+  CreateAccountUseCase(this.authManager, this.clock);
 
   /// Creates a new user account using the auth manager.
   /// Accepts a [CreateAccountUseCaseParams] object as a parameter.
@@ -38,8 +40,8 @@ class CreateAccountUseCase {
         firstName: params.firstName,
         lastName: params.lastName,
         professionalRole: params.professionalRole,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: clock.now(),
+        updatedAt: clock.now(),
         userStatus: UserProfileStatus.active,
         userPreferences: {},
       ),

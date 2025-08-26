@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
 import 'package:construculator/features/auth/testing/auth_test_module.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -11,21 +12,23 @@ import 'package:flutter_modular/flutter_modular.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  late Clock clock;
   late CreateAccountBloc bloc;
   const testPhone = '+12019292918';
   const testEmail = 'test@example.com';
-  
+
   FakeUser createFakeUser(String email) {
     return FakeUser(
       id: 'fake-user-${email.hashCode}',
       email: email,
-      createdAt: DateTime.now().toIso8601String(),
+      createdAt: clock.now().toIso8601String(),
     );
   }
 
   setUp(() {
     Modular.init(AuthTestModule());
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+    clock = Modular.get<Clock>();
     bloc = Modular.get<CreateAccountBloc>();
   });
 
@@ -48,19 +51,18 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<CreateAccountFormFieldValidated>().having(
-              (s) => s.field,
-              'field',
-              CreateAccountFormField.firstName,
-            ).having(
-              (s) => s.isValid,
-              'isValid',
-              true,
-            ).having(
-              (s) => s.validator,
-              'validator',
-              AuthErrorType.firstNameRequired,
-            ),
+            isA<CreateAccountFormFieldValidated>()
+                .having(
+                  (s) => s.field,
+                  'field',
+                  CreateAccountFormField.firstName,
+                )
+                .having((s) => s.isValid, 'isValid', true)
+                .having(
+                  (s) => s.validator,
+                  'validator',
+                  AuthErrorType.firstNameRequired,
+                ),
           ],
         );
 
@@ -75,19 +77,18 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<CreateAccountFormFieldValidated>().having(
-              (s) => s.field,
-              'field',
-              CreateAccountFormField.firstName,
-            ).having(
-              (s) => s.isValid,
-              'isValid',
-              false,
-            ).having(
-              (s) => s.validator,
-              'validator',
-              AuthErrorType.firstNameRequired,
-            ),
+            isA<CreateAccountFormFieldValidated>()
+                .having(
+                  (s) => s.field,
+                  'field',
+                  CreateAccountFormField.firstName,
+                )
+                .having((s) => s.isValid, 'isValid', false)
+                .having(
+                  (s) => s.validator,
+                  'validator',
+                  AuthErrorType.firstNameRequired,
+                ),
           ],
         );
       });
@@ -104,19 +105,18 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<CreateAccountFormFieldValidated>().having(
-              (s) => s.field,
-              'field',
-              CreateAccountFormField.lastName,
-            ).having(
-              (s) => s.isValid,
-              'isValid',
-              true,
-            ).having(
-              (s) => s.validator,
-              'validator',
-              AuthErrorType.lastNameRequired,
-            ),
+            isA<CreateAccountFormFieldValidated>()
+                .having(
+                  (s) => s.field,
+                  'field',
+                  CreateAccountFormField.lastName,
+                )
+                .having((s) => s.isValid, 'isValid', true)
+                .having(
+                  (s) => s.validator,
+                  'validator',
+                  AuthErrorType.lastNameRequired,
+                ),
           ],
         );
 
@@ -131,19 +131,18 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<CreateAccountFormFieldValidated>().having(
-              (s) => s.field,
-              'field',
-              CreateAccountFormField.lastName,
-            ).having(
-              (s) => s.isValid,
-              'isValid',
-              false,
-            ).having(
-              (s) => s.validator,
-              'validator',
-              AuthErrorType.lastNameRequired,
-            ),
+            isA<CreateAccountFormFieldValidated>()
+                .having(
+                  (s) => s.field,
+                  'field',
+                  CreateAccountFormField.lastName,
+                )
+                .having((s) => s.isValid, 'isValid', false)
+                .having(
+                  (s) => s.validator,
+                  'validator',
+                  AuthErrorType.lastNameRequired,
+                ),
           ],
         );
       });
@@ -160,19 +159,14 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<CreateAccountFormFieldValidated>().having(
-              (s) => s.field,
-              'field',
-              CreateAccountFormField.role,
-            ).having(
-              (s) => s.isValid,
-              'isValid',
-              true,
-            ).having(
-              (s) => s.validator,
-              'validator',
-              AuthErrorType.roleRequired,
-            ),
+            isA<CreateAccountFormFieldValidated>()
+                .having((s) => s.field, 'field', CreateAccountFormField.role)
+                .having((s) => s.isValid, 'isValid', true)
+                .having(
+                  (s) => s.validator,
+                  'validator',
+                  AuthErrorType.roleRequired,
+                ),
           ],
         );
 
@@ -187,19 +181,14 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<CreateAccountFormFieldValidated>().having(
-              (s) => s.field,
-              'field',
-              CreateAccountFormField.role,
-            ).having(
-              (s) => s.isValid,
-              'isValid',
-              false,
-            ).having(
-              (s) => s.validator,
-              'validator',
-              AuthErrorType.roleRequired,
-            ),
+            isA<CreateAccountFormFieldValidated>()
+                .having((s) => s.field, 'field', CreateAccountFormField.role)
+                .having((s) => s.isValid, 'isValid', false)
+                .having(
+                  (s) => s.validator,
+                  'validator',
+                  AuthErrorType.roleRequired,
+                ),
           ],
         );
       });
@@ -216,19 +205,10 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<CreateAccountFormFieldValidated>().having(
-              (s) => s.field,
-              'field',
-              CreateAccountFormField.email,
-            ).having(
-              (s) => s.isValid,
-              'isValid',
-              true,
-            ).having(
-              (s) => s.validator,
-              'validator',
-              null,
-            ),
+            isA<CreateAccountFormFieldValidated>()
+                .having((s) => s.field, 'field', CreateAccountFormField.email)
+                .having((s) => s.isValid, 'isValid', true)
+                .having((s) => s.validator, 'validator', null),
           ],
         );
 
@@ -243,19 +223,14 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<CreateAccountFormFieldValidated>().having(
-              (s) => s.field,
-              'field',
-              CreateAccountFormField.email,
-            ).having(
-              (s) => s.isValid,
-              'isValid',
-              false,
-            ).having(
-              (s) => s.validator,
-              'validator',
-              AuthErrorType.invalidEmail,
-            ),
+            isA<CreateAccountFormFieldValidated>()
+                .having((s) => s.field, 'field', CreateAccountFormField.email)
+                .having((s) => s.isValid, 'isValid', false)
+                .having(
+                  (s) => s.validator,
+                  'validator',
+                  AuthErrorType.invalidEmail,
+                ),
           ],
         );
 
@@ -270,19 +245,14 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<CreateAccountFormFieldValidated>().having(
-              (s) => s.field,
-              'field',
-              CreateAccountFormField.email,
-            ).having(
-              (s) => s.isValid,
-              'isValid',
-              false,
-            ).having(
-              (s) => s.validator,
-              'validator',
-              AuthErrorType.emailRequired,
-            ),
+            isA<CreateAccountFormFieldValidated>()
+                .having((s) => s.field, 'field', CreateAccountFormField.email)
+                .having((s) => s.isValid, 'isValid', false)
+                .having(
+                  (s) => s.validator,
+                  'validator',
+                  AuthErrorType.emailRequired,
+                ),
           ],
         );
       });
@@ -300,19 +270,14 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<CreateAccountFormFieldValidated>().having(
-              (s) => s.field,
-              'field',
-              CreateAccountFormField.mobileNumber,
-            ).having(
-              (s) => s.isValid,
-              'isValid',
-              true,
-            ).having(
-              (s) => s.validator,
-              'validator',
-              null,
-            ),
+            isA<CreateAccountFormFieldValidated>()
+                .having(
+                  (s) => s.field,
+                  'field',
+                  CreateAccountFormField.mobileNumber,
+                )
+                .having((s) => s.isValid, 'isValid', true)
+                .having((s) => s.validator, 'validator', null),
           ],
         );
 
@@ -328,19 +293,18 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<CreateAccountFormFieldValidated>().having(
-              (s) => s.field,
-              'field',
-              CreateAccountFormField.mobileNumber,
-            ).having(
-              (s) => s.isValid,
-              'isValid',
-              false,
-            ).having(
-              (s) => s.validator,
-              'validator',
-              AuthErrorType.invalidPhone,
-            ),
+            isA<CreateAccountFormFieldValidated>()
+                .having(
+                  (s) => s.field,
+                  'field',
+                  CreateAccountFormField.mobileNumber,
+                )
+                .having((s) => s.isValid, 'isValid', false)
+                .having(
+                  (s) => s.validator,
+                  'validator',
+                  AuthErrorType.invalidPhone,
+                ),
           ],
         );
 
@@ -356,19 +320,18 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<CreateAccountFormFieldValidated>().having(
-              (s) => s.field,
-              'field',
-              CreateAccountFormField.mobileNumber,
-            ).having(
-              (s) => s.isValid,
-              'isValid',
-              true,
-            ).having(
-              (s) => s.validator,
-              'validator',
-              AuthErrorType.phoneRequired,
-            ),
+            isA<CreateAccountFormFieldValidated>()
+                .having(
+                  (s) => s.field,
+                  'field',
+                  CreateAccountFormField.mobileNumber,
+                )
+                .having((s) => s.isValid, 'isValid', true)
+                .having(
+                  (s) => s.validator,
+                  'validator',
+                  AuthErrorType.phoneRequired,
+                ),
           ],
         );
 
@@ -384,19 +347,18 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<CreateAccountFormFieldValidated>().having(
-              (s) => s.field,
-              'field',
-              CreateAccountFormField.mobileNumber,
-            ).having(
-              (s) => s.isValid,
-              'isValid',
-              false,
-            ).having(
-              (s) => s.validator,
-              'validator',
-              AuthErrorType.invalidPhone,
-            ),
+            isA<CreateAccountFormFieldValidated>()
+                .having(
+                  (s) => s.field,
+                  'field',
+                  CreateAccountFormField.mobileNumber,
+                )
+                .having((s) => s.isValid, 'isValid', false)
+                .having(
+                  (s) => s.validator,
+                  'validator',
+                  AuthErrorType.invalidPhone,
+                ),
           ],
         );
       });
@@ -413,19 +375,14 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<CreateAccountFormFieldValidated>().having(
-              (s) => s.field,
-              'field',
-              CreateAccountFormField.password,
-            ).having(
-              (s) => s.isValid,
-              'isValid',
-              true,
-            ).having(
-              (s) => s.validator,
-              'validator',
-              null,
-            ),
+            isA<CreateAccountFormFieldValidated>()
+                .having(
+                  (s) => s.field,
+                  'field',
+                  CreateAccountFormField.password,
+                )
+                .having((s) => s.isValid, 'isValid', true)
+                .having((s) => s.validator, 'validator', null),
           ],
         );
 
@@ -440,19 +397,18 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<CreateAccountFormFieldValidated>().having(
-              (s) => s.field,
-              'field',
-              CreateAccountFormField.password,
-            ).having(
-              (s) => s.isValid,
-              'isValid',
-              false,
-            ).having(
-              (s) => s.validator,
-              'validator',
-              AuthErrorType.passwordTooShort,
-            ),
+            isA<CreateAccountFormFieldValidated>()
+                .having(
+                  (s) => s.field,
+                  'field',
+                  CreateAccountFormField.password,
+                )
+                .having((s) => s.isValid, 'isValid', false)
+                .having(
+                  (s) => s.validator,
+                  'validator',
+                  AuthErrorType.passwordTooShort,
+                ),
           ],
         );
 
@@ -467,19 +423,18 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<CreateAccountFormFieldValidated>().having(
-              (s) => s.field,
-              'field',
-              CreateAccountFormField.password,
-            ).having(
-              (s) => s.isValid,
-              'isValid',
-              false,
-            ).having(
-              (s) => s.validator,
-              'validator',
-              AuthErrorType.passwordRequired,
-            ),
+            isA<CreateAccountFormFieldValidated>()
+                .having(
+                  (s) => s.field,
+                  'field',
+                  CreateAccountFormField.password,
+                )
+                .having((s) => s.isValid, 'isValid', false)
+                .having(
+                  (s) => s.validator,
+                  'validator',
+                  AuthErrorType.passwordRequired,
+                ),
           ],
         );
       });
@@ -497,19 +452,14 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<CreateAccountFormFieldValidated>().having(
-              (s) => s.field,
-              'field',
-              CreateAccountFormField.confirmPassword,
-            ).having(
-              (s) => s.isValid,
-              'isValid',
-              true,
-            ).having(
-              (s) => s.validator,
-              'validator',
-              null,
-            ),
+            isA<CreateAccountFormFieldValidated>()
+                .having(
+                  (s) => s.field,
+                  'field',
+                  CreateAccountFormField.confirmPassword,
+                )
+                .having((s) => s.isValid, 'isValid', true)
+                .having((s) => s.validator, 'validator', null),
           ],
         );
 
@@ -525,19 +475,18 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<CreateAccountFormFieldValidated>().having(
-              (s) => s.field,
-              'field',
-              CreateAccountFormField.confirmPassword,
-            ).having(
-              (s) => s.isValid,
-              'isValid',
-              false,
-            ).having(
-              (s) => s.validator,
-              'validator',
-              AuthErrorType.passwordRequired,
-            ),
+            isA<CreateAccountFormFieldValidated>()
+                .having(
+                  (s) => s.field,
+                  'field',
+                  CreateAccountFormField.confirmPassword,
+                )
+                .having((s) => s.isValid, 'isValid', false)
+                .having(
+                  (s) => s.validator,
+                  'validator',
+                  AuthErrorType.passwordRequired,
+                ),
           ],
         );
 
@@ -553,19 +502,18 @@ void main() {
             ),
           ),
           expect: () => [
-            isA<CreateAccountFormFieldValidated>().having(
-              (s) => s.field,
-              'field',
-              CreateAccountFormField.confirmPassword,
-            ).having(
-              (s) => s.isValid,
-              'isValid',
-              false,
-            ).having(
-              (s) => s.validator,
-              'validator',
-              AuthErrorType.passwordsDoNotMatch,
-            ),
+            isA<CreateAccountFormFieldValidated>()
+                .having(
+                  (s) => s.field,
+                  'field',
+                  CreateAccountFormField.confirmPassword,
+                )
+                .having((s) => s.isValid, 'isValid', false)
+                .having(
+                  (s) => s.validator,
+                  'validator',
+                  AuthErrorType.passwordsDoNotMatch,
+                ),
           ],
         );
       });
@@ -594,22 +542,20 @@ void main() {
     blocTest<CreateAccountBloc, CreateAccountState>(
       'emits [OtpSending, OtpSendingSuccess] on successful OTP send',
       build: () => bloc,
-      act:
-          (bloc) => bloc.add(
-            const CreateAccountSendOtpRequested(
-              address: testPhone,
-              isEmailRegistration: true,
-            ),
-          ),
-      expect:
-          () => [
-            isA<CreateAccountOtpSending>(),
-            isA<CreateAccountOtpSendingSuccess>().having(
-              (s) => s.contact,
-              'contact',
-              testPhone,
-            ),
-          ],
+      act: (bloc) => bloc.add(
+        const CreateAccountSendOtpRequested(
+          address: testPhone,
+          isEmailRegistration: true,
+        ),
+      ),
+      expect: () => [
+        isA<CreateAccountOtpSending>(),
+        isA<CreateAccountOtpSendingSuccess>().having(
+          (s) => s.contact,
+          'contact',
+          testPhone,
+        ),
+      ],
     );
 
     blocTest<CreateAccountBloc, CreateAccountState>(
@@ -618,31 +564,27 @@ void main() {
         fakeSupabase.shouldThrowOnOtp = true;
         return bloc;
       },
-      act:
-          (bloc) => bloc.add(
-            const CreateAccountSendOtpRequested(
-              address: testEmail,
-              isEmailRegistration: true,
-            ),
-          ),
-      expect:
-          () => [
-            isA<CreateAccountOtpSending>(),
-            isA<CreateAccountOtpSendingFailure>().having(
-              (s) => s.failure,
-              'failure',
-              isA<AuthFailure>(),
-            ),
-          ],
+      act: (bloc) => bloc.add(
+        const CreateAccountSendOtpRequested(
+          address: testEmail,
+          isEmailRegistration: true,
+        ),
+      ),
+      expect: () => [
+        isA<CreateAccountOtpSending>(),
+        isA<CreateAccountOtpSendingFailure>().having(
+          (s) => s.failure,
+          'failure',
+          isA<AuthFailure>(),
+        ),
+      ],
     );
 
     blocTest<CreateAccountBloc, CreateAccountState>(
       'emits [CreateAccountContactVerified] on CreateAccountOtpVerified',
       build: () => bloc,
-      act:
-          (bloc) => bloc.add(
-            const CreateAccountOtpVerified(contact: testEmail),
-          ),
+      act: (bloc) =>
+          bloc.add(const CreateAccountOtpVerified(contact: testEmail)),
       expect: () => [isA<CreateAccountContactVerified>()],
     );
 
@@ -659,19 +601,18 @@ void main() {
         fakeSupabase.setCurrentUser(createFakeUser('john@example.com'));
         return bloc;
       },
-      act:
-          (bloc) => bloc.add(
-            const CreateAccountSubmitted(
-              email: 'john@example.com',
-              firstName: 'John',
-              lastName: 'Doe',
-              mobileNumber: '1234567890',
-              password: 'securePassword',
-              confirmPassword: 'securePassword',
-              role: 'engineer',
-              phonePrefix: '+1',
-            ),
-          ),
+      act: (bloc) => bloc.add(
+        const CreateAccountSubmitted(
+          email: 'john@example.com',
+          firstName: 'John',
+          lastName: 'Doe',
+          mobileNumber: '1234567890',
+          password: 'securePassword',
+          confirmPassword: 'securePassword',
+          role: 'engineer',
+          phonePrefix: '+1',
+        ),
+      ),
       expect: () => [isA<CreateAccountLoading>(), isA<CreateAccountSuccess>()],
     );
 
@@ -681,28 +622,26 @@ void main() {
         fakeSupabase.shouldThrowOnUpdate = true;
         return bloc;
       },
-      act:
-          (bloc) => bloc.add(
-            const CreateAccountSubmitted(
-              email: 'fail-password@example.com',
-              firstName: 'John',
-              lastName: 'Doe',
-              mobileNumber: '1234567890',
-              password: 'badPassword',
-              confirmPassword: 'badPassword',
-              role: 'engineer',
-              phonePrefix: '+1',
-            ),
-          ),
-      expect:
-          () => [
-            isA<CreateAccountLoading>(),
-            isA<CreateAccountFailure>().having(
-              (s) => s.failure,
-              'failure',
-              isA<AuthFailure>(),
-            ),
-          ],
+      act: (bloc) => bloc.add(
+        const CreateAccountSubmitted(
+          email: 'fail-password@example.com',
+          firstName: 'John',
+          lastName: 'Doe',
+          mobileNumber: '1234567890',
+          password: 'badPassword',
+          confirmPassword: 'badPassword',
+          role: 'engineer',
+          phonePrefix: '+1',
+        ),
+      ),
+      expect: () => [
+        isA<CreateAccountLoading>(),
+        isA<CreateAccountFailure>().having(
+          (s) => s.failure,
+          'failure',
+          isA<AuthFailure>(),
+        ),
+      ],
     );
 
     blocTest<CreateAccountBloc, CreateAccountState>(
@@ -711,28 +650,26 @@ void main() {
         fakeSupabase.shouldThrowOnInsert = true;
         return bloc;
       },
-      act:
-          (bloc) => bloc.add(
-            const CreateAccountSubmitted(
-              email: 'fail-insert@example.com',
-              firstName: 'Jane',
-              lastName: 'Smith',
-              mobileNumber: '1234567890',
-              password: 'securePassword',
-              confirmPassword: 'securePassword',
-              role: 'manager',
-              phonePrefix: '+1',
-            ),
-          ),
-      expect:
-          () => [
-            isA<CreateAccountLoading>(),
-            isA<CreateAccountFailure>().having(
-              (s) => s.failure,
-              'failure',
-              isA<AuthFailure>(),
-            ),
-          ],
+      act: (bloc) => bloc.add(
+        const CreateAccountSubmitted(
+          email: 'fail-insert@example.com',
+          firstName: 'Jane',
+          lastName: 'Smith',
+          mobileNumber: '1234567890',
+          password: 'securePassword',
+          confirmPassword: 'securePassword',
+          role: 'manager',
+          phonePrefix: '+1',
+        ),
+      ),
+      expect: () => [
+        isA<CreateAccountLoading>(),
+        isA<CreateAccountFailure>().having(
+          (s) => s.failure,
+          'failure',
+          isA<AuthFailure>(),
+        ),
+      ],
     );
   });
 }

@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -957,7 +958,11 @@ void main() {
 
 class _TestAppModule extends Module {
   @override
+  List<Module> get imports => [
+    ClockTestModule(),
+  ];
+  @override
   void binds(Injector i) {
-    i.add<SupabaseWrapper>(() => FakeSupabaseWrapper());
+    i.add<SupabaseWrapper>(() => FakeSupabaseWrapper(clock: i()));
   }
 }

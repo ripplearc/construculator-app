@@ -8,6 +8,8 @@ import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_manager.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -18,17 +20,34 @@ void main() {
   late FakeAuthNotifier authNotifier;
   late FakeAuthRepository authRepository;
   late FakeSupabaseWrapper wrapper;
+  late Clock clock;
+  late User testUser;
 
   const testEmail = 'test@example.com';
   const testPassword = '5i2Un@D8Y9!';
   const testUserId = 'test-test';
+
+  User createTestUser() {
+    return User(
+      id: testUserId,
+      credentialId: 'cred-$testUserId',
+      email: testEmail,
+      firstName: 'Test',
+      lastName: 'User',
+      professionalRole: 'Developer',
+      createdAt: clock.now(),
+      updatedAt: clock.now(),
+      userStatus: UserProfileStatus.active,
+      userPreferences: {},
+    );
+  }
 
   createTestCredentials() {
     return UserCredential(
       id: testUserId,
       email: testEmail,
       metadata: {},
-      createdAt: DateTime.now(),
+      createdAt: clock.now(),
     );
   }
 
@@ -38,6 +57,8 @@ void main() {
     authRepository = Modular.get<AuthRepository>() as FakeAuthRepository;
     authManager = Modular.get<AuthManager>() as FakeAuthManager;
     wrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+    clock = Modular.get<Clock>();
+    testUser = createTestUser();
   });
 
   tearDown(() {
@@ -587,19 +608,6 @@ void main() {
     });
 
     group('User Profile Management', () {
-      final testUser = User(
-        id: testUserId,
-        credentialId: 'cred-$testUserId',
-        email: testEmail,
-        firstName: 'Test',
-        lastName: 'User',
-        professionalRole: 'Developer',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        userStatus: UserProfileStatus.active,
-        userPreferences: {},
-      );
-
       setUp(() {
         authRepository.setUserProfile(testUser);
       });
@@ -707,9 +715,7 @@ void main() {
               ),
             ),
           );
-          final result = await authManager.updateUserEmail(
-            'new@example.com',
-          );
+          final result = await authManager.updateUserEmail('new@example.com');
 
           expect(result.isSuccess, true);
           expect(result.data, isNotNull);
@@ -728,9 +734,7 @@ void main() {
         () async {
           authRepository.setCurrentCredentials(createTestCredentials());
 
-          final result = await authManager.updateUserEmail(
-            'new@example.com',
-          );
+          final result = await authManager.updateUserEmail('new@example.com');
 
           expect(result.isSuccess, true);
           expect(result.data, isNotNull);
@@ -742,9 +746,7 @@ void main() {
         'updateUserPassword should update only password when email is null',
         () async {
           authRepository.setCurrentCredentials(createTestCredentials());
-          final result = await authManager.updateUserPassword(
-            'newpassword123',
-          );
+          final result = await authManager.updateUserPassword('newpassword123');
 
           expect(result.isSuccess, true);
           expect(result.data, isNotNull);
@@ -755,9 +757,7 @@ void main() {
         'updateUserEmail should return error when configured to fail',
         () async {
           authManager.setAuthResponse(succeed: false);
-          final result = await authManager.updateUserEmail(
-            'new@example.com',
-          );
+          final result = await authManager.updateUserEmail('new@example.com');
 
           expect(result.isSuccess, false);
           expect(result.errorType, AuthErrorType.serverError);
@@ -767,12 +767,9 @@ void main() {
 
     group('Professional Roles', () {
       test('getProfessionalRoles should return success', () async {
-        wrapper.addTableData(
-          'professional_roles',
-          [
-            {'id': '1', 'name': 'Developer'},
-          ],
-        );
+        wrapper.addTableData('professional_roles', [
+          {'id': '1', 'name': 'Developer'},
+        ]);
         final result = await authManager.getProfessionalRoles();
         expect(result.isSuccess, true);
         expect(result.data, isNotEmpty);
@@ -805,15 +802,18 @@ void main() {
 
 class _TestAppModule extends Module {
   @override
+  List<Module> get imports => [ClockTestModule()];
+  @override
   void binds(Injector i) {
     i.addSingleton<AuthNotifierController>(() => FakeAuthNotifier());
-    i.addSingleton<AuthRepository>(() => FakeAuthRepository());
-    i.addSingleton<SupabaseWrapper>(() => FakeSupabaseWrapper());
+    i.addSingleton<AuthRepository>(() => FakeAuthRepository(clock: i()));
+    i.addSingleton<SupabaseWrapper>(() => FakeSupabaseWrapper(clock: i()));
     i.add<AuthManager>(
       () => FakeAuthManager(
         authNotifier: i(),
         authRepository: i(),
         wrapper: i(),
+        clock: i(),
       ),
     );
   }

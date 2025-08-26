@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/features/auth/presentation/bloc/set_new_password_bloc/set_new_password_bloc.dart';
@@ -11,6 +12,7 @@ import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 void main() {
   group('SetNewPasswordBloc Tests', () {
     late FakeSupabaseWrapper fakeSupabase;
+    late Clock clock;
     late SetNewPasswordBloc bloc;
     const testEmail = 'test@example.com';
 
@@ -18,13 +20,14 @@ void main() {
       return FakeUser(
         id: 'fake-user-${email.hashCode}',
         email: email,
-        createdAt: DateTime.now().toIso8601String(),
+        createdAt: clock.now().toIso8601String(),
       );
     }
 
     setUp(() {
       Modular.init(AuthTestModule());
       fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+      clock = Modular.get<Clock>();
       bloc = Modular.get<SetNewPasswordBloc>();
     });
 
@@ -230,13 +233,9 @@ void main() {
           fakeSupabase.setCurrentUser(createFakeUser(testEmail));
           return bloc;
         },
-        act:
-            (bloc) => bloc.add(
-              SetNewPasswordSubmitted(
-                email: testEmail,
-                password: '@Password123!',
-              ),
-            ),
+        act: (bloc) => bloc.add(
+          SetNewPasswordSubmitted(email: testEmail, password: '@Password123!'),
+        ),
         expect: () => [SetNewPasswordLoading(), SetNewPasswordSuccess()],
       );
 
@@ -246,13 +245,9 @@ void main() {
           fakeSupabase.shouldThrowOnUpdate = true;
           return bloc;
         },
-        act:
-            (bloc) => bloc.add(
-              SetNewPasswordSubmitted(
-                email: testEmail,
-                password: 'invalidpass',
-              ),
-            ),
+        act: (bloc) => bloc.add(
+          SetNewPasswordSubmitted(email: testEmail, password: 'invalidpass'),
+        ),
         expect: () => [SetNewPasswordLoading(), isA<SetNewPasswordFailure>()],
       );
     });

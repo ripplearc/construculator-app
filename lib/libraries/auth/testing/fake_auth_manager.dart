@@ -8,6 +8,7 @@ import 'package:construculator/libraries/auth/data/validation/auth_validation.da
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 
 /// A fake implementation of [AuthManager] for testing purposes
@@ -15,6 +16,7 @@ class FakeAuthManager implements AuthManager {
   final AuthNotifierController _authNotifier;
   final AuthRepository _authRepository;
   final SupabaseWrapper _wrapper;
+  final Clock _clock;
 
   // Flag to control if auth operations should succeed
   bool _authShouldSucceed = true;
@@ -52,9 +54,11 @@ class FakeAuthManager implements AuthManager {
     required AuthNotifierController authNotifier,
     required AuthRepository authRepository,
     required SupabaseWrapper wrapper,
-  })  : _authNotifier = authNotifier,
-        _authRepository = authRepository,
-        _wrapper = wrapper {
+    required Clock clock,
+  }) : _authNotifier = authNotifier,
+       _authRepository = authRepository,
+       _wrapper = wrapper,
+       _clock = clock {
     // Initialize with unauthenticated state
     _authNotifier.emitAuthStateChanged(
       AuthState(status: AuthStatus.unauthenticated, user: null),
@@ -136,7 +140,7 @@ class FakeAuthManager implements AuthManager {
       id: 'test-${email.split('@')[0]}',
       email: email,
       metadata: {},
-      createdAt: DateTime.now(),
+      createdAt: _clock.now(),
     );
 
     setCurrentCredential(credential);
@@ -169,7 +173,7 @@ class FakeAuthManager implements AuthManager {
       id: 'test-${email.split('@')[0]}',
       email: email,
       metadata: {},
-      createdAt: DateTime.now(),
+      createdAt: _clock.now(),
     );
 
     setCurrentCredential(credential);
@@ -229,7 +233,7 @@ class FakeAuthManager implements AuthManager {
       id: 'test-${address.split('@')[0]}',
       email: receiver == OtpReceiver.email ? address : '',
       metadata: {},
-      createdAt: DateTime.now(),
+      createdAt: _clock.now(),
     );
 
     setCurrentCredential(credential);
@@ -362,9 +366,7 @@ class FakeAuthManager implements AuthManager {
     }
     final rolesData = await _wrapper.selectAllProfessionalRoles();
     return AuthResult.success(
-      rolesData
-          .map((roleMap) => ProfessionalRole.fromJson(roleMap))
-          .toList(),
+      rolesData.map((roleMap) => ProfessionalRole.fromJson(roleMap)).toList(),
     );
   }
 

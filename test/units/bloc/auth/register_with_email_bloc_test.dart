@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -10,12 +11,14 @@ import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  late Clock clock;
   late RegisterWithEmailBloc bloc;
   const testEmail = 'test@example.com';
 
   setUp(() {
     Modular.init(AuthTestModule());
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+    clock = Modular.get<Clock>();
     bloc = Modular.get<RegisterWithEmailBloc>();
   });
 
@@ -23,7 +26,7 @@ void main() {
     fakeSupabase.reset();
     Modular.destroy();
   });
-  
+
   group('RegisterWithEmailBloc Tests', () {
     group('RegisterWithEmailFormFieldChanged', () {
       blocTest<RegisterWithEmailBloc, RegisterWithEmailState>(
@@ -36,19 +39,14 @@ void main() {
           ),
         ),
         expect: () => [
-          isA<RegisterWithEmailFormFieldValidated>().having(
-            (state) => state.field,
-            'field',
-            RegisterWithEmailFormField.email,
-          ).having(
-            (state) => state.isValid,
-            'isValid',
-            false,
-          ).having(
-            (state) => state.validator,
-            'validator',
-            isNotNull,
-          ),
+          isA<RegisterWithEmailFormFieldValidated>()
+              .having(
+                (state) => state.field,
+                'field',
+                RegisterWithEmailFormField.email,
+              )
+              .having((state) => state.isValid, 'isValid', false)
+              .having((state) => state.validator, 'validator', isNotNull),
         ],
       );
 
@@ -62,19 +60,14 @@ void main() {
           ),
         ),
         expect: () => [
-          isA<RegisterWithEmailFormFieldValidated>().having(
-            (state) => state.field,
-            'field',
-            RegisterWithEmailFormField.email,
-          ).having(
-            (state) => state.isValid,
-            'isValid',
-            false,
-          ).having(
-            (state) => state.validator,
-            'validator',
-            isNotNull,
-          ),
+          isA<RegisterWithEmailFormFieldValidated>()
+              .having(
+                (state) => state.field,
+                'field',
+                RegisterWithEmailFormField.email,
+              )
+              .having((state) => state.isValid, 'isValid', false)
+              .having((state) => state.validator, 'validator', isNotNull),
         ],
       );
 
@@ -88,19 +81,14 @@ void main() {
           ),
         ),
         expect: () => [
-          isA<RegisterWithEmailFormFieldValidated>().having(
-            (state) => state.field,
-            'field',
-            RegisterWithEmailFormField.email,
-          ).having(
-            (state) => state.isValid,
-            'isValid',
-            true,
-          ).having(
-            (state) => state.validator,
-            'validator',
-            null,
-          ),
+          isA<RegisterWithEmailFormFieldValidated>()
+              .having(
+                (state) => state.field,
+                'field',
+                RegisterWithEmailFormField.email,
+              )
+              .having((state) => state.isValid, 'isValid', true)
+              .having((state) => state.validator, 'validator', null),
           RegisterWithEmailEmailCheckLoading(),
           RegisterWithEmailEmailCheckCompleted(isEmailRegistered: false),
         ],
@@ -113,7 +101,7 @@ void main() {
             {
               'id': '1',
               'email': testEmail,
-              'created_at': DateTime.now().toIso8601String(),
+              'created_at': clock.now().toIso8601String(),
             },
           ]);
           return bloc;
@@ -125,19 +113,14 @@ void main() {
           ),
         ),
         expect: () => [
-          isA<RegisterWithEmailFormFieldValidated>().having(
-            (state) => state.field,
-            'field',
-            RegisterWithEmailFormField.email,
-          ).having(
-            (state) => state.isValid,
-            'isValid',
-            true,
-          ).having(
-            (state) => state.validator,
-            'validator',
-            null,
-          ),
+          isA<RegisterWithEmailFormFieldValidated>()
+              .having(
+                (state) => state.field,
+                'field',
+                RegisterWithEmailFormField.email,
+              )
+              .having((state) => state.isValid, 'isValid', true)
+              .having((state) => state.validator, 'validator', null),
           RegisterWithEmailEmailCheckLoading(),
           RegisterWithEmailEmailCheckCompleted(isEmailRegistered: true),
         ],
@@ -156,19 +139,14 @@ void main() {
           ),
         ),
         expect: () => [
-          isA<RegisterWithEmailFormFieldValidated>().having(
-            (state) => state.field,
-            'field',
-            RegisterWithEmailFormField.email,
-          ).having(
-            (state) => state.isValid,
-            'isValid',
-            true,
-          ).having(
-            (state) => state.validator,
-            'validator',
-            null,
-          ),
+          isA<RegisterWithEmailFormFieldValidated>()
+              .having(
+                (state) => state.field,
+                'field',
+                RegisterWithEmailFormField.email,
+              )
+              .having((state) => state.isValid, 'isValid', true)
+              .having((state) => state.validator, 'validator', null),
           RegisterWithEmailEmailCheckLoading(),
           isA<RegisterWithEmailEmailCheckFailure>(),
         ],
@@ -210,7 +188,7 @@ void main() {
             {
               'id': '1',
               'email': testEmail,
-              'created_at': DateTime.now().toIso8601String(),
+              'created_at': clock.now().toIso8601String(),
             },
           ]);
           bloc.add(RegisterWithEmailEmailChanged(testEmail));
@@ -248,11 +226,10 @@ void main() {
           return bloc;
         },
         act: (bloc) => bloc.add(RegisterWithEmailContinuePressed(testEmail)),
-        expect:
-            () => [
-              RegisterWithEmailOtpSendingLoading(),
-              RegisterWithEmailOtpSendingSuccess(),
-            ],
+        expect: () => [
+          RegisterWithEmailOtpSendingLoading(),
+          RegisterWithEmailOtpSendingSuccess(),
+        ],
       );
 
       blocTest<RegisterWithEmailBloc, RegisterWithEmailState>(
@@ -262,11 +239,10 @@ void main() {
           return bloc;
         },
         act: (bloc) => bloc.add(RegisterWithEmailContinuePressed(testEmail)),
-        expect:
-            () => [
-              RegisterWithEmailOtpSendingLoading(),
-              isA<RegisterWithEmailOtpSendingFailure>(),
-            ],
+        expect: () => [
+          RegisterWithEmailOtpSendingLoading(),
+          isA<RegisterWithEmailOtpSendingFailure>(),
+        ],
       );
     });
 
@@ -282,6 +258,5 @@ void main() {
         },
       );
     });
-
   });
 }

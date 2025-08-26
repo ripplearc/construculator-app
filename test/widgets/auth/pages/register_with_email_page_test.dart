@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:construculator/features/auth/testing/auth_test_module.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -19,6 +20,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  late Clock clock;
   late FakeAppRouter router;
   BuildContext? buildContext;
 
@@ -56,6 +58,7 @@ void main() {
     Modular.init(AuthTestModule());
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     router = Modular.get<AppRouter>() as FakeAppRouter;
+    clock = Modular.get<Clock>();
   });
 
   tearDown(() {
@@ -134,7 +137,7 @@ void main() {
           {
             'id': '1',
             'email': 'registered@example.com',
-            'created_at': DateTime.now().toIso8601String(),
+            'created_at': clock.now().toIso8601String(),
           },
         ]);
 
@@ -175,7 +178,7 @@ void main() {
           {
             'id': '1',
             'email': 'registered@example.com',
-            'created_at': DateTime.now().toIso8601String(),
+            'created_at': clock.now().toIso8601String(),
           },
         ]);
 
@@ -272,7 +275,7 @@ void main() {
       fakeSupabase.completer!.complete();
     });
 
-     testWidgets('disables continue button when an invalid email is entered', (
+    testWidgets('disables continue button when an invalid email is entered', (
       WidgetTester tester,
     ) async {
       fakeSupabase.shouldDelayOperations = true;
