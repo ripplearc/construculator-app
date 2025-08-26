@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:construculator/libraries/clock/interfaces/clock.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';

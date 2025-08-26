@@ -1,4 +1,4 @@
-import 'package:construculator/libraries/clock/interfaces/clock.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 
 /// Fake implementation of the [Clock] interface for testing purposes.
 class FakeClockImpl implements Clock {

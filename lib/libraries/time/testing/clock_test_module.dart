@@ -1,5 +1,5 @@
-import 'package:construculator/libraries/clock/interfaces/clock.dart';
-import 'package:construculator/libraries/clock/testing/fake_clock_impl.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class ClockTestModule extends Module {

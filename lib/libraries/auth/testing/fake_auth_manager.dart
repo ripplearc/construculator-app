@@ -8,7 +8,7 @@ import 'package:construculator/libraries/auth/data/validation/auth_validation.da
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
-import 'package:construculator/libraries/clock/interfaces/clock.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 
 /// A fake implementation of [AuthManager] for testing purposes

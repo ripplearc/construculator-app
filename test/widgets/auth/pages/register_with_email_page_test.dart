@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:construculator/features/auth/testing/auth_test_module.dart';
-import 'package:construculator/libraries/clock/interfaces/clock.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
