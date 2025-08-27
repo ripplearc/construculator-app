@@ -3,9 +3,9 @@ import 'package:construculator/features/auth/presentation/widgets/auth_footer.da
 import 'package:construculator/features/auth/presentation/widgets/auth_header.dart';
 import 'package:construculator/features/auth/presentation/widgets/auth_provider_buttons.dart';
 import 'package:construculator/features/auth/presentation/widgets/error_widget_builder.dart';
-import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:core_ui/core_ui.dart';
@@ -21,12 +21,11 @@ class LoginWithEmailPage extends StatefulWidget {
   State<LoginWithEmailPage> createState() => _LoginWithEmailPageState();
 }
 
-class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
+class _LoginWithEmailPageState extends State<LoginWithEmailPage> with LocalizationMixin{
   final TextEditingController _emailController = TextEditingController();
   bool _canPressContinue = false;
   List<String>? _emailErrorList;
   List<Widget>? _emailErrorWidgetList;
-  AppLocalizations? l10n;
   final AppRouter _router = Modular.get<AppRouter>();
 
   _getContinueButtonText(LoginWithEmailState state) {
@@ -103,12 +102,6 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
     });
 
     super.initState();
-  }
-
-  @override
-  void didChangeDependencies() {
-    l10n = AppLocalizations.of(context);
-    super.didChangeDependencies();
   }
 
   @override
