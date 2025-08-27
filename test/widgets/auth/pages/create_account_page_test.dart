@@ -5,6 +5,7 @@ import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,16 +20,18 @@ import 'package:core_ui/core_ui.dart';
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
   late FakeAppRouter router;
+  late Clock clock;
   const testEmail = 'test@example.com';
   const testRole = 'Engineer';
-  const defaultCountryCode = '+1';
+  const defaultCountryCode = usCountryCode;
+
   BuildContext? buildContext;
 
   FakeUser createFakeUser(String email) {
     return FakeUser(
       id: 'fake-user-${email.hashCode}',
       email: email,
-      createdAt: DateTime.now().toIso8601String(),
+      createdAt: clock.now().toIso8601String(),
     );
   }
 
@@ -37,6 +40,7 @@ void main() {
     Modular.init(AuthTestModule());
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     router = Modular.get<AppRouter>() as FakeAppRouter;
+    clock = Modular.get<Clock>();
     fakeSupabase.addTableData('professional_roles', [
       {'id': 'uuid', 'name': testRole},
     ]);
