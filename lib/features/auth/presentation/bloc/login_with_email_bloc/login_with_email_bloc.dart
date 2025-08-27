@@ -47,7 +47,6 @@ class LoginWithEmailBloc
   ) {
     switch (event.field) {
       case LoginWithEmailFormField.email:
-        // Email validation using AuthValidation
         final validator = AuthValidation.validateEmail(event.value);
         final isValid = validator == null;
         emit(
@@ -57,8 +56,6 @@ class LoginWithEmailBloc
             validator: validator,
           ),
         );
-        
-        // If email is valid, check availability
         if (isValid && event.value.isNotEmpty) {
           add(LoginEmailAvailabilityCheckRequested(event.value));
         }

@@ -61,22 +61,17 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
 
       if (!state.isValid) {
         if (state.validator != null) {
-          // Field has AuthValidation error
           final errorMessage = state.validator?.localizedMessage(context);
           errorList = errorMessage != null ? [errorMessage] : null;
         }
       } else {
         errorList = null;
       }
-
-      // Update the appropriate error list
       switch (state.field) {
         case LoginWithEmailFormField.email:
           _emailErrorList = errorList;
           break;
       }
-
-      // Validate form after updating errors
       _validateForm();
     });
   }
@@ -140,7 +135,6 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
                     errorText: l10n?.emailNotRegistered,
                     linkText: l10n?.register,
                     onPressed: () {
-                      // navitage to the register page with the entered email
                       _router.navigate(
                         fullRegisterRoute,
                         arguments: _emailController.text,

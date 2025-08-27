@@ -11,7 +11,7 @@ abstract class LoginWithEmailState extends Equatable {
   /// Constructor for login with email states
   const LoginWithEmailState();
 
-  /// List of properties that will be used to compare states
+  /// List of properties that will be used to compare defined properties, currently empty.
   @override
   List<Object?> get props => [];
 }
