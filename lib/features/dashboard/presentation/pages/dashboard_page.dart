@@ -48,7 +48,7 @@ class _DashboardPageState extends State<DashboardPage> {
           })
           .catchError((error) {
             if (!mounted) return;
-            CoreToast.showError(context, 'Failed to load profile');
+            CoreToast.showError(context, 'Failed to load profile','Close');
           });
     }
     super.initState();
