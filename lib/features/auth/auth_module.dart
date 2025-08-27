@@ -6,13 +6,16 @@ import 'package:construculator/features/auth/domain/usecases/send_otp_usecase.da
 import 'package:construculator/features/auth/domain/usecases/verify_otp_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/login_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/set_new_password_usecase.dart';
+import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
+import 'package:construculator/features/auth/presentation/pages/create_account_page.dart';
 import 'package:construculator/features/auth/presentation/pages/register_with_email_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/time/clock_module.dart';
 import 'package:construculator/libraries/router/guards/no_auth_guard.dart';
+import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter/material.dart';
@@ -57,6 +60,19 @@ void _registerRoutes(RouteManager r) {
       );
     },
   );
+  r.child(
+    createAccountRoute,
+    guards: [AuthGuard()],
+    child: (context) => MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => Modular.get<CreateAccountBloc>()),
+        BlocProvider<OtpVerificationBloc>(
+          create: (BuildContext context) => Modular.get<OtpVerificationBloc>(),
+        ),
+      ],
+      child: CreateAccountPage(email: r.args.data as String),
+    ),
+  );
 }
 
 void _registerDependencies(Injector i) {
@@ -76,6 +92,18 @@ void _registerDependencies(Injector i) {
   i.add<RegisterWithEmailBloc>(
     () => RegisterWithEmailBloc(
       checkEmailAvailabilityUseCase: i(),
+      sendOtpUseCase: i(),
+    ),
+  );
+
+  i.add<OtpVerificationBloc>(
+    () => OtpVerificationBloc(verifyOtpUseCase: i(), sendOtpUseCase: i()),
+  );
+
+  i.add<CreateAccountBloc>(
+    () => CreateAccountBloc(
+      createAccountUseCase: i(),
+      getProfessionalRolesUseCase: i(),
       sendOtpUseCase: i(),
     ),
   );

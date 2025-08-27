@@ -495,12 +495,12 @@
     "description": "Label for button while setting password",
     "context": "N/A"
   },
-  "termsAndConditionsText": "By selecting agree and continue. I agree to\n",
+  "termsAndConditionsText": "By selecting agree and continue. I agree to Construculator ",
   "@termsAndConditionsText": {
     "description": "Text for terms and conditions agreement",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6428&t=u7FRWeWPXiomVzNr-4"
   },
-  "termsAndServicesLink": "Constructulator terms & services",
+  "termsAndServicesLink": "terms & services",
   "@termsAndServicesLink": {
     "description": "Link text for terms and services",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-6428&t=u7FRWeWPXiomVzNr-4"
