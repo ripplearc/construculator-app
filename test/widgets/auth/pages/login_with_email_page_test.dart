@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/auth/testing/auth_test_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -136,7 +138,28 @@ void main() {
         expect(router.navigationHistory.first.arguments, enteredEmail);
       },
     );
+ testWidgets('disables continue button when an invalid email is entered', (
+      WidgetTester tester,
+    ) async {
+      fakeSupabase.shouldDelayOperations = true;
+      fakeSupabase.completer = Completer<void>();
+      fakeSupabase.clearTableData('users');
 
+      await tester.pumpWidget(
+        makeTestableWidget(child: const LoginWithEmailPage(email: '')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(CoreTextField), 'newuserexample');
+      await tester.pumpAndSettle();
+
+      final continueButton = find.widgetWithText(
+        CoreButton,
+        AppLocalizations.of(buildContext!)!.continueButton,
+      );
+      expect(tester.widget<CoreButton>(continueButton).isDisabled, isTrue);
+      fakeSupabase.completer!.complete();
+    });
     testWidgets('email not registered shows error and register link', (
       WidgetTester tester,
     ) async {
