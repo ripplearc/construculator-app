@@ -4,6 +4,7 @@ import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +19,7 @@ import 'package:construculator/features/auth/presentation/bloc/login_with_email_
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
   late FakeAppRouter router;
+  late Clock clock;
   BuildContext? buildContext;
 
   Widget makeTestableWidget({required Widget child}) {
@@ -48,6 +50,7 @@ void main() {
     Modular.init(AuthTestModule());
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     router = Modular.get<AppRouter>() as FakeAppRouter;
+    clock = Modular.get<Clock>();
   });
 
   tearDown(() {
@@ -111,7 +114,7 @@ void main() {
           {
             'id': '1',
             'email': 'registered@example.com',
-            'created_at': DateTime.now().toIso8601String(),
+            'created_at': clock.now().toIso8601String(),
           },
         ]);
         await tester.pumpWidget(
