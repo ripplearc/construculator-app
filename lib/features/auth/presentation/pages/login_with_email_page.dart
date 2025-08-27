@@ -1,10 +1,9 @@
 import 'package:construculator/features/auth/presentation/bloc/login_with_email_bloc/login_with_email_bloc.dart';
 import 'package:construculator/features/auth/presentation/widgets/auth_footer.dart';
-import 'package:construculator/features/auth/presentation/widgets/auth_methods.dart';
+import 'package:construculator/features/auth/presentation/widgets/auth_provider_buttons.dart';
 import 'package:construculator/features/auth/presentation/widgets/error_widget_builder.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
-import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
@@ -29,12 +28,63 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
   AppLocalizations? l10n;
   final AppRouter _router = Modular.get<AppRouter>();
 
+  _getContinueButtonText(LoginWithEmailState state) {
+    if (state is LoginWithEmailLoading) {
+      return '${l10n?.loggingInButton}';
+    }
+    if (state is LoginWithEmailAvailabilityLoading) {
+      return '${l10n?.checkingAvailabilityButton}';
+    }
+    return '${l10n?.continueButton}';
+  }
+
   _handleFailure(Failure failure) {
     if (failure is AuthFailure) {
-      CoreToast.showError(context, failure.errorType.localizedMessage(context));
+      CoreToast.showError(
+        context,
+        failure.errorType.localizedMessage(context),
+        l10n?.closeLabel ?? '',
+      );
     } else {
-      CoreToast.showError(context, l10n?.unexpectedErrorMessage);
+      CoreToast.showError(
+        context,
+        l10n?.unexpectedErrorMessage ?? '',
+        l10n?.closeLabel ?? '',
+      );
     }
+  }
+
+  void _handleFieldValidation(LoginWithEmailFormFieldValidated state) {
+    setState(() {
+      List<String>? errorList;
+
+      if (!state.isValid) {
+        if (state.validator != null) {
+          // Field has AuthValidation error
+          final errorMessage = state.validator?.localizedMessage(context);
+          errorList = errorMessage != null ? [errorMessage] : null;
+        }
+      } else {
+        errorList = null;
+      }
+
+      // Update the appropriate error list
+      switch (state.field) {
+        case LoginWithEmailFormField.email:
+          _emailErrorList = errorList;
+          break;
+      }
+
+      // Validate form after updating errors
+      _validateForm();
+    });
+  }
+
+  void _validateForm() {
+    final valid = _emailErrorList == null && _emailController.text.isNotEmpty;
+    setState(() {
+      _canPressContinue = valid;
+    });
   }
 
   @override
@@ -45,28 +95,17 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
 
   @override
   void initState() {
-    _emailController.addListener(() {
-      final email = _emailController.text;
-      final emailValidator = AuthValidation.validateEmail(email);
-      if (emailValidator != null) {
-        final error = emailValidator.localizedMessage(context);
-        setState(() {
-          _emailErrorWidgetList = null;
-          if (error != null) {
-            _emailErrorList = [error];
-          }
-        });
-      } else {
-        setState(() {
-          _emailErrorWidgetList = null;
-          _emailErrorList = null;
-        });
-        BlocProvider.of<LoginWithEmailBloc>(
-          context,
-        ).add(LoginEmailChanged(email));
-      }
-    });
     _emailController.text = widget.email;
+
+    _emailController.addListener(() {
+      BlocProvider.of<LoginWithEmailBloc>(context).add(
+        LoginWithEmailFormFieldChanged(
+          field: LoginWithEmailFormField.email,
+          value: _emailController.text,
+        ),
+      );
+    });
+
     super.initState();
   }
 
@@ -89,14 +128,14 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
             if (state is LoginWithEmailFailure) {
               _handleFailure(state.failure);
             }
-            if (state is LoginWithEmailAvailabilityFailure) {
+            if (state is LoginWithEmailAvailabilityCheckFailure) {
               _handleFailure(state.failure);
             }
-            if (state is LoginWithEmailAvailabilitySuccess) {
+            if (state is LoginWithEmailAvailabilityCheckSuccess) {
               if (!state.isEmailRegistered) {
                 _emailErrorList = null;
                 _emailErrorWidgetList = [
-                  buildErrorWidget(
+                  buildErrorWidgetWithLink(
                     errorText: l10n?.emailNotRegistered,
                     linkText: l10n?.register,
                     onPressed: () {
@@ -114,76 +153,12 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
               }
               _canPressContinue = state.isEmailRegistered;
             }
+            if (state is LoginWithEmailFormFieldValidated) {
+              _handleFieldValidation(state);
+            }
           },
           builder: (context, state) {
-            return SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: CoreSpacing.space6),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: CoreSpacing.space20),
-                    Text(
-                      '${l10n?.welcomeBack}',
-                      style: CoreTypography.headlineLargeSemiBold(),
-                    ),
-                    const SizedBox(height: CoreSpacing.space4),
-                    Text(
-                      '${l10n?.enterYourEmailIdToLoginToYourAccount}',
-                      style: CoreTypography.bodyLargeRegular(),
-                    ),
-                    const SizedBox(height: CoreSpacing.space10),
-                    CoreTextField(
-                      controller: _emailController,
-                      label: '${l10n?.emailLabel}',
-                      hintText: '${l10n?.emailHint}',
-                      errorWidgetList: _emailErrorWidgetList,
-                      errorTextList: _emailErrorList,
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    const SizedBox(height: CoreSpacing.space6),
-                    CoreButton(
-                      isDisabled: !_canPressContinue || state is LoginWithEmailAvailabilityLoading,
-                      onPressed: () {
-                        _router.pushNamed(
-                          fullEnterPasswordRoute,
-                          arguments: _emailController.text,
-                        );
-                      },
-                      label:
-                          state is LoginWithEmailLoading
-                              ? '${l10n?.loggingInButton}'
-                              : state is LoginWithEmailAvailabilityLoading
-                              ? '${l10n?.checkingAvailabilityButton}'
-                              : '${l10n?.continueButton}',
-                      centerAlign: true,
-                    ),
-                    const SizedBox(height: CoreSpacing.space6),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Divider(color: CoreBorderColors.lineLight, thickness: 1),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: CoreSpacing.space2,
-                          ),
-                          child: Text(
-                            '${l10n?.or}',
-                            style: TextStyle(color: CoreTextColors.body),
-                          ),
-                        ),
-                        Expanded(
-                          child: Divider(color: CoreBorderColors.lineLight, thickness: 1),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: CoreSpacing.space6),
-                    AuthMethods(onPressed: (method) {}),
-                  ],
-                ),
-              ),
-            );
+            return _buildLoginWithEmailForm(state);
           },
         ),
         persistentFooterButtons: [
@@ -195,6 +170,78 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLoginWithEmailForm(LoginWithEmailState state) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: CoreSpacing.space6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: CoreSpacing.space20),
+            Text(
+              '${l10n?.welcomeBack}',
+              style: CoreTypography.headlineLargeSemiBold(),
+            ),
+            const SizedBox(height: CoreSpacing.space4),
+            Text(
+              '${l10n?.enterYourEmailIdToLoginToYourAccount}',
+              style: CoreTypography.bodyLargeRegular(),
+            ),
+            const SizedBox(height: CoreSpacing.space10),
+            CoreTextField(
+              controller: _emailController,
+              label: '${l10n?.emailLabel}',
+              hintText: '${l10n?.emailHint}',
+              errorWidgetList: _emailErrorWidgetList,
+              errorTextList: _emailErrorList,
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: CoreSpacing.space6),
+            CoreButton(
+              isDisabled:
+                  !_canPressContinue ||
+                  state is LoginWithEmailAvailabilityLoading,
+              onPressed: () {
+                _router.pushNamed(
+                  fullEnterPasswordRoute,
+                  arguments: _emailController.text,
+                );
+              },
+              label: _getContinueButtonText(state),
+              centerAlign: true,
+            ),
+            const SizedBox(height: CoreSpacing.space6),
+            Row(
+              children: [
+                Expanded(
+                  child: Divider(
+                    color: CoreBorderColors.lineLight,
+                    thickness: 1,
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: CoreSpacing.space2),
+                  child: Text(
+                    '${l10n?.or}',
+                    style: TextStyle(color: CoreTextColors.body),
+                  ),
+                ),
+                Expanded(
+                  child: Divider(
+                    color: CoreBorderColors.lineLight,
+                    thickness: 1,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: CoreSpacing.space6),
+            AuthProviderButtons(onPressed: (method) {}),
+          ],
+        ),
       ),
     );
   }

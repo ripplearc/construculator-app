@@ -152,7 +152,6 @@ void main() {
         ),
         findsOneWidget,
       );
-      // Tap register link
       final registerLink = find.byKey(
         Key(AppLocalizations.of(buildContext!)!.register),
       );

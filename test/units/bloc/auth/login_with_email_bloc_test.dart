@@ -26,9 +26,145 @@ void main() {
       Modular.destroy();
     });
 
-    group('LoginEmailChanged', () {
+    group('LoginWithEmailFormFieldChanged', () {
       blocTest<LoginWithEmailBloc, LoginWithEmailState>(
-        'emits [LoginWithEmailAvailabilityLoading, LoginWithEmailAvailabilitySuccess] when email is registered',
+        'emits [LoginWithEmailFormFieldValidated] with isValid=false when email is empty',
+        build: () => bloc,
+        act: (bloc) => bloc.add(
+          const LoginWithEmailFormFieldChanged(
+            field: LoginWithEmailFormField.email,
+            value: '',
+          ),
+        ),
+        expect: () => [
+          isA<LoginWithEmailFormFieldValidated>().having(
+            (state) => state.field,
+            'field',
+            LoginWithEmailFormField.email,
+          ).having(
+            (state) => state.isValid,
+            'isValid',
+            false,
+          ).having(
+            (state) => state.validator,
+            'validator',
+            isNotNull,
+          ),
+        ],
+      );
+
+      blocTest<LoginWithEmailBloc, LoginWithEmailState>(
+        'emits [LoginWithEmailFormFieldValidated] with isValid=false when email is invalid',
+        build: () => bloc,
+        act: (bloc) => bloc.add(
+          const LoginWithEmailFormFieldChanged(
+            field: LoginWithEmailFormField.email,
+            value: 'invalid-email',
+          ),
+        ),
+        expect: () => [
+          isA<LoginWithEmailFormFieldValidated>().having(
+            (state) => state.field,
+            'field',
+            LoginWithEmailFormField.email,
+          ).having(
+            (state) => state.isValid,
+            'isValid',
+            false,
+          ).having(
+            (state) => state.validator,
+            'validator',
+            isNotNull,
+          ),
+        ],
+      );
+
+      blocTest<LoginWithEmailBloc, LoginWithEmailState>(
+        'emits [LoginWithEmailFormFieldValidated, LoginWithEmailAvailabilityLoading, LoginWithEmailAvailabilityCheckSuccess] when email is valid and triggers availability check',
+        build: () => bloc,
+        act: (bloc) => bloc.add(
+          const LoginWithEmailFormFieldChanged(
+            field: LoginWithEmailFormField.email,
+            value: testEmail,
+          ),
+        ),
+        expect: () => [
+          isA<LoginWithEmailFormFieldValidated>().having(
+            (state) => state.field,
+            'field',
+            LoginWithEmailFormField.email,
+          ).having(
+            (state) => state.isValid,
+            'isValid',
+            true,
+          ).having(
+            (state) => state.validator,
+            'validator',
+            null,
+          ),
+          LoginWithEmailAvailabilityLoading(),
+          LoginWithEmailAvailabilityCheckSuccess(isEmailRegistered: false),
+        ],
+      );
+
+      blocTest<LoginWithEmailBloc, LoginWithEmailState>(
+        'emits [LoginWithEmailFormFieldValidated, LoginWithEmailAvailabilityLoading, LoginWithEmailAvailabilityCheckSuccess] when valid email is not registered',
+        build: () {
+          fakeSupabase.shouldThrowOnSignIn = true;
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          const LoginWithEmailFormFieldChanged(
+            field: LoginWithEmailFormField.email,
+            value: testEmail,
+          ),
+        ),
+        expect: () => [
+          isA<LoginWithEmailFormFieldValidated>().having(
+            (state) => state.field,
+            'field',
+            LoginWithEmailFormField.email,
+          ).having(
+            (state) => state.isValid,
+            'isValid',
+            true,
+          ),
+          LoginWithEmailAvailabilityLoading(),
+          LoginWithEmailAvailabilityCheckSuccess(isEmailRegistered: false),
+        ],
+      );
+
+      blocTest<LoginWithEmailBloc, LoginWithEmailState>(
+        'emits [LoginWithEmailFormFieldValidated, LoginWithEmailAvailabilityLoading, LoginWithEmailAvailabilityCheckFailure] when availability check fails',
+        build: () {
+          fakeSupabase.shouldThrowOnSelect = true;
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          const LoginWithEmailFormFieldChanged(
+            field: LoginWithEmailFormField.email,
+            value: testEmail,
+          ),
+        ),
+        expect: () => [
+          isA<LoginWithEmailFormFieldValidated>().having(
+            (state) => state.field,
+            'field',
+            LoginWithEmailFormField.email,
+          ).having(
+            (state) => state.isValid,
+            'isValid',
+            true,
+          ),
+          LoginWithEmailAvailabilityLoading(),
+          isA<LoginWithEmailAvailabilityCheckFailure>(),
+        ],
+      );
+    });
+
+    group('LoginEmailAvailabilityCheckRequested', () {
+      blocTest<LoginWithEmailBloc, LoginWithEmailState>(
+        'emits [LoginWithEmailAvailabilityLoading, LoginWithEmailAvailabilityCheckSuccess] when email is registered',
         build: () {
           fakeSupabase.addTableData('users', [
             {
@@ -39,49 +175,48 @@ void main() {
           ]);
           return bloc;
         },
-        act: (bloc) => bloc.add(LoginEmailChanged(testEmail)),
+        act: (bloc) => bloc.add(LoginEmailAvailabilityCheckRequested(testEmail)),
         expect: () => [
           LoginWithEmailAvailabilityLoading(),
-          LoginWithEmailAvailabilityLoaded(isEmailRegistered: true),
+          LoginWithEmailAvailabilityCheckSuccess(isEmailRegistered: true),
         ],
       );
 
       blocTest<LoginWithEmailBloc, LoginWithEmailState>(
-        'emits [LoginWithEmailAvailabilityLoading, LoginWithEmailAvailabilitySuccess] when email is not registered',
+        'emits [LoginWithEmailAvailabilityLoading, LoginWithEmailAvailabilityCheckSuccess] when email is not registered',
         build: () {
           fakeSupabase.shouldThrowOnSignIn = true;
           return bloc;
         },
-        act: (bloc) => bloc.add(LoginEmailChanged(testEmail)),
+        act: (bloc) => bloc.add(LoginEmailAvailabilityCheckRequested(testEmail)),
         expect: () => [
           LoginWithEmailAvailabilityLoading(),
-          LoginWithEmailAvailabilityLoaded(isEmailRegistered: false),
+          LoginWithEmailAvailabilityCheckSuccess(isEmailRegistered: false),
         ],
       );
 
       blocTest<LoginWithEmailBloc, LoginWithEmailState>(
-        'emits [LoginWithEmailAvailabilityLoading, LoginWithEmailAvailabilityFailure] when backend error occurs',
+        'emits [LoginWithEmailAvailabilityLoading, LoginWithEmailAvailabilityCheckFailure] when backend error occurs',
         build: () {
           fakeSupabase.shouldThrowOnSelect = true;
           return bloc;
         },
-        act: (bloc) => bloc.add(LoginEmailChanged(testEmail)),
+        act: (bloc) => bloc.add(LoginEmailAvailabilityCheckRequested(testEmail)),
         expect: () => [
           LoginWithEmailAvailabilityLoading(),
-          isA<LoginWithEmailAvailabilityFailure>(),
+          isA<LoginWithEmailAvailabilityCheckFailure>(),
         ],
       );
     });
+
     group('Email Registration Status', () {
       blocTest<LoginWithEmailBloc, LoginWithEmailState>(
         'correctly identifies unregistered email',
-        build: () {
-          return bloc;
-        },
-        act: (bloc) => bloc.add(LoginEmailChanged(testEmail)),
+        build: () => bloc,
+        act: (bloc) => bloc.add(LoginEmailAvailabilityCheckRequested(testEmail)),
         expect: () => [
           LoginWithEmailAvailabilityLoading(),
-          LoginWithEmailAvailabilityLoaded(isEmailRegistered: false),
+          LoginWithEmailAvailabilityCheckSuccess(isEmailRegistered: false),
         ],
       );
     });
