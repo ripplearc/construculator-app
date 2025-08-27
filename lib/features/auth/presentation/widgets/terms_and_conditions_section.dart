@@ -1,8 +1,8 @@
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/widgets.dart';
 
-class TermsAndConditions extends StatelessWidget {
-  const TermsAndConditions({
+class TermsAndConditionsSection extends StatelessWidget {
+  const TermsAndConditionsSection({
     super.key,
     required this.termsAndConditionsText,
     required this.termsAndServicesLink,

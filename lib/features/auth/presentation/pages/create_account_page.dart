@@ -1,5 +1,5 @@
 import 'package:construculator/features/auth/presentation/widgets/auth_header.dart';
-import 'package:construculator/features/auth/presentation/widgets/terms_and_conditions.dart';
+import 'package:construculator/features/auth/presentation/widgets/terms_and_conditions_section.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/professional_role.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
@@ -523,7 +523,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                     errorTextList: _confirmPasswordErrorList,
                   ),
                   const SizedBox(height: CoreSpacing.space6),
-                  TermsAndConditions(
+                  TermsAndConditionsSection(
                     termsAndConditionsText: l10n?.termsAndConditionsText ?? '',
                     termsAndServicesLink: l10n?.termsAndServicesLink ?? '',
                     privacyPolicyLink: l10n?.privacyPolicyLink ?? '',

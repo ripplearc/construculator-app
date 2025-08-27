@@ -1,4 +1,4 @@
-import 'package:construculator/features/auth/presentation/widgets/terms_and_conditions.dart';
+import 'package:construculator/features/auth/presentation/widgets/terms_and_conditions_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -26,7 +26,7 @@ void main() {
           home: Material(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: TermsAndConditions(
+              child: TermsAndConditionsSection(
                 termsAndConditionsText: termsAndConditionsText,
                 termsAndServicesLink: termsAndServicesLink,
                 privacyPolicyLink: privacyPolicyLink,
@@ -54,7 +54,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(TermsAndConditions),
+        find.byType(TermsAndConditionsSection),
         matchesGoldenFile(
           'goldens/terms_and_conditions/${size.width}x${size.height}/terms_and_conditions_agreement.png',
         ),
