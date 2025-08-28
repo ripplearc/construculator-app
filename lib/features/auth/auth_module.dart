@@ -46,7 +46,6 @@ class AuthModule extends Module {
   @override
   void binds(Injector i) => _registerDependencies(i);
 }
-// extract
 void _registerRoutes(RouteManager r) {
   r.child(
     registerWithEmailRoute,
