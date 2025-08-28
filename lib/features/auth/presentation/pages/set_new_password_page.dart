@@ -48,15 +48,12 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage>  with Localizat
 
       if (!state.isValid) {
         if (state.validator != null) {
-          // Field has AuthValidation error
           final errorMessage = state.validator?.localizedMessage(context);
           errorList = errorMessage != null ? [errorMessage] : null;
         }
       } else {
         errorList = null;
       }
-
-      // Update the appropriate error list
       switch (state.field) {
         case SetNewPasswordFormField.password:
           _passwordErrorList = errorList;
