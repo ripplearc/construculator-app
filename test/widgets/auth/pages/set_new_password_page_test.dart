@@ -231,7 +231,6 @@ void main() {
       expect(router.navigationHistory.length, 1);
       expect(router.navigationHistory.first.route, dashboardRoute);
     });
-
     testWidgets('backend error shows error message', (
       WidgetTester tester,
     ) async {

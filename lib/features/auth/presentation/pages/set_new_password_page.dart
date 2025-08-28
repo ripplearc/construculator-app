@@ -207,7 +207,6 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage>  with Localizat
                   onPressed: () => _onSubmit(context),
                   isDisabled:
                       _passwordController.text.isEmpty ||
-                      _confirmPasswordController.text.isEmpty ||
                       _passwordController.text !=
                           _confirmPasswordController.text ||
                       state is SetNewPasswordLoading,
