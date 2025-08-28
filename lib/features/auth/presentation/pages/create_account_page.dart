@@ -5,6 +5,7 @@ import 'package:construculator/libraries/auth/data/models/professional_role.dart
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
 import 'package:flutter/material.dart';
@@ -25,7 +26,7 @@ class CreateAccountPage extends StatefulWidget {
   State<CreateAccountPage> createState() => _CreateAccountPageState();
 }
 
-class _CreateAccountPageState extends State<CreateAccountPage> {
+class _CreateAccountPageState extends State<CreateAccountPage> with LocalizationMixin{
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _mobileNumberController = TextEditingController();
@@ -52,8 +53,6 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   bool _canPressContinue = false;
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
-
-  AppLocalizations? l10n;
   final AppRouter _router = Modular.get<AppRouter>();
 
   bool get isEmailRegistration {
@@ -312,12 +311,6 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     });
 
     super.initState();
-  }
-
-  @override
-  void didChangeDependencies() {
-    l10n = AppLocalizations.of(context);
-    super.didChangeDependencies();
   }
 
   @override

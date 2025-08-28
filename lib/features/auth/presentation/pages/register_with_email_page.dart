@@ -4,9 +4,9 @@ import 'package:construculator/features/auth/presentation/widgets/auth_header.da
 import 'package:construculator/features/auth/presentation/widgets/auth_provider_buttons.dart';
 import 'package:construculator/features/auth/presentation/widgets/error_widget_builder.dart';
 import 'package:construculator/features/auth/presentation/widgets/otp_quick_sheet/otp_verification_sheet.dart';
-import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:core_ui/core_ui.dart';
@@ -23,7 +23,7 @@ class RegisterWithEmailPage extends StatefulWidget {
   State<RegisterWithEmailPage> createState() => _RegisterWithEmailPageState();
 }
 
-class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
+class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> with LocalizationMixin{
   final _emailController = TextEditingController();
   final _emailTextFieldFocusNode = FocusNode();
 
@@ -31,7 +31,6 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
   List<String>? _emailErrorTextList;
 
   bool _canPressContinue = false;
-  AppLocalizations? l10n;
   final AppRouter _router = Modular.get<AppRouter>();
 
   void _handleFailure(Failure failure) {
@@ -184,12 +183,6 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
     });
 
     super.initState();
-  }
-
-  @override
-  void didChangeDependencies() {
-    l10n = AppLocalizations.of(context);
-    super.didChangeDependencies();
   }
 
   @override
