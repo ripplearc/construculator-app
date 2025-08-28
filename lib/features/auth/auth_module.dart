@@ -12,11 +12,13 @@ import 'package:construculator/features/auth/presentation/bloc/forgot_password_b
 import 'package:construculator/features/auth/presentation/bloc/login_with_email_bloc/login_with_email_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
+import 'package:construculator/features/auth/presentation/bloc/set_new_password_bloc/set_new_password_bloc.dart';
 import 'package:construculator/features/auth/presentation/pages/create_account_page.dart';
 import 'package:construculator/features/auth/presentation/pages/enter_password_page.dart';
 import 'package:construculator/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:construculator/features/auth/presentation/pages/login_with_email_page.dart';
 import 'package:construculator/features/auth/presentation/pages/register_with_email_page.dart';
+import 'package:construculator/features/auth/presentation/pages/set_new_password_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/time/clock_module.dart';
@@ -94,8 +96,7 @@ void _registerRoutes(RouteManager r) {
     enterPasswordRoute,
     guards: [NoAuthGuard()],
     child: (context) => BlocProvider(
-      create: (context) =>
-          EnterPasswordBloc(loginUseCase: Modular.get<LoginUseCase>()),
+      create: (context) => Modular.get<EnterPasswordBloc>(),
       child: EnterPasswordPage(email: r.args.data as String),
     ),
   );
@@ -109,6 +110,17 @@ void _registerRoutes(RouteManager r) {
       ],
       child: ForgotPasswordPage(),
     ),
+  );
+  r.child(
+    setNewPasswordRoute,
+    guards: [AuthGuard()],
+    child: (context) {
+      final email = r.args.data ?? '';
+      return BlocProvider(
+        create: (context) => Modular.get<SetNewPasswordBloc>(),
+        child: SetNewPasswordPage(email: email),
+      );
+    },
   );
 }
 
@@ -150,5 +162,8 @@ void _registerDependencies(Injector i) {
   i.add<EnterPasswordBloc>(() => EnterPasswordBloc(loginUseCase: i()));
   i.add<ForgotPasswordBloc>(
     () => ForgotPasswordBloc(resetPasswordUseCase: i()),
+  );
+  i.add<SetNewPasswordBloc>(
+    () => SetNewPasswordBloc(setNewPasswordUseCase: i()),
   );
 }

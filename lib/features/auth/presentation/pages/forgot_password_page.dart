@@ -1,5 +1,5 @@
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
-import 'package:construculator/features/auth/presentation/widgets/forgot_password_header.dart';
+import 'package:construculator/features/auth/presentation/widgets/auth_header.dart';
 import 'package:construculator/features/auth/presentation/widgets/otp_quick_sheet/otp_verification_sheet.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
@@ -130,7 +130,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> with Localizati
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ForgotPasswordHeader(
+                AuthHeader(
                   title: '${l10n?.forgotPasswordTitle}',
                   description: '${l10n?.forgotPasswordDescription}',
                 ),
