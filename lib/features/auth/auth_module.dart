@@ -8,11 +8,13 @@ import 'package:construculator/features/auth/domain/usecases/login_usecase.dart'
 import 'package:construculator/features/auth/domain/usecases/set_new_password_usecase.dart';
 import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/enter_password_bloc/enter_password_bloc.dart';
+import 'package:construculator/features/auth/presentation/bloc/forgot_password_bloc/forgot_password_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/login_with_email_bloc/login_with_email_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
 import 'package:construculator/features/auth/presentation/pages/create_account_page.dart';
 import 'package:construculator/features/auth/presentation/pages/enter_password_page.dart';
+import 'package:construculator/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:construculator/features/auth/presentation/pages/login_with_email_page.dart';
 import 'package:construculator/features/auth/presentation/pages/register_with_email_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
@@ -97,6 +99,17 @@ void _registerRoutes(RouteManager r) {
       child: EnterPasswordPage(email: r.args.data as String),
     ),
   );
+  r.child(
+    forgotPasswordRoute,
+    guards: [NoAuthGuard()],
+    child: (context) => MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => Modular.get<ForgotPasswordBloc>()),
+        BlocProvider(create: (context) => Modular.get<OtpVerificationBloc>()),
+      ],
+      child: ForgotPasswordPage(),
+    ),
+  );
 }
 
 void _registerDependencies(Injector i) {
@@ -135,4 +148,7 @@ void _registerDependencies(Injector i) {
     () => LoginWithEmailBloc(checkEmailAvailabilityUseCase: i()),
   );
   i.add<EnterPasswordBloc>(() => EnterPasswordBloc(loginUseCase: i()));
+  i.add<ForgotPasswordBloc>(
+    () => ForgotPasswordBloc(resetPasswordUseCase: i()),
+  );
 }
