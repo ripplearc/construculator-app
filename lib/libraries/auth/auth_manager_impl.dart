@@ -304,6 +304,10 @@ class AuthManagerImpl implements AuthManager {
     try {
       await _wrapper.signOut();
       _logger.info('Logout successful');
+      // Emit auth state change to notify listeners
+      _authNotifier.emitAuthStateChanged(
+        AuthState(status: AuthStatus.unauthenticated, user: null),
+      );
       return AuthResult.success(null);
     } catch (e) {
       return _handleException(e, 'Logout');
@@ -400,14 +404,13 @@ class AuthManagerImpl implements AuthManager {
       return _handleException(e, 'Update user email');
     }
   }
+
   @override
   Future<AuthResult<List<ProfessionalRole>>> getProfessionalRoles() async {
     try {
       final rolesData = await _wrapper.selectAllProfessionalRoles();
       return AuthResult.success(
-        rolesData
-            .map((roleMap) => ProfessionalRole.fromJson(roleMap))
-            .toList(),
+        rolesData.map((roleMap) => ProfessionalRole.fromJson(roleMap)).toList(),
       );
     } catch (e) {
       return _handleException(e, 'Get professional roles');
