@@ -23,7 +23,7 @@ _User _$UserFromJson(Map<String, dynamic> json) => _User(
 );
 
 Map<String, dynamic> _$UserToJson(_User instance) => <String, dynamic>{
-  'id': instance.id,
+  if (instance.id case final value?) 'id': value,
   'credential_id': instance.credentialId,
   'email': instance.email,
   'phone': instance.phone,

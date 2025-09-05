@@ -53,7 +53,7 @@ class AuthHeader extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              '$contact',
+                              ' $contact',
                               style: CoreTypography.bodyLargeSemiBold(
                                 color: CoreTextColors.link,
                               ),

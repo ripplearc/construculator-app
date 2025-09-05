@@ -17,7 +17,8 @@ class SetNewPasswordPage extends StatefulWidget {
   State<SetNewPasswordPage> createState() => _SetNewPasswordPageState();
 }
 
-class _SetNewPasswordPageState extends State<SetNewPasswordPage>  with LocalizationMixin{
+class _SetNewPasswordPageState extends State<SetNewPasswordPage>
+    with LocalizationMixin {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
@@ -65,6 +66,15 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage>  with Localizat
     });
   }
 
+  void _onSubmit(BuildContext context) {
+    BlocProvider.of<SetNewPasswordBloc>(context).add(
+      SetNewPasswordSubmitted(
+        email: widget.email,
+        password: _passwordController.text,
+      ),
+    );
+  }
+
   @override
   void initState() {
     _passwordController.addListener(() {
@@ -93,15 +103,6 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage>  with Localizat
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
-  }
-
-  void _onSubmit(BuildContext context) {
-    BlocProvider.of<SetNewPasswordBloc>(context).add(
-      SetNewPasswordSubmitted(
-        email: widget.email,
-        password: _passwordController.text,
-      ),
-    );
   }
 
   @override
@@ -134,10 +135,6 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage>  with Localizat
             }
           }
           if (state is SetNewPasswordSuccess) {
-            _confirmPasswordController.clear();
-            _passwordController.clear();
-            _confirmPasswordErrorList = null;
-            _passwordErrorList = null;
             SuccessModal.show(
               context,
               message: '${l10n?.passwordResetSuccessMessage}',
