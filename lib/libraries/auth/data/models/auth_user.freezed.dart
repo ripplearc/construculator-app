@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$User {
 
- String? get id; String? get credentialId; String get email; String? get phone; String? get countryCode; String get firstName; String get lastName; String get professionalRole; String? get profilePhotoUrl; DateTime get createdAt; DateTime get updatedAt; UserProfileStatus get userStatus; Map<String, dynamic> get userPreferences;
+@JsonKey(includeIfNull: false) String? get id; String? get credentialId; String get email; String? get phone; String? get countryCode; String get firstName; String get lastName; String get professionalRole; String? get profilePhotoUrl; DateTime get createdAt; DateTime get updatedAt; UserProfileStatus get userStatus; Map<String, dynamic> get userPreferences;
 /// Create a copy of User
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -49,7 +49,7 @@ abstract mixin class $UserCopyWith<$Res>  {
   factory $UserCopyWith(User value, $Res Function(User) _then) = _$UserCopyWithImpl;
 @useResult
 $Res call({
- String? id, String? credentialId, String email, String? phone, String? countryCode, String firstName, String lastName, String professionalRole, String? profilePhotoUrl, DateTime createdAt, DateTime updatedAt, UserProfileStatus userStatus, Map<String, dynamic> userPreferences
+@JsonKey(includeIfNull: false) String? id, String? credentialId, String email, String? phone, String? countryCode, String firstName, String lastName, String professionalRole, String? profilePhotoUrl, DateTime createdAt, DateTime updatedAt, UserProfileStatus userStatus, Map<String, dynamic> userPreferences
 });
 
 
@@ -92,10 +92,10 @@ as Map<String, dynamic>,
 @JsonSerializable()
 
 class _User extends User {
-  const _User({this.id, this.credentialId, required this.email, this.phone, this.countryCode, required this.firstName, required this.lastName, required this.professionalRole, this.profilePhotoUrl, required this.createdAt, required this.updatedAt, required this.userStatus, required final  Map<String, dynamic> userPreferences}): _userPreferences = userPreferences,super._();
+  const _User({@JsonKey(includeIfNull: false) this.id, this.credentialId, required this.email, this.phone, this.countryCode, required this.firstName, required this.lastName, required this.professionalRole, this.profilePhotoUrl, required this.createdAt, required this.updatedAt, required this.userStatus, required final  Map<String, dynamic> userPreferences}): _userPreferences = userPreferences,super._();
   factory _User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
 
-@override final  String? id;
+@override@JsonKey(includeIfNull: false) final  String? id;
 @override final  String? credentialId;
 @override final  String email;
 @override final  String? phone;
@@ -148,7 +148,7 @@ abstract mixin class _$UserCopyWith<$Res> implements $UserCopyWith<$Res> {
   factory _$UserCopyWith(_User value, $Res Function(_User) _then) = __$UserCopyWithImpl;
 @override @useResult
 $Res call({
- String? id, String? credentialId, String email, String? phone, String? countryCode, String firstName, String lastName, String professionalRole, String? profilePhotoUrl, DateTime createdAt, DateTime updatedAt, UserProfileStatus userStatus, Map<String, dynamic> userPreferences
+@JsonKey(includeIfNull: false) String? id, String? credentialId, String email, String? phone, String? countryCode, String firstName, String lastName, String professionalRole, String? profilePhotoUrl, DateTime createdAt, DateTime updatedAt, UserProfileStatus userStatus, Map<String, dynamic> userPreferences
 });
 
 
