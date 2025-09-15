@@ -2,9 +2,7 @@
 part of 'login_with_email_bloc.dart';
 
 /// Enum for form fields that can be validated
-enum LoginWithEmailFormField {
-  email,
-}
+enum LoginWithEmailFormField { email }
 
 /// Abstract class for login with email states
 abstract class LoginWithEmailState extends Equatable {
@@ -22,7 +20,7 @@ class LoginWithEmailInitial extends LoginWithEmailState {
   List<Object?> get props => [];
 }
 
-/// State when the login process is loading, after the user enters password 
+/// State when the login process is loading, after the user enters password
 /// and continue button is pressed
 class LoginWithEmailLoading extends LoginWithEmailState {
   @override
@@ -55,7 +53,9 @@ class LoginWithEmailAvailabilityLoading extends LoginWithEmailState {
 class LoginWithEmailAvailabilityCheckSuccess extends LoginWithEmailState {
   /// Whether the email is registered
   final bool isEmailRegistered;
-  const LoginWithEmailAvailabilityCheckSuccess({required this.isEmailRegistered});
+  const LoginWithEmailAvailabilityCheckSuccess({
+    required this.isEmailRegistered,
+  });
 
   @override
   List<Object?> get props => [isEmailRegistered];
@@ -75,8 +75,10 @@ class LoginWithEmailAvailabilityCheckFailure extends LoginWithEmailState {
 class LoginWithEmailFormFieldValidated extends LoginWithEmailState {
   /// The field that was validated
   final LoginWithEmailFormField field;
+
   /// Whether the field is valid
   final bool isValid;
+
   /// The validation result, if any
   final AuthErrorType? validator;
 

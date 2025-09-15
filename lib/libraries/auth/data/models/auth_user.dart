@@ -9,7 +9,6 @@ part 'auth_user.g.dart';
 /// Represents a user in the application
 @freezed
 sealed class User with _$User {
-
   const User._();
 
   /// Creates a new [User] instance
@@ -48,7 +47,7 @@ sealed class User with _$User {
 
   /// Full name derived from first and last names
   String get fullName => '$firstName $lastName';
-  
+
   /// The full usable phone number
   String get phoneNumber => '$countryCode$phone';
 

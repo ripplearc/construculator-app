@@ -1,6 +1,7 @@
 import 'package:construculator/features/auth/presentation/widgets/auth_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
 void main() {
   const title = 'Welcome Back';
   const description = 'Enter your details to log in to your account';
@@ -43,7 +44,9 @@ void main() {
       expect(find.byKey(Key('text_description')), findsOneWidget);
     });
 
-    testWidgets('renders contact with edit icon when contact is provided', (tester) async {
+    testWidgets('renders contact with edit icon when contact is provided', (
+      tester,
+    ) async {
       await pumpAuthHeader(
         tester: tester,
         title: title,
@@ -55,7 +58,9 @@ void main() {
       expect(find.byKey(Key('rich_text_description')), findsOneWidget);
     });
 
-    testWidgets('renders description as RichText when contact is provided', (tester) async {
+    testWidgets('renders description as RichText when contact is provided', (
+      tester,
+    ) async {
       await pumpAuthHeader(
         tester: tester,
         title: title,
@@ -67,16 +72,19 @@ void main() {
       expect(find.byKey(Key('rich_text_description')), findsOneWidget);
     });
 
-    testWidgets('renders description as simple Text when contact is not provided', (tester) async {
-      await pumpAuthHeader(
-        tester: tester,
-        title: title,
-        description: description,
-      );
+    testWidgets(
+      'renders description as simple Text when contact is not provided',
+      (tester) async {
+        await pumpAuthHeader(
+          tester: tester,
+          title: title,
+          description: description,
+        );
 
-      expect(find.byKey(Key('text_title')), findsOneWidget);
-      expect(find.byKey(Key('text_description')), findsOneWidget);
-    });
+        expect(find.byKey(Key('text_title')), findsOneWidget);
+        expect(find.byKey(Key('text_description')), findsOneWidget);
+      },
+    );
 
     testWidgets('tapping on contact triggers callback', (tester) async {
       bool contactTapped = false;
@@ -112,6 +120,5 @@ void main() {
       final row = tester.widget<Row>(rowFinder);
       expect(row.mainAxisSize, MainAxisSize.min);
     });
-
-    });
-} 
+  });
+}

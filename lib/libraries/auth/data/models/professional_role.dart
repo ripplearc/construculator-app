@@ -8,11 +8,9 @@ part 'professional_role.g.dart';
 @freezed
 sealed class ProfessionalRole with _$ProfessionalRole {
   /// The unique identifier for the professional role.
-  const factory ProfessionalRole({
-    required String id,
-    required String name,
-  }) = _ProfessionalRole;
+  const factory ProfessionalRole({required String id, required String name}) =
+      _ProfessionalRole;
 
   factory ProfessionalRole.fromJson(Map<String, dynamic> json) =>
       _$ProfessionalRoleFromJson(json);
-} 
+}

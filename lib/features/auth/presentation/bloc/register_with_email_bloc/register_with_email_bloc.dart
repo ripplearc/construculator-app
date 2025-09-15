@@ -27,9 +27,7 @@ class RegisterWithEmailBloc
     on<RegisterWithEmailEmailChanged>(
       _onEmailChanged,
       transformer: (events, mapper) {
-        return events
-            .debounceTime(debounceTime)
-            .asyncExpand(mapper);
+        return events.debounceTime(debounceTime).asyncExpand(mapper);
       },
     );
     on<RegisterWithEmailContinuePressed>(_onContinuePressed);
@@ -53,7 +51,11 @@ class RegisterWithEmailBloc
     result.fold(
       (failure) => emit(RegisterWithEmailEmailCheckFailure(failure: failure)),
       (result) {
-        emit(RegisterWithEmailEmailCheckCompleted(isEmailRegistered: result.data ?? false));
+        emit(
+          RegisterWithEmailEmailCheckCompleted(
+            isEmailRegistered: result.data ?? false,
+          ),
+        );
       },
     );
   }
@@ -88,7 +90,7 @@ class RegisterWithEmailBloc
             validator: validator,
           ),
         );
-        
+
         // If email is valid, check availability
         if (isValid && event.value.isNotEmpty) {
           add(RegisterWithEmailEmailChanged(event.value));

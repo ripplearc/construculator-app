@@ -47,9 +47,7 @@ void main() {
     test('initialize should throw an exception', () {
       expect(
         () async => await fakeConfig.initialize(Environment.dev),
-        throwsA(
-          isA<UnimplementedError>(),
-        ),
+        throwsA(isA<UnimplementedError>()),
       );
     });
     test('setAppName should update app name', () {

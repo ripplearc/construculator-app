@@ -29,12 +29,12 @@ void main() {
   });
 
   Widget makeApp(Widget child) {
-    return MaterialApp(
-      home: child,
-    );
+    return MaterialApp(home: child);
   }
 
-  testWidgets('renders welcome text with user full name and logs out', (tester) async {
+  testWidgets('renders welcome text with user full name and logs out', (
+    tester,
+  ) async {
     final nowIso = clock.now().toIso8601String();
     const credentialId = 'cred-1';
     const email = 'john.doe@example.com';
@@ -72,4 +72,4 @@ void main() {
     expect(router.navigationHistory.isNotEmpty, isTrue);
     expect(router.navigationHistory.first.route, fullLoginRoute);
   });
-} 
+}

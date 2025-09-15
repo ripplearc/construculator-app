@@ -22,15 +22,13 @@ class _DashboardPageState extends State<DashboardPage> {
   void dispose() {
     super.dispose();
   }
+
   @override
   void initState() {
     notifier.onUserProfileChanged.listen((event) {
       if (event == null) {
         final cred = authManager.getCurrentCredentials();
-        _router.navigate(
-          fullCreateAccountRoute,
-          arguments: cred.data?.email,
-        );
+        _router.navigate(fullCreateAccountRoute, arguments: cred.data?.email);
       }
     });
     final cred = authManager.getCurrentCredentials();
@@ -42,13 +40,14 @@ class _DashboardPageState extends State<DashboardPage> {
           .then((result) {
             if (result.isSuccess && result.data != null) {
               setState(() {
-                userInfo = '${result.data?.firstName} ${result.data?.lastName}!';
+                userInfo =
+                    '${result.data?.firstName} ${result.data?.lastName}!';
               });
             }
           })
           .catchError((error) {
             if (!mounted) return;
-            CoreToast.showError(context, 'Failed to load profile','Close');
+            CoreToast.showError(context, 'Failed to load profile', 'Close');
           });
     }
     super.initState();

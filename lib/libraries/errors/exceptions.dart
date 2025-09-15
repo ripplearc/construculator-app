@@ -36,23 +36,25 @@ abstract class AppException implements Exception {
     return 'AppException: $message\nOriginating StackTrace:\n$t';
   }
 }
+
 /// Exception thrown when a server error occurs.
-/// 
-/// Throw this exception when status of an upstream request 
+///
+/// Throw this exception when status of an upstream request
 /// suggests a server error, eg. 500 level errors.
 class ServerException extends AppException {
-  ServerException(super.stackTrace,super.exception);
+  ServerException(super.stackTrace, super.exception);
 }
 
 /// Exception thrown when a client error occurs.
-/// 
-/// Throw this exception when status of an upstream request 
+///
+/// Throw this exception when status of an upstream request
 /// suggests a validation error, eg. 400 level errors.
-/// 
+///
 /// [message] is the user friendly message that will be displayed to the user.
 class ClientException extends AppException {
   final String message;
-  ClientException(stackTrace,this.message) : super(stackTrace,Exception(message));
+  ClientException(stackTrace, this.message)
+    : super(stackTrace, Exception(message));
   @override
   String toString() {
     return message;
@@ -60,11 +62,12 @@ class ClientException extends AppException {
 }
 
 /// Exception thrown when a configuration error occurs.
-/// 
+///
 /// [message] is the error message containing the details of the configuration error.
 class ConfigException extends AppException {
   final String message;
-  ConfigException(stackTrace,this.message) : super(stackTrace,Exception(message));
+  ConfigException(stackTrace, this.message)
+    : super(stackTrace, Exception(message));
   @override
   String toString() {
     return message;
@@ -73,5 +76,5 @@ class ConfigException extends AppException {
 
 /// Exception thrown when a network error occurs.
 class NetworkException extends AppException {
-  NetworkException(super.stackTrace,super.exception);
+  NetworkException(super.stackTrace, super.exception);
 }

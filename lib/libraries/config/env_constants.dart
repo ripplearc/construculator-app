@@ -10,10 +10,6 @@ const String devAlias = 'Fishfood';
 const String qaAlias = 'Dogfood';
 const String prodAlias = '';
 
-enum Environment {
-  dev,
-  qa,
-  prod,
-}
+enum Environment { dev, qa, prod }
 
 const Duration debounceTime = Duration(milliseconds: 300);

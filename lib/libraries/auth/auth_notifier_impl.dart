@@ -5,7 +5,8 @@ import 'package:construculator/libraries/auth/interfaces/auth_notifier_controlle
 import 'package:flutter_modular/flutter_modular.dart';
 import 'interfaces/auth_notifier.dart';
 
-class AuthNotifierImpl implements AuthNotifier, AuthNotifierController, Disposable {
+class AuthNotifierImpl
+    implements AuthNotifier, AuthNotifierController, Disposable {
   final _authStateController = StreamController<AuthState>.broadcast();
   final _profileStateController = StreamController<User?>.broadcast();
   @override
@@ -13,7 +14,6 @@ class AuthNotifierImpl implements AuthNotifier, AuthNotifierController, Disposab
 
   @override
   Stream<User?> get onUserProfileChanged => _profileStateController.stream;
-
 
   @override
   void emitAuthStateChanged(AuthState state) {
@@ -30,4 +30,4 @@ class AuthNotifierImpl implements AuthNotifier, AuthNotifierController, Disposab
   void emitUserProfileChanged(User? user) {
     _profileStateController.add(user);
   }
-} 
+}

@@ -400,14 +400,13 @@ class AuthManagerImpl implements AuthManager {
       return _handleException(e, 'Update user email');
     }
   }
+
   @override
   Future<AuthResult<List<ProfessionalRole>>> getProfessionalRoles() async {
     try {
       final rolesData = await _wrapper.selectAllProfessionalRoles();
       return AuthResult.success(
-        rolesData
-            .map((roleMap) => ProfessionalRole.fromJson(roleMap))
-            .toList(),
+        rolesData.map((roleMap) => ProfessionalRole.fromJson(roleMap)).toList(),
       );
     } catch (e) {
       return _handleException(e, 'Get professional roles');

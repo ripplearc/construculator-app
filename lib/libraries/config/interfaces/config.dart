@@ -3,14 +3,14 @@ import 'package:construculator/libraries/config/env_constants.dart';
 /// Interface that abstracts configuration operations.
 abstract class Config {
   /// Used to initialize any important services the app requires to run.
-  /// 
+  ///
   /// [env] is the environment to initialize the app for.
   Future<void> initialize(Environment env);
 
   /// Returns the name(eg. dev, qa, prod, etc) or alias(eg. fishfood, dogfood, etc) of the environment.
-  /// 
+  ///
   /// [env] is the environment to get the name or alias for.
-  /// 
+  ///
   /// [isAlias] is a flag to determine whether to return the name or alias of the environment.
   String getEnvironmentName(Environment env, {bool isAlias = false});
 
@@ -22,7 +22,6 @@ abstract class Config {
 
   /// Whether the current environment is production
   bool get isProd;
-
 
   /// Represents the current environment of the application
   Environment get environment;
@@ -36,5 +35,4 @@ abstract class Config {
 
   /// Indicates whether debug features are enabled or not.
   bool get debugFeaturesEnabled;
-
 }

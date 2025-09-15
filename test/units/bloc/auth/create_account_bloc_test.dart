@@ -527,16 +527,16 @@ void main() {
         ]);
         return bloc;
       },
-      act: (bloc) => bloc.add(const CreateAccountGetProfessionalRolesRequested()),
-      expect:
-          () => [
-            isA<CreateAccountGetProfessionalRolesLoading>(),
-            isA<CreateAccountGetProfessionalRolesSuccess>().having(
-              (s) => s.professionalRolesList.first.name,
-              'role',
-              'Engineer',
-            ),
-          ],
+      act: (bloc) =>
+          bloc.add(const CreateAccountGetProfessionalRolesRequested()),
+      expect: () => [
+        isA<CreateAccountGetProfessionalRolesLoading>(),
+        isA<CreateAccountGetProfessionalRolesSuccess>().having(
+          (s) => s.professionalRolesList.first.name,
+          'role',
+          'Engineer',
+        ),
+      ],
     );
 
     blocTest<CreateAccountBloc, CreateAccountState>(

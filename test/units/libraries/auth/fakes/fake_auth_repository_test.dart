@@ -146,7 +146,9 @@ void main() {
       await fakeRepository.createUserProfile(fakeUser);
       fakeRepository.setAuthResponse(succeed: true);
 
-      final result = await fakeRepository.getUserProfile(fakeUser.credentialId!);
+      final result = await fakeRepository.getUserProfile(
+        fakeUser.credentialId!,
+      );
 
       expect(result, isNotNull);
       expect(result!.email, fakeUser.email);

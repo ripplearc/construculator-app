@@ -8,21 +8,21 @@ import 'package:core_ui/core_ui.dart';
 /// [microsoft] - Microsoft auth
 /// [phone] - Phone auth
 /// [email] - Email auth
-enum AuthMethod {
-  google,
-  apple,
-  microsoft,
-  phone,
-  email,
-}
+enum AuthMethod { google, apple, microsoft, phone, email }
 
 /// A widget that displays the auth provider buttons
 class AuthProviderButtons extends StatelessWidget {
   /// Constructor for the AuthProviderButtons widget
-  const AuthProviderButtons({super.key, required this.onPressed, this.isEmailAuth = true});
+  const AuthProviderButtons({
+    super.key,
+    required this.onPressed,
+    this.isEmailAuth = true,
+  });
+
   /// The callback to be called when the button is pressed
   final Function(AuthMethod) onPressed;
-  /// Whether the auth is email auth or phone auth, if true, renders the phone auth button, 
+
+  /// Whether the auth is email auth or phone auth, if true, renders the phone auth button,
   /// otherwise renders the email auth button
   final bool isEmailAuth;
 
@@ -31,7 +31,7 @@ class AuthProviderButtons extends StatelessWidget {
     return Column(
       children: [
         CoreButton(
-          onPressed: (){
+          onPressed: () {
             onPressed(AuthMethod.google);
           },
           label: '${AppLocalizations.of(context)?.continueWithGoogle}',
@@ -73,37 +73,37 @@ class AuthProviderButtons extends StatelessWidget {
           variant: CoreButtonVariant.social,
         ),
         const SizedBox(height: CoreSpacing.space4),
-        if(isEmailAuth)
-        CoreButton(
-          onPressed: () {
-            onPressed(AuthMethod.phone);
-          },
-          label: '${AppLocalizations.of(context)?.continueWithPhone}',
-          centerAlign: true,
-          spaceOut: true,
-          icon: CoreIconWidget(
-            icon: CoreIcons.phone,
-            size: CoreSpacing.space6,
-            color: CoreTextColors.info,
-          ),
+        if (isEmailAuth)
+          CoreButton(
+            onPressed: () {
+              onPressed(AuthMethod.phone);
+            },
+            label: '${AppLocalizations.of(context)?.continueWithPhone}',
+            centerAlign: true,
+            spaceOut: true,
+            icon: CoreIconWidget(
+              icon: CoreIcons.phone,
+              size: CoreSpacing.space6,
+              color: CoreTextColors.info,
+            ),
 
-          variant: CoreButtonVariant.social,
-        )
+            variant: CoreButtonVariant.social,
+          )
         else
-        CoreButton(
-          onPressed: () {
-            onPressed(AuthMethod.email);
-          },
-          icon: CoreIconWidget(
-            icon: CoreIcons.email,
-            size: CoreSpacing.space6,
-            color: CoreTextColors.info,
+          CoreButton(
+            onPressed: () {
+              onPressed(AuthMethod.email);
+            },
+            icon: CoreIconWidget(
+              icon: CoreIcons.email,
+              size: CoreSpacing.space6,
+              color: CoreTextColors.info,
+            ),
+            label: '${AppLocalizations.of(context)?.continueWithEmail}',
+            centerAlign: true,
+            spaceOut: true,
+            variant: CoreButtonVariant.social,
           ),
-          label: '${AppLocalizations.of(context)?.continueWithEmail}',
-          centerAlign: true,
-          spaceOut: true,
-          variant: CoreButtonVariant.social,
-        )
       ],
     );
   }

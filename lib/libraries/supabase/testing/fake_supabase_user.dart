@@ -9,19 +9,19 @@ class FakeUser implements supabase.User {
   /// The supabase user id
   @override
   final String id;
-  
+
   /// The supabase user email
   @override
   final String? email;
-  
+
   /// The supabase user created at
   @override
   final String createdAt;
-  
+
   /// The supabase user app metadata
   @override
   final Map<String, dynamic> appMetadata;
-  
+
   /// The supabase user metadata
   @override
   final Map<String, dynamic>? userMetadata;
@@ -51,7 +51,7 @@ class FakeUser implements supabase.User {
       userMetadata: userMetadata ?? this.userMetadata,
     );
   }
-  
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

@@ -9,6 +9,6 @@ class NoAuthGuard extends RouteGuard {
 
   @override
   Future<bool> canActivate(String path, ModularRoute router) async {
-   return !Modular.get<AuthManager>().isAuthenticated();
+    return !Modular.get<AuthManager>().isAuthenticated();
   }
 }

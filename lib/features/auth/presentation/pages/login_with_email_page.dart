@@ -21,7 +21,8 @@ class LoginWithEmailPage extends StatefulWidget {
   State<LoginWithEmailPage> createState() => _LoginWithEmailPageState();
 }
 
-class _LoginWithEmailPageState extends State<LoginWithEmailPage> with LocalizationMixin{
+class _LoginWithEmailPageState extends State<LoginWithEmailPage>
+    with LocalizationMixin {
   final TextEditingController _emailController = TextEditingController();
   bool _canPressContinue = false;
   List<String>? _emailErrorList;

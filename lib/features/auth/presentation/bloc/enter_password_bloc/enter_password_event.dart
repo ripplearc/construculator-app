@@ -15,6 +15,7 @@ abstract class EnterPasswordEvent extends Equatable {
 class EnterPasswordSubmitted extends EnterPasswordEvent {
   /// The email of the user
   final String email;
+
   /// The password entered by the user
   final String password;
 

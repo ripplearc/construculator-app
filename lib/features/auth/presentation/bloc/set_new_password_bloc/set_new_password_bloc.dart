@@ -9,14 +9,17 @@ part 'set_new_password_state.dart';
 
 /// Bloc for setting a new password
 /// Validates the new password and confirms it with the password confirmation field
-class SetNewPasswordBloc extends Bloc<SetNewPasswordEvent, SetNewPasswordState> {
+class SetNewPasswordBloc
+    extends Bloc<SetNewPasswordEvent, SetNewPasswordState> {
   final SetNewPasswordUseCase _setNewPasswordUseCase;
 
   SetNewPasswordBloc({required SetNewPasswordUseCase setNewPasswordUseCase})
-      : _setNewPasswordUseCase = setNewPasswordUseCase,
-        super(SetNewPasswordInitial()) {
+    : _setNewPasswordUseCase = setNewPasswordUseCase,
+      super(SetNewPasswordInitial()) {
     on<SetNewPasswordSubmitted>(_onSubmitted);
-    on<SetNewPasswordPasswordValidationRequested>(_onPasswordValidationRequested);
+    on<SetNewPasswordPasswordValidationRequested>(
+      _onPasswordValidationRequested,
+    );
   }
 
   void _onPasswordValidationRequested(
@@ -69,9 +72,12 @@ class SetNewPasswordBloc extends Bloc<SetNewPasswordEvent, SetNewPasswordState> 
     }
   }
 
-  Future<void> _onSubmitted(SetNewPasswordSubmitted event, Emitter<SetNewPasswordState> emit) async {
+  Future<void> _onSubmitted(
+    SetNewPasswordSubmitted event,
+    Emitter<SetNewPasswordState> emit,
+  ) async {
     emit(SetNewPasswordLoading());
-    final result = await _setNewPasswordUseCase(event.email,event.password);
+    final result = await _setNewPasswordUseCase(event.email, event.password);
 
     result.fold(
       (failure) {
@@ -82,4 +88,4 @@ class SetNewPasswordBloc extends Bloc<SetNewPasswordEvent, SetNewPasswordState> 
       },
     );
   }
-} 
+}

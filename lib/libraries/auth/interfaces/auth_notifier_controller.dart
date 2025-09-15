@@ -9,4 +9,4 @@ abstract class AuthNotifierController extends AuthNotifier {
 
   /// Emits a user profile changed event.
   void emitUserProfileChanged(User? user);
-} 
+}

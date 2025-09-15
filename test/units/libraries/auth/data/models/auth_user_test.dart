@@ -7,15 +7,15 @@ import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 
 void main() {
   late Clock clock;
-   setUp((){
+  setUp(() {
     Modular.init(_TestAppModule());
     clock = Modular.get<Clock>();
   });
-  tearDown((){
+  tearDown(() {
     Modular.destroy();
   });
   group('User Model', () {
-     group('empty factory', () {
+    group('empty factory', () {
       test('should create empty User with default values', () {
         final user = User.empty();
         expect(user.id, '');
@@ -194,9 +194,8 @@ void main() {
     });
   });
 }
+
 class _TestAppModule extends Module {
   @override
-  List<Module> get imports => [
-    ClockTestModule(),
-  ];
+  List<Module> get imports => [ClockTestModule()];
 }

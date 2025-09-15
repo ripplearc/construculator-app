@@ -32,19 +32,13 @@ void main() {
 
       test('should execute left function in fold', () {
         const left = Left<String, int>('error');
-        final result = left.fold(
-          (l) => 'Left: $l',
-          (r) => 'Right: $r',
-        );
+        final result = left.fold((l) => 'Left: $l', (r) => 'Right: $r');
         expect(result, equals('Left: error'));
       });
 
       test('should handle different types in fold', () {
         const left = Left<int, String>(42);
-        final result = left.fold(
-          (l) => l * 2,
-          (r) => r.length,
-        );
+        final result = left.fold((l) => l * 2, (r) => r.length);
         expect(result, equals(84));
       });
 
@@ -83,19 +77,13 @@ void main() {
 
       test('should execute right function in fold', () {
         const right = Right<String, int>(42);
-        final result = right.fold(
-          (l) => 'Left: $l',
-          (r) => 'Right: $r',
-        );
+        final result = right.fold((l) => 'Left: $l', (r) => 'Right: $r');
         expect(result, equals('Right: 42'));
       });
 
       test('should handle different types in fold', () {
         const right = Right<String, int>(42);
-        final result = right.fold(
-          (l) => l.length,
-          (r) => r * 2,
-        );
+        final result = right.fold((l) => l.length, (r) => r * 2);
         expect(result, equals(84)); // 42 * 2 = 84
       });
 
@@ -132,7 +120,7 @@ void main() {
     group('Either Usage Pattern Tests', () {
       test('should handle success case pattern', () {
         Either<String, int> result = const Right<String, int>(42);
-        
+
         if (result.isRight()) {
           final value = result.getRightOrNull();
           expect(value, equals(42));
@@ -143,7 +131,7 @@ void main() {
 
       test('should handle failure case pattern', () {
         Either<String, int> result = const Left<String, int>('error');
-        
+
         if (result.isLeft()) {
           final error = result.getLeftOrNull();
           expect(error, equals('error'));
@@ -154,23 +142,23 @@ void main() {
 
       test('should handle fold pattern for success', () {
         Either<String, int> result = const Right<String, int>(42);
-        
+
         final message = result.fold(
           (error) => 'Error: $error',
           (value) => 'Success: $value',
         );
-        
+
         expect(message, equals('Success: 42'));
       });
 
       test('should handle fold pattern for failure', () {
         Either<String, int> result = const Left<String, int>('database_error');
-        
+
         final message = result.fold(
           (error) => 'Error: $error',
           (value) => 'Success: $value',
         );
-        
+
         expect(message, equals('Error: database_error'));
       });
     });
@@ -201,4 +189,4 @@ void main() {
       });
     });
   });
-} 
+}

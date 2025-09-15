@@ -20,7 +20,8 @@ class ForgotPasswordPage extends StatefulWidget {
   State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
 
-class _ForgotPasswordPageState extends State<ForgotPasswordPage> with LocalizationMixin{
+class _ForgotPasswordPageState extends State<ForgotPasswordPage>
+    with LocalizationMixin {
   final TextEditingController _emailController = TextEditingController();
   final focusNode = FocusNode();
   List<String>? _emailErrorList;
@@ -76,7 +77,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> with Localizati
   @override
   void initState() {
     super.initState();
-    
+
     _emailController.addListener(() {
       BlocProvider.of<ForgotPasswordBloc>(context).add(
         ForgotPasswordFormFieldChanged(

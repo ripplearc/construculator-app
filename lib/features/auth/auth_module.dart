@@ -46,6 +46,7 @@ class AuthModule extends Module {
   @override
   void binds(Injector i) => _registerDependencies(i);
 }
+
 void _registerRoutes(RouteManager r) {
   r.child(
     registerWithEmailRoute,
@@ -131,7 +132,9 @@ void _registerDependencies(Injector i) {
   i.addLazySingleton<CheckEmailAvailabilityUseCase>(
     () => CheckEmailAvailabilityUseCase(i()),
   );
-  i.addLazySingleton<CreateAccountUseCase>(() => CreateAccountUseCase(i(), i()));
+  i.addLazySingleton<CreateAccountUseCase>(
+    () => CreateAccountUseCase(i(), i()),
+  );
   i.addLazySingleton<SendOtpUseCase>(() => SendOtpUseCase(i()));
   i.addLazySingleton<VerifyOtpUseCase>(() => VerifyOtpUseCase(i()));
   i.addLazySingleton<LoginUseCase>(() => LoginUseCase(i()));

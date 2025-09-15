@@ -2,9 +2,7 @@
 part of 'forgot_password_bloc.dart';
 
 /// Enum for form fields that can be validated
-enum ForgotPasswordFormField {
-  email,
-}
+enum ForgotPasswordFormField { email }
 
 /// Abstract class for forgot password states
 abstract class ForgotPasswordState extends Equatable {
@@ -54,8 +52,10 @@ class ForgotPasswordEditEmailSuccess extends ForgotPasswordState {
 class ForgotPasswordFormFieldValidated extends ForgotPasswordState {
   /// The field that was validated
   final ForgotPasswordFormField field;
+
   /// Whether the field is valid
   final bool isValid;
+
   /// The validation result, if any
   final AuthErrorType? validator;
 

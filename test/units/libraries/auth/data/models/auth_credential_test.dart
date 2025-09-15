@@ -6,11 +6,11 @@ import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 
 void main() {
   late Clock clock;
-  setUp((){
+  setUp(() {
     Modular.init(_TestAppModule());
     clock = Modular.get<Clock>();
   });
-  tearDown((){
+  tearDown(() {
     Modular.destroy();
   });
   group('UserCredential Model', () {
@@ -25,7 +25,6 @@ void main() {
       });
 
       test('should create empty UserCredential with recent timestamp', () {
-
         final beforeCreation = clock.now();
 
         final credential = UserCredential.empty();
@@ -52,18 +51,9 @@ void main() {
           final credential1 = UserCredential.empty();
           final credential2 = UserCredential.empty();
 
-          expect(
-            credential1.id,
-            credential2.id,
-          );
-          expect(
-            credential1.email,
-            credential2.email,
-          ); 
-          expect(
-            credential1.metadata,
-            credential2.metadata,
-          );
+          expect(credential1.id, credential2.id);
+          expect(credential1.email, credential2.email);
+          expect(credential1.metadata, credential2.metadata);
           expect(
             credential1.createdAt.isBefore(credential2.createdAt) ||
                 credential1.createdAt.isAtSameMomentAs(credential2.createdAt),
@@ -93,10 +83,7 @@ void main() {
   });
 }
 
-
 class _TestAppModule extends Module {
   @override
-  List<Module> get imports => [
-    ClockTestModule(),
-  ];
+  List<Module> get imports => [ClockTestModule()];
 }

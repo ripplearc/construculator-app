@@ -38,11 +38,12 @@ void main() {
     testWidgets('renders forgot password header correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
-      
+
       await pumpForgotPasswordHeader(
         tester: tester,
         title: 'Forgot Password?',
-        description: 'An OTP will be sent to your registered email ID to reset your password',
+        description:
+            'An OTP will be sent to your registered email ID to reset your password',
       );
 
       await expectLater(
@@ -53,4 +54,4 @@ void main() {
       );
     });
   });
-} 
+}

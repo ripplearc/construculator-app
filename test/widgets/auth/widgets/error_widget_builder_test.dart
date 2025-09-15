@@ -26,42 +26,46 @@ void main() {
   }
 
   group('buildErrorWidget Tests', () {
-    testWidgets('renders errorText correctly with proper style', (tester) async {
-      await tester.pumpWidget(pumpErrorBuilder(
-        error: errorText,
-        link: null,
-        onPressed: () {},
-      ));
+    testWidgets('renders errorText correctly with proper style', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        pumpErrorBuilder(error: errorText, link: null, onPressed: () {}),
+      );
 
       final errorFinder = find.text(errorText);
       expect(errorFinder, findsOneWidget);
 
       final textWidget = tester.widget<Text>(errorFinder);
       expect(textWidget.style!.color, CoreTextColors.error);
-      expect(textWidget.style!.fontWeight, CoreTypography.bodySmallRegular().fontWeight);
+      expect(
+        textWidget.style!.fontWeight,
+        CoreTypography.bodySmallRegular().fontWeight,
+      );
     });
 
-    testWidgets('renders linkText when provided with correct style', (tester) async {
-      await tester.pumpWidget(pumpErrorBuilder(
-        error: errorText,
-        link: linkText,
-        onPressed: () {},
-      ));
+    testWidgets('renders linkText when provided with correct style', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        pumpErrorBuilder(error: errorText, link: linkText, onPressed: () {}),
+      );
 
       final linkFinder = find.text(linkText);
       expect(linkFinder, findsOneWidget);
 
       final textWidget = tester.widget<Text>(linkFinder);
       expect(textWidget.style!.color, CoreTextColors.link);
-      expect(textWidget.style!.fontWeight, CoreTypography.bodySmallSemiBold().fontWeight);
+      expect(
+        textWidget.style!.fontWeight,
+        CoreTypography.bodySmallSemiBold().fontWeight,
+      );
     });
 
     testWidgets('does not render linkText when null', (tester) async {
-      await tester.pumpWidget(pumpErrorBuilder(
-        error: errorText,
-        link: null,
-        onPressed: () {},
-      ));
+      await tester.pumpWidget(
+        pumpErrorBuilder(error: errorText, link: null, onPressed: () {}),
+      );
 
       expect(find.text(linkText), findsNothing);
     });
@@ -69,11 +73,13 @@ void main() {
     testWidgets('tapping linkText triggers onPressed callback', (tester) async {
       bool tapped = false;
 
-      await tester.pumpWidget(pumpErrorBuilder(
-        error: errorText,
-        link: linkText,
-        onPressed: () => tapped = true,
-      ));
+      await tester.pumpWidget(
+        pumpErrorBuilder(
+          error: errorText,
+          link: linkText,
+          onPressed: () => tapped = true,
+        ),
+      );
 
       final tapTarget = find.byKey(const Key(linkText));
       expect(tapTarget, findsOneWidget);
@@ -84,16 +90,17 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets('builds inside a Row with Flexible and GestureDetector correctly', (tester) async {
-      await tester.pumpWidget(pumpErrorBuilder(
-        error: errorText,
-        link: linkText,
-        onPressed: () {},
-      ));
+    testWidgets(
+      'builds inside a Row with Flexible and GestureDetector correctly',
+      (tester) async {
+        await tester.pumpWidget(
+          pumpErrorBuilder(error: errorText, link: linkText, onPressed: () {}),
+        );
 
-      expect(find.byType(Row), findsOneWidget);
-      expect(find.byType(Flexible), findsOneWidget);
-      expect(find.byType(GestureDetector), findsOneWidget);
-    });
+        expect(find.byType(Row), findsOneWidget);
+        expect(find.byType(Flexible), findsOneWidget);
+        expect(find.byType(GestureDetector), findsOneWidget);
+      },
+    );
   });
 }

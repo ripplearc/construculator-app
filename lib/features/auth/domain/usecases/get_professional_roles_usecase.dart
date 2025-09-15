@@ -11,7 +11,7 @@ class GetProfessionalRolesUseCase {
   GetProfessionalRolesUseCase(this.authManager);
 
   /// Retrieves a list of professional roles using the auth repository.
-  /// 
+  ///
   /// Returns a [Future] that emits an [Either] containing a [Failure] or a list of [ProfessionalRole].
   Future<Either<Failure, List<ProfessionalRole>>> call() async {
     final rolesResult = await authManager.getProfessionalRoles();
@@ -28,4 +28,4 @@ class GetProfessionalRolesUseCase {
     }
     return Right(roles);
   }
-} 
+}

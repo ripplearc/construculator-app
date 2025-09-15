@@ -17,7 +17,8 @@ class SetNewPasswordPage extends StatefulWidget {
   State<SetNewPasswordPage> createState() => _SetNewPasswordPageState();
 }
 
-class _SetNewPasswordPageState extends State<SetNewPasswordPage>  with LocalizationMixin{
+class _SetNewPasswordPageState extends State<SetNewPasswordPage>
+    with LocalizationMixin {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 

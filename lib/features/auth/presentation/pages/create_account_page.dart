@@ -26,7 +26,8 @@ class CreateAccountPage extends StatefulWidget {
   State<CreateAccountPage> createState() => _CreateAccountPageState();
 }
 
-class _CreateAccountPageState extends State<CreateAccountPage> with LocalizationMixin{
+class _CreateAccountPageState extends State<CreateAccountPage>
+    with LocalizationMixin {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _mobileNumberController = TextEditingController();

@@ -12,9 +12,12 @@ class LoginUseCase {
 
   /// Logs in a user using the auth manager.
   /// Accepts an email and password as parameters.
-  /// 
+  ///
   /// Returns a [Future] that emits an [Either] containing a [Failure] or an [UserCredential].
-  Future<Either<Failure, UserCredential>> call(String email, String password) async {
+  Future<Either<Failure, UserCredential>> call(
+    String email,
+    String password,
+  ) async {
     final result = await authManager.loginWithEmail(email, password);
     if (!result.isSuccess) {
       final errorType = result.errorType;

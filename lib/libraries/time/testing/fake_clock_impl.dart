@@ -6,7 +6,7 @@ class FakeClockImpl implements Clock {
 
   /// Constructor for fake clock implementation, initializes clock to 1st Jan 2000.
   FakeClockImpl([DateTime? initial])
-      : _current = initial ?? DateTime(2000, 1, 1);
+    : _current = initial ?? DateTime(2000, 1, 1);
 
   @override
   DateTime now() => _current;

@@ -44,10 +44,11 @@ void main() {
     testWidgets('renders terms and conditions correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
-      
+
       await pumpTermsAndConditions(
         tester: tester,
-        termsAndConditionsText: 'By selecting agree and continue. I agree to Construculator ',
+        termsAndConditionsText:
+            'By selecting agree and continue. I agree to Construculator ',
         termsAndServicesLink: 'terms & services',
         privacyPolicyLink: 'privacy policy',
         andAcknowledge: 'and acknowledge ',
@@ -61,4 +62,4 @@ void main() {
       );
     });
   });
-} 
+}

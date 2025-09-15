@@ -7,7 +7,7 @@ Future<void> loadAppFonts() async {
   TestWidgetsFlutterBinding.ensureInitialized();
   await _loadMaterialIcons();
 
-   await _loadFontFromFile(
+  await _loadFontFromFile(
     'Roboto',
     'test/screenshots/fonts/Roboto-Regular.ttf',
   );
@@ -26,6 +26,7 @@ Future<void> _loadMaterialIcons() async {
     await fallbackLoader.load();
   }
 }
+
 Future<void> _loadFontFromFile(String family, String filePath) async {
   try {
     final bytes = await File(filePath).readAsBytes();

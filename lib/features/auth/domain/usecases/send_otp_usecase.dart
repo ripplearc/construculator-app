@@ -12,9 +12,12 @@ class SendOtpUseCase {
 
   /// Sends an OTP to the specified address using the auth manager.
   /// Accepts an address and an [OtpReceiver] as parameters.
-  /// 
+  ///
   /// Returns a [Future] that emits an [Either] containing a [Failure] or an [void].
-  Future<Either<Failure, void>> call(String address, OtpReceiver receiver) async {
+  Future<Either<Failure, void>> call(
+    String address,
+    OtpReceiver receiver,
+  ) async {
     final result = await authManager.sendOtp(address, receiver);
     if (!result.isSuccess) {
       final errorType = result.errorType;
@@ -25,4 +28,4 @@ class SendOtpUseCase {
     }
     return Right(null);
   }
-} 
+}
