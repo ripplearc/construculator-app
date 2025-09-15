@@ -24,6 +24,7 @@ void main() {
     CoreToast.disableTimers();
     Modular.init(AuthTestModule());
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+    fakeSupabase.reset(); // Reset fake state between tests
     router = Modular.get<AppRouter>() as FakeAppRouter;
   });
 
@@ -126,7 +127,6 @@ void main() {
       expect(tester.widget<CoreButton>(sendCodeButton).isDisabled, isFalse);
       await tester.tap(sendCodeButton);
       await tester.pumpAndSettle();
-      // OTP bottom sheet should appear
       expect(
         find.textContaining(
           AppLocalizations.of(buildContext!)!.authenticationCodeTitle,
@@ -247,5 +247,113 @@ void main() {
         findsWidgets,
       );
     });
+
+    testWidgets('resending OTP shows success toast', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(child: const ForgotPasswordPage()),
+      );
+      await tester.enterText(find.byType(CoreTextField), 'reset@example.com');
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.widgetWithText(
+          CoreButton,
+          AppLocalizations.of(buildContext!)!.continueButton,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final resendButton = find.text(
+        AppLocalizations.of(buildContext!)!.resendButton,
+      );
+      expect(resendButton, findsOneWidget);
+      await tester.tap(resendButton);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining(
+          AppLocalizations.of(buildContext!)!.otpResendSuccess,
+        ),
+        findsWidgets,
+      );
+    });
+
+    testWidgets('resending OTP failure shows error toast', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(child: const ForgotPasswordPage()),
+      );
+      await tester.enterText(find.byType(CoreTextField), 'reset@example.com');
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.widgetWithText(
+          CoreButton,
+          AppLocalizations.of(buildContext!)!.continueButton,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      fakeSupabase.shouldThrowOnOtp = true;
+      fakeSupabase.authErrorCode = SupabaseAuthErrorCode.rateLimited;
+
+      final resendButton = find.text(
+        AppLocalizations.of(buildContext!)!.resendButton,
+      );
+      expect(resendButton, findsOneWidget);
+      await tester.tap(resendButton);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('toast_close_button')), findsOneWidget);
+      expect(
+        find.textContaining(
+          AppLocalizations.of(buildContext!)!.tooManyAttempts,
+        ),
+        findsWidgets,
+      );
+    });
+
+    testWidgets(
+      'tapping edit email button closes sheet and focuses email field',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(child: const ForgotPasswordPage()),
+        );
+        await tester.enterText(find.byType(CoreTextField), 'reset@example.com');
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.widgetWithText(
+            CoreButton,
+            AppLocalizations.of(buildContext!)!.continueButton,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining(
+            AppLocalizations.of(buildContext!)!.authenticationCodeTitle,
+          ),
+          findsOneWidget,
+        );
+
+        final editButton = find.byKey(const Key('edit_contact_button'));
+        expect(editButton, findsOneWidget);
+        await tester.tap(editButton);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining(
+            AppLocalizations.of(buildContext!)!.authenticationCodeTitle,
+          ),
+          findsNothing,
+        );
+
+        expect(find.byType(CoreTextField), findsOneWidget);
+      },
+    );
   });
 }

@@ -27,6 +27,7 @@ void main() {
 
     test('should update environment and debug features in prod', () {
       fakeConfig.setEnvironment(Environment.prod);
+
       expect(fakeConfig.environment, Environment.prod);
       expect(fakeConfig.isProd, isTrue);
       expect(fakeConfig.debugFeaturesEnabled, isFalse);
@@ -34,12 +35,14 @@ void main() {
 
     test('should update environment and debug features in qa', () {
       fakeConfig.setEnvironment(Environment.qa);
+
       expect(fakeConfig.environment, Environment.qa);
       expect(fakeConfig.isQa, isTrue);
       expect(fakeConfig.debugFeaturesEnabled, isTrue);
     });
     test('should update environment and debug features in dev', () {
       fakeConfig.setEnvironment(Environment.dev);
+
       expect(fakeConfig.environment, Environment.dev);
       expect(fakeConfig.isDev, isTrue);
       expect(fakeConfig.debugFeaturesEnabled, isTrue);
@@ -52,18 +55,23 @@ void main() {
     });
     test('setAppName should update app name', () {
       const testName = 'Test App';
+
       fakeConfig.setAppName(testName);
+
       expect(fakeConfig.appName, testName);
     });
 
     test('setBaseAppName should update base app name', () {
       const testName = 'Test Base App';
+
       fakeConfig.setBaseAppName(testName);
+
       expect(fakeConfig.baseAppName, testName);
     });
 
     test('setDebugFeaturesEnabled should update debug features enabled', () {
       fakeConfig.setDebugFeaturesEnabled(false);
+
       expect(fakeConfig.debugFeaturesEnabled, false);
     });
 

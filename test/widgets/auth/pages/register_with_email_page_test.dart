@@ -6,6 +6,7 @@ import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +15,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
+import 'package:construculator/features/auth/presentation/widgets/otp_quick_sheet/otp_verification_sheet.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -270,8 +273,6 @@ void main() {
     testWidgets('disables continue button when email is submited', (
       WidgetTester tester,
     ) async {
-      fakeSupabase.shouldDelayOperations = true;
-      fakeSupabase.completer = Completer<void>();
       fakeSupabase.clearTableData('users');
 
       await tester.pumpWidget(
@@ -282,10 +283,17 @@ void main() {
       await tester.enterText(find.byType(CoreTextField), 'newuser@example.com');
       await tester.pumpAndSettle();
 
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+
       final continueButton = find.widgetWithText(
         CoreButton,
         AppLocalizations.of(buildContext!)!.continueButton,
       );
+
+      fakeSupabase.shouldDelayOperations = true;
+      fakeSupabase.completer = Completer<void>();
+
       await tester.tap(continueButton);
       await tester.pump();
       final loadingButton = find.widgetWithText(
@@ -428,6 +436,277 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(router.navigationHistory.first.route, fullLoginRoute);
+    });
+
+    testWidgets('handles AuthFailure with rateLimited error type correctly', (
+      WidgetTester tester,
+    ) async {
+      fakeSupabase.shouldThrowOnOtp = true;
+      fakeSupabase.otpErrorMessage = 'Rate limited';
+      fakeSupabase.authErrorCode = SupabaseAuthErrorCode.rateLimited;
+
+      await tester.pumpWidget(
+        makeTestableWidget(child: const RegisterWithEmailPage(email: '')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(CoreTextField), 'error@example.com');
+      await tester.pumpAndSettle();
+
+      final continueButton = find.widgetWithText(
+        CoreButton,
+        AppLocalizations.of(buildContext!)!.continueButton,
+      );
+      await tester.tap(continueButton);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RegisterWithEmailPage), findsOneWidget);
+    });
+
+    testWidgets('handles generic failure correctly', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(child: const RegisterWithEmailPage(email: '')),
+      );
+      await tester.pumpAndSettle();
+
+      final bloc = Modular.get<RegisterWithEmailBloc>();
+      bloc.emit(
+        RegisterWithEmailEmailCheckFailure(failure: UnexpectedFailure()),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RegisterWithEmailPage), findsOneWidget);
+    });
+
+    testWidgets(
+      'shows checking availability button text during email check loading',
+      (WidgetTester tester) async {
+        fakeSupabase.shouldDelayOperations = true;
+        fakeSupabase.completer = Completer<void>();
+        fakeSupabase.clearTableData('users');
+
+        await tester.pumpWidget(
+          makeTestableWidget(child: const RegisterWithEmailPage(email: '')),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.byType(CoreTextField),
+          'newuser@example.com',
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final buttonFinder = find.widgetWithText(
+          CoreButton,
+          AppLocalizations.of(buildContext!)!.checkingAvailabilityButton,
+        );
+        expect(buttonFinder, findsOneWidget);
+
+        fakeSupabase.completer!.complete();
+      },
+    );
+
+    testWidgets('handles OtpVerificationFailure state correctly', (
+      WidgetTester tester,
+    ) async {
+      fakeSupabase.clearTableData('users');
+
+      fakeSupabase.shouldThrowOnVerifyOtp = true;
+      fakeSupabase.verifyOtpErrorMessage = 'Invalid OTP';
+
+      await tester.pumpWidget(
+        makeTestableWidget(child: const RegisterWithEmailPage(email: '')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(CoreTextField), 'newuser@example.com');
+      await tester.pumpAndSettle();
+
+      final continueButton = find.widgetWithText(
+        CoreButton,
+        AppLocalizations.of(buildContext!)!.continueButton,
+      );
+      await tester.tap(continueButton);
+      await tester.pumpAndSettle();
+
+      final otpField = find.byKey(Key('pin_input'));
+      await tester.enterText(otpField, '123456');
+      await tester.pumpAndSettle();
+
+      final verifyButton = find.widgetWithText(
+        CoreButton,
+        AppLocalizations.of(buildContext!)!.verifyOtpButton,
+      );
+      await tester.tap(verifyButton);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RegisterWithEmailPage), findsOneWidget);
+    });
+
+    testWidgets('handles OtpVerificationOtpResendSuccess state correctly', (
+      WidgetTester tester,
+    ) async {
+      fakeSupabase.clearTableData('users');
+
+      await tester.pumpWidget(
+        makeTestableWidget(child: const RegisterWithEmailPage(email: '')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(CoreTextField), 'newuser@example.com');
+      await tester.pumpAndSettle();
+
+      final continueButton = find.widgetWithText(
+        CoreButton,
+        AppLocalizations.of(buildContext!)!.continueButton,
+      );
+      await tester.tap(continueButton);
+      await tester.pumpAndSettle();
+
+      final otpBloc = Modular.get<OtpVerificationBloc>();
+      otpBloc.emit(OtpVerificationOtpResendSuccess());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RegisterWithEmailPage), findsOneWidget);
+    });
+
+    testWidgets('handles OtpVerificationResendFailure state correctly', (
+      WidgetTester tester,
+    ) async {
+      fakeSupabase.clearTableData('users');
+
+      await tester.pumpWidget(
+        makeTestableWidget(child: const RegisterWithEmailPage(email: '')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(CoreTextField), 'newuser@example.com');
+      await tester.pumpAndSettle();
+
+      final continueButton = find.widgetWithText(
+        CoreButton,
+        AppLocalizations.of(buildContext!)!.continueButton,
+      );
+      await tester.tap(continueButton);
+      await tester.pumpAndSettle();
+
+      fakeSupabase.shouldThrowOnOtp = true;
+      fakeSupabase.otpErrorMessage = 'Network error';
+
+      final resendButton = find.textContaining('Resend');
+      expect(resendButton, findsOneWidget);
+      await tester.tap(resendButton);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RegisterWithEmailPage), findsOneWidget);
+    });
+
+    testWidgets('triggers OTP resend when resend button is tapped', (
+      WidgetTester tester,
+    ) async {
+      fakeSupabase.clearTableData('users');
+
+      await tester.pumpWidget(
+        makeTestableWidget(child: const RegisterWithEmailPage(email: '')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(CoreTextField), 'newuser@example.com');
+      await tester.pumpAndSettle();
+
+      final continueButton = find.widgetWithText(
+        CoreButton,
+        AppLocalizations.of(buildContext!)!.continueButton,
+      );
+      await tester.tap(continueButton);
+      await tester.pumpAndSettle();
+
+      final resendButton = find.textContaining('Resend');
+      expect(resendButton, findsOneWidget);
+      await tester.tap(resendButton);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RegisterWithEmailPage), findsOneWidget);
+    });
+
+    testWidgets('triggers email edit when edit button is tapped in OTP sheet', (
+      WidgetTester tester,
+    ) async {
+      fakeSupabase.clearTableData('users');
+
+      await tester.pumpWidget(
+        makeTestableWidget(child: const RegisterWithEmailPage(email: '')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(CoreTextField), 'newuser@example.com');
+      await tester.pumpAndSettle();
+
+      final continueButton = find.widgetWithText(
+        CoreButton,
+        AppLocalizations.of(buildContext!)!.continueButton,
+      );
+      await tester.tap(continueButton);
+      await tester.pumpAndSettle();
+
+      final editButton = find.byKey(Key('edit_contact_button'));
+      await tester.tap(editButton);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(OtpVerificationQuickSheet), findsNothing);
+    });
+
+    testWidgets('handles RegisterWithEmailOtpSendingFailure state correctly', (
+      WidgetTester tester,
+    ) async {
+      fakeSupabase.shouldThrowOnOtp = true;
+      fakeSupabase.otpErrorMessage = 'Network error';
+
+      await tester.pumpWidget(
+        makeTestableWidget(child: const RegisterWithEmailPage(email: '')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(CoreTextField), 'error@example.com');
+      await tester.pumpAndSettle();
+
+      final continueButton = find.widgetWithText(
+        CoreButton,
+        AppLocalizations.of(buildContext!)!.continueButton,
+      );
+      await tester.tap(continueButton);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RegisterWithEmailPage), findsOneWidget);
+    });
+
+    testWidgets('handles RegisterWithEmailEditUserEmail state correctly', (
+      WidgetTester tester,
+    ) async {
+      fakeSupabase.clearTableData('users');
+
+      await tester.pumpWidget(
+        makeTestableWidget(child: const RegisterWithEmailPage(email: '')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(CoreTextField), 'newuser@example.com');
+      await tester.pumpAndSettle();
+
+      final continueButton = find.widgetWithText(
+        CoreButton,
+        AppLocalizations.of(buildContext!)!.continueButton,
+      );
+      await tester.tap(continueButton);
+      await tester.pumpAndSettle();
+
+      final registerBloc = Modular.get<RegisterWithEmailBloc>();
+      registerBloc.emit(RegisterWithEmailEditUserEmail());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RegisterWithEmailPage), findsOneWidget);
     });
   });
 }
