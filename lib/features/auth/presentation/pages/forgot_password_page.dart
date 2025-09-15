@@ -2,7 +2,6 @@ import 'package:construculator/features/auth/presentation/bloc/otp_verification_
 import 'package:construculator/features/auth/presentation/widgets/auth_header.dart';
 import 'package:construculator/features/auth/presentation/widgets/otp_quick_sheet/otp_verification_sheet.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
-import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -164,18 +163,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
     );
   }
 
-  Widget _buildOtpVerificationSheet(BuildContext context, String email) {
-    String otp = '';
-    bool otpInvalid = true;
+  Widget _buildOtpVerificationSheet(BuildContext callingContext, String email) {
     return BlocProvider.value(
-      value: BlocProvider.of<OtpVerificationBloc>(context),
+      value: BlocProvider.of<OtpVerificationBloc>(callingContext),
       child: BlocConsumer<OtpVerificationBloc, OtpVerificationState>(
         listener: (context, state) {
-          if (state is OtpVerificationOtpChangeSuccess) {
-            otp = state.otp;
-            final otpValidator = AuthValidation.validateOtp(otp);
-            otpInvalid = otpValidator != null;
-          }
           if (state is OtpVerificationSuccess) {
             _router.navigate(fullSetNewPasswordRoute, arguments: email);
           }
@@ -200,29 +192,34 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
             isResending: state is OtpVerificationResendLoading,
             isVerifying: state is OtpVerificationLoading,
             verifyButtonDisabled:
-                otpInvalid ||
+                state is OtpVerificationInitial ||
+                (state is OtpVerificationOtpChangeSuccess &&
+                    state.otpInvalid) ||
                 state is OtpVerificationLoading ||
                 state is OtpVerificationResendLoading,
             onResend: () {
               BlocProvider.of<OtpVerificationBloc>(
-                context,
+                callingContext,
               ).add(OtpVerificationResendRequested(contact: email));
             },
             onEdit: () {
               Navigator.pop(context);
               BlocProvider.of<ForgotPasswordBloc>(
-                context,
+                callingContext,
               ).add(ForgotPasswordEditEmailRequested());
               focusNode.requestFocus();
             },
             onVerify: () {
+              final otp = state is OtpVerificationOtpChangeSuccess
+                  ? state.otp
+                  : '';
               BlocProvider.of<OtpVerificationBloc>(
-                context,
+                callingContext,
               ).add(OtpVerificationSubmitted(contact: email, otp: otp));
             },
             onChanged: (otp) {
               BlocProvider.of<OtpVerificationBloc>(
-                context,
+                callingContext,
               ).add(OtpVerificationOtpChanged(otp: otp));
             },
           );
@@ -241,7 +238,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
       isDismissible: false,
       enableDrag: false,
       backgroundColor: Colors.transparent,
-      builder: (context) => _buildOtpVerificationSheet(context, email),
+      builder: (context) => _buildOtpVerificationSheet(callingContext, email),
     );
   }
 }
