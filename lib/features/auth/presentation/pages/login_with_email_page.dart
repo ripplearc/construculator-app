@@ -56,24 +56,20 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
   }
 
   void _handleFieldValidation(LoginWithEmailFormFieldValidated state) {
+    List<String>? errorList;
+    if (!state.isValid && state.validator != null) {
+      final errorMessage = state.validator?.localizedMessage(context);
+      errorList = errorMessage != null ? [errorMessage] : null;
+    }
     setState(() {
-      List<String>? errorList;
-
-      if (!state.isValid) {
-        if (state.validator != null) {
-          final errorMessage = state.validator?.localizedMessage(context);
-          errorList = errorMessage != null ? [errorMessage] : null;
-        }
-      } else {
-        errorList = null;
-      }
       switch (state.field) {
         case LoginWithEmailFormField.email:
           _emailErrorList = errorList;
+          _emailErrorWidgetList = null;
           break;
       }
-      _validateForm();
     });
+    _validateForm();
   }
 
   void _validateForm() {
@@ -91,8 +87,6 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
 
   @override
   void initState() {
-    _emailController.text = widget.email;
-
     _emailController.addListener(() {
       BlocProvider.of<LoginWithEmailBloc>(context).add(
         LoginWithEmailFormFieldChanged(
@@ -101,7 +95,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
         ),
       );
     });
-
+    _emailController.text = widget.email;
     super.initState();
   }
 
