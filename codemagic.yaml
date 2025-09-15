@@ -71,7 +71,7 @@ workflows:
           HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
           mkdir -p test-results
           fvm flutter test $CHANGED_TESTS --coverage --machine > test-results/flutter.json
-          lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info
+          lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info
           # Compute coverage
           if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
             echo "❌ Coverage file coverage/lcov.info is missing or empty."
@@ -202,8 +202,8 @@ workflows:
           fi
           sudo apt-get install -y lcov
           mkdir -p test-results
-          fvm flutter test test/units --coverage --machine > test-results/flutter.json
-          lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info
+          fvm flutter test test/units test/widgets --coverage --machine > test-results/flutter.json
+          lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info
           # Compute coverage
           if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
             echo "❌ Coverage file coverage/lcov.info is missing or empty."
@@ -362,8 +362,8 @@ workflows:
           fi
           HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
           mkdir -p test-results
-          fvm flutter test test/units --coverage --machine > test-results/flutter.json
-          lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info
+          fvm flutter test test/units test/widgets --coverage --machine > test-results/flutter.json
+          lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info
           # Compute coverage
           if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
             echo "❌ Coverage file coverage/lcov.info is missing or empty."
