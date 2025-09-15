@@ -92,17 +92,14 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
     });
   }
 
-  Widget _buildOtpVerificationBottomSheet(BuildContext context, String email) {
-    String otp = '';
-    bool otpInvalid = true;
+  Widget _buildOtpVerificationBottomSheet(
+    BuildContext callingContext,
+    String email,
+  ) {
     return BlocProvider.value(
-      value: BlocProvider.of<OtpVerificationBloc>(context),
+      value: BlocProvider.of<OtpVerificationBloc>(callingContext),
       child: BlocConsumer<OtpVerificationBloc, OtpVerificationState>(
         listener: (context, state) {
-          if (state is OtpVerificationOtpChangeSuccess) {
-            otp = state.otp;
-            otpInvalid = state.otpInvalid;
-          }
           if (state is OtpVerificationSuccess) {
             _router.navigate(fullCreateAccountRoute, arguments: email);
           }
@@ -127,27 +124,32 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
             isResending: state is OtpVerificationResendLoading,
             isVerifying: state is OtpVerificationLoading,
             verifyButtonDisabled:
-                otpInvalid ||
+                state is OtpVerificationInitial ||
+                (state is OtpVerificationOtpChangeSuccess &&
+                    state.otpInvalid) ||
                 state is OtpVerificationLoading ||
                 state is OtpVerificationResendLoading,
             onResend: () {
               BlocProvider.of<OtpVerificationBloc>(
-                context,
+                callingContext,
               ).add(OtpVerificationResendRequested(contact: email));
             },
             onEdit: () {
               BlocProvider.of<RegisterWithEmailBloc>(
-                context,
+                callingContext,
               ).add(RegisterWithEmailEmailEditRequested());
             },
             onVerify: () {
+              final otp = state is OtpVerificationOtpChangeSuccess
+                  ? state.otp
+                  : '';
               BlocProvider.of<OtpVerificationBloc>(
-                context,
+                callingContext,
               ).add(OtpVerificationSubmitted(contact: email, otp: otp));
             },
             onChanged: (otp) {
               BlocProvider.of<OtpVerificationBloc>(
-                context,
+                callingContext,
               ).add(OtpVerificationOtpChanged(otp: otp));
             },
           );
@@ -167,15 +169,13 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
       enableDrag: false,
       backgroundColor: Colors.transparent,
       builder: (bottomSheetContext) {
-        return _buildOtpVerificationBottomSheet(bottomSheetContext, email);
+        return _buildOtpVerificationBottomSheet(callingContext, email);
       },
     );
   }
 
   @override
   void initState() {
-    _emailController.text = widget.email;
-
     _emailController.addListener(() {
       BlocProvider.of<RegisterWithEmailBloc>(context).add(
         RegisterWithEmailFormFieldChanged(
@@ -184,7 +184,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
         ),
       );
     });
-
+    _emailController.text = widget.email;
     super.initState();
   }
 
