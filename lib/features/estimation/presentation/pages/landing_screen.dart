@@ -2,55 +2,37 @@ import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
-import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
-class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+class EstimationLandingPage extends StatefulWidget {
+  const EstimationLandingPage({super.key});
 
   @override
-  State<DashboardPage> createState() => _DashboardPageState();
+  State<EstimationLandingPage> createState() => _EstimationLandingPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
+class _EstimationLandingPageState extends State<EstimationLandingPage> {
   final notifier = Modular.get<AuthNotifier>();
   final authManager = Modular.get<AuthManager>();
-  String userInfo = '...';
   final AppRouter _router = Modular.get<AppRouter>();
   @override
   void dispose() {
     super.dispose();
   }
+
   @override
   void initState() {
     notifier.onUserProfileChanged.listen((event) {
       if (event == null) {
         final cred = authManager.getCurrentCredentials();
-        _router.navigate(
-          fullCreateAccountRoute,
-          arguments: cred.data?.email,
-          );
+        _router.navigate(fullCreateAccountRoute, arguments: cred.data?.email);
       }
     });
     final cred = authManager.getCurrentCredentials();
     if (cred.data?.id == null) {
       _router.navigate(fullLoginRoute);
-    } else {
-      authManager
-          .getUserProfile(cred.data?.id ?? '')
-          .then((result) {
-            if (result.isSuccess && result.data != null) {
-              setState(() {
-                userInfo = '${result.data?.firstName} ${result.data?.lastName}!';
-              });
-            }
-          })
-          .catchError((error) {
-            if (!mounted) return;
-            CoreToast.showError(context, 'Failed to load profile','Close');
-          });
     }
     super.initState();
   }
@@ -76,18 +58,12 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
               const SizedBox(height: 24),
               Text(
-                'Welcome back, $userInfo',
+                'Cost Estimation Landing Screen',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'You are now logged in to your account',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16),
               ),
               const SizedBox(height: 32),
               CoreButton(
@@ -97,14 +73,6 @@ class _DashboardPageState extends State<DashboardPage> {
                   _router.navigate(fullLoginRoute);
                 },
                 label: 'Logout',
-                centerAlign: true,
-              ),
-              const SizedBox(height: 16),
-              CoreButton(
-                onPressed: () {
-                  _router.navigate(fullEstimationLandingRoute);
-                },
-                label: 'Estimation Landing',
                 centerAlign: true,
               ),
             ],
