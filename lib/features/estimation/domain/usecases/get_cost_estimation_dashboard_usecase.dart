@@ -1,5 +1,5 @@
-import 'package:construculator/features/estimation/data/repositories/interfaces/cost_estimation_repository.dart';
-import 'package:construculator/features/estimation/domain/entities/cost_estimation.dart';
+import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
+import 'package:construculator/features/estimation/domain/entities/cost_estimation_entity.dart';
 
 class GetCostEstimationDashboardUseCase {
   final CostEstimationRepository repository;

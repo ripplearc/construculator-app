@@ -1,4 +1,4 @@
-import 'package:construculator/features/estimation/data/dto/cost_estimation_dto.dart';
+import 'package:construculator/features/estimation/data/models/cost_estimation_dto.dart';
 
 /// An abstract class representing a data source for cost estimations.
 abstract class CostEstimationDataSource {

@@ -1,4 +1,4 @@
-import 'package:construculator/features/estimation/domain/entities/cost_estimation.dart';
+import 'package:construculator/features/estimation/domain/entities/cost_estimation_entity.dart';
 
 /// An abstract class representing a repository for cost estimations.
 abstract class CostEstimationRepository {
