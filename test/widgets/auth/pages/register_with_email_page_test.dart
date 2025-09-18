@@ -246,6 +246,27 @@ void main() {
       },
     );
 
+    testWidgets(
+      'enables continue button on page load when valid email is pre-filled',
+      (WidgetTester tester) async {
+        fakeSupabase.clearTableData('users');
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            child: const RegisterWithEmailPage(email: 'newuser@example.com'),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
+
+        final continueButton = find.widgetWithText(
+          CoreButton,
+          AppLocalizations.of(buildContext!)!.continueButton,
+        );
+        expect(tester.widget<CoreButton>(continueButton).isDisabled, isFalse);
+      },
+    );
+
     testWidgets('disables continue button when email is submited', (
       WidgetTester tester,
     ) async {
