@@ -9,21 +9,8 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
   CostEstimationRepositoryImpl({required this.dataSource});
 
   @override
-  Future<List<CostEstimation>> getEstimations(String projectId) async {
+  Future<List<CostEstimate>> getEstimations(String projectId) async {
     final dtos = await dataSource.getEstimations(projectId);
     return dtos.map((dto) => dto.toDomain()).toList();
   }
-}
-
-extension on CostEstimationDto {
-  CostEstimation toDomain() => CostEstimation(
-    id: id,
-    projectId: projectId,
-    estimateName: estimateName,
-    totalCost: totalCost,
-    isFavorite: isFavorite,
-    isLocked: isLocked,
-    createdAt: DateTime.parse(createdAt),
-    updatedAt: DateTime.parse(updatedAt),
-  );
 }

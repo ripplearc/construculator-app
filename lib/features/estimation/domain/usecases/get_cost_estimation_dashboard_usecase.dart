@@ -6,7 +6,7 @@ class GetCostEstimationDashboardUseCase {
 
   GetCostEstimationDashboardUseCase(this.repository);
 
-  Future<List<CostEstimation>> call(String projectId) {
+  Future<List<CostEstimate>> call(String projectId) {
     return repository.getEstimations(projectId);
   }
 }

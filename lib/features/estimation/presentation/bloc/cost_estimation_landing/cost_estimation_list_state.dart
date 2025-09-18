@@ -6,7 +6,7 @@ abstract class CostEstimationListState {}
 class CostEstimationListLoading extends CostEstimationListState {}
 
 class CostEstimationListLoaded extends CostEstimationListState {
-  final List<CostEstimation> estimations;
+  final List<CostEstimate> estimations;
   CostEstimationListLoaded(this.estimations);
 }
 
