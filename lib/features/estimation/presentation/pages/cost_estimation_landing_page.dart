@@ -6,14 +6,15 @@ import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
-class EstimationLandingPage extends StatefulWidget {
-  const EstimationLandingPage({super.key});
+class CostEstimationLandingPage extends StatefulWidget {
+  const CostEstimationLandingPage({super.key});
 
   @override
-  State<EstimationLandingPage> createState() => _EstimationLandingPageState();
+  State<CostEstimationLandingPage> createState() =>
+      _CostEstimationLandingPageState();
 }
 
-class _EstimationLandingPageState extends State<EstimationLandingPage> {
+class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
   final notifier = Modular.get<AuthNotifier>();
   final authManager = Modular.get<AuthManager>();
   final AppRouter _router = Modular.get<AppRouter>();
