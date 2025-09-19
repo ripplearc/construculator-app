@@ -17,13 +17,13 @@ T _$identity<T>(T value) => value;
 mixin _$AuthState {
 
 /// The current authentication status indicating the state of the user.
-/// 
+///
 /// This can be one of the following values:
 /// - [AuthStatus.authenticated]: User is successfully logged in
 /// - [AuthStatus.unauthenticated]: User is not logged in
 /// - [AuthStatus.connectionError]: Authentication process is in progress
  AuthStatus get status;/// The user credential information if the user is authenticated.
-/// 
+///
 /// This contains user details such as email, user ID, and other
 /// authentication-related information. Will be null when the user
 /// is not authenticated or during loading states.
@@ -108,14 +108,14 @@ class _AuthState extends AuthState {
   factory _AuthState.fromJson(Map<String, dynamic> json) => _$AuthStateFromJson(json);
 
 /// The current authentication status indicating the state of the user.
-/// 
+///
 /// This can be one of the following values:
 /// - [AuthStatus.authenticated]: User is successfully logged in
 /// - [AuthStatus.unauthenticated]: User is not logged in
 /// - [AuthStatus.connectionError]: Authentication process is in progress
 @override final  AuthStatus status;
 /// The user credential information if the user is authenticated.
-/// 
+///
 /// This contains user details such as email, user ID, and other
 /// authentication-related information. Will be null when the user
 /// is not authenticated or during loading states.
