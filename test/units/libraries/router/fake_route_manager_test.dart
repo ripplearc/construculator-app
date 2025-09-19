@@ -1,8 +1,8 @@
 import 'package:construculator/app/app_module.dart';
+import 'package:construculator/app/testing/fake_app_bootstarp.dart';
 import 'package:construculator/libraries/router/testing/fake_route_manager.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../../../app/app_module_test.dart';
 
 void main() {
   late FakeRouteManager fakeRouteManager;

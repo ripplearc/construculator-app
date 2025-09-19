@@ -1,11 +1,11 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/app_module.dart';
+import 'package:construculator/app/testing/fake_app_bootstarp.dart';
 import 'package:construculator/features/auth/auth_module.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/libraries/router/testing/fake_route_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-class FakeAppBootstrap extends Fake implements AppBootstrap {}
 
 void main() {
   late AppBootstrap fakeBootstrap;
