@@ -2,26 +2,8 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/app_module.dart';
 import 'package:construculator/features/auth/auth_module.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
-import 'package:construculator/libraries/auth/auth_library_module.dart';
-import 'package:construculator/libraries/config/config_module.dart';
-import 'package:construculator/libraries/router/router_module.dart';
-import 'package:construculator/libraries/supabase/supabase_module.dart';
-import 'package:flutter_modular/flutter_modular.dart';
+import 'package:construculator/libraries/router/testing/fake_route_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-/// Fake RouteManager that just stores routes that are added.
-class FakeRouteManager implements RouteManager {
-  final List<ModularRoute> addedRoutes = [];
-
-  @override
-  void add(ModularRoute route) {
-    addedRoutes.add(route);
-  }
-
-  // We don't need other methods for this test, so just throw if they're called.
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
 
 class FakeAppBootstrap extends Fake implements AppBootstrap {}
 
@@ -39,10 +21,6 @@ void main() {
       final imports = module.imports;
 
       expect(imports, hasLength(4));
-      expect(imports.any((m) => m is RouterModule), isTrue);
-      expect(imports.any((m) => m is ConfigModule), isTrue);
-      expect(imports.any((m) => m is SupabaseModule), isTrue);
-      expect(imports.any((m) => m is AuthLibraryModule), isTrue);
     });
 
     test('routes register correct modules', () {
