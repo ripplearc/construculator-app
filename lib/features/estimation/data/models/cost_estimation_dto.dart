@@ -1,3 +1,9 @@
+import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/enums/markup_type_enum.dart';
+import 'package:construculator/features/estimation/domain/entities/enums/markup_value_type_enum.dart';
+import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
+
 class CostEstimationDto {
   String id;
   String projectId;
@@ -86,4 +92,64 @@ class CostEstimationDto {
     'created_at': createdAt,
     'updated_at': updatedAt,
   };
+
+  CostEstimate toDomain() {
+    return CostEstimate(
+      id: id,
+      projectId: projectId,
+      estimateName: estimateName,
+      estimateDescription: estimateDescription,
+      creatorUserId: creatorUserId,
+      markupConfiguration: MarkupConfiguration(
+        overallType: _mapMarkupType(overallMarkupValueType),
+        overallValue: MarkupValue(
+          type: _mapMarkupValueType(overallMarkupValueType),
+          value: overallMarkupValue,
+        ),
+        materialValueType: _mapMarkupType(materialMarkupValueType),
+        materialValue: MarkupValue(
+          type: _mapMarkupValueType(materialMarkupValueType),
+          value: materialMarkupValue,
+        ),
+        laborValueType: _mapMarkupType(laborMarkupValueType),
+        laborValue: MarkupValue(
+          type: _mapMarkupValueType(laborMarkupValueType),
+          value: laborMarkupValue,
+        ),
+        equipmentValueType: _mapMarkupType(equipmentMarkupValueType),
+        equipmentValue: MarkupValue(
+          type: _mapMarkupValueType(equipmentMarkupValueType),
+          value: equipmentMarkupValue,
+        ),
+      ),
+      totalCost: totalCost,
+      lockStatus: isLocked
+          ? LockStatus.locked(lockedByUserID, DateTime.parse(lockedAt))
+          : const LockStatus.unlocked(),
+      createdAt: DateTime.parse(createdAt),
+      updatedAt: DateTime.parse(updatedAt),
+    );
+  }
+
+  MarkupType _mapMarkupType(String raw) {
+    switch (raw.toLowerCase()) {
+      case 'overall':
+        return MarkupType.overall;
+      case 'granular':
+        return MarkupType.granular;
+      default:
+        throw ArgumentError('Unknown MarkupType: $raw');
+    }
+  }
+
+  MarkupValueType _mapMarkupValueType(String raw) {
+    switch (raw.toLowerCase()) {
+      case 'percentage':
+        return MarkupValueType.percentage;
+      case 'amount':
+        return MarkupValueType.amount;
+      default:
+        throw ArgumentError('Unknown MarkupValueType: $raw');
+    }
+  }
 }
