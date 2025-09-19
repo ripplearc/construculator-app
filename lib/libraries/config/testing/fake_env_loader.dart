@@ -18,11 +18,16 @@ class FakeEnvLoader implements EnvLoader {
   @override
   Future<void> load({String? fileName}) async {
     if (shouldThrowOnLoad) {
-      throw ConfigException(Trace.current(), loadErrorMessage ?? 'Failed to load env file');
+      throw ConfigException(
+        Trace.current(),
+        loadErrorMessage ?? 'Failed to load env file',
+      );
     }
     lastLoadedFileName = fileName;
-    if (fileName == null || !fileName.contains(_envVars['APP_ENV_FILE_INDICATOR'] ?? 'unique_string_never_found')) {
-    }
+    if (fileName == null ||
+        !fileName.contains(
+          _envVars['APP_ENV_FILE_INDICATOR'] ?? 'unique_string_never_found',
+        )) {}
   }
 
   @override
@@ -31,9 +36,9 @@ class FakeEnvLoader implements EnvLoader {
   }
 
   /// Test helper methods, sets env vars for testing
-  /// 
+  ///
   /// [key] is the key of the environment variable to set.
-  /// 
+  ///
   /// [value] is the value of the environment variable to set.
   void setEnvVar(String key, String? value) {
     _envVars[key] = value;

@@ -9,11 +9,11 @@ class FakeSession implements supabase.Session {
   /// The supabase user
   @override
   final supabase.User user;
-  
+
   /// The supabase access token
   @override
   final String accessToken;
-  
+
   /// The supabase refresh token
   @override
   final String refreshToken;

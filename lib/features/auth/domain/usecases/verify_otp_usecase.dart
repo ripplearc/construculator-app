@@ -12,9 +12,13 @@ class VerifyOtpUseCase {
 
   /// Verifies an OTP using the auth manager.
   /// Accepts an email, an OTP, and an [OtpReceiver] as parameters.
-  /// 
+  ///
   /// Returns a [Future] that emits an [Either] containing a [Failure] or an [void].
-  Future<Either<Failure, void>> call(String email, String otp, OtpReceiver receiver) async {
+  Future<Either<Failure, void>> call(
+    String email,
+    String otp,
+    OtpReceiver receiver,
+  ) async {
     final result = await authManager.verifyOtp(email, otp, receiver);
     if (!result.isSuccess) {
       final errorType = result.errorType;

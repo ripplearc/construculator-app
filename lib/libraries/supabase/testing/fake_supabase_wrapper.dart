@@ -131,8 +131,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   final Clock _clock;
 
   /// Constructor for fake supabase wrapper
-  FakeSupabaseWrapper({required Clock clock}): _clock = clock;
-  
+  FakeSupabaseWrapper({required Clock clock}) : _clock = clock;
+
   /// Sets the current user
   void setCurrentUser(FakeUser? user) {
     _currentUser = user;
@@ -448,9 +448,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   @override
   Future<List<Map<String, dynamic>>> selectAllProfessionalRoles() async {
-    _methodCalls.add({
-      'method': 'selectAllProfessionalRoles',
-    });
+    _methodCalls.add({'method': 'selectAllProfessionalRoles'});
 
     if (shouldThrowOnSelect) {
       _throwConfiguredException(
@@ -466,7 +464,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     final tableData = _tables['professional_roles'] ?? [];
     return tableData;
   }
-  
+
   @override
   Future<void> initialize() {
     // No need to implement this method, fake supabase wrapper does not need

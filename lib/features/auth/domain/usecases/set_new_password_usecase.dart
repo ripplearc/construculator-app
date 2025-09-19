@@ -11,9 +11,9 @@ class SetNewPasswordUseCase {
 
   /// Sets a new password for the specified email using the auth manager.
   /// Accepts an email and a new password as parameters.
-  /// 
+  ///
   /// Returns a [Future] that emits an [Either] containing a [Failure] or an [void].
-  Future<Either<Failure, void>> call(String email,String newPassword) async {
+  Future<Either<Failure, void>> call(String email, String newPassword) async {
     final result = await authManager.updateUserPassword(newPassword);
     if (!result.isSuccess) {
       final errorType = result.errorType;

@@ -2,10 +2,7 @@
 part of 'set_new_password_bloc.dart';
 
 /// Enum for form fields that can be validated
-enum SetNewPasswordFormField {
-  password,
-  passwordConfirmation,
-}
+enum SetNewPasswordFormField { password, passwordConfirmation }
 
 /// Abstract class for set new password states
 abstract class SetNewPasswordState extends Equatable {
@@ -40,7 +37,7 @@ class SetNewPasswordFailure extends SetNewPasswordState {
   /// The failure that occurred during the set new password process
   final Failure failure;
   const SetNewPasswordFailure({required this.failure});
-  
+
   @override
   List<Object?> get props => [failure];
 }
@@ -49,8 +46,10 @@ class SetNewPasswordFailure extends SetNewPasswordState {
 class SetNewPasswordPasswordValidationSuccess extends SetNewPasswordState {
   /// The field that was validated
   final SetNewPasswordFormField field;
+
   /// Whether the field is valid
   final bool isValid;
+
   /// The validation error type, null if field is valid
   final AuthErrorType? validator;
 

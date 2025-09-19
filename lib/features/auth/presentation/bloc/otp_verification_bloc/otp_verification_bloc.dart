@@ -61,6 +61,8 @@ class OtpVerificationBloc
   ) async {
     final otpValidator = AuthValidation.validateOtp(event.otp);
     final otpInvalid = otpValidator != null;
-    emit(OtpVerificationOtpChangeSuccess(otp: event.otp, otpInvalid: otpInvalid));
+    emit(
+      OtpVerificationOtpChangeSuccess(otp: event.otp, otpInvalid: otpInvalid),
+    );
   }
 }

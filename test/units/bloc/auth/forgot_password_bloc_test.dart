@@ -34,19 +34,14 @@ void main() {
           ),
         ),
         expect: () => [
-          isA<ForgotPasswordFormFieldValidated>().having(
-            (state) => state.field,
-            'field',
-            ForgotPasswordFormField.email,
-          ).having(
-            (state) => state.isValid,
-            'isValid',
-            false,
-          ).having(
-            (state) => state.validator,
-            'validator',
-            isNotNull,
-          ),
+          isA<ForgotPasswordFormFieldValidated>()
+              .having(
+                (state) => state.field,
+                'field',
+                ForgotPasswordFormField.email,
+              )
+              .having((state) => state.isValid, 'isValid', false)
+              .having((state) => state.validator, 'validator', isNotNull),
         ],
       );
 
@@ -60,19 +55,14 @@ void main() {
           ),
         ),
         expect: () => [
-          isA<ForgotPasswordFormFieldValidated>().having(
-            (state) => state.field,
-            'field',
-            ForgotPasswordFormField.email,
-          ).having(
-            (state) => state.isValid,
-            'isValid',
-            false,
-          ).having(
-            (state) => state.validator,
-            'validator',
-            isNotNull,
-          ),
+          isA<ForgotPasswordFormFieldValidated>()
+              .having(
+                (state) => state.field,
+                'field',
+                ForgotPasswordFormField.email,
+              )
+              .having((state) => state.isValid, 'isValid', false)
+              .having((state) => state.validator, 'validator', isNotNull),
         ],
       );
 
@@ -86,19 +76,14 @@ void main() {
           ),
         ),
         expect: () => [
-          isA<ForgotPasswordFormFieldValidated>().having(
-            (state) => state.field,
-            'field',
-            ForgotPasswordFormField.email,
-          ).having(
-            (state) => state.isValid,
-            'isValid',
-            true,
-          ).having(
-            (state) => state.validator,
-            'validator',
-            null,
-          ),
+          isA<ForgotPasswordFormFieldValidated>()
+              .having(
+                (state) => state.field,
+                'field',
+                ForgotPasswordFormField.email,
+              )
+              .having((state) => state.isValid, 'isValid', true)
+              .having((state) => state.validator, 'validator', null),
         ],
       );
     });
@@ -125,7 +110,7 @@ void main() {
         expect: () => [ForgotPasswordLoading(), isA<ForgotPasswordFailure>()],
       );
     });
-    
+
     group('Multiple Password Reset Attempts', () {
       blocTest<ForgotPasswordBloc, ForgotPasswordState>(
         'handles multiple consecutive password reset attempts',
@@ -165,7 +150,7 @@ void main() {
         ],
       );
     });
-    
+
     group('ForgotPasswordEditEmail', () {
       blocTest<ForgotPasswordBloc, ForgotPasswordState>(
         'emits [ForgotPasswordInitial] when edit email is triggered',

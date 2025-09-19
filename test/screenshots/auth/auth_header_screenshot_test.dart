@@ -39,10 +39,12 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('renders auth header without contact correctly', (tester) async {
+    testWidgets('renders auth header without contact correctly', (
+      tester,
+    ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
-      
+
       await pumpAuthHeader(
         tester: tester,
         title: 'Welcome Back',
@@ -60,7 +62,7 @@ void main() {
     testWidgets('renders auth header with contact correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
-      
+
       await pumpAuthHeader(
         tester: tester,
         title: 'Enter your password',
@@ -77,4 +79,4 @@ void main() {
       );
     });
   });
-} 
+}

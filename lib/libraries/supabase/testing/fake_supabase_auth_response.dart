@@ -6,7 +6,6 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 /// A fake implementation of [supabase.AuthResponse] for testing purposes
 @dataModel
 class FakeAuthResponse implements supabase.AuthResponse {
-
   /// The supabase user
   @override
   final supabase.User? user;
@@ -25,7 +24,6 @@ class FakeAuthResponse implements supabase.AuthResponse {
 /// A fake implementation of [supabase.UserResponse] for testing purposes
 @dataModel
 class FakeUserResponse implements supabase.UserResponse {
-
   /// The supabase user
   @override
   final supabase.User? user;

@@ -805,5 +805,5 @@ void main() {
         findsOneWidget,
       );
     });
- });
+  });
 }

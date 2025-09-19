@@ -45,10 +45,10 @@ void main() {
       // First add some routes to the history
       await router.pushNamed('/home');
       await router.pushNamed('/profile');
-      
+
       // Navigate to a new route
       router.navigate('/dashboard', arguments: {'page': 'main'});
-      
+
       // History should be cleared and only contain the new route
       expect(router.navigationHistory.length, equals(1));
       expect(router.navigationHistory[0].route, '/dashboard');

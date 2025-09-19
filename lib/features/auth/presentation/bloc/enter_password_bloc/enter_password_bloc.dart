@@ -10,9 +10,9 @@ part 'enter_password_state.dart';
 class EnterPasswordBloc extends Bloc<EnterPasswordEvent, EnterPasswordState> {
   final LoginUseCase _loginUseCase;
 
-  EnterPasswordBloc({required LoginUseCase loginUseCase}) 
-      : _loginUseCase = loginUseCase,
-        super(EnterPasswordInitial()) {
+  EnterPasswordBloc({required LoginUseCase loginUseCase})
+    : _loginUseCase = loginUseCase,
+      super(EnterPasswordInitial()) {
     on<EnterPasswordSubmitted>(_onSubmitted);
   }
 
@@ -27,4 +27,4 @@ class EnterPasswordBloc extends Bloc<EnterPasswordEvent, EnterPasswordState> {
       (credential) => emit(EnterPasswordSubmitSuccess()),
     );
   }
-} 
+}

@@ -447,31 +447,37 @@ void main() {
           );
           expect(result, isNull);
         });
-        test('selectProfessionalRoles returns roles list of professional roles', () async {
-          fakeWrapper.addTableData('professional_roles', [
-            {'id': '1', 'name': 'Test Role'},
-          ]);
+        test(
+          'selectProfessionalRoles returns roles list of professional roles',
+          () async {
+            fakeWrapper.addTableData('professional_roles', [
+              {'id': '1', 'name': 'Test Role'},
+            ]);
 
-          final result = await fakeWrapper.selectAllProfessionalRoles();
-          expect(result, isNotNull);
-          expect(result.length, equals(1));
-          expect(result[0]['id'], equals('1'));
-          expect(result[0]['name'], equals('Test Role'));
-        });
-        test('selectProfessionalRoles throws exception when configured to fail', () async {
-          fakeWrapper.shouldThrowOnSelect = true;
-          fakeWrapper.authErrorCode = SupabaseAuthErrorCode.unknown;
-          expect(
-            () async => await fakeWrapper.selectAllProfessionalRoles(),
-            throwsA(
-              isA<ServerException>().having(
-                (e) => e.toString(),
-                'message',
-                contains('Select failed'),
+            final result = await fakeWrapper.selectAllProfessionalRoles();
+            expect(result, isNotNull);
+            expect(result.length, equals(1));
+            expect(result[0]['id'], equals('1'));
+            expect(result[0]['name'], equals('Test Role'));
+          },
+        );
+        test(
+          'selectProfessionalRoles throws exception when configured to fail',
+          () async {
+            fakeWrapper.shouldThrowOnSelect = true;
+            fakeWrapper.authErrorCode = SupabaseAuthErrorCode.unknown;
+            expect(
+              () async => await fakeWrapper.selectAllProfessionalRoles(),
+              throwsA(
+                isA<ServerException>().having(
+                  (e) => e.toString(),
+                  'message',
+                  contains('Select failed'),
+                ),
               ),
-            ),
-          );
-        });
+            );
+          },
+        );
       });
 
       group('insert', () {
@@ -958,9 +964,7 @@ void main() {
 
 class _TestAppModule extends Module {
   @override
-  List<Module> get imports => [
-    ClockTestModule(),
-  ];
+  List<Module> get imports => [ClockTestModule()];
   @override
   void binds(Injector i) {
     i.add<SupabaseWrapper>(() => FakeSupabaseWrapper(clock: i()));

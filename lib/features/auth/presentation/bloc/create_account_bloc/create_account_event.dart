@@ -15,12 +15,16 @@ abstract class CreateAccountEvent extends Equatable {
 class CreateAccountFormFieldChanged extends CreateAccountEvent {
   /// The field that changed
   final CreateAccountFormField field;
+
   /// The new value of the field
   final String value;
+
   /// Whether this is an email registration (affects validation logic)
   final bool isEmailRegistration;
+
   /// The password value for confirm password validation
   final String? passwordValue;
+
   /// The phone prefix for mobile number validation
   final String? phonePrefix;
 
@@ -33,25 +37,38 @@ class CreateAccountFormFieldChanged extends CreateAccountEvent {
   });
 
   @override
-  List<Object?> get props => [field, value, isEmailRegistration, passwordValue, phonePrefix];
+  List<Object?> get props => [
+    field,
+    value,
+    isEmailRegistration,
+    passwordValue,
+    phonePrefix,
+  ];
 }
 
 /// Event for submitting the create account form
 class CreateAccountSubmitted extends CreateAccountEvent {
   /// The email address of the user, can be null if the user is registering with a mobile number
   final String? email;
+
   /// The first name of the user
   final String firstName;
+
   /// The last name of the user
   final String lastName;
+
   /// The mobile number of the user, can be null if the user is registering with an email address
   final String? mobileNumber;
+
   /// The password of the user
   final String password;
+
   /// The confirm password of the user
   final String confirmPassword;
+
   /// The professional role id selected by the user
   final String role;
+
   /// The country code of the phone number
   final String phonePrefix;
 
@@ -68,15 +85,15 @@ class CreateAccountSubmitted extends CreateAccountEvent {
 
   @override
   List<Object?> get props => [
-        email,
-        firstName,
-        lastName,
-        mobileNumber,
-        password,
-        confirmPassword,
-        role,
-        phonePrefix,
-      ];
+    email,
+    firstName,
+    lastName,
+    mobileNumber,
+    password,
+    confirmPassword,
+    role,
+    phonePrefix,
+  ];
 }
 
 /// Event for loading the professional roles
@@ -88,20 +105,24 @@ class CreateAccountGetProfessionalRolesRequested extends CreateAccountEvent {
 }
 
 /// Event for sending OTP to the user
-class CreateAccountSendOtpRequested extends CreateAccountEvent{
+class CreateAccountSendOtpRequested extends CreateAccountEvent {
   /// The address of the user, can be an email address or a phone number
   final String address;
+
   /// Whether the user is registering with an email address or a phone number
   final bool isEmailRegistration;
-  const CreateAccountSendOtpRequested({required this.address,required this.isEmailRegistration});
+  const CreateAccountSendOtpRequested({
+    required this.address,
+    required this.isEmailRegistration,
+  });
 
   @override
-  List<Object> get props => [address,isEmailRegistration];
+  List<Object> get props => [address, isEmailRegistration];
 }
 
 /// Otp verification is handled by the OtpVerificationBloc
 /// This event is used to notify the CreateAccountBloc that the OTP has been verified
-class CreateAccountOtpVerified extends CreateAccountEvent{
+class CreateAccountOtpVerified extends CreateAccountEvent {
   /// The contact address that OTP was sent to
   final String contact;
 
@@ -113,4 +134,4 @@ class CreateAccountOtpVerified extends CreateAccountEvent{
 
 /// Event for editing the contact address, triggered after user taps on edit contact button on bottom sheet
 /// This allows the UI to hide the bottom sheet and focus on the contact input field
-class CreateAccountEditContactPressed extends CreateAccountEvent{}
+class CreateAccountEditContactPressed extends CreateAccountEvent {}

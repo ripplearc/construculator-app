@@ -10,10 +10,13 @@ class AuthFooter extends StatelessWidget {
     required this.actionText,
     required this.onPressed,
   });
+
   /// The text to display
   final String text;
+
   /// The text of the action to display
   final String actionText;
+
   /// The callback to be called when the action is pressed
   final VoidCallback onPressed;
 

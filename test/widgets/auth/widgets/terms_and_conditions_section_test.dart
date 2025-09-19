@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  const termsAndConditionsText = 'By selecting agree and continue. I agree to Construculator ';
+  const termsAndConditionsText =
+      'By selecting agree and continue. I agree to Construculator ';
   const termsAndServicesLink = 'terms & services';
   const privacyPolicyLink = 'privacy policy';
   const andAcknowledge = 'and acknowledge ';
@@ -46,7 +47,9 @@ void main() {
       expect(find.textContaining(privacyPolicyLink), findsOneWidget);
       expect(find.textContaining(andAcknowledge), findsOneWidget);
     });
-    testWidgets('tapping on terms and services link triggers callback', (tester) async {
+    testWidgets('tapping on terms and services link triggers callback', (
+      tester,
+    ) async {
       bool termsLinkTapped = false;
 
       await pumpTermsAndConditionsWidget(
@@ -64,7 +67,9 @@ void main() {
       expect(termsLinkTapped, isTrue);
     });
 
-    testWidgets('tapping on privacy policy link triggers callback', (tester) async {
+    testWidgets('tapping on privacy policy link triggers callback', (
+      tester,
+    ) async {
       bool privacyLinkTapped = false;
 
       await pumpTermsAndConditionsWidget(
@@ -82,4 +87,4 @@ void main() {
       expect(privacyLinkTapped, isTrue);
     });
   });
-} 
+}

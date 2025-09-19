@@ -37,19 +37,14 @@ void main() {
           ),
         ),
         expect: () => [
-          isA<LoginWithEmailFormFieldValidated>().having(
-            (state) => state.field,
-            'field',
-            LoginWithEmailFormField.email,
-          ).having(
-            (state) => state.isValid,
-            'isValid',
-            false,
-          ).having(
-            (state) => state.validator,
-            'validator',
-            isNotNull,
-          ),
+          isA<LoginWithEmailFormFieldValidated>()
+              .having(
+                (state) => state.field,
+                'field',
+                LoginWithEmailFormField.email,
+              )
+              .having((state) => state.isValid, 'isValid', false)
+              .having((state) => state.validator, 'validator', isNotNull),
         ],
       );
 
@@ -63,19 +58,14 @@ void main() {
           ),
         ),
         expect: () => [
-          isA<LoginWithEmailFormFieldValidated>().having(
-            (state) => state.field,
-            'field',
-            LoginWithEmailFormField.email,
-          ).having(
-            (state) => state.isValid,
-            'isValid',
-            false,
-          ).having(
-            (state) => state.validator,
-            'validator',
-            isNotNull,
-          ),
+          isA<LoginWithEmailFormFieldValidated>()
+              .having(
+                (state) => state.field,
+                'field',
+                LoginWithEmailFormField.email,
+              )
+              .having((state) => state.isValid, 'isValid', false)
+              .having((state) => state.validator, 'validator', isNotNull),
         ],
       );
 
@@ -89,19 +79,14 @@ void main() {
           ),
         ),
         expect: () => [
-          isA<LoginWithEmailFormFieldValidated>().having(
-            (state) => state.field,
-            'field',
-            LoginWithEmailFormField.email,
-          ).having(
-            (state) => state.isValid,
-            'isValid',
-            true,
-          ).having(
-            (state) => state.validator,
-            'validator',
-            null,
-          ),
+          isA<LoginWithEmailFormFieldValidated>()
+              .having(
+                (state) => state.field,
+                'field',
+                LoginWithEmailFormField.email,
+              )
+              .having((state) => state.isValid, 'isValid', true)
+              .having((state) => state.validator, 'validator', null),
           LoginWithEmailAvailabilityLoading(),
           LoginWithEmailAvailabilityCheckSuccess(isEmailRegistered: false),
         ],
@@ -120,15 +105,13 @@ void main() {
           ),
         ),
         expect: () => [
-          isA<LoginWithEmailFormFieldValidated>().having(
-            (state) => state.field,
-            'field',
-            LoginWithEmailFormField.email,
-          ).having(
-            (state) => state.isValid,
-            'isValid',
-            true,
-          ),
+          isA<LoginWithEmailFormFieldValidated>()
+              .having(
+                (state) => state.field,
+                'field',
+                LoginWithEmailFormField.email,
+              )
+              .having((state) => state.isValid, 'isValid', true),
           LoginWithEmailAvailabilityLoading(),
           LoginWithEmailAvailabilityCheckSuccess(isEmailRegistered: false),
         ],
@@ -147,15 +130,13 @@ void main() {
           ),
         ),
         expect: () => [
-          isA<LoginWithEmailFormFieldValidated>().having(
-            (state) => state.field,
-            'field',
-            LoginWithEmailFormField.email,
-          ).having(
-            (state) => state.isValid,
-            'isValid',
-            true,
-          ),
+          isA<LoginWithEmailFormFieldValidated>()
+              .having(
+                (state) => state.field,
+                'field',
+                LoginWithEmailFormField.email,
+              )
+              .having((state) => state.isValid, 'isValid', true),
           LoginWithEmailAvailabilityLoading(),
           isA<LoginWithEmailAvailabilityCheckFailure>(),
         ],
@@ -175,7 +156,8 @@ void main() {
           ]);
           return bloc;
         },
-        act: (bloc) => bloc.add(LoginEmailAvailabilityCheckRequested(testEmail)),
+        act: (bloc) =>
+            bloc.add(LoginEmailAvailabilityCheckRequested(testEmail)),
         expect: () => [
           LoginWithEmailAvailabilityLoading(),
           LoginWithEmailAvailabilityCheckSuccess(isEmailRegistered: true),
@@ -188,7 +170,8 @@ void main() {
           fakeSupabase.shouldThrowOnSignIn = true;
           return bloc;
         },
-        act: (bloc) => bloc.add(LoginEmailAvailabilityCheckRequested(testEmail)),
+        act: (bloc) =>
+            bloc.add(LoginEmailAvailabilityCheckRequested(testEmail)),
         expect: () => [
           LoginWithEmailAvailabilityLoading(),
           LoginWithEmailAvailabilityCheckSuccess(isEmailRegistered: false),
@@ -201,7 +184,8 @@ void main() {
           fakeSupabase.shouldThrowOnSelect = true;
           return bloc;
         },
-        act: (bloc) => bloc.add(LoginEmailAvailabilityCheckRequested(testEmail)),
+        act: (bloc) =>
+            bloc.add(LoginEmailAvailabilityCheckRequested(testEmail)),
         expect: () => [
           LoginWithEmailAvailabilityLoading(),
           isA<LoginWithEmailAvailabilityCheckFailure>(),
@@ -213,7 +197,8 @@ void main() {
       blocTest<LoginWithEmailBloc, LoginWithEmailState>(
         'correctly identifies unregistered email',
         build: () => bloc,
-        act: (bloc) => bloc.add(LoginEmailAvailabilityCheckRequested(testEmail)),
+        act: (bloc) =>
+            bloc.add(LoginEmailAvailabilityCheckRequested(testEmail)),
         expect: () => [
           LoginWithEmailAvailabilityLoading(),
           LoginWithEmailAvailabilityCheckSuccess(isEmailRegistered: false),

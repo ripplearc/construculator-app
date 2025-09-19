@@ -12,7 +12,6 @@ enum CreateAccountFormField {
   confirmPassword,
 }
 
-
 /// Base class for all create account states
 abstract class CreateAccountState extends Equatable {}
 
@@ -112,8 +111,10 @@ class CreateAccountEditContactSuccess extends CreateAccountState {
 class CreateAccountFormFieldValidated extends CreateAccountState {
   /// The field that was validated
   final CreateAccountFormField field;
+
   /// Whether the field is valid
   final bool isValid;
+
   /// The validation error type, null if field is valid or doesn't require AuthValidation
   final AuthErrorType? validator;
 

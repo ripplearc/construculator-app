@@ -23,7 +23,8 @@ class RegisterWithEmailPage extends StatefulWidget {
   State<RegisterWithEmailPage> createState() => _RegisterWithEmailPageState();
 }
 
-class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> with LocalizationMixin{
+class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
+    with LocalizationMixin {
   final _emailController = TextEditingController();
   final _emailTextFieldFocusNode = FocusNode();
 
@@ -84,7 +85,8 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> with Loca
   }
 
   void _validateForm() {
-    final valid = _emailErrorTextList == null && _emailController.text.isNotEmpty;
+    final valid =
+        _emailErrorTextList == null && _emailController.text.isNotEmpty;
     setState(() {
       _canPressContinue = valid;
     });
@@ -124,7 +126,8 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> with Loca
             contact: email,
             isResending: state is OtpVerificationResendLoading,
             isVerifying: state is OtpVerificationLoading,
-            verifyButtonDisabled: otpInvalid ||
+            verifyButtonDisabled:
+                otpInvalid ||
                 state is OtpVerificationLoading ||
                 state is OtpVerificationResendLoading,
             onResend: () {
@@ -172,7 +175,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> with Loca
   @override
   void initState() {
     _emailController.text = widget.email;
-    
+
     _emailController.addListener(() {
       BlocProvider.of<RegisterWithEmailBloc>(context).add(
         RegisterWithEmailFormFieldChanged(
@@ -250,7 +253,8 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> with Loca
                     const SizedBox(height: CoreSpacing.space20),
                     AuthHeader(
                       title: '${l10n?.letsGetStarted}',
-                      description: '${l10n?.heyEnterYourDetailsToRegisterWithUs}',
+                      description:
+                          '${l10n?.heyEnterYourDetailsToRegisterWithUs}',
                     ),
                     const SizedBox(height: CoreSpacing.space10),
                     CoreTextField(

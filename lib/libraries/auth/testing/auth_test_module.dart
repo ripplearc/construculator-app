@@ -13,7 +13,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 
 class AuthTestModule extends Module {
   @override
-  List<Module> get imports => [SupabaseTestModule(),ClockTestModule()];
+  List<Module> get imports => [SupabaseTestModule(), ClockTestModule()];
   @override
   void exportedBinds(Injector i) {
     i.add<AuthRepository>(
@@ -24,20 +24,11 @@ class AuthTestModule extends Module {
       () => SupabaseRepositoryImpl(supabaseWrapper: i()),
       key: 'authRepositoryWithFakeDep',
     );
-    i.add<AuthNotifier>(
-      () => FakeAuthNotifier(),
-      key: 'fakeAuthNotifier',
-    );
-    i.add<AuthNotifier>(
-      () => AuthNotifierImpl(),
-      key: 'authNotifier',
-    );
+    i.add<AuthNotifier>(() => FakeAuthNotifier(), key: 'fakeAuthNotifier');
+    i.add<AuthNotifier>(() => AuthNotifierImpl(), key: 'authNotifier');
     i.add<AuthManager>(
-      () => AuthManagerImpl(
-        wrapper: i(),
-        authRepository: i(),
-        authNotifier: i(),
-      ),
+      () =>
+          AuthManagerImpl(wrapper: i(), authRepository: i(), authNotifier: i()),
       key: 'authManagerWithFakeDep',
     );
   }

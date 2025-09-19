@@ -15,6 +15,7 @@ abstract class SetNewPasswordEvent extends Equatable {
 class SetNewPasswordSubmitted extends SetNewPasswordEvent {
   /// The email of the user
   final String email;
+
   /// The new password entered by the user
   final String password;
   const SetNewPasswordSubmitted({required this.email, required this.password});
@@ -24,8 +25,10 @@ class SetNewPasswordSubmitted extends SetNewPasswordEvent {
 class SetNewPasswordPasswordValidationRequested extends SetNewPasswordEvent {
   /// The field that was validated
   final SetNewPasswordFormField field;
+
   /// The value of the field that was validated
   final String value;
+
   /// The value of the password to confirm against the password value
   final String? passwordValue;
 

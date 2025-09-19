@@ -50,7 +50,7 @@ class FakeAuthRepository implements AuthRepository {
   final Clock _clock;
 
   /// Constructor for fake auth repository
-  FakeAuthRepository({required Clock clock}): _clock = clock;
+  FakeAuthRepository({required Clock clock}) : _clock = clock;
 
   /// Sets the current user credentials for testing
   void setCurrentCredentials(UserCredential credentials) {
@@ -67,7 +67,10 @@ class FakeAuthRepository implements AuthRepository {
   void setUserProfile(User user) {
     final credentialId = user.credentialId;
     if (credentialId == null) {
-      throw ServerException(Trace.current(), Exception('Credential ID is required'));
+      throw ServerException(
+        Trace.current(),
+        Exception('Credential ID is required'),
+      );
     }
     _userProfiles[credentialId] = user;
   }
@@ -161,7 +164,10 @@ class FakeAuthRepository implements AuthRepository {
 
     final credentialId = user.credentialId;
     if (credentialId == null) {
-      throw ServerException(Trace.current(), Exception('Credential ID is required'));
+      throw ServerException(
+        Trace.current(),
+        Exception('Credential ID is required'),
+      );
     }
     _userProfiles[credentialId] = createdUser;
     return createdUser;
@@ -183,7 +189,10 @@ class FakeAuthRepository implements AuthRepository {
 
     final credentialId = user.credentialId;
     if (credentialId == null) {
-      throw ServerException(Trace.current(), Exception('Credential ID is required'));
+      throw ServerException(
+        Trace.current(),
+        Exception('Credential ID is required'),
+      );
     }
     _userProfiles[credentialId] = updatedUser;
     return updatedUser;

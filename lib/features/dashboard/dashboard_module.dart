@@ -10,10 +10,7 @@ class DashboardModule extends Module {
   final AppBootstrap appBootstrap;
   DashboardModule(this.appBootstrap);
   @override
-  List<Module> get imports => [
-    AuthLibraryModule(appBootstrap),
-    RouterModule(),
-  ];
+  List<Module> get imports => [AuthLibraryModule(appBootstrap), RouterModule()];
   @override
   void routes(RouteManager r) {
     r.child(

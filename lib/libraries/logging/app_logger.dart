@@ -12,19 +12,20 @@ class AppLogger {
   /// Private constructor for internal instantiation by tag() and emoji()
   AppLogger._private(this._tag, this._emojiPrefix, this._internalLogger);
 
-  AppLogger()  : _tag = 'Construculator',
-        _emojiPrefix = '',
-        _internalLogger = Logger(
-          filter: _AppLogFilter(),
-          printer: PrettyPrinter(
-            methodCount: 1,
-            errorMethodCount: 5,
-            lineLength: 80,
-            colors: true,
-            printEmojis: true,
-          ),
-          output: ConsoleOutput(),
-        );
+  AppLogger()
+    : _tag = 'Construculator',
+      _emojiPrefix = '',
+      _internalLogger = Logger(
+        filter: _AppLogFilter(),
+        printer: PrettyPrinter(
+          methodCount: 1,
+          errorMethodCount: 5,
+          lineLength: 80,
+          colors: true,
+          printEmojis: true,
+        ),
+        output: ConsoleOutput(),
+      );
 
   String _formatMessage(String message) {
     String prefix = '';
@@ -35,13 +36,13 @@ class AppLogger {
     return '$prefix $message';
   }
 
-  /// Return a new instance with the default tag and emoji prefix, 
+  /// Return a new instance with the default tag and emoji prefix,
   /// and sharing the same internal logger
   AppLogger fresh() {
     return AppLogger._private('Construculator', '', _internalLogger);
   }
 
-  /// Return a new instance with the new tag, preserving the current emojiPrefix 
+  /// Return a new instance with the new tag, preserving the current emojiPrefix
   /// and sharing the same internal logger
   AppLogger tag(String newTag) {
     return AppLogger._private(newTag, _emojiPrefix, _internalLogger);
@@ -54,36 +55,60 @@ class AppLogger {
   }
 
   void info(String message, [dynamic error, StackTrace? stackTrace]) {
-    _internalLogger.i(_formatMessage(message), error: error, stackTrace: stackTrace);
+    _internalLogger.i(
+      _formatMessage(message),
+      error: error,
+      stackTrace: stackTrace,
+    );
   }
 
   void warning(String message, [dynamic error, StackTrace? stackTrace]) {
-    _internalLogger.w(_formatMessage(message), error: error, stackTrace: stackTrace);
+    _internalLogger.w(
+      _formatMessage(message),
+      error: error,
+      stackTrace: stackTrace,
+    );
   }
 
   void error(String message, [dynamic error, StackTrace? stackTrace]) {
-    _internalLogger.e(_formatMessage(message), error: error, stackTrace: stackTrace);
+    _internalLogger.e(
+      _formatMessage(message),
+      error: error,
+      stackTrace: stackTrace,
+    );
   }
 
   void debug(String message, [dynamic error, StackTrace? stackTrace]) {
-    _internalLogger.d(_formatMessage(message), error: error, stackTrace: stackTrace);
+    _internalLogger.d(
+      _formatMessage(message),
+      error: error,
+      stackTrace: stackTrace,
+    );
   }
 
   void omg(String message, [dynamic error, StackTrace? stackTrace]) {
-    _internalLogger.f(_formatMessage(message), error: error, stackTrace: stackTrace);
+    _internalLogger.f(
+      _formatMessage(message),
+      error: error,
+      stackTrace: stackTrace,
+    );
   }
-} 
+}
 
 class _AppLogFilter extends LogFilter {
   @override
   bool shouldLog(LogEvent event) {
-    final env = String.fromEnvironment('APP_ENV',defaultValue: devEnv);
+    final env = String.fromEnvironment('APP_ENV', defaultValue: devEnv);
     if (env == prodEnv && !kDebugMode) {
-      return event.level.index >= Level.warning.index; // Only log warnings and errors and fatal/omg in production
+      return event.level.index >=
+          Level
+              .warning
+              .index; // Only log warnings and errors and fatal/omg in production
     }
 
     if (env == qaEnv && !kDebugMode) {
-      return event.level.index >= Level.info.index; // Only log info and above in qa
+      return event.level.index >=
+          Level.info.index; // Only log info and above in qa
     }
 
     return true; // Log all messages in dev

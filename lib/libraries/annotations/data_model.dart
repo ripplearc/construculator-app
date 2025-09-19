@@ -4,4 +4,4 @@ class DataModel {
 }
 
 /// Shorthand for the [DataModel] annotation.
-const dataModel = DataModel(); 
+const dataModel = DataModel();

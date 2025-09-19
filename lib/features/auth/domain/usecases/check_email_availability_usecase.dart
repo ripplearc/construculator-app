@@ -11,7 +11,7 @@ class CheckEmailAvailabilityUseCase {
   CheckEmailAvailabilityUseCase(this.authManager);
 
   /// Checks the availability of an email address using the auth manager.
-  /// 
+  ///
   /// Returns a [Future] that emits an [Either] containing a [Failure] or an [AuthResult<bool>].
   Future<Either<Failure, AuthResult<bool>>> call(String email) async {
     final result = await authManager.isEmailRegistered(email);
@@ -24,4 +24,4 @@ class CheckEmailAvailabilityUseCase {
     }
     return Right(AuthResult.success(result.data));
   }
-} 
+}

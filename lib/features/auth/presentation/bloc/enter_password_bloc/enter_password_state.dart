@@ -30,7 +30,7 @@ class EnterPasswordSubmitSuccess extends EnterPasswordState {
 }
 
 /// State when the password submission fails
-class EnterPasswordSubmitFailure extends EnterPasswordState { 
+class EnterPasswordSubmitFailure extends EnterPasswordState {
   /// The failure that occurred during the password submission
   final Failure failure;
   const EnterPasswordSubmitFailure({required this.failure});

@@ -7,7 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 abstract class SupabaseWrapper {
   /// Streams authentication state changes
   Stream<supabase.AuthState> get onAuthStateChange;
-  
+
   /// The current user
   supabase.User? get currentUser;
 

@@ -21,38 +21,32 @@ abstract class Failure extends Equatable {
 }
 
 /// Failure thrown when a server error occurs.
-/// 
-/// Return this failure when a method call throws a [ServerException] 
-class ServerFailure extends Failure {
-}
+///
+/// Return this failure when a method call throws a [ServerException]
+class ServerFailure extends Failure {}
+
 /// Failure thrown when a network error occurs.
-/// 
+///
 /// Return this failure if an active network is required but none is available.
-class NetworkFailure extends Failure {
-}
+class NetworkFailure extends Failure {}
 
 /// Failure thrown when a client error occurs.
-/// 
+///
 /// Return this failure if a method call throws a [ClientException]
 /// The UI can extract the message from this failure and display it to the user.
-class ClientFailure extends Failure {
-}
+class ClientFailure extends Failure {}
 
 /// Failure thrown when a rate limit error occurs.
-class RateLimitFailure extends Failure {
-}
+class RateLimitFailure extends Failure {}
 
 /// Failure thrown when a user is not found.
-class UserNotFoundFailure extends Failure {
-}
+class UserNotFoundFailure extends Failure {}
 
 /// Failure thrown when an unexpected error occurs.
-class UnexpectedFailure extends Failure {
-}
+class UnexpectedFailure extends Failure {}
 
 /// Failure thrown when an authentication error occurs.
 class AuthFailure extends Failure {
-
   /// The type of authentication error that occurred.
   final AuthErrorType errorType;
   const AuthFailure({required this.errorType});

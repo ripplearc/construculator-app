@@ -138,7 +138,7 @@ void main() {
         expect(router.navigationHistory.first.arguments, enteredEmail);
       },
     );
- testWidgets('disables continue button when an invalid email is entered', (
+    testWidgets('disables continue button when an invalid email is entered', (
       WidgetTester tester,
     ) async {
       fakeSupabase.shouldDelayOperations = true;

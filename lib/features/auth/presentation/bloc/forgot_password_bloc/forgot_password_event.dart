@@ -19,7 +19,7 @@ class ForgotPasswordSubmitted extends ForgotPasswordEvent {
   const ForgotPasswordSubmitted(this.email);
   @override
   List<Object> get props => [email];
-} 
+}
 
 /// Event triggered when the user presses the edit email button
 class ForgotPasswordEditEmailRequested extends ForgotPasswordEvent {
@@ -35,6 +35,7 @@ class ForgotPasswordFormFieldChanged extends ForgotPasswordEvent {
 
   /// The field that changed
   final ForgotPasswordFormField field;
+
   /// The new value of the field
   final String value;
 

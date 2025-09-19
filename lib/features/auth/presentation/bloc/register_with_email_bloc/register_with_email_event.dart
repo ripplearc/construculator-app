@@ -31,11 +31,10 @@ class RegisterWithEmailContinuePressed extends RegisterWithEmailEvent {
 
   @override
   List<Object> get props => [email];
-} 
+}
 
 /// Event for editing email, triggered when user presses the edit button on the otp bottom sheet
 class RegisterWithEmailEmailEditRequested extends RegisterWithEmailEvent {
-
   const RegisterWithEmailEmailEditRequested();
 
   @override
@@ -51,6 +50,7 @@ class RegisterWithEmailFormFieldChanged extends RegisterWithEmailEvent {
 
   /// The field that changed
   final RegisterWithEmailFormField field;
+
   /// The new value of the field
   final String value;
 

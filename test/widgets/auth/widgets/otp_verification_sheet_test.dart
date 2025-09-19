@@ -29,23 +29,23 @@ void main() {
         ],
         supportedLocales: const [Locale('en')],
         home: Builder(
-        builder: (context) {
-          buildContext = context;
-          return Scaffold(
-          body: OtpVerificationQuickSheet(
-            note: AppLocalizations.of(buildContext!)!.didNotReceiveCode,
-            contact: contact,
-            onChanged: onChanged,
-            onEdit: onEdit,
-            onVerify: onVerify,
-            onResend: onResend,
-            isVerifying: isVerifying,
-            isResending: isResending,
-            verifyButtonDisabled: verifyDisabled,
-          ),
-        );
-        },
-      ),
+          builder: (context) {
+            buildContext = context;
+            return Scaffold(
+              body: OtpVerificationQuickSheet(
+                note: AppLocalizations.of(buildContext!)!.didNotReceiveCode,
+                contact: contact,
+                onChanged: onChanged,
+                onEdit: onEdit,
+                onVerify: onVerify,
+                onResend: onResend,
+                isVerifying: isVerifying,
+                isResending: isResending,
+                verifyButtonDisabled: verifyDisabled,
+              ),
+            );
+          },
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -57,10 +57,24 @@ void main() {
     ) async {
       await pumpOtpSheet(tester: tester, onChanged: (_) {});
 
-      expect(find.text(AppLocalizations.of(buildContext!)!.authenticationCodeTitle), findsOneWidget);
-      expect(find.textContaining(AppLocalizations.of(buildContext!)!.didNotReceiveCode), findsOneWidget);
-      expect(find.text(AppLocalizations.of(buildContext!)!.resendButton), findsOneWidget);
-      expect(find.text(AppLocalizations.of(buildContext!)!.verifyOtpButton), findsOneWidget);
+      expect(
+        find.text(AppLocalizations.of(buildContext!)!.authenticationCodeTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining(
+          AppLocalizations.of(buildContext!)!.didNotReceiveCode,
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(AppLocalizations.of(buildContext!)!.resendButton),
+        findsOneWidget,
+      );
+      expect(
+        find.text(AppLocalizations.of(buildContext!)!.verifyOtpButton),
+        findsOneWidget,
+      );
     });
 
     testWidgets('renders note and contact correctly inside RichText', (
@@ -71,7 +85,9 @@ void main() {
       final richTextWithNote = richTexts.evaluate().any((element) {
         final widget = element.widget as RichText;
         final span = widget.text as TextSpan;
-        return span.toPlainText().contains(AppLocalizations.of(buildContext!)!.didNotReceiveCode);
+        return span.toPlainText().contains(
+          AppLocalizations.of(buildContext!)!.didNotReceiveCode,
+        );
       });
       expect(richTextWithNote, isTrue);
       final richTextWithContact = richTexts.evaluate().any((element) {
@@ -110,7 +126,10 @@ void main() {
     ) async {
       await pumpOtpSheet(tester: tester, isResending: true, onChanged: (_) {});
 
-      expect(find.text(AppLocalizations.of(buildContext!)!.resendingButtonLabel), findsOneWidget);
+      expect(
+        find.text(AppLocalizations.of(buildContext!)!.resendingButtonLabel),
+        findsOneWidget,
+      );
     });
 
     testWidgets('tapping resend link triggers onResend', (tester) async {
@@ -121,7 +140,9 @@ void main() {
         onResend: () => tapped = true,
       );
 
-      await tester.tap(find.text(AppLocalizations.of(buildContext!)!.resendButton));
+      await tester.tap(
+        find.text(AppLocalizations.of(buildContext!)!.resendButton),
+      );
       await tester.pump();
       expect(tapped, isTrue);
     });
@@ -136,7 +157,9 @@ void main() {
         onVerify: () => tapped = true,
       );
 
-      await tester.tap(find.text(AppLocalizations.of(buildContext!)!.verifyOtpButton));
+      await tester.tap(
+        find.text(AppLocalizations.of(buildContext!)!.verifyOtpButton),
+      );
       await tester.pump();
       expect(tapped, isTrue);
     });
@@ -146,7 +169,10 @@ void main() {
     ) async {
       await pumpOtpSheet(tester: tester, onChanged: (_) {}, isVerifying: true);
 
-      expect(find.text(AppLocalizations.of(buildContext!)!.verifyingButtonLabel), findsOneWidget);
+      expect(
+        find.text(AppLocalizations.of(buildContext!)!.verifyingButtonLabel),
+        findsOneWidget,
+      );
     });
 
     testWidgets('verify button is disabled when verifyButtonDisabled=true', (

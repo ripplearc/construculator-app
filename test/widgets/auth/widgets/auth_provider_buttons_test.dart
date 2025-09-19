@@ -24,7 +24,10 @@ void main() {
           builder: (context) {
             buildContext = context;
             return Scaffold(
-              body: AuthProviderButtons(onPressed: onPressed, isEmailAuth: isEmailAuth),
+              body: AuthProviderButtons(
+                onPressed: onPressed,
+                isEmailAuth: isEmailAuth,
+              ),
             );
           },
         ),

@@ -16,7 +16,7 @@ class CreateAccountUseCase {
 
   /// Creates a new user account using the auth manager.
   /// Accepts a [CreateAccountUseCaseParams] object as a parameter.
-  /// 
+  ///
   /// Returns a [Future] that emits an [Either] containing a [Failure] or an [AuthResult<bool>].
   Future<Either<Failure, void>> call(CreateAccountUseCaseParams params) async {
     // update only the user password

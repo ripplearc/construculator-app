@@ -10,12 +10,13 @@ part 'forgot_password_state.dart';
 
 /// Bloc for resetting a password, orchestrates the flow of the reset password process
 /// Sends the reset password email to the user
-class ForgotPasswordBloc extends Bloc<ForgotPasswordEvent, ForgotPasswordState> {
+class ForgotPasswordBloc
+    extends Bloc<ForgotPasswordEvent, ForgotPasswordState> {
   final ResetPasswordUseCase _resetPasswordUseCase;
 
   ForgotPasswordBloc({required ResetPasswordUseCase resetPasswordUseCase})
-      : _resetPasswordUseCase = resetPasswordUseCase,
-        super(ForgotPasswordInitial()) {
+    : _resetPasswordUseCase = resetPasswordUseCase,
+      super(ForgotPasswordInitial()) {
     on<ForgotPasswordSubmitted>(_onSubmitted);
     on<ForgotPasswordEditEmailRequested>(_onEditEmail);
     on<ForgotPasswordFormFieldChanged>(_onFormFieldChanged);
@@ -28,7 +29,10 @@ class ForgotPasswordBloc extends Bloc<ForgotPasswordEvent, ForgotPasswordState> 
     emit(ForgotPasswordEditEmailSuccess());
   }
 
-  Future<void> _onSubmitted(ForgotPasswordSubmitted event, Emitter<ForgotPasswordState> emit) async {
+  Future<void> _onSubmitted(
+    ForgotPasswordSubmitted event,
+    Emitter<ForgotPasswordState> emit,
+  ) async {
     emit(ForgotPasswordLoading());
     final result = await _resetPasswordUseCase(event.email);
     result.fold(
@@ -60,4 +64,4 @@ class ForgotPasswordBloc extends Bloc<ForgotPasswordEvent, ForgotPasswordState> 
         break;
     }
   }
-} 
+}

@@ -37,7 +37,7 @@ class OtpVerificationResendRequested extends OtpVerificationEvent {
 
   @override
   List<Object> get props => [contact];
-} 
+}
 
 /// This is the event class for the OTP verification OTP changed event.
 /// It is triggered when the OTP input field is being edited.
@@ -49,4 +49,4 @@ class OtpVerificationOtpChanged extends OtpVerificationEvent {
 
   @override
   List<Object> get props => [otp];
-} 
+}

@@ -170,7 +170,7 @@ void main() {
         ),
         findsWidgets,
       );
-        final sentNewPasswordButton = find.widgetWithText(
+      final sentNewPasswordButton = find.widgetWithText(
         CoreButton,
         AppLocalizations.of(buildContext!)!.setPasswordButton,
       );
@@ -205,7 +205,7 @@ void main() {
         '@Password123!',
       );
       await tester.pumpAndSettle();
-        final sentNewPasswordButton = find.widgetWithText(
+      final sentNewPasswordButton = find.widgetWithText(
         CoreButton,
         AppLocalizations.of(buildContext!)!.setPasswordButton,
       );

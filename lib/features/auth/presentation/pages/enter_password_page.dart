@@ -20,7 +20,8 @@ class EnterPasswordPage extends StatefulWidget {
   State<EnterPasswordPage> createState() => _EnterPasswordPageState();
 }
 
-class _EnterPasswordPageState extends State<EnterPasswordPage> with LocalizationMixin{
+class _EnterPasswordPageState extends State<EnterPasswordPage>
+    with LocalizationMixin {
   final TextEditingController _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _canPressContinue = false;
@@ -38,10 +39,9 @@ class _EnterPasswordPageState extends State<EnterPasswordPage> with Localization
     _passwordController.addListener(() {
       setState(() {
         _canPressContinue = _passwordController.text.isNotEmpty;
-        _passwordErrorList =
-            _passwordController.text.isEmpty
-                ? [l10n?.passwordRequiredError ?? '']
-                : null;
+        _passwordErrorList = _passwordController.text.isEmpty
+            ? [l10n?.passwordRequiredError ?? '']
+            : null;
       });
     });
     super.initState();
@@ -121,8 +121,9 @@ class _EnterPasswordPageState extends State<EnterPasswordPage> with Localization
                   hintText: '${l10n?.passwordHint}',
                   suffix: IconButton(
                     icon: CoreIconWidget(
-                      icon:
-                          _isPasswordVisible ? CoreIcons.eye : CoreIcons.eyeOff,
+                      icon: _isPasswordVisible
+                          ? CoreIcons.eye
+                          : CoreIcons.eyeOff,
                       size: CoreSpacing.space6,
                       color: CoreTextColors.dark,
                     ),
@@ -151,10 +152,9 @@ class _EnterPasswordPageState extends State<EnterPasswordPage> with Localization
                   isDisabled:
                       !_canPressContinue || state is EnterPasswordSubmitLoading,
                   centerAlign: true,
-                  label:
-                      state is EnterPasswordSubmitLoading
-                          ? '${l10n?.loggingInButton}'
-                          : '${l10n?.continueButton}',
+                  label: state is EnterPasswordSubmitLoading
+                      ? '${l10n?.loggingInButton}'
+                      : '${l10n?.continueButton}',
                 ),
                 const SizedBox(height: 16),
               ],
