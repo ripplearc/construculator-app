@@ -28,7 +28,7 @@ void main() {
     test('reset() should clear all added routes', () {
       final route = ModuleRoute('/test', module: AppModule(FakeAppBootstrap()));
       fakeRouteManager.add(route);
-      expect(fakeRouteManager.addedRoutes, isNotEmpty); 
+      expect(fakeRouteManager.addedRoutes, isNotEmpty);
       fakeRouteManager.reset();
 
       expect(fakeRouteManager.addedRoutes, isEmpty);
