@@ -66,6 +66,15 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage>
     });
   }
 
+  void _onSubmit(BuildContext context) {
+    BlocProvider.of<SetNewPasswordBloc>(context).add(
+      SetNewPasswordSubmitted(
+        email: widget.email,
+        password: _passwordController.text,
+      ),
+    );
+  }
+
   @override
   void initState() {
     _passwordController.addListener(() {
@@ -94,15 +103,6 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage>
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
-  }
-
-  void _onSubmit(BuildContext context) {
-    BlocProvider.of<SetNewPasswordBloc>(context).add(
-      SetNewPasswordSubmitted(
-        email: widget.email,
-        password: _passwordController.text,
-      ),
-    );
   }
 
   @override
@@ -135,10 +135,6 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage>
             }
           }
           if (state is SetNewPasswordSuccess) {
-            _confirmPasswordController.clear();
-            _passwordController.clear();
-            _confirmPasswordErrorList = null;
-            _passwordErrorList = null;
             SuccessModal.show(
               context,
               message: '${l10n?.passwordResetSuccessMessage}',
