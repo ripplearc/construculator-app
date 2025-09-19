@@ -110,6 +110,24 @@ void main() {
     });
 
     testWidgets(
+      'shows validation error immediately for initially invalid email',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            child: const LoginWithEmailPage(email: 'invalid-email'),
+          ),
+        );
+        await tester.pump();
+        expect(
+          find.textContaining(
+            AppLocalizations.of(buildContext!)!.invalidEmailError,
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
       'valid, registered email enables button and navigates to enter password',
       (WidgetTester tester) async {
         fakeSupabase.addTableData('users', [
