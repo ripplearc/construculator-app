@@ -1,0 +1,1 @@
+enum MarkupValueType { percentage, amount }
