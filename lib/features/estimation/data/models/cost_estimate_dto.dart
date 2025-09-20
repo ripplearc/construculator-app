@@ -4,12 +4,13 @@ import 'package:construculator/features/estimation/domain/entities/enums/markup_
 import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
 
-class CostEstimationDto {
+class CostEstimateDto {
   String id;
   String projectId;
   String estimateName;
   String estimateDescription;
   String creatorUserId;
+  String markupType;
   String overallMarkupValueType;
   double overallMarkupValue;
   String materialMarkupValueType;
@@ -25,12 +26,13 @@ class CostEstimationDto {
   String createdAt;
   String updatedAt;
 
-  CostEstimationDto({
+  CostEstimateDto({
     required this.id,
     required this.projectId,
     required this.estimateName,
     required this.estimateDescription,
     required this.creatorUserId,
+    required this.markupType,
     required this.overallMarkupValueType,
     required this.overallMarkupValue,
     required this.materialMarkupValueType,
@@ -47,13 +49,14 @@ class CostEstimationDto {
     required this.updatedAt,
   });
 
-  factory CostEstimationDto.fromJson(Map<String, dynamic> json) {
-    return CostEstimationDto(
+  factory CostEstimateDto.fromJson(Map<String, dynamic> json) {
+    return CostEstimateDto(
       id: json['id'],
       projectId: json['project_id'],
       estimateName: json['estimate_name'],
       estimateDescription: json['estimate_description'],
       creatorUserId: json['creator_user_id'],
+      markupType: json['markup_type'],
       overallMarkupValueType: json['overall_markup_value_type'],
       overallMarkupValue: (json['overall_markup_value'] as num).toDouble(),
       materialMarkupValueType: json['material_markup_value_type'],
@@ -77,6 +80,7 @@ class CostEstimationDto {
     'estimate_name': estimateName,
     'estimate_description': estimateDescription,
     'creator_user_id': creatorUserId,
+    'markup_type': markupType,
     'overall_markup_value_type': overallMarkupValueType,
     'overall_markup_value': overallMarkupValue,
     'material_markup_value_type': materialMarkupValueType,
@@ -101,22 +105,19 @@ class CostEstimationDto {
       estimateDescription: estimateDescription,
       creatorUserId: creatorUserId,
       markupConfiguration: MarkupConfiguration(
-        overallType: _mapMarkupType(overallMarkupValueType),
+        overallType: _mapMarkupType(markupType),
         overallValue: MarkupValue(
           type: _mapMarkupValueType(overallMarkupValueType),
           value: overallMarkupValue,
         ),
-        materialValueType: _mapMarkupType(materialMarkupValueType),
         materialValue: MarkupValue(
           type: _mapMarkupValueType(materialMarkupValueType),
           value: materialMarkupValue,
         ),
-        laborValueType: _mapMarkupType(laborMarkupValueType),
         laborValue: MarkupValue(
           type: _mapMarkupValueType(laborMarkupValueType),
           value: laborMarkupValue,
         ),
-        equipmentValueType: _mapMarkupType(equipmentMarkupValueType),
         equipmentValue: MarkupValue(
           type: _mapMarkupValueType(equipmentMarkupValueType),
           value: equipmentMarkupValue,
