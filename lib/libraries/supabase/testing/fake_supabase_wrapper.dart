@@ -20,7 +20,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Tracks the currently authenticated user
   FakeUser? _currentUser;
 
-  /// Tracks table data for assertions during [selectSingle], [insert], and [update]
+  /// Tracks table data for assertions during [select], [selectSingle], [insert], and [update]
   final Map<String, List<Map<String, dynamic>>> _tables = {};
 
   /// Tracks method calls for assertions
@@ -43,6 +43,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Controls whether [signOut] throws an exception
   bool shouldThrowOnSignOut = false;
+
+  /// Controls whether [select] throws an exception
+  bool shouldThrowOnSelectMultiple = false;
 
   /// Controls whether [selectSingle] throws an exception
   bool shouldThrowOnSelect = false;
@@ -78,6 +81,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   String? signOutErrorMessage;
 
   /// Error message for select.
+  /// Used to specify the error message thrown when [select] is attempted
+  String? selectMultipleErrorMessage;
+
+  /// Error message for select.
   /// Used to specify the error message thrown when [selectSingle] is attempted
   String? selectErrorMessage;
 
@@ -88,6 +95,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Error message for update.
   /// Used to specify the error message thrown when [update] is attempted
   String? updateErrorMessage;
+
+  /// Error message for select.
+  /// Used to specify the error message thrown when [select] is attempted
+  SupabaseExceptionType? selectMultipleExceptionType;
 
   /// Used to specify the type of exception thrown when [selectSingle] is attempted
   SupabaseExceptionType? selectExceptionType;
@@ -101,11 +112,14 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Used to specify the error code thrown when [signInWithPassword] is attempted
   SupabaseAuthErrorCode? authErrorCode;
 
-  /// Used to specify the error code thrown during [selectSingle], [insert], and [update]
+  /// Used to specify the error code thrown during [select], [selectSingle], [insert], and [update]
   PostgresErrorCode? postgrestErrorCode;
 
   /// Controls whether [signInWithPassword] returns a null user
   bool shouldReturnNullUser = false;
+
+  /// Controls whether [select] returns a null user
+  bool shouldReturnNullOnSelectMultiple = false;
 
   /// Controls whether [selectSingle] returns a null user
   bool shouldReturnNullOnSelect = false;
@@ -309,6 +323,37 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     _authStateController.add(
       _createAuthState(supabase.AuthChangeEvent.signedOut, null),
     );
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> select({
+    required String table,
+    String columns = '*',
+    required String filterColumn,
+    required dynamic filterValue,
+  }) async {
+    _methodCalls.add({
+      'method': 'select',
+      'table': table,
+      'columns': columns,
+      'filterColumn': filterColumn,
+      'filterValue': filterValue,
+    });
+
+    if (shouldThrowOnSelectMultiple) {
+      _throwConfiguredException(
+        selectMultipleExceptionType,
+        selectMultipleErrorMessage ?? 'Select failed',
+      );
+    }
+
+    if (shouldReturnNullOnSelectMultiple) {
+      return [];
+    }
+
+    final tableData = _tables[table] ?? [];
+    final filteredData = tableData.where((row) => row[filterColumn] == filterValue).toList();
+    return filteredData;
   }
 
   @override

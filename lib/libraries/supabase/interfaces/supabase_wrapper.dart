@@ -71,6 +71,19 @@ abstract class SupabaseWrapper {
   /// Sign out the current user
   Future<void> signOut();
 
+  /// Select a set of rows from a table
+  ///
+  /// [table] The table to select from
+  /// [columns] The columns to select, defaults to '*'
+  /// [filterColumn] The column to filter by
+  /// [filterValue] The value to filter by
+  Future<List<Map<String, dynamic>>> select({
+    required String table,
+    String columns = '*',
+    required String filterColumn,
+    required dynamic filterValue,
+  });
+
   // Database-related methods
   /// Select a single row from a table
   ///
