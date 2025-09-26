@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget {
+class ProjectHeaderAppBar extends StatelessWidget
+    implements PreferredSizeWidget {
   final String projectName;
   final VoidCallback? onProjectTap;
   final VoidCallback? onSearchTap;

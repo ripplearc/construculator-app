@@ -27,7 +27,10 @@ void main() {
         ),
       );
     }
-    testWidgets('renders with required project name', (WidgetTester tester) async {
+
+    testWidgets('renders with required project name', (
+      WidgetTester tester,
+    ) async {
       const projectName = 'Test Project';
 
       await pumpProjectHeaderAppBar(tester, projectName: projectName);
@@ -36,7 +39,9 @@ void main() {
       expect(find.byType(ProjectHeaderAppBar), findsOneWidget);
     });
 
-    testWidgets('calls onProjectTap when project name is tapped', (WidgetTester tester) async {
+    testWidgets('calls onProjectTap when project name is tapped', (
+      WidgetTester tester,
+    ) async {
       const projectName = 'Test Project';
       bool onProjectTapCalled = false;
 
@@ -52,7 +57,9 @@ void main() {
       expect(onProjectTapCalled, isTrue);
     });
 
-    testWidgets('calls onSearchTap when search icon is tapped', (WidgetTester tester) async {
+    testWidgets('calls onSearchTap when search icon is tapped', (
+      WidgetTester tester,
+    ) async {
       const projectName = 'Test Project';
       bool onSearchTapCalled = false;
 
@@ -69,7 +76,9 @@ void main() {
       expect(onSearchTapCalled, isTrue);
     });
 
-    testWidgets('calls onNotificationTap when notification icon is tapped', (WidgetTester tester) async {
+    testWidgets('calls onNotificationTap when notification icon is tapped', (
+      WidgetTester tester,
+    ) async {
       const projectName = 'Test Project';
       bool onNotificationTapCalled = false;
 
@@ -79,14 +88,18 @@ void main() {
         onNotificationTap: () => onNotificationTapCalled = true,
       );
 
-      final notificationIcon = find.byKey(const Key('project_header_notification_button'));
+      final notificationIcon = find.byKey(
+        const Key('project_header_notification_button'),
+      );
       await tester.tap(notificationIcon);
       await tester.pumpAndSettle();
 
       expect(onNotificationTapCalled, isTrue);
     });
 
-    testWidgets('handles null callbacks gracefully', (WidgetTester tester) async {
+    testWidgets('handles null callbacks gracefully', (
+      WidgetTester tester,
+    ) async {
       const projectName = 'Test Project';
 
       await pumpProjectHeaderAppBar(
@@ -104,7 +117,9 @@ void main() {
       await tester.tap(searchIcon);
       await tester.pumpAndSettle();
 
-      final notificationIcon = find.byKey(const Key('project_header_notification_button'));
+      final notificationIcon = find.byKey(
+        const Key('project_header_notification_button'),
+      );
       await tester.tap(notificationIcon);
       await tester.pumpAndSettle();
 

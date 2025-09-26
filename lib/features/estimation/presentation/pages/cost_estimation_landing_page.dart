@@ -10,7 +10,8 @@ class CostEstimationLandingPage extends StatefulWidget {
   const CostEstimationLandingPage({super.key});
 
   @override
-  State<CostEstimationLandingPage> createState() => _CostEstimationLandingPageState();
+  State<CostEstimationLandingPage> createState() =>
+      _CostEstimationLandingPageState();
 }
 
 class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
@@ -53,7 +54,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
               body: Center(child: CircularProgressIndicator()),
             );
           }
-          
+
           return Scaffold(
             backgroundColor: Colors.white,
             appBar: ProjectHeaderAppBar(
@@ -61,7 +62,9 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
               onProjectTap: () {},
               onSearchTap: () {},
               onNotificationTap: () {},
-              avatarImage: userAvatarUrl.isNotEmpty ? NetworkImage(userAvatarUrl) : null,
+              avatarImage: userAvatarUrl.isNotEmpty
+                  ? NetworkImage(userAvatarUrl)
+                  : null,
             ),
             body: _buildBody(),
           );

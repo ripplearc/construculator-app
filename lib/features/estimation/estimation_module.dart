@@ -21,15 +21,21 @@ class EstimationModule extends Module {
   EstimationModule(this.appBootstrap);
 
   final List<RouteDefinition> _routeDefinitions = [
-    RouteDefinition(estimationLandingRoute, (context) => CostEstimationLandingPage(), [
-      AuthGuard(),
-    ]),
+    RouteDefinition(
+      estimationLandingRoute,
+      (context) => CostEstimationLandingPage(),
+      [AuthGuard()],
+    ),
   ];
 
   List<RouteDefinition> get routeDefinitions => _routeDefinitions;
 
   @override
-  List<Module> get imports => [AuthLibraryModule(appBootstrap), AuthModule(appBootstrap), RouterModule()];
+  List<Module> get imports => [
+    AuthLibraryModule(appBootstrap),
+    AuthModule(appBootstrap),
+    RouterModule(),
+  ];
 
   @override
   void routes(RouteManager r) {
