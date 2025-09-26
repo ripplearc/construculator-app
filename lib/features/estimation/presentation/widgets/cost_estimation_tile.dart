@@ -8,6 +8,11 @@ class CostEstimationTile extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onMenuTap;
 
+  // Static formatters to avoid recreating on every build
+  static final _dateFormatter = DateFormat('MMM dd, yyyy');
+  static final _timeFormatter = DateFormat('h:mm a');
+  static final _currencyFormatter = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+
   const CostEstimationTile({
     super.key,
     required this.estimation,
@@ -70,6 +75,8 @@ class CostEstimationTile extends StatelessWidget {
               fontWeight: FontWeight.w600,
               color: CoreTextColors.dark,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
         // Menu button
@@ -87,9 +94,6 @@ class CostEstimationTile extends StatelessWidget {
 
   Widget _buildBottomRow(BuildContext context) {
     final createdAt = estimation.createdAt;
-    final dateFormatter = DateFormat('MMM dd, yyyy');
-    final timeFormatter = DateFormat('h:mm a');
-    final currencyFormatter = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
 
     return Row(
       children: [
@@ -102,7 +106,7 @@ class CostEstimationTile extends StatelessWidget {
         const SizedBox(width: 8),
         // Date
         Text(
-          dateFormatter.format(createdAt),
+          _dateFormatter.format(createdAt),
           style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
@@ -122,7 +126,7 @@ class CostEstimationTile extends StatelessWidget {
         const SizedBox(width: 8),
         // Time
         Text(
-          timeFormatter.format(createdAt),
+          _timeFormatter.format(createdAt),
           style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
@@ -133,7 +137,7 @@ class CostEstimationTile extends StatelessWidget {
         // Cost
         Text(
           estimation.totalCost != null 
-            ? currencyFormatter.format(estimation.totalCost ?? 0)
+            ? _currencyFormatter.format(estimation.totalCost)
             : 'N/A',
           style: const TextStyle(
             fontSize: 16,
