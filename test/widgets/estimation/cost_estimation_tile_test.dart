@@ -1,6 +1,5 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
-import 'package:construculator/features/estimation/domain/entities/enums/markup_type_enum.dart';
-import 'package:construculator/features/estimation/domain/entities/enums/markup_value_type_enum.dart';
+import 'package:construculator/features/estimation/domain/entities/enums.dart';
 import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
@@ -9,13 +8,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('CostEstimationTile', () {
-    late CostEstimate mockEstimation;
+    late CostEstimate testEstimation;
     late DateTime testDate;
 
     setUp(() {
       testDate = DateTime(2024, 3, 15, 14, 30); // March 15, 2024, 2:30 PM
       
-      mockEstimation = CostEstimate(
+      testEstimation = CostEstimate(
         id: 'test-id',
         projectId: 'project-id',
         estimateName: 'Test Estimation',
@@ -43,7 +42,7 @@ void main() {
       return MaterialApp(
         home: Scaffold(
           body: CostEstimationTile(
-            estimation: estimation ?? mockEstimation,
+            estimation: estimation != null ? estimation : testEstimation,
             onTap: onTap,
             onMenuTap: onMenuTap,
           ),
@@ -212,8 +211,13 @@ void main() {
           onMenuTap: () => onMenuTapCalled = true,
         ));
 
-        // Find the menu button (third Image widget - money, calendar, menu)
-        final menuButton = find.byType(Image).at(1);
+        // Find the menu button by its semantic label or key for more robustness
+        final menuButton = find.byWidgetPredicate(
+          (widget) =>
+              widget is Image &&
+              widget.image is AssetImage &&
+              (widget.image as AssetImage).assetName == 'assets/icons/vertical_three_dots_dark_green.png',
+        );
         await tester.tap(menuButton);
         await tester.pump();
 
