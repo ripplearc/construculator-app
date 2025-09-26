@@ -37,12 +37,16 @@ class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    projectName,
-                    style: const TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w600,
-                      color: CoreTextColors.dark,
+                  Flexible(
+                    child: Text(
+                      projectName,
+                      style: const TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w600,
+                        color: CoreTextColors.dark,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -82,10 +86,10 @@ class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget
                 margin: const EdgeInsets.only(right: 16, left: 8),
                 child: CircleAvatar(
                   radius: 20,
+                  backgroundColor: Colors.black,
                   backgroundImage: (avatarUrl?.isNotEmpty ?? false)
                       ? NetworkImage(avatarUrl ?? '')
-                      : const NetworkImage(
-                          'https://via.placeholder.com/100'), // fallback
+                      : null,
                 ),
               ),
             ],
