@@ -1,5 +1,6 @@
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_state.dart';
+import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/features/estimation/presentation/widgets/project_header_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -73,10 +74,18 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
     );
   }
 
+  final estimations = [];
+
   Widget _buildBody() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(),
+      child: Column(
+        children: [
+          ...estimations.map(
+            (estimation) => CostEstimationTile(estimation: estimation),
+          ),
+        ],
+      ),
     );
   }
 }
