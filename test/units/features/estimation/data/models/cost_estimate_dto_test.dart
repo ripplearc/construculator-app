@@ -1,7 +1,6 @@
 import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
-import 'package:construculator/features/estimation/domain/entities/enums/markup_type_enum.dart';
-import 'package:construculator/features/estimation/domain/entities/enums/markup_value_type_enum.dart';
+import 'package:construculator/features/estimation/domain/entities/enums.dart';
 import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:flutter_test/flutter_test.dart';
