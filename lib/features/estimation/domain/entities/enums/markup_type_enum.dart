@@ -1,1 +1,0 @@
-enum MarkupType { overall, granular }
