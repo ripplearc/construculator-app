@@ -107,8 +107,12 @@ void main() {
         expect(config.equipmentValue!.value, dto.equipmentMarkupValue);
 
         // Lock status
-        expect(domain.lockStatus, isA<LockStatus>());
-        expect(domain.lockStatus.isLocked, true);
+        expect(domain.lockStatus, isA<LockedStatus>());
+
+        final lockedStatus = domain.lockStatus as LockedStatus;
+        expect(lockedStatus.lockedByUserId, dto.lockedByUserID);
+        expect(lockedStatus.lockedAt, DateTime.parse(dto.lockedAt));
+        expect(lockedStatus.isLocked, true);
 
         // Dates
         expect(domain.createdAt, DateTime.parse(dto.createdAt));
@@ -116,7 +120,7 @@ void main() {
       },
     );
 
-    test('toDomain should create unlocked LockStatus when isLocked=false', () {
+    test('toDomain should create CostEstimate with UnlockedStatus when isLocked is false', () {
       final unlockedJson = Map<String, dynamic>.from(sampleJson)
         ..['is_locked'] = false;
 
@@ -124,7 +128,7 @@ void main() {
       final domain = dto.toDomain();
 
       expect(domain.lockStatus.isLocked, false);
-      expect(domain.lockStatus, isA<LockStatus>());
+      expect(domain.lockStatus, isA<UnlockedStatus>());
     });
   });
 }
