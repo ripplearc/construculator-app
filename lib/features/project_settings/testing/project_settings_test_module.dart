@@ -7,6 +7,8 @@ import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class ProjectSettingsTestModule extends Module {
+  ProjectSettingsTestModule();
+
   @override
   List<Module> get imports => [ClockTestModule()];
 
