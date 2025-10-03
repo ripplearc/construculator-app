@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:construculator/features/project_settings/domain/usecases/get_project_usecase.dart';
+import 'package:construculator/features/project_settings/domain/entities/project_entity.dart';
 
-class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final String projectName;
+class ProjectHeaderAppBar extends StatefulWidget
+    implements PreferredSizeWidget {
+  final String projectId;
   final VoidCallback? onProjectTap;
   final VoidCallback? onSearchTap;
   final VoidCallback? onNotificationTap;
@@ -10,12 +14,57 @@ class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget
 
   const ProjectHeaderAppBar({
     super.key,
-    required this.projectName,
+    required this.projectId,
     this.onProjectTap,
     this.onSearchTap,
     this.onNotificationTap,
     this.avatarImage,
   });
+
+  @override
+  State<ProjectHeaderAppBar> createState() => _ProjectHeaderAppBarState();
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+}
+
+class _ProjectHeaderAppBarState extends State<ProjectHeaderAppBar> {
+  Project? _project;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProject();
+  }
+
+  Future<void> _loadProject() async {
+    try {
+      final getProjectUseCase = Modular.get<GetProjectUseCase>();
+      final result = await getProjectUseCase(widget.projectId);
+
+      result.fold(
+        (failure) {
+          setState(() {
+            _errorMessage = 'Failed to load project';
+            _isLoading = false;
+          });
+        },
+        (project) {
+          setState(() {
+            _project = project;
+            _isLoading = false;
+          });
+        },
+      );
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'An unexpected error occurred';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,22 +82,11 @@ class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget
             elevation: 0,
             titleSpacing: 0,
             title: InkWell(
-              onTap: onProjectTap,
+              onTap: widget.onProjectTap,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Flexible(
-                    child: Text(
-                      projectName,
-                      style: TextStyle(
-                        fontSize: 19,
-                        fontWeight: CoreTypography.semiBold,
-                        color: CoreTextColors.dark,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                  ),
+                  Flexible(child: _buildProjectName()),
                   const SizedBox(width: 4),
                   CoreIconWidget(
                     icon: CoreIcons.arrowDown,
@@ -61,7 +99,7 @@ class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget
             actions: [
               IconButton(
                 key: const Key('project_header_search_button'),
-                onPressed: onSearchTap,
+                onPressed: widget.onSearchTap,
                 icon: CoreIconWidget(
                   icon: CoreIcons.search,
                   color: CoreIconColors.dark,
@@ -69,7 +107,7 @@ class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget
               ),
               IconButton(
                 key: const Key('project_header_notification_button'),
-                onPressed: onNotificationTap,
+                onPressed: widget.onNotificationTap,
                 icon: CoreIconWidget(
                   icon: CoreIcons.notification,
                   color: CoreIconColors.dark,
@@ -81,7 +119,7 @@ class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget
                   radius: 20,
                   backgroundColor: Colors.black,
                   // TODO: https://ripplearc.youtrack.cloud/issue/CA-392/Cost-Estimation-Use-letter-when-no-user-avatar-is-present
-                  image: avatarImage,
+                  image: widget.avatarImage,
                 ),
               ),
             ],
@@ -91,6 +129,40 @@ class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget
     );
   }
 
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Widget _buildProjectName() {
+    if (_isLoading) {
+      return const SizedBox(
+        width: 20,
+        height: 20,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          valueColor: AlwaysStoppedAnimation<Color>(CoreTextColors.dark),
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Text(
+        'Error loading project',
+        style: const TextStyle(
+          fontSize: 19,
+          fontWeight: FontWeight.w600,
+          color: Colors.red,
+        ),
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
+      );
+    }
+
+    return Text(
+      _project?.projectName ?? 'Unknown Project',
+      style: const TextStyle(
+        fontSize: 19,
+        fontWeight: FontWeight.w600,
+        color: CoreTextColors.dark,
+      ),
+      overflow: TextOverflow.ellipsis,
+      maxLines: 1,
+    );
+  }
 }
