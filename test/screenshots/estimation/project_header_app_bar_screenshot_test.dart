@@ -1,4 +1,7 @@
 import 'package:construculator/features/estimation/presentation/widgets/project_header_app_bar.dart';
+import 'package:construculator/features/project_settings/domain/entities/project_entity.dart';
+import 'package:construculator/features/project_settings/domain/entities/enums.dart';
+import 'package:construculator/features/project_settings/testing/fake_project_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -14,25 +17,41 @@ void main() {
   final ratio = 1.0;
   final testName = 'project_header_app_bar';
   TestWidgetsFlutterBinding.ensureInitialized();
+  late FakeProjectRepository fakeProjectRepository;
 
   setUp(() async {
     await loadAppFonts();
+    fakeProjectRepository = FakeProjectRepository();
   });
 
   group('ProjectHeaderAppBar Screenshot Tests', () {
     Future<void> pumpProjectHeaderAppBar({
       required WidgetTester tester,
+      required String projectId,
       required String projectName,
       VoidCallback? onProjectTap,
       VoidCallback? onSearchTap,
       VoidCallback? onNotificationTap,
       ImageProvider? avatarImage,
     }) async {
+      // Create and configure the project
+      final project = Project(
+        id: projectId,
+        projectName: projectName,
+        creatorUserId: 'user-id',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        status: ProjectStatus.active,
+      );
+
+      // Configure the repository before creating the widget
+      fakeProjectRepository.addProject(projectId, project);
+
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             appBar: ProjectHeaderAppBar(
-              projectName: projectName,
+              projectId: projectId,
               onProjectTap: onProjectTap,
               onSearchTap: onSearchTap,
               onNotificationTap: onNotificationTap,
@@ -53,6 +72,7 @@ void main() {
       
       await pumpProjectHeaderAppBar(
         tester: tester,
+        projectId: 'project-id-1',
         projectName: 'Kitchen Renovation',
         onProjectTap: () {},
         onSearchTap: () {},
@@ -74,6 +94,7 @@ void main() {
       
       await pumpProjectHeaderAppBar(
         tester: tester,
+        projectId: 'project-id-2',
         projectName: 'Complete Home Renovation and Extension Project',
         onProjectTap: () {},
         onSearchTap: () {},
@@ -95,6 +116,7 @@ void main() {
       
       await pumpProjectHeaderAppBar(
         tester: tester,
+        projectId: 'project-id-3',
         projectName: 'Bathroom Remodel',
         onProjectTap: () {},
         onSearchTap: () {},
