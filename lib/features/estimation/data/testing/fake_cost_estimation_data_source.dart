@@ -6,7 +6,11 @@ import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:stack_trace/stack_trace.dart';
 
-/// Fake implementation of CostEstimationDataSource for testing
+/// A fake implementation of [CostEstimationDataSource] for testing purposes.
+///
+/// This class allows you to control and inspect the behavior of cost estimation
+/// data source operations in tests. You can configure it to simulate errors,
+/// delays, and return specific data for assertions.
 class FakeCostEstimationDataSource implements CostEstimationDataSource {
   /// Tracks method calls for assertions
   final List<Map<String, dynamic>> _methodCalls = [];
@@ -150,6 +154,8 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
   static const double _defaultTotalCost = 50000.0;
   static const bool _defaultIsLocked = false;
   static const String _defaultLockedByUserID = '';
+  
+  /// Creates a sample CostEstimateDto for testing
   CostEstimateDto createSampleEstimation({
     String? id,
     String? projectId,
