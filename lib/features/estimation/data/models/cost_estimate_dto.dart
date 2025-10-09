@@ -25,54 +25,54 @@ class CostEstimateDto {
   String estimateName;
   
   /// Optional description providing additional context about the estimate.
-  String estimateDescription;
+  String? estimateDescription;
   
   /// ID of the user who created this estimate.
   String creatorUserId;
   
   /// Type of markup configuration: 'overall' or 'granular'.
   /// Maps to [MarkupType] enum in domain layer.
-  String markupType;
+  String? markupType;
   
   /// Type of overall markup value: 'percentage' or 'amount'.
   /// Maps to [MarkupValueType] enum in domain layer.
-  String overallMarkupValueType;
+  String? overallMarkupValueType;
   
   /// Overall markup value as a decimal number.
-  double overallMarkupValue;
+  double? overallMarkupValue;
   
   /// Type of material markup value: 'percentage' or 'amount'.
   /// Maps to [MarkupValueType] enum in domain layer.
-  String materialMarkupValueType;
+  String? materialMarkupValueType;
   
   /// Material markup value as a decimal number.
-  double materialMarkupValue;
+  double? materialMarkupValue;
   
   /// Type of labor markup value: 'percentage' or 'amount'.
   /// Maps to [MarkupValueType] enum in domain layer.
-  String laborMarkupValueType;
+  String? laborMarkupValueType;
   
   /// Labor markup value as a decimal number.
-  double laborMarkupValue;
+  double? laborMarkupValue;
   
   /// Type of equipment markup value: 'percentage' or 'amount'.
   /// Maps to [MarkupValueType] enum in domain layer.
-  String equipmentMarkupValueType;
+  String? equipmentMarkupValueType;
   
   /// Equipment markup value as a decimal number.
-  double equipmentMarkupValue;
+  double? equipmentMarkupValue;
   
   /// Total calculated cost of the estimate.
-  double totalCost;
+  double? totalCost;
   
   /// Whether the estimate is currently locked for editing.
   bool isLocked;
   
   /// ID of the user who locked the estimate (if locked).
-  String lockedByUserID;
+  String? lockedByUserID;
   
   /// ISO 8601 timestamp when the estimate was locked.
-  String lockedAt;
+  String? lockedAt;
   
   /// ISO 8601 timestamp when the estimate was created.
   String createdAt;
@@ -123,14 +123,14 @@ class CostEstimateDto {
       creatorUserId: json['creator_user_id'],
       markupType: json['markup_type'],
       overallMarkupValueType: json['overall_markup_value_type'],
-      overallMarkupValue: (json['overall_markup_value'] as num).toDouble(),
+      overallMarkupValue: json['overall_markup_value'] != null ? (json['overall_markup_value'] as num).toDouble() : null,
       materialMarkupValueType: json['material_markup_value_type'],
-      materialMarkupValue: (json['material_markup_value'] as num).toDouble(),
+      materialMarkupValue: json['material_markup_value'] != null ? (json['material_markup_value'] as num).toDouble() : null,
       laborMarkupValueType: json['labor_markup_value_type'],
-      laborMarkupValue: (json['labor_markup_value'] as num).toDouble(),
+      laborMarkupValue: json['labor_markup_value'] != null ? (json['labor_markup_value'] as num).toDouble() : null,
       equipmentMarkupValueType: json['equipment_markup_value_type'],
-      equipmentMarkupValue: (json['equipment_markup_value'] as num).toDouble(),
-      totalCost: (json['total_cost'] as num).toDouble(),
+      equipmentMarkupValue: json['equipment_markup_value'] != null ? (json['equipment_markup_value'] as num).toDouble() : null,
+      totalCost: json['total_cost'] != null ? (json['total_cost'] as num).toDouble() : null,
       isLocked: json['is_locked'],
       lockedByUserID: json['locked_by_user_id'],
       lockedAt: json['locked_at'],
@@ -187,27 +187,36 @@ class CostEstimateDto {
       estimateDescription: estimateDescription,
       creatorUserId: creatorUserId,
       markupConfiguration: MarkupConfiguration(
-        overallType: _mapMarkupType(markupType),
+        overallType: _mapMarkupType(markupType ?? 'overall'),
         overallValue: MarkupValue(
-          type: _mapMarkupValueType(overallMarkupValueType),
-          value: overallMarkupValue,
+          type: _mapMarkupValueType(overallMarkupValueType ?? 'percentage'),
+          value: overallMarkupValue ?? 0,
         ),
-        materialValue: MarkupValue(
-          type: _mapMarkupValueType(materialMarkupValueType),
-          value: materialMarkupValue,
-        ),
-        laborValue: MarkupValue(
-          type: _mapMarkupValueType(laborMarkupValueType),
-          value: laborMarkupValue,
-        ),
-        equipmentValue: MarkupValue(
-          type: _mapMarkupValueType(equipmentMarkupValueType),
-          value: equipmentMarkupValue,
-        ),
+        materialValue: materialMarkupValueType != null && 
+                       materialMarkupValue != null
+            ? MarkupValue(
+                type: _mapMarkupValueType(materialMarkupValueType ?? 'percentage'),
+                value: materialMarkupValue ?? 0,
+              )
+            : null,
+        laborValue: laborMarkupValueType != null && 
+                    laborMarkupValue != null
+            ? MarkupValue(
+                type: _mapMarkupValueType(laborMarkupValueType ?? 'percentage'),
+                value: laborMarkupValue ?? 0,
+              )
+            : null,
+        equipmentValue: equipmentMarkupValueType != null && 
+                        equipmentMarkupValue != null
+            ? MarkupValue(
+                type: _mapMarkupValueType(equipmentMarkupValueType ?? 'percentage'),
+                value: equipmentMarkupValue ?? 0,
+              )
+            : null,
       ),
-      totalCost: totalCost,
+      totalCost: totalCost ?? 0,
       lockStatus: isLocked
-          ? LockStatus.locked(lockedByUserID, DateTime.parse(lockedAt))
+          ? LockStatus.locked(lockedByUserID ?? '', DateTime.parse(lockedAt ?? updatedAt))
           : const LockStatus.unlocked(),
       createdAt: DateTime.parse(createdAt),
       updatedAt: DateTime.parse(updatedAt),
@@ -215,6 +224,10 @@ class CostEstimateDto {
   }
 
   MarkupType _mapMarkupType(String raw) {
+    if (raw.isEmpty) {
+      return MarkupType.overall;
+    }
+
     switch (raw.toLowerCase()) {
       case 'overall':
         return MarkupType.overall;
@@ -226,6 +239,10 @@ class CostEstimateDto {
   }
 
   MarkupValueType _mapMarkupValueType(String raw) {
+    if (raw.isEmpty) {
+      return MarkupValueType.percentage;
+    }
+
     switch (raw.toLowerCase()) {
       case 'percentage':
         return MarkupValueType.percentage;
