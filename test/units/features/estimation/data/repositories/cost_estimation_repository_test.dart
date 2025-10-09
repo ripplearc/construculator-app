@@ -7,7 +7,7 @@ import 'package:construculator/features/estimation/domain/entities/markup_config
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   // Test constants
