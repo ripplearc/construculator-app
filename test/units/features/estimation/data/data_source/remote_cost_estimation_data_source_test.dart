@@ -6,6 +6,8 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/test_estimation_data_helper.dart';
+
 void main() {
   // Test constants
   const String testProjectId = 'test-project-123';
@@ -15,10 +17,8 @@ void main() {
   const String estimateId2 = 'estimate-2';
   const String estimateId3 = 'estimate-3';
   const String estimateIdComplex = 'estimate-complex';
-  const String estimateIdDefault = 'estimate-default';
   const String userId1 = 'user-123';
   const String userId2 = 'user-456';
-  const String userIdDefault = 'user-default';
   const String userIdComplex = 'user-complex';
   const String userIdLocker = 'user-locker';
   const String estimateName1 = 'Initial Estimate';
@@ -27,28 +27,19 @@ void main() {
   const String estimateName4 = 'Other Project Estimate';
   const String estimateName5 = 'Another Project 1 Estimate';
   const String estimateNameComplex = 'Complex Estimate';
-  const String estimateNameDefault = 'Default Estimate';
   const String estimateDesc1 = 'First cost estimate for the project';
   const String estimateDesc2 = 'Updated cost estimate with changes';
   const String estimateDesc3 = 'Estimate for project 1';
   const String estimateDesc5 = 'Another estimate for project 1';
   const String estimateDescComplex = 'Estimate with all field types';
-  const String estimateDescDefault = 'Default estimate description';
-  const String markupTypeOverall = 'overall';
   const String markupTypeGranular = 'granular';
   const String markupValueTypePercentage = 'percentage';
   const String markupValueTypeAmount = 'amount';
   const String tableName = 'cost_estimates';
   const String allColumns = '*';
   const String selectMethod = 'select';
-  const String emptyString = '';
-  const String defaultTimestamp = '2024-01-01T00:00:00.000Z';
   const String timestamp4 = '2024-01-10T09:15:30.456Z';
   const String timestamp5 = '2024-01-15T14:30:45.123Z';
-  const double defaultOverallMarkup = 15.0;
-  const double defaultMaterialMarkup = 10.0;
-  const double defaultLaborMarkup = 20.0;
-  const double defaultEquipmentMarkup = 5.0;
   const double defaultTotalCost = 100000.0;
   const double totalCost1 = 120000.0;
   const double totalCostComplex = 150000.75;
@@ -60,54 +51,6 @@ void main() {
   const String errorMsgAuth = 'Authentication failed';
   const String errorMsgNetwork = 'Network connection failed';
   const String errorMsgTimeout = 'Request timeout';
-
-  /// Helper method to create fake cost estimation data with default values
-  /// and ability to override specific fields
-  Map<String, dynamic> createFakeEstimationData({
-    String? id,
-    String? projectId,
-    String? estimateName,
-    String? estimateDescription,
-    String? creatorUserId,
-    String? markupType,
-    String? overallMarkupValueType,
-    double? overallMarkupValue,
-    String? materialMarkupValueType,
-    double? materialMarkupValue,
-    String? laborMarkupValueType,
-    double? laborMarkupValue,
-    String? equipmentMarkupValueType,
-    double? equipmentMarkupValue,
-    double? totalCost,
-    bool? isLocked,
-    String? lockedByUserId,
-    String? lockedAt,
-    String? createdAt,
-    String? updatedAt,
-  }) {
-    return {
-      'id': id ?? estimateIdDefault,
-      'project_id': projectId ?? testProjectId,
-      'estimate_name': estimateName ?? estimateNameDefault,
-      'estimate_description': estimateDescription ?? estimateDescDefault,
-      'creator_user_id': creatorUserId ?? userIdDefault,
-      'markup_type': markupType ?? markupTypeOverall,
-      'overall_markup_value_type': overallMarkupValueType ?? markupValueTypePercentage,
-      'overall_markup_value': overallMarkupValue ?? defaultOverallMarkup,
-      'material_markup_value_type': materialMarkupValueType ?? markupValueTypePercentage,
-      'material_markup_value': materialMarkupValue ?? defaultMaterialMarkup,
-      'labor_markup_value_type': laborMarkupValueType ?? markupValueTypePercentage,
-      'labor_markup_value': laborMarkupValue ?? defaultLaborMarkup,
-      'equipment_markup_value_type': equipmentMarkupValueType ?? markupValueTypePercentage,
-      'equipment_markup_value': equipmentMarkupValue ?? defaultEquipmentMarkup,
-      'total_cost': totalCost ?? defaultTotalCost,
-      'is_locked': isLocked ?? false,
-      'locked_by_user_id': lockedByUserId ?? emptyString,
-      'locked_at': lockedAt ?? emptyString,
-      'created_at': createdAt ?? defaultTimestamp,
-      'updated_at': updatedAt ?? defaultTimestamp,
-    };
-  }
   
   group('RemoteCostEstimationDataSource', () {
     late RemoteCostEstimationDataSource dataSource;
@@ -130,13 +73,13 @@ void main() {
       test('should return cost estimations when data exists', () async {
         // Arrange
         final expectedEstimations = [
-          createFakeEstimationData(
+          TestEstimationDataHelper.createFakeEstimationData(
             id: estimateId1,
             estimateName: estimateName1,
             estimateDescription: estimateDesc1,
             creatorUserId: userId1,
           ),
-          createFakeEstimationData(
+          TestEstimationDataHelper.createFakeEstimationData(
             id: estimateId2,
             estimateName: estimateName2,
             estimateDescription: estimateDesc2,
@@ -181,7 +124,7 @@ void main() {
       test('should return empty list when no estimations for specific project', () async {
         // Arrange
         final otherProjectEstimations = [
-          createFakeEstimationData(
+          TestEstimationDataHelper.createFakeEstimationData(
             projectId: otherProjectId,
           ),
         ];
@@ -267,7 +210,7 @@ void main() {
 
       test('should handle CostEstimateDto.fromJson correctly with all field types', () async {
         // Arrange
-        final estimationData = createFakeEstimationData(
+        final estimationData = TestEstimationDataHelper.createFakeEstimationData(
           id: estimateIdComplex,
           estimateName: estimateNameComplex,
           estimateDescription: estimateDescComplex,
@@ -321,17 +264,17 @@ void main() {
       test('should filter estimations by project_id correctly', () async {
         // Arrange
         final mixedEstimations = [
-          createFakeEstimationData(
+          TestEstimationDataHelper.createFakeEstimationData(
             id: estimateId1,
             estimateName: estimateName3,
             estimateDescription: estimateDesc3,
           ),
-          createFakeEstimationData(
+          TestEstimationDataHelper.createFakeEstimationData(
             id: estimateId2,
             projectId: otherProjectId2,
             estimateName: estimateName4,
           ),
-          createFakeEstimationData(
+          TestEstimationDataHelper.createFakeEstimationData(
             id: estimateId3,
             estimateName: estimateName5,
             estimateDescription: estimateDesc5,
