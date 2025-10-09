@@ -421,9 +421,9 @@ void main() {
       expect(estimation.markupConfiguration.materialValueType, equals(MarkupType.granular));
       expect(estimation.markupConfiguration.laborValueType, equals(MarkupType.granular));
       expect(estimation.markupConfiguration.equipmentValueType, equals(MarkupType.granular));
-      expect(estimation.markupConfiguration.materialValue?.value, equals(customMaterialMarkup));
-      expect(estimation.markupConfiguration.laborValue?.value, equals(customLaborMarkup));
-      expect(estimation.markupConfiguration.equipmentValue?.value, equals(customEquipmentMarkup));
+      expect(estimation.markupConfiguration.materialValue!.value, equals(customMaterialMarkup));
+      expect(estimation.markupConfiguration.laborValue!.value, equals(customLaborMarkup));
+      expect(estimation.markupConfiguration.equipmentValue!.value, equals(customEquipmentMarkup));
     });
 
     test('createSampleEstimation with granular markup should set all granular values', () {
@@ -435,9 +435,9 @@ void main() {
       expect(estimation.markupConfiguration.materialValueType, equals(MarkupType.granular));
       expect(estimation.markupConfiguration.laborValueType, equals(MarkupType.granular));
       expect(estimation.markupConfiguration.equipmentValueType, equals(MarkupType.granular));
-      expect(estimation.markupConfiguration.materialValue?.value, equals(10.0));
-      expect(estimation.markupConfiguration.laborValue?.value, equals(20.0));
-      expect(estimation.markupConfiguration.equipmentValue?.value, equals(12.0));
+      expect(estimation.markupConfiguration.materialValue!.value, equals(10.0));
+      expect(estimation.markupConfiguration.laborValue!.value, equals(20.0));
+      expect(estimation.markupConfiguration.equipmentValue!.value, equals(12.0));
     });
 
     test('createSampleEstimation should create locked estimation when isLocked is true', () {
