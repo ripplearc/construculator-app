@@ -102,6 +102,16 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
   }
 
   @override
+  Future<List<Map<String, dynamic>>> select({
+    required String table,
+    String columns = '*',
+    required String filterColumn,
+    required dynamic filterValue,
+  }) async {
+    return await _supabaseClient.from(table).select(columns).eq(filterColumn, filterValue);
+  }
+
+  @override
   Future<Map<String, dynamic>?> selectSingle({
     required String table,
     String columns = '*',
