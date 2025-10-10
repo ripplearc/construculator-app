@@ -1,0 +1,238 @@
+import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/enums.dart';
+import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
+
+/// Data Transfer Object for CostEstimate entity.
+/// 
+/// This DTO represents the serialized form of a cost estimate as it appears
+/// in the database or API responses. It handles the conversion between the
+/// flat database structure and the domain entity's nested object structure.
+/// 
+/// The DTO separates markup configuration fields into individual properties
+/// for database storage, while the domain entity groups them into a
+/// MarkupConfiguration object for better encapsulation.
+/// 
+/// Details can be found in the detailed design document: https://docs.google.com/document/d/1MHn-LanxVJ96-HSe47C9Km0evtkPcyQDw9eDzFD60AA/edit?tab=t.m4ek8adycklb#heading=h.p7ml049jmefm
+class CostEstimateDto {
+  /// Unique identifier for the cost estimate.
+  String id;
+  
+  /// ID of the project this estimate belongs to.
+  String projectId;
+  
+  /// Human-readable name for the estimate.
+  String estimateName;
+  
+  /// Optional description providing additional context about the estimate.
+  String estimateDescription;
+  
+  /// ID of the user who created this estimate.
+  String creatorUserId;
+  
+  /// Type of markup configuration: 'overall' or 'granular'.
+  /// Maps to [MarkupType] enum in domain layer.
+  String markupType;
+  
+  /// Type of overall markup value: 'percentage' or 'amount'.
+  /// Maps to [MarkupValueType] enum in domain layer.
+  String overallMarkupValueType;
+  
+  /// Overall markup value as a decimal number.
+  double overallMarkupValue;
+  
+  /// Type of material markup value: 'percentage' or 'amount'.
+  /// Maps to [MarkupValueType] enum in domain layer.
+  String materialMarkupValueType;
+  
+  /// Material markup value as a decimal number.
+  double materialMarkupValue;
+  
+  /// Type of labor markup value: 'percentage' or 'amount'.
+  /// Maps to [MarkupValueType] enum in domain layer.
+  String laborMarkupValueType;
+  
+  /// Labor markup value as a decimal number.
+  double laborMarkupValue;
+  
+  /// Type of equipment markup value: 'percentage' or 'amount'.
+  /// Maps to [MarkupValueType] enum in domain layer.
+  String equipmentMarkupValueType;
+  
+  /// Equipment markup value as a decimal number.
+  double equipmentMarkupValue;
+  
+  /// Total calculated cost of the estimate.
+  double totalCost;
+  
+  /// Whether the estimate is currently locked for editing.
+  bool isLocked;
+  
+  /// ID of the user who locked the estimate (if locked).
+  String lockedByUserID;
+  
+  /// ISO 8601 timestamp when the estimate was locked.
+  String lockedAt;
+  
+  /// ISO 8601 timestamp when the estimate was created.
+  String createdAt;
+  
+  /// ISO 8601 timestamp when the estimate was last updated.
+  String updatedAt;
+
+  /// Creates a new [CostEstimateDto] instance.
+  /// 
+  /// All parameters are required as they represent the complete state
+  /// of a cost estimate as stored in the database.
+  CostEstimateDto({
+    required this.id,
+    required this.projectId,
+    required this.estimateName,
+    required this.estimateDescription,
+    required this.creatorUserId,
+    required this.markupType,
+    required this.overallMarkupValueType,
+    required this.overallMarkupValue,
+    required this.materialMarkupValueType,
+    required this.materialMarkupValue,
+    required this.laborMarkupValueType,
+    required this.laborMarkupValue,
+    required this.equipmentMarkupValueType,
+    required this.equipmentMarkupValue,
+    required this.totalCost,
+    required this.isLocked,
+    required this.lockedByUserID,
+    required this.lockedAt,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  /// Creates a [CostEstimateDto] from a JSON map.
+  /// 
+  /// This factory method handles the conversion from the database/API JSON format
+  /// to the DTO structure. It performs type conversion for numeric values and
+  /// maps snake_case JSON keys to camelCase Dart properties.
+  /// 
+  /// Throws [TypeError] if required fields are missing or have invalid types.
+  factory CostEstimateDto.fromJson(Map<String, dynamic> json) {
+    return CostEstimateDto(
+      id: json['id'],
+      projectId: json['project_id'],
+      estimateName: json['estimate_name'],
+      estimateDescription: json['estimate_description'],
+      creatorUserId: json['creator_user_id'],
+      markupType: json['markup_type'],
+      overallMarkupValueType: json['overall_markup_value_type'],
+      overallMarkupValue: (json['overall_markup_value'] as num).toDouble(),
+      materialMarkupValueType: json['material_markup_value_type'],
+      materialMarkupValue: (json['material_markup_value'] as num).toDouble(),
+      laborMarkupValueType: json['labor_markup_value_type'],
+      laborMarkupValue: (json['labor_markup_value'] as num).toDouble(),
+      equipmentMarkupValueType: json['equipment_markup_value_type'],
+      equipmentMarkupValue: (json['equipment_markup_value'] as num).toDouble(),
+      totalCost: (json['total_cost'] as num).toDouble(),
+      isLocked: json['is_locked'],
+      lockedByUserID: json['locked_by_user_id'],
+      lockedAt: json['locked_at'],
+      createdAt: json['created_at'],
+      updatedAt: json['updated_at'],
+    );
+  }
+
+  /// Converts this DTO to a JSON map.
+  /// 
+  /// This method converts the DTO back to the database/API JSON format,
+  /// mapping camelCase Dart properties to snake_case JSON keys.
+  /// 
+  /// Returns a [Map<String, dynamic>] suitable for JSON serialization.
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'project_id': projectId,
+    'estimate_name': estimateName,
+    'estimate_description': estimateDescription,
+    'creator_user_id': creatorUserId,
+    'markup_type': markupType,
+    'overall_markup_value_type': overallMarkupValueType,
+    'overall_markup_value': overallMarkupValue,
+    'material_markup_value_type': materialMarkupValueType,
+    'material_markup_value': materialMarkupValue,
+    'labor_markup_value_type': laborMarkupValueType,
+    'labor_markup_value': laborMarkupValue,
+    'equipment_markup_value_type': equipmentMarkupValueType,
+    'equipment_markup_value': equipmentMarkupValue,
+    'total_cost': totalCost,
+    'is_locked': isLocked,
+    'locked_by_user_id': lockedByUserID,
+    'locked_at': lockedAt,
+    'created_at': createdAt,
+    'updated_at': updatedAt,
+  };
+
+  /// Converts this DTO to a domain [CostEstimate] entity.
+  /// 
+  /// This method performs the transformation from the flat DTO structure
+  /// to the domain entity's nested object structure. It:
+  /// - Groups markup-related fields into a [MarkupConfiguration] object
+  /// - Converts string enum values to proper enum types
+  /// - Parses ISO 8601 timestamp strings to [DateTime] objects
+  /// - Creates appropriate [LockStatus] based on the locked state
+  /// 
+  /// Throws [FormatException] if timestamp strings are invalid.
+  /// Throws [ArgumentError] if enum string values are unrecognized.
+  CostEstimate toDomain() {
+    return CostEstimate(
+      id: id,
+      projectId: projectId,
+      estimateName: estimateName,
+      estimateDescription: estimateDescription,
+      creatorUserId: creatorUserId,
+      markupConfiguration: MarkupConfiguration(
+        overallType: _mapMarkupType(markupType),
+        overallValue: MarkupValue(
+          type: _mapMarkupValueType(overallMarkupValueType),
+          value: overallMarkupValue,
+        ),
+        materialValue: MarkupValue(
+          type: _mapMarkupValueType(materialMarkupValueType),
+          value: materialMarkupValue,
+        ),
+        laborValue: MarkupValue(
+          type: _mapMarkupValueType(laborMarkupValueType),
+          value: laborMarkupValue,
+        ),
+        equipmentValue: MarkupValue(
+          type: _mapMarkupValueType(equipmentMarkupValueType),
+          value: equipmentMarkupValue,
+        ),
+      ),
+      totalCost: totalCost,
+      lockStatus: isLocked
+          ? LockStatus.locked(lockedByUserID, DateTime.parse(lockedAt))
+          : const LockStatus.unlocked(),
+      createdAt: DateTime.parse(createdAt),
+      updatedAt: DateTime.parse(updatedAt),
+    );
+  }
+
+  MarkupType _mapMarkupType(String raw) {
+    switch (raw.toLowerCase()) {
+      case 'overall':
+        return MarkupType.overall;
+      case 'granular':
+        return MarkupType.granular;
+      default:
+        throw ArgumentError('Unknown MarkupType: $raw');
+    }
+  }
+
+  MarkupValueType _mapMarkupValueType(String raw) {
+    switch (raw.toLowerCase()) {
+      case 'percentage':
+        return MarkupValueType.percentage;
+      case 'amount':
+        return MarkupValueType.amount;
+      default:
+        throw ArgumentError('Unknown MarkupValueType: $raw');
+    }
+  }
+}
