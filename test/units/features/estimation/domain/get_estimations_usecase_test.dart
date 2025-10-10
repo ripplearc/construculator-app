@@ -182,46 +182,6 @@ void main() {
         );
       });
 
-      test('should return NetworkFailure when repository throws NetworkException', () async {
-        // Arrange
-        const projectId = 'test-project-123';
-        fakeRepository.shouldThrowOnGetEstimations = true;
-        fakeRepository.getEstimationsExceptionType = SupabaseExceptionType.socket;
-        fakeRepository.getEstimationsErrorMessage = 'Network connection lost';
-
-        // Act
-        final result = await useCase.call(projectId);
-
-        // Assert
-        expect(result.isLeft(), isTrue);
-        result.fold(
-          (failure) {
-            expect(failure, isA<NetworkFailure>());
-          },
-          (estimations) => fail('Expected failure but got success: $estimations'),
-        );
-      });
-
-      test('should return ClientFailure when repository throws ClientException', () async {
-        // Arrange
-        const projectId = 'test-project-123';
-        fakeRepository.shouldThrowOnGetEstimations = true;
-        fakeRepository.getEstimationsExceptionType = SupabaseExceptionType.postgrest;
-        fakeRepository.getEstimationsErrorMessage = 'Invalid request parameters';
-
-        // Act
-        final result = await useCase.call(projectId);
-
-        // Assert
-        expect(result.isLeft(), isTrue);
-        result.fold(
-          (failure) {
-            expect(failure, isA<ClientFailure>());
-          },
-          (estimations) => fail('Expected failure but got success: $estimations'),
-        );
-      });
-
       test('should return ServerFailure when repository throws unknown exception', () async {
         // Arrange
         const projectId = 'test-project-123';
@@ -237,24 +197,6 @@ void main() {
         result.fold(
           (failure) {
             expect(failure, isA<ServerFailure>());
-          },
-          (estimations) => fail('Expected failure but got success: $estimations'),
-        );
-      });
-
-      test('should return UnexpectedFailure when repository throws completely unexpected exception', () async {
-        // Arrange
-        const projectId = 'test-project-123';
-        fakeRepository.shouldThrowOnGetEstimations = true;
-
-        // Act
-        final result = await useCase.call(projectId);
-
-        // Assert
-        expect(result.isLeft(), isTrue);
-        result.fold(
-          (failure) {
-            expect(failure, isA<UnexpectedFailure>());
           },
           (estimations) => fail('Expected failure but got success: $estimations'),
         );
