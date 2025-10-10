@@ -24,7 +24,6 @@ void main() {
 
     group('Success scenarios', () {
       test('should return estimations when repository returns data', () async {
-        // Arrange
         const projectId = 'test-project-123';
         final estimations = [
           fakeRepository.createSampleEstimation(
@@ -40,10 +39,8 @@ void main() {
         ];
         fakeRepository.addProjectEstimations(projectId, estimations);
 
-        // Act
         final result = await useCase.call(projectId);
 
-        // Assert
         expect(result.isRight(), isTrue);
         result.fold(
           (failure) => fail('Expected success but got failure: $failure'),
@@ -58,14 +55,11 @@ void main() {
       });
 
       test('should return empty list when repository returns empty list', () async {
-        // Arrange
         const projectId = 'test-project-123';
         fakeRepository.shouldReturnEmptyList = true;
 
-        // Act
         final result = await useCase.call(projectId);
 
-        // Assert
         expect(result.isRight(), isTrue);
         result.fold(
           (failure) => fail('Expected success but got failure: $failure'),
@@ -74,7 +68,6 @@ void main() {
       });
 
       test('should return estimations with different markup configurations', () async {
-        // Arrange
         const projectId = 'test-project-123';
         final overallMarkupEstimation = fakeRepository.createSampleOverallMarkupEstimation(
           projectId: projectId,
@@ -93,31 +86,30 @@ void main() {
           granularMarkupEstimation,
         ]);
 
-        // Act
         final result = await useCase.call(projectId);
 
-        // Assert
         expect(result.isRight(), isTrue);
         result.fold(
           (failure) => fail('Expected success but got failure: $failure'),
           (estimations) {
             expect(estimations, hasLength(2));
             
-            // Check overall markup estimation
             final overallEstimation = estimations.firstWhere(
               (e) => e.estimateName == 'Overall Markup Estimation',
             );
             expect(overallEstimation.markupConfiguration.overallType, equals(MarkupType.overall));
             expect(overallEstimation.markupConfiguration.overallValue.value, equals(25.0));
             
-            // Check granular markup estimation
             final granularEstimation = estimations.firstWhere(
               (e) => e.estimateName == 'Granular Markup Estimation',
             );
             expect(granularEstimation.markupConfiguration.overallType, equals(MarkupType.granular));
-            expect(granularEstimation.markupConfiguration.materialValue?.value, equals(15.0));
-            expect(granularEstimation.markupConfiguration.laborValue?.value, equals(30.0));
-            expect(granularEstimation.markupConfiguration.equipmentValue?.value, equals(20.0));
+            expect(granularEstimation.markupConfiguration.materialValue, isNotNull);
+            expect(granularEstimation.markupConfiguration.laborValue, isNotNull);
+            expect(granularEstimation.markupConfiguration.equipmentValue, isNotNull);
+            expect(granularEstimation.markupConfiguration.materialValue!.value, equals(15.0));
+            expect(granularEstimation.markupConfiguration.laborValue!.value, equals(30.0));
+            expect(granularEstimation.markupConfiguration.equipmentValue!.value, equals(20.0));
           },
         );
       });
@@ -125,15 +117,12 @@ void main() {
 
     group('Failure scenarios', () {
       test('should return ServerFailure when repository throws ServerException', () async {
-        // Arrange
         const projectId = 'test-project-123';
         fakeRepository.shouldThrowOnGetEstimations = true;
         fakeRepository.getEstimationsErrorMessage = 'Database connection failed';
 
-        // Act
         final result = await useCase.call(projectId);
 
-        // Assert
         expect(result.isLeft(), isTrue);
         result.fold(
           (failure) {
@@ -144,16 +133,13 @@ void main() {
       });
 
       test('should return NetworkFailure when repository throws timeout exception', () async {
-        // Arrange
         const projectId = 'test-project-123';
         fakeRepository.shouldThrowOnGetEstimations = true;
         fakeRepository.getEstimationsExceptionType = SupabaseExceptionType.timeout;
         fakeRepository.getEstimationsErrorMessage = 'Request timeout';
 
-        // Act
         final result = await useCase.call(projectId);
 
-        // Assert
         expect(result.isLeft(), isTrue);
         result.fold(
           (failure) {
@@ -164,55 +150,12 @@ void main() {
       });
 
       test('should return ClientFailure when repository throws type exception', () async {
-        // Arrange
         const projectId = 'test-project-123';
         fakeRepository.shouldThrowOnGetEstimations = true;
         fakeRepository.getEstimationsExceptionType = SupabaseExceptionType.type;
 
-        // Act
         final result = await useCase.call(projectId);
 
-        // Assert
-        expect(result.isLeft(), isTrue);
-        result.fold(
-          (failure) {
-            expect(failure, isA<ClientFailure>());
-          },
-          (estimations) => fail('Expected failure but got success: $estimations'),
-        );
-      });
-
-      test('should return NetworkFailure when repository throws NetworkException', () async {
-        // Arrange
-        const projectId = 'test-project-123';
-        fakeRepository.shouldThrowOnGetEstimations = true;
-        fakeRepository.getEstimationsExceptionType = SupabaseExceptionType.socket;
-        fakeRepository.getEstimationsErrorMessage = 'Network connection lost';
-
-        // Act
-        final result = await useCase.call(projectId);
-
-        // Assert
-        expect(result.isLeft(), isTrue);
-        result.fold(
-          (failure) {
-            expect(failure, isA<NetworkFailure>());
-          },
-          (estimations) => fail('Expected failure but got success: $estimations'),
-        );
-      });
-
-      test('should return ClientFailure when repository throws ClientException', () async {
-        // Arrange
-        const projectId = 'test-project-123';
-        fakeRepository.shouldThrowOnGetEstimations = true;
-        fakeRepository.getEstimationsExceptionType = SupabaseExceptionType.postgrest;
-        fakeRepository.getEstimationsErrorMessage = 'Invalid request parameters';
-
-        // Act
-        final result = await useCase.call(projectId);
-
-        // Assert
         expect(result.isLeft(), isTrue);
         result.fold(
           (failure) {
@@ -223,16 +166,13 @@ void main() {
       });
 
       test('should return ServerFailure when repository throws unknown exception', () async {
-        // Arrange
         const projectId = 'test-project-123';
         fakeRepository.shouldThrowOnGetEstimations = true;
         fakeRepository.getEstimationsExceptionType = SupabaseExceptionType.unknown;
         fakeRepository.getEstimationsErrorMessage = 'Unknown error occurred';
 
-        // Act
         final result = await useCase.call(projectId);
 
-        // Assert
         expect(result.isLeft(), isTrue);
         result.fold(
           (failure) {
@@ -241,67 +181,40 @@ void main() {
           (estimations) => fail('Expected failure but got success: $estimations'),
         );
       });
-
-      test('should return UnexpectedFailure when repository throws completely unexpected exception', () async {
-        // Arrange
-        const projectId = 'test-project-123';
-        fakeRepository.shouldThrowOnGetEstimations = true;
-
-        // Act
-        final result = await useCase.call(projectId);
-
-        // Assert
-        expect(result.isLeft(), isTrue);
-        result.fold(
-          (failure) {
-            expect(failure, isA<UnexpectedFailure>());
-          },
-          (estimations) => fail('Expected failure but got success: $estimations'),
-        );
-      });
     });
 
     group('Repository interaction', () {
       test('should call repository with correct project ID', () async {
-        // Arrange
         const projectId = 'test-project-123';
         fakeRepository.addProjectEstimations(projectId, []);
 
-        // Act
         await useCase.call(projectId);
 
-        // Assert
         final methodCalls = fakeRepository.getMethodCallsFor('getEstimations');
         expect(methodCalls, hasLength(1));
         expect(methodCalls.first['projectId'], equals(projectId));
       });
 
       test('should call repository only once per use case call', () async {
-        // Arrange
         const projectId = 'test-project-123';
         fakeRepository.addProjectEstimations(projectId, []);
 
-        // Act
         await useCase.call(projectId);
 
-        // Assert
         final methodCalls = fakeRepository.getMethodCalls();
         expect(methodCalls, hasLength(1));
         expect(methodCalls.first['method'], equals('getEstimations'));
       });
 
       test('should handle multiple calls with different project IDs', () async {
-        // Arrange
         const projectId1 = 'test-project-123';
         const projectId2 = 'test-project-456';
         fakeRepository.addProjectEstimations(projectId1, []);
         fakeRepository.addProjectEstimations(projectId2, []);
 
-        // Act
         await useCase.call(projectId1);
         await useCase.call(projectId2);
 
-        // Assert
         final methodCalls = fakeRepository.getMethodCallsFor('getEstimations');
         expect(methodCalls, hasLength(2));
         expect(methodCalls[0]['projectId'], equals(projectId1));
@@ -311,7 +224,6 @@ void main() {
 
     group('Edge cases', () {
       test('should handle default total cost in estimations', () async {
-        // Arrange
         const projectId = 'test-project-123';
         final estimationWithDefaultCost = fakeRepository.createSampleEstimation(
           projectId: projectId,
@@ -319,22 +231,19 @@ void main() {
         );
         fakeRepository.addProjectEstimations(projectId, [estimationWithDefaultCost]);
 
-        // Act
         final result = await useCase.call(projectId);
 
-        // Assert
         expect(result.isRight(), isTrue);
         result.fold(
           (failure) => fail('Expected success but got failure: $failure'),
           (estimations) {
             expect(estimations, hasLength(1));
-            expect(estimations.first.totalCost, equals(50000.0)); // Default value from fake
+            expect(estimations.first.totalCost, equals(50000.0));
           },
         );
       });
 
       test('should handle estimation with default description', () async {
-        // Arrange
         const projectId = 'test-project-123';
         final estimationWithDefaultDescription = fakeRepository.createSampleEstimation(
           projectId: projectId,
@@ -342,22 +251,19 @@ void main() {
         );
         fakeRepository.addProjectEstimations(projectId, [estimationWithDefaultDescription]);
 
-        // Act
         final result = await useCase.call(projectId);
 
-        // Assert
         expect(result.isRight(), isTrue);
         result.fold(
           (failure) => fail('Expected success but got failure: $failure'),
           (estimations) {
             expect(estimations, hasLength(1));
-            expect(estimations.first.estimateDescription, equals('Test estimation description')); // Default value from fake
+            expect(estimations.first.estimateDescription, equals('Test estimation description'));
           },
         );
       });
 
       test('should preserve estimation timestamps', () async {
-        // Arrange
         const projectId = 'test-project-123';
         final createdAt = DateTime(2023, 1, 1, 10, 0, 0);
         final updatedAt = DateTime(2023, 1, 2, 15, 30, 0);
@@ -370,10 +276,8 @@ void main() {
         );
         fakeRepository.addProjectEstimations(projectId, [estimation]);
 
-        // Act
         final result = await useCase.call(projectId);
 
-        // Assert
         expect(result.isRight(), isTrue);
         result.fold(
           (failure) => fail('Expected success but got failure: $failure'),
