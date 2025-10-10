@@ -28,7 +28,14 @@ class EstimationModule extends Module {
   EstimationModule(this.appBootstrap);
 
   final List<RouteDefinition> _routeDefinitions = [
-    RouteDefinition(estimationLandingRoute, (context) => CostEstimationLandingPage(), [
+    RouteDefinition(estimationLandingRoute, (context) {
+      final projectId = Modular.args.params['projectId'];
+      if (projectId == null || projectId.isEmpty) {
+        throw Exception('Project ID is required for cost estimation');
+      }
+      
+      return CostEstimationLandingPage(projectId: projectId);
+    }, [
       AuthGuard(),
     ]),
   ];
