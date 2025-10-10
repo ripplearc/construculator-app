@@ -34,25 +34,21 @@ void main() {
     group('Initialization', () {
       test('should be initialized with correct dependencies', () {
         expect(bloc, isNotNull);
-        // The bloc automatically triggers a refresh event, so we expect it to be in a non-initial state
         expect(bloc.state, isNot(isA<CostEstimationListInitial>()));
       });
 
       test('should automatically trigger refresh event on initialization', () async {
-        // Create a new bloc and wait for the automatic refresh to complete
         final testBloc = CostEstimationListBloc(
           getEstimationsUseCase: useCase,
           projectId: testProjectId,
         );
         
-        // Wait for the automatic refresh to complete
         await testBloc.stream.firstWhere((state) => 
           state is CostEstimationListEmpty || 
           state is CostEstimationListLoaded || 
           state is CostEstimationListError
         );
         
-        // The state should not be initial anymore after the automatic refresh
         expect(testBloc.state, isNot(isA<CostEstimationListInitial>()));
         
         testBloc.close();
@@ -156,7 +152,6 @@ void main() {
       );
 
       test('should handle error states correctly', () async {
-        // Configure repository to throw error
         fakeRepository.shouldThrowOnGetEstimations = true;
         fakeRepository.getEstimationsErrorMessage = 'Server error';
         fakeRepository.getEstimationsExceptionType = SupabaseExceptionType.unknown;
@@ -166,7 +161,6 @@ void main() {
           projectId: testProjectId,
         );
         
-        // Wait for error state
         final errorState = await testBloc.stream.firstWhere((state) => state is CostEstimationListError);
         
         expect(errorState, isA<CostEstimationListError>());
@@ -193,19 +187,15 @@ void main() {
           projectId: testProjectId,
         );
         
-        // Wait for initial load
         await testBloc.stream.firstWhere((state) => state is CostEstimationListLoaded);
         
-        // Add refresh event
         testBloc.add(const CostEstimationListRefreshEvent());
         
-        // Wait for the final state
         await testBloc.stream.firstWhere((state) => 
           state is CostEstimationListLoaded || 
           state is CostEstimationListError
         );
         
-        // Verify the final state has the expected data
         expect(testBloc.state, isA<CostEstimationListWithData>());
         final finalState = testBloc.state as CostEstimationListWithData;
         expect(finalState.estimates.length, equals(1));
@@ -256,17 +246,14 @@ void main() {
           projectId: testProjectId,
         );
         
-        // Wait for initial automatic refresh to complete
         await testBloc.stream.firstWhere((state) => 
           state is CostEstimationListEmpty || 
           state is CostEstimationListLoaded || 
           state is CostEstimationListError
         );
         
-        // Add refresh event
         testBloc.add(const CostEstimationListRefreshEvent());
         
-        // Should transition to loading (or complete quickly)
         final nextState = await testBloc.stream.first;
         expect(nextState, isA<CostEstimationListLoading>());
         
