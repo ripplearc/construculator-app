@@ -69,8 +69,8 @@ class _ProjectHeaderAppBarState extends State<ProjectHeaderAppBar> {
   Widget build(BuildContext context) {
     return PhysicalModel(
       color: Colors.transparent,
-      elevation: 6,
-      shadowColor: Colors.black.withValues(alpha: 0.15),
+      elevation: 3,
+      shadowColor: Colors.black.withValues(alpha: 0.6),
       borderRadius: BorderRadius.zero,
       child: Container(
         color: CoreBackgroundColors.pageBackground,
@@ -127,7 +127,7 @@ class _ProjectHeaderAppBarState extends State<ProjectHeaderAppBar> {
                   radius: 20,
                   backgroundColor: Colors.black,
                   backgroundImage: (widget.avatarUrl?.isNotEmpty ?? false)
-                      ? NetworkImage(widget.avatarUrl ?? '')
+                      ? NetworkImage(widget.avatarUrl ?? "https://placehold.co/600x400")
                       : null,
                 ),
               ),
