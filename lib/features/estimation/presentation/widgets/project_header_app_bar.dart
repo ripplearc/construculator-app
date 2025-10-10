@@ -70,8 +70,8 @@ class _ProjectHeaderAppBarState extends State<ProjectHeaderAppBar> {
   Widget build(BuildContext context) {
     return PhysicalModel(
       color: Colors.transparent,
-      elevation: 6,
-      shadowColor: Colors.black.withValues(alpha: 0.15),
+      elevation: 3,
+      shadowColor: Colors.black.withValues(alpha: 0.6),
       borderRadius: BorderRadius.zero,
       child: Container(
         color: CoreBackgroundColors.pageBackground,
