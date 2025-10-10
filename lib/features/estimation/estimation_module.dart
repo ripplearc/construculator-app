@@ -27,7 +27,10 @@ class EstimationModule extends Module {
   EstimationModule(this.appBootstrap);
 
   final List<_RouteDefinition> _routeDefinitions = [
-    _RouteDefinition(estimationLandingRoute, (context) => CostEstimationLandingPage(), [
+    _RouteDefinition(estimationLandingRoute, (context) {
+      final projectId = Modular.args.params['projectId'] ?? '';
+      return CostEstimationLandingPage(projectId: projectId);
+    }, [
       AuthGuard(),
     ]),
   ];
