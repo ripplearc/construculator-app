@@ -4,19 +4,22 @@ import 'package:construculator/features/project_settings/testing/fake_project_re
 import 'package:flutter_modular/flutter_modular.dart';
 
 class ProjectSettingsTestModule extends Module {
+  final FakeProjectRepository fakeProjectRepository;
+  
+  ProjectSettingsTestModule(this.fakeProjectRepository);
+  
   @override
   List<Module> get imports => [];
 
   @override
-  void exportedBinds(Injector i) {
+  void binds(Injector i) {
     i.add<ProjectRepository>(
-      () => FakeProjectRepository(),
+      () => fakeProjectRepository,
       key: 'fakeProjectRepository',
     );
 
     i.add<GetProjectUseCase>(
       () => GetProjectUseCase(i<ProjectRepository>(key: 'fakeProjectRepository')),
-      key: 'getProjectUseCaseWithFakeDep',
     );
   }
 }
