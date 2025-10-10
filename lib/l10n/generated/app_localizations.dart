@@ -754,6 +754,12 @@ abstract class AppLocalizations {
   /// **'Cost Estimation'**
   String get costEstimation;
 
+  /// Empty state message shown when no cost estimations exist
+  ///
+  /// In en, this message translates to:
+  /// **'No estimation added. To add an estimation please click on add button'**
+  String get costEstimationEmptyMessage;
+
   /// Error message shown when project fails to load
   ///
   /// In en, this message translates to:
