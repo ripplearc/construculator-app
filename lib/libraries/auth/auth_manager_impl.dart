@@ -304,6 +304,10 @@ class AuthManagerImpl implements AuthManager {
     try {
       await _wrapper.signOut();
       _logger.info('Logout successful');
+      // Emit auth state change to notify listeners
+      _authNotifier.emitAuthStateChanged(
+        AuthState(status: AuthStatus.unauthenticated, user: null),
+      );
       return AuthResult.success(null);
     } catch (e) {
       return _handleException(e, 'Logout');
