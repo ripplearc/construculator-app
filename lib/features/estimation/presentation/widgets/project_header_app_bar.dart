@@ -50,8 +50,8 @@ class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(
-                    Icons.keyboard_arrow_down,
+                  CoreIconWidget(
+                    icon: CoreIcons.arrowDown,
                     color: CoreTextColors.dark,
                     size: 20,
                   ),
@@ -64,10 +64,9 @@ class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget
                 icon: SizedBox(
                   width: 24,
                   height: 24,
-                  child: Image.asset(
-                    'assets/icons/search_icon.png',
-                    package: null,
-                    fit: BoxFit.contain,
+                  child: CoreIconWidget(
+                    icon: CoreIconData.svg('assets/icons/search_icon.svg'),
+                    size: 24,
                   ),
                 ),
               ),
@@ -76,9 +75,9 @@ class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget
                 icon: SizedBox(
                   width: 24,
                   height: 24,
-                  child: Image.asset(
-                    'assets/icons/bell_icon.png',
-                    fit: BoxFit.contain,
+                  child: CoreIconWidget(
+                    icon: CoreIconData.svg('assets/icons/bell_icon.svg'),
+                    size: 24,
                   ),
                 ),
               ),
