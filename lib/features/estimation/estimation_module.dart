@@ -6,25 +6,25 @@ import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
-class _RouteDefinition {
+class RouteDefinition {
   final String route;
   final WidgetBuilder widget;
   final List<RouteGuard> guards;
 
-  _RouteDefinition(this.route, this.widget, this.guards);
+  RouteDefinition(this.route, this.widget, this.guards);
 }
 
 class EstimationModule extends Module {
   final AppBootstrap appBootstrap;
   EstimationModule(this.appBootstrap);
 
-  final List<_RouteDefinition> _routeDefinitions = [
-    _RouteDefinition(estimationLandingRoute, (context) => Container(), [
+  final List<RouteDefinition> _routeDefinitions = [
+    RouteDefinition(estimationLandingRoute, (context) => Container(), [
       AuthGuard(),
     ]),
   ];
 
-  List<_RouteDefinition> get routeDefinitions => _routeDefinitions;
+  List<RouteDefinition> get routeDefinitions => _routeDefinitions;
 
   @override
   List<Module> get imports => [AuthLibraryModule(appBootstrap), RouterModule()];
