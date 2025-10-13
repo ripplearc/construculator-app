@@ -20,7 +20,7 @@ class EstimationModule extends Module {
   EstimationModule(this.appBootstrap);
 
   final List<RouteDefinition> _routeDefinitions = [
-    RouteDefinition(estimationLandingRoute, (context) => Container(), [
+    RouteDefinition(estimationLandingRoute, (context) => CostEstimationLandingPage(), [
       AuthGuard(),
     ]),
   ];
