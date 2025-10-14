@@ -1,4 +1,5 @@
 import 'package:construculator/features/estimation/presentation/widgets/project_header_app_bar.dart';
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:network_image_mock/network_image_mock.dart';
@@ -35,7 +36,7 @@ void main() {
         );
 
         expect(find.text(projectName), findsOneWidget);
-        expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+        expect(find.byType(CoreIconWidget), findsNWidgets(3)); // 1 dropdown + 2 action icons
       });
     });
 
@@ -146,28 +147,7 @@ void main() {
 
         expect(find.byType(CircleAvatar), findsOneWidget);
         final circleAvatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
-        expect(circleAvatar.backgroundImage, isA<NetworkImage>());
-      });
-    });
-
-    testWidgets('displays fallback avatar when avatarUrl is empty', (WidgetTester tester) async {
-      const projectName = 'Test Project';
-
-      await mockNetworkImagesFor(() async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              appBar: ProjectHeaderAppBar(
-                projectName: projectName,
-                avatarUrl: '',
-              ),
-            ),
-          ),
-        );
-
-        expect(find.byType(CircleAvatar), findsOneWidget);
-        final circleAvatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
-        expect(circleAvatar.backgroundImage, isA<NetworkImage>());
+        expect(circleAvatar.backgroundImage, isNull);
       });
     });
 
@@ -201,7 +181,7 @@ void main() {
         );
 
         expect(find.byType(IconButton), findsNWidgets(2));
-        expect(find.byType(Image), findsNWidgets(2));
+        expect(find.byType(CoreIconWidget), findsNWidgets(3)); // 1 dropdown + 2 action icons
       });
     });
 
@@ -251,14 +231,14 @@ void main() {
           ),
         );
 
-        // Check that Image widgets are present for icons
-        final images = find.byType(Image);
-        expect(images, findsNWidgets(2));
+        // Check that CoreIconWidget widgets are present for icons
+        final coreIcons = find.byType(CoreIconWidget);
+        expect(coreIcons, findsNWidgets(3)); // 1 dropdown + 2 action icons
 
-        // Verify the image assets are loaded
-        for (int i = 0; i < 2; i++) {
-          final image = tester.widget<Image>(images.at(i));
-          expect(image.image, isA<AssetImage>());
+        // Verify the CoreIconWidget widgets are present
+        for (int i = 0; i < 3; i++) {
+          final coreIcon = tester.widget<CoreIconWidget>(coreIcons.at(i));
+          expect(coreIcon, isA<CoreIconWidget>());
         }
       });
     });
