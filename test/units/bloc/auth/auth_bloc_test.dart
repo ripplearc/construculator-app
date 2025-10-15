@@ -110,7 +110,7 @@ void main() {
         expect: () => [
           const AuthLoadInProgress(),
           isA<AuthLoadSuccess>()
-              .having((s) => s.user?.id, 'user.id', testUserId),
+              .having((s) => s.user!.id, 'user.id', testUserId),
         ],
       );
 
@@ -215,8 +215,8 @@ void main() {
         },
         expect: () => [
           isA<AuthLoadSuccess>()
-              .having((s) => s.user?.id, 'user.id', testUserId)
-              .having((s) => s.user?.firstName, 'user.firstName', 'Jane')
+              .having((s) => s.user!.id, 'user.id', testUserId)
+              .having((s) => s.user!.firstName, 'user.firstName', 'Jane')
               .having((s) => s.avatarUrl, 'avatarUrl', testAvatarUrl),
         ],
       );
@@ -241,8 +241,8 @@ void main() {
         },
         expect: () => [
           isA<AuthLoadSuccess>()
-              .having((s) => s.user?.id, 'user.id', testUserId)
-              .having((s) => s.user?.firstName, 'user.firstName', 'Bob')
+              .having((s) => s.user!.id, 'user.id', testUserId)
+              .having((s) => s.user!.firstName, 'user.firstName', 'Bob')
               .having((s) => s.avatarUrl, 'avatarUrl', null),
         ],
       );
@@ -291,7 +291,7 @@ void main() {
         expect: () => [
           const AuthLoadInProgress(),
           isA<AuthLoadSuccess>()
-              .having((s) => s.user?.id, 'user.id', testUserId),
+              .having((s) => s.user!.id, 'user.id', testUserId),
           const AuthLoadUnauthenticated(),
         ],
       );
