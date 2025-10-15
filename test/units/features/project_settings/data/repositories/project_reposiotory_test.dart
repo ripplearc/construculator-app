@@ -1,7 +1,7 @@
 import 'package:construculator/features/project_settings/data/repositories/project_repository_impl.dart';
 import 'package:construculator/features/project_settings/domain/entities/project_entity.dart';
 import 'package:construculator/features/project_settings/domain/entities/enums.dart';
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('RemoteProjectRepository', () {
