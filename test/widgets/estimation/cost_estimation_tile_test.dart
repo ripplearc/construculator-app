@@ -39,10 +39,11 @@ void main() {
       VoidCallback? onTap,
       VoidCallback? onMenuTap,
     }) {
+      estimation ??= testEstimation;
       return MaterialApp(
         home: Scaffold(
           body: CostEstimationTile(
-            estimation: estimation != null ? estimation : testEstimation,
+            estimation: estimation,
             onTap: onTap,
             onMenuTap: onMenuTap,
           ),
