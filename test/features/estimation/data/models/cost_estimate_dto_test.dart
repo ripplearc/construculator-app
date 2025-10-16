@@ -120,15 +120,18 @@ void main() {
       },
     );
 
-    test('toDomain should create CostEstimate with UnlockedStatus when isLocked is false', () {
-      final unlockedJson = Map<String, dynamic>.from(sampleJson)
-        ..['is_locked'] = false;
+    test(
+      'toDomain should create CostEstimate with UnlockedStatus when isLocked is false',
+      () {
+        final unlockedJson = Map<String, dynamic>.from(sampleJson)
+          ..['is_locked'] = false;
 
-      final dto = CostEstimateDto.fromJson(unlockedJson);
-      final domain = dto.toDomain();
+        final dto = CostEstimateDto.fromJson(unlockedJson);
+        final domain = dto.toDomain();
 
-      expect(domain.lockStatus.isLocked, false);
-      expect(domain.lockStatus, isA<UnlockedStatus>());
-    });
+        expect(domain.lockStatus.isLocked, false);
+        expect(domain.lockStatus, isA<UnlockedStatus>());
+      },
+    );
   });
 }
