@@ -20,25 +20,32 @@ void main() {
     group('Environment Variable Management', () {
       test('setEnvVar correctly stores a variable and get retrieves it', () {
         fakeLoader.setEnvVar('TEST_KEY', 'test_value');
+
         final result = fakeLoader.get('TEST_KEY');
+
         expect(result, equals('test_value'));
       });
 
       test('get returns null for a non-existent environment variable', () {
         final result = fakeLoader.get('NON_EXISTENT_KEY');
+
         expect(result, isNull);
       });
 
       test('setEnvVar and get handle null values correctly', () {
         fakeLoader.setEnvVar('NULL_KEY', null);
+
         final result = fakeLoader.get('NULL_KEY');
+
         expect(result, isNull);
       });
 
       test('setEnvVar overrides an existing environment variable', () {
         fakeLoader.setEnvVar('OVERRIDE_KEY', 'original_value');
         fakeLoader.setEnvVar('OVERRIDE_KEY', 'new_value');
+
         final result = fakeLoader.get('OVERRIDE_KEY');
+
         expect(result, equals('new_value'));
       });
 
@@ -58,6 +65,7 @@ void main() {
 
       test('load captures the provided filename when one is given', () async {
         await fakeLoader.load(fileName: '.env.test');
+
         expect(fakeLoader.lastLoadedFileName, equals('.env.test'));
       });
 
@@ -65,6 +73,7 @@ void main() {
         'load sets lastLoadedFileName to null if no filename is provided',
         () async {
           await fakeLoader.load();
+
           expect(fakeLoader.lastLoadedFileName, isNull);
         },
       );
@@ -125,7 +134,9 @@ void main() {
         'correctly handles empty string values for environment variables',
         () {
           fakeLoader.setEnvVar('EMPTY_KEY', '');
+
           final result = fakeLoader.get('EMPTY_KEY');
+
           expect(result, equals(''));
         },
       );

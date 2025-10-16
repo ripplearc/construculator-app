@@ -16,7 +16,7 @@ void main() {
   User createFakeUser({String? credentialId, String? email, String? id}) {
     return User(
       id: id ?? 'fake-user-id',
-      credentialId: credentialId ?? 'fake-credential-id',
+      credentialId: credentialId,
       email: email ?? 'test@example.com',
       firstName: 'Test',
       lastName: 'User',
@@ -35,13 +35,28 @@ void main() {
     fakeRepository =
         Modular.get<AuthRepository>(key: 'fakeAuthRepository')
             as FakeAuthRepository;
-    // Default to successful responses unless a test configures otherwise
     fakeRepository.setAuthResponse(succeed: true);
     clock = Modular.get<Clock>();
   });
 
   tearDown(() {
     Modular.destroy();
+  });
+
+  group('Constructor and Initialization', () {
+    test('FakeAuthRepository should initialize with default values', () {
+      final repository = FakeAuthRepository(clock: clock);
+
+      expect(repository.getCurrentUserCallCount, equals(0));
+      expect(repository.getUserProfileCalls, isEmpty);
+      expect(repository.createProfileCalls, isEmpty);
+      expect(repository.updateProfileCalls, isEmpty);
+      expect(repository.updateEmailCalls, isEmpty);
+      expect(repository.updatePasswordCalls, isEmpty);
+      expect(repository.returnNullUserProfile, isFalse);
+      expect(repository.shouldThrowOnGetUserProfile, isFalse);
+      expect(repository.exceptionMessage, equals('Test exception'));
+    });
   });
 
   group('Credential Management', () {
@@ -75,6 +90,18 @@ void main() {
       expect(credentials!.id, equals('test-id'));
       expect(credentials.email, equals('test@example.com'));
       expect(credentials.metadata['role'], equals('user'));
+    });
+
+    test('getCurrentCredentials should throw when configured to fail', () {
+      fakeRepository.setAuthResponse(
+        succeed: false,
+        errorMessage: 'Auth failed',
+      );
+
+      expect(
+        () => fakeRepository.getCurrentCredentials(),
+        throwsA(isA<ServerException>()),
+      );
     });
     test(
       'updateUserCredentials should update only email if password is null',
@@ -134,7 +161,7 @@ void main() {
         errorMessage: 'Update failed',
       );
       expect(
-        () => fakeRepository.updateUserEmail('fail@example.com'),
+        () async => await fakeRepository.updateUserEmail('fail@example.com'),
         throwsA(isA<ServerException>()),
       );
     });
@@ -142,7 +169,7 @@ void main() {
 
   group('Database Operations - User Profiles', () {
     test('getUserProfile should return profile when it exists', () async {
-      final fakeUser = createFakeUser();
+      final fakeUser = createFakeUser(credentialId: 'test-cred-id');
       await fakeRepository.createUserProfile(fakeUser);
       fakeRepository.setAuthResponse(succeed: true);
 
@@ -199,7 +226,7 @@ void main() {
     test(
       'createUserProfile should succeed when configured to succeed',
       () async {
-        final fakeUser = createFakeUser();
+        final fakeUser = createFakeUser(credentialId: 'test-cred-id');
         fakeRepository.setAuthResponse(succeed: true);
 
         final result = await fakeRepository.createUserProfile(fakeUser);
@@ -218,18 +245,43 @@ void main() {
     );
 
     test('createUserProfile should throw when configured to fail', () async {
-      final fakeUser = createFakeUser();
+      final fakeUser = createFakeUser(credentialId: 'test-cred-id');
       fakeRepository.setAuthResponse(
         succeed: false,
         errorMessage: 'Profile creation failed',
       );
 
       expect(
-        () => fakeRepository.createUserProfile(fakeUser),
+        () async => await fakeRepository.createUserProfile(fakeUser),
         throwsA(isA<ServerException>()),
       );
       expect(fakeRepository.createProfileCalls, contains(fakeUser));
     });
+
+    test('createUserProfile should throw when credentialId is null', () async {
+      final fakeUser = createFakeUser(credentialId: null);
+      fakeRepository.setAuthResponse(succeed: true);
+
+      expect(
+        () async => await fakeRepository.createUserProfile(fakeUser),
+        throwsA(isA<ServerException>()),
+      );
+      expect(fakeRepository.createProfileCalls, contains(fakeUser));
+    });
+
+    test(
+      'createUserProfile should throw when configured to fail with null error message',
+      () async {
+        final fakeUser = createFakeUser(credentialId: 'test-cred-id');
+        fakeRepository.setAuthResponse(succeed: false, errorMessage: null);
+
+        expect(
+          () async => await fakeRepository.createUserProfile(fakeUser),
+          throwsA(isA<ServerException>()),
+        );
+        expect(fakeRepository.createProfileCalls, contains(fakeUser));
+      },
+    );
 
     test(
       'updateUserProfile should succeed when configured to succeed',
@@ -240,7 +292,6 @@ void main() {
         );
         fakeRepository.setAuthResponse(succeed: true);
 
-        // First create the profile so it exists for update
         final createdUser = await fakeRepository.createUserProfile(
           originalUser,
         );
@@ -259,7 +310,6 @@ void main() {
         expect(result.credentialId, originalUser.credentialId);
         expect(fakeRepository.updateProfileCalls, contains(updatedUser));
 
-        // Verify the update is reflected
         final fetchResult = await fakeRepository.getUserProfile(
           originalUser.credentialId!,
         );
@@ -269,7 +319,7 @@ void main() {
     );
 
     test('updateUserProfile should throw when configured to fail', () async {
-      final fakeUser = createFakeUser();
+      final fakeUser = createFakeUser(credentialId: 'test-cred-id');
 
       await fakeRepository.createUserProfile(fakeUser);
 
@@ -279,7 +329,7 @@ void main() {
       );
 
       expect(
-        () => fakeRepository.updateUserProfile(fakeUser),
+        () async => await fakeRepository.updateUserProfile(fakeUser),
         throwsA(isA<ServerException>()),
       );
       expect(fakeRepository.updateProfileCalls, contains(fakeUser));
@@ -297,6 +347,42 @@ void main() {
 
         expect(result, isNull);
         expect(fakeRepository.updateProfileCalls, contains(nonExistentUser));
+      },
+    );
+
+    test('updateUserProfile should throw when credentialId is null', () async {
+      final fakeUser = createFakeUser(credentialId: null);
+      fakeRepository.setAuthResponse(succeed: true);
+
+      expect(
+        () async => await fakeRepository.updateUserProfile(fakeUser),
+        throwsA(isA<ServerException>()),
+      );
+      expect(fakeRepository.updateProfileCalls, contains(fakeUser));
+    });
+
+    test(
+      'updateUserProfile should succeed when auth fails but no error message',
+      () async {
+        final originalUser = createFakeUser(
+          email: 'original@example.com',
+          credentialId: 'cred-original',
+        );
+
+        // First create the profile so it exists for update
+        await fakeRepository.createUserProfile(originalUser);
+
+        // Set auth to fail but without error message
+        fakeRepository.setAuthResponse(succeed: false, errorMessage: null);
+
+        final updatedUser = originalUser.copyWith(firstName: 'UpdatedName');
+
+        final result = await fakeRepository.updateUserProfile(updatedUser);
+
+        expect(result, isNotNull);
+        expect(result!.firstName, 'UpdatedName');
+        expect(result.credentialId, originalUser.credentialId);
+        expect(fakeRepository.updateProfileCalls, contains(updatedUser));
       },
     );
   });
@@ -331,6 +417,50 @@ void main() {
       expect(result2, isNotNull);
       expect(result2!.email, 'user2@test.com');
       expect(result2.id, testUser2.id);
+    });
+
+    test('setUserProfile should throw when credentialId is null', () {
+      final testUser = createFakeUser(credentialId: null);
+
+      expect(
+        () => fakeRepository.setUserProfile(testUser),
+        throwsA(isA<ServerException>()),
+      );
+    });
+
+    test('setCurrentCredentials should set the current user', () {
+      final testCredential = UserCredential(
+        id: 'test-id',
+        email: 'test@example.com',
+        metadata: {'role': 'user'},
+        createdAt: clock.now(),
+      );
+
+      fakeRepository.setCurrentCredentials(testCredential);
+
+      final result = fakeRepository.getCurrentCredentials();
+      expect(result, isNotNull);
+      expect(result!.id, equals('test-id'));
+      expect(result.email, equals('test@example.com'));
+    });
+
+    test('setAuthResponse should configure success behavior', () {
+      fakeRepository.setAuthResponse(succeed: true);
+
+      // Should not throw
+      expect(() => fakeRepository.getCurrentCredentials(), returnsNormally);
+    });
+
+    test('setAuthResponse should configure failure behavior', () {
+      fakeRepository.setAuthResponse(
+        succeed: false,
+        errorMessage: 'Test error',
+      );
+
+      expect(
+        () => fakeRepository.getCurrentCredentials(),
+        throwsA(isA<ServerException>()),
+      );
     });
   });
 
@@ -368,7 +498,7 @@ void main() {
       );
 
       expect(
-        () => fakeRepository.updateUserEmail('new@example.com'),
+        () async => await fakeRepository.updateUserEmail('new@example.com'),
         throwsA(isA<ServerException>()),
       );
       expect(fakeRepository.updateEmailCalls, contains('new@example.com'));
@@ -382,6 +512,26 @@ void main() {
       expect(result, isNull);
       expect(fakeRepository.updateEmailCalls, contains('new@example.com'));
     });
+
+    test(
+      'updateUserEmail should throw when configured to fail with null error message',
+      () async {
+        final testCredential = UserCredential(
+          id: 'test-id',
+          email: 'test@example.com',
+          metadata: {'role': 'user'},
+          createdAt: clock.now(),
+        );
+        fakeRepository.setCurrentCredentials(testCredential);
+        fakeRepository.setAuthResponse(succeed: false, errorMessage: null);
+
+        expect(
+          () async => await fakeRepository.updateUserEmail('new@example.com'),
+          throwsA(isA<ServerException>()),
+        );
+        expect(fakeRepository.updateEmailCalls, contains('new@example.com'));
+      },
+    );
   });
 
   group('Password Update Operations', () {
@@ -424,7 +574,7 @@ void main() {
       );
 
       expect(
-        () => fakeRepository.updateUserPassword('newpassword123'),
+        () async => await fakeRepository.updateUserPassword('newpassword123'),
         throwsA(isA<ServerException>()),
       );
       expect(fakeRepository.updatePasswordCalls, contains('newpassword123'));
@@ -438,6 +588,26 @@ void main() {
       expect(result, isNull);
       expect(fakeRepository.updatePasswordCalls, contains('newpassword123'));
     });
+
+    test(
+      'updateUserPassword should throw when configured to fail with null error message',
+      () async {
+        final testCredential = UserCredential(
+          id: 'test-id',
+          email: 'test@example.com',
+          metadata: {'role': 'user'},
+          createdAt: clock.now(),
+        );
+        fakeRepository.setCurrentCredentials(testCredential);
+        fakeRepository.setAuthResponse(succeed: false, errorMessage: null);
+
+        expect(
+          () async => await fakeRepository.updateUserPassword('newpassword123'),
+          throwsA(isA<ServerException>()),
+        );
+        expect(fakeRepository.updatePasswordCalls, contains('newpassword123'));
+      },
+    );
   });
 }
 

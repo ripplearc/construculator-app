@@ -181,12 +181,6 @@ class FakeAuthRepository implements AuthRepository {
       throw ServerException(Trace.current(), Exception(_errorMessage));
     }
 
-    if (!_userProfiles.containsKey(user.credentialId)) {
-      return null;
-    }
-
-    final updatedUser = user.copyWith(updatedAt: _clock.now());
-
     final credentialId = user.credentialId;
     if (credentialId == null) {
       throw ServerException(
@@ -194,6 +188,12 @@ class FakeAuthRepository implements AuthRepository {
         Exception('Credential ID is required'),
       );
     }
+
+    if (!_userProfiles.containsKey(credentialId)) {
+      return null;
+    }
+
+    final updatedUser = user.copyWith(updatedAt: _clock.now());
     _userProfiles[credentialId] = updatedUser;
     return updatedUser;
   }

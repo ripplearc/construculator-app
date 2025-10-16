@@ -50,7 +50,6 @@ void main() {
         expect(appConfig.isDev, isTrue);
         expect(appConfig.isQa, isFalse);
         expect(appConfig.isProd, isFalse);
-
         expect(
           fakeDotEnvLoader.lastLoadedFileName,
           equals('assets/env/.env.dev'),
@@ -77,7 +76,6 @@ void main() {
         expect(appConfig.isQa, isTrue);
         expect(appConfig.isDev, isFalse);
         expect(appConfig.isProd, isFalse);
-
         expect(
           fakeDotEnvLoader.lastLoadedFileName,
           equals('assets/env/.env.qa'),
@@ -102,7 +100,6 @@ void main() {
         expect(appConfig.appName, equals('ProdApp'));
         expect(appConfig.debugFeaturesEnabled, isFalse);
         expect(appConfig.isProd, isTrue);
-
         expect(
           fakeDotEnvLoader.lastLoadedFileName,
           equals('assets/env/.env.prod'),
@@ -196,18 +193,21 @@ void main() {
 
         test('should return correct values for dev environment', () async {
           await appConfig.initialize(Environment.dev);
+
           expect(appConfig.isDev, isTrue);
           expect(appConfig.isQa, isFalse);
           expect(appConfig.isProd, isFalse);
         });
         test('should return correct values for qa environment', () async {
           await appConfig.initialize(Environment.qa);
+
           expect(appConfig.isDev, isFalse);
           expect(appConfig.isQa, isTrue);
           expect(appConfig.isProd, isFalse);
         });
         test('should return correct values for prod environment', () async {
           await appConfig.initialize(Environment.prod);
+
           expect(appConfig.isDev, isFalse);
           expect(appConfig.isQa, isFalse);
           expect(appConfig.isProd, isTrue);
@@ -296,7 +296,9 @@ void main() {
         test('should handle empty environment variables', () async {
           fakeDotEnvLoader.setEnvVar('APP_NAME', '');
           fakeDotEnvLoader.setEnvVar('API_URL', '');
+
           await appConfig.initialize(Environment.dev);
+
           expect(appConfig.baseAppName, equals(''));
         });
 
@@ -305,7 +307,9 @@ void main() {
           final longApiUrl = 'https://${'a' * 1000}.com';
           fakeDotEnvLoader.setEnvVar('APP_NAME', longAppName);
           fakeDotEnvLoader.setEnvVar('API_URL', longApiUrl);
+
           await appConfig.initialize(Environment.dev);
+
           expect(appConfig.baseAppName, equals(longAppName));
         });
 
@@ -317,7 +321,9 @@ void main() {
               'API_URL',
               'https://api-test_123.com/path?param=value&other=123',
             );
+
             await appConfig.initialize(Environment.dev);
+
             expect(appConfig.baseAppName, equals('Test-App_123!@#'));
           },
         );

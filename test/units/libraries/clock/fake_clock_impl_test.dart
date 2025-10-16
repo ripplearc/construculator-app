@@ -19,6 +19,7 @@ void main() {
   group('FakeClockImpl Tests', () {
     test('should return default time (Jan 1, 2000) when initialized', () {
       final expectedDate = DateTime(2000, 1, 1);
+
       expect(clock.now(), equals(expectedDate));
     });
 
@@ -42,10 +43,8 @@ void main() {
 
     test('should maintain state between operations', () {
       final initialTime = clock.now();
-
       clock.advance(Duration(hours: 1));
       final timeAfterAdvance = clock.now();
-
       clock.set(DateTime(2023, 6, 15));
       final timeAfterSet = clock.now();
 
