@@ -104,7 +104,7 @@ workflows:
           else
               LH_SUM=$(echo "$LH_RAW" | awk '{sum+=$1} END {print sum}')
           fi
-          
+
           if ! [[ "$LF_SUM" =~ ^[0-9]+$ ]]; then
               echo "❌ LF_SUM ($LF_SUM) is not a valid number. Cannot calculate coverage."
               exit 1
@@ -135,7 +135,7 @@ workflows:
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           # Find the common ancestor commit between source and target branches
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
-          
+
           # Find changed test files
           CHANGED_UNIT_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/units/*.dart")
           CHANGED_WIDGET_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/widgets/*.dart")
@@ -158,7 +158,7 @@ workflows:
           success: true
           failure: true
       slack:
-        channel: '#build-notifications'
+        channel: "#build-notifications"
         notify_on_build_start: true
         notify:
           success: true
@@ -252,9 +252,9 @@ workflows:
           else
             COVERAGE_PERCENT=$(echo "scale=2; $LH_SUM*100/$LF_SUM" | bc)
           fi
-          
+
           echo "Code Coverage: ${COVERAGE_PERCENT}%"
-          
+
           if (( $(echo "$COVERAGE_PERCENT < $TARGET" | bc -l) )); then
             echo "❌ Coverage is $COVERAGE_PERCENT%, below $TARGET%"
             exit 1
@@ -291,15 +291,15 @@ workflows:
           fi
           echo "🧬 Checking for changed mutation config files..."
           CHANGED_FILES=$(git diff --name-only --diff-filter=d "$BASE_COMMIT" -- "test/mutations/*.xml")
-          
+
           if [ -z "$CHANGED_FILES" ]; then
           echo "✅ No changed mutation config files detected. Skipping mutation tests."
           exit 0
           fi
-          
+
           echo "Found changed mutation config files:"
           echo "$CHANGED_FILES"
-          
+
           echo "🧪 Running mutation tests..."
           fvm dart run mutation_test $CHANGED_FILES --no-builtin
 
@@ -320,7 +320,7 @@ workflows:
           success: true
           failure: true
       slack:
-        channel: '#build-notifications'
+        channel: "#build-notifications"
         notify_on_build_start: true
         notify:
           success: true
@@ -471,7 +471,7 @@ workflows:
           success: true
           failure: true
       slack:
-        channel: '#build-notifications'
+        channel: "#build-notifications"
         notify_on_build_start: true
         notify:
           success: true
@@ -532,7 +532,7 @@ workflows:
           success: true
           failure: true
       slack:
-        channel: '#build-notifications'
+        channel: "#build-notifications"
         notify_on_build_start: true
         notify:
           success: true

@@ -92,13 +92,17 @@ void main() {
       'estimate_description': estimateDescription ?? estimateDescDefault,
       'creator_user_id': creatorUserId ?? userIdDefault,
       'markup_type': markupType ?? markupTypeOverall,
-      'overall_markup_value_type': overallMarkupValueType ?? markupValueTypePercentage,
+      'overall_markup_value_type':
+          overallMarkupValueType ?? markupValueTypePercentage,
       'overall_markup_value': overallMarkupValue ?? defaultOverallMarkup,
-      'material_markup_value_type': materialMarkupValueType ?? markupValueTypePercentage,
+      'material_markup_value_type':
+          materialMarkupValueType ?? markupValueTypePercentage,
       'material_markup_value': materialMarkupValue ?? defaultMaterialMarkup,
-      'labor_markup_value_type': laborMarkupValueType ?? markupValueTypePercentage,
+      'labor_markup_value_type':
+          laborMarkupValueType ?? markupValueTypePercentage,
       'labor_markup_value': laborMarkupValue ?? defaultLaborMarkup,
-      'equipment_markup_value_type': equipmentMarkupValueType ?? markupValueTypePercentage,
+      'equipment_markup_value_type':
+          equipmentMarkupValueType ?? markupValueTypePercentage,
       'equipment_markup_value': equipmentMarkupValue ?? defaultEquipmentMarkup,
       'total_cost': totalCost ?? defaultTotalCost,
       'is_locked': isLocked ?? false,
@@ -108,7 +112,7 @@ void main() {
       'updated_at': updatedAt ?? defaultTimestamp,
     };
   }
-  
+
   group('RemoteCostEstimationDataSource', () {
     late RemoteCostEstimationDataSource dataSource;
     late FakeSupabaseWrapper fakeSupabaseWrapper;
@@ -178,145 +182,185 @@ void main() {
         expect(result, isEmpty);
       });
 
-      test('should return empty list when no estimations for specific project', () async {
-        // Arrange
-        final otherProjectEstimations = [
-          createFakeEstimationData(
-            projectId: otherProjectId,
-          ),
-        ];
+      test(
+        'should return empty list when no estimations for specific project',
+        () async {
+          // Arrange
+          final otherProjectEstimations = [
+            createFakeEstimationData(projectId: otherProjectId),
+          ];
 
-        fakeSupabaseWrapper.addTableData(tableName, otherProjectEstimations);
+          fakeSupabaseWrapper.addTableData(tableName, otherProjectEstimations);
 
-        // Act
-        final result = await dataSource.getEstimations(testProjectId);
+          // Act
+          final result = await dataSource.getEstimations(testProjectId);
 
-        // Assert
-        expect(result, isEmpty);
-      });
+          // Assert
+          expect(result, isEmpty);
+        },
+      );
 
-      test('should call supabaseWrapper.select with correct parameters', () async {
-        // Arrange
-        fakeSupabaseWrapper.addTableData(tableName, []);
+      test(
+        'should call supabaseWrapper.select with correct parameters',
+        () async {
+          // Arrange
+          fakeSupabaseWrapper.addTableData(tableName, []);
 
-        // Act
-        await dataSource.getEstimations(testProjectId);
+          // Act
+          await dataSource.getEstimations(testProjectId);
 
-        // Assert
-        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(selectMethod);
-        expect(methodCalls, hasLength(1));
-        
-        final call = methodCalls.first;
-        expect(call['table'], equals(tableName));
-        expect(call['filterColumn'], equals(DatabaseConstants.projectIdColumn));
-        expect(call['filterValue'], equals(testProjectId));
-        expect(call['columns'], equals(allColumns));
-      });
+          // Assert
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
+            selectMethod,
+          );
+          expect(methodCalls, hasLength(1));
 
-      test('should rethrow exception when supabaseWrapper.select throws', () async {
-        // Arrange
-        fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-        fakeSupabaseWrapper.selectMultipleExceptionType = SupabaseExceptionType.postgrest;
-        fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgDbConnection;
+          final call = methodCalls.first;
+          expect(call['table'], equals(tableName));
+          expect(
+            call['filterColumn'],
+            equals(DatabaseConstants.projectIdColumn),
+          );
+          expect(call['filterValue'], equals(testProjectId));
+          expect(call['columns'], equals(allColumns));
+        },
+      );
 
-        // Act & Assert
-        expect(
-          () => dataSource.getEstimations(testProjectId),
-          throwsA(isA<supabase.PostgrestException>()),
-        );
-      });
+      test(
+        'should rethrow exception when supabaseWrapper.select throws',
+        () async {
+          // Arrange
+          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
+          fakeSupabaseWrapper.selectMultipleExceptionType =
+              SupabaseExceptionType.postgrest;
+          fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgDbConnection;
 
-      test('should rethrow auth exception when supabaseWrapper.select throws auth error', () async {
-        // Arrange
-        fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-        fakeSupabaseWrapper.selectMultipleExceptionType = SupabaseExceptionType.auth;
-        fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgAuth;
+          // Act & Assert
+          expect(
+            () => dataSource.getEstimations(testProjectId),
+            throwsA(isA<supabase.PostgrestException>()),
+          );
+        },
+      );
 
-        // Act & Assert
-        expect(
-          () => dataSource.getEstimations(testProjectId),
-          throwsA(isA<supabase.AuthException>()),
-        );
-      });
+      test(
+        'should rethrow auth exception when supabaseWrapper.select throws auth error',
+        () async {
+          // Arrange
+          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
+          fakeSupabaseWrapper.selectMultipleExceptionType =
+              SupabaseExceptionType.auth;
+          fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgAuth;
 
-      test('should rethrow socket exception when supabaseWrapper.select throws socket error', () async {
-        // Arrange
-        fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-        fakeSupabaseWrapper.selectMultipleExceptionType = SupabaseExceptionType.socket;
-        fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgNetwork;
+          // Act & Assert
+          expect(
+            () => dataSource.getEstimations(testProjectId),
+            throwsA(isA<supabase.AuthException>()),
+          );
+        },
+      );
 
-        // Act & Assert
-        expect(
-          () => dataSource.getEstimations(testProjectId),
-          throwsA(isA<Exception>()),
-        );
-      });
+      test(
+        'should rethrow socket exception when supabaseWrapper.select throws socket error',
+        () async {
+          // Arrange
+          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
+          fakeSupabaseWrapper.selectMultipleExceptionType =
+              SupabaseExceptionType.socket;
+          fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgNetwork;
 
-      test('should rethrow timeout exception when supabaseWrapper.select throws timeout error', () async {
-        // Arrange
-        fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-        fakeSupabaseWrapper.selectMultipleExceptionType = SupabaseExceptionType.timeout;
-        fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgTimeout;
+          // Act & Assert
+          expect(
+            () => dataSource.getEstimations(testProjectId),
+            throwsA(isA<Exception>()),
+          );
+        },
+      );
 
-        // Act & Assert
-        expect(
-          () => dataSource.getEstimations(testProjectId),
-          throwsA(isA<Exception>()),
-        );
-      });
+      test(
+        'should rethrow timeout exception when supabaseWrapper.select throws timeout error',
+        () async {
+          // Arrange
+          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
+          fakeSupabaseWrapper.selectMultipleExceptionType =
+              SupabaseExceptionType.timeout;
+          fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgTimeout;
 
-      test('should handle CostEstimateDto.fromJson correctly with all field types', () async {
-        // Arrange
-        final estimationData = createFakeEstimationData(
-          id: estimateIdComplex,
-          estimateName: estimateNameComplex,
-          estimateDescription: estimateDescComplex,
-          creatorUserId: userIdComplex,
-          markupType: markupTypeGranular,
-          overallMarkupValueType: markupValueTypeAmount,
-          overallMarkupValue: overallMarkup3,
-          materialMarkupValue: materialMarkup3,
-          laborMarkupValueType: markupValueTypeAmount,
-          laborMarkupValue: laborMarkup4,
-          equipmentMarkupValue: equipmentMarkup2,
-          totalCost: totalCostComplex,
-          isLocked: true,
-          lockedByUserId: userIdLocker,
-          lockedAt: timestamp5,
-          createdAt: timestamp4,
-          updatedAt: timestamp5,
-        );
+          // Act & Assert
+          expect(
+            () => dataSource.getEstimations(testProjectId),
+            throwsA(isA<Exception>()),
+          );
+        },
+      );
 
-        fakeSupabaseWrapper.addTableData(tableName, [estimationData]);
+      test(
+        'should handle CostEstimateDto.fromJson correctly with all field types',
+        () async {
+          // Arrange
+          final estimationData = createFakeEstimationData(
+            id: estimateIdComplex,
+            estimateName: estimateNameComplex,
+            estimateDescription: estimateDescComplex,
+            creatorUserId: userIdComplex,
+            markupType: markupTypeGranular,
+            overallMarkupValueType: markupValueTypeAmount,
+            overallMarkupValue: overallMarkup3,
+            materialMarkupValue: materialMarkup3,
+            laborMarkupValueType: markupValueTypeAmount,
+            laborMarkupValue: laborMarkup4,
+            equipmentMarkupValue: equipmentMarkup2,
+            totalCost: totalCostComplex,
+            isLocked: true,
+            lockedByUserId: userIdLocker,
+            lockedAt: timestamp5,
+            createdAt: timestamp4,
+            updatedAt: timestamp5,
+          );
 
-        // Act
-        final result = await dataSource.getEstimations(testProjectId);
+          fakeSupabaseWrapper.addTableData(tableName, [estimationData]);
 
-        // Assert
-        expect(result, hasLength(1));
-        final estimation = result.first;
-        
-        expect(estimation.id, equals(estimateIdComplex));
-        expect(estimation.projectId, equals(testProjectId));
-        expect(estimation.estimateName, equals(estimateNameComplex));
-        expect(estimation.estimateDescription, equals(estimateDescComplex));
-        expect(estimation.creatorUserId, equals(userIdComplex));
-        expect(estimation.markupType, equals(markupTypeGranular));
-        expect(estimation.overallMarkupValueType, equals(markupValueTypeAmount));
-        expect(estimation.overallMarkupValue, equals(overallMarkup3));
-        expect(estimation.materialMarkupValueType, equals(markupValueTypePercentage));
-        expect(estimation.materialMarkupValue, equals(materialMarkup3));
-        expect(estimation.laborMarkupValueType, equals(markupValueTypeAmount));
-        expect(estimation.laborMarkupValue, equals(laborMarkup4));
-        expect(estimation.equipmentMarkupValueType, equals(markupValueTypePercentage));
-        expect(estimation.equipmentMarkupValue, equals(equipmentMarkup2));
-        expect(estimation.totalCost, equals(totalCostComplex));
-        expect(estimation.isLocked, isTrue);
-        expect(estimation.lockedByUserID, equals(userIdLocker));
-        expect(estimation.lockedAt, equals(timestamp5));
-        expect(estimation.createdAt, equals(timestamp4));
-        expect(estimation.updatedAt, equals(timestamp5));
-      });
+          // Act
+          final result = await dataSource.getEstimations(testProjectId);
+
+          // Assert
+          expect(result, hasLength(1));
+          final estimation = result.first;
+
+          expect(estimation.id, equals(estimateIdComplex));
+          expect(estimation.projectId, equals(testProjectId));
+          expect(estimation.estimateName, equals(estimateNameComplex));
+          expect(estimation.estimateDescription, equals(estimateDescComplex));
+          expect(estimation.creatorUserId, equals(userIdComplex));
+          expect(estimation.markupType, equals(markupTypeGranular));
+          expect(
+            estimation.overallMarkupValueType,
+            equals(markupValueTypeAmount),
+          );
+          expect(estimation.overallMarkupValue, equals(overallMarkup3));
+          expect(
+            estimation.materialMarkupValueType,
+            equals(markupValueTypePercentage),
+          );
+          expect(estimation.materialMarkupValue, equals(materialMarkup3));
+          expect(
+            estimation.laborMarkupValueType,
+            equals(markupValueTypeAmount),
+          );
+          expect(estimation.laborMarkupValue, equals(laborMarkup4));
+          expect(
+            estimation.equipmentMarkupValueType,
+            equals(markupValueTypePercentage),
+          );
+          expect(estimation.equipmentMarkupValue, equals(equipmentMarkup2));
+          expect(estimation.totalCost, equals(totalCostComplex));
+          expect(estimation.isLocked, isTrue);
+          expect(estimation.lockedByUserID, equals(userIdLocker));
+          expect(estimation.lockedAt, equals(timestamp5));
+          expect(estimation.createdAt, equals(timestamp4));
+          expect(estimation.updatedAt, equals(timestamp5));
+        },
+      );
 
       test('should filter estimations by project_id correctly', () async {
         // Arrange
@@ -345,8 +389,14 @@ void main() {
 
         // Assert
         expect(result, hasLength(2));
-        expect(result.every((estimation) => estimation.projectId == testProjectId), isTrue);
-        expect(result.map((e) => e.id), containsAll([estimateId1, estimateId3]));
+        expect(
+          result.every((estimation) => estimation.projectId == testProjectId),
+          isTrue,
+        );
+        expect(
+          result.map((e) => e.id),
+          containsAll([estimateId1, estimateId3]),
+        );
       });
     });
   });
