@@ -44,7 +44,7 @@ npm install
 
 Verify the installation:
 ```
-supabase --version
+npx supabase --version
 ```
 If you face any issues in this step, please refer to the supabase documentation on setting up a local development environment: https://supabase.com/docs/guides/local-development.
 
@@ -58,7 +58,7 @@ All Supabase configuration files are inside the `/supabase` directory.
 
 To start the supabase instance:
 ```
-supabase start
+npx supabase start
 ```
 This command performs a multitude of actions. It will:
 - Start all the local containers
@@ -120,6 +120,8 @@ supabase db reset
 |Reset and rebuild the DB|`supabase db reset`|
 |Create a new migration|`supabase migration new <migration_name>`|
 |Execute a SQL file manually|`supabase db execute <path-to-sql>`|
+
+Add `npx` before each of the following commands if you didn't install `supabase` globally.
 
 ## Troubleshooting
 |Issue|Cause|Fix|
