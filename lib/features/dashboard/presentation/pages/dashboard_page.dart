@@ -98,11 +98,12 @@ class _DashboardPageState extends State<DashboardPage> {
                 label: 'Logout',
                 centerAlign: true,
               ),
+              const SizedBox(height: 16),
               CoreButton(
                 onPressed: () {
-                  _router.navigate(fullEstimationLandingRoute);
+                  _router.navigate('$fullEstimationLandingRoute/950e8400-e29b-41d4-a716-446655440012');
                 },
-                label: 'Cost Estimation',
+                label: 'Cost Estimation for Project 950e...',
                 centerAlign: true,
               ),
             ],
