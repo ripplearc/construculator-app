@@ -8,11 +8,13 @@ import 'package:construculator/features/estimation/presentation/bloc/cost_estima
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/features/project_settings/project_settings_module.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/router_module.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class RouteDefinition {
@@ -31,10 +33,17 @@ class EstimationModule extends Module {
     RouteDefinition(estimationLandingRoute, (context) {
       final projectId = Modular.args.params['projectId'];
       if (projectId == null || projectId.isEmpty) {
-        throw Exception('Project ID is required for cost estimation');
+        throw ClientException(StackTrace.current, 'Project ID is required for cost estimation');
       }
       
-      return CostEstimationLandingPage(projectId: projectId);
+      return BlocProvider<CostEstimationListBloc>(
+        create: (context) {
+          final bloc = Modular.get<CostEstimationListBloc>();
+          bloc.add(CostEstimationListRefreshEvent(projectId: projectId));
+          return bloc;
+        },
+        child: CostEstimationLandingPage(projectId: projectId),
+      );
     }, [
       AuthGuard(),
     ]),
@@ -65,10 +74,9 @@ class EstimationModule extends Module {
     );
 
     // BLoCs
-    i.addLazySingleton<CostEstimationListBloc>(
+    i.add<CostEstimationListBloc>(
       () => CostEstimationListBloc(
         getEstimationsUseCase: i.get(),
-        projectId: 'default-project-id',
       ),
     );
   }
