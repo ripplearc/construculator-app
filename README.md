@@ -173,3 +173,36 @@ And replace `<FLAVOR>` with your preference mode, `dogfood`, `fishfood`, etc...
 
 #### Table entries not appearing when fetching using the supabase wrapper
 > Among the supabase migrations, there is a file that enables RLS for each table. This essentially creates an authorization check for every entry in each table, but there aren't any rules at the time of writing. This issue can be particularly frustrating because supabase returns an empty array instead of throwing an error. If you are working on the feature itself, please create the RLS rule and add it to the migration scripts. Although it is not recommended, you can also disable RLS when working on a feature initially.
+
+# Generating Screenshots for Golden Tests
+
+Golden tests work by comparing widget screenshots to baseline images. But these screenshots can vary between platforms. To mitigate this problem, there is a docker image and a docker compose file in the root directory of this project. The container produces the environment used in code magic for the CI checks where the screenshots can be generated.
+
+To use this setup for generating screenshots, first make sure to `cd` into the root directory of the project then run:
+```
+docker-compose up -d 
+```
+This command starts up the docker container. Note: this pulls the relevant base image and the dependencies so it will take a while for the image to build.
+
+Then run:
+```
+docker container ps
+```
+This command retrieves all the running containers in your system. From the output of this command, save EITHER the id or the full name of the running container. The name will most likely resemble: `construculator-app-flutter-1`.
+
+Now that the container is up and running, you'll need to open an interactive shell to interact with the tests:
+```
+docker exec -it <NAME-OR-ID-OF-DOCKER-CONTAINER> bash    
+```
+Replace `<NAME-OR-ID-OF-DOCKER-CONTAINER>` with the value you retrieved in the previous step.
+
+You should now have access to a `bash` terminal inside the container. Make sure you are in the `/app` directory and you can now run all the tests and generate screenshots for your golden tests.
+```
+flutter test <PATH-TO-TEST> --update-goldens
+```
+**Note:** There is a volume binding in the container so all the generated tests should be present in your local repository and there is no need to copy over the screenshot files from the container.
+
+## Troubleshooting
+
+#### Dependency issue when running the `flutter test` command
+> If you created the container image in one branch and switch to a different branch that has a different set of dependencies (updated `pubspec.yaml` file), you have to rebuild the docker image and re-run the container. Stop the container that is currently running, then run `docker-compose up -d --build` to rebuild the image. You can then follow the rest of the steps to access a shell in the container and run the tests.
