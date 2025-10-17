@@ -22,7 +22,6 @@ void main() {
       useCase = GetEstimationsUseCase(fakeRepository);
       bloc = CostEstimationListBloc(
         getEstimationsUseCase: useCase,
-        projectId: testProjectId,
       );
     });
 
@@ -31,17 +30,20 @@ void main() {
       fakeRepository.reset();
     });
 
-    group('Initialization', () {
+    group('Initialization tests', () {
       test('should be initialized with correct dependencies', () {
         expect(bloc, isNotNull);
-        expect(bloc.state, isNot(isA<CostEstimationListInitial>()));
+        expect(bloc.state, isA<CostEstimationListInitial>());
       });
 
-      test('should automatically trigger refresh event on initialization', () async {
+      test('should start with initial state and respond to refresh events', () async {
         final testBloc = CostEstimationListBloc(
           getEstimationsUseCase: useCase,
-          projectId: testProjectId,
         );
+        
+        expect(testBloc.state, isA<CostEstimationListInitial>());
+        
+        testBloc.add(CostEstimationListRefreshEvent(projectId: testProjectId));
         
         await testBloc.stream.firstWhere((state) => 
           state is CostEstimationListEmpty || 
@@ -74,9 +76,9 @@ void main() {
           fakeRepository.addProjectEstimations(testProjectId, estimations);
           return CostEstimationListBloc(
             getEstimationsUseCase: useCase,
-            projectId: testProjectId,
           );
         },
+        act: (bloc) => bloc.add(CostEstimationListRefreshEvent(projectId: testProjectId)),
         expect: () => [
           isA<CostEstimationListLoading>(),
           isA<CostEstimationListLoaded>()
@@ -92,9 +94,9 @@ void main() {
           fakeRepository.shouldReturnEmptyList = true;
           return CostEstimationListBloc(
             getEstimationsUseCase: useCase,
-            projectId: testProjectId,
           );
         },
+        act: (bloc) => bloc.add(CostEstimationListRefreshEvent(projectId: testProjectId)),
         expect: () => [
           isA<CostEstimationListLoading>(),
           isA<CostEstimationListEmpty>(),
@@ -114,15 +116,10 @@ void main() {
           fakeRepository.addProjectEstimations(testProjectId, estimations);
           return CostEstimationListBloc(
             getEstimationsUseCase: useCase,
-            projectId: testProjectId,
           );
         },
-        act: (bloc) => bloc.add(const CostEstimationListRefreshEvent()),
+        act: (bloc) => bloc.add(CostEstimationListRefreshEvent(projectId: testProjectId)),
         expect: () => [
-          isA<CostEstimationListLoading>(),
-          isA<CostEstimationListLoaded>()
-            .having((state) => state.estimates.length, 'estimates length', 1)
-            .having((state) => state.estimates[0].estimateName, 'estimate name', 'Refreshed Estimation'),
           isA<CostEstimationListLoading>(),
           isA<CostEstimationListLoaded>()
             .having((state) => state.estimates.length, 'estimates length', 1)
@@ -140,9 +137,9 @@ void main() {
           fakeRepository.getEstimationsExceptionType = SupabaseExceptionType.socket;
           return CostEstimationListBloc(
             getEstimationsUseCase: useCase,
-            projectId: testProjectId,
           );
         },
+        act: (bloc) => bloc.add(CostEstimationListRefreshEvent(projectId: testProjectId)),
         expect: () => [
           isA<CostEstimationListLoading>(),
           isA<CostEstimationListError>()
@@ -158,8 +155,9 @@ void main() {
         
         final testBloc = CostEstimationListBloc(
           getEstimationsUseCase: useCase,
-          projectId: testProjectId,
         );
+        
+        testBloc.add(CostEstimationListRefreshEvent(projectId: testProjectId));
         
         final errorState = await testBloc.stream.firstWhere((state) => state is CostEstimationListError);
         
@@ -171,7 +169,7 @@ void main() {
       });
     });
 
-    group('Edge cases', () {
+    group('Cases with missing values', () {
       test('should handle refresh events without errors', () async {
         final estimations = [
           TestEstimationDataHelper.createFakeEstimation(
@@ -184,12 +182,13 @@ void main() {
         
         final testBloc = CostEstimationListBloc(
           getEstimationsUseCase: useCase,
-          projectId: testProjectId,
         );
+        
+        testBloc.add(CostEstimationListRefreshEvent(projectId: testProjectId));
         
         await testBloc.stream.firstWhere((state) => state is CostEstimationListLoaded);
         
-        testBloc.add(const CostEstimationListRefreshEvent());
+        testBloc.add(CostEstimationListRefreshEvent(projectId: testProjectId));
         
         await testBloc.stream.firstWhere((state) => 
           state is CostEstimationListLoaded || 
@@ -217,9 +216,9 @@ void main() {
           fakeRepository.addProjectEstimations(testProjectId, estimations);
           return CostEstimationListBloc(
             getEstimationsUseCase: useCase,
-            projectId: testProjectId,
           );
         },
+        act: (bloc) => bloc.add(CostEstimationListRefreshEvent(projectId: testProjectId)),
         expect: () => [
           isA<CostEstimationListLoading>(),
           isA<CostEstimationListLoaded>()
@@ -243,19 +242,20 @@ void main() {
       test('should handle refresh events correctly', () async {
         final testBloc = CostEstimationListBloc(
           getEstimationsUseCase: useCase,
-          projectId: testProjectId,
         );
+        
+        expect(testBloc.state, isA<CostEstimationListInitial>());
+        
+        testBloc.add(CostEstimationListRefreshEvent(projectId: testProjectId));
+        
+        final nextState = await testBloc.stream.first;
+        expect(nextState, isA<CostEstimationListLoading>());
         
         await testBloc.stream.firstWhere((state) => 
           state is CostEstimationListEmpty || 
           state is CostEstimationListLoaded || 
           state is CostEstimationListError
         );
-        
-        testBloc.add(const CostEstimationListRefreshEvent());
-        
-        final nextState = await testBloc.stream.first;
-        expect(nextState, isA<CostEstimationListLoading>());
         
         testBloc.close();
       });

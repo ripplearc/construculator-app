@@ -1,4 +1,3 @@
-import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -102,7 +101,7 @@ class _DashboardPageState extends State<DashboardPage> {
               const SizedBox(height: 16),
               CoreButton(
                 onPressed: () {
-                  _router.navigate('$fullEstimationLandingRoute/950e8400-e29b-41d4-a716-446655440012');
+                  _router.navigate('$fullEstimationLandingRoute/950e8400-e29b-41d4-a716-446655440001');
                 },
                 label: 'Cost Estimation for Project 950e...',
                 centerAlign: true,
