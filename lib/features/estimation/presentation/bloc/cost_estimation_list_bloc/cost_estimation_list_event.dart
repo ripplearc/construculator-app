@@ -15,8 +15,10 @@ abstract class CostEstimationListEvent extends Equatable {
 
 /// Triggered when the user manually requests a refresh of the cost estimations list
 class CostEstimationListRefreshEvent extends CostEstimationListEvent {
-  const CostEstimationListRefreshEvent();
+  final String projectId;
+  
+  const CostEstimationListRefreshEvent({required this.projectId});
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [projectId];
 }
