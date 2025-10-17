@@ -8,7 +8,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class CostEstimationLandingPage extends StatefulWidget {
-  const CostEstimationLandingPage({super.key});
+  final String? projectId;
+  
+  const CostEstimationLandingPage({super.key, this.projectId});
 
   @override
   State<CostEstimationLandingPage> createState() =>
@@ -59,7 +61,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           return Scaffold(
             backgroundColor: Colors.white,
             appBar: ProjectHeaderAppBar(
-              projectName: 'My project',
+              projectId: 'My project',
               onProjectTap: () {},
               onSearchTap: () {},
               onNotificationTap: () {},
