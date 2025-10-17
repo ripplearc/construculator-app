@@ -92,7 +92,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
         return RefreshIndicator(
           onRefresh: () async {
             BlocProvider.of<CostEstimationListBloc>(context).add(
-              const CostEstimationListRefreshEvent(),
+              CostEstimationListRefreshEvent(projectId: widget.projectId),
             );
           },
           child: _buildContent(state),
