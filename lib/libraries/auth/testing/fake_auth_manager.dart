@@ -317,9 +317,13 @@ class FakeAuthManager implements AuthManager {
       return AuthResult.failure(_errorType);
     }
 
-    final result = await _authRepository.getUserProfile(credentialId);
-    _authNotifier.emitUserProfileChanged(result);
-    return AuthResult.success(result);
+    try {
+      final result = await _authRepository.getUserProfile(credentialId);
+      _authNotifier.emitUserProfileChanged(result);
+      return AuthResult.success(result);
+    } catch (e) {
+      rethrow;
+    }
   }
 
   @override
@@ -369,6 +373,9 @@ class FakeAuthManager implements AuthManager {
       rolesData.map((roleMap) => ProfessionalRole.fromJson(roleMap)).toList(),
     );
   }
+
+  /// Get the auth repository for testing purposes
+  AuthRepository get authRepository => _authRepository;
 
   /// Reset all tracking lists and state
   void reset() {

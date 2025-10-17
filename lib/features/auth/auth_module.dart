@@ -6,6 +6,7 @@ import 'package:construculator/features/auth/domain/usecases/send_otp_usecase.da
 import 'package:construculator/features/auth/domain/usecases/verify_otp_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/login_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/set_new_password_usecase.dart';
+import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/enter_password_bloc/enter_password_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/forgot_password_bloc/forgot_password_bloc.dart';
@@ -25,6 +26,7 @@ import 'package:construculator/libraries/time/clock_module.dart';
 import 'package:construculator/libraries/router/guards/no_auth_guard.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
+import 'package:construculator/libraries/router/router_module.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -38,6 +40,7 @@ class AuthModule extends Module {
     AuthLibraryModule(appBootstrap),
     SupabaseModule(appBootstrap),
     ClockModule(),
+    RouterModule(),
   ];
 
   @override
@@ -167,5 +170,13 @@ void _registerDependencies(Injector i) {
   );
   i.add<SetNewPasswordBloc>(
     () => SetNewPasswordBloc(setNewPasswordUseCase: i()),
+  );
+  
+  i.addLazySingleton<AuthBloc>(
+    () => AuthBloc(
+      authManager: i(),
+      authNotifier: i(),
+      router: i(),
+    ),
   );
 }
