@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  flutter:
+    build: .
+    volumes:
+      - ./test:/app/test
+    stdin_open: true
+    tty: true
