@@ -18,7 +18,7 @@ void main() {
     Future<void> pumpCostEstimationTile({
       required WidgetTester tester,
       required CostEstimate estimation,
-      VoidCallback? onTap,
+      required VoidCallback onTap,
       VoidCallback? onMenuTap,
     }) async {
       await tester.pumpWidget(
