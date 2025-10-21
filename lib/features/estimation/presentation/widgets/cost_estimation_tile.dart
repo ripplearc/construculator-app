@@ -1,7 +1,9 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/formatting/formatting_helper.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 
 class CostEstimationTile extends StatelessWidget {
   final CostEstimate estimation;
@@ -15,6 +17,12 @@ class CostEstimationTile extends StatelessWidget {
     this.onTap,
     this.onMenuTap,
   });
+
+  void _navigateToDetails(BuildContext context) {
+    Modular.to.pushNamed(
+      '$fullEstimationDetailsRoute/${estimation.id}',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +43,7 @@ class CostEstimationTile extends StatelessWidget {
           color: Colors.transparent,
           child: GestureDetector(
             key: const Key('tileGestureDetector'),
-            onTap: onTap,
+            onTap: onTap ?? () => _navigateToDetails(context),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
