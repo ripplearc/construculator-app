@@ -134,7 +134,6 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           final estimation = estimations[index];
           return CostEstimationTile(
             estimation: estimation,
-            onTap: () {},
             onMenuTap: () {},
           );
         },
