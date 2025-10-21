@@ -6,9 +6,10 @@ import 'package:construculator/features/estimation/domain/repositories/cost_esti
 import 'package:construculator/features/estimation/domain/usecases/get_estimations_usecase.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
+import 'package:construculator/features/estimation/presentation/pages/cost_estimation_details_page.dart';
+import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/features/project_settings/project_settings_module.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
-import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/router_module.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
@@ -44,6 +45,16 @@ class EstimationModule extends Module {
         },
         child: CostEstimationLandingPage(projectId: projectId),
       );
+    }, [
+      AuthGuard(),
+    ]),
+    RouteDefinition(estimationDetailsRoute, (context) {
+      final estimationId = Modular.args.params['estimationId'];
+      if (estimationId == null || estimationId.isEmpty) {
+        throw ClientException(StackTrace.current, 'Estimation ID is required for cost estimation details');
+      }
+      
+      return CostEstimationDetailsPage(estimationId: estimationId);
     }, [
       AuthGuard(),
     ]),
