@@ -5,13 +5,13 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class CostEstimationTile extends StatelessWidget {
   final CostEstimate estimation;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
   final VoidCallback? onMenuTap;
 
   const CostEstimationTile({
     super.key,
     required this.estimation,
-    this.onTap,
+    required this.onTap,
     this.onMenuTap,
   });
 
