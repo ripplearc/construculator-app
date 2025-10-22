@@ -1,22 +1,35 @@
-import 'package:construculator/features/auth/testing/auth_test_module.dart';
+import 'package:construculator/app/testing/fake_app_bootstrap.dart';
+import 'package:construculator/features/auth/auth_module.dart';
+import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
+import 'package:construculator/features/auth/presentation/pages/create_account_page.dart';
+import 'package:construculator/features/auth/presentation/widgets/terms_and_conditions_section.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
+import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:construculator/libraries/time/testing/clock_test_module.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:construculator/features/auth/presentation/pages/create_account_page.dart';
-import 'package:construculator/features/auth/presentation/widgets/terms_and_conditions_section.dart';
-import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
-import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
-import 'package:construculator/l10n/generated/app_localizations.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:core_ui/core_ui.dart';
+
+class _CreateAccountPageTestModule extends Module {
+  @override
+  List<Module> get imports => [
+    RouterTestModule(),
+    ClockTestModule(),
+    AuthModule(FakeAppBootstrap()),
+  ];
+}
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
@@ -36,27 +49,30 @@ void main() {
     );
   }
 
-  setUp(() {
+  setUpAll(() {
+    fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     CoreToast.disableTimers();
-    Modular.init(AuthTestModule());
-    fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+    Modular.init(_CreateAccountPageTestModule());
+    Modular.replaceInstance<SupabaseWrapper>(fakeSupabase);
     router = Modular.get<AppRouter>() as FakeAppRouter;
     clock = Modular.get<Clock>();
+  });
+
+  tearDownAll(() {
+    Modular.destroy();
+    CoreToast.enableTimers();
+  });
+
+  setUp(() {
+    fakeSupabase.reset();
     fakeSupabase.addTableData('professional_roles', [
       {'id': 'uuid', 'name': testRole},
     ]);
   });
 
-  tearDown(() {
-    fakeSupabase.reset();
-    Modular.destroy();
-    CoreToast.enableTimers();
-  });
-
   Widget makeTestableWidget({required Widget child}) {
-    final bloc = Modular.get<CreateAccountBloc>();
-    return BlocProvider.value(
-      value: bloc,
+    return BlocProvider<CreateAccountBloc>(
+      create: (context) => Modular.get<CreateAccountBloc>(),
       child: MaterialApp(
         home: Builder(
           builder: (context) {

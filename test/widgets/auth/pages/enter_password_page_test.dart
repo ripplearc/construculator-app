@@ -1,41 +1,61 @@
+import 'package:construculator/app/testing/fake_app_bootstrap.dart';
+import 'package:construculator/features/auth/auth_module.dart';
+import 'package:construculator/features/auth/presentation/bloc/enter_password_bloc/enter_password_bloc.dart';
+import 'package:construculator/features/auth/presentation/pages/enter_password_page.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
+import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:construculator/libraries/time/testing/clock_test_module.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:core_ui/core_ui.dart';
-import 'package:construculator/features/auth/presentation/pages/enter_password_page.dart';
-import 'package:construculator/features/auth/presentation/bloc/enter_password_bloc/enter_password_bloc.dart';
-import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:construculator/features/auth/testing/auth_test_module.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+class _EnterPasswordPageTestModule extends Module {
+  @override
+  List<Module> get imports => [
+    RouterTestModule(),
+    ClockTestModule(),
+    AuthModule(FakeAppBootstrap()),
+  ];
+}
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
   late FakeAppRouter router;
   BuildContext? buildContext;
   const testEmail = 'test@example.com';
-  setUp(() {
+  setUpAll(() {
+    fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     CoreToast.disableTimers();
-    Modular.init(AuthTestModule());
-    fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+
+    Modular.init(_EnterPasswordPageTestModule());
+
+    Modular.replaceInstance<SupabaseWrapper>(fakeSupabase);
+
     router = Modular.get<AppRouter>() as FakeAppRouter;
   });
 
-  tearDown(() {
+  tearDownAll(() {
     Modular.destroy();
     CoreToast.enableTimers();
   });
 
+  setUp(() {
+    fakeSupabase.reset();
+  });
+
   Widget makeTestableWidget({required Widget child}) {
-    final enterPasswordBloc = Modular.get<EnterPasswordBloc>();
-    return BlocProvider<EnterPasswordBloc>.value(
-      value: enterPasswordBloc,
+    return BlocProvider<EnterPasswordBloc>(
+      create: (context) => Modular.get<EnterPasswordBloc>(),
       child: MaterialApp(
         home: Builder(
           builder: (context) {
