@@ -1,25 +1,37 @@
 import 'dart:async';
 
-import 'package:construculator/features/auth/testing/auth_test_module.dart';
-import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:construculator/app/testing/fake_app_bootstrap.dart';
+import 'package:construculator/features/auth/auth_module.dart';
+import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
+import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
+import 'package:construculator/features/auth/presentation/pages/register_with_email_page.dart';
+import 'package:construculator/features/auth/presentation/widgets/otp_quick_sheet/otp_verification_sheet.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
+import 'package:construculator/libraries/router/testing/router_test_module.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
-import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:construculator/libraries/time/testing/clock_test_module.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:construculator/features/auth/presentation/pages/register_with_email_page.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
-import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
-import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
-import 'package:construculator/features/auth/presentation/widgets/otp_quick_sheet/otp_verification_sheet.dart';
-import 'package:construculator/libraries/supabase/data/supabase_types.dart';
-import 'package:construculator/l10n/generated/app_localizations.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+
+class _RegisterWithEmailPageTestModule extends Module {
+  @override
+  List<Module> get imports => [
+    RouterTestModule(),
+    ClockTestModule(),
+    AuthModule(FakeAppBootstrap()),
+  ];
+}
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
@@ -30,11 +42,11 @@ void main() {
   Widget makeTestableWidget({required Widget child}) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<RegisterWithEmailBloc>.value(
-          value: Modular.get<RegisterWithEmailBloc>(),
+        BlocProvider<RegisterWithEmailBloc>(
+          create: (context) => Modular.get<RegisterWithEmailBloc>(),
         ),
-        BlocProvider<OtpVerificationBloc>.value(
-          value: Modular.get<OtpVerificationBloc>(),
+        BlocProvider<OtpVerificationBloc>(
+          create: (context) => Modular.get<OtpVerificationBloc>(),
         ),
       ],
       child: MaterialApp(
@@ -56,19 +68,26 @@ void main() {
     );
   }
 
-  setUp(() {
+  setUpAll(() {
+    fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     CoreToast.disableTimers();
-    Modular.init(AuthTestModule());
-    fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+
+    Modular.init(_RegisterWithEmailPageTestModule());
+
+    Modular.replaceInstance<SupabaseWrapper>(fakeSupabase);
+
     router = Modular.get<AppRouter>() as FakeAppRouter;
     clock = Modular.get<Clock>();
   });
 
-  tearDown(() {
-    router.reset();
-    fakeSupabase.reset();
+  tearDownAll(() {
     Modular.destroy();
     CoreToast.enableTimers();
+  });
+
+  setUp(() {
+    router.reset();
+    fakeSupabase.reset();
   });
   group('RegisterWithEmailPage', () {
     testWidgets('renders all page elements correctly', (

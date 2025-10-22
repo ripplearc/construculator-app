@@ -1,13 +1,16 @@
 import 'dart:async';
 
-import 'package:construculator/features/auth/testing/auth_test_module.dart';
+import 'package:construculator/app/testing/fake_app_bootstrap.dart';
+import 'package:construculator/features/auth/auth_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
+import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+import 'package:construculator/libraries/time/testing/clock_test_module.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -17,6 +20,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:construculator/features/auth/presentation/pages/login_with_email_page.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/features/auth/presentation/bloc/login_with_email_bloc/login_with_email_bloc.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+
+class _LoginWithEmailPageTestModule extends Module {
+  @override
+  List<Module> get imports => [
+    RouterTestModule(),
+    ClockTestModule(),
+    AuthModule(FakeAppBootstrap()),
+  ];
+}
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
@@ -25,9 +38,8 @@ void main() {
   BuildContext? buildContext;
 
   Widget makeTestableWidget({required Widget child}) {
-    final loginBloc = Modular.get<LoginWithEmailBloc>();
-    return BlocProvider<LoginWithEmailBloc>.value(
-      value: loginBloc,
+    return BlocProvider<LoginWithEmailBloc>(
+      create: (context) => Modular.get<LoginWithEmailBloc>(),
       child: MaterialApp(
         home: Builder(
           builder: (context) {
@@ -47,20 +59,27 @@ void main() {
     );
   }
 
-  setUp(() {
+  setUpAll(() {
+    fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     CoreToast.disableTimers();
-    Modular.init(AuthTestModule());
-    fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+
+    Modular.init(_LoginWithEmailPageTestModule());
+
+    Modular.replaceInstance<SupabaseWrapper>(fakeSupabase);
+
     router = Modular.get<AppRouter>() as FakeAppRouter;
     clock = Modular.get<Clock>();
   });
 
-  tearDown(() {
-    fakeSupabase.reset();
-    router.reset();
+  tearDownAll(() {
     Modular.destroy();
     CoreToast.enableTimers();
   });
+
+  setUp(() {
+    fakeSupabase.reset();
+  });
+
   group('LoginWithEmailPage', () {
     testWidgets('renders email input, continue button, and register link', (
       WidgetTester tester,

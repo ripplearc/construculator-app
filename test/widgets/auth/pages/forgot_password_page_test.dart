@@ -1,45 +1,67 @@
+import 'package:construculator/app/testing/fake_app_bootstrap.dart';
+import 'package:construculator/features/auth/auth_module.dart';
+import 'package:construculator/features/auth/presentation/bloc/forgot_password_bloc/forgot_password_bloc.dart';
+import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
+import 'package:construculator/features/auth/presentation/pages/forgot_password_page.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
+import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/testing/clock_test_module.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
-import 'package:construculator/features/auth/presentation/pages/forgot_password_page.dart';
-import 'package:construculator/features/auth/presentation/bloc/forgot_password_bloc/forgot_password_bloc.dart';
-import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
-import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:construculator/features/auth/testing/auth_test_module.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+
+class _ForgotPasswordPageTestModule extends Module {
+  @override
+  List<Module> get imports => [
+    RouterTestModule(),
+    ClockTestModule(),
+    AuthModule(FakeAppBootstrap()),
+  ];
+}
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
   late FakeAppRouter router;
   BuildContext? buildContext;
-  setUp(() {
+  setUpAll(() {
+    fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     CoreToast.disableTimers();
-    Modular.init(AuthTestModule());
-    fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
-    fakeSupabase.reset(); // Reset fake state between tests
+
+    Modular.init(_ForgotPasswordPageTestModule());
+
+    Modular.replaceInstance<SupabaseWrapper>(fakeSupabase);
+
     router = Modular.get<AppRouter>() as FakeAppRouter;
   });
 
-  tearDown(() {
+  tearDownAll(() {
     Modular.destroy();
     CoreToast.enableTimers();
   });
 
+  setUp(() {
+    fakeSupabase.reset();
+  });
+
   Widget makeTestableWidget({required Widget child}) {
-    final forgotBloc = Modular.get<ForgotPasswordBloc>();
-    final otpBloc = Modular.get<OtpVerificationBloc>();
     return MultiBlocProvider(
       providers: [
-        BlocProvider.value(value: forgotBloc),
-        BlocProvider.value(value: otpBloc),
+        BlocProvider<ForgotPasswordBloc>(
+          create: (context) => Modular.get<ForgotPasswordBloc>(),
+        ),
+        BlocProvider<OtpVerificationBloc>(
+          create: (context) => Modular.get<OtpVerificationBloc>(),
+        ),
       ],
       child: MaterialApp(
         home: Builder(
