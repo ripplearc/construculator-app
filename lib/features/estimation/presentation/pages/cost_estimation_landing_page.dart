@@ -5,6 +5,7 @@ import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_st
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_page.dart';
 import 'package:construculator/features/estimation/presentation/widgets/project_header_app_bar.dart';
+import 'package:construculator/features/estimation/presentation/widgets/add_estimation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -12,7 +13,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class CostEstimationLandingPage extends StatefulWidget {
   final String projectId;
-  
+
   const CostEstimationLandingPage({super.key, required this.projectId});
 
   @override
@@ -60,7 +61,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
               body: Center(child: CircularProgressIndicator()),
             );
           }
-          
+
           return Scaffold(
             backgroundColor: Colors.white,
             appBar: ProjectHeaderAppBar(
@@ -68,7 +69,9 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
               onProjectTap: () {},
               onSearchTap: () {},
               onNotificationTap: () {},
-              avatarImage: userAvatarUrl.isNotEmpty ? NetworkImage(userAvatarUrl) : null,
+              avatarImage: userAvatarUrl.isNotEmpty
+                  ? NetworkImage(userAvatarUrl)
+                  : null,
             ),
             body: _buildBody(),
           );
@@ -81,19 +84,15 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
     return BlocConsumer<CostEstimationListBloc, CostEstimationListState>(
       listener: (context, state) {
         if (state is CostEstimationListError) {
-          CoreToast.showError(
-            context, 
-            state.message, 
-            'Close',
-          );
+          CoreToast.showError(context, state.message, 'Close');
         }
       },
       builder: (context, state) {
         return RefreshIndicator(
           onRefresh: () async {
-            BlocProvider.of<CostEstimationListBloc>(context).add(
-              CostEstimationListRefreshEvent(projectId: widget.projectId),
-            );
+            BlocProvider.of<CostEstimationListBloc>(
+              context,
+            ).add(CostEstimationListRefreshEvent(projectId: widget.projectId));
           },
           child: _buildContent(state),
         );
@@ -103,9 +102,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
 
   Widget _buildContent(CostEstimationListState state) {
     if (state is CostEstimationListLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (state is CostEstimationListEmpty) {
@@ -117,30 +114,47 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
     }
 
     // Fallback for initial state
-    return const Center(
-      child: CircularProgressIndicator(),
-    );
+    return const Center(child: CircularProgressIndicator());
   }
 
   Widget _buildEmptyState() {
-    return const CostEstimationEmptyPage(
-      message: 'No estimation added. To add an estimation please click on add button',
+    return Stack(
+      children: [
+        const CostEstimationEmptyPage(
+          message:
+              'No estimation added. To add an estimation please click on add button',
+        ),
+        Positioned(
+          bottom: MediaQuery.of(context).size.height * 0.135,
+          right: MediaQuery.of(context).size.width * 0.05,
+          child: AddEstimationButton(onPressed: () {}),
+        ),
+      ],
     );
   }
 
   Widget _buildEstimationsList(List<CostEstimate> estimations) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      child: ListView.builder(
-        itemCount: estimations.length,
-        itemBuilder: (context, index) {
-          final estimation = estimations[index];
-          return CostEstimationTile(
-            estimation: estimation,
-            onMenuTap: () {},
-          );
-        },
-      ),
+    return Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: ListView.builder(
+            itemCount: estimations.length,
+            itemBuilder: (context, index) {
+              final estimation = estimations[index];
+              return CostEstimationTile(
+                estimation: estimation,
+                onMenuTap: () {},
+              );
+            },
+          ),
+        ),
+        Positioned(
+          bottom: MediaQuery.of(context).size.height * 0.135,
+          right: MediaQuery.of(context).size.width * 0.05,
+          child: AddEstimationButton(onPressed: () {}),
+        ),
+      ],
     );
   }
 }

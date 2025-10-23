@@ -1,4 +1,6 @@
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_page.dart';
+import 'package:construculator/features/estimation/presentation/widgets/add_estimation_button.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -199,6 +201,39 @@ void main() {
         final screenWidth = tester.view.physicalSize.width / tester.view.devicePixelRatio;
         expect(textContainer.width, equals(screenWidth));
       });
+    });
+  });
+
+  group('CostEstimationEmptyPage with AddEstimationButton', () {
+    testWidgets('renders empty page with add estimation button', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Stack(
+              children: [
+                const CostEstimationEmptyPage(
+                  message: defaultMessage,
+                ),
+                Positioned(
+                  bottom: 100,
+                  right: 20,
+                  child: AddEstimationButton(
+                    onPressed: () {},
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify both widgets are present
+      expect(find.byType(CostEstimationEmptyPage), findsOneWidget);
+      expect(find.byType(AddEstimationButton), findsOneWidget);
+      expect(find.text('Add estimation'), findsOneWidget);
     });
   });
 }
