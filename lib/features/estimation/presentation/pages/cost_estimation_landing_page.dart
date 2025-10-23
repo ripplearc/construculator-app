@@ -9,7 +9,6 @@ import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
-
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +18,9 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class CostEstimationLandingPage extends StatefulWidget {
   final String projectId;
+
+  static const double _buttonBottomRatio = 0.135;
+  static const double _buttonRightRatio = 0.05;
 
   const CostEstimationLandingPage({super.key, required this.projectId});
 
@@ -116,23 +118,54 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
     return const Center(child: CircularProgressIndicator());
   }
 
+  Widget _buildPositionedAddButton(AppLocalizations l10n) {
+    final size = MediaQuery.of(context).size;
+    final colorTheme = Theme.of(context).extension<AppColorsExtension>();
+    return Positioned(
+      bottom: size.height * CostEstimationLandingPage._buttonBottomRatio,
+      right: size.width * CostEstimationLandingPage._buttonRightRatio,
+      child: CoreButton(
+        label: l10n.addEstimation,
+        onPressed: () {},
+        variant: CoreButtonVariant.secondary,
+        size: CoreButtonSize.medium,
+        icon: CoreIconWidget(
+          icon: CoreIcons.add,
+          size: 20,
+          color: colorTheme?.buttonSurface,
+        ),
+        fullWidth: false,
+      ),
+    );
+  }
+
   Widget _buildEmptyState(AppLocalizations l10n) {
-    return CostEstimationEmptyPage(message: l10n.costEstimationEmptyMessage);
+    return Stack(
+      children: [
+        CostEstimationEmptyPage(message: l10n.costEstimationEmptyMessage),
+        _buildPositionedAddButton(l10n),
+      ],
+    );
   }
 
   Widget _buildEstimationsList(List<CostEstimate> estimations) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      child: ListView.builder(
-        itemCount: estimations.length,
-        itemBuilder: (context, index) {
-          final estimation = estimations[index];
-          return CostEstimationTile(
-            estimation: estimation,
-            onTap: () => _navigateToDetails(estimation.id),
-          );
-        },
-      ),
+    return Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: ListView.builder(
+            itemCount: estimations.length,
+            itemBuilder: (context, index) {
+              final estimation = estimations[index];
+              return CostEstimationTile(
+                estimation: estimation,
+                onTap: () => _navigateToDetails(estimation.id),
+              );
+            },
+          ),
+        ),
+        _buildPositionedAddButton(l10n),
+      ],
     );
   }
 
