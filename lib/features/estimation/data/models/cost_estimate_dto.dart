@@ -252,4 +252,65 @@ class CostEstimateDto {
         throw ArgumentError('Unknown MarkupValueType: $raw');
     }
   }
+
+  /// Creates a [CostEstimateDto] from a domain [CostEstimate] entity.
+  /// 
+  /// This factory method performs the transformation from the domain entity's
+  /// nested object structure to the flat DTO structure. It:
+  /// - Extracts markup configuration fields from the [MarkupConfiguration] object
+  /// - Converts enum types to string values
+  /// - Converts [DateTime] objects to ISO 8601 timestamp strings
+  /// - Extracts lock status information
+  factory CostEstimateDto.fromDomain(CostEstimate estimate) {
+    return CostEstimateDto(
+      id: estimate.id,
+      projectId: estimate.projectId,
+      estimateName: estimate.estimateName,
+      estimateDescription: estimate.estimateDescription,
+      creatorUserId: estimate.creatorUserId,
+      markupType: _mapMarkupTypeToString(estimate.markupConfiguration.overallType),
+      overallMarkupValueType: _mapMarkupValueTypeToString(estimate.markupConfiguration.overallValue.type),
+      overallMarkupValue: estimate.markupConfiguration.overallValue.value,
+      materialMarkupValueType: estimate.markupConfiguration.materialValue != null 
+          ? _mapMarkupValueTypeToString(estimate.markupConfiguration.materialValue?.type ?? MarkupValueType.percentage)
+          : null,
+      materialMarkupValue: estimate.markupConfiguration.materialValue?.value,
+      laborMarkupValueType: estimate.markupConfiguration.laborValue != null 
+          ? _mapMarkupValueTypeToString(estimate.markupConfiguration.laborValue?.type ?? MarkupValueType.percentage)
+          : null,
+      laborMarkupValue: estimate.markupConfiguration.laborValue?.value,
+      equipmentMarkupValueType: estimate.markupConfiguration.equipmentValue != null 
+          ? _mapMarkupValueTypeToString(estimate.markupConfiguration.equipmentValue?.type ?? MarkupValueType.percentage)
+          : null,
+      equipmentMarkupValue: estimate.markupConfiguration.equipmentValue?.value,
+      totalCost: estimate.totalCost,
+      isLocked: estimate.lockStatus.isLocked,
+      lockedByUserID: estimate.lockStatus.isLocked 
+          ? (estimate.lockStatus as LockedStatus).lockedByUserId 
+          : null,
+      lockedAt: estimate.lockStatus.isLocked 
+          ? (estimate.lockStatus as LockedStatus).lockedAt.toIso8601String()
+          : null,
+      createdAt: estimate.createdAt.toIso8601String(),
+      updatedAt: estimate.updatedAt.toIso8601String(),
+    );
+  }
+
+  static String _mapMarkupTypeToString(MarkupType type) {
+    switch (type) {
+      case MarkupType.overall:
+        return 'overall';
+      case MarkupType.granular:
+        return 'granular';
+    }
+  }
+
+  static String _mapMarkupValueTypeToString(MarkupValueType type) {
+    switch (type) {
+      case MarkupValueType.percentage:
+        return 'percentage';
+      case MarkupValueType.amount:
+        return 'amount';
+    }
+  }
 }

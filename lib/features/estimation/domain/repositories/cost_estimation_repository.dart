@@ -18,4 +18,10 @@ abstract class CostEstimationRepository {
   /// all cost estimates associated with the specified project ID. The estimates
   /// include their markup configurations, lock status, and calculated totals.
   Future<List<CostEstimate>> getEstimations(String projectId);
+
+  /// Creates a new cost estimation.
+  ///
+  /// Returns a [Future] that completes with the created [CostEstimate] containing
+  /// the newly created cost estimation with its assigned ID and timestamps.
+  Future<CostEstimate> createEstimation(CostEstimate estimation);
 }

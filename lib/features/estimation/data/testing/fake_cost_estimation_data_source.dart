@@ -28,6 +28,16 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
   /// Used to specify the type of exception thrown when [getEstimations] is attempted
   SupabaseExceptionType? getEstimationsExceptionType;
 
+  /// Controls whether [createEstimation] throws an exception
+  bool shouldThrowOnCreateEstimation = false;
+
+  /// Error message for create estimation.
+  /// Used to specify the error message thrown when [createEstimation] is attempted
+  String? createEstimationErrorMessage;
+
+  /// Used to specify the type of exception thrown when [createEstimation] is attempted
+  SupabaseExceptionType? createEstimationExceptionType;
+
   /// Used to specify the error code thrown during [getEstimations]
   PostgresErrorCode? postgrestErrorCode;
 
@@ -69,6 +79,33 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
     }
 
     return _projectEstimations[projectId] ?? [];
+  }
+
+  @override
+  Future<CostEstimateDto> createEstimation(CostEstimateDto estimation) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    _methodCalls.add({
+      'method': 'createEstimation',
+      'estimation': estimation.toJson(),
+    });
+
+    if (shouldThrowOnCreateEstimation) {
+      _throwConfiguredException(
+        createEstimationExceptionType,
+        createEstimationErrorMessage ?? 'Create estimation failed',
+      );
+    }
+
+    // Add the estimation to the project's estimations
+    final projectId = estimation.projectId;
+    final estimations = _projectEstimations[projectId] ?? [];
+    estimations.add(estimation);
+    _projectEstimations[projectId] = estimations;
+
+    return estimation;
   }
 
   void _throwConfiguredException(
@@ -130,6 +167,9 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
     shouldThrowOnGetEstimations = false;
     getEstimationsErrorMessage = null;
     getEstimationsExceptionType = null;
+    shouldThrowOnCreateEstimation = false;
+    createEstimationErrorMessage = null;
+    createEstimationExceptionType = null;
     postgrestErrorCode = null;
     shouldReturnEmptyList = false;
     shouldDelayOperations = false;
