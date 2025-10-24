@@ -31,6 +31,16 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
   /// Used to specify the type of exception thrown when [getEstimations] is attempted
   SupabaseExceptionType? getEstimationsExceptionType;
 
+  /// Controls whether [createEstimation] throws an exception
+  bool shouldThrowOnCreateEstimation = false;
+
+  /// Error message for create estimation.
+  /// Used to specify the error message thrown when [createEstimation] is attempted
+  String? createEstimationErrorMessage;
+
+  /// Used to specify the type of exception thrown when [createEstimation] is attempted
+  SupabaseExceptionType? createEstimationExceptionType;
+
   /// Used to specify the error code thrown during [getEstimations]
   PostgresErrorCode? postgrestErrorCode;
 
@@ -72,6 +82,44 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     }
 
     return _projectEstimations[projectId] ?? [];
+  }
+
+  @override
+  Future<CostEstimate> createEstimation(CostEstimate estimation) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    _methodCalls.add({
+      'method': 'createEstimation',
+      'estimation': {
+        'id': estimation.id,
+        'projectId': estimation.projectId,
+        'estimateName': estimation.estimateName,
+        'estimateDescription': estimation.estimateDescription,
+        'creatorUserId': estimation.creatorUserId,
+        'totalCost': estimation.totalCost,
+        'isLocked': estimation.lockStatus.isLocked,
+        'lockedByUserID': estimation.lockStatus.isLocked ? (estimation.lockStatus as LockedStatus).lockedByUserId : null,
+        'createdAt': estimation.createdAt.toIso8601String(),
+        'updatedAt': estimation.updatedAt.toIso8601String(),
+      },
+    });
+
+    if (shouldThrowOnCreateEstimation) {
+      _throwConfiguredException(
+        createEstimationExceptionType,
+        createEstimationErrorMessage ?? 'Create estimation failed',
+      );
+    }
+
+    // Add the estimation to the project's estimations
+    final projectId = estimation.projectId;
+    final estimations = _projectEstimations[projectId] ?? [];
+    estimations.add(estimation);
+    _projectEstimations[projectId] = estimations;
+
+    return estimation;
   }
 
   void _throwConfiguredException(
@@ -133,6 +181,9 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     shouldThrowOnGetEstimations = false;
     getEstimationsErrorMessage = null;
     getEstimationsExceptionType = null;
+    shouldThrowOnCreateEstimation = false;
+    createEstimationErrorMessage = null;
+    createEstimationExceptionType = null;
     postgrestErrorCode = null;
     shouldReturnEmptyList = false;
     shouldDelayOperations = false;
