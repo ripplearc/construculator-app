@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:construculator/features/estimation/data/testing/fake_cost_estimation_repository.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/enums.dart';
@@ -652,5 +653,97 @@ void main() {
         expect(estimation.lockStatus, equals(expectedLockStatus));
       },
     );
+  });
+
+  group('Estimation Creation', () {
+    test('createEstimation should track method calls', () async {
+      final testEstimation = fakeRepository.createSampleEstimation();
+
+      expect(fakeRepository.getMethodCallsFor('createEstimation'), isEmpty);
+
+      await fakeRepository.createEstimation(testEstimation);
+
+      final calls = fakeRepository.getMethodCallsFor('createEstimation');
+      expect(calls, hasLength(1));
+      expect(calls.first['estimation'], equals(testEstimation));
+    });
+
+    test(
+      'createEstimation should return estimation and add to project',
+      () async {
+        const projectId = 'test-project-123';
+        final testEstimation = fakeRepository.createSampleEstimation(
+          id: 'estimation-1',
+          projectId: projectId,
+        );
+
+        final getResult = await fakeRepository.getEstimations(projectId);
+        expect(getResult.isRight(), isTrue);
+        getResult.fold(
+          (_) => fail('Expected success'),
+          (estimates) => expect(estimates, isEmpty),
+        );
+
+        final result = await fakeRepository.createEstimation(testEstimation);
+
+        expect(result.isRight(), isTrue);
+        result.fold(
+          (_) => fail('Expected success but got failure'),
+          (created) => expect(created, equals(testEstimation)),
+        );
+
+        final projectEstimations = await fakeRepository.getEstimations(
+          projectId,
+        );
+        expect(projectEstimations.isRight(), isTrue);
+        projectEstimations.fold((_) => fail('Expected success'), (estimates) {
+          expect(estimates, hasLength(1));
+          expect(estimates.first, equals(testEstimation));
+        });
+      },
+    );
+
+    test('createEstimation should return failure when configured', () async {
+      final testEstimation = fakeRepository.createSampleEstimation();
+
+      fakeRepository.shouldReturnFailureOnCreateEstimation = true;
+      fakeRepository.createEstimationFailureType =
+          EstimationErrorType.connectionError;
+
+      final result = await fakeRepository.createEstimation(testEstimation);
+
+      expect(result.isLeft(), isTrue);
+      result.fold(
+        (failure) => expect(
+          failure,
+          EstimationFailure(errorType: EstimationErrorType.connectionError),
+        ),
+        (_) => fail('Expected failure but got success'),
+      );
+    });
+
+    test('createEstimation should handle delay operations', () async {
+      final testEstimation = fakeRepository.createSampleEstimation();
+
+      fakeRepository.shouldDelayOperations = true;
+      fakeRepository.completer = Completer<void>();
+
+      final future = fakeRepository.createEstimation(testEstimation);
+
+      expect(fakeRepository.getMethodCallsFor('createEstimation'), isEmpty);
+
+      fakeRepository.completer!.complete();
+      final result = await future;
+
+      expect(result.isRight(), isTrue);
+      result.fold(
+        (_) => fail('Expected success'),
+        (created) => expect(created, equals(testEstimation)),
+      );
+      expect(
+        fakeRepository.getMethodCallsFor('createEstimation'),
+        hasLength(1),
+      );
+    });
   });
 }
