@@ -5,9 +5,11 @@ import 'package:construculator/features/estimation/data/data_source/remote_cost_
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_repository_impl.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/features/estimation/domain/usecases/get_estimations_usecase.dart';
+import 'package:construculator/features/estimation/domain/usecases/add_cost_estimation_usecase.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
-import 'package:construculator/features/estimation/presentation/pages/cost_estimation_details_page.dart';
+import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
+import 'package:construculator/features/estimation/presentation/pages/cost_estimation_details_page.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter/material.dart';
@@ -34,11 +36,18 @@ class EstimationModule extends Module {
         return const SizedBox.shrink();
       }
 
-      return BlocProvider<CostEstimationListBloc>(
-        create: (context) {
-          return Modular.get<CostEstimationListBloc>()
-            ..add(CostEstimationListRefreshEvent(projectId: projectId));
-        },
+      return MultiBlocProvider(
+        providers: [
+          BlocProvider<CostEstimationListBloc>(
+            create: (context) {
+              return Modular.get<CostEstimationListBloc>()
+                ..add(CostEstimationListRefreshEvent(projectId: projectId));
+            },
+          ),
+          BlocProvider(
+            create: (context) => Modular.get<AddCostEstimationBloc>(),
+          ),
+        ],
         child: CostEstimationLandingPage(projectId: projectId),
       );
     }, [AuthGuard()]),
@@ -75,9 +84,15 @@ class EstimationModule extends Module {
     i.addLazySingleton<GetEstimationsUseCase>(
       () => GetEstimationsUseCase(i.get()),
     );
+    i.addLazySingleton<AddCostEstimationUseCase>(
+      () => AddCostEstimationUseCase(i.get(), i.get()),
+    );
 
     i.add<CostEstimationListBloc>(
       () => CostEstimationListBloc(getEstimationsUseCase: i.get()),
+    );
+    i.add<AddCostEstimationBloc>(
+      () => AddCostEstimationBloc(addCostEstimationUseCase: i.get()),
     );
   }
 
