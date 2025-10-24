@@ -38,4 +38,20 @@ class RemoteCostEstimationDataSource implements CostEstimationDataSource {
       rethrow;
     }
   }
+
+  @override
+  Future<CostEstimateDto> createEstimation(CostEstimateDto estimation) async {
+    try {
+      _logger.debug('Creating cost estimation: ${estimation.id}');
+      final response = await supabaseWrapper.insert(
+        table: costEstimatesTable,
+        data: estimation.toJson(),
+      );
+
+      return CostEstimateDto.fromJson(response);
+    } catch (e) {
+      _logger.error('Error creating cost estimation: $e');
+      rethrow;
+    }
+  }
 }

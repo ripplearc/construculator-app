@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:construculator/features/estimation/data/testing/fake_cost_estimation_repository.dart';
 import 'package:construculator/features/estimation/domain/entities/enums.dart';
 import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -462,6 +463,164 @@ void main() {
       );
 
       expect(estimation.lockStatus, isA<UnlockedStatus>());
+    });
+  });
+
+  group('Estimation Creation', () {
+    test('createEstimation should track method calls', () async {
+      const projectId = 'test-project-123';
+      final testEstimation = fakeRepository.createSampleEstimation(projectId: projectId);
+
+      expect(fakeRepository.getMethodCallsFor('createEstimation'), isEmpty);
+
+      await fakeRepository.createEstimation(testEstimation);
+
+      final calls = fakeRepository.getMethodCallsFor('createEstimation');
+      expect(calls, hasLength(1));
+      expect(calls.first['estimation']['id'], equals(testEstimation.id));
+      expect(calls.first['estimation']['projectId'], equals(projectId));
+    });
+
+    test('createEstimation should add estimation to project estimations', () async {
+      const projectId = 'test-project-123';
+      final testEstimation = fakeRepository.createSampleEstimation(
+        id: 'estimation-1',
+        projectId: projectId,
+        estimateName: 'Test Estimation',
+        totalCost: 15000.0,
+      );
+
+      expect(await fakeRepository.getEstimations(projectId), isEmpty);
+
+      final result = await fakeRepository.createEstimation(testEstimation);
+
+      expect(result.id, equals('estimation-1'));
+      expect(result.estimateName, equals('Test Estimation'));
+      expect(result.totalCost, equals(15000.0));
+
+      final projectEstimations = await fakeRepository.getEstimations(projectId);
+      expect(projectEstimations, hasLength(1));
+      expect(projectEstimations.first.id, equals('estimation-1'));
+    });
+
+    test('createEstimation should handle locked estimations', () async {
+      const projectId = 'test-project-123';
+      const lockedByUserId = 'user-456';
+      final testEstimation = fakeRepository.createSampleEstimation(
+        id: 'estimation-1',
+        projectId: projectId,
+        estimateName: 'Locked Estimation',
+        isLocked: true,
+        lockedByUserID: lockedByUserId,
+      );
+
+      final result = await fakeRepository.createEstimation(testEstimation);
+
+      expect(result.lockStatus.isLocked, isTrue);
+      expect(result.lockStatus.isLockedBy(lockedByUserId), isTrue);
+    });
+
+    test('createEstimation should throw exception when configured', () async {
+      const projectId = 'test-project-123';
+      final testEstimation = fakeRepository.createSampleEstimation(projectId: projectId);
+
+      fakeRepository.shouldThrowOnCreateEstimation = true;
+      fakeRepository.createEstimationExceptionType = SupabaseExceptionType.unknown;
+      fakeRepository.createEstimationErrorMessage = 'Create estimation failed';
+
+      expect(
+        () => fakeRepository.createEstimation(testEstimation),
+        throwsA(isA<ServerException>()),
+      );
+    });
+
+    test('createEstimation should throw timeout exception when configured', () async {
+      const projectId = 'test-project-123';
+      final testEstimation = fakeRepository.createSampleEstimation(projectId: projectId);
+
+      fakeRepository.shouldThrowOnCreateEstimation = true;
+      fakeRepository.createEstimationExceptionType = SupabaseExceptionType.timeout;
+      fakeRepository.createEstimationErrorMessage = 'Request timeout';
+
+      expect(
+        () => fakeRepository.createEstimation(testEstimation),
+        throwsA(isA<TimeoutException>()),
+      );
+    });
+
+    test('createEstimation should throw type exception when configured', () async {
+      const projectId = 'test-project-123';
+      final testEstimation = fakeRepository.createSampleEstimation(projectId: projectId);
+
+      fakeRepository.shouldThrowOnCreateEstimation = true;
+      fakeRepository.createEstimationExceptionType = SupabaseExceptionType.type;
+      fakeRepository.createEstimationErrorMessage = 'Type error';
+
+      expect(
+        () => fakeRepository.createEstimation(testEstimation),
+        throwsA(isA<TypeError>()),
+      );
+    });
+
+    test('createEstimation should handle delay operations', () async {
+      const projectId = 'test-project-123';
+      final testEstimation = fakeRepository.createSampleEstimation(projectId: projectId);
+
+      fakeRepository.shouldDelayOperations = true;
+      fakeRepository.completer = Completer<void>();
+
+      final future = fakeRepository.createEstimation(testEstimation);
+
+      await Future.delayed(const Duration(milliseconds: 10));
+      expect(fakeRepository.getMethodCallsFor('createEstimation'), isEmpty);
+
+      fakeRepository.completer!.complete();
+      final result = await future;
+
+      expect(result.id, equals(testEstimation.id));
+      expect(fakeRepository.getMethodCallsFor('createEstimation'), hasLength(1));
+    });
+
+    test('createEstimation should preserve all estimation properties', () async {
+      const projectId = 'test-project-123';
+      const estimationId = 'estimation-1';
+      const estimationName = 'Test Estimation';
+      const estimationDescription = 'Test description';
+      const creatorUserId = 'user-123';
+      const totalCost = 25000.0;
+      const lockedByUserId = 'user-456';
+      final createdAt = DateTime(2024, 1, 1, 10, 0, 0);
+      final updatedAt = DateTime(2024, 1, 2, 15, 30, 0);
+
+      final testEstimation = fakeRepository.createSampleEstimation(
+        id: estimationId,
+        projectId: projectId,
+        estimateName: estimationName,
+        estimateDescription: estimationDescription,
+        creatorUserId: creatorUserId,
+        totalCost: totalCost,
+        isLocked: true,
+        lockedByUserID: lockedByUserId,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+      );
+
+      final result = await fakeRepository.createEstimation(testEstimation);
+
+      expect(result.id, equals(estimationId));
+      expect(result.projectId, equals(projectId));
+      expect(result.estimateName, equals(estimationName));
+      expect(result.estimateDescription, equals(estimationDescription));
+      expect(result.creatorUserId, equals(creatorUserId));
+      expect(result.totalCost, equals(totalCost));
+      expect(result.lockStatus.isLocked, isTrue);
+      expect(result.lockStatus.isLockedBy(lockedByUserId), isTrue);
+      expect(result.createdAt, equals(createdAt));
+      expect(result.updatedAt, equals(updatedAt));
+
+      expect(result.markupConfiguration, isA<MarkupConfiguration>());
+      expect(result.markupConfiguration.overallType, isA<MarkupType>());
+      expect(result.markupConfiguration.overallValue, isA<MarkupValue>());
     });
   });
 }

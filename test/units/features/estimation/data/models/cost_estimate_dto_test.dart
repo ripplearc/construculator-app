@@ -5,6 +5,8 @@ import 'package:construculator/features/estimation/domain/entities/lock_status_e
 import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/test_estimation_data_helper.dart';
+
 void main() {
   const sampleJson = {
     'id': '123',
@@ -202,6 +204,142 @@ void main() {
       expect(config.materialValue, isNull);
       expect(config.laborValue, isNull);
       expect(config.equipmentValue, isNull);
+    });
+
+    test('fromDomain should convert domain entity to DTO correctly', () {
+      final domain = TestEstimationDataHelper.createFakeEstimation(
+        id: 'test-id-123',
+        estimateName: 'Test Domain Estimate',
+        totalCost: 2500.0,
+      );
+
+      final dto = CostEstimateDto.fromDomain(domain);
+
+      expect(dto.id, 'test-id-123');
+      expect(dto.projectId, 'test-project-123');
+      expect(dto.estimateName, 'Test Domain Estimate');
+      expect(dto.estimateDescription, 'Default estimate description');
+      expect(dto.creatorUserId, 'user-default');
+      expect(dto.totalCost, 2500.0);
+
+      expect(dto.markupType, 'overall');
+      expect(dto.overallMarkupValueType, 'percentage');
+      expect(dto.overallMarkupValue, 10.0);
+      expect(dto.materialMarkupValueType, isNull);
+      expect(dto.materialMarkupValue, isNull);
+      expect(dto.laborMarkupValueType, isNull);
+      expect(dto.laborMarkupValue, isNull);
+      expect(dto.equipmentMarkupValueType, isNull);
+      expect(dto.equipmentMarkupValue, isNull);
+
+      expect(dto.isLocked, false);
+      expect(dto.lockedByUserID, isNull);
+      expect(dto.lockedAt, isNull);
+
+      expect(dto.createdAt, '2024-01-01T00:00:00.000');
+      expect(dto.updatedAt, '2024-01-01T00:00:00.000');
+    });
+
+    test('fromDomain should handle unlocked domain entity correctly', () {
+      final domain = TestEstimationDataHelper.createFakeEstimation(
+        id: 'unlocked-id',
+        estimateName: 'Unlocked Estimate',
+        totalCost: 1000.0,
+      );
+
+      final dto = CostEstimateDto.fromDomain(domain);
+
+      expect(dto.id, 'unlocked-id');
+      expect(dto.projectId, 'test-project-123');
+      expect(dto.estimateName, 'Unlocked Estimate');
+      expect(dto.estimateDescription, 'Default estimate description');
+      expect(dto.creatorUserId, 'user-default');
+      expect(dto.totalCost, 1000.0);
+
+      expect(dto.markupType, 'overall');
+      expect(dto.overallMarkupValueType, 'percentage');
+      expect(dto.overallMarkupValue, 10.0);
+      expect(dto.materialMarkupValueType, isNull);
+      expect(dto.materialMarkupValue, isNull);
+      expect(dto.laborMarkupValueType, isNull);
+      expect(dto.laborMarkupValue, isNull);
+      expect(dto.equipmentMarkupValueType, isNull);
+      expect(dto.equipmentMarkupValue, isNull);
+
+      expect(dto.isLocked, false);
+      expect(dto.lockedByUserID, isNull);
+      expect(dto.lockedAt, isNull);
+
+      expect(dto.createdAt, '2024-01-01T00:00:00.000');
+      expect(dto.updatedAt, '2024-01-01T00:00:00.000');
+    });
+
+    test('fromDomain should handle domain entity with null optional values', () {
+      final domain = TestEstimationDataHelper.createFakeEstimation(
+        id: 'minimal-id',
+        estimateName: 'Minimal Estimate',
+        totalCost: 500.0,
+      );
+
+      final dto = CostEstimateDto.fromDomain(domain);
+
+      expect(dto.id, 'minimal-id');
+      expect(dto.projectId, 'test-project-123');
+      expect(dto.estimateName, 'Minimal Estimate');
+      expect(dto.estimateDescription, 'Default estimate description');
+      expect(dto.creatorUserId, 'user-default');
+      expect(dto.totalCost, 500.0);
+
+      expect(dto.markupType, 'overall');
+      expect(dto.overallMarkupValueType, 'percentage');
+      expect(dto.overallMarkupValue, 10.0);
+      expect(dto.materialMarkupValueType, isNull);
+      expect(dto.materialMarkupValue, isNull);
+      expect(dto.laborMarkupValueType, isNull);
+      expect(dto.laborMarkupValue, isNull);
+      expect(dto.equipmentMarkupValueType, isNull);
+      expect(dto.equipmentMarkupValue, isNull);
+
+      expect(dto.isLocked, false);
+      expect(dto.lockedByUserID, isNull);
+      expect(dto.lockedAt, isNull);
+
+      expect(dto.createdAt, '2024-01-01T00:00:00.000');
+      expect(dto.updatedAt, '2024-01-01T00:00:00.000');
+    });
+
+    test('fromDomain should round-trip correctly (domain -> dto -> domain)', () {
+      final originalDomain = TestEstimationDataHelper.createFakeEstimation(
+        id: 'roundtrip-id',
+        estimateName: 'Roundtrip Test',
+        totalCost: 1500.0,
+      );
+
+      final dto = CostEstimateDto.fromDomain(originalDomain);
+      final convertedDomain = dto.toDomain();
+
+      expect(convertedDomain.id, originalDomain.id);
+      expect(convertedDomain.projectId, originalDomain.projectId);
+      expect(convertedDomain.estimateName, originalDomain.estimateName);
+      expect(convertedDomain.estimateDescription, originalDomain.estimateDescription);
+      expect(convertedDomain.creatorUserId, originalDomain.creatorUserId);
+      expect(convertedDomain.totalCost, originalDomain.totalCost);
+
+      expect(convertedDomain.markupConfiguration.overallType, originalDomain.markupConfiguration.overallType);
+      expect(convertedDomain.markupConfiguration.overallValue.type, originalDomain.markupConfiguration.overallValue.type);
+      expect(convertedDomain.markupConfiguration.overallValue.value, originalDomain.markupConfiguration.overallValue.value);
+      expect(convertedDomain.markupConfiguration.materialValue, originalDomain.markupConfiguration.materialValue);
+      expect(convertedDomain.markupConfiguration.laborValue, originalDomain.markupConfiguration.laborValue);
+      expect(convertedDomain.markupConfiguration.equipmentValue, originalDomain.markupConfiguration.equipmentValue);
+      expect(convertedDomain.markupConfiguration.materialValueType, originalDomain.markupConfiguration.materialValueType);
+      expect(convertedDomain.markupConfiguration.laborValueType, originalDomain.markupConfiguration.laborValueType);
+      expect(convertedDomain.markupConfiguration.equipmentValueType, originalDomain.markupConfiguration.equipmentValueType);
+
+      expect(convertedDomain.lockStatus.isLocked, originalDomain.lockStatus.isLocked);
+      expect(convertedDomain.lockStatus.runtimeType, originalDomain.lockStatus.runtimeType);
+
+      expect(convertedDomain.createdAt, originalDomain.createdAt);
+      expect(convertedDomain.updatedAt, originalDomain.updatedAt);
     });
   });
 }
