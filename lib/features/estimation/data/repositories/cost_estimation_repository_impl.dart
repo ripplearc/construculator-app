@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
+import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/either/either.dart';
@@ -17,6 +18,42 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
 
   CostEstimationRepositoryImpl({required CostEstimationDataSource dataSource})
     : _dataSource = dataSource;
+
+  Failure _handleError(Object error, String operation) {
+    if (error is TimeoutException) {
+      _logger.error('Timeout error $operation');
+      return EstimationFailure(errorType: EstimationErrorType.timeoutError);
+    }
+
+    if (error is SocketException) {
+      _logger.error('Connection error $operation');
+      return EstimationFailure(errorType: EstimationErrorType.connectionError);
+    }
+
+    if (error is FormatException) {
+      _logger.error('Parsing error $operation');
+      return EstimationFailure(errorType: EstimationErrorType.parsingError);
+    }
+
+    if (error is supabase.PostgrestException) {
+      _logger.error('PostgreSQL error $operation: ${error.code}');
+      final postgresErrorCode = PostgresErrorCode.fromCode(error.code);
+      if (postgresErrorCode == PostgresErrorCode.connectionFailure ||
+          postgresErrorCode == PostgresErrorCode.unableToConnect ||
+          postgresErrorCode == PostgresErrorCode.connectionDoesNotExist) {
+        return EstimationFailure(
+          errorType: EstimationErrorType.connectionError,
+        );
+      } else {
+        return EstimationFailure(
+          errorType: EstimationErrorType.unexpectedDatabaseError,
+        );
+      }
+    }
+
+    _logger.error('Unexpected error $operation: $error');
+    return UnexpectedFailure();
+  }
 
   @override
   Future<Either<Failure, List<CostEstimate>>> getEstimations(
@@ -36,50 +73,29 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       );
 
       return Right(costEstimates);
-    } on TimeoutException {
-      _logger.error(
-        'Timeout error getting cost estimations for project $projectId',
-      );
-      return Left(
-        EstimationFailure(errorType: EstimationErrorType.timeoutError),
-      );
-    } on SocketException {
-      _logger.error(
-        'Connection error getting cost estimations for project $projectId',
-      );
-      return Left(
-        EstimationFailure(errorType: EstimationErrorType.connectionError),
-      );
-    } on FormatException {
-      _logger.error(
-        'Parsing error getting cost estimations for project $projectId',
-      );
-      return Left(
-        EstimationFailure(errorType: EstimationErrorType.parsingError),
-      );
-    } on supabase.PostgrestException catch (e) {
-      _logger.error(
-        'PostgreSQL error getting cost estimations for project $projectId: ${e.code}',
-      );
-      final postgresErrorCode = PostgresErrorCode.fromCode(e.code);
-      if (postgresErrorCode == PostgresErrorCode.connectionFailure ||
-          postgresErrorCode == PostgresErrorCode.unableToConnect ||
-          postgresErrorCode == PostgresErrorCode.connectionDoesNotExist) {
-        return Left(
-          EstimationFailure(errorType: EstimationErrorType.connectionError),
-        );
-      } else {
-        return Left(
-          EstimationFailure(
-            errorType: EstimationErrorType.unexpectedDatabaseError,
-          ),
-        );
-      }
     } catch (e) {
-      _logger.error(
-        'Unexpected error getting cost estimations for project $projectId: $e',
+      return Left(_handleError(e, 'getting cost estimations for project'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, CostEstimate>> createEstimation(
+    CostEstimate estimation,
+  ) async {
+    try {
+      _logger.debug('Creating cost estimation: ${estimation.id}');
+
+      final costEstimateDto = CostEstimateDto.fromDomain(estimation);
+      final createdDto = await _dataSource.createEstimation(costEstimateDto);
+
+      final createdEstimation = createdDto.toDomain();
+
+      _logger.debug(
+        'Successfully created cost estimation: ${createdEstimation.id}',
       );
-      return Left(UnexpectedFailure());
+      return Right(createdEstimation);
+    } catch (e) {
+      return Left(_handleError(e, 'creating cost estimation'));
     }
   }
 }

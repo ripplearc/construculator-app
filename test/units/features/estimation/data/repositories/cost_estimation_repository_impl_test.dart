@@ -1,5 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
+import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_repository_impl.dart';
 import 'package:construculator/features/estimation/data/testing/fake_cost_estimation_data_source.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
@@ -340,6 +341,116 @@ void main() {
               estimation3.toDomain(),
             ]);
           });
+        },
+      );
+    });
+
+    group('createEstimation', () {
+      test('should return created estimation on success', () async {
+        final estimationDto = fakeDataSource.createSampleEstimation(
+          id: estimateIdDefault,
+          projectId: testProjectId,
+          estimateName: estimateNameDefault,
+          estimateDescription: estimateDescDefault,
+          creatorUserId: userIdDefault,
+          totalCost: totalCostDefault,
+        );
+        final estimation = estimationDto.toDomain();
+
+        final result = await repository.createEstimation(estimation);
+
+        expect(result.isRight(), isTrue);
+        result.fold(
+          (_) => fail('Expected success but got failure'),
+          (created) => expect(created, equals(estimation)),
+        );
+      });
+
+      test('should call data source with correct estimation', () async {
+        final estimationDto = fakeDataSource.createSampleEstimation(
+          projectId: testProjectId,
+          estimateName: estimateNameDefault,
+        );
+        final estimation = estimationDto.toDomain();
+
+        await repository.createEstimation(estimation);
+
+        final methodCalls = fakeDataSource.getMethodCallsFor(
+          'createEstimation',
+        );
+        expect(methodCalls, hasLength(1));
+        final estimationJson = methodCalls.first['estimation'];
+        estimationJson['id'] = 'test-estimation-946674000000';
+
+        expect(estimationDto, equals(CostEstimateDto.fromJson(estimationJson)));
+      });
+
+      test(
+        'should return timeout failure when data source throws timeout',
+        () async {
+          fakeDataSource.shouldThrowOnCreateEstimation = true;
+          fakeDataSource.createEstimationExceptionType =
+              SupabaseExceptionType.timeout;
+          fakeDataSource.createEstimationErrorMessage = errorMsgTimeout;
+
+          final estimationDto = fakeDataSource.createSampleEstimation();
+          final estimation = estimationDto.toDomain();
+
+          final result = await repository.createEstimation(estimation);
+
+          expect(result.isLeft(), isTrue);
+          result.fold(
+            (failure) => expect(
+              failure,
+              EstimationFailure(errorType: EstimationErrorType.timeoutError),
+            ),
+            (_) => fail('Expected failure but got success'),
+          );
+        },
+      );
+
+      test(
+        'should return connection failure when data source throws SocketException',
+        () async {
+          fakeDataSource.shouldThrowOnCreateEstimation = true;
+          fakeDataSource.createEstimationExceptionType =
+              SupabaseExceptionType.socket;
+          fakeDataSource.createEstimationErrorMessage = 'Connection failed';
+
+          final estimationDto = fakeDataSource.createSampleEstimation();
+          final estimation = estimationDto.toDomain();
+
+          final result = await repository.createEstimation(estimation);
+
+          expect(result.isLeft(), isTrue);
+          result.fold(
+            (failure) => expect(
+              failure,
+              EstimationFailure(errorType: EstimationErrorType.connectionError),
+            ),
+            (_) => fail('Expected failure but got success'),
+          );
+        },
+      );
+
+      test(
+        'should return unexpected failure when data source throws unknown error',
+        () async {
+          fakeDataSource.shouldThrowOnCreateEstimation = true;
+          fakeDataSource.createEstimationExceptionType =
+              SupabaseExceptionType.unknown;
+          fakeDataSource.createEstimationErrorMessage = errorMsgServer;
+
+          final estimationDto = fakeDataSource.createSampleEstimation();
+          final estimation = estimationDto.toDomain();
+
+          final result = await repository.createEstimation(estimation);
+
+          expect(result.isLeft(), isTrue);
+          result.fold(
+            (failure) => expect(failure, UnexpectedFailure()),
+            (_) => fail('Expected failure but got success'),
+          );
         },
       );
     });

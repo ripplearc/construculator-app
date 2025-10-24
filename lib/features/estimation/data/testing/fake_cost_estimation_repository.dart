@@ -28,11 +28,18 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
   /// Controls whether [getEstimations] returns an empty list
   bool shouldReturnEmptyList = false;
 
+  /// Controls whether [createEstimation] should return a [Failure].
+  bool shouldReturnFailureOnCreateEstimation = false;
+
+  /// Specifies the [EstimationErrorType] for the [Failure] returned by
+  /// [createEstimation] when [shouldReturnFailureOnCreateEstimation] is true.
+  EstimationErrorType? createEstimationFailureType;
+
   /// Controls whether operations should be delayed
   bool shouldDelayOperations = false;
 
   /// Controls when a delayed future is completed
-  Completer? completer;
+  Completer<void>? completer;
 
   /// Clock dependency for time operations
   final Clock clock;
@@ -64,6 +71,35 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     }
 
     return Right(_projectEstimations[projectId] ?? []);
+  }
+
+  @override
+  Future<Either<Failure, CostEstimate>> createEstimation(
+    CostEstimate estimation,
+  ) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    _methodCalls.add({'method': 'createEstimation', 'estimation': estimation});
+
+    if (shouldReturnFailureOnCreateEstimation) {
+      return Left(
+        EstimationFailure(
+          errorType:
+              createEstimationFailureType ??
+              EstimationErrorType.unexpectedError,
+        ),
+      );
+    }
+
+    // Add the estimation to the project's estimations
+    final projectId = estimation.projectId;
+    final estimations = _projectEstimations[projectId] ?? [];
+    estimations.add(estimation);
+    _projectEstimations[projectId] = estimations;
+
+    return Right(estimation);
   }
 
   /// Adds cost estimation data for a specific project
@@ -110,6 +146,8 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
   void reset() {
     shouldReturnFailureOnGetEstimations = false;
     getEstimationsFailureType = null;
+    shouldReturnFailureOnCreateEstimation = false;
+    createEstimationFailureType = null;
     shouldReturnEmptyList = false;
     shouldDelayOperations = false;
     completer = null;

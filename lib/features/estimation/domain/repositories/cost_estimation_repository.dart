@@ -22,4 +22,12 @@ abstract class CostEstimationRepository {
   /// status, and calculated totals.
   // TODO: https://ripplearc.youtrack.cloud/issue/CA-449/Cost-Estimation-Add-Pagination-for-Fetching-Estimations
   Future<Either<Failure, List<CostEstimate>>> getEstimations(String projectId);
+
+  /// Creates a new cost estimation.
+  ///
+  /// Returns a [Future] that completes with the created [CostEstimate] containing
+  /// the newly created cost estimation with its assigned ID and timestamps.
+  Future<Either<Failure, CostEstimate>> createEstimation(
+    CostEstimate estimation,
+  );
 }

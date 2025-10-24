@@ -31,11 +31,27 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
   /// Used to specify the type of exception thrown when [getEstimations] is attempted
   SupabaseExceptionType? getEstimationsExceptionType;
 
+  /// Controls whether [createEstimation] throws an exception
+  bool shouldThrowOnCreateEstimation = false;
+
+  /// Error message for create estimation.
+  /// Used to specify the error message thrown when [createEstimation] is attempted
+  String? createEstimationErrorMessage;
+
+  /// Used to specify the type of exception thrown when [createEstimation] is attempted
+  SupabaseExceptionType? createEstimationExceptionType;
+
   /// Used to specify the error code thrown during [getEstimations]
   PostgresErrorCode? postgrestErrorCode;
 
   /// Controls whether [getEstimations] returns an empty list
   bool shouldReturnEmptyList = false;
+
+  /// Controls whether operations should wait for a completer
+  bool shouldDelayOperations = false;
+
+  /// Completer to control operation timing in tests
+  Completer<void>? completer;
 
   /// Clock dependency for time operations
   final Clock clock;
@@ -59,6 +75,32 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
     }
 
     return _projectEstimations[projectId] ?? [];
+  }
+
+  @override
+  Future<CostEstimateDto> createEstimation(CostEstimateDto estimation) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    _methodCalls.add({
+      'method': 'createEstimation',
+      'estimation': estimation.toJson(),
+    });
+
+    if (shouldThrowOnCreateEstimation) {
+      _throwConfiguredException(
+        createEstimationExceptionType,
+        createEstimationErrorMessage ?? 'Create estimation failed',
+      );
+    }
+
+    final projectId = estimation.projectId;
+    final estimations = _projectEstimations[projectId] ?? [];
+    estimations.add(estimation);
+    _projectEstimations[projectId] = estimations;
+
+    return estimation;
   }
 
   void _throwConfiguredException(
@@ -130,8 +172,13 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
     shouldThrowOnGetEstimations = false;
     getEstimationsErrorMessage = null;
     getEstimationsExceptionType = null;
+    shouldThrowOnCreateEstimation = false;
+    createEstimationErrorMessage = null;
+    createEstimationExceptionType = null;
     postgrestErrorCode = null;
     shouldReturnEmptyList = false;
+    shouldDelayOperations = false;
+    completer = null;
 
     clearAllData();
     clearMethodCalls();
@@ -152,7 +199,6 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
   static const double _defaultEquipmentMarkupValue = 12.0;
   static const double _defaultTotalCost = 50000.0;
   static const bool _defaultIsLocked = false;
-  static const String _defaultLockedByUserID = '';
 
   /// Creates a sample CostEstimateDto for testing
   CostEstimateDto createSampleEstimation({
@@ -164,10 +210,12 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
     double? totalCost,
     bool? isLocked,
     String? lockedByUserID,
+    DateTime? lockedAt,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
     final now = clock.now();
+    final locked = isLocked ?? _defaultIsLocked;
     return CostEstimateDto(
       id: id ?? '$_defaultEstimationIdPrefix${now.millisecondsSinceEpoch}',
       projectId: projectId ?? _defaultProjectId,
@@ -184,9 +232,9 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
       equipmentMarkupValueType: _defaultMarkupValueType,
       equipmentMarkupValue: _defaultEquipmentMarkupValue,
       totalCost: totalCost ?? _defaultTotalCost,
-      isLocked: isLocked ?? _defaultIsLocked,
-      lockedByUserID: lockedByUserID ?? _defaultLockedByUserID,
-      lockedAt: isLocked == true ? now.toIso8601String() : '',
+      isLocked: locked,
+      lockedByUserID: locked ? lockedByUserID : null,
+      lockedAt: locked ? (lockedAt ?? now).toIso8601String() : null,
       createdAt: (createdAt ?? now).toIso8601String(),
       updatedAt: (updatedAt ?? now).toIso8601String(),
     );

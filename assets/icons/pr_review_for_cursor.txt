@@ -1,0 +1,1119 @@
+# PR Review Request: 10-24-feat_add_methods_for_estimation_creation_in_data_layer → 10-23-feat_create_add_estimation_button
+PR Branch: 10-24-feat_add_methods_for_estimation_creation_in_data_layer (with changes)
+Base Branch: 10-23-feat_create_add_estimation_button (target)
+Date: Sun Jan  4 16:46:15 EAT 2026
+
+## CHANGES OVERVIEW
+
+| File | Changes | Type |
+|------|---------|------|
+| lib/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart | Modified:  1 file changed, 5 insertions(+) | Text |
+| lib/features/estimation/data/data_source/remote_cost_estimation_data_source.dart | Modified:  1 file changed, 16 insertions(+) | Text |
+| lib/features/estimation/data/models/cost_estimate_dto.dart | Modified:  1 file changed, 76 insertions(+) | Text |
+| lib/features/estimation/data/repositories/cost_estimation_repository_impl.dart | Modified:  1 file changed, 58 insertions(+), 42 deletions(-) | Text |
+| lib/features/estimation/data/testing/fake_cost_estimation_data_source.dart | Modified:  1 file changed, 48 insertions(+) | Text |
+| lib/features/estimation/data/testing/fake_cost_estimation_repository.dart | Modified:  1 file changed, 39 insertions(+), 1 deletion(-) | Text |
+| lib/features/estimation/domain/repositories/cost_estimation_repository.dart | Modified:  1 file changed, 8 insertions(+) | Text |
+| test/units/features/estimation/data/data_source/remote_cost_estimation_data_source_test.dart | Modified:  1 file changed, 117 insertions(+) | Text |
+| test/units/features/estimation/data/models/cost_estimate_dto_test.dart | Modified:  1 file changed, 45 insertions(+) | Text |
+| test/units/features/estimation/data/repositories/cost_estimation_repository_impl_test.dart | Modified:  1 file changed, 107 insertions(+) | Text |
+| test/units/features/estimation/fakes/fake_cost_estimation_repository_test.dart | Modified:  1 file changed, 93 insertions(+) | Text |
+
+## GITHUB-STYLE DIFF WITH CONTEXT
+
+### lib/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart (Modified)
+
+```dart
+diff --git lib/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart lib/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart
+index 7f5db943be..ecb85299ed 100644
+--- lib/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart
++++ lib/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart
+@@ -7,4 +7,9 @@ abstract class CostEstimationDataSource {
+   ///
+   /// Returns a [CostEstimateDto] with the cost estimations.
+   Future<List<CostEstimateDto>> getEstimations(String projectId);
++
++  /// Used to create a new cost estimation
++  ///
++  /// Returns a [CostEstimateDto] with the created cost estimation.
++  Future<CostEstimateDto> createEstimation(CostEstimateDto estimation);
+ }
+```
+
+#### Suggestions for lib/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart
+
+<!-- Example suggestion format below -->
+<!--
+**Line XX:** ✅/❌ Comment about the code
+
+**Suggested Change:**
+
+```dart
+// Suggested implementation
+```
+-->
+
+### lib/features/estimation/data/data_source/remote_cost_estimation_data_source.dart (Modified)
+
+```dart
+diff --git lib/features/estimation/data/data_source/remote_cost_estimation_data_source.dart lib/features/estimation/data/data_source/remote_cost_estimation_data_source.dart
+index fa622ef047..579f770fdb 100644
+--- lib/features/estimation/data/data_source/remote_cost_estimation_data_source.dart
++++ lib/features/estimation/data/data_source/remote_cost_estimation_data_source.dart
+@@ -38,4 +38,20 @@ class RemoteCostEstimationDataSource implements CostEstimationDataSource {
+       rethrow;
+     }
+   }
++
++  @override
++  Future<CostEstimateDto> createEstimation(CostEstimateDto estimation) async {
++    try {
++      _logger.debug('Creating cost estimation: ${estimation.id}');
++      final response = await supabaseWrapper.insert(
++        table: costEstimatesTable,
++        data: estimation.toJson(),
++      );
++
++      return CostEstimateDto.fromJson(response);
++    } catch (e) {
++      _logger.error('Error creating cost estimation: $e');
++      rethrow;
++    }
++  }
+ }
+```
+
+#### Suggestions for lib/features/estimation/data/data_source/remote_cost_estimation_data_source.dart
+
+<!-- Example suggestion format below -->
+<!--
+**Line XX:** ✅/❌ Comment about the code
+
+**Suggested Change:**
+
+```dart
+// Suggested implementation
+```
+-->
+
+### lib/features/estimation/data/models/cost_estimate_dto.dart (Modified)
+
+```dart
+diff --git lib/features/estimation/data/models/cost_estimate_dto.dart lib/features/estimation/data/models/cost_estimate_dto.dart
+index f5972ee874..e7002ff0e5 100644
+--- lib/features/estimation/data/models/cost_estimate_dto.dart
++++ lib/features/estimation/data/models/cost_estimate_dto.dart
+@@ -280,6 +280,82 @@ class CostEstimateDto extends Equatable {
+     }
+   }
+ 
++  /// Creates a [CostEstimateDto] from a domain [CostEstimate] entity.
++  ///
++  /// This factory method performs the transformation from the domain entity's
++  /// nested object structure to the flat DTO structure. It:
++  /// - Extracts markup configuration fields from the [MarkupConfiguration] object
++  /// - Converts enum types to string values
++  /// - Converts [DateTime] objects to ISO 8601 timestamp strings
++  /// - Extracts lock status information
++  factory CostEstimateDto.fromDomain(CostEstimate estimate) {
++    return CostEstimateDto(
++      id: estimate.id,
++      projectId: estimate.projectId,
++      estimateName: estimate.estimateName,
++      estimateDescription: estimate.estimateDescription,
++      creatorUserId: estimate.creatorUserId,
++      markupType: _mapMarkupTypeToString(
++        estimate.markupConfiguration.overallType,
++      ),
++      overallMarkupValueType: _mapMarkupValueTypeToString(
++        estimate.markupConfiguration.overallValue.type,
++      ),
++      overallMarkupValue: estimate.markupConfiguration.overallValue.value,
++      materialMarkupValueType:
++          estimate.markupConfiguration.materialValue != null
++          ? _mapMarkupValueTypeToString(
++              estimate.markupConfiguration.materialValue?.type ??
++                  MarkupValueType.percentage,
++            )
++          : null,
++      materialMarkupValue: estimate.markupConfiguration.materialValue?.value,
++      laborMarkupValueType: estimate.markupConfiguration.laborValue != null
++          ? _mapMarkupValueTypeToString(
++              estimate.markupConfiguration.laborValue?.type ??
++                  MarkupValueType.percentage,
++            )
++          : null,
++      laborMarkupValue: estimate.markupConfiguration.laborValue?.value,
++      equipmentMarkupValueType:
++          estimate.markupConfiguration.equipmentValue != null
++          ? _mapMarkupValueTypeToString(
++              estimate.markupConfiguration.equipmentValue?.type ??
++                  MarkupValueType.percentage,
++            )
++          : null,
++      equipmentMarkupValue: estimate.markupConfiguration.equipmentValue?.value,
++      totalCost: estimate.totalCost,
++      isLocked: estimate.lockStatus.isLocked,
++      lockedByUserID: estimate.lockStatus.isLocked
++          ? (estimate.lockStatus as LockedStatus).lockedByUserId
++          : null,
++      lockedAt: estimate.lockStatus.isLocked
++          ? (estimate.lockStatus as LockedStatus).lockedAt.toIso8601String()
++          : null,
++      createdAt: estimate.createdAt.toIso8601String(),
++      updatedAt: estimate.updatedAt.toIso8601String(),
++    );
++  }
++
++  static String _mapMarkupTypeToString(MarkupType type) {
++    switch (type) {
++      case MarkupType.overall:
++        return _kMarkupTypeOverall;
++      case MarkupType.granular:
++        return _kMarkupTypeGranular;
++    }
++  }
++
++  static String _mapMarkupValueTypeToString(MarkupValueType type) {
++    switch (type) {
++      case MarkupValueType.percentage:
++        return _kMarkupValuePercentage;
++      case MarkupValueType.amount:
++        return _kMarkupValueAmount;
++    }
++  }
++
+   @override
+   List<Object?> get props => [
+     id,
+```
+
+#### Suggestions for lib/features/estimation/data/models/cost_estimate_dto.dart
+
+<!-- Example suggestion format below -->
+<!--
+**Line XX:** ✅/❌ Comment about the code
+
+**Suggested Change:**
+
+```dart
+// Suggested implementation
+```
+-->
+
+### lib/features/estimation/data/repositories/cost_estimation_repository_impl.dart (Modified)
+
+```dart
+diff --git lib/features/estimation/data/repositories/cost_estimation_repository_impl.dart lib/features/estimation/data/repositories/cost_estimation_repository_impl.dart
+index 2600cd8bdb..34ae4ffa1f 100644
+--- lib/features/estimation/data/repositories/cost_estimation_repository_impl.dart
++++ lib/features/estimation/data/repositories/cost_estimation_repository_impl.dart
+@@ -2,6 +2,7 @@ import 'dart:async';
+ import 'dart:io';
+ 
+ import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
++import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
+ import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
+ import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
+ import 'package:construculator/libraries/either/either.dart';
+@@ -18,6 +19,42 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
+   CostEstimationRepositoryImpl({required CostEstimationDataSource dataSource})
+     : _dataSource = dataSource;
+ 
++  Failure _handleError(Object error, String operation) {
++    if (error is TimeoutException) {
++      _logger.error('Timeout error $operation');
++      return EstimationFailure(errorType: EstimationErrorType.timeoutError);
++    }
++
++    if (error is SocketException) {
++      _logger.error('Connection error $operation');
++      return EstimationFailure(errorType: EstimationErrorType.connectionError);
++    }
++
++    if (error is FormatException) {
++      _logger.error('Parsing error $operation');
++      return EstimationFailure(errorType: EstimationErrorType.parsingError);
++    }
++
++    if (error is supabase.PostgrestException) {
++      _logger.error('PostgreSQL error $operation: ${error.code}');
++      final postgresErrorCode = PostgresErrorCode.fromCode(error.code);
++      if (postgresErrorCode == PostgresErrorCode.connectionFailure ||
++          postgresErrorCode == PostgresErrorCode.unableToConnect ||
++          postgresErrorCode == PostgresErrorCode.connectionDoesNotExist) {
++        return EstimationFailure(
++          errorType: EstimationErrorType.connectionError,
++        );
++      } else {
++        return EstimationFailure(
++          errorType: EstimationErrorType.unexpectedDatabaseError,
++        );
++      }
++    }
++
++    _logger.error('Unexpected error $operation: $error');
++    return UnexpectedFailure();
++  }
++
+   @override
+   Future<Either<Failure, List<CostEstimate>>> getEstimations(
+     String projectId,
+@@ -36,50 +73,29 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
+       );
+ 
+       return Right(costEstimates);
+-    } on TimeoutException {
+-      _logger.error(
+-        'Timeout error getting cost estimations for project $projectId',
+-      );
+-      return Left(
+-        EstimationFailure(errorType: EstimationErrorType.timeoutError),
+-      );
+-    } on SocketException {
+-      _logger.error(
+-        'Connection error getting cost estimations for project $projectId',
+-      );
+-      return Left(
+-        EstimationFailure(errorType: EstimationErrorType.connectionError),
+-      );
+-    } on FormatException {
+-      _logger.error(
+-        'Parsing error getting cost estimations for project $projectId',
+-      );
+-      return Left(
+-        EstimationFailure(errorType: EstimationErrorType.parsingError),
+-      );
+-    } on supabase.PostgrestException catch (e) {
+-      _logger.error(
+-        'PostgreSQL error getting cost estimations for project $projectId: ${e.code}',
+-      );
+-      final postgresErrorCode = PostgresErrorCode.fromCode(e.code);
+-      if (postgresErrorCode == PostgresErrorCode.connectionFailure ||
+-          postgresErrorCode == PostgresErrorCode.unableToConnect ||
+-          postgresErrorCode == PostgresErrorCode.connectionDoesNotExist) {
+-        return Left(
+-          EstimationFailure(errorType: EstimationErrorType.connectionError),
+-        );
+-      } else {
+-        return Left(
+-          EstimationFailure(
+-            errorType: EstimationErrorType.unexpectedDatabaseError,
+-          ),
+-        );
+-      }
+     } catch (e) {
+-      _logger.error(
+-        'Unexpected error getting cost estimations for project $projectId: $e',
++      return Left(_handleError(e, 'getting cost estimations for project'));
++    }
++  }
++
++  @override
++  Future<Either<Failure, CostEstimate>> createEstimation(
++    CostEstimate estimation,
++  ) async {
++    try {
++      _logger.debug('Creating cost estimation: ${estimation.id}');
++
++      final costEstimateDto = CostEstimateDto.fromDomain(estimation);
++      final createdDto = await _dataSource.createEstimation(costEstimateDto);
++
++      final createdEstimation = createdDto.toDomain();
++
++      _logger.debug(
++        'Successfully created cost estimation: ${createdEstimation.id}',
+       );
+-      return Left(UnexpectedFailure());
++      return Right(createdEstimation);
++    } catch (e) {
++      return Left(_handleError(e, 'creating cost estimation'));
+     }
+   }
+ }
+```
+
+#### Suggestions for lib/features/estimation/data/repositories/cost_estimation_repository_impl.dart
+
+<!-- Example suggestion format below -->
+<!--
+**Line XX:** ✅/❌ Comment about the code
+
+**Suggested Change:**
+
+```dart
+// Suggested implementation
+```
+-->
+
+### lib/features/estimation/data/testing/fake_cost_estimation_data_source.dart (Modified)
+
+```dart
+diff --git lib/features/estimation/data/testing/fake_cost_estimation_data_source.dart lib/features/estimation/data/testing/fake_cost_estimation_data_source.dart
+index 0d7ac7f81c..8a2eafed0e 100644
+--- lib/features/estimation/data/testing/fake_cost_estimation_data_source.dart
++++ lib/features/estimation/data/testing/fake_cost_estimation_data_source.dart
+@@ -31,12 +31,28 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
+   /// Used to specify the type of exception thrown when [getEstimations] is attempted
+   SupabaseExceptionType? getEstimationsExceptionType;
+ 
++  /// Controls whether [createEstimation] throws an exception
++  bool shouldThrowOnCreateEstimation = false;
++
++  /// Error message for create estimation.
++  /// Used to specify the error message thrown when [createEstimation] is attempted
++  String? createEstimationErrorMessage;
++
++  /// Used to specify the type of exception thrown when [createEstimation] is attempted
++  SupabaseExceptionType? createEstimationExceptionType;
++
+   /// Used to specify the error code thrown during [getEstimations]
+   PostgresErrorCode? postgrestErrorCode;
+ 
+   /// Controls whether [getEstimations] returns an empty list
+   bool shouldReturnEmptyList = false;
+ 
++  /// Controls whether operations should wait for a completer
++  bool shouldDelayOperations = false;
++
++  /// Completer to control operation timing in tests
++  Completer<void>? completer;
++
+   /// Clock dependency for time operations
+   final Clock clock;
+ 
+@@ -61,6 +77,33 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
+     return _projectEstimations[projectId] ?? [];
+   }
+ 
++  @override
++  Future<CostEstimateDto> createEstimation(CostEstimateDto estimation) async {
++    if (shouldDelayOperations) {
++      await completer?.future;
++    }
++
++    _methodCalls.add({
++      'method': 'createEstimation',
++      'estimation': estimation.toJson(),
++    });
++
++    if (shouldThrowOnCreateEstimation) {
++      _throwConfiguredException(
++        createEstimationExceptionType,
++        createEstimationErrorMessage ?? 'Create estimation failed',
++      );
++    }
++
++    // Add the estimation to the project's estimations
++    final projectId = estimation.projectId;
++    final estimations = _projectEstimations[projectId] ?? [];
++    estimations.add(estimation);
++    _projectEstimations[projectId] = estimations;
++
++    return estimation;
++  }
++
+   void _throwConfiguredException(
+     SupabaseExceptionType? exceptionType,
+     String message,
+@@ -130,8 +173,13 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
+     shouldThrowOnGetEstimations = false;
+     getEstimationsErrorMessage = null;
+     getEstimationsExceptionType = null;
++    shouldThrowOnCreateEstimation = false;
++    createEstimationErrorMessage = null;
++    createEstimationExceptionType = null;
+     postgrestErrorCode = null;
+     shouldReturnEmptyList = false;
++    shouldDelayOperations = false;
++    completer = null;
+ 
+     clearAllData();
+     clearMethodCalls();
+```
+
+#### Suggestions for lib/features/estimation/data/testing/fake_cost_estimation_data_source.dart
+
+<!-- Example suggestion format below -->
+<!--
+**Line XX:** ✅/❌ Comment about the code
+
+**Suggested Change:**
+
+```dart
+// Suggested implementation
+```
+-->
+
+### lib/features/estimation/data/testing/fake_cost_estimation_repository.dart (Modified)
+
+```dart
+diff --git lib/features/estimation/data/testing/fake_cost_estimation_repository.dart lib/features/estimation/data/testing/fake_cost_estimation_repository.dart
+index 93e16b0b3f..ee3e1400d1 100644
+--- lib/features/estimation/data/testing/fake_cost_estimation_repository.dart
++++ lib/features/estimation/data/testing/fake_cost_estimation_repository.dart
+@@ -28,11 +28,18 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
+   /// Controls whether [getEstimations] returns an empty list
+   bool shouldReturnEmptyList = false;
+ 
++  /// Controls whether [createEstimation] should return a [Failure].
++  bool shouldReturnFailureOnCreateEstimation = false;
++
++  /// Specifies the [EstimationErrorType] for the [Failure] returned by
++  /// [createEstimation] when [shouldReturnFailureOnCreateEstimation] is true.
++  EstimationErrorType? createEstimationFailureType;
++
+   /// Controls whether operations should be delayed
+   bool shouldDelayOperations = false;
+ 
+   /// Controls when a delayed future is completed
+-  Completer? completer;
++  Completer<void>? completer;
+ 
+   /// Clock dependency for time operations
+   final Clock clock;
+@@ -66,6 +73,35 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
+     return Right(_projectEstimations[projectId] ?? []);
+   }
+ 
++  @override
++  Future<Either<Failure, CostEstimate>> createEstimation(
++    CostEstimate estimation,
++  ) async {
++    if (shouldDelayOperations) {
++      await completer?.future;
++    }
++
++    _methodCalls.add({'method': 'createEstimation', 'estimation': estimation});
++
++    if (shouldReturnFailureOnCreateEstimation) {
++      return Left(
++        EstimationFailure(
++          errorType:
++              createEstimationFailureType ??
++              EstimationErrorType.unexpectedError,
++        ),
++      );
++    }
++
++    // Add the estimation to the project's estimations
++    final projectId = estimation.projectId;
++    final estimations = _projectEstimations[projectId] ?? [];
++    estimations.add(estimation);
++    _projectEstimations[projectId] = estimations;
++
++    return Right(estimation);
++  }
++
+   /// Adds cost estimation data for a specific project
+   void addProjectEstimations(String projectId, List<CostEstimate> estimations) {
+     _projectEstimations[projectId] = estimations;
+@@ -110,6 +146,8 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
+   void reset() {
+     shouldReturnFailureOnGetEstimations = false;
+     getEstimationsFailureType = null;
++    shouldReturnFailureOnCreateEstimation = false;
++    createEstimationFailureType = null;
+     shouldReturnEmptyList = false;
+     shouldDelayOperations = false;
+     completer = null;
+```
+
+#### Suggestions for lib/features/estimation/data/testing/fake_cost_estimation_repository.dart
+
+<!-- Example suggestion format below -->
+<!--
+**Line XX:** ✅/❌ Comment about the code
+
+**Suggested Change:**
+
+```dart
+// Suggested implementation
+```
+-->
+
+### lib/features/estimation/domain/repositories/cost_estimation_repository.dart (Modified)
+
+```dart
+diff --git lib/features/estimation/domain/repositories/cost_estimation_repository.dart lib/features/estimation/domain/repositories/cost_estimation_repository.dart
+index 61112e6e02..b0d64147b3 100644
+--- lib/features/estimation/domain/repositories/cost_estimation_repository.dart
++++ lib/features/estimation/domain/repositories/cost_estimation_repository.dart
+@@ -22,4 +22,12 @@ abstract class CostEstimationRepository {
+   /// status, and calculated totals.
+   // TODO: https://ripplearc.youtrack.cloud/issue/CA-449/Cost-Estimation-Add-Pagination-for-Fetching-Estimations
+   Future<Either<Failure, List<CostEstimate>>> getEstimations(String projectId);
++
++  /// Creates a new cost estimation.
++  ///
++  /// Returns a [Future] that completes with the created [CostEstimate] containing
++  /// the newly created cost estimation with its assigned ID and timestamps.
++  Future<Either<Failure, CostEstimate>> createEstimation(
++    CostEstimate estimation,
++  );
+ }
+```
+
+#### Suggestions for lib/features/estimation/domain/repositories/cost_estimation_repository.dart
+
+<!-- Example suggestion format below -->
+<!--
+**Line XX:** ✅/❌ Comment about the code
+
+**Suggested Change:**
+
+```dart
+// Suggested implementation
+```
+-->
+
+### test/units/features/estimation/data/data_source/remote_cost_estimation_data_source_test.dart (Modified)
+
+```dart
+diff --git test/units/features/estimation/data/data_source/remote_cost_estimation_data_source_test.dart test/units/features/estimation/data/data_source/remote_cost_estimation_data_source_test.dart
+index d9aaa6dd4a..3a106d3902 100644
+--- test/units/features/estimation/data/data_source/remote_cost_estimation_data_source_test.dart
++++ test/units/features/estimation/data/data_source/remote_cost_estimation_data_source_test.dart
+@@ -1,3 +1,5 @@
++import 'dart:io';
++
+ import 'package:construculator/features/estimation/data/data_source/remote_cost_estimation_data_source.dart';
+ import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
+ import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+@@ -274,5 +276,120 @@ void main() {
+         );
+       });
+     });
++
++    group('createEstimation', () {
++      test('should create cost estimation successfully', () async {
++        final estimationData =
++            EstimationTestDataMapFactory.createFakeEstimationData(
++              id: estimateId1,
++              estimateName: estimateName1,
++              estimateDescription: estimateDesc1,
++              creatorUserId: userId1,
++              totalCost: totalCost1,
++              isLocked: false,
++            );
++        final estimationDto = CostEstimateDto.fromJson(estimationData);
++
++        final result = await dataSource.createEstimation(estimationDto);
++
++        expect(result, equals(estimationDto));
++      });
++
++      test(
++        'should call supabaseWrapper.insert with correct parameters',
++        () async {
++          final estimationData =
++              EstimationTestDataMapFactory.createFakeEstimationData(
++                id: estimateId1,
++                estimateName: estimateName1,
++                creatorUserId: userId1,
++                totalCost: totalCost1,
++              );
++          final estimationDto = CostEstimateDto.fromJson(estimationData);
++
++          await dataSource.createEstimation(estimationDto);
++
++          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('insert');
++          expect(methodCalls, hasLength(1));
++
++          final call = methodCalls.first;
++          expect(call['table'], equals(tableName));
++          expect(call['data']['id'], equals(estimateId1));
++          expect(call['data']['estimate_name'], equals(estimateName1));
++          expect(call['data']['creator_user_id'], equals(userId1));
++          expect(call['data']['total_cost'], equals(totalCost1));
++        },
++      );
++
++      test(
++        'should rethrow exception when supabaseWrapper.insert throws',
++        () async {
++          final estimationData =
++              EstimationTestDataMapFactory.createFakeEstimationData(
++                id: estimateId1,
++              );
++          final estimationDto = CostEstimateDto.fromJson(estimationData);
++
++          fakeSupabaseWrapper.shouldThrowOnInsert = true;
++          fakeSupabaseWrapper.insertExceptionType =
++              SupabaseExceptionType.postgrest;
++          fakeSupabaseWrapper.insertErrorMessage = errorMsgDbConnection;
++
++          expect(
++            () => dataSource.createEstimation(estimationDto),
++            throwsA(isA<supabase.PostgrestException>()),
++          );
++        },
++      );
++
++      test(
++        'should rethrow network exception when supabaseWrapper.insert throws network error',
++        () async {
++          final estimationData =
++              EstimationTestDataMapFactory.createFakeEstimationData(
++                id: estimateId1,
++              );
++          final estimationDto = CostEstimateDto.fromJson(estimationData);
++
++          fakeSupabaseWrapper.shouldThrowOnInsert = true;
++          fakeSupabaseWrapper.insertExceptionType =
++              SupabaseExceptionType.socket;
++          fakeSupabaseWrapper.insertErrorMessage = errorMsgNetwork;
++
++          expect(
++            () => dataSource.createEstimation(estimationDto),
++            throwsA(isA<SocketException>()),
++          );
++        },
++      );
++
++      test('should handle CostEstimateDto with all field types', () async {
++        final estimationData =
++            EstimationTestDataMapFactory.createFakeEstimationData(
++              id: estimateIdComplex,
++              estimateName: estimateNameComplex,
++              estimateDescription: estimateDescComplex,
++              creatorUserId: userIdComplex,
++              markupType: markupTypeGranular,
++              overallMarkupValueType: markupValueTypeAmount,
++              overallMarkupValue: overallMarkup3,
++              materialMarkupValue: materialMarkup3,
++              laborMarkupValueType: markupValueTypeAmount,
++              laborMarkupValue: laborMarkup4,
++              equipmentMarkupValue: equipmentMarkup2,
++              totalCost: totalCostComplex,
++              isLocked: true,
++              lockedByUserId: userIdLocker,
++              lockedAt: timestamp5,
++              createdAt: timestamp4,
++              updatedAt: timestamp5,
++            );
++        final estimationDto = CostEstimateDto.fromJson(estimationData);
++
++        final result = await dataSource.createEstimation(estimationDto);
++
++        expect(result, equals(estimationDto));
++      });
++    });
+   });
+ }
+```
+
+#### Suggestions for test/units/features/estimation/data/data_source/remote_cost_estimation_data_source_test.dart
+
+<!-- Example suggestion format below -->
+<!--
+**Line XX:** ✅/❌ Comment about the code
+
+**Suggested Change:**
+
+```dart
+// Suggested implementation
+```
+-->
+
+### test/units/features/estimation/data/models/cost_estimate_dto_test.dart (Modified)
+
+```dart
+diff --git test/units/features/estimation/data/models/cost_estimate_dto_test.dart test/units/features/estimation/data/models/cost_estimate_dto_test.dart
+index 4ed3750060..7f397bdf8e 100644
+--- test/units/features/estimation/data/models/cost_estimate_dto_test.dart
++++ test/units/features/estimation/data/models/cost_estimate_dto_test.dart
+@@ -263,5 +263,50 @@ void main() {
+ 
+       expect(domain, equals(expected));
+     });
++
++    test('fromDomain should convert domain entity to DTO correctly', () {
++      final sampleData = EstimationTestDataMapFactory.createFakeEstimationData(
++        isLocked: true,
++        lockedByUserId: 'locking-user',
++        lockedAt: '2025-01-01T10:00:00.000Z',
++      );
++      final originalDto = CostEstimateDto.fromJson(sampleData);
++      final domain = originalDto.toDomain();
++
++      final convertedDto = CostEstimateDto.fromDomain(domain);
++
++      expect(convertedDto, equals(originalDto));
++    });
++
++    test('fromDomain should map MarkupType.granular correctly', () {
++      final sampleData = EstimationTestDataMapFactory.createFakeEstimationData(
++        markupType: 'granular',
++      );
++      final originalDto = CostEstimateDto.fromJson(sampleData);
++      final domain = originalDto.toDomain();
++
++      final convertedDto = CostEstimateDto.fromDomain(domain);
++
++      expect(convertedDto.markupType, equals('granular'));
++      expect(domain.markupConfiguration.overallType, MarkupType.granular);
++    });
++
++    test('fromDomain should map MarkupValueType.amount correctly', () {
++      final sampleData = EstimationTestDataMapFactory.createFakeEstimationData(
++        overallMarkupValueType: 'amount',
++        materialMarkupValueType: 'amount',
++        laborMarkupValueType: 'amount',
++        equipmentMarkupValueType: 'amount',
++        isLocked: true,
++        lockedByUserId: 'locking-user',
++        lockedAt: '2025-01-01T10:00:00.000Z',
++      );
++      final originalDto = CostEstimateDto.fromJson(sampleData);
++      final domain = originalDto.toDomain();
++
++      final convertedDto = CostEstimateDto.fromDomain(domain);
++
++      expect(convertedDto, equals(originalDto));
++    });
+   });
+ }
+```
+
+#### Suggestions for test/units/features/estimation/data/models/cost_estimate_dto_test.dart
+
+<!-- Example suggestion format below -->
+<!--
+**Line XX:** ✅/❌ Comment about the code
+
+**Suggested Change:**
+
+```dart
+// Suggested implementation
+```
+-->
+
+### test/units/features/estimation/data/repositories/cost_estimation_repository_impl_test.dart (Modified)
+
+```dart
+diff --git test/units/features/estimation/data/repositories/cost_estimation_repository_impl_test.dart test/units/features/estimation/data/repositories/cost_estimation_repository_impl_test.dart
+index 9ecf4d1610..e07ff1fd63 100644
+--- test/units/features/estimation/data/repositories/cost_estimation_repository_impl_test.dart
++++ test/units/features/estimation/data/repositories/cost_estimation_repository_impl_test.dart
+@@ -343,5 +343,112 @@ void main() {
+         },
+       );
+     });
++
++    group('createEstimation', () {
++      test('should return created estimation on success', () async {
++        final estimationDto = fakeDataSource.createSampleEstimation(
++          id: estimateIdDefault,
++          projectId: testProjectId,
++          estimateName: estimateNameDefault,
++          estimateDescription: estimateDescDefault,
++          creatorUserId: userIdDefault,
++          totalCost: totalCostDefault,
++        );
++        final estimation = estimationDto.toDomain();
++
++        final result = await repository.createEstimation(estimation);
++
++        expect(result.isRight(), isTrue);
++        result.fold(
++          (_) => fail('Expected success but got failure'),
++          (created) => expect(created, equals(estimation)),
++        );
++      });
++
++      test('should call data source with correct estimation', () async {
++        final estimationDto = fakeDataSource.createSampleEstimation(
++          id: estimateIdDefault,
++          projectId: testProjectId,
++          estimateName: estimateNameDefault,
++        );
++        final estimation = estimationDto.toDomain();
++
++        await repository.createEstimation(estimation);
++
++        final methodCalls =
++            fakeDataSource.getMethodCallsFor('createEstimation');
++        expect(methodCalls, hasLength(1));
++        expect(methodCalls.first['estimation']['id'], equals(estimateIdDefault));
++      });
++
++      test(
++        'should return timeout failure when data source throws timeout',
++        () async {
++          fakeDataSource.shouldThrowOnCreateEstimation = true;
++          fakeDataSource.createEstimationExceptionType =
++              SupabaseExceptionType.timeout;
++          fakeDataSource.createEstimationErrorMessage = errorMsgTimeout;
++
++          final estimationDto = fakeDataSource.createSampleEstimation();
++          final estimation = estimationDto.toDomain();
++
++          final result = await repository.createEstimation(estimation);
++
++          expect(result.isLeft(), isTrue);
++          result.fold(
++            (failure) => expect(
++              failure,
++              EstimationFailure(errorType: EstimationErrorType.timeoutError),
++            ),
++            (_) => fail('Expected failure but got success'),
++          );
++        },
++      );
++
++      test(
++        'should return connection failure when data source throws SocketException',
++        () async {
++          fakeDataSource.shouldThrowOnCreateEstimation = true;
++          fakeDataSource.createEstimationExceptionType =
++              SupabaseExceptionType.socket;
++          fakeDataSource.createEstimationErrorMessage = 'Connection failed';
++
++          final estimationDto = fakeDataSource.createSampleEstimation();
++          final estimation = estimationDto.toDomain();
++
++          final result = await repository.createEstimation(estimation);
++
++          expect(result.isLeft(), isTrue);
++          result.fold(
++            (failure) => expect(
++              failure,
++              EstimationFailure(errorType: EstimationErrorType.connectionError),
++            ),
++            (_) => fail('Expected failure but got success'),
++          );
++        },
++      );
++
++      test(
++        'should return unexpected failure when data source throws unknown error',
++        () async {
++          fakeDataSource.shouldThrowOnCreateEstimation = true;
++          fakeDataSource.createEstimationExceptionType =
++              SupabaseExceptionType.unknown;
++          fakeDataSource.createEstimationErrorMessage = errorMsgServer;
++
++          final estimationDto = fakeDataSource.createSampleEstimation();
++          final estimation = estimationDto.toDomain();
++
++          final result = await repository.createEstimation(estimation);
++
++          expect(result.isLeft(), isTrue);
++          result.fold(
++            (failure) => expect(failure, UnexpectedFailure()),
++            (_) => fail('Expected failure but got success'),
++          );
++        },
++      );
++    });
+   });
+ }
+```
+
+#### Suggestions for test/units/features/estimation/data/repositories/cost_estimation_repository_impl_test.dart
+
+<!-- Example suggestion format below -->
+<!--
+**Line XX:** ✅/❌ Comment about the code
+
+**Suggested Change:**
+
+```dart
+// Suggested implementation
+```
+-->
+
+### test/units/features/estimation/fakes/fake_cost_estimation_repository_test.dart (Modified)
+
+```dart
+diff --git test/units/features/estimation/fakes/fake_cost_estimation_repository_test.dart test/units/features/estimation/fakes/fake_cost_estimation_repository_test.dart
+index d520eb56bc..79e8b2fa3f 100644
+--- test/units/features/estimation/fakes/fake_cost_estimation_repository_test.dart
++++ test/units/features/estimation/fakes/fake_cost_estimation_repository_test.dart
+@@ -1,4 +1,5 @@
+ import 'dart:async';
++
+ import 'package:construculator/features/estimation/data/testing/fake_cost_estimation_repository.dart';
+ import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
+ import 'package:construculator/features/estimation/domain/entities/enums.dart';
+@@ -653,4 +654,96 @@ void main() {
+       },
+     );
+   });
++
++  group('Estimation Creation', () {
++    test('createEstimation should track method calls', () async {
++      final testEstimation = fakeRepository.createSampleEstimation();
++
++      expect(fakeRepository.getMethodCallsFor('createEstimation'), isEmpty);
++
++      await fakeRepository.createEstimation(testEstimation);
++
++      final calls = fakeRepository.getMethodCallsFor('createEstimation');
++      expect(calls, hasLength(1));
++      expect(calls.first['estimation'], equals(testEstimation));
++    });
++
++    test(
++      'createEstimation should return estimation and add to project',
++      () async {
++        const projectId = 'test-project-123';
++        final testEstimation = fakeRepository.createSampleEstimation(
++          id: 'estimation-1',
++          projectId: projectId,
++        );
++
++        final getResult = await fakeRepository.getEstimations(projectId);
++        expect(getResult.isRight(), isTrue);
++        getResult.fold(
++          (_) => fail('Expected success'),
++          (estimates) => expect(estimates, isEmpty),
++        );
++
++        final result = await fakeRepository.createEstimation(testEstimation);
++
++        expect(result.isRight(), isTrue);
++        result.fold(
++          (_) => fail('Expected success but got failure'),
++          (created) => expect(created, equals(testEstimation)),
++        );
++
++        final projectEstimations = await fakeRepository.getEstimations(
++          projectId,
++        );
++        expect(projectEstimations.isRight(), isTrue);
++        projectEstimations.fold((_) => fail('Expected success'), (estimates) {
++          expect(estimates, hasLength(1));
++          expect(estimates.first, equals(testEstimation));
++        });
++      },
++    );
++
++    test('createEstimation should return failure when configured', () async {
++      final testEstimation = fakeRepository.createSampleEstimation();
++
++      fakeRepository.shouldReturnFailureOnCreateEstimation = true;
++      fakeRepository.createEstimationFailureType =
++          EstimationErrorType.connectionError;
++
++      final result = await fakeRepository.createEstimation(testEstimation);
++
++      expect(result.isLeft(), isTrue);
++      result.fold(
++        (failure) => expect(
++          failure,
++          EstimationFailure(errorType: EstimationErrorType.connectionError),
++        ),
++        (_) => fail('Expected failure but got success'),
++      );
++    });
++
++    test('createEstimation should handle delay operations', () async {
++      final testEstimation = fakeRepository.createSampleEstimation();
++
++      fakeRepository.shouldDelayOperations = true;
++      fakeRepository.completer = Completer<void>();
++
++      final future = fakeRepository.createEstimation(testEstimation);
++
++      expect(fakeRepository.getMethodCallsFor('createEstimation'), isEmpty);
++
++      fakeRepository.completer!.complete();
++      final result = await future;
++
++      expect(result.isRight(), isTrue);
++      result.fold(
++        (_) => fail('Expected success'),
++        (created) => expect(created, equals(testEstimation)),
++      );
++      expect(
++        fakeRepository.getMethodCallsFor('createEstimation'),
++        hasLength(1),
++      );
++    });
++  });
+ }
+```
+
+#### Suggestions for test/units/features/estimation/fakes/fake_cost_estimation_repository_test.dart
+
+<!-- Example suggestion format below -->
+<!--
+**Line XX:** ✅/❌ Comment about the code
+
+**Suggested Change:**
+
+```dart
+// Suggested implementation
+```
+-->
+
+## REVIEW INSTRUCTIONS
+Please review this PR with the following considerations:
+
+### 📋 RULE 1: DIGESTIBLE PR RULE
+**Reference:** For detailed guidelines, search: https://gist.github.com/ripplearcgit/551ccf7208a1dcf3f3edd27cac002214
+
+**Size Classification (Production Code Only):**
+- XS: <50 lines | S: 50-100 lines | M: 100-200 lines | L: 200+ lines
+- **Action Required:** If PR is >M size, recommend breaking into smaller, focused PRs
+- **Focus:** Each PR should have single, clear purpose and pass tests independently
+
+### 🏗️ RULE 2: CLASS NAMING CONVENTION
+**Reference:** For detailed guidelines, search: https://gist.github.com/ripplearcgit/89f05e4f83e087f63148bbbb1d99a178
+
+**Key Patterns:**
+- **UseCase:** `VerbNounUseCase` (single business operation)
+- **Service:** `NounService` (complex domain logic)
+- **Manager:** `NounManager` (stateful coordination)
+- **Repository:** `NounRepository` (data access abstraction)
+- **DataSource:** `Local/RemoteNounDataSource` (raw data handling)
+- **BLoC:** `NounBloc` + `NounEvent` + `NounState`
+
+**Action Required:** Verify all new classes follow naming conventions and layer responsibilities
+
+### 🧪 RULE 3: TEST DOUBLE PATTERN
+**Reference:** For detailed guidelines, search: https://gist.github.com/ripplearcgit/89687b7414f62a8c042b16b52e9ceb0b
+
+**Core Principle:** Test real integration between components, only fake external dependencies
+
+**Key Rules:**
+- ❌ **Avoid:** Fake everything approach (only fakes, no real implementations)
+- ✅ **Use:** Test Double pattern (real A + real B + fake external dependencies)
+- 🔒 **Forbidden:** Mock & Stub usage
+
+**When Testing Class A → Class B:**
+- Use **real implementation of B**
+- Swap out **B's external dependencies** with fakes (DB, Network, 3P libraries)
+- Test **real integration** and **real business logic**
+
+**Action Required:**
+- Verify tests use real implementations for business logic components
+- Check that only external dependencies (DB, network, 3P) are faked
+- Ensure BLoCs test real UseCases, UseCases test real Services, etc.
+
+### 🔍 RULE 4: GENERAL CODE REVIEW CRITERIA
+1. 📝 Code quality and best practices
+2. 🐛 Potential bugs or edge cases
+3. ⚡ Performance implications
+4. 🔒 Security concerns
+
+**Review Output Format:**
+Please provide detailed comments with context for each file. If issues are found that need to be addressed, include the summary table below. If no issues are found, omit the table entirely.
+
+## REVIEW SUMMARY
+
+**IMPORTANT:** Only include this table if you find issues that need to be addressed. If the PR has no outstanding issues, delete this entire section.
+
+| Issue Name | Description | Status | Notes |
+|------------|-------------|--------|-------|
+| [Brief issue name] | [Detailed description of the issue] | [Author to fill out] | [Author to fill out] |
+
+**Status Options (for PR Author to fill out - NOT for LLM):**
+
+**Notes Requirements (for PR Author to fill out - NOT for LLM):**
+- **If Author Disagree:** State the reason for disagreement
+- **If Agree and Have Addressed:** Describe what changes were made
+- **If Agree but Needs Another Story:** List the YouTrack story name for the refactor
+
