@@ -5,11 +5,6 @@ sealed class AuthEvent {
   const AuthEvent();
 }
 
-/// Event triggered when authentication state changes
-class AuthStateChanged extends AuthEvent {
-  const AuthStateChanged();
-}
-
 /// Event triggered when user profile changes
 class AuthUserProfileChanged extends AuthEvent {
   final User? user;

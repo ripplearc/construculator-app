@@ -173,15 +173,6 @@ void main() {
       );
     });
 
-    group('AuthStateChanged', () {
-      blocTest<AuthBloc, AuthState>(
-        'handles AuthStateChanged event without emitting new states',
-        build: () => authBloc,
-        act: (bloc) => bloc.add(const AuthStateChanged()),
-        expect: () => [],
-      );
-    });
-
     group('AuthUserProfileChanged', () {
       blocTest<AuthBloc, AuthState>(
         'emits [AuthLoadUnauthenticated] when user profile is null',
@@ -283,8 +274,6 @@ void main() {
         },
         act: (bloc) async {
           bloc.add(const AuthStarted());
-          await Future.delayed(const Duration(milliseconds: 10));
-          bloc.add(const AuthStateChanged());
           await Future.delayed(const Duration(milliseconds: 10));
           bloc.add(AuthUserProfileChanged(null));
         },

@@ -1,10 +1,13 @@
 import 'package:construculator/features/estimation/presentation/widgets/project_header_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:network_image_mock/network_image_mock.dart';
 
 import '../font_loader.dart';
 import '../await_images_extension.dart';
+
+ImageProvider _createTestAvatarImage() {
+  return const AssetImage('assets/icons/app_icon.png');
+}
 
 void main() {
   final size = const Size(390, 56);
@@ -22,7 +25,7 @@ void main() {
       VoidCallback? onProjectTap,
       VoidCallback? onSearchTap,
       VoidCallback? onNotificationTap,
-      String? avatarUrl,
+      ImageProvider? avatarImage,
     }) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -32,7 +35,7 @@ void main() {
               onProjectTap: onProjectTap,
               onSearchTap: onSearchTap,
               onNotificationTap: onNotificationTap,
-              avatarUrl: avatarUrl,
+              avatarImage: avatarImage,
             ),
             body: const SizedBox.shrink(),
           ),
@@ -40,7 +43,6 @@ void main() {
       );
       await tester.pumpAndSettle();
       
-      // Wait for asset images to load
       await tester.awaitImages();
     }
 
@@ -48,72 +50,62 @@ void main() {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       
-      // Mock network images to avoid loading issues
-      await mockNetworkImagesFor(() async {
-        await pumpProjectHeaderAppBar(
-          tester: tester,
-          projectName: 'Kitchen Renovation',
-          onProjectTap: () {},
-          onSearchTap: () {},
-          onNotificationTap: () {},
-          avatarUrl: 'https://example.com/avatar.jpg',
-        );
+      await pumpProjectHeaderAppBar(
+        tester: tester,
+        projectName: 'Kitchen Renovation',
+        onProjectTap: () {},
+        onSearchTap: () {},
+        onNotificationTap: () {},
+        avatarImage: _createTestAvatarImage(),
+      );
 
-        await expectLater(
-          find.byType(ProjectHeaderAppBar),
-          matchesGoldenFile(
-            'goldens/project_header_app_bar/${size.width}x${size.height}/project_header_app_bar_normal.png',
-          ),
-        );
-      });
+      await expectLater(
+        find.byType(ProjectHeaderAppBar),
+        matchesGoldenFile(
+          'goldens/project_header_app_bar/${size.width}x${size.height}/project_header_app_bar_normal.png',
+        ),
+      );
     });
 
     testWidgets('renders project header app bar with long name correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       
-      // Mock network images to avoid loading issues
-      await mockNetworkImagesFor(() async {
-        await pumpProjectHeaderAppBar(
-          tester: tester,
-          projectName: 'Complete Home Renovation and Extension Project',
-          onProjectTap: () {},
-          onSearchTap: () {},
-          onNotificationTap: () {},
-          avatarUrl: 'https://example.com/avatar.jpg',
-        );
+      await pumpProjectHeaderAppBar(
+        tester: tester,
+        projectName: 'Complete Home Renovation and Extension Project',
+        onProjectTap: () {},
+        onSearchTap: () {},
+        onNotificationTap: () {},
+        avatarImage: _createTestAvatarImage(),
+      );
 
-        await expectLater(
-          find.byType(ProjectHeaderAppBar),
-          matchesGoldenFile(
-            'goldens/project_header_app_bar/${size.width}x${size.height}/project_header_app_bar_long_name.png',
-          ),
-        );
-      });
+      await expectLater(
+        find.byType(ProjectHeaderAppBar),
+        matchesGoldenFile(
+          'goldens/project_header_app_bar/${size.width}x${size.height}/project_header_app_bar_long_name.png',
+        ),
+      );
     });
 
     testWidgets('renders project header app bar without avatar correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       
-      // Mock network images to avoid loading issues
-      await mockNetworkImagesFor(() async {
-        await pumpProjectHeaderAppBar(
-          tester: tester,
-          projectName: 'Bathroom Remodel',
-          onProjectTap: () {},
-          onSearchTap: () {},
-          onNotificationTap: () {},
-          avatarUrl: null,
-        );
+      await pumpProjectHeaderAppBar(
+        tester: tester,
+        projectName: 'Bathroom Remodel',
+        onProjectTap: () {},
+        onSearchTap: () {},
+        onNotificationTap: () {},
+      );
 
-        await expectLater(
-          find.byType(ProjectHeaderAppBar),
-          matchesGoldenFile(
-            'goldens/project_header_app_bar/${size.width}x${size.height}/project_header_app_bar_no_avatar.png',
-          ),
-        );
-      });
+      await expectLater(
+        find.byType(ProjectHeaderAppBar),
+        matchesGoldenFile(
+          'goldens/project_header_app_bar/${size.width}x${size.height}/project_header_app_bar_no_avatar.png',
+        ),
+      );
     });
   });
 }
