@@ -6,7 +6,7 @@ class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget
   final VoidCallback? onProjectTap;
   final VoidCallback? onSearchTap;
   final VoidCallback? onNotificationTap;
-  final String? avatarUrl;
+  final ImageProvider? avatarImage;
 
   const ProjectHeaderAppBar({
     super.key,
@@ -14,7 +14,7 @@ class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget
     this.onProjectTap,
     this.onSearchTap,
     this.onNotificationTap,
-    this.avatarUrl,
+    this.avatarImage,
   });
 
   @override
@@ -40,9 +40,9 @@ class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget
                   Flexible(
                     child: Text(
                       projectName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 19,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: CoreTypography.semiBold,
                         color: CoreTextColors.dark,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -52,7 +52,7 @@ class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget
                   const SizedBox(width: 4),
                   CoreIconWidget(
                     icon: CoreIcons.arrowDown,
-                    color: CoreTextColors.dark,
+                    color: CoreIconColors.grayDark,
                     size: 20,
                   ),
                 ],
@@ -61,24 +61,16 @@ class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget
             actions: [
               IconButton(
                 onPressed: onSearchTap,
-                icon: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CoreIconWidget(
-                    icon: CoreIconData.svg('assets/icons/search_icon.svg'),
-                    size: 24,
-                  ),
+                icon: CoreIconWidget(
+                  icon: CoreIcons.search,
+                  color: CoreIconColors.dark,
                 ),
               ),
               IconButton(
                 onPressed: onNotificationTap,
-                icon: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CoreIconWidget(
-                    icon: CoreIconData.svg('assets/icons/bell_icon.svg'),
-                    size: 24,
-                  ),
+                icon: CoreIconWidget(
+                  icon: CoreIcons.notification,
+                  color: CoreIconColors.dark,
                 ),
               ),
               Container(
@@ -87,9 +79,7 @@ class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget
                   radius: 20,
                   backgroundColor: Colors.black,
                   // TODO: https://ripplearc.youtrack.cloud/issue/CA-392/Cost-Estimation-Use-letter-when-no-user-avatar-is-present
-                  backgroundImage: (avatarUrl?.isNotEmpty ?? false)
-                      ? NetworkImage(avatarUrl ?? '')
-                      : null,
+                  backgroundImage: avatarImage,
                 ),
               ),
             ],

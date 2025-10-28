@@ -61,7 +61,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
               onProjectTap: () {},
               onSearchTap: () {},
               onNotificationTap: () {},
-              avatarUrl: userAvatarUrl,
+              avatarImage: NetworkImage(userAvatarUrl),
             ),
             body: _buildBody(),
           );
