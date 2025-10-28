@@ -544,5 +544,10 @@
   "@welcomeBack": {
     "description": "Text for welcome back",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-5656&t=u7FRWeWPXiomVzNr-4"
+  },
+  "costEstimation": "Cost Estimation",
+  "@costEstimation": {
+    "description": "Label for cost estimation button on dashboard",
+    "context": "Dashboard page button"
   }
 }

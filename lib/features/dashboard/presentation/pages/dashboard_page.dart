@@ -1,3 +1,4 @@
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -102,7 +103,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 onPressed: () {
                   _router.navigate(fullEstimationLandingRoute);
                 },
-                label: 'Cost Estimation',
+                label: '${AppLocalizations.of(context)?.costEstimation}',
                 centerAlign: true,
               ),
             ],

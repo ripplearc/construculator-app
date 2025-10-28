@@ -359,4 +359,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get welcomeBack => 'Welcome Back';
+
+  @override
+  String get costEstimation => 'Cost Estimation';
 }
