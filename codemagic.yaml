@@ -290,7 +290,7 @@ workflows:
           exit 0
           fi
           echo "🧬 Checking for changed mutation config files..."
-          CHANGED_FILES=$(git diff --name-only --diff-filter=d "$BASE_COMMIT" -- "test/mutations/*.xml")
+          CHANGED_FILES=$(git diff --name-only --diff-filter=d "$BASE_COMMIT" -- "test/features/**/*.xml" "test/libraries/**/*.xml")
 
           if [ -z "$CHANGED_FILES" ]; then
           echo "✅ No changed mutation config files detected. Skipping mutation tests."
@@ -441,9 +441,9 @@ workflows:
 
       - name: Mutation Testing
         script: |
-          echo "🧬 Looking for mutation configs in test/mutations/..."
+          echo "🧬 Looking for mutation configs in test/features/ and test/libraries/..."
 
-          CONFIG_FILES=$(find test/mutations -type f -name "*.xml" | tr '\n' ' ')
+          CONFIG_FILES=$(find test/features test/libraries -type f -name "*.xml" | tr '\n' ' ')
 
           if [ -z "$CONFIG_FILES" ]; then
             echo "✅ No mutation config files found. Skipping mutation tests."
