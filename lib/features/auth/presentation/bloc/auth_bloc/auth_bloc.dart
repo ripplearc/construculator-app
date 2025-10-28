@@ -21,7 +21,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
        super(const AuthInitial()) {
     
     on<AuthStarted>(_onAuthStarted);
-    on<AuthStateChanged>(_onAuthStateChanged);
     on<AuthUserProfileChanged>(_onUserProfileChanged);
   }
 
@@ -53,11 +52,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  void _onAuthStateChanged(AuthStateChanged event, Emitter<AuthState> emit) {
-    // Handle auth state changes from the notifier
-    // This can be used to react to external auth state changes
-  }
-
   void _onUserProfileChanged(AuthUserProfileChanged event, Emitter<AuthState> emit) {
     if (event.user == null) {
       emit(const AuthLoadUnauthenticated());
@@ -71,19 +65,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  /// Initialize the auth bloc and start listening to auth changes
   void initialize() {
-    // Listen to auth state changes
-    _authNotifier.onAuthStateChanged.listen((authState) {
-      add(const AuthStateChanged());
-    });
-    
-    // Listen to user profile changes
     _authNotifier.onUserProfileChanged.listen((user) {
       add(AuthUserProfileChanged(user));
     });
     
-    // Start the auth process
     add(const AuthStarted());
   }
 }
