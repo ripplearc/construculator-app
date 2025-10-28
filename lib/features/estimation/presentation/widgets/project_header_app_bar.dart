@@ -86,6 +86,7 @@ class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget
                 child: CircleAvatar(
                   radius: 20,
                   backgroundColor: Colors.black,
+                  // TODO: https://ripplearc.youtrack.cloud/issue/CA-392/Cost-Estimation-Use-letter-when-no-user-avatar-is-present
                   backgroundImage: (avatarUrl?.isNotEmpty ?? false)
                       ? NetworkImage(avatarUrl ?? '')
                       : null,

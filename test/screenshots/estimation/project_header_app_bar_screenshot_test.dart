@@ -40,7 +40,6 @@ void main() {
       );
       await tester.pumpAndSettle();
       
-      // Wait for asset images to load
       await tester.awaitImages();
     }
 
@@ -48,7 +47,6 @@ void main() {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       
-      // Mock network images to avoid loading issues
       await mockNetworkImagesFor(() async {
         await pumpProjectHeaderAppBar(
           tester: tester,
@@ -72,7 +70,6 @@ void main() {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       
-      // Mock network images to avoid loading issues
       await mockNetworkImagesFor(() async {
         await pumpProjectHeaderAppBar(
           tester: tester,
@@ -96,7 +93,6 @@ void main() {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       
-      // Mock network images to avoid loading issues
       await mockNetworkImagesFor(() async {
         await pumpProjectHeaderAppBar(
           tester: tester,
