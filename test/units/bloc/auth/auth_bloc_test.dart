@@ -71,7 +71,12 @@ void main() {
           const AuthLoadUnauthenticated(),
         ],
         verify: (_) {
-          expect(fakeRouter.navigationHistory.any((call) => call.route == fullLoginRoute), isTrue);
+          expect(
+            fakeRouter.navigationHistory.any(
+              (call) => call.route == fullLoginRoute,
+            ),
+            isTrue,
+          );
         },
       );
 
@@ -84,7 +89,7 @@ void main() {
             metadata: {},
             createdAt: clock.now(),
           );
-          
+
           final testUser = User(
             id: testUserId,
             credentialId: testUserId,
@@ -97,12 +102,13 @@ void main() {
             updatedAt: clock.now(),
             userPreferences: {},
           );
-          
+
           fakeAuthManager.setCurrentCredential(testCredential);
           fakeAuthManager.setAuthResponse(succeed: true);
-          
+
           // Set up the fake repository to return the test user
-          final fakeRepository = fakeAuthManager.authRepository as FakeAuthRepository;
+          final fakeRepository =
+              fakeAuthManager.authRepository as FakeAuthRepository;
           fakeRepository.setUserProfile(testUser);
 
           return authBloc;
@@ -110,8 +116,11 @@ void main() {
         act: (bloc) => bloc.add(const AuthStarted()),
         expect: () => [
           const AuthLoadInProgress(),
-          isA<AuthLoadSuccess>()
-              .having((s) => s.user!.id, 'user.id', testUserId),
+          isA<AuthLoadSuccess>().having(
+            (s) => s.user!.id,
+            'user.id',
+            testUserId,
+          ),
         ],
       );
 
@@ -124,13 +133,14 @@ void main() {
             metadata: {},
             createdAt: clock.now(),
           );
-          
+
           fakeAuthManager.setCurrentCredential(testCredential);
           // Don't set auth response to fail here - we want the credential to be available
           // but we want the getUserProfile call to fail
-          
+
           // Set up the fake repository to return null user profile
-          final fakeRepository = fakeAuthManager.authRepository as FakeAuthRepository;
+          final fakeRepository =
+              fakeAuthManager.authRepository as FakeAuthRepository;
           fakeRepository.returnNullUserProfile = true;
 
           return authBloc;
@@ -141,7 +151,12 @@ void main() {
           const AuthLoadUnauthenticated(),
         ],
         verify: (_) {
-          expect(fakeRouter.navigationHistory.any((call) => call.route == fullCreateAccountRoute), isTrue);
+          expect(
+            fakeRouter.navigationHistory.any(
+              (call) => call.route == fullCreateAccountRoute,
+            ),
+            isTrue,
+          );
         },
       );
 
@@ -154,22 +169,29 @@ void main() {
             metadata: {},
             createdAt: clock.now(),
           );
-          
+
           fakeAuthManager.setCurrentCredential(testCredential);
-          fakeAuthManager.setAuthResponse(succeed: true); // Allow auth manager to succeed
-          
+          fakeAuthManager.setAuthResponse(
+            succeed: true,
+          ); // Allow auth manager to succeed
+
           // Set up the fake repository to throw an exception
-          final fakeRepository = fakeAuthManager.authRepository as FakeAuthRepository;
+          final fakeRepository =
+              fakeAuthManager.authRepository as FakeAuthRepository;
           fakeRepository.shouldThrowOnGetUserProfile = true;
-          fakeRepository.exceptionMessage = 'Server error during profile loading';
+          fakeRepository.exceptionMessage =
+              'Server error during profile loading';
 
           return authBloc;
         },
         act: (bloc) => bloc.add(const AuthStarted()),
         expect: () => [
           const AuthLoadInProgress(),
-          isA<AuthLoadFailure>()
-              .having((s) => s.message, 'message', isNotEmpty),
+          isA<AuthLoadFailure>().having(
+            (s) => s.message,
+            'message',
+            isNotEmpty,
+          ),
         ],
       );
     });
@@ -179,11 +201,14 @@ void main() {
         'emits [AuthLoadUnauthenticated] when user profile is null',
         build: () => authBloc,
         act: (bloc) => bloc.add(const AuthUserProfileChanged(null)),
-        expect: () => [
-          const AuthLoadUnauthenticated(),
-        ],
+        expect: () => [const AuthLoadUnauthenticated()],
         verify: (_) {
-          expect(fakeRouter.navigationHistory.any((call) => call.route == fullCreateAccountRoute), isTrue);
+          expect(
+            fakeRouter.navigationHistory.any(
+              (call) => call.route == fullCreateAccountRoute,
+            ),
+            isTrue,
+          );
         },
       );
 
@@ -250,7 +275,7 @@ void main() {
             metadata: {},
             createdAt: clock.now(),
           );
-          
+
           final testUser = User(
             id: testUserId,
             credentialId: testUserId,
@@ -263,12 +288,13 @@ void main() {
             updatedAt: clock.now(),
             userPreferences: {},
           );
-          
+
           fakeAuthManager.setCurrentCredential(testCredential);
           fakeAuthManager.setAuthResponse(succeed: true);
-          
+
           // Set up the fake repository to return the test user
-          final fakeRepository = fakeAuthManager.authRepository as FakeAuthRepository;
+          final fakeRepository =
+              fakeAuthManager.authRepository as FakeAuthRepository;
           fakeRepository.setUserProfile(testUser);
 
           return authBloc;
@@ -279,8 +305,11 @@ void main() {
         },
         expect: () => [
           const AuthLoadInProgress(),
-          isA<AuthLoadSuccess>()
-              .having((s) => s.user!.id, 'user.id', testUserId),
+          isA<AuthLoadSuccess>().having(
+            (s) => s.user!.id,
+            'user.id',
+            testUserId,
+          ),
           const AuthLoadUnauthenticated(),
         ],
       );
@@ -309,7 +338,7 @@ void main() {
             metadata: {},
             createdAt: clock.now(),
           );
-          
+
           fakeAuthManager.setCurrentCredential(testCredential);
           return authBloc;
         },
@@ -331,22 +360,29 @@ void main() {
             metadata: {},
             createdAt: clock.now(),
           );
-          
+
           fakeAuthManager.setCurrentCredential(testCredential);
-          fakeAuthManager.setAuthResponse(succeed: true); // Allow auth manager to succeed
-          
+          fakeAuthManager.setAuthResponse(
+            succeed: true,
+          ); // Allow auth manager to succeed
+
           // Set up the fake repository to throw an exception
-          final fakeRepository = fakeAuthManager.authRepository as FakeAuthRepository;
+          final fakeRepository =
+              fakeAuthManager.authRepository as FakeAuthRepository;
           fakeRepository.shouldThrowOnGetUserProfile = true;
-          fakeRepository.exceptionMessage = 'Server error during profile loading';
+          fakeRepository.exceptionMessage =
+              'Server error during profile loading';
 
           return authBloc;
         },
         act: (bloc) => bloc.add(const AuthStarted()),
         expect: () => [
           const AuthLoadInProgress(),
-          isA<AuthLoadFailure>()
-              .having((s) => s.message, 'message', isNotEmpty),
+          isA<AuthLoadFailure>().having(
+            (s) => s.message,
+            'message',
+            isNotEmpty,
+          ),
         ],
       );
 
@@ -359,12 +395,15 @@ void main() {
             metadata: {},
             createdAt: clock.now(),
           );
-          
+
           fakeAuthManager.setCurrentCredential(testCredential);
-          fakeAuthManager.setAuthResponse(succeed: true); // Allow auth manager to succeed
-          
+          fakeAuthManager.setAuthResponse(
+            succeed: true,
+          ); // Allow auth manager to succeed
+
           // Set up the fake repository to throw an exception
-          final fakeRepository = fakeAuthManager.authRepository as FakeAuthRepository;
+          final fakeRepository =
+              fakeAuthManager.authRepository as FakeAuthRepository;
           fakeRepository.shouldThrowOnGetUserProfile = true;
           fakeRepository.exceptionMessage = 'Network timeout error';
 
@@ -373,8 +412,11 @@ void main() {
         act: (bloc) => bloc.add(const AuthStarted()),
         expect: () => [
           const AuthLoadInProgress(),
-          isA<AuthLoadFailure>()
-              .having((s) => s.message, 'message', isNotEmpty),
+          isA<AuthLoadFailure>().having(
+            (s) => s.message,
+            'message',
+            isNotEmpty,
+          ),
         ],
       );
     });

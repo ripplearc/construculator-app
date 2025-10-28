@@ -43,14 +43,16 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      
+
       await tester.awaitImages();
     }
 
-    testWidgets('renders project header app bar with normal name correctly', (tester) async {
+    testWidgets('renders project header app bar with normal name correctly', (
+      tester,
+    ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
-      
+
       await pumpProjectHeaderAppBar(
         tester: tester,
         projectName: 'Kitchen Renovation',
@@ -68,10 +70,12 @@ void main() {
       );
     });
 
-    testWidgets('renders project header app bar with long name correctly', (tester) async {
+    testWidgets('renders project header app bar with long name correctly', (
+      tester,
+    ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
-      
+
       await pumpProjectHeaderAppBar(
         tester: tester,
         projectName: 'Complete Home Renovation and Extension Project',
@@ -89,10 +93,12 @@ void main() {
       );
     });
 
-    testWidgets('renders project header app bar without avatar correctly', (tester) async {
+    testWidgets('renders project header app bar without avatar correctly', (
+      tester,
+    ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
-      
+
       await pumpProjectHeaderAppBar(
         tester: tester,
         projectName: 'Bathroom Remodel',
