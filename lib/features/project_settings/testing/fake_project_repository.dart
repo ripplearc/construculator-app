@@ -4,6 +4,7 @@ import 'package:construculator/features/project_settings/domain/entities/project
 import 'package:construculator/features/project_settings/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 /// Fake implementation of ProjectRepository for testing
@@ -124,6 +125,7 @@ class FakeProjectRepository implements ProjectRepository {
 
   /// Creates a sample Project for testing
   static Project createSampleProject({
+    required Clock clock,
     String? id,
     String? projectName,
     String? description,
@@ -135,7 +137,7 @@ class FakeProjectRepository implements ProjectRepository {
     DateTime? updatedAt,
     ProjectStatus? status,
   }) {
-    final now = DateTime.now();
+    final now = clock.now();
     return Project(
       id: id ?? 'test-project-${now.millisecondsSinceEpoch}',
       projectName: projectName ?? 'Test Project',

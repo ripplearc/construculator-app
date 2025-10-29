@@ -6,7 +6,7 @@ import 'package:construculator/features/project_settings/domain/repositories/pro
 class RemoteProjectRepository implements ProjectRepository {
   @override
   Future<Project> getProject(String id) async {
-    // TODO: Remove dummy data and implement the actual remote data source
+    // TODO: https://ripplearc.youtrack.cloud/issue/CA-162/Dashboard-Create-Project-Repository
     return Project(
       id: id,
       projectName: 'Sample Construction Project',
