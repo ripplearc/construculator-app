@@ -1,13 +1,12 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/formatting/formatting_helper.dart';
-import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class CostEstimationTile extends StatelessWidget {
   final CostEstimate estimation;
   final VoidCallback? onTap;
   final VoidCallback? onMenuTap;
-
 
   const CostEstimationTile({
     super.key,
@@ -31,23 +30,24 @@ class CostEstimationTile extends StatelessWidget {
           ),
         ],
       ),
-        child: Material(
-          color: Colors.transparent,
-          child: GestureDetector(
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildTopRow(context),
-                  const SizedBox(height: 12),
-                  _buildBottomRow(context),
-                ],
-              ),
+      child: Material(
+        color: Colors.transparent,
+        child: GestureDetector(
+          key: const Key('tileGestureDetector'),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildTopRow(context),
+                const SizedBox(height: 12),
+                _buildBottomRow(context),
+              ],
             ),
           ),
         ),
+      ),
     );
   }
 
@@ -64,9 +64,7 @@ class CostEstimationTile extends StatelessWidget {
         Expanded(
           child: Text(
             estimation.estimateName,
-            style: CoreTypography.bodyLargeSemiBold(
-              color: CoreTextColors.dark,
-            ),
+            style: CoreTypography.bodyLargeSemiBold(color: CoreTextColors.dark),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -98,9 +96,7 @@ class CostEstimationTile extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           FormattingHelper.formatDate(createdAt),
-          style: CoreTypography.bodySmallMedium(
-            color: CoreTextColors.body,
-          )
+          style: CoreTypography.bodySmallMedium(color: CoreTextColors.body),
         ),
         const SizedBox(width: 8),
         Container(
@@ -114,16 +110,12 @@ class CostEstimationTile extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           FormattingHelper.formatTime(createdAt),
-          style: CoreTypography.bodySmallMedium(
-            color: CoreTextColors.body,
-          )
+          style: CoreTypography.bodySmallMedium(color: CoreTextColors.body),
         ),
         const Spacer(),
         Text(
           FormattingHelper.formatCurrency(estimation.totalCost),
-          style: CoreTypography.bodyLargeSemiBold(
-            color: CoreTextColors.dark
-          )
+          style: CoreTypography.bodyLargeSemiBold(color: CoreTextColors.dark),
         ),
       ],
     );

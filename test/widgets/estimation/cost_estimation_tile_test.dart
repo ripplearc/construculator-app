@@ -197,8 +197,7 @@ void main() {
           onTap: () => onTapCalled = true,
         ));
 
-        await tester.tap(find.byType(InkWell));
-        await tester.pump();
+        await tester.tap(find.text(testEstimation.estimateName));
 
         expect(onTapCalled, isTrue);
       });
@@ -220,10 +219,8 @@ void main() {
       testWidgets('should not crash when onTap is null', (WidgetTester tester) async {
         await tester.pumpWidget(createWidget(onTap: null));
 
-        await tester.tap(find.byType(InkWell));
-        await tester.pump();
+        await tester.tap(find.text(testEstimation.estimateName));
 
-        // Should not throw any exceptions
         expect(tester.takeException(), isNull);
       });
 
@@ -234,7 +231,6 @@ void main() {
         await tester.tap(menuButton);
         await tester.pump();
 
-        // Should not throw any exceptions
         expect(tester.takeException(), isNull);
       });
     });
