@@ -120,7 +120,7 @@ void main() {
 
         await tester.pumpWidget(createWidget(estimation: estimationWithoutCost));
 
-        expect(find.text('N/A'), findsOneWidget);
+        expect(find.text('-'), findsOneWidget);
         expect(find.textContaining('\$'), findsNothing);
       });
 

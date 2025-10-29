@@ -1,17 +1,13 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/libraries/formatting/formatting_helper.dart';
 import 'package:core_ui/core_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 class CostEstimationTile extends StatelessWidget {
   final CostEstimate estimation;
   final VoidCallback? onTap;
   final VoidCallback? onMenuTap;
 
-  // Static formatters to avoid recreating on every build
-  static final _dateFormatter = DateFormat('MMM dd, yyyy');
-  static final _timeFormatter = DateFormat('h:mm a');
-  static final _currencyFormatter = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
 
   const CostEstimationTile({
     super.key,
@@ -35,24 +31,23 @@ class CostEstimationTile extends StatelessWidget {
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildTopRow(context),
-                const SizedBox(height: 12),
-                _buildBottomRow(context),
-              ],
+        child: Material(
+          color: Colors.transparent,
+          child: GestureDetector(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildTopRow(context),
+                  const SizedBox(height: 12),
+                  _buildBottomRow(context),
+                ],
+              ),
             ),
           ),
         ),
-      ),
     );
   }
 
@@ -102,7 +97,7 @@ class CostEstimationTile extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Text(
-          _dateFormatter.format(createdAt),
+          FormattingHelper.formatDate(createdAt),
           style: CoreTypography.bodySmallMedium(
             color: CoreTextColors.body,
           )
@@ -118,16 +113,14 @@ class CostEstimationTile extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Text(
-          _timeFormatter.format(createdAt),
+          FormattingHelper.formatTime(createdAt),
           style: CoreTypography.bodySmallMedium(
             color: CoreTextColors.body,
           )
         ),
         const Spacer(),
         Text(
-          estimation.totalCost != null 
-            ? _currencyFormatter.format(estimation.totalCost)
-            : 'N/A',
+          FormattingHelper.formatCurrency(estimation.totalCost),
           style: CoreTypography.bodyLargeSemiBold(
             color: CoreTextColors.dark
           )
