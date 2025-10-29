@@ -59,33 +59,30 @@ class CostEstimationTile extends StatelessWidget {
   Widget _buildTopRow(BuildContext context) {
     return Row(
       children: [
-        // Money icon
-        Image.asset(
-          'assets/icons/money_icon_gray.png',
-          width: 24,
-          height: 24,
+        CoreIconWidget(
+          key: const Key('moneyIcon'),
+          icon: CoreIcons.cost,
+          color: CoreIconColors.grayMid,
+          size: 24,
         ),
         const SizedBox(width: 12),
-        // Title
         Expanded(
           child: Text(
             estimation.estimateName,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+            style: CoreTypography.bodyLargeSemiBold(
               color: CoreTextColors.dark,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        // Menu button
         GestureDetector(
           onTap: onMenuTap,
-          child: Image.asset(
-            'assets/icons/vertical_three_dots_dark_green.png',
-            width: 20,
-            height: 20,
+          child: CoreIconWidget(
+            key: const Key('menuIcon'),
+            icon: CoreIcons.moreVert,
+            color: CoreIconColors.dark,
+            size: 24,
           ),
         ),
       ],
@@ -97,24 +94,20 @@ class CostEstimationTile extends StatelessWidget {
 
     return Row(
       children: [
-        // Calendar icon
-        Image.asset(
-          'assets/icons/calendar_icon_gray.png',
-          width: 14,
-          height: 14,
+        CoreIconWidget(
+          key: const Key('calendarIcon'),
+          icon: CoreIcons.calendar,
+          color: CoreIconColors.grayMid,
+          size: 14,
         ),
         const SizedBox(width: 8),
-        // Date
         Text(
           _dateFormatter.format(createdAt),
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
+          style: CoreTypography.bodySmallMedium(
             color: CoreTextColors.body,
-          ),
+          )
         ),
         const SizedBox(width: 8),
-        // Separator dot
         Container(
           width: 4,
           height: 4,
@@ -124,26 +117,20 @@ class CostEstimationTile extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        // Time
         Text(
           _timeFormatter.format(createdAt),
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
+          style: CoreTypography.bodySmallMedium(
             color: CoreTextColors.body,
-          ),
+          )
         ),
         const Spacer(),
-        // Cost
         Text(
           estimation.totalCost != null 
             ? _currencyFormatter.format(estimation.totalCost)
             : 'N/A',
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: CoreTextColors.dark,
-          ),
+          style: CoreTypography.bodyLargeSemiBold(
+            color: CoreTextColors.dark
+          )
         ),
       ],
     );
