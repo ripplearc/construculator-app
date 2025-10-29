@@ -4,10 +4,13 @@ import 'package:construculator/features/project_settings/domain/entities/project
 import 'package:construculator/features/project_settings/domain/entities/enums.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   late FakeProjectRepository fakeRepository;
+  late Clock clock;
 
   Project createFakeProject({
     String? id,
@@ -21,7 +24,7 @@ void main() {
     DateTime? updatedAt,
     ProjectStatus? status,
   }) {
-    final now = DateTime.now();
+    final now = clock.now();
     return Project(
       id: id ?? 'test-project-${now.millisecondsSinceEpoch}',
       projectName: projectName ?? 'Test Project',
@@ -37,6 +40,7 @@ void main() {
   }
 
   setUp(() {
+    clock = FakeClockImpl();
     fakeRepository = FakeProjectRepository();
   });
 
@@ -123,14 +127,12 @@ void main() {
       fakeRepository.completer = Completer();
 
       final future = fakeRepository.getProject('test-id');
-      
-      // Verify the operation is delayed by checking it doesn't complete immediately
+
       bool completedImmediately = false;
       future.then((_) => completedImmediately = true);
       await Future.delayed(Duration(milliseconds: 10));
       expect(completedImmediately, isFalse);
 
-      // Complete the operation
       fakeRepository.completer!.complete();
       final result = await future;
 
@@ -159,14 +161,11 @@ void main() {
       final testProject = createFakeProject(id: 'to-be-removed');
       fakeRepository.addProject('to-be-removed', testProject);
 
-      // Verify project exists
       final result = await fakeRepository.getProject('to-be-removed');
       expect(result, isNotNull);
 
-      // Clear the project
       fakeRepository.clearProject('to-be-removed');
 
-      // Verify project no longer exists
       expect(
         () => fakeRepository.getProject('to-be-removed'),
         throwsA(isA<ServerException>()),
@@ -180,7 +179,6 @@ void main() {
       fakeRepository.addProject('project-1', project1);
       fakeRepository.addProject('project-2', project2);
       
-      // Make some method calls
       try {
         await fakeRepository.getProject('project-1');
       } catch (e) {
@@ -275,7 +273,6 @@ void main() {
       fakeRepository.shouldDelayOperations = true;
       fakeRepository.completer = Completer();
 
-      // Make a method call (but complete the completer first to avoid hanging)
       fakeRepository.completer!.complete();
       try {
         await fakeRepository.getProject('test-id');
@@ -283,7 +280,6 @@ void main() {
         // Ignore exceptions
       }
 
-      // Verify state before reset
       expect(fakeRepository.shouldThrowOnGetProject, isTrue);
       expect(fakeRepository.getProjectErrorMessage, equals('Test error'));
       expect(fakeRepository.getProjectExceptionType, equals(SupabaseExceptionType.timeout));
@@ -291,10 +287,8 @@ void main() {
       expect(fakeRepository.completer, isNotNull);
       expect(fakeRepository.getMethodCalls(), isNotEmpty);
 
-      // Reset the repository
       fakeRepository.reset();
 
-      // Verify state after reset
       expect(fakeRepository.shouldThrowOnGetProject, isFalse);
       expect(fakeRepository.getProjectErrorMessage, isNull);
       expect(fakeRepository.getProjectExceptionType, isNull);
