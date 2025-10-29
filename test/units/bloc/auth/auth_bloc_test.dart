@@ -239,7 +239,7 @@ void main() {
       );
     });
 
-    group('Integration Tests', () {
+    group('Multiple sequential event and state tests', () {
       blocTest<AuthBloc, AuthState>(
         'handles multiple events in sequence correctly',
         build: () {
@@ -286,7 +286,7 @@ void main() {
       );
     });
 
-    group('Edge Cases', () {
+    group('Cases where AuthBloc receives null parameters', () {
       blocTest<AuthBloc, AuthState>(
         'handles AuthStarted when credentials are null',
         build: () {
