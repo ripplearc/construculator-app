@@ -4,10 +4,13 @@ import 'package:construculator/features/project_settings/domain/entities/project
 import 'package:construculator/features/project_settings/domain/entities/enums.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   late FakeProjectRepository fakeRepository;
+  late Clock clock;
 
   Project createFakeProject({
     String? id,
@@ -21,15 +24,17 @@ void main() {
     DateTime? updatedAt,
     ProjectStatus? status,
   }) {
-    final now = DateTime.now();
+    final now = clock.now();
     return Project(
       id: id ?? 'test-project-${now.millisecondsSinceEpoch}',
       projectName: projectName ?? 'Test Project',
       description: description ?? 'Test project description',
       creatorUserId: creatorUserId ?? 'test-user-123',
       owningCompanyId: owningCompanyId ?? 'test-company-123',
-      exportFolderLink: exportFolderLink ?? 'https://drive.google.com/test-folder',
-      exportStorageProvider: exportStorageProvider ?? StorageProvider.googleDrive,
+      exportFolderLink:
+          exportFolderLink ?? 'https://drive.google.com/test-folder',
+      exportStorageProvider:
+          exportStorageProvider ?? StorageProvider.googleDrive,
       createdAt: createdAt ?? now,
       updatedAt: updatedAt ?? now,
       status: status ?? ProjectStatus.active,
@@ -37,6 +42,7 @@ void main() {
   }
 
   setUp(() {
+    clock = FakeClockImpl();
     fakeRepository = FakeProjectRepository();
   });
 
@@ -74,47 +80,59 @@ void main() {
       expect(result.description, equals('A test project description'));
     });
 
-    test('getProject should throw ServerException when project does not exist', () async {
-      expect(
-        () => fakeRepository.getProject('non-existent-id'),
-        throwsA(isA<ServerException>()),
-      );
+    test(
+      'getProject should throw ServerException when project does not exist',
+      () async {
+        expect(
+          () => fakeRepository.getProject('non-existent-id'),
+          throwsA(isA<ServerException>()),
+        );
 
-      final calls = fakeRepository.getMethodCallsFor('getProject');
-      expect(calls, hasLength(1));
-      expect(calls.first['id'], equals('non-existent-id'));
-    });
+        final calls = fakeRepository.getMethodCallsFor('getProject');
+        expect(calls, hasLength(1));
+        expect(calls.first['id'], equals('non-existent-id'));
+      },
+    );
 
-    test('getProject should throw configured exception when shouldThrowOnGetProject is true', () async {
-      fakeRepository.shouldThrowOnGetProject = true;
-      fakeRepository.getProjectErrorMessage = 'Custom error message';
+    test(
+      'getProject should throw configured exception when shouldThrowOnGetProject is true',
+      () async {
+        fakeRepository.shouldThrowOnGetProject = true;
+        fakeRepository.getProjectErrorMessage = 'Custom error message';
 
-      expect(
-        () => fakeRepository.getProject('any-id'),
-        throwsA(isA<ServerException>()),
-      );
-    });
+        expect(
+          () => fakeRepository.getProject('any-id'),
+          throwsA(isA<ServerException>()),
+        );
+      },
+    );
 
-    test('getProject should throw TimeoutException when configured with timeout type', () async {
-      fakeRepository.shouldThrowOnGetProject = true;
-      fakeRepository.getProjectExceptionType = SupabaseExceptionType.timeout;
-      fakeRepository.getProjectErrorMessage = 'Request timeout';
+    test(
+      'getProject should throw TimeoutException when configured with timeout type',
+      () async {
+        fakeRepository.shouldThrowOnGetProject = true;
+        fakeRepository.getProjectExceptionType = SupabaseExceptionType.timeout;
+        fakeRepository.getProjectErrorMessage = 'Request timeout';
 
-      expect(
-        () => fakeRepository.getProject('any-id'),
-        throwsA(isA<TimeoutException>()),
-      );
-    });
+        expect(
+          () => fakeRepository.getProject('any-id'),
+          throwsA(isA<TimeoutException>()),
+        );
+      },
+    );
 
-    test('getProject should throw TypeError when configured with type exception', () async {
-      fakeRepository.shouldThrowOnGetProject = true;
-      fakeRepository.getProjectExceptionType = SupabaseExceptionType.type;
+    test(
+      'getProject should throw TypeError when configured with type exception',
+      () async {
+        fakeRepository.shouldThrowOnGetProject = true;
+        fakeRepository.getProjectExceptionType = SupabaseExceptionType.type;
 
-      expect(
-        () => fakeRepository.getProject('any-id'),
-        throwsA(isA<TypeError>()),
-      );
-    });
+        expect(
+          () => fakeRepository.getProject('any-id'),
+          throwsA(isA<TypeError>()),
+        );
+      },
+    );
 
     test('getProject should handle delayed operations', () async {
       final testProject = createFakeProject(id: 'test-id');
@@ -123,14 +141,11 @@ void main() {
       fakeRepository.completer = Completer();
 
       final future = fakeRepository.getProject('test-id');
-      
-      // Verify the operation is delayed by checking it doesn't complete immediately
+
       bool completedImmediately = false;
       future.then((_) => completedImmediately = true);
-      await Future.delayed(Duration(milliseconds: 10));
       expect(completedImmediately, isFalse);
 
-      // Complete the operation
       fakeRepository.completer!.complete();
       final result = await future;
 
@@ -159,49 +174,48 @@ void main() {
       final testProject = createFakeProject(id: 'to-be-removed');
       fakeRepository.addProject('to-be-removed', testProject);
 
-      // Verify project exists
       final result = await fakeRepository.getProject('to-be-removed');
       expect(result, isNotNull);
 
-      // Clear the project
       fakeRepository.clearProject('to-be-removed');
 
-      // Verify project no longer exists
       expect(
         () => fakeRepository.getProject('to-be-removed'),
         throwsA(isA<ServerException>()),
       );
     });
 
-    test('clearAllData should remove all project data and method calls', () async {
-      final project1 = createFakeProject(id: 'project-1');
-      final project2 = createFakeProject(id: 'project-2');
-      
-      fakeRepository.addProject('project-1', project1);
-      fakeRepository.addProject('project-2', project2);
-      
-      // Make some method calls
-      try {
-        await fakeRepository.getProject('project-1');
-      } catch (e) {
-        // Ignore exceptions for this test
-      }
+    test(
+      'clearAllData should remove all project data and method calls',
+      () async {
+        final project1 = createFakeProject(id: 'project-1');
+        final project2 = createFakeProject(id: 'project-2');
 
-      expect(fakeRepository.getMethodCalls(), isNotEmpty);
-      expect(fakeRepository.getMethodCallsFor('getProject'), isNotEmpty);
+        fakeRepository.addProject('project-1', project1);
+        fakeRepository.addProject('project-2', project2);
 
-      fakeRepository.clearAllData();
+        try {
+          await fakeRepository.getProject('project-1');
+        } catch (e) {
+          // Ignore exceptions for this test
+        }
 
-      expect(fakeRepository.getMethodCalls(), isEmpty);
-      expect(
-        () => fakeRepository.getProject('project-1'),
-        throwsA(isA<ServerException>()),
-      );
-      expect(
-        () => fakeRepository.getProject('project-2'),
-        throwsA(isA<ServerException>()),
-      );
-    });
+        expect(fakeRepository.getMethodCalls(), isNotEmpty);
+        expect(fakeRepository.getMethodCallsFor('getProject'), isNotEmpty);
+
+        fakeRepository.clearAllData();
+
+        expect(fakeRepository.getMethodCalls(), isEmpty);
+        expect(
+          () => fakeRepository.getProject('project-1'),
+          throwsA(isA<ServerException>()),
+        );
+        expect(
+          () => fakeRepository.getProject('project-2'),
+          throwsA(isA<ServerException>()),
+        );
+      },
+    );
   });
 
   group('Method Call Tracking', () {
@@ -217,21 +231,24 @@ void main() {
       expect(allCalls.every((call) => call['method'] == 'getProject'), isTrue);
     });
 
-    test('getLastMethodCall should return the most recent method call', () async {
-      final testProject1 = createFakeProject(id: 'test-id-1');
-      final testProject2 = createFakeProject(id: 'test-id-2');
-      
-      fakeRepository.addProject('test-id-1', testProject1);
-      fakeRepository.addProject('test-id-2', testProject2);
+    test(
+      'getLastMethodCall should return the most recent method call',
+      () async {
+        final testProject1 = createFakeProject(id: 'test-id-1');
+        final testProject2 = createFakeProject(id: 'test-id-2');
 
-      await fakeRepository.getProject('test-id-1');
-      await fakeRepository.getProject('test-id-2');
+        fakeRepository.addProject('test-id-1', testProject1);
+        fakeRepository.addProject('test-id-2', testProject2);
 
-      final lastCall = fakeRepository.getLastMethodCall();
-      expect(lastCall, isNotNull);
-      expect(lastCall!['method'], equals('getProject'));
-      expect(lastCall['id'], equals('test-id-2'));
-    });
+        await fakeRepository.getProject('test-id-1');
+        await fakeRepository.getProject('test-id-2');
+
+        final lastCall = fakeRepository.getLastMethodCall();
+        expect(lastCall, isNotNull);
+        expect(lastCall!['method'], equals('getProject'));
+        expect(lastCall['id'], equals('test-id-2'));
+      },
+    );
 
     test('getLastMethodCall should return null when no calls made', () {
       final lastCall = fakeRepository.getLastMethodCall();
@@ -247,9 +264,14 @@ void main() {
 
       final getProjectCalls = fakeRepository.getMethodCallsFor('getProject');
       expect(getProjectCalls, hasLength(2));
-      expect(getProjectCalls.every((call) => call['method'] == 'getProject'), isTrue);
+      expect(
+        getProjectCalls.every((call) => call['method'] == 'getProject'),
+        isTrue,
+      );
 
-      final nonExistentCalls = fakeRepository.getMethodCallsFor('nonExistentMethod');
+      final nonExistentCalls = fakeRepository.getMethodCallsFor(
+        'nonExistentMethod',
+      );
       expect(nonExistentCalls, isEmpty);
     });
 
@@ -275,7 +297,6 @@ void main() {
       fakeRepository.shouldDelayOperations = true;
       fakeRepository.completer = Completer();
 
-      // Make a method call (but complete the completer first to avoid hanging)
       fakeRepository.completer!.complete();
       try {
         await fakeRepository.getProject('test-id');
@@ -283,18 +304,18 @@ void main() {
         // Ignore exceptions
       }
 
-      // Verify state before reset
       expect(fakeRepository.shouldThrowOnGetProject, isTrue);
       expect(fakeRepository.getProjectErrorMessage, equals('Test error'));
-      expect(fakeRepository.getProjectExceptionType, equals(SupabaseExceptionType.timeout));
+      expect(
+        fakeRepository.getProjectExceptionType,
+        equals(SupabaseExceptionType.timeout),
+      );
       expect(fakeRepository.shouldDelayOperations, isTrue);
       expect(fakeRepository.completer, isNotNull);
       expect(fakeRepository.getMethodCalls(), isNotEmpty);
 
-      // Reset the repository
       fakeRepository.reset();
 
-      // Verify state after reset
       expect(fakeRepository.shouldThrowOnGetProject, isFalse);
       expect(fakeRepository.getProjectErrorMessage, isNull);
       expect(fakeRepository.getProjectExceptionType, isNull);

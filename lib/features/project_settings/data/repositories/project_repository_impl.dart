@@ -1,12 +1,14 @@
 import 'package:construculator/features/project_settings/domain/entities/project_entity.dart';
 import 'package:construculator/features/project_settings/domain/entities/enums.dart';
 import 'package:construculator/features/project_settings/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 
 /// Remote implementation of the project repository.
-class RemoteProjectRepository implements ProjectRepository {
+class ProjectRepositoryImpl implements ProjectRepository {
   @override
   Future<Project> getProject(String id) async {
-    // TODO: Remove dummy data and implement the actual remote data source
+    // TODO: https://ripplearc.youtrack.cloud/issue/CA-162/Dashboard-Create-Project-Repository
     return Project(
       id: id,
       projectName: 'Sample Construction Project',
@@ -15,8 +17,8 @@ class RemoteProjectRepository implements ProjectRepository {
       owningCompanyId: 'company_456',
       exportFolderLink: 'https://drive.google.com/sample-folder',
       exportStorageProvider: StorageProvider.googleDrive,
-      createdAt: DateTime(2025, 10, 1, 10, 30),
-      updatedAt: DateTime(2025, 10, 1, 10, 30),
+      createdAt: Modular.get<Clock>().now(),
+      updatedAt: Modular.get<Clock>().now(),
       status: ProjectStatus.active,
     );
   }

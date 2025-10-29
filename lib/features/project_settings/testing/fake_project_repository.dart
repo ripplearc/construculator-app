@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:construculator/features/project_settings/domain/entities/enums.dart';
 import 'package:construculator/features/project_settings/domain/entities/project_entity.dart';
 import 'package:construculator/features/project_settings/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
@@ -42,10 +41,7 @@ class FakeProjectRepository implements ProjectRepository {
       await completer?.future;
     }
 
-    _methodCalls.add({
-      'method': 'getProject',
-      'id': id,
-    });
+    _methodCalls.add({'method': 'getProject', 'id': id});
 
     if (shouldThrowOnGetProject) {
       _throwConfiguredException(
@@ -56,7 +52,10 @@ class FakeProjectRepository implements ProjectRepository {
 
     final project = _projects[id];
     if (project == null) {
-      throw ServerException(Trace.current(), Exception('Project with id $id not found'));
+      throw ServerException(
+        Trace.current(),
+        Exception('Project with id $id not found'),
+      );
     }
 
     return project;
@@ -120,33 +119,5 @@ class FakeProjectRepository implements ProjectRepository {
 
     clearAllData();
     clearMethodCalls();
-  }
-
-  /// Creates a sample Project for testing
-  static Project createSampleProject({
-    String? id,
-    String? projectName,
-    String? description,
-    String? creatorUserId,
-    String? owningCompanyId,
-    String? exportFolderLink,
-    StorageProvider? exportStorageProvider,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    ProjectStatus? status,
-  }) {
-    final now = DateTime.now();
-    return Project(
-      id: id ?? 'test-project-${now.millisecondsSinceEpoch}',
-      projectName: projectName ?? 'Test Project',
-      description: description ?? 'Test project description',
-      creatorUserId: creatorUserId ?? 'test-user-123',
-      owningCompanyId: owningCompanyId ?? 'test-company-123',
-      exportFolderLink: exportFolderLink ?? 'https://drive.google.com/test-folder',
-      exportStorageProvider: exportStorageProvider ?? StorageProvider.googleDrive,
-      createdAt: createdAt ?? now,
-      updatedAt: updatedAt ?? now,
-      status: status ?? ProjectStatus.active,
-    );
   }
 }
