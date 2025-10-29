@@ -34,6 +34,7 @@ class CostEstimationTile extends StatelessWidget {
         child: Material(
           color: Colors.transparent,
           child: GestureDetector(
+            key: const Key('tileGestureDetector'),
             onTap: onTap,
             child: Padding(
               padding: const EdgeInsets.all(16),
