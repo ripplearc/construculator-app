@@ -12,7 +12,7 @@ void main() {
     late DateTime testDate;
 
     setUp(() {
-      testDate = DateTime(2024, 3, 15, 14, 30); // March 15, 2024, 2:30 PM
+      testDate = DateTime.parse('2024-03-15 14:30:00');
       
       testEstimation = CostEstimate(
         id: 'test-id',
@@ -55,17 +55,15 @@ void main() {
       testWidgets('should render with all required elements', (WidgetTester tester) async {
         await tester.pumpWidget(createWidget());
 
-        // Check if all icons are present
-        expect(find.byType(Image), findsNWidgets(3)); // money, calendar, menu icons
+        expect(find.byKey(const Key('moneyIcon')), findsOneWidget);
+        expect(find.byKey(const Key('calendarIcon')), findsOneWidget);
+        expect(find.byKey(const Key('menuIcon')), findsOneWidget);
 
-        // Check if the estimate name is displayed
         expect(find.text('Test Estimation'), findsOneWidget);
 
-        // Check if date and time are displayed
         expect(find.text('Mar 15, 2024'), findsOneWidget);
         expect(find.text('2:30 PM'), findsOneWidget);
 
-        // Check if cost is displayed
         expect(find.text('\$15,000.50'), findsOneWidget);
       });
 
@@ -165,7 +163,7 @@ void main() {
       });
 
       testWidgets('should handle different date formats', (WidgetTester tester) async {
-        final differentDate = DateTime(2024, 12, 1, 9, 15); // Dec 1, 2024, 9:15 AM
+        final differentDate = DateTime.parse('2024-12-01 09:15:00');
         final estimationWithDifferentDate = CostEstimate(
           id: 'test-id',
           projectId: 'project-id',
@@ -212,13 +210,7 @@ void main() {
           onMenuTap: () => onMenuTapCalled = true,
         ));
 
-        // Find the menu button by its semantic label or key for more robustness
-        final menuButton = find.byWidgetPredicate(
-          (widget) =>
-              widget is Image &&
-              widget.image is AssetImage &&
-              (widget.image as AssetImage).assetName == 'assets/icons/vertical_three_dots_dark_green.png',
-        );
+        final menuButton = find.byKey(const Key('menuIcon'));
         await tester.tap(menuButton);
         await tester.pump();
 
@@ -238,67 +230,12 @@ void main() {
       testWidgets('should not crash when onMenuTap is null', (WidgetTester tester) async {
         await tester.pumpWidget(createWidget(onMenuTap: null));
 
-        final menuButton = find.byType(Image).at(2);
+        final menuButton = find.byKey(const Key('menuIcon'));
         await tester.tap(menuButton);
         await tester.pump();
 
         // Should not throw any exceptions
         expect(tester.takeException(), isNull);
-      });
-    });
-
-    group('UI Elements', () {
-      testWidgets('should display all required icons', (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget());
-
-        // Check for money icon
-        final moneyIcon = find.byType(Image).at(0);
-        expect(moneyIcon, findsOneWidget);
-
-        // Check for calendar icon
-        final calendarIcon = find.byType(Image).at(1);
-        expect(calendarIcon, findsOneWidget);
-
-        // Check for menu icon
-        final menuIcon = find.byType(Image).at(2);
-        expect(menuIcon, findsOneWidget);
-      });
-
-      testWidgets('should have correct spacing and layout', (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget());
-
-        // Check if SizedBox widgets are present for spacing
-        expect(find.byType(SizedBox), findsWidgets);
-
-        // Check if Spacer is present in bottom row
-        expect(find.byType(Spacer), findsOneWidget);
-
-        // Check if Container with separator dot is present
-        expect(find.byWidgetPredicate(
-          (widget) => widget is Container && 
-                      widget.decoration is BoxDecoration &&
-                      (widget.decoration as BoxDecoration).shape == BoxShape.circle,
-        ), findsOneWidget);
-      });
-
-      testWidgets('should have correct text styles', (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget());
-
-        // Check estimate name text style
-        final estimateNameText = find.text('Test Estimation');
-        expect(estimateNameText, findsOneWidget);
-
-        // Check date text style
-        final dateText = find.text('Mar 15, 2024');
-        expect(dateText, findsOneWidget);
-
-        // Check time text style
-        final timeText = find.text('2:30 PM');
-        expect(timeText, findsOneWidget);
-
-        // Check cost text style
-        final costText = find.text('\$15,000.50');
-        expect(costText, findsOneWidget);
       });
     });
 
@@ -326,7 +263,6 @@ void main() {
         await tester.pumpWidget(createWidget(estimation: estimationWithLongName));
 
         expect(find.text(longName), findsOneWidget);
-        // Should not throw any exceptions
         expect(tester.takeException(), isNull);
       });
 

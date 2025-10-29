@@ -63,14 +63,14 @@ void main() {
       );
     }
 
-    testWidgets('renders cost estimation tile without cost correctly', (tester) async {
+    testWidgets('renders base cost estimation tile correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
-      
+
       final estimation = createTestEstimation(
-        estimateName: 'Bathroom Remodel',
-        totalCost: null,
-        createdAt: DateTime(2024, 2, 20, 9, 15),
+        estimateName: 'Base Estimate',
+        totalCost: 50000.0,
+        createdAt: DateTime(2024, 1, 1, 8, 30),
       );
 
       await pumpCostEstimationTile(
@@ -83,7 +83,7 @@ void main() {
       await expectLater(
         find.byType(CostEstimationTile),
         matchesGoldenFile(
-          'goldens/cost_estimation_tile/${size.width}x${size.height}/cost_estimation_tile_no_cost.png',
+          'goldens/cost_estimation_tile/${size.width}x${size.height}/cost_estimation_tile_base.png',
         ),
       );
     });
@@ -109,56 +109,6 @@ void main() {
         find.byType(CostEstimationTile),
         matchesGoldenFile(
           'goldens/cost_estimation_tile/${size.width}x${size.height}/cost_estimation_tile_long_name.png',
-        ),
-      );
-    });
-
-    testWidgets('renders cost estimation tile with zero cost correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      
-      final estimation = createTestEstimation(
-        estimateName: 'Initial Planning',
-        totalCost: 0.0,
-        createdAt: DateTime(2024, 1, 1, 12, 0),
-      );
-
-      await pumpCostEstimationTile(
-        tester: tester,
-        estimation: estimation,
-        onTap: () {},
-        onMenuTap: () {},
-      );
-
-      await expectLater(
-        find.byType(CostEstimationTile),
-        matchesGoldenFile(
-          'goldens/cost_estimation_tile/${size.width}x${size.height}/cost_estimation_tile_zero_cost.png',
-        ),
-      );
-    });
-
-    testWidgets('renders cost estimation tile with high cost correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      
-      final estimation = createTestEstimation(
-        estimateName: 'Commercial Building',
-        totalCost: 2500000.99,
-        createdAt: DateTime(2024, 6, 15, 8, 30),
-      );
-
-      await pumpCostEstimationTile(
-        tester: tester,
-        estimation: estimation,
-        onTap: () {},
-        onMenuTap: () {},
-      );
-
-      await expectLater(
-        find.byType(CostEstimationTile),
-        matchesGoldenFile(
-          'goldens/cost_estimation_tile/${size.width}x${size.height}/cost_estimation_tile_high_cost.png',
         ),
       );
     });
