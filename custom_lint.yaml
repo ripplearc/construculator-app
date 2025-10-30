@@ -1,8 +1,14 @@
 rules:
   - prefer_fake_over_mock
-  - no_optional_operators_in_tests
   - forbid_forced_unwrapping
-
-analyzer:
-  plugins:
-    - custom_lint_library 
+  - no_optional_operators_in_tests
+  - no_direct_instantiation: false
+  - document_fake_parameters
+  - document_interface
+  - todo_with_story_links
+  - no_internal_method_docs
+  - specific_exception_types
+  - test_file_mutation_coverage: false
+  - avoid_test_timeouts
+  - private_subject
+  - sealed_over_dynamic
