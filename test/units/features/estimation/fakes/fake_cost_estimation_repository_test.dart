@@ -4,23 +4,16 @@ import 'package:construculator/features/estimation/domain/entities/enums.dart';
 import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
-import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-class MockClock implements Clock {
-  final DateTime _now = DateTime(2024, 1, 15, 10, 30, 0);
-
-  @override
-  DateTime now() => _now;
-}
 
 void main() {
   late FakeCostEstimationRepository fakeRepository;
-  late MockClock mockClock;
+  late FakeClockImpl fakeClock;
 
   setUp(() {
-    mockClock = MockClock();
-    fakeRepository = FakeCostEstimationRepository(clock: mockClock);
+    fakeClock = FakeClockImpl(DateTime(2024, 1, 15, 10, 30, 0));
+    fakeRepository = FakeCostEstimationRepository(clock: fakeClock);
   });
 
   tearDown(() {
