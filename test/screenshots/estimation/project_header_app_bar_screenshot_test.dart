@@ -72,7 +72,7 @@ void main() {
       
       await pumpProjectHeaderAppBar(
         tester: tester,
-        projectId: 'project-id-1',
+        projectId: 'project-id',
         projectName: 'Kitchen Renovation',
         onProjectTap: () {},
         onSearchTap: () {},
