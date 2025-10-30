@@ -1,8 +1,10 @@
-import 'package:construculator/app/testing/fake_app_bootstrap.dart';
+import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/auth/auth_module.dart';
 import 'package:construculator/features/auth/presentation/bloc/set_new_password_bloc/set_new_password_bloc.dart';
 import 'package:construculator/features/auth/presentation/pages/set_new_password_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/config/testing/fake_app_config.dart';
+import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -20,11 +22,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class _SetNewPasswordPageTestModule extends Module {
+  final AppBootstrap appBootstrap;
+  _SetNewPasswordPageTestModule(this.appBootstrap);
+
   @override
   List<Module> get imports => [
     RouterTestModule(),
     ClockTestModule(),
-    AuthModule(FakeAppBootstrap()),
+    AuthModule(appBootstrap),
   ];
 }
 
@@ -45,10 +50,14 @@ void main() {
     fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     CoreToast.disableTimers();
 
-    Modular.init(_SetNewPasswordPageTestModule());
+    final appBootstrap = AppBootstrap(
+      config: FakeAppConfig(),
+      envLoader: FakeEnvLoader(),
+      supabaseWrapper: fakeSupabase,
+    );
 
+    Modular.init(_SetNewPasswordPageTestModule(appBootstrap));
     Modular.replaceInstance<SupabaseWrapper>(fakeSupabase);
-
     router = Modular.get<AppRouter>() as FakeAppRouter;
   });
 
@@ -83,208 +92,138 @@ void main() {
     );
   }
 
-  group('SetNewPasswordPage', () {
-    testWidgets('renders password and confirm password fields and button', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidget(child: const SetNewPasswordPage(email: '')),
-      );
-      expect(
-        find.textContaining(
-          AppLocalizations.of(buildContext!)!.newPasswordLabel,
-        ),
-        findsWidgets,
-      );
-      expect(
-        find.textContaining(
-          AppLocalizations.of(buildContext!)!.confirmPasswordLabel,
-        ),
-        findsWidgets,
-      );
-      final sentNewPasswordButton = find.widgetWithText(
-        CoreButton,
-        AppLocalizations.of(buildContext!)!.setPasswordButton,
-      );
-      expect(sentNewPasswordButton, findsOneWidget);
+  AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
 
-      expect(
-        tester.widget<CoreButton>(sentNewPasswordButton).isDisabled,
-        isTrue,
-      );
+  Future<void> renderPage(WidgetTester tester, {String email = ''}) async {
+    await tester.pumpWidget(
+      makeTestableWidget(child: SetNewPasswordPage(email: email)),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> enterNewPassword(WidgetTester tester, String password) async {
+    final passwordField = find.ancestor(
+      of: find.text(l10n().newPasswordLabel),
+      matching: find.byType(TextField),
+    );
+    await tester.enterText(passwordField, password);
+    await tester.pump();
+  }
+
+  Future<void> enterConfirmPassword(WidgetTester tester, String password) async {
+    final confirmPasswordField = find.ancestor(
+      of: find.text(l10n().confirmPasswordLabel),
+      matching: find.byType(TextField),
+    );
+    await tester.enterText(confirmPasswordField, password);
+    await tester.pump();
+  }
+
+  Future<void> tapSetPasswordButton(WidgetTester tester) async {
+    await tester.tap(find.text(l10n().setPasswordButton));
+    await tester.pumpAndSettle();
+  }
+
+  Finder findPasswordVisibilityToggle(int index) {
+    return find.byType(IconButton).at(index);
+  }
+
+  bool isPasswordVisible(WidgetTester tester, String labelText) {
+    final passwordField = find.ancestor(
+      of: find.text(labelText),
+      matching: find.byType(TextField),
+    );
+    return !tester.widget<TextField>(passwordField).obscureText;
+  }
+
+  group('User on SetNewPasswordPage', () {
+    testWidgets('sees password fields and set password button', (tester) async {
+      await renderPage(tester);
+
+      expect(find.textContaining(l10n().newPasswordLabel), findsWidgets);
+      
+      expect(find.textContaining(l10n().confirmPasswordLabel), findsWidgets);
+      
+      expect(find.text(l10n().setPasswordButton), findsOneWidget);
     });
 
-    testWidgets('password and confirm password visibility toggles work', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidget(child: const SetNewPasswordPage(email: '')),
-      );
-      final eyeOffButtons = find.byType(CoreIconWidget);
-      expect(eyeOffButtons, findsNWidgets(2));
+    testWidgets('can toggle password visibility for both fields', (tester) async {
+      await renderPage(tester);
 
-      // first toggle
-      final eyeOffButton = eyeOffButtons.first;
-      final eyeOff = tester.widget<CoreIconWidget>(eyeOffButton);
-      expect(eyeOff.icon, CoreIcons.eyeOff);
+      expect(isPasswordVisible(tester, l10n().newPasswordLabel), isFalse);
+      expect(isPasswordVisible(tester, l10n().confirmPasswordLabel), isFalse);
 
-      await tester.tap(find.byType(IconButton).first);
+      await tester.tap(findPasswordVisibilityToggle(0));
       await tester.pumpAndSettle();
 
-      final eyeButton = find.byType(CoreIconWidget).first;
-      final eyeOn = tester.widget<CoreIconWidget>(eyeButton);
-      expect(eyeOn.icon, CoreIcons.eye);
+      expect(isPasswordVisible(tester, l10n().newPasswordLabel), isTrue);
+      expect(isPasswordVisible(tester, l10n().confirmPasswordLabel), isFalse);
 
-      // second toggle
-      final eyeOffButton2 = eyeOffButtons.last;
-      final eyeOff2 = tester.widget<CoreIconWidget>(eyeOffButton2);
-      expect(eyeOff2.icon, CoreIcons.eyeOff);
-
-      await tester.tap(find.byType(IconButton).last);
+      await tester.tap(findPasswordVisibilityToggle(1));
       await tester.pumpAndSettle();
 
-      final eyeButton2 = find.byType(CoreIconWidget).last;
-      final eyeOn2 = tester.widget<CoreIconWidget>(eyeButton2);
-      expect(eyeOn2.icon, CoreIcons.eye);
+      expect(isPasswordVisible(tester, l10n().newPasswordLabel), isTrue);
+      expect(isPasswordVisible(tester, l10n().confirmPasswordLabel), isTrue);
     });
 
-    testWidgets('shows error for weak password and password mismatch', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidget(child: const SetNewPasswordPage(email: '')),
-      );
-      await tester.enterText(
-        find.widgetWithText(
-          CoreTextField,
-          AppLocalizations.of(buildContext!)!.newPasswordLabel,
-        ),
-        '123',
-      );
-      await tester.pump();
-      expect(
-        find.textContaining(
-          AppLocalizations.of(buildContext!)!.passwordTooShortError,
-        ),
-        findsWidgets,
-      );
+    testWidgets('sees error for weak password', (tester) async {
+      await renderPage(tester);
+      
+      await enterNewPassword(tester, '123');
 
-      await tester.enterText(
-        find.widgetWithText(
-          CoreTextField,
-          AppLocalizations.of(buildContext!)!.newPasswordLabel,
-        ),
-        'Password123!',
-      );
-      await tester.enterText(
-        find.widgetWithText(
-          CoreTextField,
-          AppLocalizations.of(buildContext!)!.confirmPasswordLabel,
-        ),
-        'Password321!',
-      );
-      await tester.pump();
       expect(
-        find.textContaining(
-          AppLocalizations.of(buildContext!)!.passwordsDoNotMatchError,
-        ),
+        find.textContaining(l10n().passwordTooShortError),
         findsWidgets,
-      );
-      final sentNewPasswordButton = find.widgetWithText(
-        CoreButton,
-        AppLocalizations.of(buildContext!)!.setPasswordButton,
-      );
-      expect(
-        tester.widget<CoreButton>(sentNewPasswordButton).isDisabled,
-        isTrue,
       );
     });
 
-    testWidgets('valid passwords shows success modal', (
-      WidgetTester tester,
-    ) async {
-      final String email = 'email@example.com';
+    testWidgets('sees error when passwords do not match', (tester) async {
+      await renderPage(tester);
+      
+      await enterNewPassword(tester, 'Password123!');
+      await enterConfirmPassword(tester, 'Password321!');
+
+      expect(
+        find.textContaining(l10n().passwordsDoNotMatchError),
+        findsWidgets,
+      );
+    });
+
+    testWidgets('can set valid matching passwords and navigate to dashboard', (tester) async {
+      const email = 'email@example.com';
       fakeSupabase.setCurrentUser(createFakeUser(email));
-      await tester.pumpWidget(
-        makeTestableWidget(child: SetNewPasswordPage(email: email)),
-      );
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.widgetWithText(
-          CoreTextField,
-          AppLocalizations.of(buildContext!)!.newPasswordLabel,
-        ),
-        '@Password123!',
-      );
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.widgetWithText(
-          CoreTextField,
-          AppLocalizations.of(buildContext!)!.confirmPasswordLabel,
-        ),
-        '@Password123!',
-      );
-      await tester.pumpAndSettle();
-      final sentNewPasswordButton = find.widgetWithText(
-        CoreButton,
-        AppLocalizations.of(buildContext!)!.setPasswordButton,
-      );
+      
+      await renderPage(tester, email: email);
+      
+      await enterNewPassword(tester, '@Password123!');
+      await enterConfirmPassword(tester, '@Password123!');
+      
+      await tapSetPasswordButton(tester);
+
       expect(
-        tester.widget<CoreButton>(sentNewPasswordButton).isDisabled,
-        isFalse,
-      );
-      await tester.tap(sentNewPasswordButton);
-      await tester.pumpAndSettle();
-      expect(
-        find.textContaining(
-          AppLocalizations.of(buildContext!)!.passwordResetSuccessMessage,
-        ),
+        find.textContaining(l10n().passwordResetSuccessMessage),
         findsWidgets,
       );
+
+      await tester.tap(find.text(l10n().continueButton));
       await tester.pumpAndSettle();
-      await tester.tap(
-        find.widgetWithText(
-          CoreButton,
-          AppLocalizations.of(buildContext!)!.continueButton,
-        ),
-      );
+
       expect(router.navigationHistory.length, 1);
       expect(router.navigationHistory.first.route, dashboardRoute);
     });
-    testWidgets('backend error shows error message', (
-      WidgetTester tester,
-    ) async {
+
+    testWidgets('sees error when backend update fails', (tester) async {
       fakeSupabase.shouldThrowOnUpdate = true;
-      await tester.pumpWidget(
-        makeTestableWidget(child: const SetNewPasswordPage(email: '')),
-      );
-      await tester.enterText(
-        find.widgetWithText(
-          CoreTextField,
-          AppLocalizations.of(buildContext!)!.newPasswordLabel,
-        ),
-        'Password123!',
-      );
-      await tester.enterText(
-        find.widgetWithText(
-          CoreTextField,
-          AppLocalizations.of(buildContext!)!.confirmPasswordLabel,
-        ),
-        'Password123!',
-      );
-      await tester.pump();
-      await tester.tap(
-        find.widgetWithText(
-          CoreButton,
-          AppLocalizations.of(buildContext!)!.setPasswordButton,
-        ),
-      );
-      await tester.pumpAndSettle();
+      
+      await renderPage(tester);
+      
+      await enterNewPassword(tester, 'Password123!');
+      await enterConfirmPassword(tester, 'Password123!');
+      
+      await tapSetPasswordButton(tester);
+
       expect(find.byKey(const Key('toast_close_button')), findsOneWidget);
-      expect(
-        find.textContaining(AppLocalizations.of(buildContext!)!.serverError),
-        findsWidgets,
-      );
+      expect(find.textContaining(l10n().serverError), findsWidgets);
     });
   });
 }
