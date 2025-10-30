@@ -4,6 +4,8 @@ import 'package:construculator/features/project_settings/domain/entities/enums.d
 import 'package:construculator/features/project_settings/domain/repositories/project_repository.dart';
 import 'package:construculator/features/project_settings/testing/fake_project_repository.dart';
 import 'package:construculator/features/project_settings/testing/project_settings_test_module.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -11,11 +13,13 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 void main() {
   late FakeProjectRepository fakeProjectRepository;
+  late Clock clock;
 
   setUp(() {
     Modular.init(ProjectSettingsTestModule());
     fakeProjectRepository =
         Modular.get<ProjectRepository>() as FakeProjectRepository;
+    clock = Modular.get<Clock>();
   });
 
   tearDown(() {
@@ -36,8 +40,8 @@ void main() {
         id: projectId,
         projectName: projectName,
         creatorUserId: 'user-id',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: clock.now(),
+        updatedAt: clock.now(),
         status: ProjectStatus.active,
       );
 
