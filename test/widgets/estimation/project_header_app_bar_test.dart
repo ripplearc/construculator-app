@@ -89,6 +89,7 @@ void main() {
         projectName: projectName,
         onProjectTap: () => onProjectTapCalled = true,
       );
+      await tester.pumpAndSettle();
 
       await tester.tap(find.text(projectName));
       await tester.pumpAndSettle();
@@ -109,6 +110,7 @@ void main() {
         projectName: projectName,
         onSearchTap: () => onSearchTapCalled = true,
       );
+      await tester.pumpAndSettle();
 
       final searchIcon = find.byKey(const Key('project_header_search_button'));
       await tester.tap(searchIcon);
@@ -130,6 +132,7 @@ void main() {
         projectName: projectName,
         onNotificationTap: () => onNotificationTapCalled = true,
       );
+      await tester.pumpAndSettle();
 
       final notificationIcon = find.byKey(
         const Key('project_header_notification_button'),
@@ -170,6 +173,7 @@ void main() {
         onSearchTap: null,
         onNotificationTap: null,
       );
+      await tester.pumpAndSettle();
 
       await tester.tap(find.text(projectName));
       await tester.pumpAndSettle();

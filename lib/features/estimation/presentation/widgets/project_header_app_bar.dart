@@ -144,10 +144,8 @@ class _ProjectHeaderAppBarState extends State<ProjectHeaderAppBar> {
     if (_errorMessage != null) {
       return Text(
         'Error loading project',
-        style: const TextStyle(
-          fontSize: 19,
-          fontWeight: FontWeight.w600,
-          color: Colors.red,
+        style: CoreTypography.bodyLargeSemiBold(
+          color: CoreTextColors.error,
         ),
         overflow: TextOverflow.ellipsis,
         maxLines: 1,
@@ -156,9 +154,7 @@ class _ProjectHeaderAppBarState extends State<ProjectHeaderAppBar> {
 
     return Text(
       _project?.projectName ?? 'Unknown Project',
-      style: const TextStyle(
-        fontSize: 19,
-        fontWeight: FontWeight.w600,
+      style: CoreTypography.bodyLargeSemiBold(
         color: CoreTextColors.dark,
       ),
       overflow: TextOverflow.ellipsis,
