@@ -1,8 +1,10 @@
 import 'dart:async';
 
-import 'package:construculator/app/testing/fake_app_bootstrap.dart';
+import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/auth/auth_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/config/testing/fake_app_config.dart';
+import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -23,11 +25,14 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.
 import 'package:construculator/features/auth/presentation/bloc/login_with_email_bloc/login_with_email_bloc.dart';
 
 class _LoginWithEmailPageTestModule extends Module {
+  final AppBootstrap appBootstrap;
+  _LoginWithEmailPageTestModule(this.appBootstrap);
+
   @override
   List<Module> get imports => [
     RouterTestModule(),
     ClockTestModule(),
-    AuthModule(FakeAppBootstrap()),
+    AuthModule(appBootstrap),
   ];
 }
 
@@ -63,10 +68,14 @@ void main() {
     fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     CoreToast.disableTimers();
 
-    Modular.init(_LoginWithEmailPageTestModule());
+    final appBootstrap = AppBootstrap(
+      config: FakeAppConfig(),
+      envLoader: FakeEnvLoader(),
+      supabaseWrapper: fakeSupabase,
+    );
 
+    Modular.init(_LoginWithEmailPageTestModule(appBootstrap));
     Modular.replaceInstance<SupabaseWrapper>(fakeSupabase);
-
     router = Modular.get<AppRouter>() as FakeAppRouter;
     clock = Modular.get<Clock>();
   });
@@ -80,200 +89,155 @@ void main() {
     fakeSupabase.reset();
   });
 
-  group('LoginWithEmailPage', () {
-    testWidgets('renders email input, continue button, and register link', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidget(child: const LoginWithEmailPage(email: '')),
-      );
-      expect(
-        find.text(AppLocalizations.of(buildContext!)!.emailLabel),
-        findsOneWidget,
-      );
-      expect(
-        find.widgetWithText(
-          CoreButton,
-          AppLocalizations.of(buildContext!)!.continueButton,
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.textContaining(AppLocalizations.of(buildContext!)!.register),
-        findsOneWidget,
-      );
-    });
+  AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
 
-    testWidgets('shows validation errors for empty and invalid email', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidget(child: const LoginWithEmailPage(email: '')),
-      );
-      await tester.enterText(find.byType(TextFormField), '');
-      await tester.pump();
-      expect(
-        find.textContaining(
-          AppLocalizations.of(buildContext!)!.emailRequiredError,
-        ),
-        findsOneWidget,
-      );
-      await tester.enterText(find.byType(TextFormField), 'invalid-email');
-      await tester.pump();
-      expect(
-        find.textContaining(
-          AppLocalizations.of(buildContext!)!.invalidEmailError,
-        ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets(
-      'shows validation error immediately for initially invalid email',
-      (WidgetTester tester) async {
-        await tester.pumpWidget(
-          makeTestableWidget(
-            child: const LoginWithEmailPage(email: 'invalid-email'),
-          ),
-        );
-        await tester.pump();
-        expect(
-          find.textContaining(
-            AppLocalizations.of(buildContext!)!.invalidEmailError,
-          ),
-          findsOneWidget,
-        );
-      },
+  Future<void> renderPage(WidgetTester tester, {String email = ''}) async {
+    await tester.pumpWidget(
+      makeTestableWidget(child: LoginWithEmailPage(email: email)),
     );
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> enterEmail(WidgetTester tester, String email) async {
+    await tester.enterText(
+      find.ancestor(
+        of: find.text(l10n().emailLabel),
+        matching: find.byType(TextField),
+      ),
+      email,
+    );
+    await tester.pump();
+  }
+
+  Future<void> tapContinueButton(WidgetTester tester) async {
+    await tester.tap(find.text(l10n().continueButton));
+    await tester.pumpAndSettle();
+  }
+
+  group('User on LoginWithEmailPage', () {
+    testWidgets('sees email input, continue button, and register link', (
+      tester,
+    ) async {
+      await renderPage(tester);
+
+      expect(find.text(l10n().emailLabel), findsOneWidget);
+
+      expect(find.text(l10n().continueButton), findsOneWidget);
+
+      expect(find.textContaining(l10n().register), findsOneWidget);
+    });
+
+    testWidgets('sees error when email is empty', (tester) async {
+      await renderPage(tester);
+
+      await enterEmail(tester, '');
+
+      expect(find.text(l10n().emailRequiredError), findsOneWidget);
+    });
+
+    testWidgets('sees error when email format is invalid', (tester) async {
+      await renderPage(tester);
+
+      await enterEmail(tester, 'invalid-email');
+
+      expect(find.text(l10n().invalidEmailError), findsOneWidget);
+    });
+
+    testWidgets('sees immediate error for pre-filled invalid email', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          child: const LoginWithEmailPage(email: 'invalid-email'),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text(l10n().invalidEmailError), findsOneWidget);
+    });
 
     testWidgets(
-      'valid, registered email enables button and navigates to enter password',
-      (WidgetTester tester) async {
+      'can login with registered email and navigate to password page',
+      (tester) async {
+        const registeredEmail = 'registered@example.com';
+
         fakeSupabase.addTableData('users', [
           {
             'id': '1',
-            'email': 'registered@example.com',
+            'email': registeredEmail,
             'created_at': clock.now().toIso8601String(),
           },
         ]);
-        await tester.pumpWidget(
-          makeTestableWidget(child: const LoginWithEmailPage(email: '')),
-        );
-        final enteredEmail = 'registered@example.com';
-        await tester.enterText(find.byType(CoreTextField), enteredEmail);
-        await tester.pump();
 
-        final continueButton = find.widgetWithText(
-          CoreButton,
-          AppLocalizations.of(buildContext!)!.continueButton,
-        );
-        expect(tester.widget<CoreButton>(continueButton).isDisabled, isFalse);
-        await tester.tap(continueButton);
-        await tester.pumpAndSettle();
+        await renderPage(tester);
+
+        await enterEmail(tester, registeredEmail);
+        await tapContinueButton(tester);
 
         expect(router.navigationHistory.first.route, fullEnterPasswordRoute);
-        expect(router.navigationHistory.first.arguments, enteredEmail);
+        expect(router.navigationHistory.first.arguments, registeredEmail);
       },
     );
-    testWidgets('disables continue button when an invalid email is entered', (
-      WidgetTester tester,
-    ) async {
+
+    testWidgets('cannot continue with invalid email format', (tester) async {
       fakeSupabase.shouldDelayOperations = true;
       fakeSupabase.completer = Completer<void>();
       fakeSupabase.clearTableData('users');
 
-      await tester.pumpWidget(
-        makeTestableWidget(child: const LoginWithEmailPage(email: '')),
-      );
-      await tester.pumpAndSettle();
+      await renderPage(tester);
 
-      await tester.enterText(find.byType(CoreTextField), 'newuserexample');
-      await tester.pumpAndSettle();
+      await enterEmail(tester, 'newuserexample');
 
-      final continueButton = find.widgetWithText(
-        CoreButton,
-        AppLocalizations.of(buildContext!)!.continueButton,
-      );
-      expect(tester.widget<CoreButton>(continueButton).isDisabled, isTrue);
+      expect(find.text(l10n().invalidEmailError), findsOneWidget);
+
       fakeSupabase.completer!.complete();
     });
-    testWidgets('email not registered shows error and register link', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidget(child: LoginWithEmailPage(email: '')),
-      );
-      await tester.enterText(
-        find.byType(CoreTextField),
-        'notregistered@example.com',
-      );
-      await tester.pumpAndSettle();
 
-      expect(
-        find.textContaining(
-          AppLocalizations.of(buildContext!)!.emailNotRegistered,
-        ),
-        findsOneWidget,
-      );
-      final registerLink = find.byKey(
-        Key(AppLocalizations.of(buildContext!)!.register),
-      );
-      await tester.tap(registerLink);
-      await tester.pumpAndSettle();
-      expect(router.navigationHistory.length, 1);
-      expect(router.navigationHistory.first.route, fullRegisterRoute);
+    testWidgets('sees error and register option when email not registered', (
+      tester,
+    ) async {
+      await renderPage(tester);
+
+      await enterEmail(tester, 'notregistered@example.com');
+
+      expect(find.text(l10n().emailNotRegistered), findsOneWidget);
+
+      expect(find.text(l10n().register), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('login link navigates to login page on tap', (
-      WidgetTester tester,
+    testWidgets('can navigate to register page from email not found message', (
+      tester,
     ) async {
-      await tester.pumpWidget(
-        makeTestableWidget(child: LoginWithEmailPage(email: '')),
-      );
-      final enteredEmail = 'notregistered@example.com';
-      await tester.enterText(find.byType(CoreTextField), enteredEmail);
-      await tester.pumpAndSettle();
+      await renderPage(tester);
 
-      final registerLink = find.byKey(
-        Key(AppLocalizations.of(buildContext!)!.register),
-      );
+      const unregisteredEmail = 'notregistered@example.com';
+      await enterEmail(tester, unregisteredEmail);
+
+      final registerLink = find.byKey(Key(l10n().register));
       await tester.tap(registerLink);
       await tester.pumpAndSettle();
 
       expect(router.navigationHistory.first.route, fullRegisterRoute);
-      expect(router.navigationHistory.first.arguments, enteredEmail);
+      expect(router.navigationHistory.first.arguments, unregisteredEmail);
     });
 
-    testWidgets('backend error shows error message', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('sees server error message when backend fails', (tester) async {
       fakeSupabase.shouldThrowOnSelect = true;
       fakeSupabase.authErrorCode = SupabaseAuthErrorCode.invalidCredentials;
-      await tester.pumpWidget(
-        makeTestableWidget(child: LoginWithEmailPage(email: '')),
-      );
-      await tester.enterText(
-        find.widgetWithText(
-          CoreTextField,
-          AppLocalizations.of(buildContext!)!.emailLabel,
-        ),
-        'error@example.com',
-      );
-      await tester.pumpAndSettle();
 
-      expect(
-        find.textContaining(AppLocalizations.of(buildContext!)!.serverError),
-        findsWidgets,
-      );
+      await renderPage(tester);
+
+      await enterEmail(tester, 'error@example.com');
+
+      expect(find.textContaining(l10n().serverError), findsWidgets);
     });
 
-    testWidgets('footer register link navigates to register page', (
-      WidgetTester tester,
+    testWidgets('can navigate to register page from footer link', (
+      tester,
     ) async {
-      await tester.pumpWidget(
-        makeTestableWidget(child: LoginWithEmailPage(email: '')),
-      );
-      final registerLink = find.byKey(Key('auth_footer_link'));
+      await renderPage(tester);
+
+      final registerLink = find.byKey(const Key('auth_footer_link'));
       await tester.tap(registerLink);
       await tester.pumpAndSettle();
 

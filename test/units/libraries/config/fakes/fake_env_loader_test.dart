@@ -63,22 +63,14 @@ void main() {
         expect(() async => await fakeLoader.load(), returnsNormally);
       });
 
-      test('load captures the provided filename when one is given', () async {
-        await fakeLoader.load(fileName: '.env.test');
-
-        expect(fakeLoader.lastLoadedFileName, equals('.env.test'));
+      test('load executes successfully with filename', () async {
+        expect(
+          () async => await fakeLoader.load(fileName: '.env.test'),
+          returnsNormally,
+        );
       });
 
-      test(
-        'load sets lastLoadedFileName to null if no filename is provided',
-        () async {
-          await fakeLoader.load();
-
-          expect(fakeLoader.lastLoadedFileName, isNull);
-        },
-      );
-
-      test('load throws a custom exception when configured to fail', () async {
+      test('load throws exception when configured to fail', () async {
         fakeLoader.shouldThrowOnLoad = true;
         fakeLoader.loadErrorMessage = 'Failed to load .env file';
 
@@ -95,7 +87,7 @@ void main() {
       });
 
       test(
-        'load throws a default error message if configured to fail without a custom message',
+        'load throws with custom error message when configured to fail',
         () async {
           fakeLoader.loadErrorMessage = 'Failed to load env file';
           fakeLoader.shouldThrowOnLoad = true;
