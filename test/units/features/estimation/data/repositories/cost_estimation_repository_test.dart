@@ -50,7 +50,6 @@ void main() {
 
     group('getEstimations', () {
       test('should return cost estimates when data exists', () async {
-        // Arrange
         final estimation1 = fakeDataSource.createSampleEstimation(
           id: estimateId1,
           projectId: testProjectId,
@@ -81,13 +80,10 @@ void main() {
           estimation2,
         ]);
 
-        // Act
         final result = await repository.getEstimations(testProjectId);
 
-        // Assert
         expect(result, hasLength(2));
 
-        // Verify first estimation
         final firstEstimate = result[0];
         expect(firstEstimate.id, equals(estimateId1));
         expect(firstEstimate.projectId, equals(testProjectId));
@@ -99,7 +95,6 @@ void main() {
         expect(firstEstimate.createdAt, equals(DateTime.parse(timestamp1)));
         expect(firstEstimate.updatedAt, equals(DateTime.parse(timestamp1)));
 
-        // Verify second estimation
         final secondEstimate = result[1];
         expect(secondEstimate.id, equals(estimateId2));
         expect(secondEstimate.projectId, equals(testProjectId));
@@ -114,19 +109,14 @@ void main() {
       });
 
       test('should return empty list when no estimations found', () async {
-        // Arrange - no data added to fake data source
-
-        // Act
         final result = await repository.getEstimations(testProjectId);
 
-        // Assert
         expect(result, isEmpty);
       });
 
       test(
         'should return empty list when no estimations for specific project',
         () async {
-          // Arrange
           final otherProjectEstimation = fakeDataSource.createSampleEstimation(
             id: estimateId1,
             projectId: otherProjectId,
@@ -137,10 +127,8 @@ void main() {
             otherProjectEstimation,
           ]);
 
-          // Act
           final result = await repository.getEstimations(testProjectId);
 
-          // Assert
           expect(result, isEmpty);
         },
       );
@@ -148,7 +136,6 @@ void main() {
       test(
         'should correctly convert DTO to domain entity',
         () async {
-          // Arrange
           final estimation = fakeDataSource.createSampleEstimation(
             id: estimateId1,
             projectId: testProjectId,
@@ -161,14 +148,11 @@ void main() {
 
           fakeDataSource.addProjectEstimations(testProjectId, [estimation]);
 
-          // Act
           final result = await repository.getEstimations(testProjectId);
 
-          // Assert
           expect(result, hasLength(1));
           final estimate = result.first;
 
-          // Verify markup configuration
           expect(
             estimate.markupConfiguration.overallType,
             equals(MarkupType.overall),
@@ -179,7 +163,6 @@ void main() {
           );
           expect(estimate.markupConfiguration.overallValue.value, equals(15.0));
 
-          // Verify material, labor, and equipment markups are present
           expect(estimate.markupConfiguration.materialValue, isNotNull);
           expect(
             estimate.markupConfiguration.materialValue!.type,
@@ -210,26 +193,21 @@ void main() {
       );
 
       test('should call data source with correct project ID', () async {
-        // Arrange
         fakeDataSource.addProjectEstimations(testProjectId, []);
 
-        // Act
         await repository.getEstimations(testProjectId);
 
-        // Assert
         final methodCalls = fakeDataSource.getMethodCallsFor('getEstimations');
         expect(methodCalls, hasLength(1));
         expect(methodCalls.first['projectId'], equals(testProjectId));
       });
 
       test('should rethrow server exception when data source throws', () async {
-        // Arrange
         fakeDataSource.shouldThrowOnGetEstimations = true;
         fakeDataSource.getEstimationsExceptionType =
             SupabaseExceptionType.unknown;
         fakeDataSource.getEstimationsErrorMessage = errorMsgServer;
 
-        // Act & Assert
         expect(
           () => repository.getEstimations(testProjectId),
           throwsA(isA<ServerException>()),
@@ -239,13 +217,11 @@ void main() {
       test(
         'should rethrow timeout exception when data source throws timeout',
         () async {
-          // Arrange
           fakeDataSource.shouldThrowOnGetEstimations = true;
           fakeDataSource.getEstimationsExceptionType =
               SupabaseExceptionType.timeout;
           fakeDataSource.getEstimationsErrorMessage = errorMsgTimeout;
 
-          // Act & Assert
           expect(
             () => repository.getEstimations(testProjectId),
             throwsA(isA<TimeoutException>()),
@@ -256,13 +232,11 @@ void main() {
       test(
         'should rethrow type exception when data source throws type error',
         () async {
-          // Arrange
           fakeDataSource.shouldThrowOnGetEstimations = true;
           fakeDataSource.getEstimationsExceptionType =
               SupabaseExceptionType.type;
           fakeDataSource.getEstimationsErrorMessage = 'Type error';
 
-          // Act & Assert
           expect(
             () => repository.getEstimations(testProjectId),
             throwsA(isA<TypeError>()),
@@ -273,7 +247,6 @@ void main() {
       test(
         'should handle multiple estimations with different configurations',
         () async {
-          // Arrange
           final estimation1 = fakeDataSource.createSampleEstimation(
             id: estimateId1,
             projectId: testProjectId,
@@ -317,24 +290,19 @@ void main() {
             estimation3,
           ]);
 
-          // Act
           final result = await repository.getEstimations(testProjectId);
 
-          // Assert
           expect(result, hasLength(3));
 
-          // Verify all estimations are for the correct project
           expect(
             result.every((estimate) => estimate.projectId == testProjectId),
             isTrue,
           );
 
-          // Verify unique IDs
           final ids = result.map((e) => e.id).toList();
           expect(ids, containsAll([estimateId1, estimateId2, estimateId3]));
-          expect(ids.toSet(), hasLength(3)); // Ensure all IDs are unique
+          expect(ids.toSet(), hasLength(3));
 
-          // Verify different lock statuses
           final lockedEstimates = result
               .where((e) => e.lockStatus.isLocked)
               .toList();
@@ -344,7 +312,6 @@ void main() {
           expect(lockedEstimates, hasLength(1));
           expect(unlockedEstimates, hasLength(2));
 
-          // Verify different total costs
           final totalCosts = result.map((e) => e.totalCost).toList();
           expect(totalCosts, containsAll([totalCost1, totalCost2, totalCost3]));
         },
@@ -353,7 +320,6 @@ void main() {
       test(
         'should preserve all domain entity properties during conversion',
         () async {
-          // Arrange
           final estimation = fakeDataSource.createSampleEstimation(
             id: estimateId1,
             projectId: testProjectId,
@@ -369,14 +335,11 @@ void main() {
 
           fakeDataSource.addProjectEstimations(testProjectId, [estimation]);
 
-          // Act
           final result = await repository.getEstimations(testProjectId);
 
-          // Assert
           expect(result, hasLength(1));
           final estimate = result.first;
 
-          // Verify all basic properties
           expect(estimate.id, equals(estimateId1));
           expect(estimate.projectId, equals(testProjectId));
           expect(estimate.estimateName, equals(estimateName1));
@@ -386,7 +349,6 @@ void main() {
           expect(estimate.createdAt, equals(DateTime.parse(timestamp1)));
           expect(estimate.updatedAt, equals(DateTime.parse(timestamp2)));
 
-          // Verify markup configuration structure
           expect(estimate.markupConfiguration, isA<MarkupConfiguration>());
           expect(estimate.markupConfiguration.overallType, isA<MarkupType>());
           expect(estimate.markupConfiguration.overallValue, isA<MarkupValue>());
@@ -400,7 +362,6 @@ void main() {
             isA<MarkupValue>(),
           );
 
-          // Verify lock status structure
           expect(estimate.lockStatus, isA<LockStatus>());
           expect(estimate.lockStatus.isLocked, isTrue);
           expect(estimate.lockStatus, isA<LockedStatus>());
