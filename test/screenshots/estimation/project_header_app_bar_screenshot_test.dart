@@ -34,7 +34,6 @@ void main() {
       VoidCallback? onNotificationTap,
       ImageProvider? avatarImage,
     }) async {
-      // Create and configure the project
       final project = Project(
         id: projectId,
         projectName: projectName,
@@ -44,7 +43,6 @@ void main() {
         status: ProjectStatus.active,
       );
 
-      // Configure the repository before creating the widget
       fakeProjectRepository.addProject(projectId, project);
 
       await tester.pumpWidget(
