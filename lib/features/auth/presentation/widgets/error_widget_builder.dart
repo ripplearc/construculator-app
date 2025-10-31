@@ -1,4 +1,4 @@
-import 'package:core_ui/core_ui.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
 
 /// Displays an error message and a link, useful for displaying errors on the login and register pages

@@ -257,14 +257,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.2"
-  core_ui:
-    dependency: "direct main"
-    description:
-      name: core_ui
-      sha256: d931bcf9d06550f8276a9aea034a31abd1b54a23916bb254ed8ca554286221a4
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.0"
   coverage:
     dependency: transitive
     description:
@@ -925,6 +917,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.2"
+  ripplearc_coreui:
+    dependency: "direct main"
+    description:
+      name: ripplearc_coreui
+      sha256: "0daa236e02ee0a1ec085a094c66fb4908edda3b6079cdcb943203b4416223a72"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.0"
   ripplearc_flutter_lint:
     dependency: "direct dev"
     description:
