@@ -273,8 +273,8 @@ workflows:
 
       - name: Run Screenshot Tests
         script: |
-          if find test/screenshots -type f -name "*.dart" | grep -q .; then
-            fvm flutter test test/screenshots
+          if find test -type f -name "*__snap_test.dart" | grep -q .; then
+            find test -name "*__snap_test.dart" -exec fvm flutter test {} \;
           else
             echo "No screenshot tests found. Skipping."
           fi
@@ -433,8 +433,8 @@ workflows:
 
       - name: Run Screenshot Tests
         script: |
-          if find test/screenshots -type f -name "*.dart" | grep -q .; then
-            fvm flutter test test/screenshots
+          if find test -type f -name "*__snap_test.dart" | grep -q .; then
+            find test -name "*__snap_test.dart" -exec fvm flutter test {} \;
           else
             echo "No screenshot tests found. Skipping."
           fi

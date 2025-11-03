@@ -168,11 +168,11 @@ comprehensive_check() {
   fi
 
   # Screenshot tests
-  if [ -d "test/screenshots" ] && [ "$(ls -A test/screenshots)" ]; then
+  if find test -name "*__snap_test.dart" | grep -q .; then
     echo "🖼️ Screenshot tests..."
-    fvm flutter test test/screenshots --update-goldens
+    find test -name "*__snap_test.dart" -exec fvm flutter test {} --update-goldens \;
   else
-    echo "⏩ Skipping screenshot tests: test/screenshots directory not found."
+    echo "⏩ Skipping screenshot tests: no *__snap_test.dart files found."
   fi
 
   # Build Android
