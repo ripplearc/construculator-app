@@ -121,7 +121,7 @@ comprehensive_check() {
   if [ -d "test/units" ] && [ "$(ls -A test/units)" ]; then
     echo "🧪 Unit tests with coverage..."
     mkdir -p test-results
-    fvm flutter test test/units test/widgets --coverage --machine > test-results/flutter.json
+    fvm flutter test test/features test/libraries test/app --coverage --machine > test-results/flutter.json
 
     # Process coverage
     if [[ -f "coverage/lcov.info" ||  ! -s "coverage/lcov.info" ]]; then
