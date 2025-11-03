@@ -113,6 +113,16 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  bool isContinueButtonEnabled(WidgetTester tester) {
+    final buttonFinder = find.ancestor(
+      of: find.text(l10n().continueButton),
+      matching: find.byType(CoreButton),
+    );
+    if (buttonFinder.evaluate().isEmpty) return false;
+    final button = tester.widget<CoreButton>(buttonFinder);
+    return !button.isDisabled;
+  }
+
   group('User on EnterPasswordPage', () {
     testWidgets('sees password field, email, and continue button', (
       tester,
@@ -124,6 +134,7 @@ void main() {
       expect(find.textContaining(testEmail), findsOneWidget);
 
       expect(find.text(l10n().continueButton), findsOneWidget);
+      expect(isContinueButtonEnabled(tester), isFalse);
     });
 
     testWidgets('can toggle password visibility', (tester) async {
@@ -156,7 +167,8 @@ void main() {
 
       await enterPassword(tester, '');
 
-      expect(find.text(l10n().passwordRequiredError), findsWidgets);
+      expect(find.text(l10n().passwordRequiredError), findsOneWidget);
+      expect(isContinueButtonEnabled(tester), isFalse);
     });
 
     testWidgets('sees success message after entering correct password', (
@@ -165,9 +177,10 @@ void main() {
       await renderPage(tester);
 
       await enterPassword(tester, '5i2Un@D8Y9!');
+      expect(isContinueButtonEnabled(tester), isTrue);
       await tapContinueButton(tester);
 
-      expect(find.textContaining(l10n().loginSuccessMessage), findsWidgets);
+      expect(find.textContaining(l10n().loginSuccessMessage), findsOneWidget);
     });
 
     testWidgets('sees error message with incorrect password', (tester) async {
@@ -177,6 +190,7 @@ void main() {
       await renderPage(tester);
 
       await enterPassword(tester, 'WrongPassword123!');
+      expect(isContinueButtonEnabled(tester), isTrue);
       await tapContinueButton(tester);
 
       expect(find.text(l10n().invalidCredentialsError), findsOneWidget);
