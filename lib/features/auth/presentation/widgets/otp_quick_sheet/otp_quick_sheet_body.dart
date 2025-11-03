@@ -1,5 +1,5 @@
 // coverage:ignore-file
-import 'package:core_ui/core_ui.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:pinput/pinput.dart';

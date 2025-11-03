@@ -1,12 +1,12 @@
 name: construculator
 description: "A calculator for construction workers"
 
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 version: 1.0.0+1
 
 environment:
-  sdk: '3.8.0'
+  sdk: "3.8.0"
 
 dependencies:
   flutter:
@@ -14,11 +14,10 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  
   cupertino_icons: 1.0.8
   flutter_bloc: 9.1.0
   flutter_modular: 6.3.4
-  
+
   supabase_flutter: 2.9.0
   flutter_dotenv: 5.2.1
   logger: 2.5.0
@@ -27,14 +26,9 @@ dependencies:
   rxdart: 0.28.0
   freezed_annotation: 3.0.0
   json_annotation: 4.9.0
-  core_ui: 0.2.0
+  ripplearc_coreui: ^0.1.0
   pinput: 5.0.1
   dartz: 0.10.1
-
-
-
-  
-  
 
 dev_dependencies:
   flutter_test:
@@ -51,11 +45,10 @@ dev_dependencies:
   ripplearc_flutter_lint: 0.2.2
   bloc_test: 10.0.0
 
-
 flutter:
   uses-material-design: true
   generate: true
-  
+
   assets:
     # Environment files
     - assets/env/

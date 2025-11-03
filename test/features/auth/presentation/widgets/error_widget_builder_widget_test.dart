@@ -1,7 +1,7 @@
 import 'package:construculator/features/auth/presentation/widgets/error_widget_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:core_ui/core_ui.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 void main() {
   const errorText = 'Something went wrong';

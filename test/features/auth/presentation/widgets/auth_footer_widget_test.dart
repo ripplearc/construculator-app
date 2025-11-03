@@ -1,7 +1,7 @@
 import 'package:construculator/features/auth/presentation/widgets/auth_footer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:core_ui/core_ui.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 void main() {
   const text = 'Don’t have an account?';

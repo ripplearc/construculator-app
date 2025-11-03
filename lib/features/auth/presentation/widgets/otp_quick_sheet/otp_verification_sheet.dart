@@ -1,7 +1,7 @@
 import 'package:construculator/features/auth/presentation/widgets/otp_quick_sheet/otp_quick_sheet_body.dart';
 import 'package:flutter/material.dart';
 import 'package:pinput/pinput.dart';
-import 'package:core_ui/core_ui.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// A widget that displays the OTP verification sheet
 /// [note] - The note to display
