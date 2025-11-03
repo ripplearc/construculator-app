@@ -91,7 +91,7 @@ run_mutation_tests() {
   BASE_COMMIT=$(git merge-base HEAD origin/$TARGET_BRANCH)
 
   echo "🧬 Checking for changed mutation config files..."
-  CHANGED_FILES=$(git diff --name-only --diff-filter=d "$TARGET_BRANCH" -- "test/mutations/*.xml")
+  CHANGED_FILES=$(git diff --name-only --diff-filter=d "$TARGET_BRANCH" -- "test/features/**/*.xml" "test/libraries/**/*.xml")
 
   if [ -z "$CHANGED_FILES" ]; then
   echo "✅ No changed mutation config files detected. Skipping mutation tests."

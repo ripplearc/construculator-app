@@ -84,7 +84,7 @@
     </rules>
 
     <commands>
-        <command group="fake-auth-manager" expected-return="0">flutter test test/units/libraries/auth/fakes/fake_auth_manager_test.dart</command>
+        <command group="fake-auth-manager" expected-return="0">flutter test test/libraries/auth/fakes/fake_auth_manager_test.dart</command>
     </commands>
 
     <threshold failure="85">

@@ -78,8 +78,8 @@
     </rules>
 
     <commands>
-        <command group="auth-credential" expected-return="0">flutter test test/units/libraries/auth/data/models/auth_credential_test.dart</command>
-        <command group="auth-user" expected-return="0">flutter test test/units/libraries/auth/data/models/auth_user_test.dart</command>
+        <command group="auth-credential" expected-return="0">flutter test test/libraries/auth/data/models/auth_credential_test.dart</command>
+        <command group="auth-user" expected-return="0">flutter test test/libraries/auth/data/models/auth_user_test.dart</command>
        </commands>
 
     <threshold failure="85">

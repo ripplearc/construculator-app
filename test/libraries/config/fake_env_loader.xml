@@ -41,7 +41,7 @@
     </rules>
 
     <commands>
-        <command group="fake_env_loader" expected-return="0">flutter test test/units/libraries/config/fakes/fake_env_loader_test.dart</command>
+        <command group="fake_env_loader" expected-return="0">flutter test test/libraries/config/fakes/fake_env_loader_test.dart</command>
     </commands>
 
     <threshold failure="85">

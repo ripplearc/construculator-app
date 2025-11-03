@@ -1,38 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mutations version="1.0">
-   <files>
-    <file>lib/features/auth/presentation/pages/forgot_password_page.dart</file>
-</files>
+<mutations version="1.0">    
+    <files>
+        <file>lib/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart</file>
+    </files>
 
     <rules>
-
         <literal text="&amp;&amp;" id="and-to-or">
             <mutation text="||"/>
         </literal>
-
         <literal text="||" id="or-to-and">
             <mutation text="&amp;&amp;"/>
         </literal>
-
         <literal text="==" id="equals">
             <mutation text="!="/>
         </literal>
-
         <literal text="!=" id="not-equals">
             <mutation text="=="/>
         </literal>
-
-        <literal text="return true" id="return-true">
-            <mutation text="return false"/>
+        
+        <!-- Null safety for fake implementations -->
+        <literal text="??" id="null-coalescing">
+            <mutation text=""/>
         </literal>
-
-        <literal text="return false" id="return-false">
-            <mutation text="return true"/>
-        </literal>
+        
+        <!-- Conditional logic in fake implementations -->
+        <regex pattern="[\s]if[\s]*\((.*?)\)[\s]*{" dotAll="true" id="if-negation">
+            <mutation text=" if (!($1)) {"/>
+        </regex>
     </rules>
 
     <commands>
-        <command group="auth-feature-forgot-password" expected-return="0">flutter test test/widgets/auth/pages/forgot_password_page_test.dart</command>
+       <command group="fake-register-with-email-bloc" expected-return="0">flutter test test/features/auth/presentation/bloc/register_with_email_bloc_test.dart</command>
     </commands>
 
     <threshold failure="85">

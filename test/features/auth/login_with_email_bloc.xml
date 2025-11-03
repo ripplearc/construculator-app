@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mutations version="1.0">
+<mutations version="1.0">    
     <files>
-        <file>lib/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart</file>
+        <file>lib/features/auth/presentation/bloc/login_with_email_bloc/login_with_email_bloc.dart</file>
     </files>
 
     <rules>
@@ -30,7 +30,7 @@
     </rules>
 
     <commands>
-       <command group="fake-otp-verification-bloc" expected-return="0">flutter test test/units/bloc/auth/otp_verification_bloc_test.dart</command>
+       <command group="fake-login-with-email-bloc" expected-return="0">flutter test test/features/auth/presentation/bloc/login_with_email_bloc_test.dart</command>
     </commands>
 
     <threshold failure="85">

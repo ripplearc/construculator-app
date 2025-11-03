@@ -77,7 +77,7 @@
     </rules>
 
     <commands>
-        <command group="auth-repositories" expected-return="0">flutter test test/units/libraries/auth/supabase_repository_test.dart</command>
+        <command group="auth-repositories" expected-return="0">flutter test test/libraries/auth/supabase_repository_test.dart</command>
     </commands>
 
     <threshold failure="85">
