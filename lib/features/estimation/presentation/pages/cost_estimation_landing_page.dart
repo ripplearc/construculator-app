@@ -137,7 +137,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
     return Stack(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space4, vertical: CoreSpacing.space4),
           child: ListView.builder(
             itemCount: estimations.length,
             itemBuilder: (context, index) {
