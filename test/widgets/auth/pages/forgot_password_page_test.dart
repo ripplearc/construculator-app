@@ -131,6 +131,16 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  bool isContinueButtonEnabled(WidgetTester tester) {
+    final buttonFinder = find.ancestor(
+      of: find.text(l10n().continueButton),
+      matching: find.byType(CoreButton),
+    );
+    if (buttonFinder.evaluate().isEmpty) return false;
+    final button = tester.widget<CoreButton>(buttonFinder);
+    return !button.isDisabled;
+  }
+
   group('User on ForgotPasswordPage', () {
     testWidgets('sees email input and continue button', (tester) async {
       await renderPage(tester);
@@ -140,6 +150,7 @@ void main() {
       expect(find.text(l10n().emailLabel), findsOneWidget);
 
       expect(find.text(l10n().continueButton), findsOneWidget);
+      expect(isContinueButtonEnabled(tester), isFalse);
     });
 
     testWidgets('sees error when email is empty', (tester) async {
@@ -147,7 +158,8 @@ void main() {
 
       await enterEmail(tester, '');
 
-      expect(find.textContaining(l10n().emailRequiredError), findsWidgets);
+      expect(find.textContaining(l10n().emailRequiredError), findsOneWidget);
+      expect(isContinueButtonEnabled(tester), isFalse);
     });
 
     testWidgets('sees error when email format is invalid', (tester) async {
@@ -155,7 +167,8 @@ void main() {
 
       await enterEmail(tester, 'invalid-email');
 
-      expect(find.textContaining(l10n().invalidEmailError), findsWidgets);
+      expect(find.textContaining(l10n().invalidEmailError), findsOneWidget);
+      expect(isContinueButtonEnabled(tester), isFalse);
     });
 
     testWidgets('sees OTP verification modal after submitting valid email', (
@@ -164,6 +177,7 @@ void main() {
       await renderPage(tester);
 
       await enterEmail(tester, 'reset@example.com');
+      expect(isContinueButtonEnabled(tester), isTrue);
       await tapContinueButton(tester);
 
       expect(
@@ -178,6 +192,7 @@ void main() {
       await renderPage(tester);
 
       await enterEmail(tester, 'reset@example.com');
+      expect(isContinueButtonEnabled(tester), isTrue);
       await tapContinueButton(tester);
 
       expect(
@@ -199,13 +214,17 @@ void main() {
       await renderPage(tester);
 
       await enterEmail(tester, 'reset@example.com');
+      expect(isContinueButtonEnabled(tester), isTrue);
       await tapContinueButton(tester);
 
       await enterOtp(tester, '123456');
       await tapVerifyButton(tester);
 
       expect(find.byKey(const Key('toast_close_button')), findsOneWidget);
-      expect(find.textContaining(l10n().invalidCredentialsError), findsWidgets);
+      expect(
+        find.textContaining(l10n().invalidCredentialsError),
+        findsOneWidget,
+      );
     });
 
     testWidgets('sees error when backend request fails', (tester) async {
@@ -215,16 +234,18 @@ void main() {
       await renderPage(tester);
 
       await enterEmail(tester, 'error@example.com');
+      expect(isContinueButtonEnabled(tester), isTrue);
       await tapContinueButton(tester);
 
       expect(find.byKey(const Key('toast_close_button')), findsOneWidget);
-      expect(find.textContaining(l10n().tooManyAttempts), findsWidgets);
+      expect(find.textContaining(l10n().tooManyAttempts), findsOneWidget);
     });
 
     testWidgets('can resend OTP code', (tester) async {
       await renderPage(tester);
 
       await enterEmail(tester, 'reset@example.com');
+      expect(isContinueButtonEnabled(tester), isTrue);
       await tapContinueButton(tester);
 
       final resendButton = find.text(l10n().resendButton);
@@ -233,13 +254,14 @@ void main() {
       await tester.tap(resendButton);
       await tester.pumpAndSettle();
 
-      expect(find.textContaining(l10n().otpResendSuccess), findsWidgets);
+      expect(find.textContaining(l10n().otpResendSuccess), findsOneWidget);
     });
 
     testWidgets('sees error when OTP resend fails', (tester) async {
       await renderPage(tester);
 
       await enterEmail(tester, 'reset@example.com');
+      expect(isContinueButtonEnabled(tester), isTrue);
       await tapContinueButton(tester);
 
       fakeSupabase.shouldThrowOnOtp = true;
@@ -250,13 +272,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('toast_close_button')), findsOneWidget);
-      expect(find.textContaining(l10n().tooManyAttempts), findsWidgets);
+      expect(find.textContaining(l10n().tooManyAttempts), findsOneWidget);
     });
 
     testWidgets('can edit email from OTP verification screen', (tester) async {
       await renderPage(tester);
 
       await enterEmail(tester, 'reset@example.com');
+      expect(isContinueButtonEnabled(tester), isTrue);
       await tapContinueButton(tester);
 
       expect(

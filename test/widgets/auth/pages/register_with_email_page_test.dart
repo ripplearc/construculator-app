@@ -9,7 +9,6 @@ import 'package:construculator/features/auth/presentation/widgets/otp_quick_shee
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
-import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -101,10 +100,7 @@ void main() {
 
   AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
 
-  Future<void> renderPage(
-    WidgetTester tester, {
-    String email = '',
-  }) async {
+  Future<void> renderPage(WidgetTester tester, {String email = ''}) async {
     await tester.pumpWidget(
       makeTestableWidget(child: RegisterWithEmailPage(email: email)),
     );
@@ -141,13 +137,26 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  bool isContinueButtonEnabled(WidgetTester tester) {
+    final buttonFinder = find.ancestor(
+      of: find.text(l10n().continueButton),
+      matching: find.byType(CoreButton),
+    );
+    if (buttonFinder.evaluate().isEmpty) return false;
+    final button = tester.widget<CoreButton>(buttonFinder);
+    return !button.isDisabled;
+  }
+
   group('User on RegisterWithEmailPage', () {
-    testWidgets('sees email input, continue button, and welcome message', (tester) async {
+    testWidgets('sees email input, continue button, and welcome message', (
+      tester,
+    ) async {
       await renderPage(tester);
 
       expect(find.text(l10n().emailLabel), findsOneWidget);
 
       expect(find.text(l10n().continueButton), findsOneWidget);
+      expect(isContinueButtonEnabled(tester), isFalse);
 
       expect(
         find.textContaining(l10n().heyEnterYourDetailsToRegisterWithUs),
@@ -157,16 +166,16 @@ void main() {
 
     testWidgets('sees invalid email error message', (tester) async {
       await renderPage(tester);
-      
+
       await enterEmail(tester, 'invalid-email');
 
-      expect(
-        find.textContaining(l10n().invalidEmailError),
-        findsOneWidget,
-      );
+      expect(find.textContaining(l10n().invalidEmailError), findsOneWidget);
+      expect(isContinueButtonEnabled(tester), isFalse);
     });
 
-    testWidgets('sees already registered error with login link', (tester) async {
+    testWidgets('sees already registered error with login link', (
+      tester,
+    ) async {
       fakeSupabase.addTableData('users', [
         {
           'id': '1',
@@ -182,14 +191,16 @@ void main() {
         find.textContaining(l10n().emailAlreadyRegistered),
         findsOneWidget,
       );
-      
-      expect(find.text(l10n().continueButton), findsOneWidget);
+
+      expect(isContinueButtonEnabled(tester), isFalse);
 
       final methodCalls = fakeSupabase.getMethodCallsFor('selectSingle');
       expect(methodCalls.length, 1);
     });
 
-    testWidgets('can navigate to login from already registered link', (tester) async {
+    testWidgets('can navigate to login from already registered link', (
+      tester,
+    ) async {
       fakeSupabase.addTableData('users', [
         {
           'id': '1',
@@ -203,6 +214,7 @@ void main() {
       await enterEmail(tester, enteredEmail);
 
       final loginLink = find.byKey(Key(l10n().logginLink));
+      expect(isContinueButtonEnabled(tester), isFalse);
       await tester.tap(loginLink);
       await tester.pumpAndSettle();
 
@@ -226,6 +238,7 @@ void main() {
       await renderPage(tester);
       await enterEmail(tester, 'newuser@example.com');
 
+      expect(isContinueButtonEnabled(tester), isTrue);
       expect(find.textContaining(l10n().invalidEmailError), findsNothing);
       expect(find.textContaining(l10n().emailAlreadyRegistered), findsNothing);
     });
@@ -242,11 +255,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('newuser@example.com'), findsOneWidget);
-      
-      expect(find.text(l10n().continueButton), findsOneWidget);
+      expect(isContinueButtonEnabled(tester), isTrue);
     });
 
-    testWidgets('sees button text change when submitting email', (tester) async {
+    testWidgets('sees button text change when submitting email', (
+      tester,
+    ) async {
       fakeSupabase.clearTableData('users');
 
       await renderPage(tester);
@@ -255,6 +269,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpAndSettle();
 
+      expect(isContinueButtonEnabled(tester), isTrue);
       fakeSupabase.shouldDelayOperations = true;
       fakeSupabase.completer = Completer<void>();
 
@@ -262,11 +277,13 @@ void main() {
       await tester.pump();
 
       expect(find.text(l10n().sendingOtpButton), findsOneWidget);
-      
+
       fakeSupabase.completer!.complete();
     });
 
-    testWidgets('sees checking availability message during validation', (tester) async {
+    testWidgets('sees checking availability message during validation', (
+      tester,
+    ) async {
       fakeSupabase.shouldDelayOperations = true;
       fakeSupabase.completer = Completer<void>();
       fakeSupabase.clearTableData('users');
@@ -296,22 +313,26 @@ void main() {
       await enterEmail(tester, 'newuserexample');
 
       expect(find.textContaining(l10n().invalidEmailError), findsOneWidget);
-      
+      expect(isContinueButtonEnabled(tester), isFalse);
+
       fakeSupabase.completer!.complete();
     });
 
-    testWidgets('sees OTP verification screen after submitting email', (tester) async {
+    testWidgets('sees OTP verification screen after submitting email', (
+      tester,
+    ) async {
       fakeSupabase.clearTableData('users');
 
       await renderPage(tester);
       await enterEmail(tester, 'newuser@example.com');
+      expect(isContinueButtonEnabled(tester), isTrue);
       await tapContinueButton(tester);
 
       expect(
         find.textContaining(l10n().authenticationCodeTitle),
         findsOneWidget,
       );
-      
+
       expect(find.text(l10n().verifyOtpButton), findsOneWidget);
     });
 
@@ -320,8 +341,9 @@ void main() {
 
       await renderPage(tester);
       await enterEmail(tester, 'newuser@example.com');
+      expect(isContinueButtonEnabled(tester), isTrue);
       await tapContinueButton(tester);
-      
+
       await enterOtp(tester, '123456');
 
       expect(find.text(l10n().verifyOtpButton), findsOneWidget);
@@ -332,8 +354,9 @@ void main() {
 
       await renderPage(tester);
       await enterEmail(tester, 'newuser@example.com');
+      expect(isContinueButtonEnabled(tester), isTrue);
       await tapContinueButton(tester);
-      
+
       await enterOtp(tester, '123456');
 
       fakeSupabase.shouldDelayOperations = true;
@@ -343,13 +366,13 @@ void main() {
       await tester.pump();
 
       expect(find.text(l10n().verifyingButtonLabel), findsOneWidget);
-      
+
       fakeSupabase.completer!.complete();
     });
 
     testWidgets('can navigate to login from footer link', (tester) async {
       await renderPage(tester);
-      
+
       final loginLink = find.byKey(const Key('auth_footer_link'));
       await tester.tap(loginLink);
       await tester.pumpAndSettle();
@@ -364,65 +387,48 @@ void main() {
 
       await renderPage(tester);
       await enterEmail(tester, 'error@example.com');
+      expect(isContinueButtonEnabled(tester), isTrue);
       await tapContinueButton(tester);
 
-      expect(find.byType(RegisterWithEmailPage), findsOneWidget);
-    });
-
-    testWidgets('handles generic failure gracefully', (tester) async {
-      await renderPage(tester);
-
-      final bloc = Modular.get<RegisterWithEmailBloc>();
-      bloc.emit(
-        RegisterWithEmailEmailCheckFailure(failure: UnexpectedFailure()),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.byType(RegisterWithEmailPage), findsOneWidget);
+      expect(find.text(l10n().tooManyAttempts), findsOneWidget);
+      expect(find.byKey(const Key('toast_close_button')), findsOneWidget);
     });
 
     testWidgets('sees error when OTP verification fails', (tester) async {
       fakeSupabase.clearTableData('users');
       fakeSupabase.shouldThrowOnVerifyOtp = true;
       fakeSupabase.verifyOtpErrorMessage = 'Invalid OTP';
+      fakeSupabase.authErrorCode = null;
 
       await renderPage(tester);
       await enterEmail(tester, 'newuser@example.com');
+      expect(isContinueButtonEnabled(tester), isTrue);
       await tapContinueButton(tester);
-      
+
       await enterOtp(tester, '123456');
       await tapVerifyButton(tester);
 
-      expect(find.byType(RegisterWithEmailPage), findsOneWidget);
+      expect(find.text(l10n().unknownError), findsOneWidget);
+      expect(find.byKey(const Key('toast_close_button')), findsOneWidget);
+      expect(find.byType(OtpVerificationQuickSheet), findsOneWidget);
     });
 
-    testWidgets('can resend OTP code', (tester) async {
+    testWidgets('can resend OTP code and sees success toast', (tester) async {
       fakeSupabase.clearTableData('users');
 
       await renderPage(tester);
       await enterEmail(tester, 'newuser@example.com');
+      expect(isContinueButtonEnabled(tester), isTrue);
       await tapContinueButton(tester);
 
       final resendButton = find.textContaining('Resend');
       expect(resendButton, findsOneWidget);
-      
+
       await tapResendButton(tester);
 
-      expect(find.byType(RegisterWithEmailPage), findsOneWidget);
-    });
-
-    testWidgets('handles OTP resend success', (tester) async {
-      fakeSupabase.clearTableData('users');
-
-      await renderPage(tester);
-      await enterEmail(tester, 'newuser@example.com');
-      await tapContinueButton(tester);
-
-      final otpBloc = Modular.get<OtpVerificationBloc>();
-      otpBloc.emit(OtpVerificationOtpResendSuccess());
-      await tester.pumpAndSettle();
-
-      expect(find.byType(RegisterWithEmailPage), findsOneWidget);
+      expect(find.text(l10n().otpResendSuccess), findsOneWidget);
+      expect(find.byKey(const Key('toast_close_button')), findsOneWidget);
+      expect(find.byType(OtpVerificationQuickSheet), findsOneWidget);
     });
 
     testWidgets('sees error when OTP resend fails', (tester) async {
@@ -430,14 +436,18 @@ void main() {
 
       await renderPage(tester);
       await enterEmail(tester, 'newuser@example.com');
+      expect(isContinueButtonEnabled(tester), isTrue);
       await tapContinueButton(tester);
 
       fakeSupabase.shouldThrowOnOtp = true;
       fakeSupabase.otpErrorMessage = 'Network error';
+      fakeSupabase.authErrorCode = null;
 
       await tapResendButton(tester);
 
-      expect(find.byType(RegisterWithEmailPage), findsOneWidget);
+      expect(find.text(l10n().unknownError), findsOneWidget);
+      expect(find.byKey(const Key('toast_close_button')), findsOneWidget);
+      expect(find.byType(OtpVerificationQuickSheet), findsOneWidget);
     });
 
     testWidgets('can edit email from OTP verification screen', (tester) async {
@@ -445,10 +455,11 @@ void main() {
 
       await renderPage(tester);
       await enterEmail(tester, 'newuser@example.com');
+      expect(isContinueButtonEnabled(tester), isTrue);
       await tapContinueButton(tester);
 
       final editButton = find.byKey(const Key('edit_contact_button'));
-      
+
       await tester.tap(editButton);
       await tester.pumpAndSettle();
 
@@ -461,23 +472,15 @@ void main() {
 
       await renderPage(tester);
       await enterEmail(tester, 'error@example.com');
+      expect(isContinueButtonEnabled(tester), isTrue);
       await tapContinueButton(tester);
 
-      expect(find.byType(RegisterWithEmailPage), findsOneWidget);
-    });
-
-    testWidgets('handles email edit state transition', (tester) async {
-      fakeSupabase.clearTableData('users');
-
-      await renderPage(tester);
-      await enterEmail(tester, 'newuser@example.com');
-      await tapContinueButton(tester);
-
-      final registerBloc = Modular.get<RegisterWithEmailBloc>();
-      registerBloc.emit(RegisterWithEmailEditUserEmail());
-      await tester.pumpAndSettle();
-
-      expect(find.byType(RegisterWithEmailPage), findsOneWidget);
+      expect(find.text(l10n().unknownError), findsOneWidget);
+      expect(find.byKey(const Key('toast_close_button')), findsOneWidget);
+      expect(
+        find.widgetWithText(CoreTextField, l10n().emailLabel),
+        findsOneWidget,
+      );
     });
   });
 }
