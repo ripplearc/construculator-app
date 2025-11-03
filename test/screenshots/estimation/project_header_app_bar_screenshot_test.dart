@@ -2,8 +2,10 @@ import 'package:construculator/features/estimation/presentation/widgets/project_
 import 'package:construculator/features/project_settings/domain/entities/project_entity.dart';
 import 'package:construculator/features/project_settings/domain/entities/enums.dart';
 import 'package:construculator/features/project_settings/testing/fake_project_repository.dart';
+import 'package:construculator/features/project_settings/testing/project_settings_test_module.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 
 import '../font_loader.dart';
 import '../await_images_extension.dart';
@@ -22,6 +24,12 @@ void main() {
   setUp(() async {
     await loadAppFonts();
     fakeProjectRepository = FakeProjectRepository();
+    Modular.init(ProjectSettingsTestModule(fakeProjectRepository));
+  });
+
+  tearDown(() {
+    Modular.destroy();
+    fakeProjectRepository.clearAllData();
   });
 
   group('ProjectHeaderAppBar Screenshot Tests', () {
