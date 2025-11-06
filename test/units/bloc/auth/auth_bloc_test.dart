@@ -2,17 +2,22 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_event.dart';
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_state.dart';
+import 'package:construculator/features/auth/testing/auth_test_module.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_manager.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
-import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -29,24 +34,13 @@ void main() {
     const testAvatarUrl = 'https://example.com/avatar.jpg';
 
     setUp(() {
-      // Create fake dependencies directly instead of using Modular
-      clock = FakeClockImpl();
-      fakeSupabase = FakeSupabaseWrapper(clock: clock);
-      fakeAuthNotifier = FakeAuthNotifier();
-      final fakeAuthRepository = FakeAuthRepository(clock: clock);
-      fakeAuthManager = FakeAuthManager(
-        authNotifier: fakeAuthNotifier,
-        authRepository: fakeAuthRepository,
-        wrapper: fakeSupabase,
-        clock: clock,
-      );
-      fakeRouter = FakeAppRouter();
-
-      authBloc = AuthBloc(
-        authManager: fakeAuthManager,
-        authNotifier: fakeAuthNotifier,
-        router: fakeRouter,
-      );
+      Modular.init(AuthTestModule());
+      clock = Modular.get<Clock>();
+      fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+      fakeAuthNotifier = Modular.get<AuthNotifier>() as FakeAuthNotifier;
+      fakeAuthManager = Modular.get<AuthManager>() as FakeAuthManager;
+      fakeRouter = Modular.get<AppRouter>() as FakeAppRouter;
+      authBloc = Modular.get<AuthBloc>();
     });
 
     tearDown(() {
@@ -55,6 +49,7 @@ void main() {
       fakeRouter.reset();
       fakeSupabase.reset();
       authBloc.close();
+      Modular.destroy();
     });
 
     group('AuthStarted', () {
