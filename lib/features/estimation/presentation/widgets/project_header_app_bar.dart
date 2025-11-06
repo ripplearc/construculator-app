@@ -60,6 +60,7 @@ class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget
             ),
             actions: [
               IconButton(
+                key: const Key('project_header_search_button'),
                 onPressed: onSearchTap,
                 icon: CoreIconWidget(
                   icon: CoreIcons.search,
@@ -67,6 +68,7 @@ class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget
                 ),
               ),
               IconButton(
+                key: const Key('project_header_notification_button'),
                 onPressed: onNotificationTap,
                 icon: CoreIconWidget(
                   icon: CoreIcons.notification,

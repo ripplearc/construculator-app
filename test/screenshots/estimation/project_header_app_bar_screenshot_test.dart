@@ -12,6 +12,7 @@ ImageProvider _createTestAvatarImage() {
 void main() {
   final size = const Size(390, 56);
   final ratio = 1.0;
+  final testName = 'project_header_app_bar';
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() async {
@@ -62,7 +63,7 @@ void main() {
       await expectLater(
         find.byType(ProjectHeaderAppBar),
         matchesGoldenFile(
-          'goldens/project_header_app_bar/${size.width}x${size.height}/project_header_app_bar_normal.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_normal.png',
         ),
       );
     });
@@ -83,7 +84,7 @@ void main() {
       await expectLater(
         find.byType(ProjectHeaderAppBar),
         matchesGoldenFile(
-          'goldens/project_header_app_bar/${size.width}x${size.height}/project_header_app_bar_long_name.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_long_name.png',
         ),
       );
     });
@@ -103,7 +104,7 @@ void main() {
       await expectLater(
         find.byType(ProjectHeaderAppBar),
         matchesGoldenFile(
-          'goldens/project_header_app_bar/${size.width}x${size.height}/project_header_app_bar_no_avatar.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_no_avatar.png',
         ),
       );
     });
