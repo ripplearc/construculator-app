@@ -18,7 +18,11 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
   /// Tracks cost estimation data for assertions during [getEstimations]
   final Map<String, List<CostEstimate>> _projectEstimations = {};
 
-  /// Controls whether [getEstimations] should return a [Failure].
+  /// Stream controllers for each project
+  final Map<String, StreamController<Either<Failure, List<CostEstimate>>>>
+  _streamControllers = {};
+
+  /// Controls whether [getEstimations] should return a [Failure].s
   bool shouldReturnFailureOnGetEstimations = false;
 
   /// Specifies the [EstimationErrorType] for the [Failure] returned by
@@ -58,19 +62,56 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     _methodCalls.add({'method': 'getEstimations', 'projectId': projectId});
 
     if (shouldReturnFailureOnGetEstimations) {
-      return Left(
-        EstimationFailure(
-          errorType:
-              getEstimationsFailureType ?? EstimationErrorType.unexpectedError,
-        ),
+      final failure = EstimationFailure(
+        errorType:
+            getEstimationsFailureType ?? EstimationErrorType.unexpectedError,
       );
+      _emitToStream(projectId, Left(failure));
+      return Left(failure);
     }
 
     if (shouldReturnEmptyList) {
-      return Right([]);
+      _emitToStream(projectId, const Right([]));
+      return const Right([]);
     }
 
-    return Right(_projectEstimations[projectId] ?? []);
+    final estimations = _projectEstimations[projectId] ?? [];
+    _emitToStream(projectId, Right(estimations));
+    return Right(estimations);
+  }
+
+  @override
+  Stream<Either<Failure, List<CostEstimate>>> watchEstimations(
+    String projectId,
+  ) {
+    _methodCalls.add({'method': 'watchEstimations', 'projectId': projectId});
+
+    if (!_streamControllers.containsKey(projectId)) {
+      _streamControllers[projectId] =
+          StreamController<Either<Failure, List<CostEstimate>>>.broadcast(
+            onCancel: () {
+              _streamControllers[projectId]?.close();
+              _streamControllers.remove(projectId);
+            },
+          );
+      Future.microtask(() => getEstimations(projectId));
+    }
+
+    final controller = _streamControllers[projectId];
+    if (controller == null) {
+      throw StateError('Stream controller not found for project: $projectId');
+    }
+    return controller.stream;
+  }
+
+  void _emitToStream(
+    String projectId,
+    Either<Failure, List<CostEstimate>> result,
+  ) {
+    if (_streamControllers.containsKey(projectId) &&
+        _streamControllers[projectId]?.isClosed == false) {
+      _streamControllers[projectId]?.add(result);
+    }
   }
 
   @override
@@ -93,13 +134,25 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
       );
     }
 
-    // Add the estimation to the project's estimations
     final projectId = estimation.projectId;
     final estimations = _projectEstimations[projectId] ?? [];
     estimations.add(estimation);
     _projectEstimations[projectId] = estimations;
 
+    _emitToStream(projectId, Right(estimations));
+
     return Right(estimation);
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _streamControllers.values) {
+      if (!controller.isClosed) {
+        controller.close();
+      }
+    }
+    _streamControllers.clear();
+    _projectEstimations.clear();
   }
 
   /// Adds cost estimation data for a specific project
@@ -152,6 +205,11 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     shouldDelayOperations = false;
     completer = null;
 
+    for (final controller in _streamControllers.values) {
+      controller.close();
+    }
+    _streamControllers.clear();
+
     clearAllData();
     clearMethodCalls();
   }
@@ -187,7 +245,6 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     final created = createdAt ?? now;
     final updated = updatedAt ?? now;
 
-    // Create markup configuration
     final markupConfig = MarkupConfiguration(
       overallType: markupType ?? MarkupType.overall,
       overallValue: const MarkupValue(
@@ -223,7 +280,6 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
           : null,
     );
 
-    // Create lock status
     final lockStatus = isLocked == true && lockedByUserID != null
         ? LockStatus.locked(lockedByUserID, now)
         : const LockStatus.unlocked();
@@ -260,7 +316,6 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     final created = createdAt ?? now;
     final updated = updatedAt ?? now;
 
-    // Create overall markup configuration
     final markupConfig = MarkupConfiguration(
       overallType: MarkupType.overall,
       overallValue: MarkupValue(
@@ -269,7 +324,6 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
       ),
     );
 
-    // Create lock status
     final lockStatus = isLocked == true && lockedByUserID != null
         ? LockStatus.locked(lockedByUserID, now)
         : const LockStatus.unlocked();
@@ -308,7 +362,6 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     final created = createdAt ?? now;
     final updated = updatedAt ?? now;
 
-    // Create granular markup configuration
     final markupConfig = MarkupConfiguration(
       overallType: MarkupType.granular,
       overallValue: const MarkupValue(
@@ -332,7 +385,6 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
       ),
     );
 
-    // Create lock status
     final lockStatus = isLocked == true && lockedByUserID != null
         ? LockStatus.locked(lockedByUserID, now)
         : const LockStatus.unlocked();

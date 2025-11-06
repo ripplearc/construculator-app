@@ -19,14 +19,12 @@ abstract class AddCostEstimationEvent extends Equatable {
 class AddCostEstimationSubmitted extends AddCostEstimationEvent {
   final String estimationName;
   final String projectId;
-  final String creatorUserId;
 
   const AddCostEstimationSubmitted({
     required this.estimationName,
     required this.projectId,
-    required this.creatorUserId,
   });
 
   @override
-  List<Object?> get props => [estimationName, projectId, creatorUserId];
+  List<Object?> get props => [estimationName, projectId];
 }

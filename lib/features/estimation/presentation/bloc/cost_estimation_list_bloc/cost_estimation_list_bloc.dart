@@ -1,46 +1,82 @@
+import 'dart:async';
 import 'dart:collection';
 
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
-import 'package:construculator/features/estimation/domain/usecases/get_estimations_usecase.dart';
+import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
+import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rxdart/transformers.dart';
 
 part 'cost_estimation_list_event.dart';
 part 'cost_estimation_list_state.dart';
 
 class CostEstimationListBloc
     extends Bloc<CostEstimationListEvent, CostEstimationListState> {
-  final GetEstimationsUseCase _getEstimationsUseCase;
+  final CostEstimationRepository _repository;
+  StreamSubscription<Either<Failure, List<CostEstimate>>>? _streamSubscription;
 
-  CostEstimationListBloc({required GetEstimationsUseCase getEstimationsUseCase})
-    : _getEstimationsUseCase = getEstimationsUseCase,
+  CostEstimationListBloc({required CostEstimationRepository repository})
+    : _repository = repository,
       super(const CostEstimationListInitial()) {
-    on<CostEstimationListRefreshEvent>(_onRefresh);
+    on<CostEstimationListStartWatching>(_onStartWatching);
+    on<_CostEstimationListUpdated>(_onUpdated);
   }
 
-  Future<void> _onRefresh(
-    CostEstimationListRefreshEvent event,
+  @override
+  Future<void> close() {
+    _streamSubscription?.cancel();
+    return super.close();
+  }
+
+  void _onStartWatching(
+    CostEstimationListStartWatching event,
     Emitter<CostEstimationListState> emit,
-  ) async {
-    final currentEstimations = state is CostEstimationListWithData
-        ? List<CostEstimate>.from(
-            (state as CostEstimationListWithData).estimates,
-          )
-        : <CostEstimate>[];
+  ) {
     emit(const CostEstimationListLoading());
-    await _loadEstimations(emit, event.projectId, currentEstimations);
+
+    _streamSubscription?.cancel();
+
+    _streamSubscription = _repository
+        .watchEstimations(event.projectId)
+        .distinct(_compareEstimationResults)
+        .debounceTime(const Duration(milliseconds: 300))
+        .listen((result) {
+          add(_CostEstimationListUpdated(result));
+        });
   }
 
-  Future<void> _loadEstimations(
-    Emitter<CostEstimationListState> emit,
-    String projectId,
-    List<CostEstimate> currentEstimations,
-  ) async {
-    final result = await _getEstimationsUseCase(projectId);
+  bool _compareEstimationResults(
+    Either<Failure, List<CostEstimate>> previous,
+    Either<Failure, List<CostEstimate>> current,
+  ) {
+    return previous.fold(
+      (prevFailure) => current.fold(
+        (currFailure) =>
+            prevFailure.runtimeType == currFailure.runtimeType &&
+            prevFailure == currFailure,
+        (_) => false,
+      ),
+      (prevEstimations) => current.fold((_) => false, (currEstimations) {
+        if (prevEstimations.length != currEstimations.length) return false;
+        for (var i = 0; i < prevEstimations.length; i++) {
+          if (prevEstimations[i] != currEstimations[i]) return false;
+        }
+        return true;
+      }),
+    );
+  }
 
-    result.fold(
+  void _onUpdated(
+    _CostEstimationListUpdated event,
+    Emitter<CostEstimationListState> emit,
+  ) {
+    event.result.fold(
       (failure) {
+        final currentEstimations = state is CostEstimationListWithData
+            ? (state as CostEstimationListWithData).estimates.toList()
+            : <CostEstimate>[];
         emit(
           CostEstimationListError(
             failure: failure,

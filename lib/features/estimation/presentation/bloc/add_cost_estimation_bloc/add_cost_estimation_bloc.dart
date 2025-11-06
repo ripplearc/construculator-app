@@ -32,7 +32,6 @@ class AddCostEstimationBloc
     final result = await _addCostEstimationUseCase(
       estimationName: event.estimationName,
       projectId: event.projectId,
-      creatorUserId: event.creatorUserId,
     );
 
     result.fold(

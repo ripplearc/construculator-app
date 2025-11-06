@@ -2,10 +2,12 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_repository_impl.dart';
 import 'package:construculator/features/estimation/data/testing/fake_cost_estimation_data_source.dart';
+import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -64,6 +66,7 @@ void main() {
     });
 
     setUp(() {
+      repository.dispose();
       fakeDataSource.reset();
     });
 
@@ -344,6 +347,53 @@ void main() {
       );
     });
 
+    group('watchEstimations', () {
+      test('should emit estimations when stream is watched', () async {
+        final estimation1 = fakeDataSource.createSampleEstimation(
+          id: estimateIdDefault,
+          projectId: testProjectId,
+          estimateName: estimateNameDefault,
+        );
+
+        fakeDataSource.addProjectEstimation(testProjectId, estimation1);
+
+        final stream = repository.watchEstimations(testProjectId);
+
+        await expectLater(
+          stream,
+          emits(
+            predicate((dynamic result) {
+              if (result is! Either<Failure, List<CostEstimate>>) return false;
+              return result.isRight() &&
+                  result.fold(
+                    (_) => false,
+                    (estimations) =>
+                        estimations.length == 1 &&
+                        estimations[0] == estimation1.toDomain(),
+                  );
+            }),
+          ),
+        );
+      });
+
+      test('should share stream emissions across multiple listeners', () async {
+        fakeDataSource.addProjectEstimations(testProjectId, []);
+
+        final stream1 = repository.watchEstimations(testProjectId);
+        final stream2 = repository.watchEstimations(testProjectId);
+
+        final results1 = <Either<Failure, List<CostEstimate>>>[];
+        final results2 = <Either<Failure, List<CostEstimate>>>[];
+
+        stream1.listen(results1.add);
+        stream2.listen(results2.add);
+
+        await pumpEventQueue();
+
+        expect(results1, equals(results2));
+      });
+    });
+
     group('createEstimation', () {
       test('should return created estimation on success', () async {
         final estimationDto = fakeDataSource.createSampleEstimation(
@@ -449,6 +499,107 @@ void main() {
             (failure) => expect(failure, UnexpectedFailure()),
             (_) => fail('Expected failure but got success'),
           );
+        },
+      );
+
+      test(
+        'should update stream with newly created estimation using cached data',
+        () async {
+          final existingEstimation = fakeDataSource.createSampleEstimation(
+            id: estimateIdDefault,
+            projectId: testProjectId,
+            estimateName: estimateNameDefault,
+          );
+
+          fakeDataSource.addProjectEstimation(
+            testProjectId,
+            existingEstimation,
+          );
+
+          final stream = repository.watchEstimations(testProjectId);
+          final streamResults = <Either<Failure, List<CostEstimate>>>[];
+
+          final subscription = stream.listen(streamResults.add);
+
+          await pumpEventQueue();
+
+          expect(streamResults.length, equals(1));
+          expect(
+            streamResults[0].fold(
+              (_) => 0,
+              (estimations) => estimations.length,
+            ),
+            equals(1),
+          );
+
+          final newEstimationDto = fakeDataSource.createSampleEstimation(
+            id: estimateId2,
+            projectId: testProjectId,
+            estimateName: estimateName2,
+          );
+          final newEstimation = newEstimationDto.toDomain();
+
+          await repository.createEstimation(newEstimation);
+
+          await pumpEventQueue();
+
+          expect(streamResults.length, equals(2));
+          expect(
+            streamResults[1].fold(
+              (_) => 0,
+              (estimations) => estimations.length,
+            ),
+            equals(2),
+          );
+
+          streamResults[1].fold(
+            (_) => fail('Expected success but got failure'),
+            (estimations) {
+              expect(estimations[0], equals(existingEstimation.toDomain()));
+              expect(estimations[1], equals(newEstimation));
+            },
+          );
+
+          await subscription.cancel();
+        },
+      );
+    });
+
+    group('dispose', () {
+      test('should close all stream controllers and clear caches', () async {
+        fakeDataSource.addProjectEstimations(testProjectId, []);
+        fakeDataSource.addProjectEstimations(otherProjectId, []);
+
+        repository.watchEstimations(testProjectId);
+        repository.watchEstimations(otherProjectId);
+
+        repository.dispose();
+
+        expect(
+          () => repository.watchEstimations(testProjectId),
+          returnsNormally,
+        );
+      });
+
+      test('should not throw when disposing with no active streams', () {
+        expect(() => repository.dispose(), returnsNormally);
+      });
+
+      test(
+        'should close stream controllers that are not already closed',
+        () async {
+          fakeDataSource.addProjectEstimations(testProjectId, []);
+
+          final stream = repository.watchEstimations(testProjectId);
+          final subscription = stream.listen((_) {});
+
+          await pumpEventQueue();
+
+          repository.dispose();
+
+          await subscription.cancel();
+
+          expect(() => repository.dispose(), returnsNormally);
         },
       );
     });

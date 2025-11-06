@@ -409,6 +409,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       'data': Map<String, dynamic>.from(data),
     });
 
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
     if (shouldThrowOnInsert) {
       _throwConfiguredException(
         insertExceptionType,
