@@ -564,5 +564,15 @@
   "@projectLoadError": {
     "description": "Error message shown when project fails to load",
     "context": "N/A"
+  },
+  "untitledEstimation": "Untitled Estimation",
+  "@untitledEstimation": {
+    "description": "Default name for a newly created cost estimation",
+    "context": "N/A"
+  },
+  "userIdNotAvailable": "User ID is not available",
+  "@userIdNotAvailable": {
+    "description": "Error message shown when user ID is not available",
+    "context": "N/A"
   }
 }

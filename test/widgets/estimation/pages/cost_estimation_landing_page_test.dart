@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
@@ -236,6 +237,103 @@ void main() {
 
       expect(find.byType(CoreButton), findsOneWidget);
       expect(find.text(l10n().addEstimation), findsOneWidget);
+    });
+
+    testWidgets(
+      'shows trailing loading indicator and disables add button while creating',
+      (tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+
+        addCostEstimationData(
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimation-1',
+            projectId: testProjectId,
+            estimateName: 'Existing Estimation',
+          ),
+        );
+
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CostEstimationTile), findsOneWidget);
+
+        fakeSupabase.shouldDelayOperations = true;
+        fakeSupabase.completer = Completer();
+
+        await tester.tap(find.text(l10n().addEstimation));
+        await tester.pump();
+
+        final addButton = tester.widget<CoreButton>(
+          find.widgetWithText(CoreButton, l10n().addEstimation),
+        );
+        expect(addButton.isDisabled, isTrue);
+
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        fakeSupabase.completer?.complete();
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets('appends new estimation tile after successful creation', (
+      tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      addCostEstimationData(
+        EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: 'Existing Estimation',
+        ),
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      expect(find.byType(CostEstimationTile), findsOneWidget);
+
+      await tester.tap(find.text(l10n().addEstimation));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CostEstimationTile), findsNWidgets(2));
+      expect(find.text(l10n().untitledEstimation), findsOneWidget);
+    });
+
+    testWidgets('shows error toast when creation fails', (tester) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      addCostEstimationData(
+        EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: 'Existing Estimation',
+        ),
+      );
+
+      fakeSupabase.shouldThrowOnInsert = true;
+      fakeSupabase.insertExceptionType = SupabaseExceptionType.socket;
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      await tester.tap(find.text(l10n().addEstimation));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().connectionError), findsOneWidget);
+
+      final addButton = tester.widget<CoreButton>(
+        find.widgetWithText(CoreButton, l10n().addEstimation),
+      );
+      expect(addButton.isDisabled, isFalse);
+      expect(find.byType(CostEstimationTile), findsOneWidget);
     });
   });
 

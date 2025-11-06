@@ -771,6 +771,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unable to load project'**
   String get projectLoadError;
+
+  /// Default name for a newly created cost estimation
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled Estimation'**
+  String get untitledEstimation;
+
+  /// Error message shown when user ID is not available
+  ///
+  /// In en, this message translates to:
+  /// **'User ID is not available'**
+  String get userIdNotAvailable;
 }
 
 class _AppLocalizationsDelegate
