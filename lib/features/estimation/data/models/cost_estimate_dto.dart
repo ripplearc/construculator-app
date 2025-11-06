@@ -144,29 +144,39 @@ class CostEstimateDto {
   /// This method converts the DTO back to the database/API JSON format,
   /// mapping camelCase Dart properties to snake_case JSON keys.
   /// 
+  /// If the `id` field is empty, it is excluded from the JSON to allow
+  /// the database to auto-generate the UUID.
+  /// 
   /// Returns a [Map<String, dynamic>] suitable for JSON serialization.
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'project_id': projectId,
-    'estimate_name': estimateName,
-    'estimate_description': estimateDescription,
-    'creator_user_id': creatorUserId,
-    'markup_type': markupType,
-    'overall_markup_value_type': overallMarkupValueType,
-    'overall_markup_value': overallMarkupValue,
-    'material_markup_value_type': materialMarkupValueType,
-    'material_markup_value': materialMarkupValue,
-    'labor_markup_value_type': laborMarkupValueType,
-    'labor_markup_value': laborMarkupValue,
-    'equipment_markup_value_type': equipmentMarkupValueType,
-    'equipment_markup_value': equipmentMarkupValue,
-    'total_cost': totalCost,
-    'is_locked': isLocked,
-    'locked_by_user_id': lockedByUserID,
-    'locked_at': lockedAt,
-    'created_at': createdAt,
-    'updated_at': updatedAt,
-  };
+  Map<String, dynamic> toJson() {
+    final json = <String, dynamic>{
+      'project_id': projectId,
+      'estimate_name': estimateName,
+      'estimate_description': estimateDescription,
+      'creator_user_id': creatorUserId,
+      'markup_type': markupType,
+      'overall_markup_value_type': overallMarkupValueType,
+      'overall_markup_value': overallMarkupValue,
+      'material_markup_value_type': materialMarkupValueType,
+      'material_markup_value': materialMarkupValue,
+      'labor_markup_value_type': laborMarkupValueType,
+      'labor_markup_value': laborMarkupValue,
+      'equipment_markup_value_type': equipmentMarkupValueType,
+      'equipment_markup_value': equipmentMarkupValue,
+      'total_cost': totalCost,
+      'is_locked': isLocked,
+      'locked_by_user_id': lockedByUserID,
+      'locked_at': lockedAt,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+    };
+    
+    if (id.isNotEmpty) {
+      json['id'] = id;
+    }
+    
+    return json;
+  }
 
   /// Converts this DTO to a domain [CostEstimate] entity.
   /// 
