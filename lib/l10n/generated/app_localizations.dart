@@ -759,6 +759,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cost Estimation'**
   String get costEstimation;
+
+  /// Default name for a newly created cost estimation
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled Estimation'**
+  String get untitledEstimation;
+
+  /// Message shown when there are no cost estimations in the list
+  ///
+  /// In en, this message translates to:
+  /// **'No estimation added. To add an estimation please click on add button'**
+  String get noEstimationAddedMessage;
+
+  /// Error message shown when user ID is not available
+  ///
+  /// In en, this message translates to:
+  /// **'User ID is not available'**
+  String get userIdNotAvailable;
 }
 
 class _AppLocalizationsDelegate

@@ -181,7 +181,6 @@ void main() {
           expect(costEstimation.estimateName, testEstimationName);
           expect(costEstimation.projectId, testProjectId);
           expect(costEstimation.creatorUserId, testCreatorUserId);
-          expect(costEstimation.id, isNotEmpty);
           expect(costEstimation.estimateDescription, isNull);
           expect(costEstimation.totalCost, isNull);
           

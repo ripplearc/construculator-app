@@ -86,11 +86,23 @@ void main() {
       expect(dto.updatedAt, '2025-09-20T10:00:00Z');
     });
 
-    test('toJson should output the same map as input', () {
+    test('toJson should output the same map as input when id is not empty', () {
       final dto = CostEstimateDto.fromJson(sampleJson);
       final json = dto.toJson();
 
       expect(json, equals(sampleJson));
+      expect(json['id'], '123');
+    });
+
+    test('toJson should exclude id when id is empty', () {
+      final dto = CostEstimateDto.fromJson(sampleJson);
+      dto.id = '';
+      final json = dto.toJson();
+
+      expect(json.containsKey('id'), false);
+      expect(json['project_id'], 'p1');
+      expect(json['estimate_name'], 'Test Estimate');
+      expect(json.keys.length, sampleJson.keys.length - 1);
     });
 
     test(

@@ -365,4 +365,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get costEstimation => 'Cost Estimation';
+
+  @override
+  String get untitledEstimation => 'Untitled Estimation';
+
+  @override
+  String get noEstimationAddedMessage =>
+      'No estimation added. To add an estimation please click on add button';
+
+  @override
+  String get userIdNotAvailable => 'User ID is not available';
 }
