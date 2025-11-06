@@ -554,5 +554,20 @@
   "@costEstimation": {
     "description": "Label for cost estimation button on dashboard",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57518-25657&t=12IIYBsZE7VQ2Gg0-4"
+  },
+  "untitledEstimation": "Untitled Estimation",
+  "@untitledEstimation": {
+    "description": "Default name for a newly created cost estimation",
+    "context": "N/A"
+  },
+  "noEstimationAddedMessage": "No estimation added. To add an estimation please click on add button",
+  "@noEstimationAddedMessage": {
+    "description": "Message shown when there are no cost estimations in the list",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-6523&t=12IIYBsZE7VQ2Gg0-4"
+  },
+  "userIdNotAvailable": "User ID is not available",
+  "@userIdNotAvailable": {
+    "description": "Error message shown when user ID is not available",
+    "context": "N/A"
   }
 }
