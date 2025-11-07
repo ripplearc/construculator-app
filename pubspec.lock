@@ -926,13 +926,13 @@ packages:
     source: hosted
     version: "3.1.2"
   ripplearc_linter:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: ripplearc_linter
-      sha256: "37772b4e32ff8a91ab658aa33fe1f7377d6d7fe747ad30c0c39450be90b8f367"
+      sha256: "35097f194a7f6c0b59661de052506dafdd7f82f03fde454d7f1b2e57527bfeb7"
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.1"
+    version: "0.1.2"
   rxdart:
     dependency: "direct main"
     description:
