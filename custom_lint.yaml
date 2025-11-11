@@ -1,14 +1,14 @@
-rules:
-  - prefer_fake_over_mock
-  - forbid_forced_unwrapping
-  - no_optional_operators_in_tests
-  - no_direct_instantiation: false
-  - document_fake_parameters
-  - document_interface
-  - todo_with_story_links
-  - no_internal_method_docs
-  - specific_exception_types
-  - test_file_mutation_coverage: false
-  - avoid_test_timeouts
-  - private_subject
-  - sealed_over_dynamic
+# This file is optional.
+# It is ONLY used to provide rule-specific configurations, not to enable or disable rules.
+# Rules are enabled/disabled in the 'analysis_options.yaml' file.
+#
+# ---
+#
+# EXAMPLE:
+# If a rule (e.g., 'use_logger') exposed custom options, you would configure them here.
+# The code for the 'use_logger' lint would then read these values.
+#
+# use_logger:
+#   allowed_levels:
+#     - warning
+#     - error
