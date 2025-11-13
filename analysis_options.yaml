@@ -17,17 +17,23 @@ analyzer:
   exclude:
     - lib/generated/**
     - lib/**.g.dart
-
+    - lib/**.freezed.dart
+    - lib/l10n/generated/**
 custom_lint:
   rules:
     - prefer_fake_over_mock
+    - forbid_forced_unwrapping
     - no_optional_operators_in_tests
-    - forbid_forced_unwrapping:
+    - no_direct_instantiation: false
     - document_fake_parameters
     - document_interface
     - todo_with_story_links
     - no_internal_method_docs
-    - no_direct_instantiation: false
+    - specific_exception_types
+    - test_file_mutation_coverage: false
+    - avoid_test_timeouts
+    - private_subject
+    - sealed_over_dynamic
 
 linter:
   # The lint rules applied to this project can be customized in the
