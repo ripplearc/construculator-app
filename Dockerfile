@@ -7,7 +7,7 @@ ENV PATH="/flutter/bin:${PATH}"
 ENV PUB_CACHE="/home/flutter/.pub-cache"
 ENV PUB_HOSTED_URL="https://pub.dartlang.org"
 
-# Install dependencies for Flutter testing
+# Install dependencies for Flutter testing (add lcov for coverage reporting)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         curl \
@@ -18,6 +18,7 @@ RUN apt-get update && \
         libglu1-mesa \
         xvfb \
         ca-certificates \
+        lcov \
         && rm -rf /var/lib/apt/lists/*
 
 # Update certificates and configure git
