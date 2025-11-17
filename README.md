@@ -197,9 +197,17 @@ docker exec -it <NAME-OR-ID-OF-DOCKER-CONTAINER> bash
 Replace `<NAME-OR-ID-OF-DOCKER-CONTAINER>` with the value you retrieved in the previous step.
 
 You should now have access to a `bash` terminal inside the container. Make sure you are in the `/app` directory and you can now run all the tests and generate screenshots for your golden tests.
+
+Run a single test file (useful for local verification and CI):
+```
+flutter test <PATH-TO-TEST>
+```
+
+Update golden images (only run when a visual change is intended and reviewed):
 ```
 flutter test <PATH-TO-TEST> --update-goldens
 ```
+
 **Note:** There is a volume binding in the container so all the generated tests should be present in your local repository and there is no need to copy over the screenshot files from the container.
 
 ## Troubleshooting
