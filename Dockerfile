@@ -1,8 +1,10 @@
 # Use Ubuntu 24.04 as base
 FROM ubuntu:24.04
 
+# Set Flutter version as build argument (can be overridden at build time)
+ARG FLUTTER_VERSION=3.32.0
+
 # Set environment variables
-ENV FLUTTER_VERSION=3.32.0
 ENV PATH="/flutter/bin:${PATH}"
 ENV PUB_CACHE="/home/flutter/.pub-cache"
 ENV PUB_HOSTED_URL="https://pub.dartlang.org"
@@ -26,7 +28,7 @@ RUN update-ca-certificates && \
     git config --global http.sslverify true
 
 # Install Flutter using the official Flutter SDK archive (more reliable)
-RUN curl -fsSL https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.32.0-stable.tar.xz -o flutter.tar.xz && \
+RUN curl -fsSL https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz -o flutter.tar.xz && \
     tar -xf flutter.tar.xz -C / && \
     rm flutter.tar.xz
 
