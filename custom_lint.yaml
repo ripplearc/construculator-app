@@ -1,8 +1,14 @@
-rules:
-  - prefer_fake_over_mock
-  - no_optional_operators_in_tests
-  - forbid_forced_unwrapping
-
-analyzer:
-  plugins:
-    - custom_lint_library 
+# This file is optional.
+# It is ONLY used to provide rule-specific configurations, not to enable or disable rules.
+# Rules are enabled/disabled in the 'analysis_options.yaml' file.
+#
+# ---
+#
+# EXAMPLE:
+# If a rule (e.g., 'use_logger') exposed custom options, you would configure them here.
+# The code for the 'use_logger' lint would then read these values.
+#
+# use_logger:
+#   allowed_levels:
+#     - warning
+#     - error

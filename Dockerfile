@@ -1,13 +1,15 @@
 # Use Ubuntu 24.04 as base
 FROM ubuntu:24.04
 
+# Set Flutter version as build argument (can be overridden at build time)
+ARG FLUTTER_VERSION=3.32.0
+
 # Set environment variables
-ENV FLUTTER_VERSION=3.32.0
-ENV PATH="/flutter/bin:${PATH}"
 ENV PUB_CACHE="/home/flutter/.pub-cache"
 ENV PUB_HOSTED_URL="https://pub.dartlang.org"
+ENV PATH="/flutter/bin:/home/flutter/.pub-cache/bin:${PATH}"
 
-# Install dependencies for Flutter testing
+# Install dependencies for Flutter testing (add lcov for coverage reporting)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         curl \
@@ -18,6 +20,7 @@ RUN apt-get update && \
         libglu1-mesa \
         xvfb \
         ca-certificates \
+        lcov \
         && rm -rf /var/lib/apt/lists/*
 
 # Update certificates and configure git
@@ -25,7 +28,7 @@ RUN update-ca-certificates && \
     git config --global http.sslverify true
 
 # Install Flutter using the official Flutter SDK archive (more reliable)
-RUN curl -fsSL https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.32.0-stable.tar.xz -o flutter.tar.xz && \
+RUN curl -fsSL https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz -o flutter.tar.xz && \
     tar -xf flutter.tar.xz -C / && \
     rm flutter.tar.xz
 
@@ -46,6 +49,12 @@ RUN chown flutter:flutter pubspec.yaml pubspec.lock
 
 # Switch to non-root user before running flutter commands
 USER flutter
+
+# Install FVM globally
+RUN dart pub global activate fvm
+
+# Ensure PATH is exported in interactive shells
+RUN echo 'export PATH="$PATH:$HOME/.pub-cache/bin"' >> ~/.bashrc
 
 # Verify Flutter installation and configure pub cache
 RUN flutter doctor --verbose && \
