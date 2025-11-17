@@ -5,9 +5,9 @@ FROM ubuntu:24.04
 ARG FLUTTER_VERSION=3.32.0
 
 # Set environment variables
-ENV PATH="/flutter/bin:${PATH}"
 ENV PUB_CACHE="/home/flutter/.pub-cache"
 ENV PUB_HOSTED_URL="https://pub.dartlang.org"
+ENV PATH="/flutter/bin:/home/flutter/.pub-cache/bin:${PATH}"
 
 # Install dependencies for Flutter testing (add lcov for coverage reporting)
 RUN apt-get update && \
@@ -49,6 +49,12 @@ RUN chown flutter:flutter pubspec.yaml pubspec.lock
 
 # Switch to non-root user before running flutter commands
 USER flutter
+
+# Install FVM globally
+RUN dart pub global activate fvm
+
+# Ensure PATH is exported in interactive shells
+RUN echo 'export PATH="$PATH:$HOME/.pub-cache/bin"' >> ~/.bashrc
 
 # Verify Flutter installation and configure pub cache
 RUN flutter doctor --verbose && \
