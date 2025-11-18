@@ -73,6 +73,7 @@ pre_check() {
     echo "✅ No Dart files changed"
   else
     echo "🔍 Analyzing changed files..."
+    echo "📋 Running Flutter analyzer (includes custom_lint rules)..."
     fvm flutter analyze --fatal-infos --fatal-warnings $changed_dart_files
     
     # Filter out generated files (matching analysis_options.yaml exclusions)
