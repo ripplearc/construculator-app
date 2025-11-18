@@ -7,9 +7,10 @@ ARG FLUTTER_VERSION=3.32.0
 # Set environment variables
 ENV PUB_CACHE="/home/flutter/.pub-cache"
 ENV PUB_HOSTED_URL="https://pub.dartlang.org"
-ENV PATH="/flutter/bin:/home/flutter/.pub-cache/bin:${PATH}"
+ENV DART_SDK="/usr/lib/dart"
+ENV PATH="/home/flutter/.pub-cache/bin:/home/flutter/fvm/default/bin:${DART_SDK}/bin:${PATH}"
 
-# Install dependencies for Flutter testing (add lcov for coverage reporting)
+# Install dependencies for Flutter testing (add lcov for coverage reporting and dart-sdk for FVM)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         curl \
@@ -21,48 +22,54 @@ RUN apt-get update && \
         xvfb \
         ca-certificates \
         lcov \
-        && rm -rf /var/lib/apt/lists/*
+        apt-transport-https \
+        wget \
+        gnupg \
+        && wget -qO- https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/dart.gpg && \
+        echo 'deb [signed-by=/usr/share/keyrings/dart.gpg arch=amd64] https://storage.googleapis.com/download.dartlang.org/linux/debian stable main' | tee /etc/apt/sources.list.d/dart_stable.list && \
+        apt-get update && \
+        apt-get install -y dart && \
+        rm -rf /var/lib/apt/lists/*
 
 # Update certificates and configure git
 RUN update-ca-certificates && \
     git config --global http.sslverify true
 
-# Install Flutter using the official Flutter SDK archive (more reliable)
-RUN curl -fsSL https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz -o flutter.tar.xz && \
-    tar -xf flutter.tar.xz -C / && \
-    rm flutter.tar.xz
-
-# Fix git ownership and create non-root user
-RUN git config --global --add safe.directory /flutter && \
-    useradd -m -s /bin/bash flutter && \
-    chown -R flutter:flutter /flutter && \
-    mkdir -p /home/flutter/.pub-cache && \
+# Create non-root user
+RUN useradd -m -s /bin/bash flutter && \
+    mkdir -p /home/flutter/.pub-cache /home/flutter/fvm && \
     chown -R flutter:flutter /home/flutter
 
 # Set working directory and ensure proper ownership
 WORKDIR /app
 RUN chown -R flutter:flutter /app
 
-# Copy pubspec files first for better caching
-COPY pubspec.yaml pubspec.lock ./
-RUN chown flutter:flutter pubspec.yaml pubspec.lock
-
-# Switch to non-root user before running flutter commands
+# Switch to non-root user before running FVM commands
 USER flutter
 
-# Install FVM globally
+# Install FVM globally using dart
 RUN dart pub global activate fvm
 
+# Copy .fvmrc to use project's Flutter version
+COPY --chown=flutter:flutter .fvmrc ./
+
+# Install Flutter using FVM based on .fvmrc and set it as default
+RUN fvm install && \
+    fvm global ${FLUTTER_VERSION}
+
 # Ensure PATH is exported in interactive shells
-RUN echo 'export PATH="$PATH:$HOME/.pub-cache/bin"' >> ~/.bashrc
+RUN echo 'export PATH="$PATH:$HOME/.pub-cache/bin:$HOME/fvm/default/bin"' >> ~/.bashrc
 
-# Verify Flutter installation and configure pub cache
-RUN flutter doctor --verbose && \
-    flutter config --no-analytics && \
-    flutter precache
+# Verify Flutter installation and configure
+RUN fvm flutter doctor --verbose && \
+    fvm flutter config --no-analytics && \
+    fvm flutter precache
 
-# Install dependencies
-RUN flutter pub get
+# Copy pubspec files for better caching
+COPY --chown=flutter:flutter pubspec.yaml pubspec.lock ./
+
+# Install dependencies using FVM-managed Flutter
+RUN fvm flutter pub get
 
 # Copy the rest of the application
 COPY --chown=flutter:flutter . .
