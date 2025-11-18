@@ -49,11 +49,16 @@ pre_check() {
 
   # Changed Dart files analysis
   local changed_dart_files=$(git diff --name-only --diff-filter=d "$base_commit" -- "lib/*.dart" "test/*.dart")
+  
   if [[ -z "$changed_dart_files" ]]; then
     echo "✅ No Dart files changed"
   else
     echo "🔍 Analyzing changed files..."
+    echo "📋 Running Flutter analyzer (includes custom_lint rules)..."
     fvm flutter analyze --fatal-infos --fatal-warnings $changed_dart_files
+    
+    echo "🔍 Running custom linter (ripplearc_linter rules) on changed files..."
+    dart run custom_lint $changed_dart_files
   fi
 
   # Changed tests
@@ -116,6 +121,21 @@ comprehensive_check() {
   # Full code analysis
   echo "🔍 Full code analysis..."
   fvm flutter analyze --fatal-infos --fatal-warnings .
+
+  # Get base commit for custom linter check on changed files only
+  git fetch origin "$TARGET_BRANCH"
+  local base_commit=$(git merge-base HEAD "origin/$TARGET_BRANCH")
+  
+  # Get committed changed files (compared to base commit) for custom_lint only
+  local changed_dart_files=$(git diff --name-only --diff-filter=d "$base_commit" -- "lib/*.dart" "test/*.dart")
+  
+  # Run custom linter only on changed files
+  if [[ -z "$changed_dart_files" ]]; then
+    echo "✅ No Dart files changed, skipping custom linter"
+  else
+    echo "🔍 Running custom linter (ripplearc_linter rules) on changed files..."
+    dart run custom_lint $changed_dart_files
+  fi
 
   # Unit tests with coverage
   if [ -d "test/units" ] && [ "$(ls -A test/units)" ]; then
