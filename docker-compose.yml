@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  flutter:
+    build:
+      context: .
+      args:
+        FLUTTER_VERSION: 3.32.0
+    volumes:
+      - ./test:/app/test
+      - ./lib:/app/lib
+    stdin_open: true
+    tty: true
