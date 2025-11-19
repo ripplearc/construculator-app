@@ -15,7 +15,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.
 import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:core_ui/core_ui.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
