@@ -269,7 +269,6 @@ void main() {
         },
         act: (bloc) async {
           bloc.add(const AuthStarted());
-          await Future.delayed(const Duration(milliseconds: 10));
           bloc.add(AuthUserProfileChanged(null));
         },
         expect: () => [
