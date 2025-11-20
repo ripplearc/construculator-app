@@ -783,6 +783,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'User ID is not available'**
   String get userIdNotAvailable;
+
+  /// Label for rename action button
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get renameAction;
+
+  /// Label for favourite action button
+  ///
+  /// In en, this message translates to:
+  /// **'Favourite'**
+  String get favouriteAction;
+
+  /// Label for remove action button
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get removeAction;
 }
 
 class _AppLocalizationsDelegate

@@ -574,5 +574,20 @@
   "@userIdNotAvailable": {
     "description": "Error message shown when user ID is not available",
     "context": "N/A"
+  },
+  "renameAction": "Rename",
+  "@renameAction": {
+    "description": "Label for rename action button",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53142&t=wjWHI4P6ds90viit-4: "
+  },
+  "favouriteAction": "Favourite",
+  "@favouriteAction": {
+    "description": "Label for favourite action button",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53146&t=wjWHI4P6ds90viit-4"
+  },
+  "removeAction": "Remove",
+  "@removeAction": {
+    "description": "Label for remove action button",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53150&t=wjWHI4P6ds90viit-4"
   }
 }

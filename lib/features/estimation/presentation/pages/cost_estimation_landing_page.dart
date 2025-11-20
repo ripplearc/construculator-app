@@ -5,13 +5,14 @@ import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bl
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_state.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
+import 'package:construculator/features/estimation/presentation/widgets/estimation_actions_sheet.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
-import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -33,12 +34,14 @@ class CostEstimationLandingPage extends StatefulWidget {
 class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
     with LocalizationMixin {
   late final AuthBloc _authBloc;
+  late final AppRouter _router;
   String userAvatarUrl = '';
 
   @override
   void initState() {
     super.initState();
     _authBloc = Modular.get<AuthBloc>();
+    _router = Modular.get<AppRouter>();
     _authBloc.initialize();
   }
 
@@ -49,6 +52,35 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
       AddCostEstimationSubmitted(
         estimationName: l10n.untitledEstimation,
         projectId: widget.projectId,
+      ),
+    );
+  }
+
+  void _showEstimationActionsSheet(
+    CostEstimate estimation,
+    AppColorsExtension colorTheme,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: colorTheme.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (_) => EstimationActionsSheet(
+        estimationName: estimation.estimateName,
+        onRename: () {
+          _router.pop();
+          // TODO:https://ripplearc.youtrack.cloud/issue/CA-100
+        },
+        onFavourite: () {
+          _router.pop();
+          // TODO:https://ripplearc.youtrack.cloud/issue/CA-88
+        },
+        onRemove: () {
+          _router.pop();
+          // TODO:https://ripplearc.youtrack.cloud/issue/CA-86
+        },
       ),
     );
   }
@@ -197,6 +229,8 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
       children: [
         BlocBuilder<AddCostEstimationBloc, AddCostEstimationState>(
           builder: (context, state) {
+            final colorTheme = AppColorsExtension.of(context);
+
             final isCreating = state is AddCostEstimationInProgress;
             final itemCount = estimations.length + (isCreating ? 1 : 0);
 
@@ -220,6 +254,8 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
                   return CostEstimationTile(
                     estimation: estimation,
                     onTap: () => _navigateToDetails(estimation.id),
+                    onMenuTap: () =>
+                        _showEstimationActionsSheet(estimation, colorTheme),
                   );
                 },
               ),
@@ -232,8 +268,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
   }
 
   void _navigateToDetails(String estimationId) {
-    final router = Modular.get<AppRouter>();
-    router.pushNamed('$fullEstimationDetailsRoute/$estimationId');
+    _router.pushNamed('$fullEstimationDetailsRoute/$estimationId');
   }
 
   String? _mapFailureToMessage(AppLocalizations l10n, Failure failure) {
