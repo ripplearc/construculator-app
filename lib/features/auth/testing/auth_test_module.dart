@@ -21,7 +21,6 @@ import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
-import 'package:construculator/libraries/auth/testing/fake_auth_manager.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -31,7 +30,6 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
-import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -56,14 +54,6 @@ class AuthTestModule extends Module {
     i.addSingleton<AuthNotifier>(() => i<AuthNotifierController>() as AuthNotifier);
     i.addSingleton<AuthRepository>(
       () => FakeAuthRepository(clock: i<Clock>()),
-    );
-    i.addSingleton<AuthManager>(
-      () => FakeAuthManager(
-        authNotifier: i<AuthNotifierController>(),
-        authRepository: i<AuthRepository>(),
-        wrapper: i<SupabaseWrapper>(),
-        clock: i<Clock>(),
-      ),
     );
     
     i.add<ResetPasswordUseCase>(() => ResetPasswordUseCase(i()));

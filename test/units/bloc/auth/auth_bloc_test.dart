@@ -38,8 +38,14 @@ void main() {
       clock = Modular.get<Clock>();
       fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
       fakeAuthNotifier = Modular.get<AuthNotifier>() as FakeAuthNotifier;
-      fakeAuthManager = Modular.get<AuthManager>() as FakeAuthManager;
       fakeRouter = Modular.get<AppRouter>() as FakeAppRouter;
+      fakeAuthManager = FakeAuthManager(
+        authNotifier: fakeAuthNotifier,
+        authRepository: Modular.get(),
+        wrapper: fakeSupabase,
+        clock: clock,
+      );
+      Modular.replaceInstance<AuthManager>(fakeAuthManager);
       authBloc = Modular.get<AuthBloc>();
     });
 
