@@ -454,5 +454,136 @@ void main() {
         },
       );
     });
+
+    group('deleteEstimation', () {
+      test('should return Right(null) when deletion is successful', () async {
+        final estimationDto = fakeDataSource.createSampleEstimation(
+          id: estimateIdDefault,
+          projectId: testProjectId,
+        );
+        fakeDataSource.addProjectEstimation(testProjectId, estimationDto);
+
+        final result = await repository.deleteEstimation(estimateIdDefault);
+
+        expect(result.isRight(), isTrue);
+      });
+
+      test('should call data source with correct estimation ID', () async {
+        await repository.deleteEstimation(estimateIdDefault);
+
+        final methodCalls = fakeDataSource.getMethodCallsFor(
+          'deleteEstimation',
+        );
+        expect(methodCalls, hasLength(1));
+        expect(methodCalls.first['estimationId'], equals(estimateIdDefault));
+      });
+
+      test(
+        'should return timeout failure when data source throws timeout',
+        () async {
+          fakeDataSource.shouldThrowOnDeleteEstimation = true;
+          fakeDataSource.deleteEstimationExceptionType =
+              SupabaseExceptionType.timeout;
+          fakeDataSource.deleteEstimationErrorMessage = errorMsgTimeout;
+
+          final result = await repository.deleteEstimation(estimateIdDefault);
+
+          expect(result.isLeft(), isTrue);
+          result.fold(
+            (failure) => expect(
+              failure,
+              EstimationFailure(errorType: EstimationErrorType.timeoutError),
+            ),
+            (_) => fail('Expected failure but got success'),
+          );
+        },
+      );
+
+      test(
+        'should return connection failure when data source throws SocketException',
+        () async {
+          fakeDataSource.shouldThrowOnDeleteEstimation = true;
+          fakeDataSource.deleteEstimationExceptionType =
+              SupabaseExceptionType.socket;
+          fakeDataSource.deleteEstimationErrorMessage = 'Connection failed';
+
+          final result = await repository.deleteEstimation(estimateIdDefault);
+
+          expect(result.isLeft(), isTrue);
+          result.fold(
+            (failure) => expect(
+              failure,
+              EstimationFailure(errorType: EstimationErrorType.connectionError),
+            ),
+            (_) => fail('Expected failure but got success'),
+          );
+        },
+      );
+
+      test(
+        'should return unexpected failure when data source throws unknown error',
+        () async {
+          fakeDataSource.shouldThrowOnDeleteEstimation = true;
+          fakeDataSource.deleteEstimationExceptionType =
+              SupabaseExceptionType.unknown;
+          fakeDataSource.deleteEstimationErrorMessage = errorMsgServer;
+
+          final result = await repository.deleteEstimation(estimateIdDefault);
+
+          expect(result.isLeft(), isTrue);
+          result.fold(
+            (failure) => expect(failure, UnexpectedFailure()),
+            (_) => fail('Expected failure but got success'),
+          );
+        },
+      );
+
+      test(
+        'should return connection error when data source throws PostgrestException with connection failure',
+        () async {
+          fakeDataSource.shouldThrowOnDeleteEstimation = true;
+          fakeDataSource.deleteEstimationExceptionType =
+              SupabaseExceptionType.postgrest;
+          fakeDataSource.postgrestErrorCode =
+              PostgresErrorCode.connectionFailure;
+          fakeDataSource.deleteEstimationErrorMessage = 'Connection lost';
+
+          final result = await repository.deleteEstimation(estimateIdDefault);
+
+          expect(result.isLeft(), isTrue);
+          result.fold(
+            (failure) => expect(
+              failure,
+              EstimationFailure(errorType: EstimationErrorType.connectionError),
+            ),
+            (_) => fail('Expected failure but got success'),
+          );
+        },
+      );
+
+      test(
+        'should return unexpected database error when data source throws PostgrestException with other error',
+        () async {
+          fakeDataSource.shouldThrowOnDeleteEstimation = true;
+          fakeDataSource.deleteEstimationExceptionType =
+              SupabaseExceptionType.postgrest;
+          fakeDataSource.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
+          fakeDataSource.deleteEstimationErrorMessage = 'Database error';
+
+          final result = await repository.deleteEstimation(estimateIdDefault);
+
+          expect(result.isLeft(), isTrue);
+          result.fold(
+            (failure) => expect(
+              failure,
+              EstimationFailure(
+                errorType: EstimationErrorType.unexpectedDatabaseError,
+              ),
+            ),
+            (_) => fail('Expected failure but got success'),
+          );
+        },
+      );
+    });
   });
 }

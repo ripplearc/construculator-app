@@ -35,6 +35,13 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
   /// [createEstimation] when [shouldReturnFailureOnCreateEstimation] is true.
   EstimationErrorType? createEstimationFailureType;
 
+  /// Controls whether [deleteEstimation] should return a [Failure].
+  bool shouldReturnFailureOnDeleteEstimation = false;
+
+  /// Specifies the [EstimationErrorType] for the [Failure] returned by
+  /// [deleteEstimation] when [shouldReturnFailureOnDeleteEstimation] is true.
+  EstimationErrorType? deleteEstimationFailureType;
+
   /// Controls whether operations should be delayed
   bool shouldDelayOperations = false;
 
@@ -102,6 +109,33 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     return Right(estimation);
   }
 
+  @override
+  Future<Either<Failure, void>> deleteEstimation(String estimationId) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    _methodCalls.add({'method': 'deleteEstimation', 'estimationId': estimationId});
+
+    if (shouldReturnFailureOnDeleteEstimation) {
+      return Left(
+        EstimationFailure(
+          errorType:
+              deleteEstimationFailureType ?? EstimationErrorType.unexpectedError,
+        ),
+      );
+    }
+
+    // Remove the estimation from the project's estimations
+    for (final projectId in _projectEstimations.keys) {
+      final estimations = _projectEstimations[projectId] ?? [];
+      estimations.removeWhere((estimation) => estimation.id == estimationId);
+      _projectEstimations[projectId] = estimations;
+    }
+
+    return const Right(null);
+  }
+
   /// Adds cost estimation data for a specific project
   void addProjectEstimations(String projectId, List<CostEstimate> estimations) {
     _projectEstimations[projectId] = estimations;
@@ -148,6 +182,8 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     getEstimationsFailureType = null;
     shouldReturnFailureOnCreateEstimation = false;
     createEstimationFailureType = null;
+    shouldReturnFailureOnDeleteEstimation = false;
+    deleteEstimationFailureType = null;
     shouldReturnEmptyList = false;
     shouldDelayOperations = false;
     completer = null;
