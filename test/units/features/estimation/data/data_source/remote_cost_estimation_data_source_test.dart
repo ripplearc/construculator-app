@@ -52,7 +52,7 @@ void main() {
   const String errorMsgAuth = 'Authentication failed';
   const String errorMsgNetwork = 'Network connection failed';
   const String errorMsgTimeout = 'Request timeout';
-  
+
   group('RemoteCostEstimationDataSource', () {
     late RemoteCostEstimationDataSource dataSource;
     late FakeSupabaseWrapper fakeSupabaseWrapper;
@@ -149,7 +149,7 @@ void main() {
         // Assert
         final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(selectMethod);
         expect(methodCalls, hasLength(1));
-        
+
         final call = methodCalls.first;
         expect(call['table'], equals(tableName));
         expect(call['filterColumn'], equals(DatabaseConstants.projectIdColumn));
@@ -239,7 +239,7 @@ void main() {
         // Assert
         expect(result, hasLength(1));
         final estimation = result.first;
-        
+
         expect(estimation.id, equals(estimateIdComplex));
         expect(estimation.projectId, equals(testProjectId));
         expect(estimation.estimateName, equals(estimateNameComplex));
@@ -352,7 +352,7 @@ void main() {
 
         final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('insert');
         expect(methodCalls, hasLength(1));
-        
+
         final call = methodCalls.first;
         expect(call['table'], equals(tableName));
         expect(call['data']['id'], equals(estimateId1));
@@ -374,7 +374,7 @@ void main() {
 
         final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('insert');
         expect(methodCalls, hasLength(1));
-        
+
         final call = methodCalls.first;
         expect(call['table'], equals(tableName));
         expect(call['data'].containsKey('id'), isFalse);
@@ -475,6 +475,113 @@ void main() {
         expect(result.lockedAt, equals(timestamp5));
         expect(result.createdAt, isNotEmpty);
         expect(result.updatedAt, isNotEmpty);
+      });
+    });
+
+    group('deleteEstimation', () {
+      test('should delete cost estimation successfully', () async {
+        // Arrange
+        final estimationData = TestEstimationDataHelper.createFakeEstimationData(
+          id: estimateId1,
+          estimateName: estimateName1,
+        );
+        fakeSupabaseWrapper.addTableData(tableName, [estimationData]);
+
+        // Verify estimation exists before deletion
+        final estimationsBeforeDelete = await dataSource.getEstimations(testProjectId);
+        expect(estimationsBeforeDelete, hasLength(1));
+
+        // Act
+        await dataSource.deleteEstimation(estimateId1);
+
+        // Assert
+        final estimationsAfterDelete = await dataSource.getEstimations(testProjectId);
+        expect(estimationsAfterDelete, isEmpty);
+      });
+
+      test('should call supabaseWrapper.delete with correct parameters', () async {
+        // Arrange
+        final estimationData = TestEstimationDataHelper.createFakeEstimationData(
+          id: estimateId1,
+        );
+        fakeSupabaseWrapper.addTableData(tableName, [estimationData]);
+
+        // Act
+        await dataSource.deleteEstimation(estimateId1);
+
+        // Assert
+        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('delete');
+        expect(methodCalls, hasLength(1));
+
+        final call = methodCalls.first;
+        expect(call['table'], equals(tableName));
+        expect(call['filterColumn'], equals('id'));
+        expect(call['filterValue'], equals(estimateId1));
+      });
+
+      test('should rethrow exception when supabaseWrapper.delete throws', () async {
+        // Arrange
+        fakeSupabaseWrapper.shouldThrowOnDelete = true;
+        fakeSupabaseWrapper.deleteExceptionType = SupabaseExceptionType.postgrest;
+        fakeSupabaseWrapper.deleteErrorMessage = errorMsgDbConnection;
+
+        // Act & Assert
+        expect(
+          () => dataSource.deleteEstimation(estimateId1),
+          throwsA(isA<supabase.PostgrestException>()),
+        );
+      });
+
+      test('should rethrow auth exception when supabaseWrapper.delete throws auth error', () async {
+        // Arrange
+        fakeSupabaseWrapper.shouldThrowOnDelete = true;
+        fakeSupabaseWrapper.deleteExceptionType = SupabaseExceptionType.auth;
+        fakeSupabaseWrapper.deleteErrorMessage = errorMsgAuth;
+
+        // Act & Assert
+        expect(
+          () => dataSource.deleteEstimation(estimateId1),
+          throwsA(isA<supabase.AuthException>()),
+        );
+      });
+
+      test('should rethrow network exception when supabaseWrapper.delete throws network error', () async {
+        // Arrange
+        fakeSupabaseWrapper.shouldThrowOnDelete = true;
+        fakeSupabaseWrapper.deleteExceptionType = SupabaseExceptionType.unknown;
+        fakeSupabaseWrapper.deleteErrorMessage = errorMsgNetwork;
+
+        // Act & Assert
+        expect(
+          () => dataSource.deleteEstimation(estimateId1),
+          throwsA(isA<Exception>()),
+        );
+      });
+
+      test('should rethrow timeout exception when supabaseWrapper.delete throws timeout error', () async {
+        // Arrange
+        fakeSupabaseWrapper.shouldThrowOnDelete = true;
+        fakeSupabaseWrapper.deleteExceptionType = SupabaseExceptionType.timeout;
+        fakeSupabaseWrapper.deleteErrorMessage = errorMsgTimeout;
+
+        // Act & Assert
+        expect(
+          () => dataSource.deleteEstimation(estimateId1),
+          throwsA(isA<Exception>()),
+        );
+      });
+
+      test('should handle deleting non-existent estimation gracefully', () async {
+        // Arrange - no estimation in database
+        fakeSupabaseWrapper.addTableData(tableName, []);
+
+        // Act - should not throw
+        await dataSource.deleteEstimation('non-existent-id');
+
+        // Assert - method was called
+        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('delete');
+        expect(methodCalls, hasLength(1));
+        expect(methodCalls.first['filterValue'], equals('non-existent-id'));
       });
     });
   });

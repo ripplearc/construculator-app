@@ -54,4 +54,20 @@ class RemoteCostEstimationDataSource implements CostEstimationDataSource {
       rethrow;
     }
   }
+
+  @override
+  Future<void> deleteEstimation(String estimationId) async {
+    try {
+      _logger.debug('Deleting cost estimation: $estimationId');
+      await supabaseWrapper.delete(
+        table: costEstimatesTable,
+        filterColumn: 'id',
+        filterValue: estimationId,
+      );
+      _logger.debug('Successfully deleted cost estimation: $estimationId');
+    } catch (e) {
+      _logger.error('Error deleting cost estimation: $e');
+      rethrow;
+    }
+  }
 }

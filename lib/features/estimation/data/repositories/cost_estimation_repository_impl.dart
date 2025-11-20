@@ -53,7 +53,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
   Future<CostEstimate> createEstimation(CostEstimate estimation) async {
     try {
       _logger.debug('Creating cost estimation: ${estimation.id}');
-      
+
       final costEstimateDto = CostEstimateDto.fromDomain(estimation);
       final createdDto = await _dataSource.createEstimation(costEstimateDto);
 
@@ -63,6 +63,20 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       return createdEstimation;
     } catch (e) {
       _logger.error('Error creating cost estimation: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> deleteEstimation(String estimationId) async {
+    try {
+      _logger.debug('Deleting cost estimation: $estimationId');
+
+      await _dataSource.deleteEstimation(estimationId);
+
+      _logger.debug('Successfully deleted cost estimation: $estimationId');
+    } catch (e) {
+      _logger.error('Error deleting cost estimation $estimationId: $e');
       rethrow;
     }
   }
