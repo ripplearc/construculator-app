@@ -5,6 +5,7 @@ import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bl
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_state.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_page.dart';
+import 'package:construculator/features/estimation/presentation/widgets/estimation_actions_sheet_body.dart';
 import 'package:construculator/features/estimation/presentation/widgets/project_header_app_bar.dart';
 import 'package:construculator/features/estimation/presentation/widgets/add_estimation_button.dart';
 import 'package:construculator/libraries/mixins/localization_mixin.dart';
@@ -62,6 +63,33 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
         estimationName: l10n?.untitledEstimation ?? 'Untitled Estimation',
         projectId: widget.projectId,
         creatorUserId: currentUserId,
+      ),
+    );
+  }
+
+  void _showEstimationActionsSheet(CostEstimate estimation) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) => EstimationActionsSheetBody(
+        estimationName: estimation.estimateName,
+        isFavourite: false,
+        onRename: () {
+          Navigator.pop(context);
+          // TODO:https://ripplearc.youtrack.cloud/issue/CA-100
+        },
+        onFavourite: () {
+          Navigator.pop(context);
+          // TODO:https://ripplearc.youtrack.cloud/issue/CA-88
+        },
+        onRemove: () {
+          Navigator.pop(context);
+          // TODO:https://ripplearc.youtrack.cloud/issue/CA-86
+        },
       ),
     );
   }
@@ -209,7 +237,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
               final estimation = estimations[index];
               return CostEstimationTile(
                 estimation: estimation,
-                onMenuTap: () {},
+                onMenuTap: () => _showEstimationActionsSheet(estimation),
               );
             },
           ),
