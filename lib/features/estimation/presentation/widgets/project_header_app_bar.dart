@@ -77,11 +77,11 @@ class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget
               ),
               Container(
                 margin: const EdgeInsets.only(right: 16, left: 8),
-                child: CircleAvatar(
+                child: CoreAvatar(
                   radius: 20,
                   backgroundColor: Colors.black,
                   // TODO: https://ripplearc.youtrack.cloud/issue/CA-392/Cost-Estimation-Use-letter-when-no-user-avatar-is-present
-                  backgroundImage: avatarImage,
+                  image: avatarImage,
                 ),
               ),
             ],
