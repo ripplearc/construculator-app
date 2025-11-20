@@ -1,6 +1,6 @@
 import 'package:construculator/features/estimation/presentation/widgets/add_estimation_button.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
-import 'package:core_ui/core_ui.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -12,21 +12,13 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: Stack(
-              children: [
-                AddEstimationButton(
-                  onPressed: () {},
-                ),
-              ],
-            ),
+            body: Stack(children: [AddEstimationButton(onPressed: () {})]),
           ),
         ),
       );
 
       // Verify the container has correct styling
-      final container = tester.widget<Container>(
-        find.byType(Container),
-      );
+      final container = tester.widget<Container>(find.byType(Container));
       final decoration = container.decoration as BoxDecoration;
       expect(decoration.color, Colors.white);
       expect(decoration.borderRadius, BorderRadius.circular(24));
@@ -54,7 +46,7 @@ void main() {
 
     testWidgets('calls onPressed when tapped', (tester) async {
       bool onPressedCalled = false;
-      
+
       await tester.pumpWidget(
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -86,23 +78,15 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: Stack(
-              children: [
-                AddEstimationButton(
-                  onPressed: () {},
-                ),
-              ],
-            ),
+            body: Stack(children: [AddEstimationButton(onPressed: () {})]),
           ),
         ),
       );
 
-      final container = tester.widget<Container>(
-        find.byType(Container),
-      );
+      final container = tester.widget<Container>(find.byType(Container));
       final decoration = container.decoration as BoxDecoration;
       final border = decoration.border as Border;
-      
+
       expect(border.top.color, CoreBorderColors.outlineFocus);
       expect(border.top.width, 2.5);
     });
@@ -113,21 +97,16 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: Stack(
-              children: [
-                AddEstimationButton(
-                  onPressed: () {},
-                ),
-              ],
-            ),
+            body: Stack(children: [AddEstimationButton(onPressed: () {})]),
           ),
         ),
       );
 
-      final container = tester.widget<Container>(
-        find.byType(Container),
+      final container = tester.widget<Container>(find.byType(Container));
+      expect(
+        container.padding,
+        const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
       );
-      expect(container.padding, const EdgeInsets.symmetric(horizontal: 18, vertical: 7));
     });
 
     testWidgets('has correct spacing between icon and text', (tester) async {
@@ -136,13 +115,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: Stack(
-              children: [
-                AddEstimationButton(
-                  onPressed: () {},
-                ),
-              ],
-            ),
+            body: Stack(children: [AddEstimationButton(onPressed: () {})]),
           ),
         ),
       );
@@ -160,24 +133,18 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: Stack(
-              children: [
-                AddEstimationButton(
-                  onPressed: () {},
-                ),
-              ],
-            ),
+            body: Stack(children: [AddEstimationButton(onPressed: () {})]),
           ),
         ),
       );
 
       const expectedColor = CoreBorderColors.outlineFocus;
-      
+
       // Check text color
       final textWidget = tester.widget<Text>(find.text('Add estimation'));
       expect(textWidget.style, isNotNull);
       expect(textWidget.style!.color, expectedColor);
-      
+
       // Check border color
       final container = tester.widget<Container>(find.byType(Container));
       final decoration = container.decoration as BoxDecoration;
