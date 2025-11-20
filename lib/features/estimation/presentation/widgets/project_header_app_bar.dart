@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:core_ui/core_ui.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class ProjectHeaderAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String projectName;
