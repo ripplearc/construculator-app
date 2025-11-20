@@ -26,9 +26,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../units/features/estimation/helpers/estimation_test_data_map_factory.dart';
+import 'package:construculator/features/estimation/presentation/widgets/estimation_actions_sheet.dart';
 
 class _CostEstimationLandingPageTestModule extends Module {
   final AppBootstrap appBootstrap;
+
   _CostEstimationLandingPageTestModule(this.appBootstrap);
 
   @override
@@ -73,9 +75,8 @@ void main() {
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(_CostEstimationLandingPageTestModule(appBootstrap));
-    Modular.setInitialRoute(testEstimationRoute);
-
     fakeAppRouter = Modular.get<AppRouter>() as FakeAppRouter;
+    Modular.setInitialRoute(testEstimationRoute);
   });
 
   tearDownAll(() {
@@ -85,6 +86,7 @@ void main() {
 
   setUp(() {
     fakeSupabase.reset();
+    fakeAppRouter.reset();
   });
 
   Widget makeApp() {
@@ -503,6 +505,118 @@ void main() {
       expect(find.text('Initial Estimation'), findsOneWidget);
       expect(find.text('Updated Estimation'), findsOneWidget);
       expect(find.byType(CostEstimationTile), findsNWidgets(2));
+    });
+  });
+
+  group('Estimation Actions Sheet', () {
+    testWidgets('shows actions sheet when menu icon is tapped', (tester) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      const estimationName = 'Kitchen Remodel';
+      addCostEstimationData(
+        EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: estimationName,
+        ),
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      await tester.tap(find.byKey(const Key('menuIcon')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EstimationActionsSheet), findsOneWidget);
+    });
+
+    testWidgets('calls router.pop when rename action is tapped', (
+      tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      addCostEstimationData(
+        EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: 'Kitchen Remodel',
+        ),
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      await tester.tap(find.byKey(const Key('menuIcon')));
+      await tester.pumpAndSettle();
+
+      expect(fakeAppRouter.popCalls, 0);
+
+      await tester.tap(find.text(l10n().renameAction));
+      await tester.pumpAndSettle();
+
+      expect(fakeAppRouter.popCalls, 1);
+    });
+
+    testWidgets('calls router.pop when favourite action is tapped', (
+      tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      addCostEstimationData(
+        EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: 'Kitchen Remodel',
+        ),
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      await tester.tap(find.byKey(const Key('menuIcon')));
+      await tester.pumpAndSettle();
+
+      expect(fakeAppRouter.popCalls, 0);
+
+      await tester.tap(find.text(l10n().favouriteAction));
+      await tester.pumpAndSettle();
+
+      expect(fakeAppRouter.popCalls, 1);
+    });
+
+    testWidgets('calls router.pop when remove action is tapped', (
+      tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      addCostEstimationData(
+        EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: 'Kitchen Remodel',
+        ),
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      await tester.tap(find.byKey(const Key('menuIcon')));
+      await tester.pumpAndSettle();
+
+      expect(fakeAppRouter.popCalls, 0);
+
+      await tester.tap(find.text(l10n().removeAction));
+      await tester.pumpAndSettle();
+
+      expect(fakeAppRouter.popCalls, 1);
     });
   });
 
