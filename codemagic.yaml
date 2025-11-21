@@ -43,7 +43,7 @@ workflows:
           echo "Triggered By: $CM_BUILD_STARTED_BY"
           echo "🛠️ Running Flutter analysis..."
           TARGET_BRANCH=${CM_PULL_REQUEST_DEST:-main}
-          git fetch origin $TARGET_BRANCH
+          git fetch origin "$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
           BASE_COMMIT=$(git merge-base HEAD origin/$TARGET_BRANCH)
 
           # Identify changed Dart files (lib/ and test/)
@@ -218,7 +218,7 @@ workflows:
           fvm flutter analyze --fatal-infos --fatal-warnings .
           
           TARGET_BRANCH=${CM_PULL_REQUEST_DEST:-main}
-          git fetch origin $TARGET_BRANCH
+          git fetch origin "$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
           BASE_COMMIT=$(git merge-base HEAD origin/$TARGET_BRANCH)
 
           # Get committed changed files (compared to base commit) for custom_lint only
