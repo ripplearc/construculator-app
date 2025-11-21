@@ -47,6 +47,9 @@ class EstimationModule extends Module {
           BlocProvider(
             create: (context) => Modular.get<AddCostEstimationBloc>(),
           ),
+          BlocProvider(
+            create: (context) => Modular.get<DeleteCostEstimationBloc>(),
+          ),
         ],
         child: CostEstimationLandingPage(projectId: projectId),
       );
