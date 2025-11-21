@@ -44,7 +44,7 @@ pre_check() {
   fvm flutter pub get
 
   # Get base commit
-  git fetch origin "$TARGET_BRANCH"
+  git fetch origin "$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
   local base_commit=$(git merge-base HEAD "origin/$TARGET_BRANCH")
 
   # Changed Dart files analysis
@@ -131,7 +131,7 @@ comprehensive_check() {
   fvm flutter analyze --fatal-infos --fatal-warnings .
 
   # Get base commit for custom linter check on changed files only
-  git fetch origin "$TARGET_BRANCH"
+  git fetch origin "$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
   local base_commit=$(git merge-base HEAD "origin/$TARGET_BRANCH")
   
   # Get committed changed files (compared to base commit) for custom_lint only
