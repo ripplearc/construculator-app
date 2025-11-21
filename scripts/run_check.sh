@@ -54,11 +54,12 @@ pre_check() {
     echo "✅ No Dart files changed"
   else
     echo "🔍 Analyzing changed files..."
-    echo "📋 Running Flutter analyzer (includes custom_lint rules)..."
     fvm flutter analyze --fatal-infos --fatal-warnings $changed_dart_files
     
+    # Run custom lint on changed files with all rules
     echo "🔍 Running custom linter (ripplearc_linter rules) on changed files..."
-    dart run custom_lint $changed_dart_files
+    local all_rules="prefer_fake_over_mock,forbid_forced_unwrapping,no_optional_operators_in_tests,document_fake_parameters,document_interface,todo_with_story_links,no_internal_method_docs,specific_exception_types,avoid_test_timeouts,private_subject,sealed_over_dynamic"
+    dart run ripplearc_linter:standalone_checker --rules $all_rules $changed_dart_files
   fi
 
   # Changed tests
@@ -134,7 +135,8 @@ comprehensive_check() {
     echo "✅ No Dart files changed, skipping custom linter"
   else
     echo "🔍 Running custom linter (ripplearc_linter rules) on changed files..."
-    dart run custom_lint $changed_dart_files
+    local all_rules="prefer_fake_over_mock,forbid_forced_unwrapping,no_optional_operators_in_tests,document_fake_parameters,document_interface,todo_with_story_links,no_internal_method_docs,specific_exception_types,avoid_test_timeouts,private_subject,sealed_over_dynamic"
+    dart run ripplearc_linter:standalone_checker --rules $all_rules $changed_dart_files
   fi
 
   # Unit tests with coverage
