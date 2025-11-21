@@ -387,4 +387,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get removeAction => 'Remove';
+
+  @override
+  String deleteEstimationConfirmTitle(String estimationName) {
+    return 'Are you sure you want to remove \"$estimationName\"?';
+  }
+
+  @override
+  String get deleteEstimationWarningMessage =>
+      'By removing you will lose all the Material, Labour and Equipment Cost Calculation Permanently as well as the images and documents attached with that calculation also will be removed';
+
+  @override
+  String imagesAttachedCount(int count) {
+    return '$count images attached';
+  }
+
+  @override
+  String documentsAttachedCount(int count) {
+    return '$count documents attached';
+  }
+
+  @override
+  String get yesDeleteButton => 'Yes, Delete';
+
+  @override
+  String get noKeepButton => 'No, Keep';
+
+  @override
+  String get estimationDeletedSuccess => 'Estimation deleted successfully';
 }

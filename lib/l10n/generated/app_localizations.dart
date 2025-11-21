@@ -801,6 +801,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove'**
   String get removeAction;
+
+  /// Title for delete estimation confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to remove \"{estimationName}\"?'**
+  String deleteEstimationConfirmTitle(String estimationName);
+
+  /// Warning message shown in delete estimation confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'By removing you will lose all the Material, Labour and Equipment Cost Calculation Permanently as well as the images and documents attached with that calculation also will be removed'**
+  String get deleteEstimationWarningMessage;
+
+  /// Label showing number of images attached
+  ///
+  /// In en, this message translates to:
+  /// **'{count} images attached'**
+  String imagesAttachedCount(int count);
+
+  /// Label showing number of documents attached
+  ///
+  /// In en, this message translates to:
+  /// **'{count} documents attached'**
+  String documentsAttachedCount(int count);
+
+  /// Label for confirm delete button
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, Delete'**
+  String get yesDeleteButton;
+
+  /// Label for cancel/keep button
+  ///
+  /// In en, this message translates to:
+  /// **'No, Keep'**
+  String get noKeepButton;
+
+  /// Success message shown when an estimation is deleted
+  ///
+  /// In en, this message translates to:
+  /// **'Estimation deleted successfully'**
+  String get estimationDeletedSuccess;
 }
 
 class _AppLocalizationsDelegate
