@@ -42,8 +42,9 @@ workflows:
           echo "Linux version: $(uname -a)"
           echo "Triggered By: $CM_BUILD_STARTED_BY"
           echo "🛠️ Running Flutter analysis..."
-          # Get the base commit (when the PR branched off the target branch)
-          BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
+          TARGET_BRANCH=${CM_PULL_REQUEST_DEST:-main}
+          git fetch origin "$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
+          BASE_COMMIT=$(git merge-base HEAD origin/$TARGET_BRANCH)
 
           # Identify changed Dart files (lib/ and test/)
           CHANGED_DART_FILES=$(git diff --name-only  --diff-filter=d $BASE_COMMIT HEAD -- "lib/*.dart" "test/*.dart")
@@ -216,10 +217,10 @@ workflows:
           echo "🛠️ Running Flutter analysis..."
           fvm flutter analyze --fatal-infos --fatal-warnings .
           
-          # Get base commit for custom linter check on changed files only
-          git fetch origin $BASE_BRANCH || git fetch origin main
-          BASE_COMMIT=$(git merge-base HEAD origin/$BASE_BRANCH 2>/dev/null || git merge-base HEAD origin/main)
-          
+          TARGET_BRANCH=${CM_PULL_REQUEST_DEST:-main}
+          git fetch origin "$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
+          BASE_COMMIT=$(git merge-base HEAD origin/$TARGET_BRANCH)
+
           # Get committed changed files (compared to base commit) for custom_lint only
           CHANGED_DART_FILES=$(git diff --name-only --diff-filter=d "$BASE_COMMIT" -- "lib/*.dart" "test/*.dart")
           
