@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../font_loader.dart';
 
 void main() {
-  final size = const Size(390, 600);
+  final size = const Size(390, 500);
   final ratio = 1.0;
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -19,7 +19,6 @@ void main() {
       required WidgetTester tester,
       required String estimationName,
       bool isLocked = false,
-      bool isFavourite = false,
     }) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -33,6 +32,8 @@ void main() {
               onRename: () {},
               onFavourite: () {},
               onRemove: () {},
+              isLocked: isLocked,
+              onLock: (value) {},
             ),
           ),
         ),
@@ -68,6 +69,24 @@ void main() {
         find.byType(EstimationActionsSheet),
         matchesGoldenFile(
           'goldens/estimation_actions_sheet/${size.width}x${size.height}/estimation_actions_sheet_long_name.png',
+        ),
+      );
+    });
+
+    testWidgets('renders with locked state', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+
+      await pumpActionsSheet(
+        tester: tester,
+        estimationName: 'Estimation 1',
+        isLocked: true,
+      );
+
+      await expectLater(
+        find.byType(EstimationActionsSheet),
+        matchesGoldenFile(
+          'goldens/estimation_actions_sheet/${size.width}x${size.height}/estimation_actions_sheet_locked.png',
         ),
       );
     });

@@ -4,16 +4,16 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class DeleteEstimationConfirmationSheet extends StatefulWidget {
   final String estimationName;
-  final VoidCallback onConfirm;
-  final VoidCallback onCancel;
+  final VoidCallback? onConfirm;
+  final VoidCallback? onCancel;
   final int? imagesAttachedCount;
   final int? documentsAttachedCount;
 
   const DeleteEstimationConfirmationSheet({
     super.key,
     required this.estimationName,
-    required this.onConfirm,
-    required this.onCancel,
+    this.onConfirm,
+    this.onCancel,
     this.imagesAttachedCount,
     this.documentsAttachedCount,
   });

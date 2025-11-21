@@ -84,6 +84,10 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
           _router.pop();
           _showDeleteConfirmationSheet(estimation, colorTheme);
         },
+        onLock: (bool isLocked) {
+          // TODO:https://ripplearc.youtrack.cloud/issue/CA-88
+        },
+        isLocked: estimation.lockStatus.isLocked,
       ),
     );
   }

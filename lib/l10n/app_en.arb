@@ -590,6 +590,22 @@
     "description": "Label for remove action button",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53150&t=wjWHI4P6ds90viit-4"
   },
+  "copyEstimationAction": "Copy cost estimation",
+  "@copyEstimationAction": {
+    "description": "Label for copy estimation action item"
+  },
+  "shareExportAction": "Share / Export",
+  "@shareExportAction": {
+    "description": "Label for share or export estimation action"
+  },
+  "logsAction": "Logs",
+  "@logsAction": {
+    "description": "Label for estimation logs action"
+  },
+  "lockEstimationAction": "Lock estimation",
+  "@lockEstimationAction": {
+    "description": "Label for lock estimation toggle action"
+  },
   "deleteEstimationConfirmTitle": "Are you sure you want to remove \"{estimationName}\"?",
   "@deleteEstimationConfirmTitle": {
     "description": "Title for delete estimation confirmation dialog",
@@ -641,5 +657,15 @@
   "estimationDeletedSuccess": "Estimation deleted successfully",
   "@estimationDeletedSuccess": {
     "description": "Success message shown when an estimation is deleted"
+  },
+  "lockLabel": "Lock",
+  "@lockLabel": {
+    "description": "Label for lock action",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53163&t=72cjZpZMiulKp3Yl-4https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53163&t=72cjZpZMiulKp3Yl-4" 
+  },
+  "unlockLabel": "Unlock",
+  "@unlockLabel": {
+    "description": "Label for unlock action",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53163&t=72cjZpZMiulKp3Yl-4https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53163&t=72cjZpZMiulKp3Yl-4"
   }
 }
