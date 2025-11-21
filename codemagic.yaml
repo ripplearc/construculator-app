@@ -57,7 +57,9 @@ workflows:
           fvm flutter analyze --fatal-infos --fatal-warnings $CHANGED_DART_FILES
           
           echo "🔍 Running custom linter (ripplearc_linter rules) on changed files..."
-          dart run custom_lint $CHANGED_DART_FILES
+
+          ALL_RULES="prefer_fake_over_mock,forbid_forced_unwrapping,no_optional_operators_in_tests,document_fake_parameters,document_interface,todo_with_story_links,no_internal_method_docs,specific_exception_types,avoid_test_timeouts,private_subject,sealed_over_dynamic"
+          dart run ripplearc_linter:standalone_checker --rules $ALL_RULES $CHANGED_DART_FILES
 
       - name: Run Unit Tests With Coverage
         script: |
@@ -219,7 +221,8 @@ workflows:
             echo "✅ No Dart files changed, skipping custom linter"
           else
             echo "🔍 Running custom linter (ripplearc_linter rules) on changed files..."
-            dart run custom_lint $CHANGED_DART_FILES
+            ALL_RULES="prefer_fake_over_mock,forbid_forced_unwrapping,no_optional_operators_in_tests,document_fake_parameters,document_interface,todo_with_story_links,no_internal_method_docs,specific_exception_types,avoid_test_timeouts,private_subject,sealed_over_dynamic"
+            dart run ripplearc_linter:standalone_checker --rules $ALL_RULES $CHANGED_DART_FILES
           fi
 
       - name: Run Unit Tests With Coverage Report
