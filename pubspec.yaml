@@ -30,7 +30,7 @@ dependencies:
   core_ui: 0.2.0
   pinput: 5.0.1
   dartz: 0.10.1
-  ripplearc_linter: ^0.1.2
+  ripplearc_linter: ^0.1.3
 
 
 
