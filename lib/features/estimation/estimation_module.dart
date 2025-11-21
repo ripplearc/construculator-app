@@ -5,8 +5,10 @@ import 'package:construculator/features/estimation/data/repositories/cost_estima
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/features/estimation/domain/usecases/get_estimations_usecase.dart';
 import 'package:construculator/features/estimation/domain/usecases/add_cost_estimation_usecase.dart';
+import 'package:construculator/features/estimation/domain/usecases/delete_cost_estimation_usecase.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_details_page.dart';
 import 'package:construculator/features/project_settings/project_settings_module.dart';
@@ -93,6 +95,9 @@ class EstimationModule extends Module {
     i.addLazySingleton<AddCostEstimationUseCase>(
       () => AddCostEstimationUseCase(i.get(), i.get()),
     );
+    i.addLazySingleton<DeleteCostEstimationUseCase>(
+      () => DeleteCostEstimationUseCase(i.get()),
+    );
 
     // BLoCs
     i.add<CostEstimationListBloc>(
@@ -100,6 +105,11 @@ class EstimationModule extends Module {
     );
     i.add<AddCostEstimationBloc>(
       () => AddCostEstimationBloc(addCostEstimationUseCase: i.get()),
+    );
+    i.add<DeleteCostEstimationBloc>(
+      () => DeleteCostEstimationBloc(
+        deleteCostEstimationUseCase: i.get(),
+      ),
     );
   }
 
