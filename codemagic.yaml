@@ -56,10 +56,17 @@ workflows:
           echo "$CHANGED_DART_FILES"
           fvm flutter analyze --fatal-infos --fatal-warnings $CHANGED_DART_FILES
           
-          echo "🔍 Running custom linter (ripplearc_linter rules) on changed files..."
-
-          ALL_RULES="prefer_fake_over_mock,forbid_forced_unwrapping,no_optional_operators_in_tests,document_fake_parameters,document_interface,todo_with_story_links,no_internal_method_docs,specific_exception_types,avoid_test_timeouts,private_subject,sealed_over_dynamic"
-          dart run ripplearc_linter:standalone_checker --rules $ALL_RULES $CHANGED_DART_FILES
+          # Filter out generated files (matching analysis_options.yaml exclusions)
+          FILTERED_FILES=$(echo "$CHANGED_DART_FILES" | grep -v -E "(lib/generated/|\.g\.dart$|\.freezed\.dart$|lib/l10n/generated/)")
+          
+          # Run custom linter on filtered files (excluding generated files)
+          if [ -z "$FILTERED_FILES" ]; then
+            echo "✅ No non-generated Dart files changed, skipping custom linter"
+          else
+            echo "🔍 Running custom linter (ripplearc_linter rules) on changed files..."
+            ALL_RULES="prefer_fake_over_mock,forbid_forced_unwrapping,no_optional_operators_in_tests,document_fake_parameters,document_interface,todo_with_story_links,no_internal_method_docs,specific_exception_types,avoid_test_timeouts,private_subject,sealed_over_dynamic"
+            dart run ripplearc_linter:standalone_checker --rules $ALL_RULES $FILTERED_FILES
+          fi
 
       - name: Run Unit Tests With Coverage
         script: |
@@ -216,13 +223,16 @@ workflows:
           # Get committed changed files (compared to base commit) for custom_lint only
           CHANGED_DART_FILES=$(git diff --name-only --diff-filter=d "$BASE_COMMIT" -- "lib/*.dart" "test/*.dart")
           
-          # Run custom linter only on changed files
-          if [ -z "$CHANGED_DART_FILES" ]; then
-            echo "✅ No Dart files changed, skipping custom linter"
+          # Filter out generated files (matching analysis_options.yaml exclusions)
+          FILTERED_FILES=$(echo "$CHANGED_DART_FILES" | grep -v -E "(lib/generated/|\.g\.dart$|\.freezed\.dart$|lib/l10n/generated/)")
+          
+          # Run custom linter only on changed files (excluding generated files)
+          if [ -z "$FILTERED_FILES" ]; then
+            echo "✅ No non-generated Dart files changed, skipping custom linter"
           else
             echo "🔍 Running custom linter (ripplearc_linter rules) on changed files..."
             ALL_RULES="prefer_fake_over_mock,forbid_forced_unwrapping,no_optional_operators_in_tests,document_fake_parameters,document_interface,todo_with_story_links,no_internal_method_docs,specific_exception_types,avoid_test_timeouts,private_subject,sealed_over_dynamic"
-            dart run ripplearc_linter:standalone_checker --rules $ALL_RULES $CHANGED_DART_FILES
+            dart run ripplearc_linter:standalone_checker --rules $ALL_RULES $FILTERED_FILES
           fi
 
       - name: Run Unit Tests With Coverage Report
