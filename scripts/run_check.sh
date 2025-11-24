@@ -63,7 +63,7 @@ pre_check() {
     if [[ -n "$filtered_files" ]]; then
       echo "🔍 Running custom linter (ripplearc_linter rules) on changed files..."
       local all_rules="prefer_fake_over_mock,forbid_forced_unwrapping,no_optional_operators_in_tests,document_fake_parameters,document_interface,todo_with_story_links,no_internal_method_docs,specific_exception_types,avoid_test_timeouts,private_subject,sealed_over_dynamic"
-      dart run ripplearc_linter:standalone_checker --rules $all_rules $filtered_files
+      fvm dart run ripplearc_linter:standalone_checker --rules $all_rules $filtered_files
     else
       echo "✅ No non-generated Dart files changed, skipping custom linter"
     fi
@@ -146,7 +146,7 @@ comprehensive_check() {
   else
     echo "🔍 Running custom linter (ripplearc_linter rules) on changed files..."
     local all_rules="prefer_fake_over_mock,forbid_forced_unwrapping,no_optional_operators_in_tests,document_fake_parameters,document_interface,todo_with_story_links,no_internal_method_docs,specific_exception_types,avoid_test_timeouts,private_subject,sealed_over_dynamic"
-    dart run ripplearc_linter:standalone_checker --rules $all_rules $filtered_files
+    fvm dart run ripplearc_linter:standalone_checker --rules $all_rules $filtered_files
   fi
 
   # Unit tests with coverage
