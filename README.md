@@ -25,9 +25,9 @@
 ## Overview
 
 Construculator is a mobile application designed for construction professionals to:
-- Manage construction projects (office buildings, housing developments, warehouses)
-- Create detailed cost estimates (materials, labor, equipment)
-- Collaborate with team members through role-based permissions
+- Perform construction-related calculations using an intuitive interface featuring suggestion chips.
+- Create quick cost estimates (materials, labor, equipment)
+- Collaborate with team members on cost estimation.
 - Track calculations and project data
 - Export estimates to cloud storage (Google Drive, OneDrive, Dropbox)
 
@@ -48,6 +48,8 @@ Construculator is a mobile application designed for construction professionals t
 ---
 
 ## Architecture
+
+**Design Documentation:** [RippleArc Engineering Best Practice](https://docs.google.com/document/d/1gJKQ_9kEZaQfbFBDHxrS7zQct9ubsc37EcdqPpsXURk/edit?tab=t.cftu3k9in6u#heading=h.sxep7l3m4lxv)
 
 ### Project Structure
 
@@ -82,11 +84,11 @@ External (Supabase, Storage)
 ```
 
 **Key Principles:**
-- Feature-based modules with clear boundaries
-- BLoC for state management (flutter_bloc 9.1.0)
-- Use Case pattern for business operations
-- Repository pattern for data abstraction
-- Test Double pattern (real implementations, fake externals only - no mocks)
+- [Feature-based modules with clear boundaries](https://docs.google.com/document/d/1gJKQ_9kEZaQfbFBDHxrS7zQct9ubsc37EcdqPpsXURk/edit?tab=t.cftu3k9in6u#heading=h.n6s05wrc5vaw)
+- [BLoC for state management](https://docs.google.com/document/d/1gJKQ_9kEZaQfbFBDHxrS7zQct9ubsc37EcdqPpsXURk/edit?tab=t.twe1ifcyor7p) (flutter_bloc 9.1.0)
+- [Use Case pattern for business operations](https://docs.google.com/document/d/1gJKQ_9kEZaQfbFBDHxrS7zQct9ubsc37EcdqPpsXURk/edit?tab=t.avq0hrlnmvs5#bookmark=id.9zm4c91a7nf1)
+- [Repository pattern for data abstraction](https://docs.google.com/document/d/1gJKQ_9kEZaQfbFBDHxrS7zQct9ubsc37EcdqPpsXURk/edit?tab=t.avq0hrlnmvs5#bookmark=id.9zv9ppub7lzj)
+- [Test Double pattern](https://docs.google.com/document/d/1gJKQ_9kEZaQfbFBDHxrS7zQct9ubsc37EcdqPpsXURk/edit?tab=t.781ppv45x6si) (real implementations, fake externals only - no mocks)
 
 ---
 
@@ -603,13 +605,13 @@ test/
 fvm flutter test
 
 # Run specific test file
-fvm flutter test test/units/features/auth/login_test.dart
+fvm flutter test test/units/libraries/auth/auth_notifier_test.dart
 
 # Run tests with coverage
 fvm flutter test --coverage
 
-# Run golden tests (update screenshots)
-fvm flutter test test/screenshots --update-goldens
+# Run golden tests (inside the docker container)
+fvm flutter test < PATH-SCREENSHOT-FEATURE > --update-goldens
 ```
 
 ### Coverage Requirements
@@ -626,9 +628,16 @@ fvm flutter test --coverage
 # Remove generated files from coverage
 lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info
 
-# View coverage report
+# Generate HTML coverage report
 genhtml coverage/lcov.info -o coverage/html
+
+# Open coverage report (OS-specific), or open the file in any browser manually
+# macOS:
 open coverage/html/index.html
+# Linux:
+xdg-open coverage/html/index.html
+# Windows:
+start coverage/html/index.html
 ```
 
 ### Golden Tests with Docker
@@ -671,7 +680,7 @@ open coverage/html/index.html
 
 #### Rebuilding Docker Image
 
-If you switch branches or update dependencies:
+Rebuild the Docker image only when switching to a branch that changes underlying dependencies (for example when pubspec.yaml or pubspec.lock — or any other dependency files — differ). If those files did not change, you can skip the rebuild and just restart the containers.
 
 ```bash
 # Stop container
@@ -778,7 +787,7 @@ Generates AI-friendly code review documents for use with Claude/Cursor.
 - Change statistics table (files modified, lines added/removed)
 - GitHub-style diffs with 3 lines of context
 - Filters out generated files and binaries
-- Review instructions based on 4 coding standards
+- Review instructions based on 4 coding standards (This can change overtime)
 
 **Workflow:**
 1. Run the script to generate review document
@@ -841,7 +850,7 @@ The project uses **CodeMagic** for continuous integration and deployment.
 To manually trigger CI checks on a PR, add a comment with:
 
 ```
-#RunCheck
+#runcheck
 ```
 
 This will trigger all workflows (pre-check, comprehensive-check, ios-debug-build).
@@ -1036,7 +1045,7 @@ fvm flutter pub run build_runner build --delete-conflicting-outputs
 2. Add tests for uncovered code
 3. Rerun: `./scripts/run_check.sh --pre`
 
-**Alternative:** If coverage is temporarily low and intentional:
+**Alternative (Must get the approval of the code owner):** If coverage is temporarily low and intentional:
 - Add `#DeltaCoverageLow` or `DCL` to commit message
 - This lowers the coverage requirement for that commit
 
