@@ -48,7 +48,7 @@ pre_check() {
   
   # Check for rebase conflicts before running analysis
   echo "🔄 Checking for rebase conflicts..."
-  if ! git rebase origin/$TARGET_BRANCH; then
+  if ! git rebase --autostash origin/$TARGET_BRANCH; then
     echo "❌ Rebase failed due to conflicts!"
     # Detect conflicting files
     local conflicted_files=$(git diff --name-only --diff-filter=U 2>/dev/null || git status --short 2>/dev/null | grep -E "^(UU|AA|DD|AU|UA|DU|UD)" | awk '{print $2}' || git ls-files -u 2>/dev/null | awk '{print $4}' | sort -u || echo "Unable to determine")
@@ -150,7 +150,7 @@ comprehensive_check() {
   
   # Check for rebase conflicts before running analysis
   echo "🔄 Checking for rebase conflicts..."
-  if ! git rebase origin/$TARGET_BRANCH; then
+  if ! git rebase --autostash origin/$TARGET_BRANCH; then
     echo "❌ Rebase failed due to conflicts!"
     # Detect conflicting files
     local conflicted_files=$(git diff --name-only --diff-filter=U 2>/dev/null || git status --short 2>/dev/null | grep -E "^(UU|AA|DD|AU|UA|DU|UD)" | awk '{print $2}' || git ls-files -u 2>/dev/null | awk '{print $4}' | sort -u || echo "Unable to determine")
