@@ -44,9 +44,28 @@ workflows:
           echo "🛠️ Running Flutter analysis..."
           TARGET_BRANCH=${CM_PULL_REQUEST_DEST:-main}
           git fetch origin "$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
-          BASE_COMMIT=$(git merge-base HEAD origin/$TARGET_BRANCH)
+          
+          # Check for rebase conflicts before running analysis
+          echo "🔄 Checking for rebase conflicts..."
+          if ! git rebase origin/$TARGET_BRANCH; then
+            echo "❌ Rebase failed due to conflicts!"
+            # Detect conflicting files
+            CONFLICTED_FILES=$(git diff --name-only --diff-filter=U 2>/dev/null || git status --short 2>/dev/null | grep -E "^(UU|AA|DD|AU|UA|DU|UD)" | awk '{print $2}' || git ls-files -u 2>/dev/null | awk '{print $4}' | sort -u || echo "Unable to determine")
+            if [ -n "$CONFLICTED_FILES" ] && [ "$CONFLICTED_FILES" != "Unable to determine" ]; then
+              echo "Conflicting files:"
+              echo "$CONFLICTED_FILES"
+            else
+              echo "Unable to determine specific conflicting files, but rebase failed."
+            fi
+            git rebase --abort
+            exit 1
+          fi
+          echo "✅ Rebase successful, no conflicts detected"
+          
+          # After successful rebase, find delta files from rebased HEAD
+          BASE_COMMIT=origin/$TARGET_BRANCH
 
-          # Identify changed Dart files (lib/ and test/)
+          # Identify changed Dart files (lib/ and test/) - comparing rebased HEAD to target branch
           CHANGED_DART_FILES=$(git diff --name-only  --diff-filter=d $BASE_COMMIT HEAD -- "lib/*.dart" "test/*.dart")
 
           if [ -z "$CHANGED_DART_FILES" ]; then
@@ -215,14 +234,35 @@ workflows:
         script: |
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           echo "🛠️ Running Flutter analysis..."
-          fvm flutter analyze --fatal-infos --fatal-warnings .
           
           TARGET_BRANCH=${CM_PULL_REQUEST_DEST:-main}
           git fetch origin "$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
-          BASE_COMMIT=$(git merge-base HEAD origin/$TARGET_BRANCH)
+          
+          # Check for rebase conflicts before running analysis
+          echo "🔄 Checking for rebase conflicts..."
+          if ! git rebase origin/$TARGET_BRANCH; then
+            echo "❌ Rebase failed due to conflicts!"
+            # Detect conflicting files
+            CONFLICTED_FILES=$(git diff --name-only --diff-filter=U 2>/dev/null || git status --short 2>/dev/null | grep -E "^(UU|AA|DD|AU|UA|DU|UD)" | awk '{print $2}' || git ls-files -u 2>/dev/null | awk '{print $4}' | sort -u || echo "Unable to determine")
+            if [ -n "$CONFLICTED_FILES" ] && [ "$CONFLICTED_FILES" != "Unable to determine" ]; then
+              echo "Conflicting files:"
+              echo "$CONFLICTED_FILES"
+            else
+              echo "Unable to determine specific conflicting files, but rebase failed."
+            fi
+            git rebase --abort
+            exit 1
+          fi
+          echo "✅ Rebase successful, no conflicts detected"
+          
+          # Run Flutter analysis on rebased codebase
+          fvm flutter analyze --fatal-infos --fatal-warnings .
+          
+          # After successful rebase, find delta files from rebased HEAD
+          BASE_COMMIT=origin/$TARGET_BRANCH
 
           # Get committed changed files (compared to base commit) for custom_lint only
-          CHANGED_DART_FILES=$(git diff --name-only --diff-filter=d "$BASE_COMMIT" -- "lib/*.dart" "test/*.dart")
+          CHANGED_DART_FILES=$(git diff --name-only --diff-filter=d "$BASE_COMMIT" HEAD -- "lib/*.dart" "test/*.dart")
           
           # Filter out generated files (matching analysis_options.yaml exclusions)
           FILTERED_FILES=$(echo "$CHANGED_DART_FILES" | grep -v -E "(lib/generated/|\.g\.dart$|\.freezed\.dart$|lib/l10n/generated/)")
