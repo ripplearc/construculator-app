@@ -8,7 +8,11 @@ abstract class SomeRepository {
   Future<String> fetchData();
 }
 
+/// Fake implementation of [SomeRepository] for testing purposes.
 class FakeSomeRepository implements SomeRepository {
+  /// Constructor for fake some repository.
+  FakeSomeRepository();
+
   @override
   Future<String> fetchData() async => 'test';
 }
