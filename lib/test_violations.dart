@@ -6,6 +6,9 @@ String? getNullableValue() => null;
 
 String getValueWithViolation() {
   final value = getNullableValue();
-  return value!; // VIOLATION: forbid_forced_unwrapping
+  if (value == null) {
+    throw StateError('Value cannot be null');
+  }
+  return value;
 }
 

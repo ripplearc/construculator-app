@@ -2,15 +2,16 @@
 /// DELETE THIS FILE AFTER TESTING.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
 
 // Violation 1: prefer_fake_over_mock - using Mock instead of Fake
 abstract class SomeRepository {
   Future<String> fetchData();
 }
 
-class MockSomeRepository extends Mock implements SomeRepository {}
-// VIOLATION: prefer_fake_over_mock - should use Fake instead of Mock
+class FakeSomeRepository implements SomeRepository {
+  @override
+  Future<String> fetchData() async => 'test';
+}
 
 void main() {
   group('Test violations', () {
@@ -18,7 +19,10 @@ void main() {
       final String? nullableValue = 'test';
       
       // Violation 2: no_optional_operators_in_tests - using ?. in tests
-      final length = nullableValue?.length; // VIOLATION: no_optional_operators_in_tests
+      if (nullableValue == null) {
+        fail('nullableValue should not be null');
+      }
+      final length = nullableValue.length;
       
       expect(length, 4);
     });
