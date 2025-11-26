@@ -2,12 +2,12 @@
 set -euo pipefail
 
 # Run Code Analysis Script
-# Usage: ./scripts/ci/run_code_analysis.sh <target_branch> [--delta|--full]
-#   --delta: Analyze only changed files (for pre-check)
-#   --full:  Analyze entire codebase (for comprehensive-check)
+# Usage: ./scripts/ci/run_code_analysis.sh <target_branch> [--pre|--comp]
+#   --pre:  Analyze only changed files (for pre-check)
+#   --comp: Analyze entire codebase (for comprehensive-check)
 
 TARGET_BRANCH="${1:-main}"
-MODE="${2:---delta}"
+MODE="${2:---pre}"
 
 echo "🛠️ Running Flutter analysis..."
 echo "Target branch: $TARGET_BRANCH"
@@ -37,8 +37,8 @@ BASE_COMMIT=origin/$TARGET_BRANCH
 CHANGED_DART_FILES=$(git diff --name-only --diff-filter=d "$BASE_COMMIT" HEAD -- "lib/*.dart" "test/*.dart")
 
 # Run Flutter analysis based on mode
-if [ "$MODE" = "--delta" ]; then
-  # Delta mode: analyze only changed files
+if [ "$MODE" = "--pre" ]; then
+  # Pre-check mode: analyze only changed files
   if [ -z "$CHANGED_DART_FILES" ]; then
     echo "✅ No Dart files modified. Skipping analysis."
     exit 0
@@ -47,7 +47,7 @@ if [ "$MODE" = "--delta" ]; then
   echo "$CHANGED_DART_FILES"
   fvm flutter analyze --fatal-infos --fatal-warnings $CHANGED_DART_FILES
 else
-  # Full mode: analyze entire codebase
+  # Comprehensive mode: analyze entire codebase
   fvm flutter analyze --fatal-infos --fatal-warnings .
 fi
 

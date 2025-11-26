@@ -42,7 +42,7 @@ workflows:
           echo "Linux version: $(uname -a)"
           echo "Triggered By: $CM_BUILD_STARTED_BY"
           chmod +x scripts/ci/run_code_analysis.sh
-          ./scripts/ci/run_code_analysis.sh "${CM_PULL_REQUEST_DEST:-main}" --delta
+          ./scripts/ci/run_code_analysis.sh "${CM_PULL_REQUEST_DEST:-main}" --pre
 
       - name: Run Unit Tests With Coverage
         script: |
@@ -190,7 +190,7 @@ workflows:
         script: |
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           chmod +x scripts/ci/run_code_analysis.sh
-          ./scripts/ci/run_code_analysis.sh "${CM_PULL_REQUEST_DEST:-main}" --full
+          ./scripts/ci/run_code_analysis.sh "${CM_PULL_REQUEST_DEST:-main}" --comp
 
       - name: Run Unit Tests With Coverage Report
         script: |
