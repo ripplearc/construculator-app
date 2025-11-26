@@ -51,7 +51,7 @@ pre_check() {
   if ! git rebase --autostash origin/$TARGET_BRANCH; then
     echo "❌ Rebase failed due to conflicts!"
     # Detect conflicting files
-    local conflicted_files=$(git diff --name-only --diff-filter=U 2>/dev/null || git status --short 2>/dev/null | grep -E "^(UU|AA|DD|AU|UA|DU|UD)" | awk '{print $2}' || git ls-files -u 2>/dev/null | awk '{print $4}' | sort -u || echo "Unable to determine")
+    local conflicted_files=$(git diff --name-only --diff-filter=U 2>/dev/null || git ls-files -u | awk '{print $4}' | sort -u || echo "Unable to determine")
     if [[ -n "$conflicted_files" && "$conflicted_files" != "Unable to determine" ]]; then
       echo "Conflicting files:"
       echo "$conflicted_files"
@@ -153,7 +153,7 @@ comprehensive_check() {
   if ! git rebase --autostash origin/$TARGET_BRANCH; then
     echo "❌ Rebase failed due to conflicts!"
     # Detect conflicting files
-    local conflicted_files=$(git diff --name-only --diff-filter=U 2>/dev/null || git status --short 2>/dev/null | grep -E "^(UU|AA|DD|AU|UA|DU|UD)" | awk '{print $2}' || git ls-files -u 2>/dev/null | awk '{print $4}' | sort -u || echo "Unable to determine")
+    local conflicted_files=$(git diff --name-only --diff-filter=U 2>/dev/null || git ls-files -u | awk '{print $4}' | sort -u || echo "Unable to determine")
     if [[ -n "$conflicted_files" && "$conflicted_files" != "Unable to determine" ]]; then
       echo "Conflicting files:"
       echo "$conflicted_files"
