@@ -41,20 +41,8 @@ workflows:
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           echo "Linux version: $(uname -a)"
           echo "Triggered By: $CM_BUILD_STARTED_BY"
-          echo "🛠️ Running Flutter analysis..."
-          # Get the base commit (when the PR branched off the target branch)
-          BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
-
-          # Identify changed Dart files (lib/ and test/)
-          CHANGED_DART_FILES=$(git diff --name-only  --diff-filter=d $BASE_COMMIT HEAD -- "lib/*.dart" "test/*.dart")
-
-          if [ -z "$CHANGED_DART_FILES" ]; then
-            echo "✅ No Dart files modified. Skipping analysis."
-            exit 0
-          fi
-          echo "🛠️ Analyzing changed files:"
-          echo "$CHANGED_DART_FILES"
-          fvm flutter analyze --fatal-infos --fatal-warnings $CHANGED_DART_FILES
+          chmod +x scripts/ci/run_code_analysis.sh
+          ./scripts/ci/run_code_analysis.sh "${CM_PULL_REQUEST_DEST:-main}" --pre
 
       - name: Run Unit Tests With Coverage
         script: |
@@ -201,8 +189,8 @@ workflows:
       - name: Run Code Analysis
         script: |
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
-          echo "🛠️ Running Flutter analysis..."
-          fvm flutter analyze --fatal-infos --fatal-warnings .
+          chmod +x scripts/ci/run_code_analysis.sh
+          ./scripts/ci/run_code_analysis.sh "${CM_PULL_REQUEST_DEST:-main}" --comp
 
       - name: Run Unit Tests With Coverage Report
         script: |

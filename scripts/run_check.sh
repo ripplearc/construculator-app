@@ -13,6 +13,40 @@ TARGET_BRANCH=${TARGET_BRANCH:-main}
 ARC_CODE_COVERAGE_TARGET=${ARC_CODE_COVERAGE_TARGET:-95}
 
 # Functions
+
+check_rebase_conflicts() {
+  local target_branch="$1"
+  
+  echo "🔄 Checking for rebase conflicts..."
+  if ! git rebase --autostash origin/"$target_branch"; then
+    echo "❌ Rebase failed due to conflicts!"
+    local conflicted_files=$(git diff --name-only --diff-filter=U 2>/dev/null || git ls-files -u | awk '{print $4}' | sort -u || echo "Unable to determine")
+    if [[ -n "$conflicted_files" && "$conflicted_files" != "Unable to determine" ]]; then
+      echo "Conflicting files:"
+      echo "$conflicted_files"
+    else
+      echo "Unable to determine specific conflicting files, but rebase failed."
+    fi
+    git rebase --abort
+    return 1
+  fi
+  echo "✅ Rebase successful, no conflicts detected"
+  return 0
+}
+
+run_custom_linter() {
+  local files="$1"
+  
+  if [[ -z "$files" ]]; then
+    echo "✅ No non-generated Dart files changed, skipping custom linter"
+    return 0
+  fi
+  
+  echo "🔍 Running custom linter (ripplearc_linter rules) on changed files..."
+  local all_rules="prefer_fake_over_mock,forbid_forced_unwrapping,no_optional_operators_in_tests,document_fake_parameters,document_interface,todo_with_story_links,no_internal_method_docs,specific_exception_types,avoid_test_timeouts,private_subject,sealed_over_dynamic"
+  fvm dart run ripplearc_linter:standalone_checker --rules $all_rules $files
+}
+
 check_dependencies() {
   local missing=()
   for cmd in git flutter dart; do
@@ -45,10 +79,17 @@ pre_check() {
 
   # Get base commit
   git fetch origin "$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
-  local base_commit=$(git merge-base HEAD "origin/$TARGET_BRANCH")
+  
+  # Check for rebase conflicts before running analysis
+  if ! check_rebase_conflicts "$TARGET_BRANCH"; then
+    exit 1
+  fi
+  
+  # After successful rebase, find delta files from rebased HEAD
+  local base_commit=origin/$TARGET_BRANCH
 
   # Changed Dart files analysis
-  local changed_dart_files=$(git diff --name-only --diff-filter=d "$base_commit" -- "lib/*.dart" "test/*.dart")
+  local changed_dart_files=$(git diff --name-only --diff-filter=d "$base_commit" HEAD -- "lib/*.dart" "test/*.dart")
   
   if [[ -z "$changed_dart_files" ]]; then
     echo "✅ No Dart files changed"
@@ -56,17 +97,9 @@ pre_check() {
     echo "🔍 Analyzing changed files..."
     fvm flutter analyze --fatal-infos --fatal-warnings $changed_dart_files
     
-    # Filter out generated files (matching analysis_options.yaml exclusions)
+    # Filter out generated files and run custom linter
     local filtered_files=$(echo "$changed_dart_files" | grep -v -E "(lib/generated/|\.g\.dart$|\.freezed\.dart$|lib/l10n/generated/)")
-    
-    # Run custom lint on changed files with all rules (excluding generated files)
-    if [[ -n "$filtered_files" ]]; then
-      echo "🔍 Running custom linter (ripplearc_linter rules) on changed files..."
-      local all_rules="prefer_fake_over_mock,forbid_forced_unwrapping,no_optional_operators_in_tests,document_fake_parameters,document_interface,todo_with_story_links,no_internal_method_docs,specific_exception_types,avoid_test_timeouts,private_subject,sealed_over_dynamic"
-      fvm dart run ripplearc_linter:standalone_checker --rules $all_rules $filtered_files
-    else
-      echo "✅ No non-generated Dart files changed, skipping custom linter"
-    fi
+    run_custom_linter "$filtered_files"
   fi
 
   # Changed tests
@@ -126,28 +159,27 @@ comprehensive_check() {
   # Install dependencies
   fvm flutter pub get
 
+  # Get base commit for custom linter check on changed files only
+  git fetch origin "$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
+  
+  # Check for rebase conflicts before running analysis
+  if ! check_rebase_conflicts "$TARGET_BRANCH"; then
+    exit 1
+  fi
+  
   # Full code analysis
   echo "🔍 Full code analysis..."
   fvm flutter analyze --fatal-infos --fatal-warnings .
 
-  # Get base commit for custom linter check on changed files only
-  git fetch origin "$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
-  local base_commit=$(git merge-base HEAD "origin/$TARGET_BRANCH")
+  # After successful rebase, find delta files from rebased HEAD
+  local base_commit=origin/$TARGET_BRANCH
   
   # Get committed changed files (compared to base commit) for custom_lint only
-  local changed_dart_files=$(git diff --name-only --diff-filter=d "$base_commit" -- "lib/*.dart" "test/*.dart")
+  local changed_dart_files=$(git diff --name-only --diff-filter=d "$base_commit" HEAD -- "lib/*.dart" "test/*.dart")
   
-  # Filter out generated files (matching analysis_options.yaml exclusions)
+  # Filter out generated files and run custom linter
   local filtered_files=$(echo "$changed_dart_files" | grep -v -E "(lib/generated/|\.g\.dart$|\.freezed\.dart$|lib/l10n/generated/)")
-  
-  # Run custom linter only on changed files (excluding generated files)
-  if [[ -z "$filtered_files" ]]; then
-    echo "✅ No non-generated Dart files changed, skipping custom linter"
-  else
-    echo "🔍 Running custom linter (ripplearc_linter rules) on changed files..."
-    local all_rules="prefer_fake_over_mock,forbid_forced_unwrapping,no_optional_operators_in_tests,document_fake_parameters,document_interface,todo_with_story_links,no_internal_method_docs,specific_exception_types,avoid_test_timeouts,private_subject,sealed_over_dynamic"
-    fvm dart run ripplearc_linter:standalone_checker --rules $all_rules $filtered_files
-  fi
+  run_custom_linter "$filtered_files"
 
   # Unit tests with coverage
   if [ -d "test/units" ] && [ "$(ls -A test/units)" ]; then
