@@ -1,4 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/auth/auth_module.dart';
+import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/router_module.dart';
@@ -19,15 +21,21 @@ class EstimationModule extends Module {
   EstimationModule(this.appBootstrap);
 
   final List<RouteDefinition> _routeDefinitions = [
-    RouteDefinition(estimationLandingRoute, (context) => Container(), [
-      AuthGuard(),
-    ]),
+    RouteDefinition(
+      estimationLandingRoute,
+      (context) => CostEstimationLandingPage(),
+      [AuthGuard()],
+    ),
   ];
 
   List<RouteDefinition> get routeDefinitions => _routeDefinitions;
 
   @override
-  List<Module> get imports => [AuthLibraryModule(appBootstrap), RouterModule()];
+  List<Module> get imports => [
+    AuthLibraryModule(appBootstrap),
+    AuthModule(appBootstrap),
+    RouterModule(),
+  ];
 
   @override
   void routes(RouteManager r) {

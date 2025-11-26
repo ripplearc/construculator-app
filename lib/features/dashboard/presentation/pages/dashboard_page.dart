@@ -1,7 +1,9 @@
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
+import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -95,6 +97,13 @@ class _DashboardPageState extends State<DashboardPage> {
                   _router.navigate(fullLoginRoute);
                 },
                 label: 'Logout',
+                centerAlign: true,
+              ),
+              CoreButton(
+                onPressed: () {
+                  _router.navigate(fullEstimationLandingRoute);
+                },
+                label: '${AppLocalizations.of(context)?.costEstimation}',
                 centerAlign: true,
               ),
             ],

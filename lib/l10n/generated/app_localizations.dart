@@ -747,6 +747,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Welcome Back'**
   String get welcomeBack;
+
+  /// Label for cost estimation button on dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Estimation'**
+  String get costEstimation;
 }
 
 class _AppLocalizationsDelegate
