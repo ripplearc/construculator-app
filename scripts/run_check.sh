@@ -13,6 +13,27 @@ TARGET_BRANCH=${TARGET_BRANCH:-main}
 ARC_CODE_COVERAGE_TARGET=${ARC_CODE_COVERAGE_TARGET:-95}
 
 # Functions
+
+check_rebase_conflicts() {
+  local target_branch="$1"
+  
+  echo "🔄 Checking for rebase conflicts..."
+  if ! git rebase --autostash origin/"$target_branch"; then
+    echo "❌ Rebase failed due to conflicts!"
+    local conflicted_files=$(git diff --name-only --diff-filter=U 2>/dev/null || git ls-files -u | awk '{print $4}' | sort -u || echo "Unable to determine")
+    if [[ -n "$conflicted_files" && "$conflicted_files" != "Unable to determine" ]]; then
+      echo "Conflicting files:"
+      echo "$conflicted_files"
+    else
+      echo "Unable to determine specific conflicting files, but rebase failed."
+    fi
+    git rebase --abort
+    return 1
+  fi
+  echo "✅ Rebase successful, no conflicts detected"
+  return 0
+}
+
 check_dependencies() {
   local missing=()
   for cmd in git flutter dart; do
@@ -47,21 +68,9 @@ pre_check() {
   git fetch origin "$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
   
   # Check for rebase conflicts before running analysis
-  echo "🔄 Checking for rebase conflicts..."
-  if ! git rebase --autostash origin/$TARGET_BRANCH; then
-    echo "❌ Rebase failed due to conflicts!"
-    # Detect conflicting files
-    local conflicted_files=$(git diff --name-only --diff-filter=U 2>/dev/null || git ls-files -u | awk '{print $4}' | sort -u || echo "Unable to determine")
-    if [[ -n "$conflicted_files" && "$conflicted_files" != "Unable to determine" ]]; then
-      echo "Conflicting files:"
-      echo "$conflicted_files"
-    else
-      echo "Unable to determine specific conflicting files, but rebase failed."
-    fi
-    git rebase --abort
+  if ! check_rebase_conflicts "$TARGET_BRANCH"; then
     exit 1
   fi
-  echo "✅ Rebase successful, no conflicts detected"
   
   # After successful rebase, find delta files from rebased HEAD
   local base_commit=origin/$TARGET_BRANCH
@@ -149,21 +158,9 @@ comprehensive_check() {
   git fetch origin "$TARGET_BRANCH:refs/remotes/origin/$TARGET_BRANCH"
   
   # Check for rebase conflicts before running analysis
-  echo "🔄 Checking for rebase conflicts..."
-  if ! git rebase --autostash origin/$TARGET_BRANCH; then
-    echo "❌ Rebase failed due to conflicts!"
-    # Detect conflicting files
-    local conflicted_files=$(git diff --name-only --diff-filter=U 2>/dev/null || git ls-files -u | awk '{print $4}' | sort -u || echo "Unable to determine")
-    if [[ -n "$conflicted_files" && "$conflicted_files" != "Unable to determine" ]]; then
-      echo "Conflicting files:"
-      echo "$conflicted_files"
-    else
-      echo "Unable to determine specific conflicting files, but rebase failed."
-    fi
-    git rebase --abort
+  if ! check_rebase_conflicts "$TARGET_BRANCH"; then
     exit 1
   fi
-  echo "✅ Rebase successful, no conflicts detected"
   
   # Full code analysis
   echo "🔍 Full code analysis..."
