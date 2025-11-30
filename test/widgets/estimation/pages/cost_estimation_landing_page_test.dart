@@ -112,16 +112,13 @@ void main() {
     );
   }
 
-  testWidgets('navigates to login when credentials id is null', (
-    tester,
-  ) async {
+  testWidgets('navigates to login when credentials id is null', (tester) async {
     await tester.pumpWidget(makeApp());
     await tester.pump();
 
     expect(router.navigationHistory.isNotEmpty, isTrue);
     expect(router.navigationHistory.last.route, fullLoginRoute);
   });
-
 
   testWidgets('shows content when authenticated with user profile', (
     tester,
@@ -171,8 +168,6 @@ void main() {
 
       expect(find.text('My project'), findsOneWidget);
 
-      router.navigationHistory.clear();
-
       authNotifier.emitUserProfileChanged(null);
       await tester.pump();
 
@@ -181,5 +176,4 @@ void main() {
       expect(router.navigationHistory.last.arguments, testEmail);
     },
   );
-
 }
