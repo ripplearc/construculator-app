@@ -498,7 +498,7 @@ void main() {
         );
 
         final emailField = tester.widget<TextField>(emailFieldFinder);
-        expect(emailField.controller?.text, testEmail);
+        expect(emailField.controller!.text, testEmail);
         expect(emailField.enabled, isFalse);
       },
     );
