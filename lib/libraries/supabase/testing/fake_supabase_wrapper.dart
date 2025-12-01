@@ -370,6 +370,11 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       'filterColumn': filterColumn,
       'filterValue': filterValue,
     });
+
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
     if (shouldThrowOnSelect) {
       _throwConfiguredException(
         selectExceptionType,

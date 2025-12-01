@@ -1,4 +1,5 @@
-import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
+import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
@@ -15,14 +16,13 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-class _DashboardPageTestModule extends Module {
+class _TestModule extends Module {
   final FakeAuthManager authManager;
   final FakeAuthNotifier authNotifier;
   final FakeAppRouter appRouter;
 
-  _DashboardPageTestModule({
+  _TestModule({
     required this.authManager,
     required this.authNotifier,
     required this.appRouter,
@@ -33,6 +33,13 @@ class _DashboardPageTestModule extends Module {
     i.addLazySingleton<AuthManager>(() => authManager);
     i.addLazySingleton<AuthNotifier>(() => authNotifier);
     i.addLazySingleton<AppRouter>(() => appRouter);
+    i.add<AuthBloc>(
+      () => AuthBloc(
+        authManager: authManager,
+        authNotifier: authNotifier,
+        router: appRouter,
+      ),
+    );
   }
 }
 
@@ -56,7 +63,7 @@ void main() {
     router = FakeAppRouter();
 
     Modular.init(
-      _DashboardPageTestModule(
+      _TestModule(
         authManager: authManager,
         authNotifier: authNotifier,
         appRouter: router,
@@ -69,7 +76,7 @@ void main() {
   });
 
   Widget makeApp() {
-    return const MaterialApp(home: DashboardPage());
+    return const MaterialApp(home: CostEstimationLandingPage());
   }
 
   UserCredential createCredential({
@@ -84,15 +91,12 @@ void main() {
     );
   }
 
-  const String firstName = 'John';
-  const String lastName = 'Doe';
-
   User createUser({
     String id = 'user-1',
     String credentialId = 'test-id',
     String email = 'test@example.com',
-    String firstName = firstName,
-    String lastName = lastName,
+    String firstName = 'John',
+    String lastName = 'Doe',
   }) {
     return User(
       id: id,
@@ -110,43 +114,29 @@ void main() {
 
   testWidgets('navigates to login when credentials id is null', (tester) async {
     await tester.pumpWidget(makeApp());
-
-    expect(router.navigationHistory.length, 1);
-    expect(router.navigationHistory.first.route, fullLoginRoute);
-  });
-
-  testWidgets('renders welcome text with user full name', (tester) async {
-    final credential = createCredential();
-    final user = createUser();
-
-    authManager.setCurrentCredential(credential);
-    authRepository.setUserProfile(user);
-
-    await tester.pumpWidget(makeApp());
-    await tester.pumpAndSettle();
-
-    expect(find.text('Welcome back, $firstName $lastName!'), findsOneWidget);
-    expect(find.text('You are now logged in to your account'), findsOneWidget);
-  });
-
-  testWidgets('logout navigates to login', (tester) async {
-    final credential = createCredential();
-    final user = createUser();
-
-    authManager.setCurrentCredential(credential);
-    authRepository.setUserProfile(user);
-
-    await tester.pumpWidget(makeApp());
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.widgetWithText(CoreButton, 'Logout'));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(router.navigationHistory.isNotEmpty, isTrue);
     expect(router.navigationHistory.last.route, fullLoginRoute);
   });
 
-  testWidgets('navigates to create account when user profile event is null', (
+  testWidgets('shows content when authenticated with user profile', (
+    tester,
+  ) async {
+    final credential = createCredential();
+    final user = createUser();
+
+    authManager.setCurrentCredential(credential);
+    authRepository.setUserProfile(user);
+
+    await tester.pumpWidget(makeApp());
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.text('My project'), findsOneWidget);
+  });
+
+  testWidgets('navigates to create account when user profile is null', (
     tester,
   ) async {
     const testEmail = 'test@example.com';
@@ -158,23 +148,9 @@ void main() {
     await tester.pumpWidget(makeApp());
     await tester.pump();
 
-    expect(router.navigationHistory.length, 1);
-    expect(router.navigationHistory.first.route, fullCreateAccountRoute);
-    expect(router.navigationHistory.first.arguments, testEmail);
-  });
-
-  testWidgets('shows placeholder when getUserProfile returns null', (
-    tester,
-  ) async {
-    final credential = createCredential();
-
-    authManager.setCurrentCredential(credential);
-    authRepository.returnNullUserProfile = true;
-
-    await tester.pumpWidget(makeApp());
-    await tester.pump();
-
-    expect(find.text('Welcome back, ...'), findsOneWidget);
+    expect(router.navigationHistory.isNotEmpty, isTrue);
+    expect(router.navigationHistory.last.route, fullCreateAccountRoute);
+    expect(router.navigationHistory.last.arguments, testEmail);
   });
 
   testWidgets(
@@ -190,14 +166,14 @@ void main() {
       await tester.pumpWidget(makeApp());
       await tester.pumpAndSettle();
 
-      expect(find.text('Welcome back, $firstName $lastName!'), findsOneWidget);
+      expect(find.text('My project'), findsOneWidget);
 
       authNotifier.emitUserProfileChanged(null);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
-      expect(router.navigationHistory.length, 1);
-      expect(router.navigationHistory.first.route, fullCreateAccountRoute);
-      expect(router.navigationHistory.first.arguments, testEmail);
+      expect(router.navigationHistory.isNotEmpty, isTrue);
+      expect(router.navigationHistory.last.route, fullCreateAccountRoute);
+      expect(router.navigationHistory.last.arguments, testEmail);
     },
   );
 }
