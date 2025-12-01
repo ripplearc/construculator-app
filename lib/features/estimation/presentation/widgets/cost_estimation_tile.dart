@@ -20,31 +20,24 @@ class CostEstimationTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12, top: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(
+          context,
+        ).extension<AppColorsExtension>()?.pageBackground,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: CoreShadowColors.shadowGrey8,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: CoreShadows.small,
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: GestureDetector(
-          key: const Key('tileGestureDetector'),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildTopRow(context),
-                const SizedBox(height: 12),
-                _buildBottomRow(context),
-              ],
-            ),
+      child: GestureDetector(
+        key: const Key('tileGestureDetector'),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildTopRow(context),
+              const SizedBox(height: 12),
+              _buildBottomRow(context),
+            ],
           ),
         ),
       ),
@@ -57,14 +50,16 @@ class CostEstimationTile extends StatelessWidget {
         CoreIconWidget(
           key: const Key('moneyIcon'),
           icon: CoreIcons.cost,
-          color: CoreIconColors.grayMid,
+          color: Theme.of(context).extension<AppColorsExtension>()?.iconGrayMid,
           size: 24,
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             estimation.estimateName,
-            style: CoreTypography.bodyLargeSemiBold(color: CoreTextColors.dark),
+            style: Theme.of(
+              context,
+            ).extension<TypographyExtension>()?.bodyLargeMedium,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -74,7 +69,7 @@ class CostEstimationTile extends StatelessWidget {
           child: CoreIconWidget(
             key: const Key('menuIcon'),
             icon: CoreIcons.moreVert,
-            color: CoreIconColors.dark,
+            color: Theme.of(context).extension<AppColorsExtension>()?.iconDark,
             size: 24,
           ),
         ),
@@ -90,32 +85,45 @@ class CostEstimationTile extends StatelessWidget {
         CoreIconWidget(
           key: const Key('calendarIcon'),
           icon: CoreIcons.calendar,
-          color: CoreIconColors.grayMid,
+          color: Theme.of(context).extension<AppColorsExtension>()?.iconGrayMid,
           size: 14,
         ),
         const SizedBox(width: 8),
         Text(
           FormattingHelper.formatDate(createdAt),
-          style: CoreTypography.bodySmallMedium(color: CoreTextColors.body),
+          style: Theme.of(
+            context,
+          ).extension<TypographyExtension>()?.bodySmallRegular,
         ),
         const SizedBox(width: 8),
         Container(
           width: 4,
           height: 4,
-          decoration: const BoxDecoration(
-            color: CoreTextColors.disable,
+          decoration: BoxDecoration(
+            color: Theme.of(
+              context,
+            ).extension<AppColorsExtension>()?.lineDarkOutline,
             shape: BoxShape.circle,
           ),
         ),
         const SizedBox(width: 8),
         Text(
           FormattingHelper.formatTime(createdAt),
-          style: CoreTypography.bodySmallMedium(color: CoreTextColors.body),
+          style: Theme.of(
+            context,
+          ).extension<TypographyExtension>()?.bodySmallRegular,
         ),
         const Spacer(),
         Text(
           FormattingHelper.formatCurrency(estimation.totalCost),
-          style: CoreTypography.bodyLargeSemiBold(color: CoreTextColors.dark),
+          style: Theme.of(context)
+              .extension<TypographyExtension>()
+              ?.bodyLargeSemiBold
+              .copyWith(
+                color: Theme.of(
+                  context,
+                ).extension<AppColorsExtension>()?.textDark,
+              ),
         ),
       ],
     );

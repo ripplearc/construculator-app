@@ -34,11 +34,14 @@ class CostEstimationEmptyPage extends StatelessWidget {
             child: Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: CoreTextColors.body,
-              ),
+              style: Theme.of(context)
+                  .extension<TypographyExtension>()
+                  ?.bodyMediumRegular
+                  .copyWith(
+                    color: Theme.of(
+                      context,
+                    ).extension<AppColorsExtension>()?.textHeadline,
+                  ),
             ),
           ),
         ],

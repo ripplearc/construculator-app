@@ -2,6 +2,7 @@ import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bl
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_state.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/features/estimation/presentation/widgets/project_header_app_bar.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -43,7 +44,11 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           });
         } else if (state is AuthLoadFailure) {
           if (mounted) {
-            CoreToast.showError(context, state.message, 'Close');
+            CoreToast.showError(
+              context,
+              state.message,
+              AppLocalizations.of(context)?.closeLabel ?? 'Close',
+            );
           }
         }
       },
@@ -57,7 +62,9 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           }
 
           return Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: Theme.of(
+              context,
+            ).extension<AppColorsExtension>()?.pageBackground,
             appBar: ProjectHeaderAppBar(
               projectName: 'My project',
               onProjectTap: () {},
