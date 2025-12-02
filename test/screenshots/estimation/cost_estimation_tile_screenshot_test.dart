@@ -26,6 +26,7 @@ void main() {
     }) async {
       await tester.pumpWidget(
         MaterialApp(
+          theme: createTestTheme(),
           home: Material(
             child: CostEstimationTile(
               estimation: estimation,
@@ -88,10 +89,12 @@ void main() {
       );
     });
 
-    testWidgets('renders cost estimation tile with long name correctly', (tester) async {
+    testWidgets('renders cost estimation tile with long name correctly', (
+      tester,
+    ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
-      
+
       final estimation = createTestEstimation(
         estimateName: 'Complete Home Renovation and Extension Project',
         totalCost: 125000.75,

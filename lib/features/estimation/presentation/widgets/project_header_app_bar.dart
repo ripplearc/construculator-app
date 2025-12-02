@@ -26,9 +26,7 @@ class ProjectHeaderAppBar extends StatelessWidget
       shadowColor: Colors.black.withValues(alpha: 0.15),
       borderRadius: BorderRadius.zero,
       child: Container(
-        color: Theme.of(
-          context,
-        ).extension<AppColorsExtension>()?.pageBackground,
+        color: CoreBackgroundColors.pageBackground,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: AppBar(
@@ -67,9 +65,7 @@ class ProjectHeaderAppBar extends StatelessWidget
                 onPressed: onSearchTap,
                 icon: CoreIconWidget(
                   icon: CoreIcons.search,
-                  color: Theme.of(
-                    context,
-                  ).extension<AppColorsExtension>()?.iconDark,
+                  color: CoreIconColors.dark,
                 ),
               ),
               IconButton(
@@ -77,18 +73,14 @@ class ProjectHeaderAppBar extends StatelessWidget
                 onPressed: onNotificationTap,
                 icon: CoreIconWidget(
                   icon: CoreIcons.notification,
-                  color: Theme.of(
-                    context,
-                  ).extension<AppColorsExtension>()?.iconDark,
+                  color: CoreIconColors.dark,
                 ),
               ),
               Container(
                 margin: const EdgeInsets.only(right: 16, left: 8),
                 child: CoreAvatar(
                   radius: 20,
-                  backgroundColor: Theme.of(
-                    context,
-                  ).extension<AppColorsExtension>()?.backgroundDarkGray,
+                  backgroundColor: Colors.black,
                   // TODO: https://ripplearc.youtrack.cloud/issue/CA-392/Cost-Estimation-Use-letter-when-no-user-avatar-is-present
                   image: avatarImage,
                 ),

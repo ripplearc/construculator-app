@@ -1,5 +1,9 @@
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_state.dart';
+import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/enums.dart';
+import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/features/estimation/presentation/widgets/project_header_app_bar.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -25,12 +29,6 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
     super.initState();
     _authBloc = Modular.get<AuthBloc>();
     _authBloc.initialize();
-  }
-
-  @override
-  void dispose() {
-    _authBloc.close();
-    super.dispose();
   }
 
   @override
@@ -81,11 +79,28 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
     );
   }
 
-  final estimations = [];
+  final List<CostEstimate> estimations = [
+    CostEstimate(
+      estimateName: 'Estimation 1',
+      id: '',
+      projectId: '',
+      creatorUserId: '',
+      markupConfiguration: MarkupConfiguration(
+        overallType: MarkupType.overall,
+        overallValue: MarkupValue(
+          type: MarkupValueType.percentage,
+          value: 10.0,
+        ),
+      ),
+      lockStatus: LockStatus.locked("", DateTime.now()),
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    ),
+  ];
 
   Widget _buildBody() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
       child: Column(
         children: [
           ...estimations.map(

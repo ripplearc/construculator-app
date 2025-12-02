@@ -18,7 +18,7 @@ class CostEstimationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12, top: 12),
+      margin: EdgeInsets.symmetric(vertical: CoreSpacing.space3),
       decoration: BoxDecoration(
         color: Theme.of(
           context,
@@ -26,19 +26,18 @@ class CostEstimationTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: CoreShadows.small,
       ),
+      padding: const EdgeInsets.all(CoreSpacing.space4),
       child: GestureDetector(
         key: const Key('tileGestureDetector'),
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTopRow(context),
-              const SizedBox(height: 12),
-              _buildBottomRow(context),
-            ],
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildTopRow(context),
+            const SizedBox(height: CoreSpacing.space3),
+            _buildBottomRow(context),
+          ],
         ),
       ),
     );
@@ -53,13 +52,18 @@ class CostEstimationTile extends StatelessWidget {
           color: Theme.of(context).extension<AppColorsExtension>()?.iconGrayMid,
           size: 24,
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: CoreSpacing.space3),
         Expanded(
           child: Text(
             estimation.estimateName,
-            style: Theme.of(
-              context,
-            ).extension<TypographyExtension>()?.bodyLargeMedium,
+            style: Theme.of(context)
+                .extension<TypographyExtension>()
+                ?.bodyLargeMedium
+                .copyWith(
+                  color: Theme.of(
+                    context,
+                  ).extension<AppColorsExtension>()?.textDark,
+                ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -88,14 +92,14 @@ class CostEstimationTile extends StatelessWidget {
           color: Theme.of(context).extension<AppColorsExtension>()?.iconGrayMid,
           size: 14,
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: CoreSpacing.space2),
         Text(
           FormattingHelper.formatDate(createdAt),
           style: Theme.of(
             context,
           ).extension<TypographyExtension>()?.bodySmallRegular,
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: CoreSpacing.space2),
         Container(
           width: 4,
           height: 4,
@@ -106,24 +110,27 @@ class CostEstimationTile extends StatelessWidget {
             shape: BoxShape.circle,
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: CoreSpacing.space2),
         Text(
           FormattingHelper.formatTime(createdAt),
           style: Theme.of(
             context,
           ).extension<TypographyExtension>()?.bodySmallRegular,
         ),
-        const Spacer(),
-        Text(
-          FormattingHelper.formatCurrency(estimation.totalCost),
-          style: Theme.of(context)
-              .extension<TypographyExtension>()
-              ?.bodyLargeSemiBold
-              .copyWith(
-                color: Theme.of(
-                  context,
-                ).extension<AppColorsExtension>()?.textDark,
-              ),
+        const SizedBox(width: CoreSpacing.space2),
+        Expanded(
+          child: Text(
+            textAlign: TextAlign.right,
+            FormattingHelper.formatCurrency(estimation.totalCost),
+            style: Theme.of(context)
+                .extension<TypographyExtension>()
+                ?.bodyLargeSemiBold
+                .copyWith(
+                  color: Theme.of(
+                    context,
+                  ).extension<AppColorsExtension>()?.textDark,
+                ),
+          ),
         ),
       ],
     );
