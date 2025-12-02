@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../font_loader.dart';
 
 void main() {
-  final size = const Size(390, 120);
+  final size = const Size(390, 140);
   final ratio = 1.0;
   TestWidgetsFlutterBinding.ensureInitialized();
 

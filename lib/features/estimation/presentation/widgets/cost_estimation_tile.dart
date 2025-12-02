@@ -60,7 +60,7 @@ class CostEstimationTile extends StatelessWidget {
             style: typography?.bodyLargeMedium.copyWith(
               color: appColors?.textDark,
             ),
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
         ),
