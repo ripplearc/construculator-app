@@ -1,6 +1,8 @@
 import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/enums.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 
 /// Represents a cost estimate for a construction project.
 ///
@@ -91,7 +93,7 @@ class CostEstimate {
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
-    final now = createdAt ?? DateTime.now();
+    final now = createdAt ?? Modular.get<Clock>().now();
     return CostEstimate(
       id: id,
       projectId: projectId,

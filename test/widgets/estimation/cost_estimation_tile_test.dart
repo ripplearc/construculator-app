@@ -1,20 +1,30 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('CostEstimationTile', () {
     late CostEstimate testEstimation;
+    late FakeClockImpl clock;
     late DateTime testDate;
 
-    setUp(() {
-      testDate = DateTime.parse('2024-03-15 14:30:00');
+    setUpAll(() {
+      Modular.init(_TestAppModule());
+      clock = Modular.get<Clock>() as FakeClockImpl;
+      clock.set(DateTime.parse('2024-03-15 14:30:00'));
+    });
 
-      testEstimation = CostEstimate.defaultEstimate(
-        createdAt: testDate,
-        updatedAt: testDate,
-      );
+    setUp(() {
+      testDate = clock.now();
+      testEstimation = CostEstimate.defaultEstimate();
+    });
+
+    tearDownAll(() {
+      Modular.destroy();
     });
 
     Widget createWidget({
@@ -248,4 +258,13 @@ void main() {
       });
     });
   });
+}
+
+class _TestAppModule extends Module {
+  static final FakeClockImpl fakeClock = FakeClockImpl();
+
+  @override
+  void binds(Injector i) {
+    i.addSingleton<Clock>(() => fakeClock);
+  }
 }
