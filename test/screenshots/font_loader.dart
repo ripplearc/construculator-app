@@ -9,17 +9,26 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 Future<void> loadAppFonts() async {
   TestWidgetsFlutterBinding.ensureInitialized();
   await loadMaterialIcons();
-  await _loadRobotoFonts();
+  await _loadRobotoFonts(
+    fontFiles: ['test/screenshots/fonts/Roboto-Regular.ttf'],
+  );
 }
 
-Future<void> _loadRobotoFonts() async {
-  try {
-    final fontFiles = [
+/// Use this when tests require Regular, Medium, and Bold Roboto variants.
+Future<void> loadAppFontsAll() async {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  await loadMaterialIcons();
+  await _loadRobotoFonts(
+    fontFiles: [
       'test/screenshots/fonts/Roboto-Regular.ttf',
       'test/screenshots/fonts/Roboto-Medium.ttf',
       'test/screenshots/fonts/Roboto-Bold.ttf',
-    ];
+    ],
+  );
+}
 
+Future<void> _loadRobotoFonts({List<String> fontFiles = const []}) async {
+  try {
     final loader = FontLoader('Roboto');
     for (final filePath in fontFiles) {
       final bytes = await File(filePath).readAsBytes();

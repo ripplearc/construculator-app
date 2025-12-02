@@ -11,7 +11,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() async {
-    await loadAppFonts();
+    await loadAppFontsAll();
   });
 
   group('CostEstimationTile Screenshot Tests', () {
