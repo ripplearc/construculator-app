@@ -17,12 +17,11 @@ class CostEstimationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appColors = Theme.of(context).extension<AppColorsExtension>();
     return Container(
       margin: EdgeInsets.symmetric(vertical: CoreSpacing.space3),
       decoration: BoxDecoration(
-        color: Theme.of(
-          context,
-        ).extension<AppColorsExtension>()?.pageBackground,
+        color: appColors?.pageBackground,
         borderRadius: BorderRadius.circular(12),
         boxShadow: CoreShadows.small,
       ),
@@ -44,26 +43,23 @@ class CostEstimationTile extends StatelessWidget {
   }
 
   Widget _buildTopRow(BuildContext context) {
+    final appColors = Theme.of(context).extension<AppColorsExtension>();
+    final typography = Theme.of(context).extension<TypographyExtension>();
     return Row(
       children: [
         CoreIconWidget(
           key: const Key('moneyIcon'),
           icon: CoreIcons.cost,
-          color: Theme.of(context).extension<AppColorsExtension>()?.iconGrayMid,
+          color: appColors?.iconGrayMid,
           size: 24,
         ),
         const SizedBox(width: CoreSpacing.space3),
         Expanded(
           child: Text(
             estimation.estimateName,
-            style: Theme.of(context)
-                .extension<TypographyExtension>()
-                ?.bodyLargeMedium
-                .copyWith(
-                  color: Theme.of(
-                    context,
-                  ).extension<AppColorsExtension>()?.textDark,
-                ),
+            style: typography?.bodyLargeMedium.copyWith(
+              color: appColors?.textDark,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -73,7 +69,7 @@ class CostEstimationTile extends StatelessWidget {
           child: CoreIconWidget(
             key: const Key('menuIcon'),
             icon: CoreIcons.moreVert,
-            color: Theme.of(context).extension<AppColorsExtension>()?.iconDark,
+            color: appColors?.iconDark,
             size: 24,
           ),
         ),
@@ -84,52 +80,44 @@ class CostEstimationTile extends StatelessWidget {
   Widget _buildBottomRow(BuildContext context) {
     final createdAt = estimation.createdAt;
 
+    final appColors = Theme.of(context).extension<AppColorsExtension>();
+    final typography = Theme.of(context).extension<TypographyExtension>();
+
     return Row(
       children: [
         CoreIconWidget(
           key: const Key('calendarIcon'),
           icon: CoreIcons.calendar,
-          color: Theme.of(context).extension<AppColorsExtension>()?.iconGrayMid,
+          color: appColors?.iconGrayMid,
           size: 14,
         ),
         const SizedBox(width: CoreSpacing.space2),
         Text(
           FormattingHelper.formatDate(createdAt),
-          style: Theme.of(
-            context,
-          ).extension<TypographyExtension>()?.bodySmallRegular,
+          style: typography?.bodySmallRegular,
         ),
         const SizedBox(width: CoreSpacing.space2),
         Container(
           width: 4,
           height: 4,
           decoration: BoxDecoration(
-            color: Theme.of(
-              context,
-            ).extension<AppColorsExtension>()?.lineDarkOutline,
+            color: appColors?.lineDarkOutline,
             shape: BoxShape.circle,
           ),
         ),
         const SizedBox(width: CoreSpacing.space2),
         Text(
           FormattingHelper.formatTime(createdAt),
-          style: Theme.of(
-            context,
-          ).extension<TypographyExtension>()?.bodySmallRegular,
+          style: typography?.bodySmallRegular,
         ),
         const SizedBox(width: CoreSpacing.space2),
         Expanded(
           child: Text(
             textAlign: TextAlign.right,
             FormattingHelper.formatCurrency(estimation.totalCost),
-            style: Theme.of(context)
-                .extension<TypographyExtension>()
-                ?.bodyLargeSemiBold
-                .copyWith(
-                  color: Theme.of(
-                    context,
-                  ).extension<AppColorsExtension>()?.textDark,
-                ),
+            style: typography?.bodyLargeSemiBold.copyWith(
+              color: appColors?.textDark,
+            ),
           ),
         ),
       ],

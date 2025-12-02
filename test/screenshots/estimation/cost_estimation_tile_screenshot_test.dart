@@ -1,7 +1,4 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
-import 'package:construculator/features/estimation/domain/entities/enums.dart';
-import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
-import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -44,23 +41,10 @@ void main() {
       double? totalCost,
       required DateTime createdAt,
     }) {
-      return CostEstimate(
-        id: 'test-id-123',
-        projectId: 'project-456',
+      return CostEstimate.defaultEstimate(
         estimateName: estimateName,
-        estimateDescription: 'Test description',
-        creatorUserId: 'user-789',
-        markupConfiguration: MarkupConfiguration(
-          overallType: MarkupType.overall,
-          overallValue: MarkupValue(
-            type: MarkupValueType.percentage,
-            value: 10.0,
-          ),
-        ),
         totalCost: totalCost,
-        lockStatus: const UnlockedStatus(),
         createdAt: createdAt,
-        updatedAt: DateTime(2024, 1, 15, 14, 30),
       );
     }
 

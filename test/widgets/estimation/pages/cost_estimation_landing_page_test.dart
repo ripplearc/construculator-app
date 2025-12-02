@@ -33,10 +33,8 @@ void main() {
     router = Modular.get<AppRouter>() as FakeAppRouter;
     clock = Modular.get<Clock>();
 
-    // Get the FakeAuthRepository that was bound in AuthTestModule
     fakeAuthRepository = Modular.get<AuthRepository>() as FakeAuthRepository;
 
-    // Create FakeAuthManager and replace the instance
     fakeAuthManager = FakeAuthManager(
       authNotifier: Modular.get<AuthNotifierController>(),
       authRepository: fakeAuthRepository,
@@ -87,7 +85,6 @@ void main() {
   }
 
   testWidgets('navigates to login when credentials id is null', (tester) async {
-    // No credential set - unauthenticated (default state)
     await tester.pumpWidget(makeApp());
     await tester.pump();
 
@@ -101,7 +98,6 @@ void main() {
     const testEmail = 'test@example.com';
     const credentialId = 'test-credential-id';
 
-    // Set up authenticated credential
     fakeAuthManager.setCurrentCredential(
       UserCredential(
         id: credentialId,
@@ -128,11 +124,10 @@ void main() {
     const credentialId = 'test-credential-id';
     const avatarUrl = 'https://example.com/avatar.jpg';
 
-    // Temporarily ignore image loading errors (expected in test environment)
     final originalOnError = FlutterError.onError;
     FlutterError.onError = (details) {
       if (details.exception is NetworkImageLoadException) return;
-      originalOnError?.call(details);
+      originalOnError!.call(details);
     };
     addTearDown(() => FlutterError.onError = originalOnError);
 
@@ -158,7 +153,6 @@ void main() {
     });
     await tester.pump();
 
-    // Verify CoreAvatar has the NetworkImage with the avatar URL
     final coreAvatarFinder = find.byWidgetPredicate(
       (widget) => widget is CoreAvatar && widget.image is NetworkImage,
     );
@@ -180,7 +174,6 @@ void main() {
 
     fakeAuthRepository.shouldThrowOnGetUserProfile = true;
 
-    // Use runAsync to allow real async bloc operations to complete
     await tester.runAsync(() async {
       await tester.pumpWidget(makeApp());
     });
