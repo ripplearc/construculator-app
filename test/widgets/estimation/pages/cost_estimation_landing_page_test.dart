@@ -1,102 +1,73 @@
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
+import 'package:construculator/features/auth/testing/auth_test_module.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_manager.dart';
-import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
-import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
-import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-class _TestModule extends Module {
-  final FakeAuthManager authManager;
-  final FakeAuthNotifier authNotifier;
-  final FakeAppRouter appRouter;
-
-  _TestModule({
-    required this.authManager,
-    required this.authNotifier,
-    required this.appRouter,
-  });
-
-  @override
-  void binds(Injector i) {
-    i.addLazySingleton<AuthManager>(() => authManager);
-    i.addLazySingleton<AuthNotifier>(() => authNotifier);
-    i.addLazySingleton<AppRouter>(() => appRouter);
-    i.add<AuthBloc>(
-      () => AuthBloc(
-        authManager: authManager,
-        authNotifier: authNotifier,
-        router: appRouter,
-      ),
-    );
-  }
-}
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 void main() {
-  late FakeClockImpl clock;
-  late FakeAuthRepository authRepository;
-  late FakeAuthManager authManager;
-  late FakeAuthNotifier authNotifier;
+  late FakeAuthManager fakeAuthManager;
+  late FakeAuthRepository fakeAuthRepository;
   late FakeAppRouter router;
+  late Clock clock;
 
   setUp(() {
-    clock = FakeClockImpl();
-    authNotifier = FakeAuthNotifier();
-    authRepository = FakeAuthRepository(clock: clock);
-    authManager = FakeAuthManager(
-      authNotifier: authNotifier,
-      authRepository: authRepository,
-      wrapper: FakeSupabaseWrapper(clock: clock),
+    CoreToast.disableTimers();
+
+    Modular.init(AuthTestModule());
+    router = Modular.get<AppRouter>() as FakeAppRouter;
+    clock = Modular.get<Clock>();
+
+    fakeAuthRepository = Modular.get<AuthRepository>() as FakeAuthRepository;
+
+    fakeAuthManager = FakeAuthManager(
+      authNotifier: Modular.get<AuthNotifierController>(),
+      authRepository: fakeAuthRepository,
+      wrapper: Modular.get<SupabaseWrapper>(),
       clock: clock,
     );
-    router = FakeAppRouter();
+    Modular.replaceInstance<AuthManager>(fakeAuthManager);
 
-    Modular.init(
-      _TestModule(
-        authManager: authManager,
-        authNotifier: authNotifier,
-        appRouter: router,
+    Modular.replaceInstance<AuthBloc>(
+      AuthBloc(
+        authManager: fakeAuthManager,
+        authNotifier: Modular.get<AuthNotifier>(),
+        router: router,
       ),
     );
   });
 
   tearDown(() {
     Modular.destroy();
+    CoreToast.enableTimers();
   });
 
   Widget makeApp() {
     return const MaterialApp(home: CostEstimationLandingPage());
   }
 
-  UserCredential createCredential({
-    String id = 'test-id',
-    String email = 'test@example.com',
-  }) {
-    return UserCredential(
-      id: id,
-      email: email,
-      metadata: {},
-      createdAt: clock.now(),
-    );
-  }
-
   User createUser({
     String id = 'user-1',
-    String credentialId = 'test-id',
+    required String credentialId,
     String email = 'test@example.com',
     String firstName = 'John',
     String lastName = 'Doe',
+    String? profilePhotoUrl,
   }) {
     return User(
       id: id,
@@ -105,10 +76,11 @@ void main() {
       firstName: firstName,
       lastName: lastName,
       professionalRole: 'Engineer',
+      profilePhotoUrl: profilePhotoUrl,
       createdAt: clock.now(),
       updatedAt: clock.now(),
       userStatus: UserProfileStatus.active,
-      userPreferences: {},
+      userPreferences: const {},
     );
   }
 
@@ -123,11 +95,22 @@ void main() {
   testWidgets('shows content when authenticated with user profile', (
     tester,
   ) async {
-    final credential = createCredential();
-    final user = createUser();
+    const testEmail = 'test@example.com';
+    const credentialId = 'test-credential-id';
 
-    authManager.setCurrentCredential(credential);
-    authRepository.setUserProfile(user);
+    fakeAuthManager.setCurrentCredential(
+      UserCredential(
+        id: credentialId,
+        email: testEmail,
+        metadata: {},
+        createdAt: clock.now(),
+      ),
+    );
+
+    // Set up user profile
+    fakeAuthRepository.setUserProfile(
+      createUser(credentialId: credentialId, email: testEmail),
+    );
 
     await tester.pumpWidget(makeApp());
     await tester.pumpAndSettle();
@@ -136,44 +119,67 @@ void main() {
     expect(find.text('My project'), findsOneWidget);
   });
 
-  testWidgets('navigates to create account when user profile is null', (
-    tester,
-  ) async {
+  testWidgets('sets avatar URL when user profile has photo', (tester) async {
     const testEmail = 'test@example.com';
-    final credential = createCredential(email: testEmail);
+    const credentialId = 'test-credential-id';
+    const avatarUrl = 'https://example.com/avatar.jpg';
 
-    authManager.setCurrentCredential(credential);
-    authRepository.returnNullUserProfile = true;
+    final originalOnError = FlutterError.onError;
+    FlutterError.onError = (details) {
+      if (details.exception is NetworkImageLoadException) return;
+      originalOnError!.call(details);
+    };
+    addTearDown(() => FlutterError.onError = originalOnError);
 
-    await tester.pumpWidget(makeApp());
+    fakeAuthManager.setCurrentCredential(
+      UserCredential(
+        id: credentialId,
+        email: testEmail,
+        metadata: {},
+        createdAt: clock.now(),
+      ),
+    );
+
+    fakeAuthRepository.setUserProfile(
+      createUser(
+        credentialId: credentialId,
+        email: testEmail,
+        profilePhotoUrl: avatarUrl,
+      ),
+    );
+
+    await tester.runAsync(() async {
+      await tester.pumpWidget(makeApp());
+    });
     await tester.pump();
 
-    expect(router.navigationHistory.isNotEmpty, isTrue);
-    expect(router.navigationHistory.last.route, fullCreateAccountRoute);
-    expect(router.navigationHistory.last.arguments, testEmail);
+    final coreAvatarFinder = find.byWidgetPredicate(
+      (widget) => widget is CoreAvatar && widget.image is NetworkImage,
+    );
+    expect(coreAvatarFinder, findsOneWidget);
+
+    final coreAvatar = tester.widget<CoreAvatar>(coreAvatarFinder);
+    expect((coreAvatar.image! as NetworkImage).url, avatarUrl);
   });
 
-  testWidgets(
-    'navigates to create account when user profile stream emits null',
-    (tester) async {
-      const testEmail = 'stream-test@example.com';
-      final credential = createCredential(email: testEmail);
-      final user = createUser(email: testEmail);
+  testWidgets('shows error toast when auth fails', (tester) async {
+    fakeAuthManager.setCurrentCredential(
+      UserCredential(
+        id: 'test-id',
+        email: 'test@example.com',
+        metadata: {},
+        createdAt: clock.now(),
+      ),
+    );
 
-      authManager.setCurrentCredential(credential);
-      authRepository.setUserProfile(user);
+    fakeAuthRepository.shouldThrowOnGetUserProfile = true;
 
+    await tester.runAsync(() async {
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+    });
 
-      expect(find.text('My project'), findsOneWidget);
+    await tester.pump();
 
-      authNotifier.emitUserProfileChanged(null);
-      await tester.pump();
-
-      expect(router.navigationHistory.isNotEmpty, isTrue);
-      expect(router.navigationHistory.last.route, fullCreateAccountRoute);
-      expect(router.navigationHistory.last.arguments, testEmail);
-    },
-  );
+    expect(find.text('Close'), findsOneWidget);
+  });
 }

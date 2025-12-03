@@ -1,6 +1,9 @@
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_state.dart';
+import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/features/estimation/presentation/widgets/project_header_app_bar.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -26,12 +29,6 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
   }
 
   @override
-  void dispose() {
-    _authBloc.close();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       bloc: _authBloc,
@@ -42,7 +39,11 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           });
         } else if (state is AuthLoadFailure) {
           if (mounted) {
-            CoreToast.showError(context, state.message, 'Close');
+            CoreToast.showError(
+              context,
+              state.message,
+              AppLocalizations.of(context)?.closeLabel ?? 'Close',
+            );
           }
         }
       },
@@ -56,7 +57,9 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           }
 
           return Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: Theme.of(
+              context,
+            ).extension<AppColorsExtension>()?.pageBackground,
             appBar: ProjectHeaderAppBar(
               projectName: 'My project',
               onProjectTap: () {},
@@ -73,10 +76,18 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
     );
   }
 
+  final List<CostEstimate> estimations = [];
+
   Widget _buildBody() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(),
+      padding: EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
+      child: Column(
+        children: [
+          ...estimations.map(
+            (estimation) => CostEstimationTile(estimation: estimation),
+          ),
+        ],
+      ),
     );
   }
 }

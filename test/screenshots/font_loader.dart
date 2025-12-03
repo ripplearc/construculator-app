@@ -1,25 +1,52 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+/// Manually loads fonts for golden tests without relying on golden_toolkit.
 Future<void> loadAppFonts() async {
   TestWidgetsFlutterBinding.ensureInitialized();
-  await _loadMaterialIcons();
-
-  await _loadFontFromFile(
-    'Roboto',
-    'test/screenshots/fonts/Roboto-Regular.ttf',
+  await loadMaterialIcons();
+  await _loadRobotoFonts(
+    fontFiles: ['test/screenshots/fonts/Roboto-Regular.ttf'],
   );
 }
 
-Future<void> _loadMaterialIcons() async {
+/// Use this when tests require Regular, Medium, and Bold Roboto variants.
+Future<void> loadAppFontsAll() async {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  await loadMaterialIcons();
+  await _loadRobotoFonts(
+    fontFiles: [
+      'test/screenshots/fonts/Roboto-Regular.ttf',
+      'test/screenshots/fonts/Roboto-Medium.ttf',
+      'test/screenshots/fonts/Roboto-Bold.ttf',
+    ],
+  );
+}
+
+Future<void> _loadRobotoFonts({List<String> fontFiles = const []}) async {
+  try {
+    final loader = FontLoader('Roboto');
+    for (final filePath in fontFiles) {
+      final bytes = await File(filePath).readAsBytes();
+      final byteData = ByteData.view(Uint8List.fromList(bytes).buffer);
+      loader.addFont(Future.value(byteData));
+    }
+    await loader.load();
+  } catch (e) {
+    debugPrint('Failed to load Roboto fonts: $e');
+  }
+}
+
+Future<void> loadMaterialIcons() async {
   try {
     final iconLoader = FontLoader('MaterialIcons')
       ..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
     await iconLoader.load();
   } catch (e) {
-    debugPrint('Failed to load MaterialIcons: $e');
     // Fallback to empty font to prevent crashes
     final fallbackLoader = FontLoader('MaterialIcons')
       ..addFont(Future.value(ByteData.view(Uint8List(0).buffer)));
@@ -27,20 +54,18 @@ Future<void> _loadMaterialIcons() async {
   }
 }
 
-Future<void> _loadFontFromFile(String family, String filePath) async {
-  try {
-    final bytes = await File(filePath).readAsBytes();
-    final byteData = ByteData.view(Uint8List.fromList(bytes).buffer);
+/// Creates a test theme with Roboto font applied to all typography styles
+ThemeData createTestTheme() {
+  final baseTheme = CoreTheme.light();
+  final typography = baseTheme.extension<TypographyExtension>()!;
+  final colors = baseTheme.extension<AppColorsExtension>()!;
 
-    final loader = FontLoader(family)..addFont(Future.value(byteData));
-    await loader.load();
-  } catch (e) {
-    debugPrint('Failed to load $family from $filePath: $e');
-
-    final fallback = FontLoader(family)
-      ..addFont(Future.value(ByteData.view(Uint8List(0).buffer)));
-    await fallback.load();
-  }
+  return ThemeData(
+    fontFamily: 'Roboto',
+    materialTapTargetSize: MaterialTapTargetSize.padded,
+    primaryColor: CoreBrandColors.orient,
+    extensions: [colors, typography],
+  );
 }
 
 String derivedFontFamily(Map<String, dynamic> fontDefinition) {
