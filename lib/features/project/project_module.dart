@@ -1,4 +1,5 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/project/presentation/bloc/get_project_bloc/get_project_bloc.dart';
 import 'package:construculator/libraries/project/data/repositories/project_repository_impl.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/features/project/domain/usecases/get_project_usecase.dart';
@@ -23,4 +24,6 @@ void _registerDependencies(Injector i) {
   i.addLazySingleton<ProjectRepository>(() => ProjectRepositoryImpl());
 
   i.addLazySingleton<GetProjectUseCase>(() => GetProjectUseCase(i()));
+
+  i.add<GetProjectBloc>(() => GetProjectBloc(getProjectUseCase: i()));
 }

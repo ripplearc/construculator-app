@@ -1,3 +1,4 @@
+import 'package:construculator/features/project/presentation/bloc/get_project_bloc/get_project_bloc.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/features/project/domain/usecases/get_project_usecase.dart';
 import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
@@ -9,7 +10,7 @@ class ProjectTestModule extends Module {
   List<Module> get imports => [ClockTestModule()];
 
   @override
-  void exportedBinds(Injector i) {
+  void binds(Injector i) {
     i.addLazySingleton<ProjectRepository>(
       () => FakeProjectRepository(),
       key: 'fakeProjectRepository',
@@ -19,6 +20,13 @@ class ProjectTestModule extends Module {
       () =>
           GetProjectUseCase(i<ProjectRepository>(key: 'fakeProjectRepository')),
       key: 'getProjectUseCaseWithFakeDep',
+    );
+    i.add<GetProjectBloc>(
+      () => GetProjectBloc(
+        getProjectUseCase: i<GetProjectUseCase>(
+          key: 'getProjectUseCaseWithFakeDep',
+        ),
+      ),
     );
   }
 }
