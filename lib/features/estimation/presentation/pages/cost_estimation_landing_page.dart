@@ -2,11 +2,11 @@ import 'package:construculator/features/estimation/domain/entities/cost_estimate
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_state.dart';
-import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_page.dart';
 import 'package:construculator/features/estimation/presentation/widgets/project_header_app_bar.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/features/estimation/presentation/widgets/add_estimation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -119,25 +119,43 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
   }
 
   Widget _buildEmptyState() {
-    return const CostEstimationEmptyPage(
-      message:
-          'No estimation added. To add an estimation please click on add button',
+    return Stack(
+      children: [
+        const CostEstimationEmptyPage(
+          message:
+              'No estimation added. To add an estimation please click on add button',
+        ),
+        Positioned(
+          bottom: MediaQuery.of(context).size.height * 0.135,
+          right: MediaQuery.of(context).size.width * 0.05,
+          child: AddEstimationButton(onPressed: () {}),
+        ),
+      ],
     );
   }
 
   Widget _buildEstimationsList(List<CostEstimate> estimations) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      child: ListView.builder(
-        itemCount: estimations.length,
-        itemBuilder: (context, index) {
-          final estimation = estimations[index];
-          return CostEstimationTile(
-            estimation: estimation,
-            onMenuTap: () {},
-          );
-        },
-      ),
+    return Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space4, vertical: CoreSpacing.space4),
+          child: ListView.builder(
+            itemCount: estimations.length,
+            itemBuilder: (context, index) {
+              final estimation = estimations[index];
+              return CostEstimationTile(
+                estimation: estimation,
+                onMenuTap: () {},
+              );
+            },
+          ),
+        ),
+        Positioned(
+          bottom: MediaQuery.of(context).size.height * 0.135,
+          right: MediaQuery.of(context).size.width * 0.05,
+          child: AddEstimationButton(onPressed: () {}),
+        ),
+      ],
     );
   }
 }
