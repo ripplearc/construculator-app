@@ -361,6 +361,28 @@ void main() {
         expect(call['data']['total_cost'], equals(totalCost1));
       });
 
+      test('should exclude id from JSON when id is empty', () async {
+        final estimationData = TestEstimationDataHelper.createFakeEstimationData(
+          id: '',
+          estimateName: estimateName1,
+          creatorUserId: userId1,
+          totalCost: totalCost1,
+        );
+        final estimationDto = CostEstimateDto.fromJson(estimationData);
+
+        await dataSource.createEstimation(estimationDto);
+
+        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('insert');
+        expect(methodCalls, hasLength(1));
+        
+        final call = methodCalls.first;
+        expect(call['table'], equals(tableName));
+        expect(call['data'].containsKey('id'), isFalse);
+        expect(call['data']['estimate_name'], equals(estimateName1));
+        expect(call['data']['creator_user_id'], equals(userId1));
+        expect(call['data']['total_cost'], equals(totalCost1));
+      });
+
       test('should rethrow exception when supabaseWrapper.insert throws', () async {
         final estimationData = TestEstimationDataHelper.createFakeEstimationData(
           id: estimateId1,
