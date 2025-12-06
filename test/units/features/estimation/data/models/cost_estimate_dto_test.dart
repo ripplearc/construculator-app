@@ -6,7 +6,7 @@ import 'package:construculator/features/estimation/domain/entities/markup_config
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  final sampleJson = {
+  const sampleJson = {
     'id': '123',
     'project_id': 'p1',
     'estimate_name': 'Test Estimate',
@@ -25,6 +25,29 @@ void main() {
     'is_locked': true,
     'locked_by_user_id': 'user2',
     'locked_at': '2025-09-20T12:00:00Z',
+    'created_at': '2025-09-19T10:00:00Z',
+    'updated_at': '2025-09-20T10:00:00Z',
+  };
+
+  const jsonWithNulls = {
+    'id': '123',
+    'project_id': 'p1',
+    'estimate_name': 'Test Estimate',
+    'estimate_description': null,
+    'creator_user_id': 'user1',
+    'markup_type': null,
+    'overall_markup_value_type': null,
+    'overall_markup_value': null,
+    'material_markup_value_type': null,
+    'material_markup_value': null,
+    'labor_markup_value_type': null,
+    'labor_markup_value': null,
+    'equipment_markup_value_type': null,
+    'equipment_markup_value': null,
+    'total_cost': null,
+    'is_locked': false,
+    'locked_by_user_id': null,
+    'locked_at': null,
     'created_at': '2025-09-19T10:00:00Z',
     'updated_at': '2025-09-20T10:00:00Z',
   };
@@ -111,7 +134,7 @@ void main() {
 
         final lockedStatus = domain.lockStatus as LockedStatus;
         expect(lockedStatus.lockedByUserId, dto.lockedByUserID);
-        expect(lockedStatus.lockedAt, DateTime.parse(dto.lockedAt));
+        expect(lockedStatus.lockedAt, DateTime.parse(dto.lockedAt as String));
         expect(lockedStatus.isLocked, true);
 
         // Dates
@@ -129,6 +152,56 @@ void main() {
 
       expect(domain.lockStatus.isLocked, false);
       expect(domain.lockStatus, isA<UnlockedStatus>());
+    });
+
+    test('fromJson should handle null numeric fields gracefully', () {
+      // Should not throw any exceptions
+      final dto = CostEstimateDto.fromJson(jsonWithNulls);
+
+      // Verify null fields are handled correctly
+      expect(dto.estimateDescription, isNull);
+      expect(dto.markupType, isNull);
+      expect(dto.overallMarkupValueType, isNull);
+      expect(dto.overallMarkupValue, isNull);
+      expect(dto.materialMarkupValueType, isNull);
+      expect(dto.materialMarkupValue, isNull);
+      expect(dto.laborMarkupValueType, isNull);
+      expect(dto.laborMarkupValue, isNull);
+      expect(dto.equipmentMarkupValueType, isNull);
+      expect(dto.equipmentMarkupValue, isNull);
+      expect(dto.totalCost, isNull);
+      expect(dto.lockedByUserID, isNull);
+      expect(dto.lockedAt, isNull);
+
+      // Verify required fields are still present
+      expect(dto.id, '123');
+      expect(dto.projectId, 'p1');
+      expect(dto.estimateName, 'Test Estimate');
+      expect(dto.creatorUserId, 'user1');
+      expect(dto.isLocked, false);
+      expect(dto.createdAt, '2025-09-19T10:00:00Z');
+      expect(dto.updatedAt, '2025-09-20T10:00:00Z');
+    });
+
+    test('toDomain should handle null fields with default values', () {
+      final dto = CostEstimateDto.fromJson(jsonWithNulls);
+      final domain = dto.toDomain();
+
+      // Should not throw any exceptions during conversion
+      expect(domain, isA<CostEstimate>());
+
+      // Verify default values are applied
+      expect(domain.totalCost, 0.0); // Default to 0 when null
+      expect(domain.lockStatus, isA<UnlockedStatus>()); // Default to unlocked when not locked
+
+      // Verify markup configuration handles nulls with defaults
+      final config = domain.markupConfiguration;
+      expect(config.overallType, MarkupType.overall); 
+      expect(config.overallValue.value, 0.0); 
+      expect(config.overallValue.type, MarkupValueType.percentage); 
+      expect(config.materialValue, isNull);
+      expect(config.laborValue, isNull);
+      expect(config.equipmentValue, isNull);
     });
   });
 }
