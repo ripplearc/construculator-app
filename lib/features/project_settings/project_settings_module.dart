@@ -2,6 +2,7 @@ import 'package:construculator/features/project_settings/domain/usecases/get_pro
 import 'package:construculator/features/project_settings/domain/repositories/project_repository.dart';
 import 'package:construculator/features/project_settings/data/repositories/project_repository_impl.dart';
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/libraries/time/clock_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class ProjectSettingsModule extends Module {
@@ -9,7 +10,7 @@ class ProjectSettingsModule extends Module {
   ProjectSettingsModule(this.appBootstrap);
 
   @override
-  List<Module> get imports => [];
+  List<Module> get imports => [ClockModule()];
 
   @override
   void routes(RouteManager r) {}
@@ -19,11 +20,7 @@ class ProjectSettingsModule extends Module {
 }
 
 void _registerDependencies(Injector i) {
-  i.addLazySingleton<ProjectRepository>(
-    () => RemoteProjectRepository(),
-  );
+  i.addLazySingleton<ProjectRepository>(() => ProjectRepositoryImpl());
 
-  i.addLazySingleton<GetProjectUseCase>(
-    () => GetProjectUseCase(i()),
-  );
+  i.addLazySingleton<GetProjectUseCase>(() => GetProjectUseCase(i()));
 }
