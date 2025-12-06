@@ -19,11 +19,7 @@ class ProjectSettingsModule extends Module {
 }
 
 void _registerDependencies(Injector i) {
-  i.addLazySingleton<ProjectRepository>(
-    () => RemoteProjectRepository(),
-  );
+  i.addLazySingleton<ProjectRepository>(() => ProjectRepositoryImpl());
 
-  i.addLazySingleton<GetProjectUseCase>(
-    () => GetProjectUseCase(i()),
-  );
+  i.addLazySingleton<GetProjectUseCase>(() => GetProjectUseCase(i()));
 }
