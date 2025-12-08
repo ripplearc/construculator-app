@@ -34,6 +34,8 @@ custom_lint:
     - avoid_test_timeouts
     - private_subject
     - sealed_over_dynamic
+    - avoid_static_colors: false
+    - avoid_static_typography: false
 
 linter:
   # The lint rules applied to this project can be customized in the
