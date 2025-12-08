@@ -113,13 +113,30 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
       );
     }
 
+    // Generate a proper ID if it's empty
+    final finalId = estimation.id.isEmpty ? '$_defaultEstimationIdPrefix${clock.now().millisecondsSinceEpoch}_${_methodCalls.length}' : estimation.id;
+    
+    // Create the estimation with the proper ID
+    final finalEstimation = CostEstimate(
+      id: finalId,
+      projectId: estimation.projectId,
+      estimateName: estimation.estimateName,
+      estimateDescription: estimation.estimateDescription,
+      creatorUserId: estimation.creatorUserId,
+      markupConfiguration: estimation.markupConfiguration,
+      totalCost: estimation.totalCost,
+      lockStatus: estimation.lockStatus,
+      createdAt: estimation.createdAt,
+      updatedAt: estimation.updatedAt,
+    );
+
     // Add the estimation to the project's estimations
     final projectId = estimation.projectId;
     final estimations = _projectEstimations[projectId] ?? [];
-    estimations.add(estimation);
+    estimations.add(finalEstimation);
     _projectEstimations[projectId] = estimations;
 
-    return estimation;
+    return finalEstimation;
   }
 
   void _throwConfiguredException(
