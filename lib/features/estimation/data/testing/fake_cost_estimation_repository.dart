@@ -41,6 +41,16 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
   /// Used to specify the type of exception thrown when [createEstimation] is attempted
   SupabaseExceptionType? createEstimationExceptionType;
 
+  /// Controls whether [deleteEstimation] throws an exception
+  bool shouldThrowOnDeleteEstimation = false;
+
+  /// Error message for delete estimation.
+  /// Used to specify the error message thrown when [deleteEstimation] is attempted
+  String? deleteEstimationErrorMessage;
+
+  /// Used to specify the type of exception thrown when [deleteEstimation] is attempted
+  SupabaseExceptionType? deleteEstimationExceptionType;
+
   /// Used to specify the error code thrown during [getEstimations]
   PostgresErrorCode? postgrestErrorCode;
 
@@ -139,6 +149,32 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     return finalEstimation;
   }
 
+  @override
+  Future<void> deleteEstimation(String estimationId) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    _methodCalls.add({
+      'method': 'deleteEstimation',
+      'estimationId': estimationId,
+    });
+
+    if (shouldThrowOnDeleteEstimation) {
+      _throwConfiguredException(
+        deleteEstimationExceptionType,
+        deleteEstimationErrorMessage ?? 'Delete estimation failed',
+      );
+    }
+
+    // Remove the estimation from the project's estimations
+    for (final projectId in _projectEstimations.keys) {
+      final estimations = _projectEstimations[projectId] ?? [];
+      estimations.removeWhere((estimation) => estimation.id == estimationId);
+      _projectEstimations[projectId] = estimations;
+    }
+  }
+
   void _throwConfiguredException(
     SupabaseExceptionType? exceptionType,
     String message,
@@ -201,6 +237,9 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     shouldThrowOnCreateEstimation = false;
     createEstimationErrorMessage = null;
     createEstimationExceptionType = null;
+    shouldThrowOnDeleteEstimation = false;
+    deleteEstimationErrorMessage = null;
+    deleteEstimationExceptionType = null;
     postgrestErrorCode = null;
     shouldReturnEmptyList = false;
     shouldDelayOperations = false;

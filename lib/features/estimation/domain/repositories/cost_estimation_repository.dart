@@ -24,4 +24,9 @@ abstract class CostEstimationRepository {
   /// Returns a [Future] that completes with the created [CostEstimate] containing
   /// the newly created cost estimation with its assigned ID and timestamps.
   Future<CostEstimate> createEstimation(CostEstimate estimation);
+
+  /// Deletes a cost estimation by its ID.
+  ///
+  /// Returns a [Future] that completes when the deletion is successful.
+  Future<void> deleteEstimation(String estimationId);
 }

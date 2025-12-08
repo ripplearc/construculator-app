@@ -526,5 +526,117 @@ void main() {
         expect(result.lockStatus, isA<LockedStatus>());
       });
     });
+
+    group('deleteEstimation', () {
+      test('should delete cost estimation successfully', () async {
+        final estimation = fakeDataSource.createSampleEstimation(
+          id: estimateId1,
+          projectId: testProjectId,
+          estimateName: estimateName1,
+        );
+
+        fakeDataSource.addProjectEstimation(testProjectId, estimation);
+
+        final estimationsBeforeDelete = await repository.getEstimations(testProjectId);
+        expect(estimationsBeforeDelete, hasLength(1));
+
+        await repository.deleteEstimation(estimateId1);
+
+        final estimationsAfterDelete = await repository.getEstimations(testProjectId);
+        expect(estimationsAfterDelete, isEmpty);
+      });
+
+      test('should call data source with correct estimation ID', () async {
+        await repository.deleteEstimation(estimateId1);
+
+        final dataSourceCalls = fakeDataSource.getMethodCallsFor('deleteEstimation');
+        expect(dataSourceCalls, hasLength(1));
+        expect(dataSourceCalls.first['estimationId'], equals(estimateId1));
+      });
+
+      test('should delete only the specified estimation', () async {
+        final estimation1 = fakeDataSource.createSampleEstimation(
+          id: estimateId1,
+          projectId: testProjectId,
+          estimateName: estimateName1,
+        );
+
+        final estimation2 = fakeDataSource.createSampleEstimation(
+          id: estimateId2,
+          projectId: testProjectId,
+          estimateName: estimateName2,
+        );
+
+        fakeDataSource.addProjectEstimations(testProjectId, [
+          estimation1,
+          estimation2,
+        ]);
+
+        await repository.deleteEstimation(estimateId1);
+
+        final remainingEstimations = await repository.getEstimations(testProjectId);
+        expect(remainingEstimations, hasLength(1));
+        expect(remainingEstimations.first.id, equals(estimateId2));
+      });
+
+      test('should rethrow server exception when data source throws', () async {
+        fakeDataSource.shouldThrowOnDeleteEstimation = true;
+        fakeDataSource.deleteEstimationExceptionType = SupabaseExceptionType.unknown;
+        fakeDataSource.deleteEstimationErrorMessage = errorMsgServer;
+
+        expect(
+          () => repository.deleteEstimation(estimateId1),
+          throwsA(isA<ServerException>()),
+        );
+      });
+
+      test('should rethrow timeout exception when data source throws timeout', () async {
+        fakeDataSource.shouldThrowOnDeleteEstimation = true;
+        fakeDataSource.deleteEstimationExceptionType = SupabaseExceptionType.timeout;
+        fakeDataSource.deleteEstimationErrorMessage = errorMsgTimeout;
+
+        expect(
+          () => repository.deleteEstimation(estimateId1),
+          throwsA(isA<TimeoutException>()),
+        );
+      });
+
+      test('should rethrow type exception when data source throws type error', () async {
+        fakeDataSource.shouldThrowOnDeleteEstimation = true;
+        fakeDataSource.deleteEstimationExceptionType = SupabaseExceptionType.type;
+        fakeDataSource.deleteEstimationErrorMessage = 'Type error';
+
+        expect(
+          () => repository.deleteEstimation(estimateId1),
+          throwsA(isA<TypeError>()),
+        );
+      });
+
+      test('should delete estimation from correct project', () async {
+        final estimation1 = fakeDataSource.createSampleEstimation(
+          id: estimateId1,
+          projectId: testProjectId,
+          estimateName: estimateName1,
+        );
+
+        final estimation2 = fakeDataSource.createSampleEstimation(
+          id: estimateId2,
+          projectId: otherProjectId,
+          estimateName: estimateName2,
+        );
+
+        fakeDataSource.addProjectEstimation(testProjectId, estimation1);
+        fakeDataSource.addProjectEstimation(otherProjectId, estimation2);
+
+        await repository.deleteEstimation(estimateId1);
+
+        final testProjectEstimations = await repository.getEstimations(testProjectId);
+        final otherProjectEstimations = await repository.getEstimations(otherProjectId);
+
+        expect(testProjectEstimations, isEmpty);
+        expect(otherProjectEstimations, hasLength(1));
+        expect(otherProjectEstimations.first.id, equals(estimateId2));
+      });
+    });
   });
 }
