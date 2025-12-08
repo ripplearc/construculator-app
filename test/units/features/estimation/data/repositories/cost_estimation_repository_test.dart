@@ -368,5 +368,163 @@ void main() {
         },
       );
     });
+
+    group('createEstimation', () {
+      test('should create cost estimation successfully', () async {
+        final estimation = fakeDataSource.createSampleEstimation(
+          id: estimateId1,
+          projectId: testProjectId,
+          estimateName: estimateName1,
+          estimateDescription: estimateDesc1,
+          creatorUserId: userId1,
+          totalCost: totalCost1,
+          isLocked: false,
+          createdAt: DateTime.parse(timestamp1),
+          updatedAt: DateTime.parse(timestamp1),
+        ).toDomain();
+
+        final result = await repository.createEstimation(estimation);
+
+        expect(result.id, equals(estimateId1));
+        expect(result.projectId, equals(testProjectId));
+        expect(result.estimateName, equals(estimateName1));
+        expect(result.estimateDescription, equals(estimateDesc1));
+        expect(result.creatorUserId, equals(userId1));
+        expect(result.totalCost, equals(totalCost1));
+        expect(result.lockStatus.isLocked, isFalse);
+        expect(result.createdAt, equals(DateTime.parse(timestamp1)));
+        expect(result.updatedAt, equals(DateTime.parse(timestamp1)));
+
+        final dataSourceCalls = fakeDataSource.getMethodCallsFor('createEstimation');
+        expect(dataSourceCalls, hasLength(1));
+        expect(dataSourceCalls.first['estimation']['id'], equals(estimateId1));
+      });
+
+      test('should handle locked estimation creation', () async {
+        final estimation = fakeDataSource.createSampleEstimation(
+          id: estimateId1,
+          projectId: testProjectId,
+          estimateName: estimateName1,
+          estimateDescription: estimateDesc1,
+          creatorUserId: userId1,
+          totalCost: totalCost1,
+          isLocked: true,
+          lockedByUserID: userId2,
+          createdAt: DateTime.parse(timestamp1),
+          updatedAt: DateTime.parse(timestamp1),
+        ).toDomain();
+
+        final result = await repository.createEstimation(estimation);
+
+        expect(result.lockStatus.isLocked, isTrue);
+        expect(result.lockStatus.isLockedBy(userId2), isTrue);
+      });
+
+      test('should call data source with correct estimation data', () async {
+        final estimation = fakeDataSource.createSampleEstimation(
+          id: estimateId1,
+          projectId: testProjectId,
+          estimateName: estimateName1,
+          estimateDescription: estimateDesc1,
+          creatorUserId: userId1,
+          totalCost: totalCost1,
+        ).toDomain();
+
+        await repository.createEstimation(estimation);
+
+        final dataSourceCalls = fakeDataSource.getMethodCallsFor('createEstimation');
+        expect(dataSourceCalls, hasLength(1));
+        
+        final callData = dataSourceCalls.first['estimation'];
+        expect(callData['id'], equals(estimateId1));
+        expect(callData['project_id'], equals(testProjectId));
+        expect(callData['estimate_name'], equals(estimateName1));
+        expect(callData['estimate_description'], equals(estimateDesc1));
+        expect(callData['creator_user_id'], equals(userId1));
+        expect(callData['total_cost'], equals(totalCost1));
+      });
+
+      test('should rethrow server exception when data source throws', () async {
+        final estimation = fakeDataSource.createSampleEstimation(
+          id: estimateId1,
+          projectId: testProjectId,
+        ).toDomain();
+
+        fakeDataSource.shouldThrowOnCreateEstimation = true;
+        fakeDataSource.createEstimationExceptionType = SupabaseExceptionType.unknown;
+        fakeDataSource.createEstimationErrorMessage = errorMsgServer;
+
+        expect(
+          () => repository.createEstimation(estimation),
+          throwsA(isA<ServerException>()),
+        );
+      });
+
+      test('should rethrow timeout exception when data source throws timeout', () async {
+        final estimation = fakeDataSource.createSampleEstimation(
+          id: estimateId1,
+          projectId: testProjectId,
+        ).toDomain();
+
+        fakeDataSource.shouldThrowOnCreateEstimation = true;
+        fakeDataSource.createEstimationExceptionType = SupabaseExceptionType.timeout;
+        fakeDataSource.createEstimationErrorMessage = errorMsgTimeout;
+
+        expect(
+          () => repository.createEstimation(estimation),
+          throwsA(isA<TimeoutException>()),
+        );
+      });
+
+      test('should rethrow type exception when data source throws type error', () async {
+        final estimation = fakeDataSource.createSampleEstimation(
+          id: estimateId1,
+          projectId: testProjectId,
+        ).toDomain();
+
+        fakeDataSource.shouldThrowOnCreateEstimation = true;
+        fakeDataSource.createEstimationExceptionType = SupabaseExceptionType.type;
+        fakeDataSource.createEstimationErrorMessage = 'Type error';
+
+        expect(
+          () => repository.createEstimation(estimation),
+          throwsA(isA<TypeError>()),
+        );
+      });
+
+      test('should preserve all domain entity properties during conversion', () async {
+        final estimation = fakeDataSource.createSampleEstimation(
+          id: estimateId1,
+          projectId: testProjectId,
+          estimateName: estimateName1,
+          estimateDescription: estimateDesc1,
+          creatorUserId: userId1,
+          totalCost: totalCost1,
+          isLocked: true,
+          lockedByUserID: userId2,
+          createdAt: DateTime.parse(timestamp1),
+          updatedAt: DateTime.parse(timestamp2),
+        ).toDomain();
+
+        final result = await repository.createEstimation(estimation);
+
+        expect(result.id, equals(estimateId1));
+        expect(result.projectId, equals(testProjectId));
+        expect(result.estimateName, equals(estimateName1));
+        expect(result.estimateDescription, equals(estimateDesc1));
+        expect(result.creatorUserId, equals(userId1));
+        expect(result.totalCost, equals(totalCost1));
+        expect(result.createdAt, equals(DateTime.parse(timestamp1)));
+        expect(result.updatedAt, equals(DateTime.parse(timestamp2)));
+
+        expect(result.markupConfiguration, isA<MarkupConfiguration>());
+        expect(result.markupConfiguration.overallType, isA<MarkupType>());
+        expect(result.markupConfiguration.overallValue, isA<MarkupValue>());
+
+        expect(result.lockStatus, isA<LockStatus>());
+        expect(result.lockStatus.isLocked, isTrue);
+        expect(result.lockStatus, isA<LockedStatus>());
+      });
+    });
   });
 }

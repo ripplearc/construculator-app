@@ -1,4 +1,5 @@
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
+import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
@@ -33,10 +34,8 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     try {
       _logger.debug('Getting cost estimations for project: $projectId');
       
-      // Fetch DTOs from the data source
       final costEstimateDtos = await _dataSource.getEstimations(projectId);
       
-      // Convert DTOs to domain entities
       final costEstimates = costEstimateDtos
           .map((dto) => dto.toDomain())
           .toList();
@@ -46,6 +45,24 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       return costEstimates;
     } catch (e) {
       _logger.error('Error getting cost estimations for project $projectId: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CostEstimate> createEstimation(CostEstimate estimation) async {
+    try {
+      _logger.debug('Creating cost estimation: ${estimation.id}');
+      
+      final costEstimateDto = CostEstimateDto.fromDomain(estimation);
+      final createdDto = await _dataSource.createEstimation(costEstimateDto);
+
+      final createdEstimation = createdDto.toDomain();
+
+      _logger.debug('Successfully created cost estimation: ${createdEstimation.id}');
+      return createdEstimation;
+    } catch (e) {
+      _logger.error('Error creating cost estimation: $e');
       rethrow;
     }
   }
