@@ -361,5 +361,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get welcomeBack => 'Welcome Back';
 
   @override
+  String get addEstimation => 'Add estimation';
+
+  @override
   String get costEstimation => 'Cost Estimation';
 }
