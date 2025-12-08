@@ -1,4 +1,4 @@
-import 'package:construculator/features/project_settings/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 
 /// Abstract repository interface for project data operations.
 ///
