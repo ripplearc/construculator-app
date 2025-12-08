@@ -12,16 +12,12 @@ part 'cost_estimation_list_state.dart';
 /// It follows the project's naming conventions and patterns for BLoC implementation.
 class CostEstimationListBloc extends Bloc<CostEstimationListEvent, CostEstimationListState> {
   final GetEstimationsUseCase _getEstimationsUseCase;
-  final String _projectId;
 
   CostEstimationListBloc({
     required GetEstimationsUseCase getEstimationsUseCase,
-    required String projectId,
   }) : _getEstimationsUseCase = getEstimationsUseCase,
-       _projectId = projectId,
        super(const CostEstimationListInitial()) {
     on<CostEstimationListRefreshEvent>(_onRefresh);
-    add(const CostEstimationListRefreshEvent());
   }
 
   Future<void> _onRefresh(
@@ -29,13 +25,14 @@ class CostEstimationListBloc extends Bloc<CostEstimationListEvent, CostEstimatio
     Emitter<CostEstimationListState> emit,
   ) async {
     emit(const CostEstimationListLoading());
-    await _loadEstimations(emit);
+    await _loadEstimations(event.projectId, emit);
   }
 
   Future<void> _loadEstimations(
+    String projectId,
     Emitter<CostEstimationListState> emit,
   ) async {
-    final result = await _getEstimationsUseCase(_projectId);
+    final result = await _getEstimationsUseCase(projectId);
     
     result.fold(
       (failure) {
