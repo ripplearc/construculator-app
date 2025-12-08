@@ -1,11 +1,13 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_state.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_page.dart';
 import 'package:construculator/features/estimation/presentation/widgets/estimation_actions_sheet_body.dart';
+import 'package:construculator/features/estimation/presentation/widgets/delete_estimation_confirmation_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/project_header_app_bar.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/features/estimation/presentation/widgets/add_estimation_button.dart';
@@ -30,6 +32,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
     with LocalizationMixin {
   late final AuthBloc _authBloc;
   late final AddCostEstimationBloc _addCostEstimationBloc;
+  late final DeleteCostEstimationBloc _deleteCostEstimationBloc;
   String userAvatarUrl = '';
   String? userId;
 
@@ -38,6 +41,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
     super.initState();
     _authBloc = Modular.get<AuthBloc>();
     _addCostEstimationBloc = Modular.get<AddCostEstimationBloc>();
+    _deleteCostEstimationBloc = Modular.get<DeleteCostEstimationBloc>();
     _authBloc.initialize();
   }
 
@@ -45,6 +49,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
   void dispose() {
     _authBloc.close();
     _addCostEstimationBloc.close();
+    _deleteCostEstimationBloc.close();
     super.dispose();
   }
 
@@ -73,7 +78,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (context) => EstimationActionsSheetBody(
@@ -89,7 +94,33 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
         },
         onRemove: () {
           Navigator.pop(context);
-          // TODO:https://ripplearc.youtrack.cloud/issue/CA-86
+          _showDeleteConfirmationSheet(estimation);
+        },
+      ),
+    );
+  }
+
+  void _showDeleteConfirmationSheet(CostEstimate estimation) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      isDismissible: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) => DeleteEstimationConfirmationSheet(
+        estimationName: estimation.estimateName,
+        imagesAttachedCount: 10,
+        documentsAttachedCount: 10,
+        onConfirm: () {
+          Navigator.pop(context);
+          _deleteCostEstimationBloc.add(
+            DeleteCostEstimationRequested(estimationId: estimation.id),
+          );
+        },
+        onCancel: () {
+          Navigator.pop(context);
         },
       ),
     );
@@ -170,6 +201,30 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
                 CostEstimationListRefreshEvent(projectId: widget.projectId),
               );
             } else if (state is AddCostEstimationFailure) {
+              if (mounted) {
+                CoreToast.showError(
+                  context,
+                  state.message,
+                  l10n?.closeLabel ?? 'Close',
+                );
+              }
+            }
+          },
+        ),
+        BlocListener<DeleteCostEstimationBloc, DeleteCostEstimationState>(
+          bloc: _deleteCostEstimationBloc,
+          listener: (context, state) {
+            if (state is DeleteCostEstimationSuccess) {
+              CoreToast.showSuccess(
+                context,
+                'Estimation deleted successfully',
+                l10n?.closeLabel ?? 'Close',
+              );
+
+              BlocProvider.of<CostEstimationListBloc>(context).add(
+                CostEstimationListRefreshEvent(projectId: widget.projectId),
+              );
+            } else if (state is DeleteCostEstimationFailure) {
               if (mounted) {
                 CoreToast.showError(
                   context,
