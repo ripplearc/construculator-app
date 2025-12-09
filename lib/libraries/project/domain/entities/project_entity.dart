@@ -1,4 +1,4 @@
-import 'package:construculator/features/project_settings/domain/entities/enums.dart';
+import 'package:construculator/libraries/project/domain/entities/enums.dart';
 
 /// Represents a project in the system.
 ///

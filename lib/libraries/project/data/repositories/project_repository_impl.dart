@@ -1,6 +1,6 @@
-import 'package:construculator/features/project_settings/domain/entities/project_entity.dart';
-import 'package:construculator/features/project_settings/domain/entities/enums.dart';
-import 'package:construculator/features/project_settings/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/project/domain/entities/enums.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
