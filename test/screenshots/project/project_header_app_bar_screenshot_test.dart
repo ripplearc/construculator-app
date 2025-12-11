@@ -1,6 +1,19 @@
+import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/project/presentation/widgets/project_header_app_bar.dart';
+import 'package:construculator/libraries/config/testing/fake_app_config.dart';
+import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/project/domain/entities/enums.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/project_library_module.dart';
+import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:construculator/libraries/time/testing/clock_test_module.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 
 import '../font_loader.dart';
 import '../await_images_extension.dart';
@@ -14,25 +27,59 @@ void main() {
   final ratio = 1.0;
   final testName = 'project_header_app_bar';
   TestWidgetsFlutterBinding.ensureInitialized();
+  late FakeProjectRepository fakeProjectRepository;
+  late Clock clock;
 
-  setUp(() async {
-    await loadAppFonts();
+  setUpAll(() async {
+    final appBootstrap = AppBootstrap(
+      config: FakeAppConfig(),
+      envLoader: FakeEnvLoader(),
+      supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
+    );
+    Modular.init(_TestModule(appBootstrap));
+    fakeProjectRepository =
+        Modular.get<ProjectRepository>(key: 'fakeProjectRepository')
+            as FakeProjectRepository;
+    clock = Modular.get<Clock>();
+    await loadAppFontsAll();
+  });
+
+  tearDownAll(() {
+    Modular.destroy();
+    fakeProjectRepository.clearAllData();
+  });
+
+  setUp(() {
+    fakeProjectRepository.clearAllData();
   });
 
   group('ProjectHeaderAppBar Screenshot Tests', () {
     Future<void> pumpProjectHeaderAppBar({
       required WidgetTester tester,
+      required String projectId,
       required String projectName,
       VoidCallback? onProjectTap,
       VoidCallback? onSearchTap,
       VoidCallback? onNotificationTap,
       ImageProvider? avatarImage,
     }) async {
+      final project = Project(
+        id: projectId,
+        projectName: projectName,
+        creatorUserId: 'user-id',
+        createdAt: clock.now(),
+        updatedAt: clock.now(),
+        status: ProjectStatus.active,
+      );
+
+      fakeProjectRepository.addProject(projectId, project);
+
       await tester.pumpWidget(
         MaterialApp(
+          theme: createTestTheme(),
           home: Scaffold(
             appBar: ProjectHeaderAppBar(
-              projectName: projectName,
+              projectId: projectId,
               onProjectTap: onProjectTap,
               onSearchTap: onSearchTap,
               onNotificationTap: onNotificationTap,
@@ -55,6 +102,7 @@ void main() {
 
       await pumpProjectHeaderAppBar(
         tester: tester,
+        projectId: 'project-id',
         projectName: 'Kitchen Renovation',
         onProjectTap: () {},
         onSearchTap: () {},
@@ -78,6 +126,7 @@ void main() {
 
       await pumpProjectHeaderAppBar(
         tester: tester,
+        projectId: 'project-id-2',
         projectName: 'Complete Home Renovation and Extension Project',
         onProjectTap: () {},
         onSearchTap: () {},
@@ -101,6 +150,7 @@ void main() {
 
       await pumpProjectHeaderAppBar(
         tester: tester,
+        projectId: 'project-id-3',
         projectName: 'Bathroom Remodel',
         onProjectTap: () {},
         onSearchTap: () {},
@@ -115,4 +165,16 @@ void main() {
       );
     });
   });
+}
+
+class _TestModule extends Module {
+  final AppBootstrap appBootstrap;
+
+  _TestModule(this.appBootstrap);
+
+  @override
+  List<Module> get imports => [
+    ProjectLibraryModule(appBootstrap),
+    ClockTestModule(),
+  ];
 }
