@@ -2,8 +2,7 @@ import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bl
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_state.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
-import 'package:construculator/features/estimation/presentation/widgets/project_header_app_bar.dart';
-import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/features/project/presentation/widgets/project_header_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -37,14 +36,6 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           setState(() {
             userAvatarUrl = state.avatarUrl ?? '';
           });
-        } else if (state is AuthLoadFailure) {
-          if (mounted) {
-            CoreToast.showError(
-              context,
-              state.message,
-              AppLocalizations.of(context)?.closeLabel ?? 'Close',
-            );
-          }
         }
       },
       child: BlocBuilder<AuthBloc, AuthState>(
@@ -61,7 +52,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
               context,
             ).extension<AppColorsExtension>()?.pageBackground,
             appBar: ProjectHeaderAppBar(
-              projectName: 'My project',
+              projectId: 'My project',
               onProjectTap: () {},
               onSearchTap: () {},
               onNotificationTap: () {},
