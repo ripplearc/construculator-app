@@ -35,6 +35,12 @@ custom_lint:
     - private_subject
     - sealed_over_dynamic
 
+    # TODO: Fix violations and enable. See ticket: https://ripplearc.youtrack.cloud/issue/CA-446/Todo-Resolve-Avoid-static-colors-violations-on-Construculator-app
+    - avoid_static_colors: false
+
+    # TODO: Fix violations and enable. See ticket: https://ripplearc.youtrack.cloud/issue/CA-445/Todo-Resolve-Avoid-static-typography-violations-on-Construculator-app
+    - avoid_static_typography: false
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`
