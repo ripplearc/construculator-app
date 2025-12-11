@@ -753,6 +753,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cost Estimation'**
   String get costEstimation;
+
+  /// Error message shown when project fails to load
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load project'**
+  String get projectLoadError;
 }
 
 class _AppLocalizationsDelegate

@@ -549,5 +549,10 @@
   "@costEstimation": {
     "description": "Label for cost estimation button on dashboard",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57518-25657&t=12IIYBsZE7VQ2Gg0-4"
+  },
+  "projectLoadError": "Unable to load project",
+  "@projectLoadError": {
+    "description": "Error message shown when project fails to load",
+    "context": "N/A"
   }
 }
