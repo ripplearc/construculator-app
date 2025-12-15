@@ -1,4 +1,4 @@
-import 'package:construculator/libraries/project/data/repositories/project_repository_impl.dart';
+import 'package:construculator/features/project/data/repositories/project_repository_impl.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
@@ -20,13 +20,10 @@ void main() {
 
     group('getProject', () {
       test('should return dummy project data with correct structure', () async {
-        // Arrange
         const projectId = 'test-project-123';
 
-        // Act
         final result = await repository.getProject(projectId);
 
-        // Assert
         expect(result, isA<Project>());
         expect(result.id, equals(projectId));
         expect(result.projectName, equals('Sample Construction Project'));
@@ -52,19 +49,15 @@ void main() {
       test(
         'should return project with same dummy data regardless of input id',
         () async {
-          // Arrange
           const projectId1 = 'different-id-1';
           const projectId2 = 'different-id-2';
 
-          // Act
           final result1 = await repository.getProject(projectId1);
           final result2 = await repository.getProject(projectId2);
 
-          // Assert
           expect(result1.id, equals(projectId1));
           expect(result2.id, equals(projectId2));
 
-          // All other fields should be identical dummy data
           expect(result1.projectName, equals(result2.projectName));
           expect(result1.description, equals(result2.description));
           expect(result1.creatorUserId, equals(result2.creatorUserId));

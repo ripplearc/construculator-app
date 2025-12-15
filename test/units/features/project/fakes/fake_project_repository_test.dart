@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
+import 'package:construculator/features/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
