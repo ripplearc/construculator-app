@@ -101,12 +101,14 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppColorsExtension>();
+
     return Theme(
       data: Theme.of(context).copyWith(
         dividerTheme: const DividerThemeData(color: Colors.transparent),
       ),
       child: Scaffold(
-        backgroundColor: CoreBackgroundColors.pageBackground,
+        backgroundColor: colors?.pageBackground,
         body: BlocConsumer<LoginWithEmailBloc, LoginWithEmailState>(
           listener: (context, state) {
             if (state is LoginWithEmailFailure) {
@@ -160,6 +162,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
 
   Widget _buildLoginWithEmailForm(LoginWithEmailState state) {
     final typography = Theme.of(context).coreTypography;
+    final colors = Theme.of(context).extension<AppColorsExtension>();
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: CoreSpacing.space6),
@@ -199,7 +202,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
               children: [
                 Expanded(
                   child: Divider(
-                    color: CoreBorderColors.lineLight,
+                    color: colors?.lineLight,
                     thickness: 1,
                   ),
                 ),
@@ -208,13 +211,13 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
                   child: Text(
                     l10n.or,
                     style: typography.bodyMediumRegular.copyWith(
-                      color: CoreTextColors.body,
+                      color: colors?.textBody,
                     ),
                   ),
                 ),
                 Expanded(
                   child: Divider(
-                    color: CoreBorderColors.lineLight,
+                    color: colors?.lineLight,
                     thickness: 1,
                   ),
                 ),

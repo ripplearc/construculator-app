@@ -100,10 +100,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppColorsExtension>();
     return Scaffold(
-      backgroundColor: CoreBackgroundColors.pageBackground,
+      backgroundColor: colors?.pageBackground,
       appBar: AppBar(
-        backgroundColor: CoreBackgroundColors.pageBackground,
+        backgroundColor: colors?.pageBackground,
         elevation: 0,
       ),
       body: BlocConsumer<ForgotPasswordBloc, ForgotPasswordState>(
