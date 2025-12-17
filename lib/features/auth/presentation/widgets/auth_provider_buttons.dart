@@ -28,6 +28,8 @@ class AuthProviderButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).extension<AppColorsExtension>();
+
     return Column(
       children: [
         CoreButton(
@@ -54,7 +56,7 @@ class AuthProviderButtons extends StatelessWidget {
           icon: CoreIconWidget(
             icon: CoreIcons.apple,
             size: CoreSpacing.space6,
-            color: CoreTextColors.dark,
+            color: colors?.textDark,
           ),
           variant: CoreButtonVariant.social,
         ),
@@ -84,7 +86,7 @@ class AuthProviderButtons extends StatelessWidget {
             icon: CoreIconWidget(
               icon: CoreIcons.phone,
               size: CoreSpacing.space6,
-              color: CoreTextColors.info,
+              color: colors?.textInfo,
             ),
 
             variant: CoreButtonVariant.social,
@@ -97,7 +99,7 @@ class AuthProviderButtons extends StatelessWidget {
             icon: CoreIconWidget(
               icon: CoreIcons.email,
               size: CoreSpacing.space6,
-              color: CoreTextColors.info,
+              color: colors?.textInfo,
             ),
             label: '${AppLocalizations.of(context)?.continueWithEmail}',
             centerAlign: true,

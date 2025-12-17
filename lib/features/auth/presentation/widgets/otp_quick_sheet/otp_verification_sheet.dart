@@ -41,6 +41,7 @@ class OtpVerificationQuickSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = Theme.of(context).coreTypography;
+    final colors = Theme.of(context).extension<AppColorsExtension>();
 
     final pinTheme = PinTheme(
       width: 50,
@@ -49,7 +50,7 @@ class OtpVerificationQuickSheet extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: CoreTextColors.disable),
-        color: CoreBackgroundColors.pageBackground,
+        color: colors?.pageBackground,
       ),
     );
 
