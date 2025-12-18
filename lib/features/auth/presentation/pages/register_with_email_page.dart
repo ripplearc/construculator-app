@@ -197,6 +197,8 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
 
   @override
   Widget build(BuildContext context) {
+    final typography = Theme.of(context).extension<TypographyExtension>();
+
     return Theme(
       data: Theme.of(context).copyWith(
         dividerTheme: const DividerThemeData(color: Colors.transparent),
@@ -210,6 +212,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
                 _emailErrorTextList = null;
                 _emailErrorWidgetList = [
                   buildErrorWidgetWithLink(
+                    context: context,
                     errorText: l10n?.emailAlreadyRegistered,
                     linkText: l10n?.logginLink,
                     onPressed: () {
@@ -301,7 +304,9 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
                           ),
                           child: Text(
                             '${l10n?.or}',
-                            style: TextStyle(color: CoreTextColors.body),
+                            style: typography?.bodyMediumRegular.copyWith(
+                              color: CoreTextColors.body,
+                            ),
                           ),
                         ),
                         Expanded(

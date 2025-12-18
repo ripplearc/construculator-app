@@ -64,6 +64,7 @@ class _EnterPasswordPageState extends State<EnterPasswordPage>
 
   @override
   Widget build(BuildContext context) {
+    final typography = Theme.of(context).extension<TypographyExtension>();
     return Scaffold(
       backgroundColor: CoreBackgroundColors.pageBackground,
       appBar: AppBar(
@@ -140,7 +141,7 @@ class _EnterPasswordPageState extends State<EnterPasswordPage>
                     },
                     child: Text(
                       '${l10n?.forgotPasswordTitle}',
-                      style: CoreTypography.bodyLargeSemiBold(
+                      style: typography?.bodyLargeSemiBold.copyWith(
                         color: CoreTextColors.link,
                       ),
                     ),

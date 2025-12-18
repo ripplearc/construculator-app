@@ -120,6 +120,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
                 _emailErrorList = null;
                 _emailErrorWidgetList = [
                   buildErrorWidgetWithLink(
+                    context: context,
                     errorText: l10n?.emailNotRegistered,
                     linkText: l10n?.register,
                     onPressed: () {
@@ -158,6 +159,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
   }
 
   Widget _buildLoginWithEmailForm(LoginWithEmailState state) {
+    final typography = Theme.of(context).extension<TypographyExtension>();
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: CoreSpacing.space6),
@@ -205,7 +207,9 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
                   padding: EdgeInsets.symmetric(horizontal: CoreSpacing.space2),
                   child: Text(
                     '${l10n?.or}',
-                    style: TextStyle(color: CoreTextColors.body),
+                    style: typography?.bodyMediumRegular.copyWith(
+                      color: CoreTextColors.body,
+                    ),
                   ),
                 ),
                 Expanded(

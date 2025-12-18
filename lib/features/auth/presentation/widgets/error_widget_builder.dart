@@ -7,10 +7,13 @@ import 'package:flutter/material.dart';
 /// [linkText] - The text of the link to display
 /// [onPressed] - The callback to be called when the link is pressed
 Widget buildErrorWidgetWithLink({
+  required BuildContext context,
   String? errorText,
   String? linkText,
   required VoidCallback onPressed,
 }) {
+  final typography = Theme.of(context).extension<TypographyExtension>();
+
   return Row(
     crossAxisAlignment: CrossAxisAlignment.center,
     mainAxisSize: MainAxisSize.min,
@@ -18,7 +21,9 @@ Widget buildErrorWidgetWithLink({
       Flexible(
         child: Text(
           errorText ?? '',
-          style: CoreTypography.bodySmallRegular(color: CoreTextColors.error),
+          style: typography?.bodySmallRegular.copyWith(
+            color: CoreTextColors.error,
+          ),
         ),
       ),
       if (linkText != null)
@@ -27,7 +32,9 @@ Widget buildErrorWidgetWithLink({
           key: Key(linkText),
           child: Text(
             linkText,
-            style: CoreTypography.bodySmallSemiBold(color: CoreTextColors.link),
+            style: typography?.bodySmallSemiBold.copyWith(
+              color: CoreTextColors.link,
+            ),
           ),
         ),
     ],

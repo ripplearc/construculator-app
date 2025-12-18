@@ -362,6 +362,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
           }
         },
         builder: (context, state) {
+          final typography = Theme.of(context).extension<TypographyExtension>();
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Form(
@@ -397,7 +398,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                   else if (state is CreateAccountGetProfessionalRolesFailure)
                     Text(
                       '${l10n?.rolesLoadingError}',
-                      style: CoreTypography.bodySmallRegular(
+                      style: typography?.bodySmallRegular.copyWith(
                         color: CoreTextColors.error,
                       ),
                     )
@@ -429,7 +430,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                           const SizedBox(width: CoreSpacing.space1),
                           Text(
                             '${_roleErrorList?.first}',
-                            style: CoreTypography.bodySmallRegular(
+                            style: typography?.bodySmallRegular.copyWith(
                               color: CoreTextColors.error,
                             ),
                           ),

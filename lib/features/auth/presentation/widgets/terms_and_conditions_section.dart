@@ -1,5 +1,5 @@
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 
 class TermsAndConditionsSection extends StatelessWidget {
   const TermsAndConditionsSection({
@@ -20,19 +20,24 @@ class TermsAndConditionsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typography = Theme.of(context).extension<TypographyExtension>();
+
     return Text.rich(
       TextSpan(
         text: termsAndConditionsText,
-        style: CoreTypography.bodyMediumRegular(color: CoreTextColors.headline),
+        style: typography?.bodyMediumRegular.copyWith(
+          color: CoreTextColors.headline,
+        ),
         children: [
           WidgetSpan(
             child: GestureDetector(
               onTap: onTermsAndConditionsLinkPressed,
               child: Text(
                 termsAndServicesLink,
-                style: CoreTypography.bodyMediumMedium(
+                style: typography?.bodyMediumMedium.copyWith(
                   color: CoreTextColors.link,
-                ).copyWith(decoration: TextDecoration.underline),
+                  decoration: TextDecoration.underline,
+                ),
               ),
             ),
           ),
@@ -42,9 +47,10 @@ class TermsAndConditionsSection extends StatelessWidget {
               onTap: onPrivacyPolicyLinkPressed,
               child: Text(
                 privacyPolicyLink,
-                style: CoreTypography.bodyMediumMedium(
+                style: typography?.bodyMediumMedium.copyWith(
                   color: CoreTextColors.link,
-                ).copyWith(decoration: TextDecoration.underline),
+                  decoration: TextDecoration.underline,
+                ),
               ),
             ),
           ),
