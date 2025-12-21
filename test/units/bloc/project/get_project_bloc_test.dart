@@ -1,13 +1,13 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/project/presentation/bloc/get_project_bloc/get_project_bloc.dart';
+import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
-import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -58,7 +58,7 @@ void main() {
         envLoader: FakeEnvLoader(),
         supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
       );
-      Modular.init(_TestModule(appBootstrap));
+      Modular.init(ProjectModule(appBootstrap));
       Modular.replaceInstance<ProjectRepository>(FakeProjectRepository());
       fakeProjectRepository =
           Modular.get<ProjectRepository>() as FakeProjectRepository;
@@ -276,11 +276,4 @@ void main() {
       expect(bloc.state, isA<GetProjectInitial>());
     });
   });
-}
-
-class _TestModule extends Module {
-  final AppBootstrap appBootstrap;
-  _TestModule(this.appBootstrap);
-  @override
-  List<Module> get imports => [ProjectLibraryModule(appBootstrap)];
 }
