@@ -123,8 +123,6 @@ void main() {
 
     await pumpAppAtRoute(tester, fullEstimationLandingRoute);
 
-    await tester.pump();
-
     expect(find.byType(CircularProgressIndicator), findsNothing);
 
     // TODO: https://ripplearc.youtrack.cloud/issue/CA-162/Dashboard-Create-Project-Repository correct this to an actual name from fake project table
@@ -150,12 +148,6 @@ void main() {
       addTearDown(() => FlutterError.onError = originalOnError);
 
       await pumpAppAtRoute(tester, fullEstimationLandingRoute);
-
-      await tester.runAsync(() async {
-        await Future.delayed(const Duration(milliseconds: 500));
-      });
-
-      await tester.pump();
 
       final projectHeaderAppBar = tester.widget<ProjectHeaderAppBar>(
         find.byType(ProjectHeaderAppBar),

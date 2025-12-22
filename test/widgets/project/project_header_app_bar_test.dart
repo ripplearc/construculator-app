@@ -108,8 +108,8 @@ void main() {
       );
 
       await tester.pumpAndSettle();
-      expect(find.text(projectName), findsOneWidget);
       expect(find.byType(ProjectHeaderAppBar), findsOneWidget);
+      expect(find.text(projectName), findsOneWidget);
     });
 
     testWidgets('calls onProjectTap when project name is tapped', (
@@ -191,8 +191,74 @@ void main() {
         projectName: projectName,
       );
 
-      expect(find.byType(IconButton), findsNWidgets(2));
-      expect(find.byType(CoreIconWidget), findsNWidgets(3));
+      expect(
+        find.byKey(const Key('project_header_search_button')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('project_header_notification_button')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('search button has correct icon and attributes', (
+      WidgetTester tester,
+    ) async {
+      const projectId = 'test-project-id';
+      const projectName = 'Test Project';
+      bool onSearchTapCalled = false;
+
+      await pumpProjectHeaderAppBar(
+        tester,
+        projectId: projectId,
+        projectName: projectName,
+        onSearchTap: () => onSearchTapCalled = true,
+      );
+      await tester.pumpAndSettle();
+
+      final searchFinder = find.byKey(
+        const Key('project_header_search_button'),
+      );
+      expect(searchFinder, findsOneWidget);
+
+      final searchIconWidget = tester.widget<CoreIconWidget>(searchFinder);
+      expect(searchIconWidget.icon, CoreIcons.search);
+      expect(searchIconWidget.onTap, isNotNull);
+
+      await tester.tap(searchFinder);
+      await tester.pumpAndSettle();
+      expect(onSearchTapCalled, isTrue);
+    });
+
+    testWidgets('notification button has correct icon and attributes', (
+      WidgetTester tester,
+    ) async {
+      const projectId = 'test-project-id';
+      const projectName = 'Test Project';
+      bool onNotificationTapCalled = false;
+
+      await pumpProjectHeaderAppBar(
+        tester,
+        projectId: projectId,
+        projectName: projectName,
+        onNotificationTap: () => onNotificationTapCalled = true,
+      );
+      await tester.pumpAndSettle();
+
+      final notificationFinder = find.byKey(
+        const Key('project_header_notification_button'),
+      );
+      expect(notificationFinder, findsOneWidget);
+
+      final notificationIconWidget = tester.widget<CoreIconWidget>(
+        notificationFinder,
+      );
+      expect(notificationIconWidget.icon, CoreIcons.notification);
+      expect(notificationIconWidget.onTap, isNotNull);
+
+      await tester.tap(notificationFinder);
+      await tester.pumpAndSettle();
+      expect(onNotificationTapCalled, isTrue);
     });
 
     testWidgets('handles null callbacks gracefully', (
@@ -269,8 +335,6 @@ void main() {
         shouldThrowOnGetProject: true,
       );
 
-      await tester.pump();
-      await tester.pump();
       await tester.pumpAndSettle();
 
       expect(find.text(l10n().projectLoadError), findsOneWidget);

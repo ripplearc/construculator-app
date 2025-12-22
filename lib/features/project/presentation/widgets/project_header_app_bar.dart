@@ -65,23 +65,19 @@ class ProjectHeaderAppBar extends StatelessWidget
                   ),
                 ),
                 actions: [
-                  IconButton(
+                  CoreIconWidget(
                     key: const Key('project_header_search_button'),
-                    onPressed: onSearchTap,
-                    icon: CoreIconWidget(
-                      icon: CoreIcons.search,
-                      size: 24,
-                      color: appColorTheme?.iconDark,
-                    ),
+                    icon: CoreIcons.search,
+                    size: 24,
+                    onTap: onSearchTap,
+                    color: appColorTheme?.iconDark,
                   ),
-                  IconButton(
+                  CoreIconWidget(
                     key: const Key('project_header_notification_button'),
-                    onPressed: onNotificationTap,
-                    icon: CoreIconWidget(
-                      icon: CoreIcons.notification,
-                      size: 24,
-                      color: appColorTheme?.iconDark,
-                    ),
+                    onTap: onNotificationTap,
+                    icon: CoreIcons.notification,
+                    size: 24,
+                    color: appColorTheme?.iconDark,
                   ),
                   SizedBox(width: CoreSpacing.space2),
                   CoreAvatar(
