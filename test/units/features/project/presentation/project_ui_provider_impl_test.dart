@@ -4,6 +4,7 @@ import 'package:construculator/features/project/presentation/widgets/project_hea
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -16,10 +17,7 @@ class _TestModule extends Module {
   _TestModule(this.appBootstrap);
 
   @override
-  List<Module> get imports => [
-    ClockTestModule(),
-    ProjectModule(appBootstrap),
-  ];
+  List<Module> get imports => [ClockTestModule(), ProjectModule(appBootstrap)];
 }
 
 void main() {
@@ -35,8 +33,12 @@ void main() {
       Modular.init(_TestModule(appBootstrap));
     });
 
+    tearDownAll(() {
+      Modular.dispose();
+    });
+
     setUp(() {
-      provider = ProjectUIProviderImpl();
+      provider = Modular.get<ProjectUIProvider>() as ProjectUIProviderImpl;
     });
 
     group('buildProjectHeaderAppbar', () {
