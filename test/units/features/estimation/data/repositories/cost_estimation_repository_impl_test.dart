@@ -1,9 +1,17 @@
 import 'dart:async';
+import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_repository_impl.dart';
 import 'package:construculator/features/estimation/data/testing/fake_cost_estimation_data_source.dart';
+import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
+import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/libraries/config/testing/fake_app_config.dart';
+import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/test_estimation_data_helper.dart';
@@ -29,13 +37,33 @@ void main() {
     late FakeCostEstimationDataSource fakeDataSource;
     late FakeClockImpl fakeClock;
 
-    setUp(() {
+    setUpAll(() {
       fakeClock = FakeClockImpl();
-      fakeDataSource = FakeCostEstimationDataSource(clock: fakeClock);
-      repository = CostEstimationRepositoryImpl(dataSource: fakeDataSource);
+      Modular.init(
+        EstimationModule(
+          AppBootstrap(
+            supabaseWrapper: FakeSupabaseWrapper(clock: fakeClock),
+            config: FakeAppConfig(),
+            envLoader: FakeEnvLoader(),
+          ),
+        ),
+      );
+      Modular.replaceInstance<CostEstimationDataSource>(
+        FakeCostEstimationDataSource(clock: fakeClock),
+      );
+      fakeDataSource =
+          Modular.get<CostEstimationDataSource>()
+              as FakeCostEstimationDataSource;
+      repository =
+          Modular.get<CostEstimationRepository>()
+              as CostEstimationRepositoryImpl;
     });
 
-    tearDown(() {
+    tearDownAll(() {
+      Modular.dispose();
+    });
+
+    setUp(() {
       fakeDataSource.reset();
     });
 
@@ -93,9 +121,10 @@ void main() {
             estimateName: estimateNameDefault,
           );
 
-          fakeDataSource.addProjectEstimations(otherProjectId, [
+          fakeDataSource.addProjectEstimation(
+            otherProjectId,
             otherProjectEstimation,
-          ]);
+          );
 
           final result = await repository.getEstimations(testProjectId);
 

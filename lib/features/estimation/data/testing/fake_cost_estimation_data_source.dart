@@ -28,17 +28,8 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
   /// Used to specify the type of exception thrown when [getEstimations] is attempted
   SupabaseExceptionType? getEstimationsExceptionType;
 
-  /// Used to specify the error code thrown during [getEstimations]
-  PostgresErrorCode? postgrestErrorCode;
-
   /// Controls whether [getEstimations] returns an empty list
   bool shouldReturnEmptyList = false;
-
-  /// Controls whether operations should be delayed
-  bool shouldDelayOperations = false;
-
-  /// Controls when a delayed future is completed
-  Completer? completer;
 
   /// Clock dependency for time operations
   final Clock clock;
@@ -48,14 +39,7 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
 
   @override
   Future<List<CostEstimateDto>> getEstimations(String projectId) async {
-    if (shouldDelayOperations) {
-      await completer?.future;
-    }
-
-    _methodCalls.add({
-      'method': 'getEstimations',
-      'projectId': projectId,
-    });
+    _methodCalls.add({'method': 'getEstimations', 'projectId': projectId});
 
     if (shouldThrowOnGetEstimations) {
       _throwConfiguredException(
@@ -86,7 +70,10 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
   }
 
   /// Adds cost estimation data for a specific project
-  void addProjectEstimations(String projectId, List<CostEstimateDto> estimations) {
+  void addProjectEstimations(
+    String projectId,
+    List<CostEstimateDto> estimations,
+  ) {
     _projectEstimations[projectId] = estimations;
   }
 
@@ -130,10 +117,7 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
     shouldThrowOnGetEstimations = false;
     getEstimationsErrorMessage = null;
     getEstimationsExceptionType = null;
-    postgrestErrorCode = null;
     shouldReturnEmptyList = false;
-    shouldDelayOperations = false;
-    completer = null;
 
     clearAllData();
     clearMethodCalls();
@@ -143,7 +127,8 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
   static const String _defaultEstimationIdPrefix = 'test-estimation-';
   static const String _defaultProjectId = 'test-project-123';
   static const String _defaultEstimateName = 'Test Estimation';
-  static const String _defaultEstimateDescription = 'Test estimation description';
+  static const String _defaultEstimateDescription =
+      'Test estimation description';
   static const String _defaultCreatorUserId = 'test-user-123';
   static const String _defaultMarkupType = 'overall';
   static const String _defaultMarkupValueType = 'percentage';
@@ -154,7 +139,7 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
   static const double _defaultTotalCost = 50000.0;
   static const bool _defaultIsLocked = false;
   static const String _defaultLockedByUserID = '';
-  
+
   /// Creates a sample CostEstimateDto for testing
   CostEstimateDto createSampleEstimation({
     String? id,

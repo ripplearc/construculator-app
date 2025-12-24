@@ -60,12 +60,8 @@ void main() {
       final result = await fakeRepository.getEstimations(projectId);
 
       expect(result, hasLength(2));
-      expect(result[0].id, equals('estimation-1'));
-      expect(result[0].estimateName, equals('Test Estimation 1'));
-      expect(result[0].totalCost, equals(10000.0));
-      expect(result[1].id, equals('estimation-2'));
-      expect(result[1].estimateName, equals('Test Estimation 2'));
-      expect(result[1].totalCost, equals(20000.0));
+      expect(result[0], equals(testEstimation1));
+      expect(result[1], equals(testEstimation2));
     });
 
     test(
@@ -160,37 +156,6 @@ void main() {
   });
 
   group('Test Data Management', () {
-    test(
-      'addProjectEstimations should store estimation data for retrieval',
-      () async {
-        const projectId = 'stored-project';
-        final testEstimation1 = fakeRepository.createSampleEstimation(
-          id: 'estimation-1',
-          projectId: projectId,
-          estimateName: 'Stored Estimation 1',
-          totalCost: 15000.0,
-        );
-        final testEstimation2 = fakeRepository.createSampleEstimation(
-          id: 'estimation-2',
-          projectId: projectId,
-          estimateName: 'Stored Estimation 2',
-          totalCost: 25000.0,
-        );
-
-        fakeRepository.addProjectEstimations(projectId, [
-          testEstimation1,
-          testEstimation2,
-        ]);
-
-        final result = await fakeRepository.getEstimations(projectId);
-        expect(result, hasLength(2));
-        expect(result[0].estimateName, equals('Stored Estimation 1'));
-        expect(result[0].totalCost, equals(15000.0));
-        expect(result[1].estimateName, equals('Stored Estimation 2'));
-        expect(result[1].totalCost, equals(25000.0));
-      },
-    );
-
     test(
       'addProjectEstimation should add single estimation to existing list',
       () async {
