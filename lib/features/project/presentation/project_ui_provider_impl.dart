@@ -12,7 +12,7 @@ class ProjectUIProviderImpl extends ProjectUIProvider {
     ImageProvider<Object>? avatarImage,
   }) {
     return ProjectHeaderAppBar(
-      projectName: projectId,
+      projectId: projectId,
       onProjectTap: onProjectTap,
       onSearchTap: onSearchTap,
       onNotificationTap: onNotificationTap,

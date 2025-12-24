@@ -362,4 +362,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get costEstimation => 'Cost Estimation';
+
+  @override
+  String get projectLoadError => 'Unable to load project';
 }
