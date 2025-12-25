@@ -71,8 +71,9 @@ RUN fvm install && \
     fvm global ${FLUTTER_VERSION}
 
 # Ensure PATH and SSH alias are exported in interactive shells
-RUN echo 'export PATH="$PATH:$HOME/.pub-cache/bin:$HOME/fvm/default/bin:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools"' >> ~/.bashrc && \
-    echo 'alias load_ripplearc_key='"'"'eval "$(ssh-agent -s)" && ssh-add /home/flutter/.ssh/ripplearc_git_rsa'"'"'' >> ~/.bashrc
+RUN echo 'export PATH="$PATH:$HOME/.pub-cache/bin:$HOME/fvm/default/bin:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools"' >> ~/.bashrc
+RUN mkdir -p /home/flutter/.ssh && \
+    echo "alias load_ripplearc_key='eval \"\$(ssh-agent -s)\" && ssh-add /home/flutter/.ssh/ripplearc_git_rsa'" >> /home/flutter/.bashrc
 
 # Verify Flutter installation and configure
 RUN fvm flutter doctor --verbose && \
