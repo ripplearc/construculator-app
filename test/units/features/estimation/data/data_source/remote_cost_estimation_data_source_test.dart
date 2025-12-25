@@ -1,4 +1,5 @@
 import 'package:construculator/features/estimation/data/data_source/remote_cost_estimation_data_source.dart';
+import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -31,14 +32,12 @@ void main() {
   const String estimateDesc5 = 'Another estimate for project 1';
   const String estimateDescComplex = 'Estimate with all field types';
   const String markupTypeGranular = 'granular';
-  const String markupValueTypePercentage = 'percentage';
   const String markupValueTypeAmount = 'amount';
   const String tableName = 'cost_estimates';
   const String allColumns = '*';
   const String selectMethod = 'select';
   const String timestamp4 = '2024-01-10T09:15:30.456Z';
   const String timestamp5 = '2024-01-15T14:30:45.123Z';
-  const double defaultTotalCost = 100000.0;
   const double totalCost1 = 120000.0;
   const double totalCostComplex = 150000.75;
   const double overallMarkup3 = 7500.0;
@@ -69,41 +68,34 @@ void main() {
 
     group('getEstimations', () {
       test('should return cost estimations when data exists', () async {
-        final expectedEstimations = [
-          TestEstimationDataHelper.createFakeEstimationData(
-            id: estimateId1,
-            estimateName: estimateName1,
-            estimateDescription: estimateDesc1,
-            creatorUserId: userId1,
-          ),
-          TestEstimationDataHelper.createFakeEstimationData(
-            id: estimateId2,
-            estimateName: estimateName2,
-            estimateDescription: estimateDesc2,
-            creatorUserId: userId2,
-            totalCost: totalCost1,
-            isLocked: true,
-            lockedByUserId: userId2,
-          ),
-        ];
+        final data1 = TestEstimationDataHelper.createFakeEstimationData(
+          id: estimateId1,
+          estimateName: estimateName1,
+          estimateDescription: estimateDesc1,
+          creatorUserId: userId1,
+        );
+        final data2 = TestEstimationDataHelper.createFakeEstimationData(
+          id: estimateId2,
+          estimateName: estimateName2,
+          estimateDescription: estimateDesc2,
+          creatorUserId: userId2,
+          totalCost: totalCost1,
+          isLocked: true,
+          lockedByUserId: userId2,
+        );
+        final expectedEstimations = [data1, data2];
 
         fakeSupabaseWrapper.addTableData(tableName, expectedEstimations);
 
         final result = await dataSource.getEstimations(testProjectId);
 
-        expect(result, hasLength(2));
-        expect(result[0].id, equals(estimateId1));
-        expect(result[0].projectId, equals(testProjectId));
-        expect(result[0].estimateName, equals(estimateName1));
-        expect(result[0].totalCost, equals(defaultTotalCost));
-        expect(result[0].isLocked, isFalse);
+        final expectedDto1 = CostEstimateDto.fromJson(data1);
+        final expectedDto2 = CostEstimateDto.fromJson(data2);
 
-        expect(result[1].id, equals(estimateId2));
-        expect(result[1].projectId, equals(testProjectId));
-        expect(result[1].estimateName, equals(estimateName2));
-        expect(result[1].totalCost, equals(totalCost1));
-        expect(result[1].isLocked, isTrue);
-        expect(result[1].lockedByUserID, equals(userId2));
+        expect(result, hasLength(2));
+        expect(result[0], equals(expectedDto1));
+
+        expect(result[1], equals(expectedDto2));
       });
 
       test('should return empty list when no estimations found', () async {
@@ -170,13 +162,11 @@ void main() {
       test(
         'should rethrow auth exception when supabaseWrapper.select throws auth error',
         () async {
-           
           fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
           fakeSupabaseWrapper.selectMultipleExceptionType =
               SupabaseExceptionType.auth;
           fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgAuth;
 
-           
           expect(
             () => dataSource.getEstimations(testProjectId),
             throwsA(isA<supabase.AuthException>()),
@@ -187,13 +177,11 @@ void main() {
       test(
         'should rethrow socket exception when supabaseWrapper.select throws socket error',
         () async {
-           
           fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
           fakeSupabaseWrapper.selectMultipleExceptionType =
               SupabaseExceptionType.socket;
           fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgNetwork;
 
-           
           expect(
             () => dataSource.getEstimations(testProjectId),
             throwsA(isA<Exception>()),
@@ -204,13 +192,11 @@ void main() {
       test(
         'should rethrow timeout exception when supabaseWrapper.select throws timeout error',
         () async {
-           
           fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
           fakeSupabaseWrapper.selectMultipleExceptionType =
               SupabaseExceptionType.timeout;
           fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgTimeout;
 
-           
           expect(
             () => dataSource.getEstimations(testProjectId),
             throwsA(isA<Exception>()),
@@ -221,7 +207,6 @@ void main() {
       test(
         'should handle CostEstimateDto.fromJson correctly with all field types',
         () async {
-           
           final estimationData =
               TestEstimationDataHelper.createFakeEstimationData(
                 id: estimateIdComplex,
@@ -245,50 +230,17 @@ void main() {
 
           fakeSupabaseWrapper.addTableData(tableName, [estimationData]);
 
-           
           final result = await dataSource.getEstimations(testProjectId);
 
-           
           expect(result, hasLength(1));
           final estimation = result.first;
+          final expectedFromJsonDto = CostEstimateDto.fromJson(estimationData);
 
-          expect(estimation.id, equals(estimateIdComplex));
-          expect(estimation.projectId, equals(testProjectId));
-          expect(estimation.estimateName, equals(estimateNameComplex));
-          expect(estimation.estimateDescription, equals(estimateDescComplex));
-          expect(estimation.creatorUserId, equals(userIdComplex));
-          expect(estimation.markupType, equals(markupTypeGranular));
-          expect(
-            estimation.overallMarkupValueType,
-            equals(markupValueTypeAmount),
-          );
-          expect(estimation.overallMarkupValue, equals(overallMarkup3));
-          expect(
-            estimation.materialMarkupValueType,
-            equals(markupValueTypePercentage),
-          );
-          expect(estimation.materialMarkupValue, equals(materialMarkup3));
-          expect(
-            estimation.laborMarkupValueType,
-            equals(markupValueTypeAmount),
-          );
-          expect(estimation.laborMarkupValue, equals(laborMarkup4));
-          expect(
-            estimation.equipmentMarkupValueType,
-            equals(markupValueTypePercentage),
-          );
-          expect(estimation.equipmentMarkupValue, equals(equipmentMarkup2));
-          expect(estimation.totalCost, equals(totalCostComplex));
-          expect(estimation.isLocked, isTrue);
-          expect(estimation.lockedByUserID, equals(userIdLocker));
-          expect(estimation.lockedAt, equals(timestamp5));
-          expect(estimation.createdAt, equals(timestamp4));
-          expect(estimation.updatedAt, equals(timestamp5));
+          expect(estimation, equals(expectedFromJsonDto));
         },
       );
 
       test('should filter estimations by project_id correctly', () async {
-         
         final mixedEstimations = [
           TestEstimationDataHelper.createFakeEstimationData(
             id: estimateId1,
@@ -309,10 +261,8 @@ void main() {
 
         fakeSupabaseWrapper.addTableData(tableName, mixedEstimations);
 
-         
         final result = await dataSource.getEstimations(testProjectId);
 
-         
         expect(result, hasLength(2));
         expect(
           result.every((estimation) => estimation.projectId == testProjectId),

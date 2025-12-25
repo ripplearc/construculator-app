@@ -123,7 +123,7 @@ void main() {
       },
     );
 
-    test('two CostEstimate from identical DTOs are equal', () {
+    test('two CostEstimateDto instances from identical data are equal', () {
       final data = TestEstimationDataHelper.createFakeEstimationData();
 
       expect(

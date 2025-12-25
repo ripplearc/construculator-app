@@ -143,9 +143,11 @@ void main() {
 
       final future = fakeRepository.getEstimations(projectId);
 
-      bool completedImmediately = false;
-      future.then((_) => completedImmediately = true);
-      expect(completedImmediately, isFalse);
+      // Verify future hasn't completed yet by checking it doesn't resolve in a short time
+      var completed = false;
+      future.then((_) => completed = true);
+      await Future.delayed(Duration(milliseconds: 10));
+      expect(completed, isFalse, reason: 'Future should not complete before completer is completed');
 
       fakeRepository.completer!.complete();
       final result = await future;

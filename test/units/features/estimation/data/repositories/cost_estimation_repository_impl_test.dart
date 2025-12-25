@@ -148,8 +148,8 @@ void main() {
             SupabaseExceptionType.unknown;
         fakeDataSource.getEstimationsErrorMessage = errorMsgServer;
 
-        expect(
-          () => repository.getEstimations(testProjectId),
+        await expectLater(
+          repository.getEstimations(testProjectId),
           throwsA(isA<ServerException>()),
         );
       });
@@ -162,8 +162,8 @@ void main() {
               SupabaseExceptionType.timeout;
           fakeDataSource.getEstimationsErrorMessage = errorMsgTimeout;
 
-          expect(
-            () => repository.getEstimations(testProjectId),
+          await expectLater(
+            repository.getEstimations(testProjectId),
             throwsA(isA<TimeoutException>()),
           );
         },
@@ -177,8 +177,8 @@ void main() {
               SupabaseExceptionType.type;
           fakeDataSource.getEstimationsErrorMessage = 'Type error';
 
-          expect(
-            () => repository.getEstimations(testProjectId),
+          await expectLater(
+            repository.getEstimations(testProjectId),
             throwsA(isA<TypeError>()),
           );
         },
