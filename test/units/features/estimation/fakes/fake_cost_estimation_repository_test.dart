@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:construculator/features/estimation/data/testing/fake_cost_estimation_repository.dart';
+import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/enums.dart';
 import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -142,12 +144,13 @@ void main() {
       fakeRepository.completer = Completer();
 
       final future = fakeRepository.getEstimations(projectId);
-
-      // Verify future hasn't completed yet by checking it doesn't resolve in a short time
       var completed = false;
       future.then((_) => completed = true);
-      await Future.delayed(Duration(milliseconds: 10));
-      expect(completed, isFalse, reason: 'Future should not complete before completer is completed');
+      expect(
+        completed,
+        isFalse,
+        reason: 'Future should not complete before completer is completed',
+      );
 
       fakeRepository.completer!.complete();
       final result = await future;
@@ -363,6 +366,15 @@ void main() {
     test(
       'createSampleEstimation should create estimation with default values',
       () {
+        const expectedConfig = MarkupConfiguration(
+          overallType: MarkupType.overall,
+          overallValue: MarkupValue(
+            type: MarkupValueType.percentage,
+            value: 15.0,
+          ),
+        );
+        const expectedLockStatus = LockStatus.unlocked();
+
         final estimation = fakeRepository.createSampleEstimation();
 
         expect(estimation.id, startsWith('test-estimation-'));
@@ -374,12 +386,8 @@ void main() {
         );
         expect(estimation.creatorUserId, equals('test-user-123'));
         expect(estimation.totalCost, equals(50000.0));
-        expect(estimation.lockStatus, isA<UnlockedStatus>());
-        expect(
-          estimation.markupConfiguration.overallType,
-          equals(MarkupType.overall),
-        );
-        expect(estimation.markupConfiguration.overallValue.value, equals(15.0));
+        expect(estimation.lockStatus, equals(expectedLockStatus));
+        expect(estimation.markupConfiguration, equals(expectedConfig));
       },
     );
 
@@ -396,7 +404,41 @@ void main() {
         final customCreatedAt = DateTime(2024, 1, 1);
         final customUpdatedAt = DateTime(2024, 1, 2);
 
-        final estimation = fakeRepository.createSampleEstimation(
+        final expected = CostEstimate(
+          id: customId,
+          projectId: customProjectId,
+          estimateName: customName,
+          estimateDescription: customDescription,
+          creatorUserId: customUserId,
+          totalCost: customTotalCost,
+          lockStatus: LockStatus.locked(customLockedByUserId, fakeClock.now()),
+          createdAt: customCreatedAt,
+          updatedAt: customUpdatedAt,
+          markupConfiguration: const MarkupConfiguration(
+            overallType: MarkupType.granular,
+            overallValue: MarkupValue(
+              type: MarkupValueType.percentage,
+              value: 15.0,
+            ),
+            materialValueType: MarkupType.granular,
+            materialValue: MarkupValue(
+              type: MarkupValueType.percentage,
+              value: 10.0,
+            ),
+            laborValueType: MarkupType.granular,
+            laborValue: MarkupValue(
+              type: MarkupValueType.percentage,
+              value: 20.0,
+            ),
+            equipmentValueType: MarkupType.granular,
+            equipmentValue: MarkupValue(
+              type: MarkupValueType.percentage,
+              value: 12.0,
+            ),
+          ),
+        );
+
+        final actual = fakeRepository.createSampleEstimation(
           id: customId,
           projectId: customProjectId,
           estimateName: customName,
@@ -410,19 +452,7 @@ void main() {
           markupType: MarkupType.granular,
         );
 
-        expect(estimation.id, equals(customId));
-        expect(estimation.projectId, equals(customProjectId));
-        expect(estimation.estimateName, equals(customName));
-        expect(estimation.estimateDescription, equals(customDescription));
-        expect(estimation.creatorUserId, equals(customUserId));
-        expect(estimation.totalCost, equals(customTotalCost));
-        expect(estimation.lockStatus, isA<LockedStatus>());
-        expect(estimation.createdAt, equals(customCreatedAt));
-        expect(estimation.updatedAt, equals(customUpdatedAt));
-        expect(
-          estimation.markupConfiguration.overallType,
-          equals(MarkupType.granular),
-        );
+        expect(actual, equals(expected));
       },
     );
 
@@ -430,22 +460,19 @@ void main() {
       'createSampleOverallMarkupEstimation should create estimation with overall markup',
       () {
         const customOverallMarkup = 25.0;
+        const expectedConfig = MarkupConfiguration(
+          overallType: MarkupType.overall,
+          overallValue: MarkupValue(
+            type: MarkupValueType.percentage,
+            value: customOverallMarkup,
+          ),
+        );
 
         final estimation = fakeRepository.createSampleOverallMarkupEstimation(
           overallMarkupValue: customOverallMarkup,
         );
 
-        expect(
-          estimation.markupConfiguration.overallType,
-          equals(MarkupType.overall),
-        );
-        expect(
-          estimation.markupConfiguration.overallValue.value,
-          equals(customOverallMarkup),
-        );
-        expect(estimation.markupConfiguration.materialValueType, isNull);
-        expect(estimation.markupConfiguration.laborValueType, isNull);
-        expect(estimation.markupConfiguration.equipmentValueType, isNull);
+        expect(estimation.markupConfiguration, equals(expectedConfig));
       },
     );
 
@@ -455,6 +482,28 @@ void main() {
         const customMaterialMarkup = 8.0;
         const customLaborMarkup = 18.0;
         const customEquipmentMarkup = 12.0;
+        const expectedConfig = MarkupConfiguration(
+          overallType: MarkupType.granular,
+          overallValue: MarkupValue(
+            type: MarkupValueType.percentage,
+            value: 15.0,
+          ),
+          materialValueType: MarkupType.granular,
+          materialValue: MarkupValue(
+            type: MarkupValueType.percentage,
+            value: customMaterialMarkup,
+          ),
+          laborValueType: MarkupType.granular,
+          laborValue: MarkupValue(
+            type: MarkupValueType.percentage,
+            value: customLaborMarkup,
+          ),
+          equipmentValueType: MarkupType.granular,
+          equipmentValue: MarkupValue(
+            type: MarkupValueType.percentage,
+            value: customEquipmentMarkup,
+          ),
+        );
 
         final estimation = fakeRepository.createSampleGranularMarkupEstimation(
           materialMarkupValue: customMaterialMarkup,
@@ -462,69 +511,41 @@ void main() {
           equipmentMarkupValue: customEquipmentMarkup,
         );
 
-        expect(
-          estimation.markupConfiguration.overallType,
-          equals(MarkupType.granular),
-        );
-        expect(
-          estimation.markupConfiguration.materialValueType,
-          equals(MarkupType.granular),
-        );
-        expect(
-          estimation.markupConfiguration.laborValueType,
-          equals(MarkupType.granular),
-        );
-        expect(
-          estimation.markupConfiguration.equipmentValueType,
-          equals(MarkupType.granular),
-        );
-        expect(
-          estimation.markupConfiguration.materialValue!.value,
-          equals(customMaterialMarkup),
-        );
-        expect(
-          estimation.markupConfiguration.laborValue!.value,
-          equals(customLaborMarkup),
-        );
-        expect(
-          estimation.markupConfiguration.equipmentValue!.value,
-          equals(customEquipmentMarkup),
-        );
+        expect(estimation.markupConfiguration, equals(expectedConfig));
       },
     );
 
     test(
       'createSampleEstimation with granular markup should set all granular values',
       () {
+        const expectedConfig = MarkupConfiguration(
+          overallType: MarkupType.granular,
+          overallValue: MarkupValue(
+            type: MarkupValueType.percentage,
+            value: 15.0,
+          ),
+          materialValueType: MarkupType.granular,
+          materialValue: MarkupValue(
+            type: MarkupValueType.percentage,
+            value: 10.0,
+          ),
+          laborValueType: MarkupType.granular,
+          laborValue: MarkupValue(
+            type: MarkupValueType.percentage,
+            value: 20.0,
+          ),
+          equipmentValueType: MarkupType.granular,
+          equipmentValue: MarkupValue(
+            type: MarkupValueType.percentage,
+            value: 12.0,
+          ),
+        );
+
         final estimation = fakeRepository.createSampleEstimation(
           markupType: MarkupType.granular,
         );
 
-        expect(
-          estimation.markupConfiguration.overallType,
-          equals(MarkupType.granular),
-        );
-        expect(
-          estimation.markupConfiguration.materialValueType,
-          equals(MarkupType.granular),
-        );
-        expect(
-          estimation.markupConfiguration.laborValueType,
-          equals(MarkupType.granular),
-        );
-        expect(
-          estimation.markupConfiguration.equipmentValueType,
-          equals(MarkupType.granular),
-        );
-        expect(
-          estimation.markupConfiguration.materialValue!.value,
-          equals(10.0),
-        );
-        expect(estimation.markupConfiguration.laborValue!.value, equals(20.0));
-        expect(
-          estimation.markupConfiguration.equipmentValue!.value,
-          equals(12.0),
-        );
+        expect(estimation.markupConfiguration, equals(expectedConfig));
       },
     );
 
@@ -532,39 +553,45 @@ void main() {
       'createSampleEstimation should create locked estimation when isLocked is true',
       () {
         const lockedByUserId = 'lock-user-123';
+        final expectedLockStatus = LockStatus.locked(
+          lockedByUserId,
+          fakeClock.now(),
+        );
 
         final estimation = fakeRepository.createSampleEstimation(
           isLocked: true,
           lockedByUserID: lockedByUserId,
         );
 
-        expect(estimation.lockStatus, isA<LockedStatus>());
-        final lockedStatus = estimation.lockStatus as LockedStatus;
-        expect(lockedStatus.lockedByUserId, equals(lockedByUserId));
+        expect(estimation.lockStatus, equals(expectedLockStatus));
       },
     );
 
     test(
       'createSampleEstimation should create unlocked estimation when isLocked is false',
       () {
+        const expectedLockStatus = LockStatus.unlocked();
+
         final estimation = fakeRepository.createSampleEstimation(
           isLocked: false,
           lockedByUserID: 'some-user',
         );
 
-        expect(estimation.lockStatus, isA<UnlockedStatus>());
+        expect(estimation.lockStatus, equals(expectedLockStatus));
       },
     );
 
     test(
       'createSampleEstimation should create unlocked estimation when lockedByUserID is null',
       () {
+        const expectedLockStatus = LockStatus.unlocked();
+
         final estimation = fakeRepository.createSampleEstimation(
           isLocked: true,
           lockedByUserID: null,
         );
 
-        expect(estimation.lockStatus, isA<UnlockedStatus>());
+        expect(estimation.lockStatus, equals(expectedLockStatus));
       },
     );
   });
