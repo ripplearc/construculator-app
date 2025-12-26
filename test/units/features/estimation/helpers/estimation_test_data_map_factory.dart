@@ -13,7 +13,12 @@ const double totalCostDefault = 100000.0;
 const String emptyString = '';
 const String timestampDefault = '2024-01-01T00:00:00.000Z';
 
-class TestEstimationDataHelper {
+/// Fixture factory that produces estimation records as map payloads for tests.
+class EstimationTestDataMapFactory {
+  /// Builds a map shaped like an estimation record, allowing targeted overrides.
+  ///
+  /// Only provide the fields you want to customize; all others fall back to
+  /// sensible test defaults.
   static Map<String, dynamic> createFakeEstimationData({
     String? id,
     String? projectId,

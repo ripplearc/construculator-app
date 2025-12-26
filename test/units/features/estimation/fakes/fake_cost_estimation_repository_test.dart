@@ -376,18 +376,20 @@ void main() {
         const expectedLockStatus = LockStatus.unlocked();
 
         final estimation = fakeRepository.createSampleEstimation();
-
-        expect(estimation.id, startsWith('test-estimation-'));
-        expect(estimation.projectId, equals('test-project-123'));
-        expect(estimation.estimateName, equals('Test Estimation'));
-        expect(
-          estimation.estimateDescription,
-          equals('Test estimation description'),
+        final expectedEntity = CostEstimate(
+          id: 'test-estimation-${fakeClock.now().millisecondsSinceEpoch}',
+          projectId: 'test-project-123',
+          estimateName: 'Test Estimation',
+          creatorUserId: 'test-user-123',
+          markupConfiguration: expectedConfig,
+          lockStatus: expectedLockStatus,
+          createdAt: fakeClock.now(),
+          updatedAt: fakeClock.now(),
+          estimateDescription: 'Test estimation description',
+          totalCost: 50000.0,
         );
-        expect(estimation.creatorUserId, equals('test-user-123'));
-        expect(estimation.totalCost, equals(50000.0));
-        expect(estimation.lockStatus, equals(expectedLockStatus));
-        expect(estimation.markupConfiguration, equals(expectedConfig));
+
+        expect(estimation, equals(expectedEntity));
       },
     );
 

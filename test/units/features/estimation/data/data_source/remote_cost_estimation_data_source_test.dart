@@ -6,7 +6,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import 'package:flutter_test/flutter_test.dart';
-import '../../helpers/test_estimation_data_helper.dart';
+import '../../helpers/estimation_test_data_map_factory.dart';
 
 void main() {
   const String testProjectId = 'test-project-123';
@@ -68,13 +68,13 @@ void main() {
 
     group('getEstimations', () {
       test('should return cost estimations when data exists', () async {
-        final data1 = TestEstimationDataHelper.createFakeEstimationData(
+        final data1 = EstimationTestDataMapFactory.createFakeEstimationData(
           id: estimateId1,
           estimateName: estimateName1,
           estimateDescription: estimateDesc1,
           creatorUserId: userId1,
         );
-        final data2 = TestEstimationDataHelper.createFakeEstimationData(
+        final data2 = EstimationTestDataMapFactory.createFakeEstimationData(
           id: estimateId2,
           estimateName: estimateName2,
           estimateDescription: estimateDesc2,
@@ -108,7 +108,7 @@ void main() {
         'should return empty list when no estimations for specific project',
         () async {
           final otherProjectEstimations = [
-            TestEstimationDataHelper.createFakeEstimationData(
+            EstimationTestDataMapFactory.createFakeEstimationData(
               projectId: otherProjectId,
             ),
           ];
@@ -208,7 +208,7 @@ void main() {
         'should handle CostEstimateDto.fromJson correctly with all field types',
         () async {
           final estimationData =
-              TestEstimationDataHelper.createFakeEstimationData(
+              EstimationTestDataMapFactory.createFakeEstimationData(
                 id: estimateIdComplex,
                 estimateName: estimateNameComplex,
                 estimateDescription: estimateDescComplex,
@@ -242,17 +242,17 @@ void main() {
 
       test('should filter estimations by project_id correctly', () async {
         final mixedEstimations = [
-          TestEstimationDataHelper.createFakeEstimationData(
+          EstimationTestDataMapFactory.createFakeEstimationData(
             id: estimateId1,
             estimateName: estimateName3,
             estimateDescription: estimateDesc3,
           ),
-          TestEstimationDataHelper.createFakeEstimationData(
+          EstimationTestDataMapFactory.createFakeEstimationData(
             id: estimateId2,
             projectId: otherProjectId2,
             estimateName: estimateName4,
           ),
-          TestEstimationDataHelper.createFakeEstimationData(
+          EstimationTestDataMapFactory.createFakeEstimationData(
             id: estimateId3,
             estimateName: estimateName5,
             estimateDescription: estimateDesc5,

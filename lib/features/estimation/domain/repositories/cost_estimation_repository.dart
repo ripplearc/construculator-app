@@ -17,5 +17,6 @@ abstract class CostEstimationRepository {
   /// Returns a [Future] that completes with a [List<CostEstimate>] containing
   /// all cost estimates associated with the specified project ID. The estimates
   /// include their markup configurations, lock status, and calculated totals.
+  // TODO: https://ripplearc.youtrack.cloud/issue/CA-449/Cost-Estimation-Add-Pagination-for-Fetching-Estimations
   Future<List<CostEstimate>> getEstimations(String projectId);
 }

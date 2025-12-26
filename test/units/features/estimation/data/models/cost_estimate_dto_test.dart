@@ -5,12 +5,12 @@ import 'package:construculator/features/estimation/domain/entities/lock_status_e
 import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../helpers/test_estimation_data_helper.dart';
+import '../../helpers/estimation_test_data_map_factory.dart';
 
 void main() {
   group('CostEstimateDto', () {
     test('fromJson should parse all fields correctly', () {
-      final sampleData = TestEstimationDataHelper.createFakeEstimationData(
+      final sampleData = EstimationTestDataMapFactory.createFakeEstimationData(
         isLocked: true,
         lockedByUserId: 'locking-user',
         lockedAt: '2025-01-01T10:00:00.000Z',
@@ -46,7 +46,8 @@ void main() {
     });
 
     test('toJson should output the same map as input', () {
-      final sampleData = TestEstimationDataHelper.createFakeEstimationData();
+      final sampleData =
+          EstimationTestDataMapFactory.createFakeEstimationData();
       final dto = CostEstimateDto.fromJson(sampleData);
       final json = dto.toJson();
 
@@ -56,11 +57,12 @@ void main() {
     test(
       'toDomain should map all fields and types correctly (nullable granular parts)',
       () {
-        final sampleData = TestEstimationDataHelper.createFakeEstimationData(
-          isLocked: true,
-          lockedByUserId: 'locking-user',
-          lockedAt: '2025-01-01T10:00:00.000Z',
-        );
+        final sampleData =
+            EstimationTestDataMapFactory.createFakeEstimationData(
+              isLocked: true,
+              lockedByUserId: 'locking-user',
+              lockedAt: '2025-01-01T10:00:00.000Z',
+            );
         final dto = CostEstimateDto.fromJson(sampleData);
         final domain = dto.toDomain();
 
@@ -110,7 +112,7 @@ void main() {
       'toDomain should create CostEstimate with UnlockedStatus when isLocked is false',
       () {
         final unlockedJson = Map<String, dynamic>.from(
-          TestEstimationDataHelper.createFakeEstimationData(),
+          EstimationTestDataMapFactory.createFakeEstimationData(),
         )..['is_locked'] = false;
 
         final dto = CostEstimateDto.fromJson(unlockedJson);
@@ -124,7 +126,7 @@ void main() {
     );
 
     test('two CostEstimateDto instances from identical data are equal', () {
-      final data = TestEstimationDataHelper.createFakeEstimationData();
+      final data = EstimationTestDataMapFactory.createFakeEstimationData();
 
       expect(
         CostEstimateDto.fromJson(data),
@@ -133,7 +135,7 @@ void main() {
     });
 
     test('toDomain maps markup type: overall', () {
-      final data = TestEstimationDataHelper.createFakeEstimationData(
+      final data = EstimationTestDataMapFactory.createFakeEstimationData(
         markupType: 'overall',
       );
       final domain = CostEstimateDto.fromJson(data).toDomain();
@@ -141,7 +143,7 @@ void main() {
     });
 
     test('toDomain maps markup type: granular', () {
-      final data = TestEstimationDataHelper.createFakeEstimationData(
+      final data = EstimationTestDataMapFactory.createFakeEstimationData(
         markupType: 'granular',
       );
       final domain = CostEstimateDto.fromJson(data).toDomain();
@@ -149,7 +151,7 @@ void main() {
     });
 
     test('toDomain maps overall markup value type: percentage', () {
-      final data = TestEstimationDataHelper.createFakeEstimationData(
+      final data = EstimationTestDataMapFactory.createFakeEstimationData(
         overallMarkupValueType: 'percentage',
       );
       final domain = CostEstimateDto.fromJson(data).toDomain();
@@ -160,7 +162,7 @@ void main() {
     });
 
     test('toDomain maps overall markup value type: amount', () {
-      final data = TestEstimationDataHelper.createFakeEstimationData(
+      final data = EstimationTestDataMapFactory.createFakeEstimationData(
         overallMarkupValueType: 'amount',
       );
       final domain = CostEstimateDto.fromJson(data).toDomain();
@@ -171,7 +173,7 @@ void main() {
     });
 
     test('toDomain throws ArgumentError for unknown markup type', () {
-      final data = TestEstimationDataHelper.createFakeEstimationData(
+      final data = EstimationTestDataMapFactory.createFakeEstimationData(
         markupType: 'unknown-type',
       );
       expect(
@@ -181,7 +183,7 @@ void main() {
     });
 
     test('toDomain throws ArgumentError for unknown markup value type', () {
-      final data = TestEstimationDataHelper.createFakeEstimationData(
+      final data = EstimationTestDataMapFactory.createFakeEstimationData(
         overallMarkupValueType: 'unknown-value',
       );
       expect(
