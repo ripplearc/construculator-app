@@ -2,6 +2,7 @@ import 'package:construculator/features/estimation/domain/entities/lock_status_e
 import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/enums.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 /// Represents a cost estimate for a construction project.
@@ -20,7 +21,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 ///
 /// Details can be found in the detailed design document:
 /// https://docs.google.com/document/d/1MHn-LanxVJ96-HSe47C9Km0evtkPcyQDw9eDzFD60AA/edit?tab=t.m4ek8adycklb#bookmark=id.x13qk65itz6s
-class CostEstimate {
+class CostEstimate extends Equatable {
   /// Unique identifier for this cost estimate.
   final String id;
 
@@ -115,4 +116,18 @@ class CostEstimate {
       updatedAt: updatedAt ?? now,
     );
   }
+
+  @override
+  List<Object?> get props => [
+    id,
+    projectId,
+    estimateName,
+    estimateDescription,
+    creatorUserId,
+    markupConfiguration,
+    totalCost,
+    lockStatus,
+    createdAt,
+    updatedAt,
+  ];
 }

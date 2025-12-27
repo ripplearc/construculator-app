@@ -1,5 +1,9 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/auth/auth_module.dart';
+import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
+import 'package:construculator/features/estimation/data/data_source/remote_cost_estimation_data_source.dart';
+import 'package:construculator/features/estimation/data/repositories/cost_estimation_repository_impl.dart';
+import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
@@ -26,10 +30,20 @@ class EstimationModule extends Module {
     ),
   ];
 
-  List<RouteDefinition> get routeDefinitions => _routeDefinitions;
-
   @override
   List<Module> get imports => [AuthModule(appBootstrap)];
+
+  @override
+  void binds(Injector i) {
+    i.addLazySingleton<CostEstimationDataSource>(
+      () => RemoteCostEstimationDataSource(
+        supabaseWrapper: appBootstrap.supabaseWrapper,
+      ),
+    );
+    i.addLazySingleton<CostEstimationRepository>(
+      () => CostEstimationRepositoryImpl(dataSource: i.get()),
+    );
+  }
 
   @override
   void routes(RouteManager r) {

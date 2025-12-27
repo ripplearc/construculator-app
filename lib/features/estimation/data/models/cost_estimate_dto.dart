@@ -2,89 +2,90 @@ import 'package:construculator/features/estimation/domain/entities/cost_estimate
 import 'package:construculator/features/estimation/domain/entities/enums.dart';
 import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
+import 'package:equatable/equatable.dart';
 
 /// Data Transfer Object for CostEstimate entity.
-/// 
+///
 /// This DTO represents the serialized form of a cost estimate as it appears
 /// in the database or API responses. It handles the conversion between the
 /// flat database structure and the domain entity's nested object structure.
-/// 
+///
 /// The DTO separates markup configuration fields into individual properties
 /// for database storage, while the domain entity groups them into a
 /// MarkupConfiguration object for better encapsulation.
-/// 
+///
 /// Details can be found in the detailed design document: https://docs.google.com/document/d/1MHn-LanxVJ96-HSe47C9Km0evtkPcyQDw9eDzFD60AA/edit?tab=t.m4ek8adycklb#heading=h.p7ml049jmefm
-class CostEstimateDto {
+class CostEstimateDto extends Equatable {
   /// Unique identifier for the cost estimate.
-  String id;
-  
+  final String id;
+
   /// ID of the project this estimate belongs to.
-  String projectId;
-  
+  final String projectId;
+
   /// Human-readable name for the estimate.
-  String estimateName;
-  
+  final String estimateName;
+
   /// Optional description providing additional context about the estimate.
-  String estimateDescription;
-  
+  final String estimateDescription;
+
   /// ID of the user who created this estimate.
-  String creatorUserId;
-  
+  final String creatorUserId;
+
   /// Type of markup configuration: 'overall' or 'granular'.
   /// Maps to [MarkupType] enum in domain layer.
-  String markupType;
-  
+  final String markupType;
+
   /// Type of overall markup value: 'percentage' or 'amount'.
   /// Maps to [MarkupValueType] enum in domain layer.
-  String overallMarkupValueType;
-  
+  final String overallMarkupValueType;
+
   /// Overall markup value as a decimal number.
-  double overallMarkupValue;
-  
+  final double overallMarkupValue;
+
   /// Type of material markup value: 'percentage' or 'amount'.
   /// Maps to [MarkupValueType] enum in domain layer.
-  String materialMarkupValueType;
-  
+  final String materialMarkupValueType;
+
   /// Material markup value as a decimal number.
-  double materialMarkupValue;
-  
+  final double materialMarkupValue;
+
   /// Type of labor markup value: 'percentage' or 'amount'.
   /// Maps to [MarkupValueType] enum in domain layer.
-  String laborMarkupValueType;
-  
+  final String laborMarkupValueType;
+
   /// Labor markup value as a decimal number.
-  double laborMarkupValue;
-  
+  final double laborMarkupValue;
+
   /// Type of equipment markup value: 'percentage' or 'amount'.
   /// Maps to [MarkupValueType] enum in domain layer.
-  String equipmentMarkupValueType;
-  
+  final String equipmentMarkupValueType;
+
   /// Equipment markup value as a decimal number.
-  double equipmentMarkupValue;
-  
+  final double equipmentMarkupValue;
+
   /// Total calculated cost of the estimate.
-  double totalCost;
-  
+  final double totalCost;
+
   /// Whether the estimate is currently locked for editing.
-  bool isLocked;
-  
+  final bool isLocked;
+
   /// ID of the user who locked the estimate (if locked).
-  String lockedByUserID;
-  
+  final String lockedByUserID;
+
   /// ISO 8601 timestamp when the estimate was locked.
-  String lockedAt;
-  
+  final String lockedAt;
+
   /// ISO 8601 timestamp when the estimate was created.
-  String createdAt;
-  
+  final String createdAt;
+
   /// ISO 8601 timestamp when the estimate was last updated.
-  String updatedAt;
+  final String updatedAt;
 
   /// Creates a new [CostEstimateDto] instance.
-  /// 
+  ///
   /// All parameters are required as they represent the complete state
   /// of a cost estimate as stored in the database.
-  CostEstimateDto({
+  const CostEstimateDto({
     required this.id,
     required this.projectId,
     required this.estimateName,
@@ -108,11 +109,11 @@ class CostEstimateDto {
   });
 
   /// Creates a [CostEstimateDto] from a JSON map.
-  /// 
+  ///
   /// This factory method handles the conversion from the database/API JSON format
   /// to the DTO structure. It performs type conversion for numeric values and
   /// maps snake_case JSON keys to camelCase Dart properties.
-  /// 
+  ///
   /// Throws [TypeError] if required fields are missing or have invalid types.
   factory CostEstimateDto.fromJson(Map<String, dynamic> json) {
     return CostEstimateDto(
@@ -140,10 +141,10 @@ class CostEstimateDto {
   }
 
   /// Converts this DTO to a JSON map.
-  /// 
+  ///
   /// This method converts the DTO back to the database/API JSON format,
   /// mapping camelCase Dart properties to snake_case JSON keys.
-  /// 
+  ///
   /// Returns a [Map<String, dynamic>] suitable for JSON serialization.
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -169,14 +170,14 @@ class CostEstimateDto {
   };
 
   /// Converts this DTO to a domain [CostEstimate] entity.
-  /// 
+  ///
   /// This method performs the transformation from the flat DTO structure
   /// to the domain entity's nested object structure. It:
   /// - Groups markup-related fields into a [MarkupConfiguration] object
   /// - Converts string enum values to proper enum types
   /// - Parses ISO 8601 timestamp strings to [DateTime] objects
   /// - Creates appropriate [LockStatus] based on the locked state
-  /// 
+  ///
   /// Throws [FormatException] if timestamp strings are invalid.
   /// Throws [ArgumentError] if enum string values are unrecognized.
   CostEstimate toDomain() {
@@ -235,4 +236,28 @@ class CostEstimateDto {
         throw ArgumentError('Unknown MarkupValueType: $raw');
     }
   }
+
+  @override
+  List<Object?> get props => [
+    id,
+    projectId,
+    estimateName,
+    estimateDescription,
+    creatorUserId,
+    markupType,
+    overallMarkupValueType,
+    overallMarkupValue,
+    materialMarkupValueType,
+    materialMarkupValue,
+    laborMarkupValueType,
+    laborMarkupValue,
+    equipmentMarkupValueType,
+    equipmentMarkupValue,
+    totalCost,
+    isLocked,
+    lockedByUserID,
+    lockedAt,
+    createdAt,
+    updatedAt,
+  ];
 }
