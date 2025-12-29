@@ -430,7 +430,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                           const SizedBox(width: CoreSpacing.space1),
                           Text(
                             '${_roleErrorList?.first}',
-                            style: typography?.bodySmallRegular.copyWith(
+                            style: typography.bodySmallRegular.copyWith(
                               color: CoreTextColors.error,
                             ),
                           ),
