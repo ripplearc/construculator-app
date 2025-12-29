@@ -159,7 +159,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
   }
 
   Widget _buildLoginWithEmailForm(LoginWithEmailState state) {
-    final typography = Theme.of(context).extension<TypographyExtension>();
+    final typography = Theme.of(context).coreTypography;
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: CoreSpacing.space6),
@@ -207,7 +207,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
                   padding: EdgeInsets.symmetric(horizontal: CoreSpacing.space2),
                   child: Text(
                     '${l10n?.or}',
-                    style: typography?.bodyMediumRegular.copyWith(
+                    style: typography.bodyMediumRegular.copyWith(
                       color: CoreTextColors.body,
                     ),
                   ),

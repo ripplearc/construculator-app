@@ -57,7 +57,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final typography = Theme.of(context).extension<TypographyExtension>();
+    final typography = Theme.of(context).coreTypography;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Construculator'),
@@ -79,13 +79,13 @@ class _DashboardPageState extends State<DashboardPage> {
               Text(
                 'Welcome back, $userInfo',
                 textAlign: TextAlign.center,
-                style: typography?.headlineMediumSemiBold,
+                style: typography.headlineMediumSemiBold,
               ),
               const SizedBox(height: 8),
               Text(
                 'You are now logged in to your account',
                 textAlign: TextAlign.center,
-                style: typography?.bodyLargeRegular,
+                style: typography.bodyLargeRegular,
               ),
               const SizedBox(height: 32),
               CoreButton(

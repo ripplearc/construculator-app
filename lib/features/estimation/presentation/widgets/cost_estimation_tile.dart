@@ -44,7 +44,7 @@ class CostEstimationTile extends StatelessWidget {
 
   Widget _buildTopRow(BuildContext context) {
     final appColors = Theme.of(context).extension<AppColorsExtension>();
-    final typography = Theme.of(context).extension<TypographyExtension>();
+    final typography = Theme.of(context).coreTypography;
     return Row(
       children: [
         CoreIconWidget(
@@ -57,7 +57,7 @@ class CostEstimationTile extends StatelessWidget {
         Expanded(
           child: Text(
             estimation.estimateName,
-            style: typography?.bodyLargeMedium.copyWith(
+            style: typography.bodyLargeMedium.copyWith(
               color: appColors?.textDark,
             ),
             maxLines: 2,
@@ -81,7 +81,7 @@ class CostEstimationTile extends StatelessWidget {
     final createdAt = estimation.createdAt;
 
     final appColors = Theme.of(context).extension<AppColorsExtension>();
-    final typography = Theme.of(context).extension<TypographyExtension>();
+    final typography = Theme.of(context).coreTypography;
 
     return Row(
       children: [
@@ -94,7 +94,7 @@ class CostEstimationTile extends StatelessWidget {
         const SizedBox(width: CoreSpacing.space2),
         Text(
           FormattingHelper.formatDate(createdAt),
-          style: typography?.bodySmallRegular,
+          style: typography.bodySmallRegular,
         ),
         const SizedBox(width: CoreSpacing.space2),
         Container(
@@ -108,14 +108,14 @@ class CostEstimationTile extends StatelessWidget {
         const SizedBox(width: CoreSpacing.space2),
         Text(
           FormattingHelper.formatTime(createdAt),
-          style: typography?.bodySmallRegular,
+          style: typography.bodySmallRegular,
         ),
         const SizedBox(width: CoreSpacing.space2),
         Expanded(
           child: Text(
             textAlign: TextAlign.right,
             FormattingHelper.formatCurrency(estimation.totalCost),
-            style: typography?.bodyLargeSemiBold.copyWith(
+            style: typography.bodyLargeSemiBold.copyWith(
               color: appColors?.textDark,
             ),
           ),

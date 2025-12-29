@@ -49,7 +49,7 @@ void main() {
 
       final context = tester.element(find.byType(Center));
       final typography =
-          Theme.of(context).extension<TypographyExtension>()!;
+          Theme.of(context).coreTypography;
 
       expect(
         textWidget.style!.fontWeight,
@@ -71,7 +71,7 @@ void main() {
       expect(textWidget.style!.color, CoreTextColors.link);
 
       final context = tester.element(find.byType(Center));
-      final typography = Theme.of(context).extension<TypographyExtension>()!;
+      final typography = Theme.of(context).coreTypography;
 
       expect(
         textWidget.style!.fontWeight,

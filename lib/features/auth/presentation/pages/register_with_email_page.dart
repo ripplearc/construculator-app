@@ -197,7 +197,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
 
   @override
   Widget build(BuildContext context) {
-    final typography = Theme.of(context).extension<TypographyExtension>();
+    final typography = Theme.of(context).coreTypography;
 
     return Theme(
       data: Theme.of(context).copyWith(
@@ -304,7 +304,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
                           ),
                           child: Text(
                             '${l10n?.or}',
-                            style: typography?.bodyMediumRegular.copyWith(
+                            style: typography.bodyMediumRegular.copyWith(
                               color: CoreTextColors.body,
                             ),
                           ),

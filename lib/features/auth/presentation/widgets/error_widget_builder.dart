@@ -12,7 +12,7 @@ Widget buildErrorWidgetWithLink({
   String? linkText,
   required VoidCallback onPressed,
 }) {
-  final typography = Theme.of(context).extension<TypographyExtension>();
+  final typography = Theme.of(context).coreTypography;
 
   return Row(
     crossAxisAlignment: CrossAxisAlignment.center,
@@ -21,7 +21,7 @@ Widget buildErrorWidgetWithLink({
       Flexible(
         child: Text(
           errorText ?? '',
-          style: typography?.bodySmallRegular.copyWith(
+          style: typography.bodySmallRegular.copyWith(
             color: CoreTextColors.error,
           ),
         ),
@@ -32,7 +32,7 @@ Widget buildErrorWidgetWithLink({
           key: Key(linkText),
           child: Text(
             linkText,
-            style: typography?.bodySmallSemiBold.copyWith(
+            style: typography.bodySmallSemiBold.copyWith(
               color: CoreTextColors.link,
             ),
           ),

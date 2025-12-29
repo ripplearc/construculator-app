@@ -12,15 +12,15 @@ class ForgotPasswordHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typography = Theme.of(context).extension<TypographyExtension>();
+    final typography = Theme.of(context).coreTypography;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: typography?.headlineLargeSemiBold),
+        Text(title, style: typography.headlineLargeSemiBold),
         const SizedBox(height: CoreSpacing.space2),
-        Text(description, style: typography?.bodyLargeRegular),
+        Text(description, style: typography.bodyLargeRegular),
       ],
     );
   }

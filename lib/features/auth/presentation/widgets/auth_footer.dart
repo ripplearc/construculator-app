@@ -22,7 +22,7 @@ class AuthFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typography = Theme.of(context).extension<TypographyExtension>();
+    final typography = Theme.of(context).coreTypography;
 
     return SafeArea(
       child: Container(
@@ -33,13 +33,13 @@ class AuthFooter extends StatelessWidget {
           child: Wrap(
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Text('$text ', style: typography?.bodyMediumRegular),
+              Text('$text ', style: typography.bodyMediumRegular),
               InkWell(
                 onTap: onPressed,
                 key: Key('auth_footer_link'),
                 child: Text(
                   actionText,
-                  style: typography?.bodyMediumSemiBold.copyWith(
+                  style: typography.bodyMediumSemiBold.copyWith(
                     color: CoreTextColors.link,
                   ),
                 ),
