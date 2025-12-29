@@ -44,15 +44,15 @@ abstract class CostEstimationListWithData extends CostEstimationListState {
 /// State when loading cost estimations fails but we have previous data
 class CostEstimationListError extends CostEstimationListWithData {
   /// The error message describing what went wrong
-  final String message;
+  final Failure failure;
 
   const CostEstimationListError({
-    required this.message,
+    required this.failure,
     required super.estimates,
   });
 
   @override
-  List<Object?> get props => [message, estimates];
+  List<Object?> get props => [failure, estimates];
 }
 
 /// State when the cost estimations are loaded successfully with data

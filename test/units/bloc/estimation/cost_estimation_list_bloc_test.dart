@@ -77,16 +77,18 @@ void main() {
           isA<CostEstimationListLoading>(),
           isA<CostEstimationListLoaded>()
               .having((state) => state.estimates.length, 'estimates length', 2)
-              .having(
-                (state) => state.estimates[0].estimateName,
-                'first estimate name',
-                'Test Estimation 1',
-              )
-              .having(
-                (state) => state.estimates[1].estimateName,
-                'second estimate name',
-                'Test Estimation 2',
-              ),
+              .having((state) => state.estimates, 'estimates', [
+                CostEstimate.defaultEstimate(
+                  id: 'est-1',
+                  estimateName: 'Test Estimation 1',
+                  totalCost: 10000.0,
+                ),
+                CostEstimate.defaultEstimate(
+                  id: 'est-2',
+                  estimateName: 'Test Estimation 2',
+                  totalCost: 20000.0,
+                ),
+              ]),
         ],
       );
 

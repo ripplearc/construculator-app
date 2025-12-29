@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/features/estimation/domain/usecases/get_estimations_usecase.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -38,7 +39,7 @@ class CostEstimationListBloc
       (failure) {
         emit(
           CostEstimationListError(
-            message: 'Failed to load cost estimations',
+            failure: failure,
             estimates: currentEstimations,
           ),
         );
