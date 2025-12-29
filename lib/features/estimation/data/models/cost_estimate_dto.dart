@@ -4,6 +4,12 @@ import 'package:construculator/features/estimation/domain/entities/lock_status_e
 import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:equatable/equatable.dart';
 
+// Markup literals used in serialization and mapping.
+const String _kMarkupTypeOverall = 'overall';
+const String _kMarkupTypeGranular = 'granular';
+const String _kMarkupValuePercentage = 'percentage';
+const String _kMarkupValueAmount = 'amount';
+
 /// Data Transfer Object for CostEstimate entity.
 ///
 /// This DTO represents the serialized form of a cost estimate as it appears
@@ -198,23 +204,27 @@ class CostEstimateDto extends Equatable {
       estimateDescription: estimateDescription,
       creatorUserId: creatorUserId,
       markupConfiguration: MarkupConfiguration(
-        overallType: _mapMarkupType(markupType ?? 'overall'),
+        overallType: _mapMarkupType(markupType ?? _kMarkupTypeOverall),
         overallValue: MarkupValue(
-          type: _mapMarkupValueType(overallMarkupValueType ?? 'percentage'),
+          type: _mapMarkupValueType(
+            overallMarkupValueType ?? _kMarkupValuePercentage,
+          ),
           value: overallMarkupValue ?? 0,
         ),
         materialValue:
             materialMarkupValueType != null && materialMarkupValue != null
             ? MarkupValue(
                 type: _mapMarkupValueType(
-                  materialMarkupValueType ?? 'percentage',
+                  materialMarkupValueType ?? _kMarkupValuePercentage,
                 ),
                 value: materialMarkupValue ?? 0,
               )
             : null,
         laborValue: laborMarkupValueType != null && laborMarkupValue != null
             ? MarkupValue(
-                type: _mapMarkupValueType(laborMarkupValueType ?? 'percentage'),
+                type: _mapMarkupValueType(
+                  laborMarkupValueType ?? _kMarkupValuePercentage,
+                ),
                 value: laborMarkupValue ?? 0,
               )
             : null,
@@ -222,7 +232,7 @@ class CostEstimateDto extends Equatable {
             equipmentMarkupValueType != null && equipmentMarkupValue != null
             ? MarkupValue(
                 type: _mapMarkupValueType(
-                  equipmentMarkupValueType ?? 'percentage',
+                  equipmentMarkupValueType ?? _kMarkupValuePercentage,
                 ),
                 value: equipmentMarkupValue ?? 0,
               )
@@ -246,9 +256,9 @@ class CostEstimateDto extends Equatable {
     }
 
     switch (raw.toLowerCase()) {
-      case 'overall':
+      case _kMarkupTypeOverall:
         return MarkupType.overall;
-      case 'granular':
+      case _kMarkupTypeGranular:
         return MarkupType.granular;
       default:
         throw ArgumentError('Unknown MarkupType: $raw');
@@ -261,9 +271,9 @@ class CostEstimateDto extends Equatable {
     }
 
     switch (raw.toLowerCase()) {
-      case 'percentage':
+      case _kMarkupValuePercentage:
         return MarkupValueType.percentage;
-      case 'amount':
+      case _kMarkupValueAmount:
         return MarkupValueType.amount;
       default:
         throw ArgumentError('Unknown MarkupValueType: $raw');
