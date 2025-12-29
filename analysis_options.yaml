@@ -37,9 +37,7 @@ custom_lint:
 
     # TODO: Fix violations and enable. See ticket: https://ripplearc.youtrack.cloud/issue/CA-446/Todo-Resolve-Avoid-static-colors-violations-on-Construculator-app
     - avoid_static_colors: false
-
-    # TODO: Fix violations and enable. See ticket: https://ripplearc.youtrack.cloud/issue/CA-445/Todo-Resolve-Avoid-static-typography-violations-on-Construculator-app
-    - avoid_static_typography: false
+    - avoid_static_typography
 
 linter:
   # The lint rules applied to this project can be customized in the
