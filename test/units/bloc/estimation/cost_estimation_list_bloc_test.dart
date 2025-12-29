@@ -6,7 +6,8 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
-import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -38,7 +39,7 @@ void main() {
               as FakeCostEstimationRepository;
     });
 
-    tearDown(() {
+    tearDownAll(() {
       Modular.dispose();
     });
 
@@ -138,12 +139,11 @@ void main() {
 
     group('Error handling scenarios', () {
       blocTest<CostEstimationListBloc, CostEstimationListState>(
-        'should emit loading then error state when use case fails',
+        'should emit loading then error state with connection error when repository returns connection failure',
         build: () {
-          fakeRepository.shouldThrowOnGetEstimations = true;
-          fakeRepository.getEstimationsErrorMessage = 'Network error';
-          fakeRepository.getEstimationsExceptionType =
-              SupabaseExceptionType.socket;
+          fakeRepository.getEstimationsFailureType =
+              EstimationErrorType.connectionError;
+          fakeRepository.shouldReturnFailureOnGetEstimations = true;
           return bloc;
         },
         act: (bloc) => bloc.add(
@@ -153,9 +153,57 @@ void main() {
           isA<CostEstimationListLoading>(),
           isA<CostEstimationListError>()
               .having(
-                (state) => state.message,
-                'error message',
-                'Failed to load cost estimations',
+                (state) => state.failure,
+                'failure',
+                EstimationFailure(
+                  errorType: EstimationErrorType.connectionError,
+                ),
+              )
+              .having((state) => state.estimates, 'empty estimates', isEmpty),
+        ],
+      );
+
+      blocTest<CostEstimationListBloc, CostEstimationListState>(
+        'should emit loading then error state with parsing error when repository returns parsing failure',
+        build: () {
+          fakeRepository.shouldReturnFailureOnGetEstimations = true;
+          fakeRepository.getEstimationsFailureType =
+              EstimationErrorType.parsingError;
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          const CostEstimationListRefreshEvent(projectId: testProjectId),
+        ),
+        expect: () => [
+          isA<CostEstimationListLoading>(),
+          isA<CostEstimationListError>()
+              .having(
+                (state) => state.failure,
+                'failure',
+                EstimationFailure(errorType: EstimationErrorType.parsingError),
+              )
+              .having((state) => state.estimates, 'empty estimates', isEmpty),
+        ],
+      );
+
+      blocTest<CostEstimationListBloc, CostEstimationListState>(
+        'should emit loading then error state with timeout error when repository returns timeout failure',
+        build: () {
+          fakeRepository.shouldReturnFailureOnGetEstimations = true;
+          fakeRepository.getEstimationsFailureType =
+              EstimationErrorType.timeoutError;
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          const CostEstimationListRefreshEvent(projectId: testProjectId),
+        ),
+        expect: () => [
+          isA<CostEstimationListLoading>(),
+          isA<CostEstimationListError>()
+              .having(
+                (state) => state.failure,
+                'failure',
+                EstimationFailure(errorType: EstimationErrorType.timeoutError),
               )
               .having((state) => state.estimates, 'empty estimates', isEmpty),
         ],
@@ -164,7 +212,7 @@ void main() {
 
     group('Edge cases', () {
       blocTest<CostEstimationListBloc, CostEstimationListState>(
-        'should retain existing estimations if present when refresh encounters an error',
+        'should retain existing estimations when refresh returns a failure',
         build: () {
           final estimations = [
             CostEstimate.defaultEstimate(
@@ -183,7 +231,7 @@ void main() {
 
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
 
-          fakeRepository.shouldThrowOnGetEstimations = true;
+          fakeRepository.shouldReturnFailureOnGetEstimations = true;
 
           bloc.add(
             const CostEstimationListRefreshEvent(projectId: testProjectId),
@@ -195,22 +243,26 @@ void main() {
               .having((s) => s.estimates.length, 'estimates length', 1)
               .having(
                 (s) => s.estimates[0].estimateName,
-                'name',
+                'estimate name',
                 'Previous Estimation',
               ),
           isA<CostEstimationListLoading>(),
           isA<CostEstimationListError>()
               .having(
-                (e) => e.message,
-                'error message',
-                'Failed to load cost estimations',
+                (e) => e.failure,
+                'failure',
+                EstimationFailure(
+                  errorType: EstimationErrorType.unexpectedError,
+                ),
               )
               .having((e) => e.estimates.length, 'estimates length', 1)
-              .having(
-                (e) => e.estimates[0].estimateName,
-                'name',
-                'Previous Estimation',
-              ),
+              .having((e) => e.estimates, 'estimates', [
+                CostEstimate.defaultEstimate(
+                  id: 'est-prev-1',
+                  estimateName: 'Previous Estimation',
+                  totalCost: 3000.0,
+                ),
+              ]),
         ],
       );
     });

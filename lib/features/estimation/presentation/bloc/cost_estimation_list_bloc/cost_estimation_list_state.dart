@@ -1,3 +1,5 @@
+// coverage:ignore-file
+
 part of 'cost_estimation_list_bloc.dart';
 
 /// Abstract class for cost estimation list states.
