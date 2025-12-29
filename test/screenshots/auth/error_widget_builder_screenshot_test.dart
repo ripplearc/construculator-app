@@ -22,10 +22,15 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: Center(
-              child: buildErrorWidgetWithLink(
-                errorText: error,
-                linkText: link,
-                onPressed: () {},
+              child: Builder(
+                builder: (context) {
+                  return buildErrorWidgetWithLink(
+                    context: context,
+                    errorText: error,
+                    linkText: link,
+                    onPressed: () {},
+                  );
+                },
               ),
             ),
           ),
