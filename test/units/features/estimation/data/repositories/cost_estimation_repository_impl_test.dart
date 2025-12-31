@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_repository_impl.dart';
@@ -7,7 +6,8 @@ import 'package:construculator/features/estimation/domain/repositories/cost_esti
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
-import 'package:construculator/libraries/errors/exceptions.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -101,15 +101,24 @@ void main() {
 
         final result = await repository.getEstimations(testProjectId);
 
-        expect(result, hasLength(2));
-        expect(result[0], equals(estimation1.toDomain()));
-        expect(result[1], equals(estimation2.toDomain()));
+        expect(result.isRight(), isTrue);
+        result.fold((_) => fail('Expected success but got failure'), (
+          estimates,
+        ) {
+          expect(estimates, hasLength(2));
+          expect(estimates[0], equals(estimation1.toDomain()));
+          expect(estimates[1], equals(estimation2.toDomain()));
+        });
       });
 
       test('should return empty list when no estimations found', () async {
         final result = await repository.getEstimations(testProjectId);
 
-        expect(result, isEmpty);
+        expect(result.isRight(), isTrue);
+        result.fold(
+          (_) => fail('Expected success but got failure'),
+          (estimates) => expect(estimates, isEmpty),
+        );
       });
 
       test(
@@ -128,7 +137,11 @@ void main() {
 
           final result = await repository.getEstimations(testProjectId);
 
-          expect(result, isEmpty);
+          expect(result.isRight(), isTrue);
+          result.fold(
+            (_) => fail('Expected success but got failure'),
+            (estimates) => expect(estimates, isEmpty),
+          );
         },
       );
 
@@ -142,44 +155,129 @@ void main() {
         expect(methodCalls.first['projectId'], equals(testProjectId));
       });
 
-      test('should rethrow server exception when data source throws', () async {
-        fakeDataSource.shouldThrowOnGetEstimations = true;
-        fakeDataSource.getEstimationsExceptionType =
-            SupabaseExceptionType.unknown;
-        fakeDataSource.getEstimationsErrorMessage = errorMsgServer;
+      test(
+        'should return unexpected failure when data source throws server exception',
+        () async {
+          fakeDataSource.shouldThrowOnGetEstimations = true;
+          fakeDataSource.getEstimationsExceptionType =
+              SupabaseExceptionType.unknown;
+          fakeDataSource.getEstimationsErrorMessage = errorMsgServer;
 
-        await expectLater(
-          repository.getEstimations(testProjectId),
-          throwsA(isA<ServerException>()),
-        );
-      });
+          final result = await repository.getEstimations(testProjectId);
+
+          expect(result.isLeft(), isTrue);
+          result.fold(
+            (failure) => expect(failure, UnexpectedFailure()),
+            (_) => fail('Expected failure but got success'),
+          );
+        },
+      );
 
       test(
-        'should rethrow timeout exception when data source throws timeout',
+        'should return timeout error when data source throws timeout',
         () async {
           fakeDataSource.shouldThrowOnGetEstimations = true;
           fakeDataSource.getEstimationsExceptionType =
               SupabaseExceptionType.timeout;
           fakeDataSource.getEstimationsErrorMessage = errorMsgTimeout;
 
-          await expectLater(
-            repository.getEstimations(testProjectId),
-            throwsA(isA<TimeoutException>()),
+          final result = await repository.getEstimations(testProjectId);
+
+          expect(result.isLeft(), isTrue);
+          result.fold(
+            (failure) => expect(
+              failure,
+              EstimationFailure(errorType: EstimationErrorType.timeoutError),
+            ),
+            (_) => fail('Expected failure but got success'),
           );
         },
       );
 
       test(
-        'should rethrow type exception when data source throws type error',
+        'should return connection error when data source throws SocketException',
         () async {
           fakeDataSource.shouldThrowOnGetEstimations = true;
           fakeDataSource.getEstimationsExceptionType =
-              SupabaseExceptionType.type;
-          fakeDataSource.getEstimationsErrorMessage = 'Type error';
+              SupabaseExceptionType.socket;
+          fakeDataSource.getEstimationsErrorMessage = 'Connection failed';
 
-          await expectLater(
-            repository.getEstimations(testProjectId),
-            throwsA(isA<TypeError>()),
+          final result = await repository.getEstimations(testProjectId);
+
+          expect(result.isLeft(), isTrue);
+          result.fold(
+            (failure) => expect(
+              failure,
+              EstimationFailure(errorType: EstimationErrorType.connectionError),
+            ),
+            (_) => fail('Expected failure but got success'),
+          );
+        },
+      );
+
+      test(
+        'should return parsing error when data source throws FormatException',
+        () async {
+          fakeDataSource.getEstimationsErrorMessage = 'Format error';
+          fakeDataSource.getEstimationsExceptionType =
+              SupabaseExceptionType.type;
+          fakeDataSource.shouldThrowOnGetEstimations = true;
+
+          final result = await repository.getEstimations(testProjectId);
+
+          expect(result.isLeft(), isTrue);
+          result.fold((failure) {
+            expect(
+              failure,
+              EstimationFailure(errorType: EstimationErrorType.parsingError),
+            );
+          }, (_) => fail('Expected failure but got success'));
+        },
+      );
+
+      test(
+        'should return connection error when data source throws PostgrestException with connection failure',
+        () async {
+          fakeDataSource.shouldThrowOnGetEstimations = true;
+          fakeDataSource.getEstimationsExceptionType =
+              SupabaseExceptionType.postgrest;
+          fakeDataSource.postgrestErrorCode =
+              PostgresErrorCode.connectionFailure;
+          fakeDataSource.getEstimationsErrorMessage = 'Connection lost';
+
+          final result = await repository.getEstimations(testProjectId);
+
+          expect(result.isLeft(), isTrue);
+          result.fold(
+            (failure) => expect(
+              failure,
+              EstimationFailure(errorType: EstimationErrorType.connectionError),
+            ),
+            (_) => fail('Expected failure but got success'),
+          );
+        },
+      );
+
+      test(
+        'should return unexpected database error when data source throws PostgrestException with unique violation',
+        () async {
+          fakeDataSource.shouldThrowOnGetEstimations = true;
+          fakeDataSource.getEstimationsExceptionType =
+              SupabaseExceptionType.postgrest;
+          fakeDataSource.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
+          fakeDataSource.getEstimationsErrorMessage = 'Unique violation';
+
+          final result = await repository.getEstimations(testProjectId);
+
+          expect(result.isLeft(), isTrue);
+          result.fold(
+            (failure) => expect(
+              failure,
+              EstimationFailure(
+                errorType: EstimationErrorType.unexpectedDatabaseError,
+              ),
+            ),
+            (_) => fail('Expected failure but got success'),
           );
         },
       );
@@ -232,10 +330,15 @@ void main() {
 
           final result = await repository.getEstimations(testProjectId);
 
-          expect(result, hasLength(3));
-          expect(result[0], equals(estimation1.toDomain()));
-          expect(result[1], equals(estimation2.toDomain()));
-          expect(result[2], equals(estimation3.toDomain()));
+          expect(result.isRight(), isTrue);
+          result.fold((_) => fail('Expected success but got failure'), (
+            estimates,
+          ) {
+            expect(estimates, hasLength(3));
+            expect(estimates[0], equals(estimation1.toDomain()));
+            expect(estimates[1], equals(estimation2.toDomain()));
+            expect(estimates[2], equals(estimation3.toDomain()));
+          });
         },
       );
     });

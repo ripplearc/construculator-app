@@ -4,7 +4,8 @@ import 'package:construculator/features/estimation/domain/entities/cost_estimate
 import 'package:construculator/features/estimation/domain/entities/enums.dart';
 import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
-import 'package:construculator/libraries/errors/exceptions.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -61,9 +62,12 @@ void main() {
 
       final result = await fakeRepository.getEstimations(projectId);
 
-      expect(result, hasLength(2));
-      expect(result[0], equals(testEstimation1));
-      expect(result[1], equals(testEstimation2));
+      expect(result.isRight(), isTrue);
+      result.fold((_) => fail('Expected success but got failure'), (estimates) {
+        expect(estimates, hasLength(2));
+        expect(estimates[0], equals(testEstimation1));
+        expect(estimates[1], equals(testEstimation2));
+      });
     });
 
     test(
@@ -73,7 +77,11 @@ void main() {
 
         final result = await fakeRepository.getEstimations(projectId);
 
-        expect(result, isEmpty);
+        expect(result.isRight(), isTrue);
+        result.fold(
+          (_) => fail('Expected success but got failure'),
+          (estimates) => expect(estimates, isEmpty),
+        );
       },
     );
 
@@ -88,48 +96,66 @@ void main() {
         fakeRepository.shouldReturnEmptyList = true;
 
         final result = await fakeRepository.getEstimations(projectId);
-
-        expect(result, isEmpty);
+        expect(result.isRight(), isTrue);
+        result.fold(
+          (_) => fail('Expected success but got failure'),
+          (estimates) => expect(estimates, isEmpty),
+        );
       },
     );
 
     test(
-      'getEstimations should throw ServerException when shouldThrowOnGetEstimations is true',
+      'getEstimations should return unexpected failure when shouldThrowOnGetEstimations is true',
       () async {
         fakeRepository.shouldThrowOnGetEstimations = true;
         fakeRepository.getEstimationsErrorMessage = 'Custom error message';
 
-        expect(
-          () => fakeRepository.getEstimations('any-project-id'),
-          throwsA(isA<ServerException>()),
+        final result = await fakeRepository.getEstimations('any-project-id');
+
+        expect(result.isLeft(), isTrue);
+        result.fold(
+          (failure) => expect(failure, UnexpectedFailure()),
+          (_) => fail('Expected failure but got success'),
         );
       },
     );
 
     test(
-      'getEstimations should throw TimeoutException when configured with timeout type',
+      'getEstimations should return connection error when configured with socket type',
       () async {
         fakeRepository.shouldThrowOnGetEstimations = true;
         fakeRepository.getEstimationsExceptionType =
-            SupabaseExceptionType.timeout;
-        fakeRepository.getEstimationsErrorMessage = 'Request timeout';
+            SupabaseExceptionType.socket;
+        fakeRepository.getEstimationsErrorMessage = 'Connection error';
 
-        expect(
-          () => fakeRepository.getEstimations('any-project-id'),
-          throwsA(isA<TimeoutException>()),
+        final result = await fakeRepository.getEstimations('any-project-id');
+
+        expect(result.isLeft(), isTrue);
+        result.fold(
+          (failure) => expect(
+            failure,
+            EstimationFailure(errorType: EstimationErrorType.connectionError),
+          ),
+          (_) => fail('Expected failure but got success'),
         );
       },
     );
 
     test(
-      'getEstimations should throw TypeError when configured with type exception',
+      'getEstimations should return parsing error when configured with type exception',
       () async {
         fakeRepository.shouldThrowOnGetEstimations = true;
         fakeRepository.getEstimationsExceptionType = SupabaseExceptionType.type;
 
-        expect(
-          () => fakeRepository.getEstimations('any-project-id'),
-          throwsA(isA<TypeError>()),
+        final result = await fakeRepository.getEstimations('any-project-id');
+
+        expect(result.isLeft(), isTrue);
+        result.fold(
+          (failure) => expect(
+            failure,
+            EstimationFailure(errorType: EstimationErrorType.parsingError),
+          ),
+          (_) => fail('Expected failure but got success'),
         );
       },
     );
@@ -155,8 +181,11 @@ void main() {
       fakeRepository.completer!.complete();
       final result = await future;
 
-      expect(result, hasLength(1));
-      expect(result.first.id, equals(testEstimation.id));
+      expect(result.isRight(), isTrue);
+      result.fold((_) => fail('Expected success but got failure'), (estimates) {
+        expect(estimates, hasLength(1));
+        expect(estimates.first.id, equals(testEstimation.id));
+      });
     });
   });
 
@@ -178,9 +207,14 @@ void main() {
         fakeRepository.addProjectEstimation(projectId, newEstimation);
 
         final result = await fakeRepository.getEstimations(projectId);
-        expect(result, hasLength(2));
-        expect(result.any((e) => e.id == 'existing-estimation'), isTrue);
-        expect(result.any((e) => e.id == 'new-estimation'), isTrue);
+        expect(result.isRight(), isTrue);
+        result.fold((_) => fail('Expected success but got failure'), (
+          estimates,
+        ) {
+          expect(estimates, hasLength(2));
+          expect(estimates.any((e) => e.id == 'existing-estimation'), isTrue);
+          expect(estimates.any((e) => e.id == 'new-estimation'), isTrue);
+        });
       },
     );
 
@@ -194,12 +228,20 @@ void main() {
         fakeRepository.addProjectEstimation(projectId, testEstimation);
 
         final result = await fakeRepository.getEstimations(projectId);
-        expect(result, hasLength(1));
+        expect(result.isRight(), isTrue);
+        result.fold(
+          (_) => fail('Expected success but got failure'),
+          (estimates) => expect(estimates, hasLength(1)),
+        );
 
         fakeRepository.clearProjectEstimations(projectId);
 
         final clearedResult = await fakeRepository.getEstimations(projectId);
-        expect(clearedResult, isEmpty);
+        expect(clearedResult.isRight(), isTrue);
+        clearedResult.fold(
+          (_) => fail('Expected success but got failure'),
+          (estimates) => expect(estimates, isEmpty),
+        );
       },
     );
 
@@ -226,8 +268,18 @@ void main() {
         fakeRepository.clearAllData();
 
         expect(fakeRepository.getMethodCalls(), isEmpty);
-        expect(await fakeRepository.getEstimations(projectId1), isEmpty);
-        expect(await fakeRepository.getEstimations(projectId2), isEmpty);
+        final result1 = await fakeRepository.getEstimations(projectId1);
+        final result2 = await fakeRepository.getEstimations(projectId2);
+        expect(result1.isRight(), isTrue);
+        expect(result2.isRight(), isTrue);
+        result1.fold(
+          (_) => fail('Expected success but got failure'),
+          (estimates) => expect(estimates, isEmpty),
+        );
+        result2.fold(
+          (_) => fail('Expected success but got failure'),
+          (estimates) => expect(estimates, isEmpty),
+        );
       },
     );
   });
@@ -358,7 +410,11 @@ void main() {
       expect(fakeRepository.shouldDelayOperations, isFalse);
       expect(fakeRepository.completer, isNull);
       expect(fakeRepository.getMethodCalls(), isEmpty);
-      expect(await fakeRepository.getEstimations(projectId), isEmpty);
+      final result = await fakeRepository.getEstimations(projectId);
+      expect(result.isRight(), isTrue);
+      result.fold((_) => fail('Expected success but got failure'), (estimates) {
+        expect(estimates, isEmpty);
+      });
     });
   });
 

@@ -1,13 +1,15 @@
 import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/enums.dart';
 import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
-import 'package:construculator/libraries/errors/exceptions.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
-import 'package:stack_trace/stack_trace.dart';
+import 'package:dartz/dartz.dart';
 
 /// A fake implementation of [CostEstimationRepository] for testing purposes.
 class FakeCostEstimationRepository implements CostEstimationRepository {
@@ -46,7 +48,9 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
   FakeCostEstimationRepository({required this.clock});
 
   @override
-  Future<List<CostEstimate>> getEstimations(String projectId) async {
+  Future<Either<Failure, List<CostEstimate>>> getEstimations(
+    String projectId,
+  ) async {
     if (shouldDelayOperations) {
       await completer?.future;
     }
@@ -54,30 +58,53 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     _methodCalls.add({'method': 'getEstimations', 'projectId': projectId});
 
     if (shouldThrowOnGetEstimations) {
-      _throwConfiguredException(
+      return _handleConfiguredException(
         getEstimationsExceptionType,
         getEstimationsErrorMessage ?? 'Get estimations failed',
       );
     }
 
     if (shouldReturnEmptyList) {
-      return [];
+      return Right([]);
     }
 
-    return _projectEstimations[projectId] ?? [];
+    return Right(_projectEstimations[projectId] ?? []);
   }
 
-  void _throwConfiguredException(
+  Either<Failure, List<CostEstimate>> _handleConfiguredException(
     SupabaseExceptionType? exceptionType,
     String message,
   ) {
     switch (exceptionType) {
       case SupabaseExceptionType.timeout:
-        throw TimeoutException(message);
+        return Left(
+          EstimationFailure(errorType: EstimationErrorType.timeoutError),
+        );
+      case SupabaseExceptionType.socket:
+        return Left(
+          EstimationFailure(errorType: EstimationErrorType.connectionError),
+        );
+      case SupabaseExceptionType.postgrest:
+        final postgresErrorCode =
+            postgrestErrorCode ?? PostgresErrorCode.unknownError;
+        if (postgresErrorCode == PostgresErrorCode.connectionFailure ||
+            postgresErrorCode == PostgresErrorCode.unableToConnect ||
+            postgresErrorCode == PostgresErrorCode.connectionDoesNotExist) {
+          return Left(
+            EstimationFailure(errorType: EstimationErrorType.connectionError),
+          );
+        }
+        return Left(
+          EstimationFailure(
+            errorType: EstimationErrorType.unexpectedDatabaseError,
+          ),
+        );
       case SupabaseExceptionType.type:
-        throw TypeError();
+        return Left(
+          EstimationFailure(errorType: EstimationErrorType.parsingError),
+        );
       default:
-        throw ServerException(Trace.current(), Exception(message));
+        return Left(UnexpectedFailure());
     }
   }
 

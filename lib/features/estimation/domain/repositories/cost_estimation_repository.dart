@@ -1,4 +1,6 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/libraries/errors/failures.dart';
+import 'package:dartz/dartz.dart';
 
 /// Abstract repository interface for cost estimation data operations.
 ///
@@ -14,9 +16,10 @@ import 'package:construculator/features/estimation/domain/entities/cost_estimate
 abstract class CostEstimationRepository {
   /// Retrieves all cost estimates for a specific project.
   ///
-  /// Returns a [Future] that completes with a [List<CostEstimate>] containing
-  /// all cost estimates associated with the specified project ID. The estimates
-  /// include their markup configurations, lock status, and calculated totals.
+  /// Returns a [Future] that completes with an [Either] containing either
+  /// a [Failure] or a [List<CostEstimate>] associated with the specified
+  /// project ID. The estimates include their markup configurations, lock
+  /// status, and calculated totals.
   // TODO: https://ripplearc.youtrack.cloud/issue/CA-449/Cost-Estimation-Add-Pagination-for-Fetching-Estimations
-  Future<List<CostEstimate>> getEstimations(String projectId);
+  Future<Either<Failure, List<CostEstimate>>> getEstimations(String projectId);
 }

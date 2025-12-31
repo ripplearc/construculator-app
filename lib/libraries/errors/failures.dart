@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:equatable/equatable.dart';
 
 /// Failure represents specific, anticipated error conditions or alternative outcomes of an operation (e.g., a use case or repository method).
@@ -50,4 +51,14 @@ class AuthFailure extends Failure {
   /// The type of authentication error that occurred.
   final AuthErrorType errorType;
   const AuthFailure({required this.errorType});
+}
+
+/// Failure thrown when an estimation error occurs.
+class EstimationFailure extends Failure {
+  /// The type of estimation error that occurred.
+  final EstimationErrorType errorType;
+  const EstimationFailure({required this.errorType});
+
+  @override
+  List<Object?> get props => [errorType];
 }
