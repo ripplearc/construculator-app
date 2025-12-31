@@ -1,13 +1,14 @@
 import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/enums.dart';
 import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
-import 'package:construculator/libraries/errors/exceptions.dart';
-import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/either/either.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
-import 'package:stack_trace/stack_trace.dart';
 
 /// A fake implementation of [CostEstimationRepository] for testing purposes.
 class FakeCostEstimationRepository implements CostEstimationRepository {
@@ -17,18 +18,12 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
   /// Tracks cost estimation data for assertions during [getEstimations]
   final Map<String, List<CostEstimate>> _projectEstimations = {};
 
-  /// Controls whether [getEstimations] throws an exception
-  bool shouldThrowOnGetEstimations = false;
+  /// Controls whether [getEstimations] should return a [Failure].
+  bool shouldReturnFailureOnGetEstimations = false;
 
-  /// Error message for get estimations.
-  /// Used to specify the error message thrown when [getEstimations] is attempted
-  String? getEstimationsErrorMessage;
-
-  /// Used to specify the type of exception thrown when [getEstimations] is attempted
-  SupabaseExceptionType? getEstimationsExceptionType;
-
-  /// Used to specify the error code thrown during [getEstimations]
-  PostgresErrorCode? postgrestErrorCode;
+  /// Specifies the [EstimationErrorType] for the [Failure] returned by
+  /// [getEstimations] when [shouldReturnFailureOnGetEstimations] is true.
+  EstimationErrorType? getEstimationsFailureType;
 
   /// Controls whether [getEstimations] returns an empty list
   bool shouldReturnEmptyList = false;
@@ -46,39 +41,29 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
   FakeCostEstimationRepository({required this.clock});
 
   @override
-  Future<List<CostEstimate>> getEstimations(String projectId) async {
+  Future<Either<Failure, List<CostEstimate>>> getEstimations(
+    String projectId,
+  ) async {
     if (shouldDelayOperations) {
       await completer?.future;
     }
 
     _methodCalls.add({'method': 'getEstimations', 'projectId': projectId});
 
-    if (shouldThrowOnGetEstimations) {
-      _throwConfiguredException(
-        getEstimationsExceptionType,
-        getEstimationsErrorMessage ?? 'Get estimations failed',
+    if (shouldReturnFailureOnGetEstimations) {
+      return Left(
+        EstimationFailure(
+          errorType:
+              getEstimationsFailureType ?? EstimationErrorType.unexpectedError,
+        ),
       );
     }
 
     if (shouldReturnEmptyList) {
-      return [];
+      return Right([]);
     }
 
-    return _projectEstimations[projectId] ?? [];
-  }
-
-  void _throwConfiguredException(
-    SupabaseExceptionType? exceptionType,
-    String message,
-  ) {
-    switch (exceptionType) {
-      case SupabaseExceptionType.timeout:
-        throw TimeoutException(message);
-      case SupabaseExceptionType.type:
-        throw TypeError();
-      default:
-        throw ServerException(Trace.current(), Exception(message));
-    }
+    return Right(_projectEstimations[projectId] ?? []);
   }
 
   /// Adds cost estimation data for a specific project
@@ -123,10 +108,8 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
 
   /// Resets all fake configurations, clears data
   void reset() {
-    shouldThrowOnGetEstimations = false;
-    getEstimationsErrorMessage = null;
-    getEstimationsExceptionType = null;
-    postgrestErrorCode = null;
+    shouldReturnFailureOnGetEstimations = false;
+    getEstimationsFailureType = null;
     shouldReturnEmptyList = false;
     shouldDelayOperations = false;
     completer = null;

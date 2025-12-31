@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:io';
+
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
 import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:stack_trace/stack_trace.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 /// A fake implementation of [CostEstimationDataSource] for testing purposes.
 ///
@@ -27,6 +30,9 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
 
   /// Used to specify the type of exception thrown when [getEstimations] is attempted
   SupabaseExceptionType? getEstimationsExceptionType;
+
+  /// Used to specify the error code thrown during [getEstimations]
+  PostgresErrorCode? postgrestErrorCode;
 
   /// Controls whether [getEstimations] returns an empty list
   bool shouldReturnEmptyList = false;
@@ -62,8 +68,15 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
     switch (exceptionType) {
       case SupabaseExceptionType.timeout:
         throw TimeoutException(message);
+      case SupabaseExceptionType.socket:
+        throw SocketException(message);
+      case SupabaseExceptionType.postgrest:
+        throw supabase.PostgrestException(
+          code: postgrestErrorCode?.toString() ?? 'unknown',
+          message: message,
+        );
       case SupabaseExceptionType.type:
-        throw TypeError();
+        throw FormatException();
       default:
         throw ServerException(Trace.current(), Exception(message));
     }
@@ -117,6 +130,7 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
     shouldThrowOnGetEstimations = false;
     getEstimationsErrorMessage = null;
     getEstimationsExceptionType = null;
+    postgrestErrorCode = null;
     shouldReturnEmptyList = false;
 
     clearAllData();
