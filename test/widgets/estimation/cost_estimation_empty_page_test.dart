@@ -1,4 +1,5 @@
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_page.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -6,21 +7,12 @@ void main() {
   const defaultMessage =
       'No estimation added. To add an estimation please click on add button';
 
-  Widget createWidget({
-    String? message,
-    String? iconPath,
-    double? iconWidth,
-    double? iconHeight,
-    double? textWidthFactor,
-  }) {
+  Widget createWidget({String? message, double? textWidthFactor}) {
     return MaterialApp(
-      theme: ThemeData.light(),
+      theme: CoreTheme.light(),
       home: Scaffold(
         body: CostEstimationEmptyPage(
           message: message ?? defaultMessage,
-          iconPath: iconPath ?? 'assets/icons/empty_state_icon.png',
-          iconWidth: iconWidth,
-          iconHeight: iconHeight,
           textWidthFactor: textWidthFactor,
         ),
       ),
@@ -36,34 +28,27 @@ void main() {
       expect(find.text(defaultMessage), findsOneWidget);
     });
 
+    testWidgets('renders the empty estimation icon', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(createWidget());
+      await tester.pumpAndSettle();
+
+      final iconFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is CoreIconWidget &&
+            widget.icon == CoreIcons.emptyEstimation,
+      );
+
+      expect(iconFinder, findsOneWidget);
+    });
+
     testWidgets('accepts custom message', (WidgetTester tester) async {
       const customMessage = 'Custom empty state message';
       await tester.pumpWidget(createWidget(message: customMessage));
       await tester.pumpAndSettle();
 
       expect(find.text(customMessage), findsOneWidget);
-    });
-
-    testWidgets('accepts custom icon path', (WidgetTester tester) async {
-      const customIconPath = 'assets/icons/empty_state_icon.png';
-      await tester.pumpWidget(createWidget(iconPath: customIconPath));
-      await tester.pumpAndSettle();
-
-      final imageWidget = tester.widget<Image>(find.byType(Image));
-      expect(imageWidget.image, isA<AssetImage>());
-    });
-
-    testWidgets('accepts custom icon dimensions', (WidgetTester tester) async {
-      const customWidth = 200.0;
-      const customHeight = 150.0;
-      await tester.pumpWidget(
-        createWidget(iconWidth: customWidth, iconHeight: customHeight),
-      );
-      await tester.pumpAndSettle();
-
-      final imageWidget = tester.widget<Image>(find.byType(Image));
-      expect(imageWidget.width, equals(customWidth));
-      expect(imageWidget.height, equals(customHeight));
     });
 
     testWidgets('accepts custom textWidthFactor', (WidgetTester tester) async {

@@ -5,6 +5,7 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 void main() {
   group('CostEstimationTile', () {
@@ -34,6 +35,7 @@ void main() {
     }) {
       estimation ??= testEstimation;
       return MaterialApp(
+        theme: CoreTheme.light(),
         home: Scaffold(
           body: CostEstimationTile(
             estimation: estimation,

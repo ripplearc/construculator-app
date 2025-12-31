@@ -11,9 +11,6 @@ void main() {
   Future<void> pumpCostEstimationEmptyPage({
     required WidgetTester tester,
     String? message,
-    String? iconPath,
-    double? iconWidth,
-    double? iconHeight,
     double? textWidthFactor,
   }) async {
     await tester.pumpWidget(
@@ -24,9 +21,6 @@ void main() {
             message:
                 message ??
                 'No estimation added. To add an estimation please click on add button',
-            iconPath: iconPath ?? 'assets/icons/empty_state_icon.png',
-            iconWidth: iconWidth,
-            iconHeight: iconHeight,
             textWidthFactor: textWidthFactor,
           ),
         ),
@@ -52,25 +46,6 @@ void main() {
         find.byType(CostEstimationEmptyPage),
         matchesGoldenFile(
           'goldens/cost_estimation_empty_page/${size.width}x${size.height}/cost_estimation_empty_page_custom_message.png',
-        ),
-      );
-    });
-
-    testWidgets('renders with custom icon dimensions correctly', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      await pumpCostEstimationEmptyPage(
-        tester: tester,
-        iconWidth: 200.0,
-        iconHeight: 160.0,
-      );
-
-      await expectLater(
-        find.byType(CostEstimationEmptyPage),
-        matchesGoldenFile(
-          'goldens/cost_estimation_empty_page/${size.width}x${size.height}/cost_estimation_empty_page_custom_icon_size.png',
         ),
       );
     });
