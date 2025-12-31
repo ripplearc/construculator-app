@@ -1,0 +1,38 @@
+name: Sync Docs to Wiki
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/**"
+      - ".github/workflows/wiki-sync.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  sync-docs-to-wiki:
+    name: Sync Documentation to Wiki
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Deploy to Wiki
+        uses: jamesives/github-pages-deploy-action@v4
+        with:
+          repository-name: ${{ github.repository }}.wiki
+
+          branch: master
+
+          folder: docs
+
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+          clean: true
+
+          single-commit: true
