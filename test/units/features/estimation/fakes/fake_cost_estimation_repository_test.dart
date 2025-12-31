@@ -6,7 +6,6 @@ import 'package:construculator/features/estimation/domain/entities/lock_status_e
 import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/errors/failures.dart';
-import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -107,14 +106,18 @@ void main() {
     test(
       'getEstimations should return unexpected failure when shouldThrowOnGetEstimations is true',
       () async {
-        fakeRepository.shouldThrowOnGetEstimations = true;
-        fakeRepository.getEstimationsErrorMessage = 'Custom error message';
+        fakeRepository.shouldReturnFailureOnGetEstimations = true;
+        fakeRepository.getEstimationsFailureType =
+            EstimationErrorType.unexpectedError;
 
         final result = await fakeRepository.getEstimations('any-project-id');
 
         expect(result.isLeft(), isTrue);
         result.fold(
-          (failure) => expect(failure, UnexpectedFailure()),
+          (failure) => expect(
+            failure,
+            EstimationFailure(errorType: EstimationErrorType.unexpectedError),
+          ),
           (_) => fail('Expected failure but got success'),
         );
       },
@@ -123,10 +126,9 @@ void main() {
     test(
       'getEstimations should return connection error when configured with socket type',
       () async {
-        fakeRepository.shouldThrowOnGetEstimations = true;
-        fakeRepository.getEstimationsExceptionType =
-            SupabaseExceptionType.socket;
-        fakeRepository.getEstimationsErrorMessage = 'Connection error';
+        fakeRepository.shouldReturnFailureOnGetEstimations = true;
+        fakeRepository.getEstimationsFailureType =
+            EstimationErrorType.connectionError;
 
         final result = await fakeRepository.getEstimations('any-project-id');
 
@@ -144,8 +146,9 @@ void main() {
     test(
       'getEstimations should return parsing error when configured with type exception',
       () async {
-        fakeRepository.shouldThrowOnGetEstimations = true;
-        fakeRepository.getEstimationsExceptionType = SupabaseExceptionType.type;
+        fakeRepository.shouldReturnFailureOnGetEstimations = true;
+        fakeRepository.getEstimationsFailureType =
+            EstimationErrorType.parsingError;
 
         final result = await fakeRepository.getEstimations('any-project-id');
 
@@ -381,20 +384,18 @@ void main() {
       );
       fakeRepository.addProjectEstimation(projectId, testEstimation);
       await fakeRepository.getEstimations(projectId);
-      fakeRepository.shouldThrowOnGetEstimations = true;
-      fakeRepository.getEstimationsErrorMessage = 'Test error';
-      fakeRepository.getEstimationsExceptionType =
-          SupabaseExceptionType.timeout;
+      fakeRepository.shouldReturnFailureOnGetEstimations = true;
+      fakeRepository.getEstimationsFailureType =
+          EstimationErrorType.timeoutError;
       fakeRepository.shouldReturnEmptyList = true;
       fakeRepository.shouldDelayOperations = true;
       fakeRepository.completer = Completer();
       fakeRepository.completer!.complete();
 
-      expect(fakeRepository.shouldThrowOnGetEstimations, isTrue);
-      expect(fakeRepository.getEstimationsErrorMessage, equals('Test error'));
+      expect(fakeRepository.shouldReturnFailureOnGetEstimations, isTrue);
       expect(
-        fakeRepository.getEstimationsExceptionType,
-        equals(SupabaseExceptionType.timeout),
+        fakeRepository.getEstimationsFailureType,
+        equals(EstimationErrorType.timeoutError),
       );
       expect(fakeRepository.shouldReturnEmptyList, isTrue);
       expect(fakeRepository.shouldDelayOperations, isTrue);
@@ -403,9 +404,8 @@ void main() {
 
       fakeRepository.reset();
 
-      expect(fakeRepository.shouldThrowOnGetEstimations, isFalse);
-      expect(fakeRepository.getEstimationsErrorMessage, isNull);
-      expect(fakeRepository.getEstimationsExceptionType, isNull);
+      expect(fakeRepository.shouldReturnFailureOnGetEstimations, isFalse);
+      expect(fakeRepository.getEstimationsFailureType, isNull);
       expect(fakeRepository.shouldReturnEmptyList, isFalse);
       expect(fakeRepository.shouldDelayOperations, isFalse);
       expect(fakeRepository.completer, isNull);

@@ -334,10 +334,11 @@ void main() {
           result.fold((_) => fail('Expected success but got failure'), (
             estimates,
           ) {
-            expect(estimates, hasLength(3));
-            expect(estimates[0], equals(estimation1.toDomain()));
-            expect(estimates[1], equals(estimation2.toDomain()));
-            expect(estimates[2], equals(estimation3.toDomain()));
+            expect(estimates, [
+              estimation1.toDomain(),
+              estimation2.toDomain(),
+              estimation3.toDomain(),
+            ]);
           });
         },
       );

@@ -5,11 +5,10 @@ import 'package:construculator/features/estimation/domain/entities/enums.dart';
 import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
+import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/errors/failures.dart';
-import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
-import 'package:dartz/dartz.dart';
 
 /// A fake implementation of [CostEstimationRepository] for testing purposes.
 class FakeCostEstimationRepository implements CostEstimationRepository {
@@ -19,18 +18,12 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
   /// Tracks cost estimation data for assertions during [getEstimations]
   final Map<String, List<CostEstimate>> _projectEstimations = {};
 
-  /// Controls whether [getEstimations] throws an exception
-  bool shouldThrowOnGetEstimations = false;
+  /// Controls whether [getEstimations] should return a [Failure].
+  bool shouldReturnFailureOnGetEstimations = false;
 
-  /// Error message for get estimations.
-  /// Used to specify the error message thrown when [getEstimations] is attempted
-  String? getEstimationsErrorMessage;
-
-  /// Used to specify the type of exception thrown when [getEstimations] is attempted
-  SupabaseExceptionType? getEstimationsExceptionType;
-
-  /// Used to specify the error code thrown during [getEstimations]
-  PostgresErrorCode? postgrestErrorCode;
+  /// Specifies the [EstimationErrorType] for the [Failure] returned by
+  /// [getEstimations] when [shouldReturnFailureOnGetEstimations] is true.
+  EstimationErrorType? getEstimationsFailureType;
 
   /// Controls whether [getEstimations] returns an empty list
   bool shouldReturnEmptyList = false;
@@ -57,10 +50,12 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
 
     _methodCalls.add({'method': 'getEstimations', 'projectId': projectId});
 
-    if (shouldThrowOnGetEstimations) {
-      return _handleConfiguredException(
-        getEstimationsExceptionType,
-        getEstimationsErrorMessage ?? 'Get estimations failed',
+    if (shouldReturnFailureOnGetEstimations) {
+      return Left(
+        EstimationFailure(
+          errorType:
+              getEstimationsFailureType ?? EstimationErrorType.unexpectedError,
+        ),
       );
     }
 
@@ -69,43 +64,6 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     }
 
     return Right(_projectEstimations[projectId] ?? []);
-  }
-
-  Either<Failure, List<CostEstimate>> _handleConfiguredException(
-    SupabaseExceptionType? exceptionType,
-    String message,
-  ) {
-    switch (exceptionType) {
-      case SupabaseExceptionType.timeout:
-        return Left(
-          EstimationFailure(errorType: EstimationErrorType.timeoutError),
-        );
-      case SupabaseExceptionType.socket:
-        return Left(
-          EstimationFailure(errorType: EstimationErrorType.connectionError),
-        );
-      case SupabaseExceptionType.postgrest:
-        final postgresErrorCode =
-            postgrestErrorCode ?? PostgresErrorCode.unknownError;
-        if (postgresErrorCode == PostgresErrorCode.connectionFailure ||
-            postgresErrorCode == PostgresErrorCode.unableToConnect ||
-            postgresErrorCode == PostgresErrorCode.connectionDoesNotExist) {
-          return Left(
-            EstimationFailure(errorType: EstimationErrorType.connectionError),
-          );
-        }
-        return Left(
-          EstimationFailure(
-            errorType: EstimationErrorType.unexpectedDatabaseError,
-          ),
-        );
-      case SupabaseExceptionType.type:
-        return Left(
-          EstimationFailure(errorType: EstimationErrorType.parsingError),
-        );
-      default:
-        return Left(UnexpectedFailure());
-    }
   }
 
   /// Adds cost estimation data for a specific project
@@ -150,10 +108,8 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
 
   /// Resets all fake configurations, clears data
   void reset() {
-    shouldThrowOnGetEstimations = false;
-    getEstimationsErrorMessage = null;
-    getEstimationsExceptionType = null;
-    postgrestErrorCode = null;
+    shouldReturnFailureOnGetEstimations = false;
+    getEstimationsFailureType = null;
     shouldReturnEmptyList = false;
     shouldDelayOperations = false;
     completer = null;

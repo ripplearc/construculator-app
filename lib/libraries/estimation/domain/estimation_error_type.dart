@@ -11,4 +11,5 @@ enum EstimationErrorType {
   parsingError,
   timeoutError,
   unexpectedDatabaseError,
+  unexpectedError,
 }

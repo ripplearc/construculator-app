@@ -1,6 +1,6 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/libraries/either/interfaces/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
-import 'package:dartz/dartz.dart';
 
 /// Abstract repository interface for cost estimation data operations.
 ///
