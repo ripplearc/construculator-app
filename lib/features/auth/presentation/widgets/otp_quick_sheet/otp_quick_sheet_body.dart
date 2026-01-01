@@ -32,6 +32,7 @@ class OtpQuickSheetBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typography = Theme.of(context).coreTypography;
     return Container(
       decoration: const BoxDecoration(
         color: CoreBackgroundColors.pageBackground,
@@ -60,18 +61,18 @@ class OtpQuickSheetBody extends StatelessWidget {
             const SizedBox(height: CoreSpacing.space6),
             Text(
               '${AppLocalizations.of(context)?.authenticationCodeTitle}',
-              style: CoreTypography.headlineMediumSemiBold(),
+              style: typography.headlineMediumSemiBold,
             ),
             const SizedBox(height: CoreSpacing.space2),
             RichText(
               text: TextSpan(
-                style: TextStyle(
+                style: typography.bodyLargeRegular.copyWith(
                   fontFamily: Theme.of(context).textTheme.bodyLarge?.fontFamily,
                 ),
                 children: [
                   TextSpan(
                     text: note,
-                    style: CoreTypography.bodyLargeRegular(),
+                    style: typography.bodyLargeRegular,
                   ),
                   WidgetSpan(
                     child: GestureDetector(
@@ -83,7 +84,7 @@ class OtpQuickSheetBody extends StatelessWidget {
                           SizedBox(width: 4),
                           Text(
                             contact,
-                            style: CoreTypography.bodyLargeSemiBold(
+                            style: typography.bodyLargeSemiBold.copyWith(
                               color: CoreTextColors.link,
                             ),
                           ),
@@ -119,7 +120,9 @@ class OtpQuickSheetBody extends StatelessWidget {
             Text.rich(
               TextSpan(
                 text: '${AppLocalizations.of(context)?.didNotReceiveCode} ',
-                style: TextStyle(color: CoreTextColors.dark),
+                style: typography.bodyMediumRegular.copyWith(
+                  color: CoreTextColors.dark,
+                ),
 
                 children: [
                   WidgetSpan(
@@ -129,9 +132,8 @@ class OtpQuickSheetBody extends StatelessWidget {
                         isResending
                             ? '${AppLocalizations.of(context)?.resendingButtonLabel}'
                             : '${AppLocalizations.of(context)?.resendButton}',
-                        style: TextStyle(
+                        style: typography.bodyMediumSemiBold.copyWith(
                           color: CoreTextColors.link,
-                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),

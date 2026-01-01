@@ -1,5 +1,5 @@
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 
 class ForgotPasswordHeader extends StatelessWidget {
   final String title;
@@ -12,13 +12,15 @@ class ForgotPasswordHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typography = Theme.of(context).coreTypography;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: CoreTypography.headlineLargeSemiBold()),
+        Text(title, style: typography.headlineLargeSemiBold),
         const SizedBox(height: CoreSpacing.space2),
-        Text(description, style: CoreTypography.bodyLargeRegular()),
+        Text(description, style: typography.bodyLargeRegular),
       ],
     );
   }

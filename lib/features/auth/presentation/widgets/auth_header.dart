@@ -21,6 +21,7 @@ class AuthHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typography = Theme.of(context).coreTypography;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -28,14 +29,14 @@ class AuthHeader extends StatelessWidget {
         Text(
           key: Key('text_title'),
           title,
-          style: CoreTypography.headlineLargeSemiBold(),
+          style: typography.headlineLargeSemiBold,
         ),
         const SizedBox(height: CoreSpacing.space2),
         contact != null
             ? RichText(
                 key: Key('rich_text_description'),
                 text: TextSpan(
-                  style: TextStyle(
+                  style: typography.bodyLargeRegular.copyWith(
                     fontFamily: Theme.of(
                       context,
                     ).textTheme.bodyLarge?.fontFamily,
@@ -43,7 +44,7 @@ class AuthHeader extends StatelessWidget {
                   children: [
                     TextSpan(
                       text: description,
-                      style: CoreTypography.bodyLargeRegular(),
+                      style: typography.bodyLargeRegular,
                     ),
                     WidgetSpan(
                       child: GestureDetector(
@@ -54,7 +55,7 @@ class AuthHeader extends StatelessWidget {
                           children: [
                             Text(
                               '$contact',
-                              style: CoreTypography.bodyLargeSemiBold(
+                              style: typography.bodyLargeSemiBold.copyWith(
                                 color: CoreTextColors.link,
                               ),
                             ),
@@ -77,7 +78,7 @@ class AuthHeader extends StatelessWidget {
             : Text(
                 key: Key('text_description'),
                 description,
-                style: CoreTypography.bodyLargeRegular(),
+                style: typography.bodyLargeRegular,
               ),
       ],
     );

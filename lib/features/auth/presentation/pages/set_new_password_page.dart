@@ -144,6 +144,7 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage>
           }
         },
         builder: (context, state) {
+          final typography = Theme.of(context).coreTypography;
           return SingleChildScrollView(
             padding: EdgeInsets.symmetric(
               horizontal: CoreSpacing.space6,
@@ -154,12 +155,12 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage>
               children: [
                 Text(
                   '${l10n?.setNewPasswordTitle}',
-                  style: CoreTypography.headlineLargeSemiBold(),
+                  style: typography.headlineLargeSemiBold,
                 ),
                 const SizedBox(height: CoreSpacing.space2),
                 Text(
                   '${l10n?.setNewPasswordDescription}',
-                  style: CoreTypography.bodyLargeRegular().copyWith(
+                  style: typography.bodyLargeRegular.copyWith(
                     color: Colors.grey[700],
                   ),
                 ),

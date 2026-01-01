@@ -13,6 +13,9 @@ void main() {
   }) async {
     await tester.pumpWidget(
       MaterialApp(
+        theme: ThemeData(
+          extensions: <ThemeExtension<dynamic>>[TypographyExtension.create()],
+        ),
         home: Scaffold(
           body: AuthFooter(
             text: text,
@@ -36,9 +39,13 @@ void main() {
 
         final textWidget = tester.widget<Text>(actionTextFinder);
         expect(textWidget.style!.color, CoreTextColors.link);
+
+        final context = tester.element(find.byType(AuthFooter));
+        final typography = Theme.of(context).coreTypography;
+
         expect(
           textWidget.style!.fontWeight,
-          CoreTypography.bodyMediumSemiBold().fontWeight,
+          typography.bodyMediumSemiBold.fontWeight,
         );
       },
     );

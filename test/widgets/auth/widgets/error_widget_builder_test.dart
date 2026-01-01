@@ -13,13 +13,21 @@ void main() {
     required VoidCallback onPressed,
   }) {
     return MaterialApp(
+      theme: ThemeData(
+        extensions: <ThemeExtension<dynamic>>[TypographyExtension.create()],
+      ),
       home: Scaffold(
-        body: Center(
-          child: buildErrorWidgetWithLink(
-            errorText: error,
-            linkText: link,
-            onPressed: onPressed,
-          ),
+        body: Builder(
+          builder: (context) {
+            return Center(
+              child: buildErrorWidgetWithLink(
+                context: context,
+                errorText: error,
+                linkText: link,
+                onPressed: onPressed,
+              ),
+            );
+          },
         ),
       ),
     );
@@ -38,9 +46,14 @@ void main() {
 
       final textWidget = tester.widget<Text>(errorFinder);
       expect(textWidget.style!.color, CoreTextColors.error);
+
+      final context = tester.element(find.byType(Center));
+      final typography =
+          Theme.of(context).coreTypography;
+
       expect(
         textWidget.style!.fontWeight,
-        CoreTypography.bodySmallRegular().fontWeight,
+        typography.bodySmallRegular.fontWeight,
       );
     });
 
@@ -56,9 +69,13 @@ void main() {
 
       final textWidget = tester.widget<Text>(linkFinder);
       expect(textWidget.style!.color, CoreTextColors.link);
+
+      final context = tester.element(find.byType(Center));
+      final typography = Theme.of(context).coreTypography;
+
       expect(
         textWidget.style!.fontWeight,
-        CoreTypography.bodySmallSemiBold().fontWeight,
+        typography.bodySmallSemiBold.fontWeight,
       );
     });
 
