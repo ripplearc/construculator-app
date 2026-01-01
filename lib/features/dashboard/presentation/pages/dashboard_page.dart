@@ -97,6 +97,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 centerAlign: true,
               ),
               const SizedBox(height: 16),
+              //TODO: https://ripplearc.youtrack.cloud/issue/CA-108/Dashboard-Show-Recent-Cost-Estimations
               CoreButton(
                 onPressed: () {
                   _router.navigate(

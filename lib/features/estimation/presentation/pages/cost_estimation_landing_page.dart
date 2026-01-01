@@ -5,6 +5,7 @@ import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_st
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_page.dart';
@@ -24,7 +25,8 @@ class CostEstimationLandingPage extends StatefulWidget {
       _CostEstimationLandingPageState();
 }
 
-class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
+class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
+    with LocalizationMixin {
   late final AuthBloc _authBloc;
   String userAvatarUrl = '';
 
@@ -37,7 +39,6 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     return BlocListener<AuthBloc, AuthState>(
       bloc: _authBloc,
       listener: (context, state) {
@@ -52,6 +53,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
         builder: (context, state) {
           if (state is AuthLoadUnauthenticated) {
             return const Scaffold(
+              // TODO: https://ripplearc.youtrack.cloud/issue/CA-458/CostEstimation-Refactor-Loading-Indicators-in-Construculator-App
               body: Center(child: CircularProgressIndicator()),
             );
           }
@@ -73,12 +75,12 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
     );
   }
 
-  Widget _buildBody(AppLocalizations? l10n) {
+  Widget _buildBody(AppLocalizations l10n) {
     return BlocConsumer<CostEstimationListBloc, CostEstimationListState>(
       listener: (context, state) {
         if (state is CostEstimationListError) {
           final message = _mapFailureToMessage(l10n, state.failure);
-          CoreToast.showError(context, message, l10n?.closeLabel ?? '');
+          CoreToast.showError(context, message, l10n.closeLabel);
         }
       },
       builder: (context, state) {
@@ -94,8 +96,9 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
     );
   }
 
-  Widget _buildContent(CostEstimationListState state, AppLocalizations? l10n) {
+  Widget _buildContent(CostEstimationListState state, AppLocalizations l10n) {
     if (state is CostEstimationListLoading) {
+      // TODO: https://ripplearc.youtrack.cloud/issue/CA-458/CostEstimation-Refactor-Loading-Indicators-in-Construculator-App
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -110,12 +113,8 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
     return const Center(child: CircularProgressIndicator());
   }
 
-  Widget _buildEmptyState(AppLocalizations? l10n) {
-    return CostEstimationEmptyPage(
-      message:
-          l10n?.costEstimationEmptyMessage ??
-          'No estimation added. To add an estimation please click on add button',
-    );
+  Widget _buildEmptyState(AppLocalizations l10n) {
+    return CostEstimationEmptyPage(message: l10n.costEstimationEmptyMessage);
   }
 
   Widget _buildEstimationsList(List<CostEstimate> estimations) {

@@ -139,12 +139,10 @@ void main() {
     ]);
   }
 
-  /// Helper function to add cost estimation data to the fake Supabase cost_estimates table
   void addCostEstimationData(Map<String, dynamic> estimationData) {
     fakeSupabase.addTableData('cost_estimates', [estimationData]);
   }
 
-  /// Helper function to add multiple cost estimations to the fake Supabase cost_estimates table
   void addMultipleCostEstimations(List<Map<String, dynamic>> estimations) {
     fakeSupabase.addTableData('cost_estimates', estimations);
   }
