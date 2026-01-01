@@ -36,9 +36,8 @@ class EstimationModule extends Module {
 
       return BlocProvider<CostEstimationListBloc>(
         create: (context) {
-          final bloc = Modular.get<CostEstimationListBloc>();
-          bloc.add(CostEstimationListRefreshEvent(projectId: projectId));
-          return bloc;
+          return Modular.get<CostEstimationListBloc>()
+            ..add(CostEstimationListRefreshEvent(projectId: projectId));
         },
         child: CostEstimationLandingPage(projectId: projectId),
       );
