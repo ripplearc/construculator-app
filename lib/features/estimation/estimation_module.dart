@@ -4,6 +4,9 @@ import 'package:construculator/features/estimation/data/data_source/interfaces/c
 import 'package:construculator/features/estimation/data/data_source/remote_cost_estimation_data_source.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_repository_impl.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
+import 'package:construculator/features/estimation/domain/usecases/get_estimations_usecase.dart';
+import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
+
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
@@ -40,8 +43,17 @@ class EstimationModule extends Module {
         supabaseWrapper: appBootstrap.supabaseWrapper,
       ),
     );
+
     i.addLazySingleton<CostEstimationRepository>(
       () => CostEstimationRepositoryImpl(dataSource: i.get()),
+    );
+
+    i.addLazySingleton<GetEstimationsUseCase>(
+      () => GetEstimationsUseCase(i.get()),
+    );
+
+    i.add<CostEstimationListBloc>(
+      () => CostEstimationListBloc(getEstimationsUseCase: i.get()),
     );
   }
 
