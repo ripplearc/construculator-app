@@ -21,7 +21,6 @@ void main() {
             message:
                 message ??
                 'No estimation added. To add an estimation please click on add button',
-            textWidthFactor: textWidthFactor,
           ),
         ),
       ),
@@ -46,21 +45,6 @@ void main() {
         find.byType(CostEstimationEmptyPage),
         matchesGoldenFile(
           'goldens/cost_estimation_empty_page/${size.width}x${size.height}/cost_estimation_empty_page_custom_message.png',
-        ),
-      );
-    });
-
-    testWidgets('renders with custom text width factor correctly', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      await pumpCostEstimationEmptyPage(tester: tester, textWidthFactor: 0.5);
-
-      await expectLater(
-        find.byType(CostEstimationEmptyPage),
-        matchesGoldenFile(
-          'goldens/cost_estimation_empty_page/${size.width}x${size.height}/cost_estimation_empty_page_custom_text_width.png',
         ),
       );
     });

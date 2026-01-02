@@ -3,13 +3,8 @@ import 'package:flutter/material.dart';
 
 class CostEstimationEmptyPage extends StatelessWidget {
   final String message;
-  final double? textWidthFactor;
 
-  const CostEstimationEmptyPage({
-    super.key,
-    required this.message,
-    this.textWidthFactor = 0.7,
-  });
+  const CostEstimationEmptyPage({super.key, required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +15,7 @@ class CostEstimationEmptyPage extends StatelessWidget {
           CoreIconWidget(icon: CoreIcons.emptyEstimation),
           const SizedBox(height: 24),
           SizedBox(
-            width: MediaQuery.of(context).size.width * (textWidthFactor ?? 0.7),
+            width: MediaQuery.of(context).size.width * 0.7,
             child: Text(
               message,
               textAlign: TextAlign.center,

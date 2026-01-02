@@ -7,14 +7,11 @@ void main() {
   const defaultMessage =
       'No estimation added. To add an estimation please click on add button';
 
-  Widget createWidget({String? message, double? textWidthFactor}) {
+  Widget createWidget({String? message}) {
     return MaterialApp(
       theme: CoreTheme.light(),
       home: Scaffold(
-        body: CostEstimationEmptyPage(
-          message: message ?? defaultMessage,
-          textWidthFactor: textWidthFactor,
-        ),
+        body: CostEstimationEmptyPage(message: message ?? defaultMessage),
       ),
     );
   }
@@ -49,22 +46,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(customMessage), findsOneWidget);
-    });
-
-    testWidgets('accepts custom textWidthFactor', (WidgetTester tester) async {
-      const customTextWidthFactor = 0.5;
-      await tester.pumpWidget(
-        createWidget(textWidthFactor: customTextWidthFactor),
-      );
-      await tester.pumpAndSettle();
-
-      final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));
-      final textContainer = sizedBoxes.last;
-      final screenWidth =
-          tester.view.physicalSize.width / tester.view.devicePixelRatio;
-      final expectedWidth = screenWidth * customTextWidthFactor;
-
-      expect(textContainer.width, equals(expectedWidth));
     });
   });
 }
