@@ -16,7 +16,6 @@ import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -81,13 +80,8 @@ void main() {
           },
         ),
         locale: const Locale('en'),
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: const [Locale('en')],
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
       ),
     );
   }
@@ -110,7 +104,10 @@ void main() {
     await tester.pump();
   }
 
-  Future<void> enterConfirmPassword(WidgetTester tester, String password) async {
+  Future<void> enterConfirmPassword(
+    WidgetTester tester,
+    String password,
+  ) async {
     final confirmPasswordField = find.ancestor(
       of: find.text(l10n().confirmPasswordLabel),
       matching: find.byType(TextField),
@@ -141,13 +138,15 @@ void main() {
       await renderPage(tester);
 
       expect(find.textContaining(l10n().newPasswordLabel), findsWidgets);
-      
+
       expect(find.textContaining(l10n().confirmPasswordLabel), findsWidgets);
-      
+
       expect(find.text(l10n().setPasswordButton), findsOneWidget);
     });
 
-    testWidgets('can toggle password visibility for both fields', (tester) async {
+    testWidgets('can toggle password visibility for both fields', (
+      tester,
+    ) async {
       await renderPage(tester);
 
       expect(isPasswordVisible(tester, l10n().newPasswordLabel), isFalse);
@@ -168,18 +167,15 @@ void main() {
 
     testWidgets('sees error for weak password', (tester) async {
       await renderPage(tester);
-      
+
       await enterNewPassword(tester, '123');
 
-      expect(
-        find.textContaining(l10n().passwordTooShortError),
-        findsWidgets,
-      );
+      expect(find.textContaining(l10n().passwordTooShortError), findsWidgets);
     });
 
     testWidgets('sees error when passwords do not match', (tester) async {
       await renderPage(tester);
-      
+
       await enterNewPassword(tester, 'Password123!');
       await enterConfirmPassword(tester, 'Password321!');
 
@@ -189,15 +185,17 @@ void main() {
       );
     });
 
-    testWidgets('can set valid matching passwords and navigate to dashboard', (tester) async {
+    testWidgets('can set valid matching passwords and navigate to dashboard', (
+      tester,
+    ) async {
       const email = 'email@example.com';
       fakeSupabase.setCurrentUser(createFakeUser(email));
-      
+
       await renderPage(tester, email: email);
-      
+
       await enterNewPassword(tester, '@Password123!');
       await enterConfirmPassword(tester, '@Password123!');
-      
+
       await tapSetPasswordButton(tester);
 
       expect(
@@ -214,12 +212,12 @@ void main() {
 
     testWidgets('sees error when backend update fails', (tester) async {
       fakeSupabase.shouldThrowOnUpdate = true;
-      
+
       await renderPage(tester);
-      
+
       await enterNewPassword(tester, 'Password123!');
       await enterConfirmPassword(tester, 'Password123!');
-      
+
       await tapSetPasswordButton(tester);
 
       expect(find.byKey(const Key('toast_close_button')), findsOneWidget);
