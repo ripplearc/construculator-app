@@ -18,7 +18,6 @@ import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -86,13 +85,8 @@ void main() {
     return MaterialApp.router(
       routerConfig: Modular.routerConfig,
       locale: const Locale('en'),
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [Locale('en')],
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) {
         buildContext = context;
         return child!;
@@ -104,6 +98,7 @@ void main() {
 
   Future<void> pumpAppAtRoute(WidgetTester tester, String route) async {
     await tester.pumpWidget(makeApp());
+    await tester.pumpAndSettle();
     Modular.to.navigate(route);
     await tester.pumpAndSettle();
   }
@@ -147,22 +142,6 @@ void main() {
     fakeSupabase.addTableData('cost_estimates', estimations);
   }
 
-  group('Route validation', () {
-    testWidgets('renders empty screen when projectId is missing', (
-      tester,
-    ) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
-
-      await pumpAppAtRoute(tester, '$fullEstimationLandingRoute/');
-
-      expect(find.byType(SizedBox), findsOneWidget);
-      expect(find.byType(CostEstimationEmptyPage), findsNothing);
-    });
-  });
-
   group('Auth and header', () {
     testWidgets('shows content when authenticated with user profile', (
       tester,
@@ -173,6 +152,7 @@ void main() {
       );
 
       await pumpAppAtRoute(tester, testEstimationRoute);
+      await tester.pumpAndSettle();
 
       expect(find.byType(CircularProgressIndicator), findsNothing);
 
@@ -354,6 +334,22 @@ void main() {
       expect(find.text('Initial Estimation'), findsOneWidget);
       expect(find.text('Updated Estimation'), findsOneWidget);
       expect(find.byType(CostEstimationTile), findsNWidgets(2));
+    });
+  });
+
+  group('Route validation', () {
+    testWidgets('renders empty screen when projectId is missing', (
+      tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      await pumpAppAtRoute(tester, '$fullEstimationLandingRoute/');
+
+      expect(find.byType(SizedBox), findsOneWidget);
+      expect(find.byType(CostEstimationEmptyPage), findsNothing);
     });
   });
 }

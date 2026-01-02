@@ -84,6 +84,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
         }
       },
       builder: (context, state) {
+        // TODO: https://ripplearc.youtrack.cloud/issue/CA-459/CoreUI-Implement-Custom-Branded-Pull-to-Refresh
         return RefreshIndicator(
           onRefresh: () async {
             BlocProvider.of<CostEstimationListBloc>(
@@ -134,17 +135,17 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
     );
   }
 
-  String? _mapFailureToMessage(AppLocalizations? l10n, Failure failure) {
+  String? _mapFailureToMessage(AppLocalizations l10n, Failure failure) {
     if (failure is! EstimationFailure) {
-      return l10n?.unexpectedErrorMessage;
+      return l10n.unexpectedErrorMessage;
     }
     switch (failure.errorType) {
       case EstimationErrorType.timeoutError:
-        return l10n?.timeoutError;
+        return l10n.timeoutError;
       case EstimationErrorType.connectionError:
-        return l10n?.connectionError;
+        return l10n.connectionError;
       default:
-        return l10n?.unexpectedErrorMessage;
+        return l10n.unexpectedErrorMessage;
     }
   }
 }
