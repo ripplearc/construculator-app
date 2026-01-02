@@ -29,7 +29,7 @@ class EstimationModule extends Module {
   final List<RouteDefinition> _routeDefinitions = [
     RouteDefinition(estimationLandingRoute, (context) {
       final projectId = Modular.args.params['projectId'];
-
+      // TODO: https://ripplearc.youtrack.cloud/issue/CA-119/Dashboard-Enable-Project-Selection-and-Switching (Fall back to the currently selected project id)
       if (projectId == null || projectId.isEmpty) {
         return const SizedBox.shrink();
       }
