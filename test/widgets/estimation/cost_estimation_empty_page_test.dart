@@ -1,4 +1,4 @@
-import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_page.dart';
+import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,14 +7,11 @@ void main() {
   const defaultMessage =
       'No estimation added. To add an estimation please click on add button';
 
-  Widget createWidget({String? message, double? textWidthFactor}) {
+  Widget createWidget({String? message}) {
     return MaterialApp(
       theme: CoreTheme.light(),
       home: Scaffold(
-        body: CostEstimationEmptyPage(
-          message: message ?? defaultMessage,
-          textWidthFactor: textWidthFactor,
-        ),
+        body: CostEstimationEmptyWidget(message: message ?? defaultMessage),
       ),
     );
   }
@@ -24,7 +21,7 @@ void main() {
       await tester.pumpWidget(createWidget());
       await tester.pumpAndSettle();
 
-      expect(find.byType(CostEstimationEmptyPage), findsOneWidget);
+      expect(find.byType(CostEstimationEmptyWidget), findsOneWidget);
       expect(find.text(defaultMessage), findsOneWidget);
     });
 
@@ -49,22 +46,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(customMessage), findsOneWidget);
-    });
-
-    testWidgets('accepts custom textWidthFactor', (WidgetTester tester) async {
-      const customTextWidthFactor = 0.5;
-      await tester.pumpWidget(
-        createWidget(textWidthFactor: customTextWidthFactor),
-      );
-      await tester.pumpAndSettle();
-
-      final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));
-      final textContainer = sizedBoxes.last;
-      final screenWidth =
-          tester.view.physicalSize.width / tester.view.devicePixelRatio;
-      final expectedWidth = screenWidth * customTextWidthFactor;
-
-      expect(textContainer.width, equals(expectedWidth));
     });
   });
 }

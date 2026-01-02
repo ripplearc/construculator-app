@@ -1,4 +1,4 @@
-import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_page.dart';
+import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import '../font_loader.dart';
@@ -17,11 +17,10 @@ void main() {
       MaterialApp(
         theme: createTestTheme(),
         home: Scaffold(
-          body: CostEstimationEmptyPage(
+          body: CostEstimationEmptyWidget(
             message:
                 message ??
-                'No estimation added. To add an estimation please click on add button',
-            textWidthFactor: textWidthFactor,
+                'No estimation added To add an estimation please click on add button',
           ),
         ),
       ),
@@ -43,24 +42,9 @@ void main() {
       );
 
       await expectLater(
-        find.byType(CostEstimationEmptyPage),
+        find.byType(CostEstimationEmptyWidget),
         matchesGoldenFile(
-          'goldens/cost_estimation_empty_page/${size.width}x${size.height}/cost_estimation_empty_page_custom_message.png',
-        ),
-      );
-    });
-
-    testWidgets('renders with custom text width factor correctly', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      await pumpCostEstimationEmptyPage(tester: tester, textWidthFactor: 0.5);
-
-      await expectLater(
-        find.byType(CostEstimationEmptyPage),
-        matchesGoldenFile(
-          'goldens/cost_estimation_empty_page/${size.width}x${size.height}/cost_estimation_empty_page_custom_text_width.png',
+          'goldens/cost_estimation_empty_widget/${size.width}x${size.height}/cost_estimation_empty_widget_custom_message.png',
         ),
       );
     });
@@ -75,9 +59,9 @@ void main() {
       );
 
       await expectLater(
-        find.byType(CostEstimationEmptyPage),
+        find.byType(CostEstimationEmptyWidget),
         matchesGoldenFile(
-          'goldens/cost_estimation_empty_page/${size.width}x${size.height}/cost_estimation_empty_page_long_message.png',
+          'goldens/cost_estimation_empty_widget/${size.width}x${size.height}/cost_estimation_empty_widget_long_message.png',
         ),
       );
     });
