@@ -7,9 +7,47 @@ The localization system is configured to automatically generate type-safe Dart c
 ## Key Components
 
 - **ARB Files**: Source files containing localized strings in JSON format (`lib/l10n/app_*.arb`)
+  ```json
+  {
+    "@@locale": "en",
+    "welcomeText": "Welcome to Construculator",
+    "@welcomeText": {
+      "description": "Welcome message on home screen"
+    }
+  }
+  ```
+
 - **Generated Code**: Type-safe Dart classes automatically generated from ARB files (`lib/l10n/generated/`)
+  ```dart
+  // Auto-generated - DO NOT EDIT
+  class AppLocalizations {
+    String get welcomeText => 'Welcome to Construculator';
+
+    static AppLocalizations? of(BuildContext context) {
+      return Localizations.of<AppLocalizations>(context, AppLocalizations);
+    }
+  }
+  ```
+
 - **Configuration**: Settings for code generation (`l10n.yaml`)
+  ```yaml
+  arb-dir: lib/l10n
+  template-arb-file: app_en.arb
+  output-localization-file: app_localizations.dart
+  output-dir: lib/l10n/generated
+  ```
+
 - **App Integration**: Localization delegates configured in MaterialApp (`lib/app/app.dart`)
+  ```dart
+  MaterialApp(
+    locale: const Locale('en'),
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    // ... rest of the app
+  )
+  ```
+
+> **Note:** The `locale` parameter is optional. If omitted, Flutter uses the device's locale (if supported). Specify it when you want to override the device locale or implement language switching.
 
 ### Configuration
 
@@ -62,7 +100,7 @@ Some IDEs automatically re-generate the files after editing the ARB files.
 Once generated, access the new string:
 
 ```dart
-AppLocalizations.of(context)?.myNewButtonLabel
+AppLocalizations.of(context).myNewButtonLabel
 ```
 
 ### Step 4: Add Translations for Other Languages
@@ -84,24 +122,10 @@ Then regenerate the files using `flutter gen-l10n`.
 
 ## Using Localized Text in Code
 
-### Standard Approach
+<!-- TODO: https://ripplearc.youtrack.cloud/issue/CA-460/UI-refactorCreate-BuildContext-Extensions-for-UI-Shortcuts -->
+### Using LocalizationMixin (Recommended)
 
-The most common way to access localized strings:
-
-```dart
-import 'package:construculator/l10n/generated/app_localizations.dart';
-
-// In your widget's build method
-Widget build(BuildContext context) {
-  final l10n = AppLocalizations.of(context);
-  
-  return Text(l10n?.agreeAndContinueButton??'');
-}
-```
-
-### Using LocalizationMixin
-
-Alternatively, you can use the provided `LocalizationMixin` to automatically access localizations:
+The recommended way to access localized strings is using the `LocalizationMixin`. This approach eliminates the need for null checks and provides cleaner code:
 
 ```dart
 import 'package:construculator/libraries/mixins/localization_mixin.dart';
@@ -114,8 +138,54 @@ class MyPage extends StatefulWidget {
 class _MyPageState extends State<MyPage> with LocalizationMixin {
   @override
   Widget build(BuildContext context) {
-    return Text(l10n?.agreeAndContinueButton ?? 'Fallback text');
+    return Text(l10n.agreeAndContinueButton);
   }
+}
+```
+
+The mixin is defined as:
+
+```dart
+mixin LocalizationMixin<T extends StatefulWidget> on State<T> {
+  /// Holds the current localization instance for the widget.
+  ///
+  /// This is updated automatically in `didChangeDependencies`.
+  late AppLocalizations l10n;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final localizations = AppLocalizations.of(context);
+    if (localizations == null) {
+      throw StateError(
+        'AppLocalizations not found in the widget tree. '
+        'Ensure that your MaterialApp has localizationsDelegates configured '
+        'and that you are accessing this from a descendant widget.',
+      );
+    }
+    l10n = localizations;
+  }
+}
+```
+
+**Benefits:**
+- No null checks required (`l10n.key` instead of `l10n?.key ?? ''`)
+- Automatic updates when locale changes
+- Clear error messages if localization is not properly configured
+
+
+### Standard Approach
+
+The most common way to access localized strings:
+
+```dart
+import 'package:construculator/l10n/generated/app_localizations.dart';
+
+// In your widget's build method
+Widget build(BuildContext context) {
+  final l10n = AppLocalizations.of(context)!;
+
+  return Text(l10n.agreeAndContinueButton);
 }
 ```
 
@@ -181,8 +251,8 @@ To pass dynamic values in translations, define placeholders in your ARB file and
 
 **Code usage:**
 ```dart
-final l10n = AppLocalizations.of(context);
-Text(l10n?.greeting('Alice'))  // Output: "Hello Alice!"
+final l10n = AppLocalizations.of(context)!;
+Text(l10n.greeting('Alice'))  // Output: "Hello Alice!"
 ```
 
 #### Multiple Parameters
@@ -210,8 +280,8 @@ Text(l10n?.greeting('Alice'))  // Output: "Hello Alice!"
 
 **Code usage:**
 ```dart
-final l10n = AppLocalizations.of(context);
-Text(l10n?.welcomeMessage('John', 'Doe', 5))
+final l10n = AppLocalizations.of(context)!;
+Text(l10n.welcomeMessage('John', 'Doe', 5))
 // Output: "Welcome John Doe, you have 5 new messages"
 ```
 
@@ -248,13 +318,13 @@ Text(l10n?.welcomeMessage('John', 'Doe', 5))
 
 **Code usage:**
 ```dart
-final l10n = AppLocalizations.of(context);
+final l10n = AppLocalizations.of(context)!;
 
 // Price formatting
-Text(l10n?.priceDisplay(99.99))  // Output: "Price: $99.99"
+Text(l10n.priceDisplay(99.99))  // Output: "Price: $99.99"
 
 // Date formatting
-Text(l10n?.lastUpdated(clock.now()))  // Output: "Last updated: 1/1/2026"
+Text(l10n.lastUpdated(clock.now()))  // Output: "Last updated: 1/1/2026"
 ```
 
 ### Pluralization
@@ -302,26 +372,29 @@ Text(l10n.itemsCount(5))  // Output: "5 items"
 }
 ```
 
+**Code usage:**
+```dart
+final l10n = AppLocalizations.of(context)!;
+
+Text(l10n.daysRemaining(0))  // Output: "Due today"
+Text(l10n.daysRemaining(1))  // Output: "1 day remaining"
+Text(l10n.daysRemaining(3))  // Output: "3 days remaining"
+```
+
 ## Testing
 
 Widget tests must include the localization delegates to access translated strings. Use this helper setup:
 
 ```dart
 import 'package:construculator/l10n/generated/app_localizations.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 
 BuildContext? buildContext;
 
 Widget makeTestableWidget({required Widget child}) {
   return MaterialApp(
     locale: const Locale('en'),
-    localizationsDelegates: const [
-      AppLocalizations.delegate,
-      GlobalMaterialLocalizations.delegate,
-      GlobalWidgetsLocalizations.delegate,
-      GlobalCupertinoLocalizations.delegate,
-    ],
-    supportedLocales: const [Locale('en')],
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
     home: Builder(
       builder: (context) {
         buildContext = context;
