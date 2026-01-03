@@ -5,13 +5,31 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 void main() {
-  group('CostEstimationTile', () {
-    late CostEstimate testEstimation;
-    late FakeClockImpl clock;
-    late DateTime testDate;
+  late CostEstimate testEstimation;
+  late FakeClockImpl clock;
+  late DateTime testDate;
+  Widget createWidget({
+    CostEstimate? estimation,
+    VoidCallback? onTap,
+    VoidCallback? onMenuTap,
+  }) {
+    estimation ??= testEstimation;
+    return MaterialApp(
+      theme: CoreTheme.light(),
+      home: Scaffold(
+        body: CostEstimationTile(
+          estimation: estimation,
+          onTap: onTap,
+          onMenuTap: onMenuTap,
+        ),
+      ),
+    );
+  }
 
+  group('CostEstimationTile', () {
     setUpAll(() {
       Modular.init(_TestAppModule());
       clock = Modular.get<Clock>() as FakeClockImpl;
@@ -26,23 +44,6 @@ void main() {
     tearDownAll(() {
       Modular.destroy();
     });
-
-    Widget createWidget({
-      CostEstimate? estimation,
-      VoidCallback? onTap,
-      VoidCallback? onMenuTap,
-    }) {
-      estimation ??= testEstimation;
-      return MaterialApp(
-        home: Scaffold(
-          body: CostEstimationTile(
-            estimation: estimation,
-            onTap: onTap,
-            onMenuTap: onMenuTap,
-          ),
-        ),
-      );
-    }
 
     group('Basic Rendering', () {
       testWidgets('should render with all required elements', (
