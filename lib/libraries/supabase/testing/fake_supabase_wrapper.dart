@@ -352,7 +352,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     }
 
     final tableData = _tables[table] ?? [];
-    final filteredData = tableData.where((row) => row[filterColumn] == filterValue).toList();
+    final filteredData = tableData
+        .where((row) => row[filterColumn] == filterValue)
+        .toList();
     return filteredData;
   }
 
@@ -633,6 +635,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     shouldThrowOnSelect = false;
     shouldThrowOnInsert = false;
     shouldThrowOnUpdate = false;
+    shouldThrowOnSelectMultiple = false;
 
     signInErrorMessage = null;
     signUpErrorMessage = null;
@@ -645,6 +648,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     updateErrorMessage = null;
 
     selectExceptionType = null;
+    selectMultipleExceptionType = null;
     insertExceptionType = null;
     updateExceptionType = null;
     postgrestErrorCode = null;

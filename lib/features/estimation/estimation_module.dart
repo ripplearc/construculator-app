@@ -11,6 +11,7 @@ import 'package:construculator/features/estimation/presentation/pages/cost_estim
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class RouteDefinition {
@@ -26,11 +27,21 @@ class EstimationModule extends Module {
   EstimationModule(this.appBootstrap);
 
   final List<RouteDefinition> _routeDefinitions = [
-    RouteDefinition(
-      estimationLandingRoute,
-      (context) => CostEstimationLandingPage(),
-      [AuthGuard()],
-    ),
+    RouteDefinition(estimationLandingRoute, (context) {
+      final projectId = Modular.args.params['projectId'];
+      // TODO: https://ripplearc.youtrack.cloud/issue/CA-119/Dashboard-Enable-Project-Selection-and-Switching (Fall back to the currently selected project id)
+      if (projectId == null || projectId.isEmpty) {
+        return const SizedBox.shrink();
+      }
+
+      return BlocProvider<CostEstimationListBloc>(
+        create: (context) {
+          return Modular.get<CostEstimationListBloc>()
+            ..add(CostEstimationListRefreshEvent(projectId: projectId));
+        },
+        child: CostEstimationLandingPage(projectId: projectId),
+      );
+    }, [AuthGuard()]),
   ];
 
   @override
