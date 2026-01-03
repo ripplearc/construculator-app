@@ -4,6 +4,12 @@ import 'package:construculator/features/estimation/domain/entities/lock_status_e
 import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:equatable/equatable.dart';
 
+// Markup literals used in serialization and mapping.
+const String _kMarkupTypeOverall = 'overall';
+const String _kMarkupTypeGranular = 'granular';
+const String _kMarkupValuePercentage = 'percentage';
+const String _kMarkupValueAmount = 'amount';
+
 /// Data Transfer Object for CostEstimate entity.
 ///
 /// This DTO represents the serialized form of a cost estimate as it appears
@@ -26,54 +32,54 @@ class CostEstimateDto extends Equatable {
   final String estimateName;
 
   /// Optional description providing additional context about the estimate.
-  final String estimateDescription;
+  final String? estimateDescription;
 
   /// ID of the user who created this estimate.
   final String creatorUserId;
 
   /// Type of markup configuration: 'overall' or 'granular'.
   /// Maps to [MarkupType] enum in domain layer.
-  final String markupType;
+  final String? markupType;
 
   /// Type of overall markup value: 'percentage' or 'amount'.
   /// Maps to [MarkupValueType] enum in domain layer.
-  final String overallMarkupValueType;
+  final String? overallMarkupValueType;
 
   /// Overall markup value as a decimal number.
-  final double overallMarkupValue;
+  final double? overallMarkupValue;
 
   /// Type of material markup value: 'percentage' or 'amount'.
   /// Maps to [MarkupValueType] enum in domain layer.
-  final String materialMarkupValueType;
+  final String? materialMarkupValueType;
 
   /// Material markup value as a decimal number.
-  final double materialMarkupValue;
+  final double? materialMarkupValue;
 
   /// Type of labor markup value: 'percentage' or 'amount'.
   /// Maps to [MarkupValueType] enum in domain layer.
-  final String laborMarkupValueType;
+  final String? laborMarkupValueType;
 
   /// Labor markup value as a decimal number.
-  final double laborMarkupValue;
+  final double? laborMarkupValue;
 
   /// Type of equipment markup value: 'percentage' or 'amount'.
   /// Maps to [MarkupValueType] enum in domain layer.
-  final String equipmentMarkupValueType;
+  final String? equipmentMarkupValueType;
 
   /// Equipment markup value as a decimal number.
-  final double equipmentMarkupValue;
+  final double? equipmentMarkupValue;
 
   /// Total calculated cost of the estimate.
-  final double totalCost;
+  final double? totalCost;
 
   /// Whether the estimate is currently locked for editing.
   final bool isLocked;
 
   /// ID of the user who locked the estimate (if locked).
-  final String lockedByUserID;
+  final String? lockedByUserID;
 
   /// ISO 8601 timestamp when the estimate was locked.
-  final String lockedAt;
+  final String? lockedAt;
 
   /// ISO 8601 timestamp when the estimate was created.
   final String createdAt;
@@ -124,14 +130,24 @@ class CostEstimateDto extends Equatable {
       creatorUserId: json['creator_user_id'],
       markupType: json['markup_type'],
       overallMarkupValueType: json['overall_markup_value_type'],
-      overallMarkupValue: (json['overall_markup_value'] as num).toDouble(),
+      overallMarkupValue: json['overall_markup_value'] != null
+          ? (json['overall_markup_value'] as num).toDouble()
+          : null,
       materialMarkupValueType: json['material_markup_value_type'],
-      materialMarkupValue: (json['material_markup_value'] as num).toDouble(),
+      materialMarkupValue: json['material_markup_value'] != null
+          ? (json['material_markup_value'] as num).toDouble()
+          : null,
       laborMarkupValueType: json['labor_markup_value_type'],
-      laborMarkupValue: (json['labor_markup_value'] as num).toDouble(),
+      laborMarkupValue: json['labor_markup_value'] != null
+          ? (json['labor_markup_value'] as num).toDouble()
+          : null,
       equipmentMarkupValueType: json['equipment_markup_value_type'],
-      equipmentMarkupValue: (json['equipment_markup_value'] as num).toDouble(),
-      totalCost: (json['total_cost'] as num).toDouble(),
+      equipmentMarkupValue: json['equipment_markup_value'] != null
+          ? (json['equipment_markup_value'] as num).toDouble()
+          : null,
+      totalCost: json['total_cost'] != null
+          ? (json['total_cost'] as num).toDouble()
+          : null,
       isLocked: json['is_locked'],
       lockedByUserID: json['locked_by_user_id'],
       lockedAt: json['locked_at'],
@@ -188,27 +204,46 @@ class CostEstimateDto extends Equatable {
       estimateDescription: estimateDescription,
       creatorUserId: creatorUserId,
       markupConfiguration: MarkupConfiguration(
-        overallType: _mapMarkupType(markupType),
+        overallType: _mapMarkupType(markupType ?? _kMarkupTypeOverall),
         overallValue: MarkupValue(
-          type: _mapMarkupValueType(overallMarkupValueType),
-          value: overallMarkupValue,
+          type: _mapMarkupValueType(
+            overallMarkupValueType ?? _kMarkupValuePercentage,
+          ),
+          value: overallMarkupValue ?? 0,
         ),
-        materialValue: MarkupValue(
-          type: _mapMarkupValueType(materialMarkupValueType),
-          value: materialMarkupValue,
-        ),
-        laborValue: MarkupValue(
-          type: _mapMarkupValueType(laborMarkupValueType),
-          value: laborMarkupValue,
-        ),
-        equipmentValue: MarkupValue(
-          type: _mapMarkupValueType(equipmentMarkupValueType),
-          value: equipmentMarkupValue,
-        ),
+        materialValue:
+            materialMarkupValueType != null && materialMarkupValue != null
+            ? MarkupValue(
+                type: _mapMarkupValueType(
+                  materialMarkupValueType ?? _kMarkupValuePercentage,
+                ),
+                value: materialMarkupValue ?? 0,
+              )
+            : null,
+        laborValue: laborMarkupValueType != null && laborMarkupValue != null
+            ? MarkupValue(
+                type: _mapMarkupValueType(
+                  laborMarkupValueType ?? _kMarkupValuePercentage,
+                ),
+                value: laborMarkupValue ?? 0,
+              )
+            : null,
+        equipmentValue:
+            equipmentMarkupValueType != null && equipmentMarkupValue != null
+            ? MarkupValue(
+                type: _mapMarkupValueType(
+                  equipmentMarkupValueType ?? _kMarkupValuePercentage,
+                ),
+                value: equipmentMarkupValue ?? 0,
+              )
+            : null,
       ),
-      totalCost: totalCost,
+      totalCost: totalCost ?? 0,
       lockStatus: isLocked
-          ? LockStatus.locked(lockedByUserID, DateTime.parse(lockedAt))
+          ? LockStatus.locked(
+              lockedByUserID ?? '',
+              DateTime.parse(lockedAt ?? updatedAt),
+            )
           : const LockStatus.unlocked(),
       createdAt: DateTime.parse(createdAt),
       updatedAt: DateTime.parse(updatedAt),
@@ -216,10 +251,14 @@ class CostEstimateDto extends Equatable {
   }
 
   MarkupType _mapMarkupType(String raw) {
+    if (raw.isEmpty) {
+      return MarkupType.overall;
+    }
+
     switch (raw.toLowerCase()) {
-      case 'overall':
+      case _kMarkupTypeOverall:
         return MarkupType.overall;
-      case 'granular':
+      case _kMarkupTypeGranular:
         return MarkupType.granular;
       default:
         throw ArgumentError('Unknown MarkupType: $raw');
@@ -227,10 +266,14 @@ class CostEstimateDto extends Equatable {
   }
 
   MarkupValueType _mapMarkupValueType(String raw) {
+    if (raw.isEmpty) {
+      return MarkupValueType.percentage;
+    }
+
     switch (raw.toLowerCase()) {
-      case 'percentage':
+      case _kMarkupValuePercentage:
         return MarkupValueType.percentage;
-      case 'amount':
+      case _kMarkupValueAmount:
         return MarkupValueType.amount;
       default:
         throw ArgumentError('Unknown MarkupValueType: $raw');

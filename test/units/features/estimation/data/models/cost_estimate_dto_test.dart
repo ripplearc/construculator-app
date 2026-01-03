@@ -8,6 +8,29 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../helpers/estimation_test_data_map_factory.dart';
 
 void main() {
+  const jsonWithNulls = {
+    'id': '123',
+    'project_id': 'p1',
+    'estimate_name': 'Test Estimate',
+    'estimate_description': null,
+    'creator_user_id': 'user1',
+    'markup_type': null,
+    'overall_markup_value_type': null,
+    'overall_markup_value': null,
+    'material_markup_value_type': null,
+    'material_markup_value': null,
+    'labor_markup_value_type': null,
+    'labor_markup_value': null,
+    'equipment_markup_value_type': null,
+    'equipment_markup_value': null,
+    'total_cost': null,
+    'is_locked': false,
+    'locked_by_user_id': null,
+    'locked_at': null,
+    'created_at': '2025-09-19T10:00:00Z',
+    'updated_at': '2025-09-20T10:00:00Z',
+  };
+
   group('CostEstimateDto', () {
     test('fromJson should parse all fields correctly', () {
       final sampleData = EstimationTestDataMapFactory.createFakeEstimationData(
@@ -17,32 +40,30 @@ void main() {
       );
       final dto = CostEstimateDto.fromJson(sampleData);
 
-      expect(dto.id, estimateIdDefault);
-      expect(dto.projectId, testProjectId);
-      expect(dto.estimateName, estimateNameDefault);
-      expect(dto.estimateDescription, estimateDescDefault);
-      expect(dto.creatorUserId, userIdDefault);
+      const expected = CostEstimateDto(
+        id: estimateIdDefault,
+        projectId: testProjectId,
+        estimateName: estimateNameDefault,
+        estimateDescription: estimateDescDefault,
+        creatorUserId: userIdDefault,
+        markupType: markupTypeOverall,
+        overallMarkupValueType: markupValueTypePercentage,
+        overallMarkupValue: overallMarkupDefault,
+        materialMarkupValueType: markupValueTypePercentage,
+        materialMarkupValue: materialMarkupDefault,
+        laborMarkupValueType: markupValueTypePercentage,
+        laborMarkupValue: laborMarkupDefault,
+        equipmentMarkupValueType: markupValueTypePercentage,
+        equipmentMarkupValue: equipmentMarkupDefault,
+        totalCost: totalCostDefault,
+        isLocked: true,
+        lockedByUserID: 'locking-user',
+        lockedAt: '2025-01-01T10:00:00.000Z',
+        createdAt: timestampDefault,
+        updatedAt: timestampDefault,
+      );
 
-      expect(dto.markupType, markupTypeOverall);
-
-      expect(dto.overallMarkupValueType, markupValueTypePercentage);
-      expect(dto.overallMarkupValue, overallMarkupDefault);
-
-      expect(dto.materialMarkupValueType, markupValueTypePercentage);
-      expect(dto.materialMarkupValue, materialMarkupDefault);
-
-      expect(dto.laborMarkupValueType, markupValueTypePercentage);
-      expect(dto.laborMarkupValue, laborMarkupDefault);
-
-      expect(dto.equipmentMarkupValueType, markupValueTypePercentage);
-      expect(dto.equipmentMarkupValue, equipmentMarkupDefault);
-
-      expect(dto.totalCost, totalCostDefault);
-      expect(dto.isLocked, true);
-      expect(dto.lockedByUserID, 'locking-user');
-      expect(dto.lockedAt, '2025-01-01T10:00:00.000Z');
-      expect(dto.createdAt, timestampDefault);
-      expect(dto.updatedAt, timestampDefault);
+      expect(dto, equals(expected));
     });
 
     test('toJson should output the same map as input', () {
@@ -66,45 +87,41 @@ void main() {
         final dto = CostEstimateDto.fromJson(sampleData);
         final domain = dto.toDomain();
 
-        expect(domain, isA<CostEstimate>());
+        final expected = CostEstimate(
+          id: dto.id,
+          projectId: dto.projectId,
+          estimateName: dto.estimateName,
+          estimateDescription: dto.estimateDescription,
+          creatorUserId: dto.creatorUserId,
+          markupConfiguration: MarkupConfiguration(
+            overallType: MarkupType.overall,
+            overallValue: const MarkupValue(
+              type: MarkupValueType.percentage,
+              value: overallMarkupDefault,
+            ),
+            materialValue: const MarkupValue(
+              type: MarkupValueType.percentage,
+              value: materialMarkupDefault,
+            ),
+            laborValue: const MarkupValue(
+              type: MarkupValueType.percentage,
+              value: laborMarkupDefault,
+            ),
+            equipmentValue: const MarkupValue(
+              type: MarkupValueType.percentage,
+              value: equipmentMarkupDefault,
+            ),
+          ),
+          totalCost: dto.totalCost,
+          lockStatus: LockedStatus(
+            'locking-user',
+            DateTime.parse('2025-01-01T10:00:00.000Z'),
+          ),
+          createdAt: DateTime.parse(timestampDefault),
+          updatedAt: DateTime.parse(timestampDefault),
+        );
 
-        expect(domain.id, dto.id);
-        expect(domain.projectId, dto.projectId);
-        expect(domain.estimateName, dto.estimateName);
-        expect(domain.estimateDescription, dto.estimateDescription);
-        expect(domain.creatorUserId, dto.creatorUserId);
-        expect(domain.totalCost, dto.totalCost);
-
-        final MarkupConfiguration config = domain.markupConfiguration;
-        expect(config.overallValue, isA<MarkupValue>());
-        expect(config.overallValue.value, dto.overallMarkupValue);
-        expect(config.overallValue.type, isA<MarkupValueType>());
-
-        expect(config.overallType, isA<MarkupType>());
-
-        expect(config.materialValue, isA<MarkupValue>());
-        expect(config.materialValue!.type, isA<MarkupValueType>());
-        expect(config.materialValue!.value, dto.materialMarkupValue);
-
-        expect(config.laborValue, isA<MarkupValue>());
-        expect(config.laborValue!.type, isA<MarkupValueType>());
-        expect(config.laborValue!.value, dto.laborMarkupValue);
-
-        expect(config.equipmentValue, isA<MarkupValue>());
-        expect(config.equipmentValue!.type, isA<MarkupValueType>());
-        expect(config.equipmentValue!.value, dto.equipmentMarkupValue);
-
-        expect(domain.lockStatus, isA<LockedStatus>());
-
-        final lockedStatus = domain.lockStatus as LockedStatus;
-        expect(lockedStatus.lockedByUserId, dto.lockedByUserID);
-        expect(lockedStatus.lockedAt, DateTime.parse(dto.lockedAt));
-        expect(lockedStatus.isLocked, true);
-        expect(lockedStatus.isLockedBy('locking-user'), isTrue);
-        expect(lockedStatus.isLockedBy('different-user'), isFalse);
-
-        expect(domain.createdAt, DateTime.parse(dto.createdAt));
-        expect(domain.updatedAt, DateTime.parse(dto.updatedAt));
+        expect(domain, equals(expected));
       },
     );
 
@@ -190,6 +207,61 @@ void main() {
         () => CostEstimateDto.fromJson(data).toDomain(),
         throwsA(isA<ArgumentError>()),
       );
+    });
+
+    test('fromJson should handle null numeric fields gracefully', () {
+      final dto = CostEstimateDto.fromJson(jsonWithNulls);
+
+      const expected = CostEstimateDto(
+        id: '123',
+        projectId: 'p1',
+        estimateName: 'Test Estimate',
+        estimateDescription: null,
+        creatorUserId: 'user1',
+        markupType: null,
+        overallMarkupValueType: null,
+        overallMarkupValue: null,
+        materialMarkupValueType: null,
+        materialMarkupValue: null,
+        laborMarkupValueType: null,
+        laborMarkupValue: null,
+        equipmentMarkupValueType: null,
+        equipmentMarkupValue: null,
+        totalCost: null,
+        isLocked: false,
+        lockedByUserID: null,
+        lockedAt: null,
+        createdAt: '2025-09-19T10:00:00Z',
+        updatedAt: '2025-09-20T10:00:00Z',
+      );
+
+      expect(dto, equals(expected));
+    });
+
+    test('toDomain should handle null fields with default values', () {
+      final dto = CostEstimateDto.fromJson(jsonWithNulls);
+      final domain = dto.toDomain();
+
+      final expected = CostEstimate(
+        id: '123',
+        projectId: 'p1',
+        estimateName: 'Test Estimate',
+        estimateDescription: null,
+        creatorUserId: 'user1',
+        markupConfiguration: const MarkupConfiguration(
+          overallType: MarkupType.overall,
+          overallValue: MarkupValue(
+            type: MarkupValueType.percentage,
+            value: 0.0,
+          ),
+        ),
+        totalCost: 0.0,
+        lockStatus: const UnlockedStatus(),
+        createdAt: DateTime.parse('2025-09-19T10:00:00Z'),
+        updatedAt: DateTime.parse('2025-09-20T10:00:00Z'),
+      );
+
+      expect(domain, equals(expected));
     });
   });
 }
