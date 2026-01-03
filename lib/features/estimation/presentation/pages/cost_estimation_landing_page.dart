@@ -10,8 +10,6 @@ import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
-
-import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

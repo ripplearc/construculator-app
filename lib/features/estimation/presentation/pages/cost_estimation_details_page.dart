@@ -12,15 +12,15 @@ class CostEstimationDetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).extension<TypographyExtension>();
-    final colorTheme = Theme.of(context).extension<AppColorsExtension>();
+    final textTheme = AppTypographyExtension.of(context);
+    final colorTheme = AppColorsExtension.of(context);
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
         title: Text(
           'Estimation Details',
-          style: textTheme?.bodyLargeSemiBold.copyWith(
-            color: colorTheme?.textDark,
+          style: textTheme.bodyLargeSemiBold.copyWith(
+            color: colorTheme.textDark,
           ),
         ),
         centerTitle: true,
@@ -34,19 +34,19 @@ class CostEstimationDetailsPage extends StatelessWidget {
               CoreIconWidget(
                 icon: CoreIcons.divide,
                 size: 64,
-                color: colorTheme?.textDisable,
+                color: colorTheme.textDisable,
               ),
               const SizedBox(height: CoreSpacing.space8),
               Text(
                 'Cost estimation details will be available in a future update.',
                 textAlign: TextAlign.center,
-                style: textTheme?.bodyLargeMedium,
+                style: textTheme.bodyLargeMedium,
               ),
               const SizedBox(height: CoreSpacing.space4),
               Text(
                 'Estimation ID: $estimationId',
-                style: textTheme?.bodySmallMedium.copyWith(
-                  color: colorTheme?.textDisable,
+                style: textTheme.bodySmallMedium.copyWith(
+                  color: colorTheme.textDisable,
                 ),
               ),
             ],

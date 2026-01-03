@@ -46,6 +46,13 @@ class EstimationModule extends Module {
     RouteDefinition(estimationDetailsRoute, (context) {
       final estimationId = Modular.args.params['estimationId'];
 
+      if (estimationId == null || estimationId.isEmpty) {
+        throw ArgumentError(
+          'estimationId is required for CostEstimationDetailsPage. '
+          'Ensure the route includes a valid estimationId parameter.',
+        );
+      }
+
       return CostEstimationDetailsPage(estimationId: estimationId);
     }, [AuthGuard()]),
   ];

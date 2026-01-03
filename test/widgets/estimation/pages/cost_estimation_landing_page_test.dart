@@ -222,7 +222,6 @@ void main() {
         email: 'test@example.com',
       );
 
-      // Add estimations using the test data factory
       addMultipleCostEstimations([
         EstimationTestDataMapFactory.createFakeEstimationData(
           id: 'estimation-1',
@@ -335,7 +334,6 @@ void main() {
         email: 'test@example.com',
       );
 
-      // Add initial estimation
       addCostEstimationData(
         EstimationTestDataMapFactory.createFakeEstimationData(
           id: 'estimation-1',
@@ -348,7 +346,6 @@ void main() {
 
       expect(find.text('Initial Estimation'), findsOneWidget);
 
-      // Clear and add updated estimations
       fakeSupabase.clearTableData('cost_estimates');
       addMultipleCostEstimations([
         EstimationTestDataMapFactory.createFakeEstimationData(
