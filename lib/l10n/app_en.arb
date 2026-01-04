@@ -545,6 +545,11 @@
     "description": "Text for welcome back",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=47-5656&t=u7FRWeWPXiomVzNr-4"
   },
+  "addEstimation": "Add estimation",
+  "@addEstimation": {
+    "description": "Text for add estimation button",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-6592&t=LRsSVoyqW6AaIfXf-4"
+  },
   "costEstimation": "Cost Estimation",
   "@costEstimation": {
     "description": "Label for cost estimation button on dashboard",
