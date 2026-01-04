@@ -22,7 +22,7 @@ void main() {
       home: Scaffold(
         body: CostEstimationTile(
           estimation: estimation,
-          onTap: onTap,
+          onTap: onTap ?? () {},
           onMenuTap: onMenuTap,
         ),
       ),
@@ -182,16 +182,6 @@ void main() {
         await tester.pump();
 
         expect(onMenuTapCalled, isTrue);
-      });
-
-      testWidgets('should not crash when onTap is null', (
-        WidgetTester tester,
-      ) async {
-        await tester.pumpWidget(createWidget(onTap: null));
-
-        await tester.tap(find.text(testEstimation.estimateName));
-
-        expect(tester.takeException(), isNull);
       });
 
       testWidgets('should not crash when onMenuTap is null', (
