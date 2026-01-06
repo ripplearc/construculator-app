@@ -43,7 +43,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
 
   @override
   Widget build(BuildContext context) {
-    final colorTheme = Theme.of(context).extension<AppColorsExtension>();
+    final colorTheme = AppColorsExtension.of(context);
 
     return BlocListener<AuthBloc, AuthState>(
       bloc: _authBloc,
@@ -65,7 +65,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
           }
 
           return Scaffold(
-            backgroundColor: colorTheme?.pageBackground,
+            backgroundColor: colorTheme.pageBackground,
             appBar: Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
               projectId: widget.projectId,
               avatarImage: userAvatarUrl.isNotEmpty
