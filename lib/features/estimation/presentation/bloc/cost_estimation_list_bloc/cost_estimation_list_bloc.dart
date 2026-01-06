@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/features/estimation/domain/usecases/get_estimations_usecase.dart';
 import 'package:construculator/libraries/errors/failures.dart';
@@ -22,7 +24,9 @@ class CostEstimationListBloc
     Emitter<CostEstimationListState> emit,
   ) async {
     final currentEstimations = state is CostEstimationListWithData
-        ? (state as CostEstimationListWithData).estimates
+        ? List<CostEstimate>.from(
+            (state as CostEstimationListWithData).estimates,
+          )
         : <CostEstimate>[];
     emit(const CostEstimationListLoading());
     await _loadEstimations(emit, event.projectId, currentEstimations);

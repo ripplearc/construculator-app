@@ -33,10 +33,13 @@ class CostEstimationListEmpty extends CostEstimationListState {
 
 /// Abstract base class for states that can contain cost estimation data.
 abstract class CostEstimationListWithData extends CostEstimationListState {
-  /// The list of cost estimations
-  final List<CostEstimate> estimates;
+  /// Read-only list of cost estimations to prevent mutation outside the bloc.
+  final UnmodifiableListView<CostEstimate> estimates;
 
-  const CostEstimationListWithData({required this.estimates});
+  CostEstimationListWithData({required List<CostEstimate> estimates})
+    : estimates = UnmodifiableListView<CostEstimate>(
+        List<CostEstimate>.from(estimates),
+      );
 
   /// List of properties that will be used to compare states
   @override
@@ -48,10 +51,7 @@ class CostEstimationListError extends CostEstimationListWithData {
   /// The error message describing what went wrong
   final Failure failure;
 
-  const CostEstimationListError({
-    required this.failure,
-    required super.estimates,
-  });
+  CostEstimationListError({required this.failure, required super.estimates});
 
   @override
   List<Object?> get props => [failure, estimates];
@@ -59,7 +59,7 @@ class CostEstimationListError extends CostEstimationListWithData {
 
 /// State when the cost estimations are loaded successfully with data
 class CostEstimationListLoaded extends CostEstimationListWithData {
-  const CostEstimationListLoaded({required super.estimates});
+  CostEstimationListLoaded({required super.estimates});
 
   @override
   List<Object?> get props => [estimates];
