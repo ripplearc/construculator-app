@@ -89,6 +89,7 @@ void main() {
   Widget makeApp() {
     return MaterialApp.router(
       routerConfig: Modular.routerConfig,
+      theme: CoreTheme.light(),
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
