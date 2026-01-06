@@ -57,7 +57,7 @@ Future<void> loadMaterialIcons() async {
 /// Creates a test theme with Roboto font applied to all typography styles
 ThemeData createTestTheme() {
   final baseTheme = CoreTheme.light();
-  final typography = baseTheme.extension<TypographyExtension>()!;
+  final typography = baseTheme.extension<AppTypographyExtension>()!;
   final colors = baseTheme.extension<AppColorsExtension>()!;
 
   return ThemeData(

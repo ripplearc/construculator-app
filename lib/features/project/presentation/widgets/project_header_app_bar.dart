@@ -101,7 +101,7 @@ class ProjectHeaderAppBar extends StatelessWidget
         final appColorTheme = Theme.of(context).extension<AppColorsExtension>();
         final appTypographyTheme = Theme.of(
           context,
-        ).extension<TypographyExtension>();
+        ).extension<AppTypographyExtension>();
         if (state is GetProjectByIdLoading || state is GetProjectInitial) {
           return SizedBox(
             width: 20,
