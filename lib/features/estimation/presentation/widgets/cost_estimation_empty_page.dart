@@ -35,7 +35,7 @@ class CostEstimationEmptyPage extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: Theme.of(context)
-                  .extension<TypographyExtension>()
+                  .extension<AppTypographyExtension>()
                   ?.bodyMediumRegular
                   .copyWith(
                     color: Theme.of(

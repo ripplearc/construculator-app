@@ -14,7 +14,9 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: ThemeData(
-          extensions: <ThemeExtension<dynamic>>[TypographyExtension.create()],
+          extensions: <ThemeExtension<dynamic>>[
+            AppTypographyExtension.create(),
+          ],
         ),
         home: Scaffold(
           body: AuthFooter(

@@ -26,7 +26,7 @@ dependencies:
   rxdart: 0.28.0
   freezed_annotation: 3.0.0
   json_annotation: 4.9.0
-  ripplearc_coreui: 0.3.2
+  ripplearc_coreui: 0.3.4
   pinput: 5.0.1
   ripplearc_linter: ^0.2.1
   intl: 0.20.2

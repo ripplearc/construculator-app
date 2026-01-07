@@ -14,7 +14,7 @@ void main() {
   }) {
     return MaterialApp(
       theme: ThemeData(
-        extensions: <ThemeExtension<dynamic>>[TypographyExtension.create()],
+        extensions: <ThemeExtension<dynamic>>[AppTypographyExtension.create()],
       ),
       home: Scaffold(
         body: Builder(
@@ -48,8 +48,7 @@ void main() {
       expect(textWidget.style!.color, CoreTextColors.error);
 
       final context = tester.element(find.byType(Center));
-      final typography =
-          Theme.of(context).coreTypography;
+      final typography = Theme.of(context).coreTypography;
 
       expect(
         textWidget.style!.fontWeight,
