@@ -301,28 +301,17 @@ class CostEstimateDto extends Equatable {
         estimate.markupConfiguration.overallValue.type,
       ),
       overallMarkupValue: estimate.markupConfiguration.overallValue.value,
-      materialMarkupValueType:
-          estimate.markupConfiguration.materialValue != null
-          ? _mapMarkupValueTypeToString(
-              estimate.markupConfiguration.materialValue?.type ??
-                  MarkupValueType.percentage,
-            )
-          : null,
+      materialMarkupValueType: _getMarkupTypeString(
+        estimate.markupConfiguration.materialValue,
+      ),
       materialMarkupValue: estimate.markupConfiguration.materialValue?.value,
-      laborMarkupValueType: estimate.markupConfiguration.laborValue != null
-          ? _mapMarkupValueTypeToString(
-              estimate.markupConfiguration.laborValue?.type ??
-                  MarkupValueType.percentage,
-            )
-          : null,
+      laborMarkupValueType: _getMarkupTypeString(
+        estimate.markupConfiguration.laborValue,
+      ),
       laborMarkupValue: estimate.markupConfiguration.laborValue?.value,
-      equipmentMarkupValueType:
-          estimate.markupConfiguration.equipmentValue != null
-          ? _mapMarkupValueTypeToString(
-              estimate.markupConfiguration.equipmentValue?.type ??
-                  MarkupValueType.percentage,
-            )
-          : null,
+      equipmentMarkupValueType: _getMarkupTypeString(
+        estimate.markupConfiguration.equipmentValue,
+      ),
       equipmentMarkupValue: estimate.markupConfiguration.equipmentValue?.value,
       totalCost: estimate.totalCost,
       isLocked: estimate.lockStatus.isLocked,
@@ -353,6 +342,11 @@ class CostEstimateDto extends Equatable {
       case MarkupValueType.amount:
         return _kMarkupValueAmount;
     }
+  }
+
+  static String? _getMarkupTypeString(MarkupValue? markupValue) {
+    if (markupValue == null) return null;
+    return _mapMarkupValueTypeToString(markupValue.type);
   }
 
   @override

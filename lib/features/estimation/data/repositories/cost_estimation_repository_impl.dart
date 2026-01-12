@@ -19,24 +19,49 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
   CostEstimationRepositoryImpl({required CostEstimationDataSource dataSource})
     : _dataSource = dataSource;
 
-  Failure _handleError(Object error, String operation) {
+  Failure _handleError(
+    Object error,
+    String operation, {
+    String? projectId,
+    String? estimationId,
+  }) {
+    final context = _buildContextString(
+      projectId: projectId,
+      estimationId: estimationId,
+    );
+
     if (error is TimeoutException) {
-      _logger.error('Timeout error $operation');
+      _logger.error(
+        'Timeout error $operation$context: '
+        'message=${error.message}, duration=${error.duration}',
+      );
       return EstimationFailure(errorType: EstimationErrorType.timeoutError);
     }
 
     if (error is SocketException) {
-      _logger.error('Connection error $operation');
+      _logger.error(
+        'Connection error $operation$context: '
+        'message=${error.message}, address=${error.address}, '
+        'port=${error.port}, osError=${error.osError}',
+      );
       return EstimationFailure(errorType: EstimationErrorType.connectionError);
     }
 
     if (error is FormatException) {
-      _logger.error('Parsing error $operation');
+      _logger.error(
+        'Parsing error $operation$context: '
+        'message=${error.message}, source=${error.source}, '
+        'offset=${error.offset}',
+      );
       return EstimationFailure(errorType: EstimationErrorType.parsingError);
     }
 
     if (error is supabase.PostgrestException) {
-      _logger.error('PostgreSQL error $operation: ${error.code}');
+      _logger.error(
+        'PostgreSQL error $operation$context: '
+        'code=${error.code}, message=${error.message}, '
+        'details=${error.details}, hint=${error.hint}',
+      );
       final postgresErrorCode = PostgresErrorCode.fromCode(error.code);
       if (postgresErrorCode == PostgresErrorCode.connectionFailure ||
           postgresErrorCode == PostgresErrorCode.unableToConnect ||
@@ -51,8 +76,19 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       }
     }
 
-    _logger.error('Unexpected error $operation: $error');
+    _logger.error('Unexpected error $operation$context: $error');
     return UnexpectedFailure();
+  }
+
+  String _buildContextString({String? projectId, String? estimationId}) {
+    final parts = <String>[];
+    if (projectId != null) {
+      parts.add('projectId=$projectId');
+    }
+    if (estimationId != null) {
+      parts.add('estimationId=$estimationId');
+    }
+    return parts.isEmpty ? '' : ' [${parts.join(', ')}]';
   }
 
   @override
@@ -74,7 +110,9 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
 
       return Right(costEstimates);
     } catch (e) {
-      return Left(_handleError(e, 'getting cost estimations for project'));
+      return Left(
+        _handleError(e, 'getting cost estimations', projectId: projectId),
+      );
     }
   }
 
@@ -95,7 +133,14 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       );
       return Right(createdEstimation);
     } catch (e) {
-      return Left(_handleError(e, 'creating cost estimation'));
+      return Left(
+        _handleError(
+          e,
+          'creating cost estimation',
+          projectId: estimation.projectId,
+          estimationId: estimation.id,
+        ),
+      );
     }
   }
 }
