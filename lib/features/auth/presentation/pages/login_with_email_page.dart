@@ -31,12 +31,12 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
 
   _getContinueButtonText(LoginWithEmailState state) {
     if (state is LoginWithEmailLoading) {
-      return '${l10n?.loggingInButton}';
+      return l10n.loggingInButton;
     }
     if (state is LoginWithEmailAvailabilityLoading) {
-      return '${l10n?.checkingAvailabilityButton}';
+      return l10n.checkingAvailabilityButton;
     }
-    return '${l10n?.continueButton}';
+    return l10n.continueButton;
   }
 
   _handleFailure(Failure failure) {
@@ -44,13 +44,13 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
       CoreToast.showError(
         context,
         failure.errorType.localizedMessage(context),
-        l10n?.closeLabel ?? '',
+        l10n.closeLabel,
       );
     } else {
       CoreToast.showError(
         context,
-        l10n?.unexpectedErrorMessage ?? '',
-        l10n?.closeLabel ?? '',
+        l10n.unexpectedErrorMessage,
+        l10n.closeLabel,
       );
     }
   }
@@ -121,8 +121,8 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
                 _emailErrorWidgetList = [
                   buildErrorWidgetWithLink(
                     context: context,
-                    errorText: l10n?.emailNotRegistered,
-                    linkText: l10n?.register,
+                    errorText: l10n.emailNotRegistered,
+                    linkText: l10n.register,
                     onPressed: () {
                       _router.navigate(
                         fullRegisterRoute,
@@ -147,8 +147,8 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
         ),
         persistentFooterButtons: [
           AuthFooter(
-            text: '${l10n?.dontHaveAndAccountText}',
-            actionText: '${l10n?.register}',
+            text: l10n.dontHaveAndAccountText,
+            actionText: l10n.register,
             onPressed: () {
               _router.navigate(fullRegisterRoute);
             },
@@ -168,14 +168,14 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
           children: [
             const SizedBox(height: CoreSpacing.space20),
             AuthHeader(
-              title: '${l10n?.welcomeBack}',
-              description: '${l10n?.enterYourEmailIdToLoginToYourAccount}',
+              title: l10n.welcomeBack,
+              description: l10n.enterYourEmailIdToLoginToYourAccount,
             ),
             const SizedBox(height: CoreSpacing.space10),
             CoreTextField(
               controller: _emailController,
-              label: '${l10n?.emailLabel}',
-              hintText: '${l10n?.emailHint}',
+              label: l10n.emailLabel,
+              hintText: l10n.emailHint,
               errorWidgetList: _emailErrorWidgetList,
               errorTextList: _emailErrorList,
               keyboardType: TextInputType.emailAddress,
@@ -206,7 +206,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: CoreSpacing.space2),
                   child: Text(
-                    '${l10n?.or}',
+                    l10n.or,
                     style: typography.bodyMediumRegular.copyWith(
                       color: CoreTextColors.body,
                     ),

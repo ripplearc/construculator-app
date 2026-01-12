@@ -37,23 +37,19 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
   void _handleFailure(Failure failure) {
     if (failure is AuthFailure) {
       if (failure.errorType == AuthErrorType.rateLimited) {
-        CoreToast.showError(
-          context,
-          l10n?.tooManyAttempts,
-          l10n?.closeLabel ?? '',
-        );
+        CoreToast.showError(context, l10n.tooManyAttempts, l10n.closeLabel);
       } else {
         CoreToast.showError(
           context,
           failure.errorType.localizedMessage(context),
-          l10n?.closeLabel ?? '',
+          l10n.closeLabel,
         );
       }
     } else {
       CoreToast.showError(
         context,
-        l10n?.unexpectedErrorMessage,
-        l10n?.closeLabel ?? '',
+        l10n.unexpectedErrorMessage,
+        l10n.closeLabel,
       );
     }
   }
@@ -109,8 +105,8 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
           if (state is OtpVerificationOtpResendSuccess) {
             CoreToast.showSuccess(
               context,
-              l10n?.otpResendSuccess,
-              l10n?.closeLabel ?? '',
+              l10n.otpResendSuccess,
+              l10n.closeLabel,
             );
           }
           if (state is OtpVerificationResendFailure) {
@@ -119,7 +115,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
         },
         builder: (context, state) {
           return OtpVerificationQuickSheet(
-            note: '${l10n?.otpVerificationNote}',
+            note: l10n.otpVerificationNote,
             contact: email,
             isResending: state is OtpVerificationResendLoading,
             isVerifying: state is OtpVerificationLoading,
@@ -213,8 +209,8 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
                 _emailErrorWidgetList = [
                   buildErrorWidgetWithLink(
                     context: context,
-                    errorText: l10n?.emailAlreadyRegistered,
-                    linkText: l10n?.logginLink,
+                    errorText: l10n.emailAlreadyRegistered,
+                    linkText: l10n.logginLink,
                     onPressed: () {
                       // navigate to the login page with the currently entered email
                       _router.navigate(
@@ -255,16 +251,15 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
                   children: [
                     const SizedBox(height: CoreSpacing.space20),
                     AuthHeader(
-                      title: '${l10n?.letsGetStarted}',
-                      description:
-                          '${l10n?.heyEnterYourDetailsToRegisterWithUs}',
+                      title: l10n.letsGetStarted,
+                      description: l10n.heyEnterYourDetailsToRegisterWithUs,
                     ),
                     const SizedBox(height: CoreSpacing.space10),
                     CoreTextField(
                       focusNode: _emailTextFieldFocusNode,
                       controller: _emailController,
-                      label: '${l10n?.emailLabel}',
-                      hintText: '${l10n?.emailHint}',
+                      label: l10n.emailLabel,
+                      hintText: l10n.emailHint,
                       errorTextList: _emailErrorTextList,
                       errorWidgetList: _emailErrorWidgetList,
                     ),
@@ -283,10 +278,10 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
                           state is RegisterWithEmailOtpSendingLoading ||
                           state is RegisterWithEmailEmailCheckLoading,
                       label: state is RegisterWithEmailOtpSendingLoading
-                          ? '${l10n?.sendingOtpButton}'
+                          ? l10n.sendingOtpButton
                           : state is RegisterWithEmailEmailCheckLoading
-                          ? '${l10n?.checkingAvailabilityButton}'
-                          : '${l10n?.continueButton}',
+                          ? l10n.checkingAvailabilityButton
+                          : l10n.continueButton,
                       centerAlign: true,
                     ),
                     const SizedBox(height: CoreSpacing.space6),
@@ -303,7 +298,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
                             horizontal: CoreSpacing.space2,
                           ),
                           child: Text(
-                            '${l10n?.or}',
+                            l10n.or,
                             style: typography.bodyMediumRegular.copyWith(
                               color: CoreTextColors.body,
                             ),
@@ -327,8 +322,8 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
         ),
         persistentFooterButtons: [
           AuthFooter(
-            text: '${l10n?.alreadyHaveAccount}',
-            actionText: '${l10n?.logginLink}',
+            text: l10n.alreadyHaveAccount,
+            actionText: l10n.logginLink,
             onPressed: () {
               _router.navigate(fullLoginRoute);
             },

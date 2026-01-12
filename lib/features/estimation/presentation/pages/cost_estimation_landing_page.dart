@@ -2,13 +2,12 @@ import 'package:construculator/features/estimation/domain/entities/cost_estimate
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_state.dart';
+import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
-
-import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -115,7 +114,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
   }
 
   Widget _buildEmptyState(AppLocalizations l10n) {
-    return CostEstimationEmptyPage(message: l10n.costEstimationEmptyMessage);
+    return CostEstimationEmptyWidget(message: l10n.costEstimationEmptyMessage);
   }
 
   Widget _buildEstimationsList(List<CostEstimate> estimations) {

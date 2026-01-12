@@ -1,7 +1,7 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
-import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_page.dart';
+import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/features/project/presentation/widgets/project_header_app_bar.dart';
 import 'package:construculator/features/project/project_module.dart';
@@ -206,7 +206,7 @@ void main() {
 
       final locale = l10n();
 
-      expect(find.byType(CostEstimationEmptyPage), findsOneWidget);
+      expect(find.byType(CostEstimationEmptyWidget), findsOneWidget);
       expect(find.text(locale.costEstimationEmptyMessage), findsOneWidget);
       expect(find.byType(CostEstimationTile), findsNothing);
     });
@@ -236,7 +236,7 @@ void main() {
       await pumpAppAtRoute(tester, testEstimationRoute);
 
       expect(find.byType(CostEstimationTile), findsNWidgets(2));
-      expect(find.byType(CostEstimationEmptyPage), findsNothing);
+      expect(find.byType(CostEstimationEmptyWidget), findsNothing);
       expect(find.text('Kitchen Remodel'), findsOneWidget);
       expect(find.text('Bathroom Renovation'), findsOneWidget);
     });
@@ -349,7 +349,7 @@ void main() {
       await pumpAppAtRoute(tester, '$fullEstimationLandingRoute/');
 
       expect(find.byType(SizedBox), findsOneWidget);
-      expect(find.byType(CostEstimationEmptyPage), findsNothing);
+      expect(find.byType(CostEstimationEmptyWidget), findsNothing);
     });
   });
 }

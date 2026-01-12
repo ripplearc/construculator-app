@@ -17,7 +17,7 @@ import 'package:flutter/material.dart';
 /// class _MyPageState extends State<MyPage> with LocalizationMixin {
 ///   @override
 ///   Widget build(BuildContext context) {
-///     return Text(l10n?.helloWorld ?? "Hello");
+///     return Text(l10n.helloWorld);
 ///   }
 /// }
 /// ```
