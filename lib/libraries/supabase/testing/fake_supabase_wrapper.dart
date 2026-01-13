@@ -56,6 +56,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Controls whether [update] throws an exception
   bool shouldThrowOnUpdate = false;
 
+  /// Controls whether [delete] throws an exception
+  bool shouldThrowOnDelete = false;
+
   /// Error message for sign in.
   /// Used to specify the error message thrown when [signInWithPassword] is attempted
   String? signInErrorMessage;
@@ -96,6 +99,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Used to specify the error message thrown when [update] is attempted
   String? updateErrorMessage;
 
+  /// Error message for delete.
+  /// Used to specify the error message thrown when [delete] is attempted
+  String? deleteErrorMessage;
+
   /// Error message for select.
   /// Used to specify the error message thrown when [select] is attempted
   SupabaseExceptionType? selectMultipleExceptionType;
@@ -108,6 +115,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Used to specify the type of exception thrown when [update] is attempted
   SupabaseExceptionType? updateExceptionType;
+
+  /// Used to specify the type of exception thrown when [delete] is attempted
+  SupabaseExceptionType? deleteExceptionType;
 
   /// Used to specify the error code thrown when [signInWithPassword] is attempted
   SupabaseAuthErrorCode? authErrorCode;
@@ -503,6 +513,37 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   }
 
   @override
+  Future<void> delete({
+    required String table,
+    required String filterColumn,
+    required dynamic filterValue,
+  }) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    _methodCalls.add({
+      'method': 'delete',
+      'table': table,
+      'filterColumn': filterColumn,
+      'filterValue': filterValue,
+    });
+
+    if (shouldThrowOnDelete) {
+      _throwConfiguredException(
+        deleteExceptionType,
+        deleteErrorMessage ?? 'Delete failed',
+      );
+    }
+
+    final tableData = _tables[table] ?? [];
+    final filteredData = tableData
+        .where((row) => row[filterColumn] != filterValue)
+        .toList();
+    _tables[table] = filteredData;
+  }
+
+  @override
   Future<List<Map<String, dynamic>>> selectAllProfessionalRoles() async {
     _methodCalls.add({'method': 'selectAllProfessionalRoles'});
 
@@ -640,6 +681,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     shouldThrowOnInsert = false;
     shouldThrowOnUpdate = false;
     shouldThrowOnSelectMultiple = false;
+    shouldThrowOnDelete = false;
 
     signInErrorMessage = null;
     signUpErrorMessage = null;
@@ -650,11 +692,13 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     selectErrorMessage = null;
     insertErrorMessage = null;
     updateErrorMessage = null;
+    deleteErrorMessage = null;
 
     selectExceptionType = null;
     selectMultipleExceptionType = null;
     insertExceptionType = null;
     updateExceptionType = null;
+    deleteExceptionType = null;
     postgrestErrorCode = null;
 
     shouldReturnNullUser = false;

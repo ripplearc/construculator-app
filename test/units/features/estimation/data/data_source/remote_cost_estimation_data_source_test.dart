@@ -392,5 +392,67 @@ void main() {
         expect(result, equals(estimationDto));
       });
     });
+
+    group('deleteEstimation', () {
+      test(
+        'should call supabaseWrapper.delete with correct parameters',
+        () async {
+          await dataSource.deleteEstimation(estimateId1);
+
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('delete');
+          expect(methodCalls, hasLength(1));
+
+          final call = methodCalls.first;
+          expect(call['table'], equals(tableName));
+          expect(call['filterColumn'], equals('id'));
+          expect(call['filterValue'], equals(estimateId1));
+        },
+      );
+
+      test(
+        'should rethrow exception when supabaseWrapper.delete throws',
+        () async {
+          fakeSupabaseWrapper.shouldThrowOnDelete = true;
+          fakeSupabaseWrapper.deleteExceptionType =
+              SupabaseExceptionType.postgrest;
+          fakeSupabaseWrapper.deleteErrorMessage = errorMsgDbConnection;
+
+          expect(
+            () => dataSource.deleteEstimation(estimateId1),
+            throwsA(isA<supabase.PostgrestException>()),
+          );
+        },
+      );
+
+      test(
+        'should rethrow network exception when supabaseWrapper.delete throws network error',
+        () async {
+          fakeSupabaseWrapper.shouldThrowOnDelete = true;
+          fakeSupabaseWrapper.deleteExceptionType =
+              SupabaseExceptionType.socket;
+          fakeSupabaseWrapper.deleteErrorMessage = errorMsgNetwork;
+
+          expect(
+            () => dataSource.deleteEstimation(estimateId1),
+            throwsA(isA<SocketException>()),
+          );
+        },
+      );
+
+      test(
+        'should rethrow timeout exception when supabaseWrapper.delete throws timeout error',
+        () async {
+          fakeSupabaseWrapper.shouldThrowOnDelete = true;
+          fakeSupabaseWrapper.deleteExceptionType =
+              SupabaseExceptionType.timeout;
+          fakeSupabaseWrapper.deleteErrorMessage = errorMsgTimeout;
+
+          expect(
+            () => dataSource.deleteEstimation(estimateId1),
+            throwsA(isA<Exception>()),
+          );
+        },
+      );
+    });
   });
 }
