@@ -129,15 +129,4 @@ abstract class SupabaseWrapper {
   Future<supabase.UserResponse> updateUser(
     supabase.UserAttributes userAttributes,
   );
-
-  /// Delete a row from a table
-  ///
-  /// [table] The table to delete from
-  /// [filterColumn] The column to filter by
-  /// [filterValue] The value to filter by
-  Future<void> delete({
-    required String table,
-    required String filterColumn,
-    required dynamic filterValue,
-  });
 }

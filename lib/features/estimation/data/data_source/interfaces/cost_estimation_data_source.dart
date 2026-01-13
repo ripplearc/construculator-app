@@ -12,9 +12,4 @@ abstract class CostEstimationDataSource {
   ///
   /// Returns a [CostEstimateDto] with the created cost estimation.
   Future<CostEstimateDto> createEstimation(CostEstimateDto estimation);
-
-  /// Deletes a cost estimation by its ID.
-  ///
-  /// Returns a [Future] that completes when the deletion is successful.
-  Future<void> deleteEstimation(String estimationId);
 }

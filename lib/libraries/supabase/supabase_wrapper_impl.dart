@@ -159,13 +159,4 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
   ) async {
     return await _supabaseClient.auth.updateUser(userAttributes);
   }
-
-  @override
-  Future<void> delete({
-    required String table,
-    required String filterColumn,
-    required dynamic filterValue,
-  }) async {
-    await _supabaseClient.from(table).delete().eq(filterColumn, filterValue);
-  }
 }

@@ -143,18 +143,4 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       );
     }
   }
-
-  @override
-  Future<Either<Failure, void>> deleteEstimation(String estimationId) async {
-    try {
-      _logger.debug('Deleting cost estimation: $estimationId');
-
-      await _dataSource.deleteEstimation(estimationId);
-
-      _logger.debug('Successfully deleted cost estimation: $estimationId');
-      return const Right(null);
-    } catch (e) {
-      return Left(_handleError(e, 'deleting cost estimation'));
-    }
-  }
 }

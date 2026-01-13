@@ -388,12 +388,6 @@ void main() {
       fakeRepository.shouldReturnFailureOnGetEstimations = true;
       fakeRepository.getEstimationsFailureType =
           EstimationErrorType.timeoutError;
-      fakeRepository.shouldReturnFailureOnCreateEstimation = true;
-      fakeRepository.createEstimationFailureType =
-          EstimationErrorType.connectionError;
-      fakeRepository.shouldReturnFailureOnDeleteEstimation = true;
-      fakeRepository.deleteEstimationFailureType =
-          EstimationErrorType.unexpectedError;
       fakeRepository.shouldReturnEmptyList = true;
       fakeRepository.shouldDelayOperations = true;
       fakeRepository.completer = Completer();
@@ -404,16 +398,6 @@ void main() {
         fakeRepository.getEstimationsFailureType,
         equals(EstimationErrorType.timeoutError),
       );
-      expect(fakeRepository.shouldReturnFailureOnCreateEstimation, isTrue);
-      expect(
-        fakeRepository.createEstimationFailureType,
-        equals(EstimationErrorType.connectionError),
-      );
-      expect(fakeRepository.shouldReturnFailureOnDeleteEstimation, isTrue);
-      expect(
-        fakeRepository.deleteEstimationFailureType,
-        equals(EstimationErrorType.unexpectedError),
-      );
       expect(fakeRepository.shouldReturnEmptyList, isTrue);
       expect(fakeRepository.shouldDelayOperations, isTrue);
       expect(fakeRepository.completer, isNotNull);
@@ -423,10 +407,6 @@ void main() {
 
       expect(fakeRepository.shouldReturnFailureOnGetEstimations, isFalse);
       expect(fakeRepository.getEstimationsFailureType, isNull);
-      expect(fakeRepository.shouldReturnFailureOnCreateEstimation, isFalse);
-      expect(fakeRepository.createEstimationFailureType, isNull);
-      expect(fakeRepository.shouldReturnFailureOnDeleteEstimation, isFalse);
-      expect(fakeRepository.deleteEstimationFailureType, isNull);
       expect(fakeRepository.shouldReturnEmptyList, isFalse);
       expect(fakeRepository.shouldDelayOperations, isFalse);
       expect(fakeRepository.completer, isNull);
@@ -762,108 +742,6 @@ void main() {
       );
       expect(
         fakeRepository.getMethodCallsFor('createEstimation'),
-        hasLength(1),
-      );
-    });
-  });
-
-  group('Estimation Deletion', () {
-    test('deleteEstimation should track method calls', () async {
-      const estimationId = 'estimation-to-delete';
-
-      expect(fakeRepository.getMethodCallsFor('deleteEstimation'), isEmpty);
-
-      await fakeRepository.deleteEstimation(estimationId);
-
-      final calls = fakeRepository.getMethodCallsFor('deleteEstimation');
-      expect(calls, hasLength(1));
-      expect(calls.first['estimationId'], equals(estimationId));
-    });
-
-    test(
-      'deleteEstimation should remove estimation from project',
-      () async {
-        const projectId = 'test-project-123';
-        const estimationId = 'estimation-to-delete';
-        final testEstimation = fakeRepository.createSampleEstimation(
-          id: estimationId,
-          projectId: projectId,
-        );
-        fakeRepository.addProjectEstimation(projectId, testEstimation);
-
-        final beforeDelete = await fakeRepository.getEstimations(projectId);
-        expect(beforeDelete.isRight(), isTrue);
-        beforeDelete.fold(
-          (_) => fail('Expected success'),
-          (estimates) => expect(estimates, hasLength(1)),
-        );
-
-        final result = await fakeRepository.deleteEstimation(estimationId);
-
-        expect(result.isRight(), isTrue);
-
-        final afterDelete = await fakeRepository.getEstimations(projectId);
-        expect(afterDelete.isRight(), isTrue);
-        afterDelete.fold(
-          (_) => fail('Expected success'),
-          (estimates) => expect(estimates, isEmpty),
-        );
-      },
-    );
-
-    test('deleteEstimation should return failure when configured', () async {
-      fakeRepository.shouldReturnFailureOnDeleteEstimation = true;
-      fakeRepository.deleteEstimationFailureType =
-          EstimationErrorType.connectionError;
-
-      final result = await fakeRepository.deleteEstimation('any-estimation-id');
-
-      expect(result.isLeft(), isTrue);
-      result.fold(
-        (failure) => expect(
-          failure,
-          EstimationFailure(errorType: EstimationErrorType.connectionError),
-        ),
-        (_) => fail('Expected failure but got success'),
-      );
-    });
-
-    test(
-      'deleteEstimation should return unexpected failure by default',
-      () async {
-        fakeRepository.shouldReturnFailureOnDeleteEstimation = true;
-
-        final result = await fakeRepository.deleteEstimation(
-          'any-estimation-id',
-        );
-
-        expect(result.isLeft(), isTrue);
-        result.fold(
-          (failure) => expect(
-            failure,
-            EstimationFailure(errorType: EstimationErrorType.unexpectedError),
-          ),
-          (_) => fail('Expected failure but got success'),
-        );
-      },
-    );
-
-    test('deleteEstimation should handle delay operations', () async {
-      const estimationId = 'estimation-to-delete';
-
-      fakeRepository.shouldDelayOperations = true;
-      fakeRepository.completer = Completer<void>();
-
-      final future = fakeRepository.deleteEstimation(estimationId);
-
-      expect(fakeRepository.getMethodCallsFor('deleteEstimation'), isEmpty);
-
-      fakeRepository.completer!.complete();
-      final result = await future;
-
-      expect(result.isRight(), isTrue);
-      expect(
-        fakeRepository.getMethodCallsFor('deleteEstimation'),
         hasLength(1),
       );
     });

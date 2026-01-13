@@ -30,10 +30,4 @@ abstract class CostEstimationRepository {
   Future<Either<Failure, CostEstimate>> createEstimation(
     CostEstimate estimation,
   );
-
-  /// Deletes a cost estimation by its ID.
-  ///
-  /// Returns a [Future] that completes with an [Either] containing either
-  /// a [Failure] if the deletion fails, or [void] if successful.
-  Future<Either<Failure, void>> deleteEstimation(String estimationId);
 }
