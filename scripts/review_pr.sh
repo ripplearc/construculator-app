@@ -282,6 +282,26 @@ echo "Please provide detailed comments with context for each file. If issues are
 echo "" >> "$OUTPUT_FILE"
 
 # =============================================================================
+# RULE 5: UI & BUSINESS LOGIC SEPARATION
+# =============================================================================
+echo "### 🎨 RULE 5: UI & BUSINESS LOGIC SEPARATION" >> "$OUTPUT_FILE"
+echo "**Reference:** For detailed guidelines and code samples, search: https://gist.github.com/ripplearcgit/f190fecc8f7124e511cb01283f9fbc31" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Core Principle:** Keep the UI 'dumb.' It should only handle layout, user input, and reflecting state." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Red Flags (Business Logic Pollution):**" >> "$OUTPUT_FILE"
+echo "- ❌ **Guard Checks in UI:** Validating domain rules (e.g., 'is userId null?') before sending an event to the BLoC." >> "$OUTPUT_FILE"
+echo "- ❌ **State Duplication:** Using \`setState\` to copy data from a BLoC/Repository into the Widget's local variables." >> "$OUTPUT_FILE"
+echo "- ❌ **Manual Coordination:** Using one BLoC's listener to manually trigger an event in a different BLoC." >> "$OUTPUT_FILE"
+echo "- ❌ **Transformation Logic:** Formatting raw data (dates, currency) or mapping errors to strings inside the Widget." >> "$OUTPUT_FILE"
+echo "- ❌ **Navigation Decisions:** Deciding which route to take based on business conditions inside the UI." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Ensure the UI only dispatches 'Intents' (Events) and consumes 'States'." >> "$OUTPUT_FILE"
+echo "- Verify that all validation, data fetching, and coordination live in BLoCs or UseCases." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
 # REVIEW SUMMARY TABLE
 # =============================================================================
 echo "## REVIEW SUMMARY" >> "$OUTPUT_FILE"
