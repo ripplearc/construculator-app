@@ -12,9 +12,7 @@ class RemoteCostEstimationDataSource implements CostEstimationDataSource {
   static const String costEstimatesTable = DatabaseConstants.costEstimatesTable;
   static const String projectIdColumn = DatabaseConstants.projectIdColumn;
 
-  RemoteCostEstimationDataSource({
-    required this.supabaseWrapper,
-  });
+  RemoteCostEstimationDataSource({required this.supabaseWrapper});
 
   @override
   Future<List<CostEstimateDto>> getEstimations(String projectId) async {
@@ -32,7 +30,9 @@ class RemoteCostEstimationDataSource implements CostEstimationDataSource {
         return [];
       }
 
-      return response.map((costEstimate) => CostEstimateDto.fromJson(costEstimate)).toList();
+      return response
+          .map((costEstimate) => CostEstimateDto.fromJson(costEstimate))
+          .toList();
     } catch (e) {
       _logger.error('Error getting cost estimations: $e');
       rethrow;
@@ -51,6 +51,24 @@ class RemoteCostEstimationDataSource implements CostEstimationDataSource {
       return CostEstimateDto.fromJson(response);
     } catch (e) {
       _logger.error('Error creating cost estimation: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CostEstimateDto> deleteEstimation(String estimationId) async {
+    try {
+      _logger.debug('Deleting cost estimation: $estimationId');
+      final deletedData = await supabaseWrapper.delete(
+        table: costEstimatesTable,
+        filterColumn: 'id',
+        filterValue: estimationId,
+      );
+      final deletedDto = CostEstimateDto.fromJson(deletedData);
+      _logger.debug('Successfully deleted cost estimation: $estimationId');
+      return deletedDto;
+    } catch (e) {
+      _logger.error('Error deleting cost estimation: $e');
       rethrow;
     }
   }

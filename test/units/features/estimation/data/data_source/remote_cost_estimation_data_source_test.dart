@@ -392,5 +392,110 @@ void main() {
         expect(result, equals(estimationDto));
       });
     });
+
+    group('deleteEstimation', () {
+      test(
+        'should throw exception when attempting to delete non-existent estimation',
+        () async {
+          expect(
+            () => dataSource.deleteEstimation(estimateId1),
+            throwsA(isA<supabase.PostgrestException>()),
+          );
+        },
+      );
+
+      test(
+        'should call supabaseWrapper.delete with correct parameters',
+        () async {
+          final estimationData =
+              EstimationTestDataMapFactory.createFakeEstimationData(
+                id: estimateId1,
+                estimateName: estimateName1,
+                estimateDescription: estimateDesc1,
+                creatorUserId: userId1,
+                totalCost: totalCost1,
+                isLocked: false,
+                createdAt: fakeClock.now().toIso8601String(),
+                updatedAt: fakeClock.now().toIso8601String(),
+              );
+          fakeSupabaseWrapper.addTableData(tableName, [estimationData]);
+          await dataSource.deleteEstimation(estimateId1);
+
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('delete');
+          expect(methodCalls, hasLength(1));
+
+          final call = methodCalls.first;
+          expect(call['table'], equals(tableName));
+          expect(call['filterColumn'], equals('id'));
+          expect(call['filterValue'], equals(estimateId1));
+        },
+      );
+
+      test('should return deleted estimation DTO', () async {
+        final estimationData =
+            EstimationTestDataMapFactory.createFakeEstimationData(
+              id: estimateId1,
+              estimateName: estimateName1,
+              estimateDescription: estimateDesc1,
+              creatorUserId: userId1,
+              totalCost: totalCost1,
+              isLocked: false,
+              createdAt: fakeClock.now().toIso8601String(),
+              updatedAt: fakeClock.now().toIso8601String(),
+            );
+        fakeSupabaseWrapper.addTableData(tableName, [estimationData]);
+
+        final result = await dataSource.deleteEstimation(estimateId1);
+
+        final expectedDto = CostEstimateDto.fromJson(estimationData);
+
+        expect(result, equals(expectedDto));
+      });
+
+      test(
+        'should rethrow exception when supabaseWrapper.delete throws',
+        () async {
+          fakeSupabaseWrapper.shouldThrowOnDelete = true;
+          fakeSupabaseWrapper.deleteExceptionType =
+              SupabaseExceptionType.postgrest;
+          fakeSupabaseWrapper.deleteErrorMessage = errorMsgDbConnection;
+
+          expect(
+            () => dataSource.deleteEstimation(estimateId1),
+            throwsA(isA<supabase.PostgrestException>()),
+          );
+        },
+      );
+
+      test(
+        'should rethrow network exception when supabaseWrapper.delete throws network error',
+        () async {
+          fakeSupabaseWrapper.shouldThrowOnDelete = true;
+          fakeSupabaseWrapper.deleteExceptionType =
+              SupabaseExceptionType.socket;
+          fakeSupabaseWrapper.deleteErrorMessage = errorMsgNetwork;
+
+          expect(
+            () => dataSource.deleteEstimation(estimateId1),
+            throwsA(isA<SocketException>()),
+          );
+        },
+      );
+
+      test(
+        'should rethrow timeout exception when supabaseWrapper.delete throws timeout error',
+        () async {
+          fakeSupabaseWrapper.shouldThrowOnDelete = true;
+          fakeSupabaseWrapper.deleteExceptionType =
+              SupabaseExceptionType.timeout;
+          fakeSupabaseWrapper.deleteErrorMessage = errorMsgTimeout;
+
+          expect(
+            () => dataSource.deleteEstimation(estimateId1),
+            throwsA(isA<Exception>()),
+          );
+        },
+      );
+    });
   });
 }

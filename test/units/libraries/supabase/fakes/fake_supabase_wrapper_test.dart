@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -536,6 +538,85 @@ void main() {
         });
       });
 
+      group('delete', () {
+        test('removes record from table and returns deleted row', () async {
+          fakeWrapper.addTableData('users', [
+            {'id': '1', 'email': 'test@example.com', 'name': 'Test User'},
+            {'id': '2', 'email': 'other@example.com', 'name': 'Other User'},
+          ]);
+
+          final deletedRow = await fakeWrapper.delete(
+            table: 'users',
+            filterColumn: 'id',
+            filterValue: '1',
+          );
+
+          expect(deletedRow, isNotNull);
+          expect(deletedRow['id'], equals('1'));
+          expect(deletedRow['email'], equals('test@example.com'));
+          expect(deletedRow['name'], equals('Test User'));
+
+          final deletedUser = await fakeWrapper.selectSingle(
+            table: 'users',
+            filterColumn: 'id',
+            filterValue: '1',
+          );
+          expect(deletedUser, isNull);
+
+          final remainingUser = await fakeWrapper.selectSingle(
+            table: 'users',
+            filterColumn: 'id',
+            filterValue: '2',
+          );
+          expect(remainingUser, isNotNull);
+          expect(remainingUser!['email'], equals('other@example.com'));
+        });
+
+        test(
+          'throws exception when configured to fail delete operations',
+          () async {
+            fakeWrapper.shouldThrowOnDelete = true;
+            fakeWrapper.deleteErrorMessage = 'Delete failed';
+
+            expect(
+              () async => await fakeWrapper.delete(
+                table: 'users',
+                filterColumn: 'id',
+                filterValue: '1',
+              ),
+              throwsA(
+                isA<ServerException>().having(
+                  (e) => e.toString(),
+                  'message',
+                  contains('Delete failed'),
+                ),
+              ),
+            );
+          },
+        );
+
+        test('handles delayed operations', () async {
+          fakeWrapper.addTableData('users', [
+            {'id': '1', 'email': 'test@example.com', 'name': 'Test User'},
+          ]);
+          fakeWrapper.shouldDelayOperations = true;
+          fakeWrapper.completer = Completer();
+
+          final future = fakeWrapper.delete(
+            table: 'users',
+            filterColumn: 'id',
+            filterValue: '1',
+          );
+
+          expect(fakeWrapper.getMethodCallsFor('delete'), isEmpty);
+
+          fakeWrapper.completer!.complete();
+          await future;
+
+          expect(fakeWrapper.getMethodCallsFor('delete'), hasLength(1));
+        });
+      });
+
       group('update', () {
         test('modifies existing record and returns updated data', () async {
           final initialTime = '2023-01-01T00:00:00Z';
@@ -957,6 +1038,107 @@ void main() {
           () async => await fakeWrapper.initialize(),
           throwsA(isA<UnimplementedError>()),
         );
+      });
+    });
+
+    group('reset', () {
+      test('clears all configurations and data', () async {
+        fakeWrapper.addTableData('users', [
+          {'id': '1', 'name': 'Test User'},
+        ]);
+        await fakeWrapper.signInWithPassword(
+          email: 'test@example.com',
+          password: 'password',
+        );
+        fakeWrapper.shouldThrowOnSignIn = true;
+        fakeWrapper.shouldThrowOnSignUp = true;
+        fakeWrapper.shouldThrowOnOtp = true;
+        fakeWrapper.shouldThrowOnVerifyOtp = true;
+        fakeWrapper.shouldThrowOnResetPassword = true;
+        fakeWrapper.shouldThrowOnSignOut = true;
+        fakeWrapper.shouldThrowOnSelect = true;
+        fakeWrapper.shouldThrowOnInsert = true;
+        fakeWrapper.shouldThrowOnUpdate = true;
+        fakeWrapper.shouldThrowOnSelectMultiple = true;
+        fakeWrapper.shouldThrowOnDelete = true;
+        fakeWrapper.signInErrorMessage = 'Sign in failed';
+        fakeWrapper.signUpErrorMessage = 'Sign up failed';
+        fakeWrapper.otpErrorMessage = 'OTP failed';
+        fakeWrapper.verifyOtpErrorMessage = 'Verify OTP failed';
+        fakeWrapper.resetPasswordErrorMessage = 'Reset password failed';
+        fakeWrapper.signOutErrorMessage = 'Sign out failed';
+        fakeWrapper.selectErrorMessage = 'Select failed';
+        fakeWrapper.insertErrorMessage = 'Insert failed';
+        fakeWrapper.updateErrorMessage = 'Update failed';
+        fakeWrapper.deleteErrorMessage = 'Delete failed';
+        fakeWrapper.selectExceptionType = SupabaseExceptionType.postgrest;
+        fakeWrapper.selectMultipleExceptionType = SupabaseExceptionType.socket;
+        fakeWrapper.insertExceptionType = SupabaseExceptionType.timeout;
+        fakeWrapper.updateExceptionType = SupabaseExceptionType.auth;
+        fakeWrapper.deleteExceptionType = SupabaseExceptionType.type;
+        fakeWrapper.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
+        fakeWrapper.shouldReturnNullUser = true;
+        fakeWrapper.shouldReturnNullOnSelect = true;
+        fakeWrapper.shouldDelayOperations = true;
+        fakeWrapper.completer = Completer();
+        fakeWrapper.shouldEmitStreamErrors = true;
+        fakeWrapper.shouldReturnUser = true;
+        fakeWrapper.shouldThrowOnGetUserProfile = true;
+
+        expect(fakeWrapper.shouldThrowOnDelete, isTrue);
+        expect(fakeWrapper.deleteErrorMessage, equals('Delete failed'));
+        expect(
+          fakeWrapper.deleteExceptionType,
+          equals(SupabaseExceptionType.type),
+        );
+        expect(fakeWrapper.getMethodCalls(), isNotEmpty);
+        expect(fakeWrapper.isAuthenticated, isTrue);
+
+        fakeWrapper.reset();
+
+        expect(fakeWrapper.shouldThrowOnSignIn, isFalse);
+        expect(fakeWrapper.shouldThrowOnSignUp, isFalse);
+        expect(fakeWrapper.shouldThrowOnOtp, isFalse);
+        expect(fakeWrapper.shouldThrowOnVerifyOtp, isFalse);
+        expect(fakeWrapper.shouldThrowOnResetPassword, isFalse);
+        expect(fakeWrapper.shouldThrowOnSignOut, isFalse);
+        expect(fakeWrapper.shouldThrowOnSelect, isFalse);
+        expect(fakeWrapper.shouldThrowOnInsert, isFalse);
+        expect(fakeWrapper.shouldThrowOnUpdate, isFalse);
+        expect(fakeWrapper.shouldThrowOnSelectMultiple, isFalse);
+        expect(fakeWrapper.shouldThrowOnDelete, isFalse);
+        expect(fakeWrapper.signInErrorMessage, isNull);
+        expect(fakeWrapper.signUpErrorMessage, isNull);
+        expect(fakeWrapper.otpErrorMessage, isNull);
+        expect(fakeWrapper.verifyOtpErrorMessage, isNull);
+        expect(fakeWrapper.resetPasswordErrorMessage, isNull);
+        expect(fakeWrapper.signOutErrorMessage, isNull);
+        expect(fakeWrapper.selectErrorMessage, isNull);
+        expect(fakeWrapper.insertErrorMessage, isNull);
+        expect(fakeWrapper.updateErrorMessage, isNull);
+        expect(fakeWrapper.deleteErrorMessage, isNull);
+        expect(fakeWrapper.selectExceptionType, isNull);
+        expect(fakeWrapper.selectMultipleExceptionType, isNull);
+        expect(fakeWrapper.insertExceptionType, isNull);
+        expect(fakeWrapper.updateExceptionType, isNull);
+        expect(fakeWrapper.deleteExceptionType, isNull);
+        expect(fakeWrapper.postgrestErrorCode, isNull);
+        expect(fakeWrapper.shouldReturnNullUser, isFalse);
+        expect(fakeWrapper.shouldReturnNullOnSelect, isFalse);
+        expect(fakeWrapper.shouldDelayOperations, isFalse);
+        expect(fakeWrapper.completer, isNull);
+        expect(fakeWrapper.shouldEmitStreamErrors, isFalse);
+        expect(fakeWrapper.shouldReturnUser, isFalse);
+        expect(fakeWrapper.shouldThrowOnGetUserProfile, isFalse);
+        expect(fakeWrapper.getMethodCalls(), isEmpty);
+        expect(fakeWrapper.isAuthenticated, isFalse);
+
+        final userResult = await fakeWrapper.selectSingle(
+          table: 'users',
+          filterColumn: 'id',
+          filterValue: '1',
+        );
+        expect(userResult, isNull);
       });
     });
   });

@@ -41,6 +41,16 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
   /// Used to specify the type of exception thrown when [createEstimation] is attempted
   SupabaseExceptionType? createEstimationExceptionType;
 
+  /// Controls whether [deleteEstimation] throws an exception
+  bool shouldThrowOnDeleteEstimation = false;
+
+  /// Error message for delete estimation.
+  /// Used to specify the error message thrown when [deleteEstimation] is attempted
+  String? deleteEstimationErrorMessage;
+
+  /// Used to specify the type of exception thrown when [deleteEstimation] is attempted
+  SupabaseExceptionType? deleteEstimationExceptionType;
+
   /// Used to specify the error code thrown during [getEstimations]
   PostgresErrorCode? postgrestErrorCode;
 
@@ -101,6 +111,51 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
     _projectEstimations[projectId] = estimations;
 
     return estimation;
+  }
+
+  @override
+  Future<CostEstimateDto> deleteEstimation(String estimationId) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    _methodCalls.add({
+      'method': 'deleteEstimation',
+      'estimationId': estimationId,
+    });
+
+    if (shouldThrowOnDeleteEstimation) {
+      _throwConfiguredException(
+        deleteEstimationExceptionType,
+        deleteEstimationErrorMessage ?? 'Delete estimation failed',
+      );
+    }
+
+    CostEstimateDto? deletedEstimation;
+    for (final projectId in _projectEstimations.keys) {
+      final estimations = _projectEstimations[projectId] ?? [];
+      for (final estimation in estimations) {
+        if (estimation.id == estimationId) {
+          deletedEstimation = estimation;
+          break;
+        }
+      }
+
+      if (deletedEstimation != null) {
+        estimations.removeWhere((estimation) => estimation.id == estimationId);
+        _projectEstimations[projectId] = estimations;
+        break;
+      }
+    }
+
+    if (deletedEstimation == null) {
+      throw ServerException(
+        Trace.current(),
+        Exception('Estimation not found for deletion'),
+      );
+    }
+
+    return deletedEstimation;
   }
 
   void _throwConfiguredException(
@@ -175,6 +230,9 @@ class FakeCostEstimationDataSource implements CostEstimationDataSource {
     shouldThrowOnCreateEstimation = false;
     createEstimationErrorMessage = null;
     createEstimationExceptionType = null;
+    shouldThrowOnDeleteEstimation = false;
+    deleteEstimationErrorMessage = null;
+    deleteEstimationExceptionType = null;
     postgrestErrorCode = null;
     shouldReturnEmptyList = false;
     shouldDelayOperations = false;

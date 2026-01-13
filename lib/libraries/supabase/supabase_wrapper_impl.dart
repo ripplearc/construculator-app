@@ -108,7 +108,10 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
     required String filterColumn,
     required dynamic filterValue,
   }) async {
-    return await _supabaseClient.from(table).select(columns).eq(filterColumn, filterValue);
+    return await _supabaseClient
+        .from(table)
+        .select(columns)
+        .eq(filterColumn, filterValue);
   }
 
   @override
@@ -158,5 +161,19 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
     supabase.UserAttributes userAttributes,
   ) async {
     return await _supabaseClient.auth.updateUser(userAttributes);
+  }
+
+  @override
+  Future<Map<String, dynamic>> delete({
+    required String table,
+    required String filterColumn,
+    required dynamic filterValue,
+  }) async {
+    return await _supabaseClient
+        .from(table)
+        .delete()
+        .eq(filterColumn, filterValue)
+        .select()
+        .single();
   }
 }
