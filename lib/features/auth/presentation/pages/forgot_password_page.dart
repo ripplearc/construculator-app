@@ -29,23 +29,19 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
   void _handleFailure(Failure failure) {
     if (failure is AuthFailure) {
       if (failure.errorType == AuthErrorType.rateLimited) {
-        CoreToast.showError(
-          context,
-          l10n?.tooManyAttempts,
-          '${l10n?.continueButton}',
-        );
+        CoreToast.showError(context, l10n.tooManyAttempts, l10n.continueButton);
       } else {
         CoreToast.showError(
           context,
           failure.errorType.localizedMessage(context),
-          '${l10n?.continueButton}',
+          l10n.continueButton,
         );
       }
     } else {
       CoreToast.showError(
         context,
-        l10n?.unexpectedErrorMessage,
-        '${l10n?.continueButton}',
+        l10n.unexpectedErrorMessage,
+        l10n.continueButton,
       );
     }
   }
@@ -131,15 +127,15 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AuthHeader(
-                  title: '${l10n?.forgotPasswordTitle}',
-                  description: '${l10n?.forgotPasswordDescription}',
+                  title: l10n.forgotPasswordTitle,
+                  description: l10n.forgotPasswordDescription,
                 ),
                 const SizedBox(height: CoreSpacing.space10),
                 CoreTextField(
                   focusNode: focusNode,
                   controller: _emailController,
-                  label: '${l10n?.emailLabel}',
-                  hintText: '${l10n?.emailHint}',
+                  label: l10n.emailLabel,
+                  hintText: l10n.emailHint,
                   keyboardType: TextInputType.emailAddress,
                   errorTextList: _emailErrorList,
                 ),
@@ -151,8 +147,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
                       _emailController.text.isEmpty ||
                       _emailErrorList != null,
                   label: state is ForgotPasswordLoading
-                      ? '${l10n?.sendingOtpButton}'
-                      : '${l10n?.continueButton}',
+                      ? l10n.sendingOtpButton
+                      : l10n.continueButton,
                   centerAlign: true,
                 ),
               ],
@@ -177,8 +173,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
           if (state is OtpVerificationOtpResendSuccess) {
             CoreToast.showSuccess(
               context,
-              l10n?.otpResendSuccess,
-              '${l10n?.continueButton}',
+              l10n.otpResendSuccess,
+              l10n.continueButton,
             );
           }
           if (state is OtpVerificationResendFailure) {
@@ -187,7 +183,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
         },
         builder: (context, state) {
           return OtpVerificationQuickSheet(
-            note: '${l10n?.otpVerificationNote}',
+            note: l10n.otpVerificationNote,
             contact: email,
             isResending: state is OtpVerificationResendLoading,
             isVerifying: state is OtpVerificationLoading,

@@ -1,13 +1,17 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
+import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/features/project/presentation/widgets/project_header_app_bar.dart';
 import 'package:construculator/features/project/project_module.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
@@ -17,6 +21,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+
+import '../../../units/features/estimation/helpers/estimation_test_data_map_factory.dart';
 
 class _CostEstimationLandingPageTestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -39,7 +45,7 @@ class _CostEstimationLandingPageTestModule extends Module {
 
   @override
   void routes(RouteManager r) {
-    r.module('/estimation', module: EstimationModule(appBootstrap));
+    r.module(estimationBaseRoute, module: EstimationModule(appBootstrap));
   }
 }
 
@@ -48,18 +54,24 @@ void main() {
   late Clock clock;
   late AppBootstrap appBootstrap;
 
+  const testEstimationRoute = '$fullEstimationLandingRoute/$testProjectId';
+  BuildContext? buildContext;
+
   setUpAll(() {
-    fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     CoreToast.disableTimers();
+
+    clock = FakeClockImpl();
+    fakeSupabase = FakeSupabaseWrapper(clock: clock);
 
     appBootstrap = AppBootstrap(
       config: FakeAppConfig(),
       envLoader: FakeEnvLoader(),
       supabaseWrapper: fakeSupabase,
     );
-
-    clock = FakeClockImpl();
+    Modular.init(_CostEstimationLandingPageTestModule(appBootstrap));
+    Modular.setInitialRoute(testEstimationRoute);
   });
+
   tearDownAll(() {
     Modular.destroy();
     CoreToast.enableTimers();
@@ -70,15 +82,24 @@ void main() {
   });
 
   Widget makeApp() {
-    return ModularApp(
-      module: _CostEstimationLandingPageTestModule(appBootstrap),
-      child: MaterialApp.router(routerConfig: Modular.routerConfig),
+    return MaterialApp.router(
+      routerConfig: Modular.routerConfig,
+      locale: const Locale('en'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      builder: (context, child) {
+        buildContext = context;
+        return child!;
+      },
     );
   }
 
+  AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
+
   Future<void> pumpAppAtRoute(WidgetTester tester, String route) async {
-    Modular.setInitialRoute(route);
     await tester.pumpWidget(makeApp());
+    await tester.pumpAndSettle();
+    Modular.to.navigate(route);
     await tester.pumpAndSettle();
   }
 
@@ -113,50 +134,222 @@ void main() {
     ]);
   }
 
-  testWidgets('shows content when authenticated with user profile', (
-    tester,
-  ) async {
-    setUpAuthenticatedUser(
-      credentialId: 'test-credential-id',
-      email: 'test@example.com',
-    );
+  void addCostEstimationData(Map<String, dynamic> estimationData) {
+    fakeSupabase.addTableData('cost_estimates', [estimationData]);
+  }
 
-    await pumpAppAtRoute(tester, fullEstimationLandingRoute);
+  void addMultipleCostEstimations(List<Map<String, dynamic>> estimations) {
+    fakeSupabase.addTableData('cost_estimates', estimations);
+  }
 
-    expect(find.byType(CircularProgressIndicator), findsNothing);
-
-    // TODO: https://ripplearc.youtrack.cloud/issue/CA-162/Dashboard-Create-Project-Repository correct this to an actual name from fake project table
-    expect(find.text('Sample Construction Project'), findsOneWidget);
-  });
-
-  testWidgets(
-    'passes project id and avatar image to ProjectHeaderAppBar when user has photo',
-    (tester) async {
-      const avatarUrl = 'https://example.com/avatar.jpg';
-
+  group('Auth and header', () {
+    testWidgets('shows content when authenticated with user profile', (
+      tester,
+    ) async {
       setUpAuthenticatedUser(
         credentialId: 'test-credential-id',
         email: 'test@example.com',
-        profilePhotoUrl: avatarUrl,
       );
 
-      final originalOnError = FlutterError.onError;
-      FlutterError.onError = (details) {
-        if (details.exception is NetworkImageLoadException) return;
-        originalOnError!.call(details);
-      };
-      addTearDown(() => FlutterError.onError = originalOnError);
+      await pumpAppAtRoute(tester, testEstimationRoute);
+      await tester.pumpAndSettle();
 
-      await pumpAppAtRoute(tester, fullEstimationLandingRoute);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
 
-      final projectHeaderAppBar = tester.widget<ProjectHeaderAppBar>(
-        find.byType(ProjectHeaderAppBar),
+      // TODO: https://ripplearc.youtrack.cloud/issue/CA-162/Dashboard-Create-Project-Repository correct this to an actual name from fake project table
+      expect(find.text('Sample Construction Project'), findsOneWidget);
+    });
+
+    testWidgets(
+      'passes project id and avatar image to ProjectHeaderAppBar when user has photo',
+      (tester) async {
+        const avatarUrl = 'https://example.com/avatar.jpg';
+
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+          profilePhotoUrl: avatarUrl,
+        );
+
+        final originalOnError = FlutterError.onError;
+        FlutterError.onError = (details) {
+          if (details.exception is NetworkImageLoadException) return;
+          originalOnError!.call(details);
+        };
+        addTearDown(() => FlutterError.onError = originalOnError);
+
+        await pumpAppAtRoute(tester, testEstimationRoute);
+
+        final projectHeaderAppBar = tester.widget<ProjectHeaderAppBar>(
+          find.byType(ProjectHeaderAppBar),
+        );
+
+        expect(projectHeaderAppBar.projectId, testProjectId);
+        expect(projectHeaderAppBar.avatarImage, isNotNull);
+        expect(projectHeaderAppBar.avatarImage, isA<NetworkImage>());
+        expect(
+          (projectHeaderAppBar.avatarImage! as NetworkImage).url,
+          avatarUrl,
+        );
+      },
+    );
+  });
+
+  group('Cost Estimation Bloc Integration', () {
+    testWidgets('shows empty page when no estimations exist', (tester) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
       );
 
-      expect(projectHeaderAppBar.projectId, '');
-      expect(projectHeaderAppBar.avatarImage, isNotNull);
-      expect(projectHeaderAppBar.avatarImage, isA<NetworkImage>());
-      expect((projectHeaderAppBar.avatarImage! as NetworkImage).url, avatarUrl);
-    },
-  );
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      final locale = l10n();
+
+      expect(find.byType(CostEstimationEmptyWidget), findsOneWidget);
+      expect(find.text(locale.costEstimationEmptyMessage), findsOneWidget);
+      expect(find.byType(CostEstimationTile), findsNothing);
+    });
+
+    testWidgets('shows list of estimations when data exists', (tester) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      // Add estimations using the test data factory
+      addMultipleCostEstimations([
+        EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: 'Kitchen Remodel',
+          totalCost: 25000.0,
+        ),
+        EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-2',
+          projectId: testProjectId,
+          estimateName: 'Bathroom Renovation',
+          totalCost: 15000.0,
+        ),
+      ]);
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      expect(find.byType(CostEstimationTile), findsNWidgets(2));
+      expect(find.byType(CostEstimationEmptyWidget), findsNothing);
+      expect(find.text('Kitchen Remodel'), findsOneWidget);
+      expect(find.text('Bathroom Renovation'), findsOneWidget);
+    });
+
+    testWidgets('shows timeout error message when timeout error occurs', (
+      tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      fakeSupabase.shouldThrowOnSelectMultiple = true;
+      fakeSupabase.selectMultipleExceptionType = SupabaseExceptionType.timeout;
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      final locale = l10n();
+
+      expect(find.text(locale.timeoutError), findsOneWidget);
+      expect(find.byKey(const Key('toast_close_button')), findsOneWidget);
+    });
+
+    testWidgets('shows connection error message when connection error occurs', (
+      tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      fakeSupabase.shouldThrowOnSelectMultiple = true;
+      fakeSupabase.selectMultipleExceptionType = SupabaseExceptionType.socket;
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      expect(find.text(l10n().connectionError), findsOneWidget);
+      expect(find.byKey(const Key('toast_close_button')), findsOneWidget);
+    });
+
+    testWidgets('shows unexpected error message when unexpected error occurs', (
+      tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      fakeSupabase.shouldThrowOnSelectMultiple = true;
+      fakeSupabase.selectMultipleExceptionType = SupabaseExceptionType.type;
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      expect(find.text(l10n().unexpectedErrorMessage), findsOneWidget);
+      expect(find.byKey(const Key('toast_close_button')), findsOneWidget);
+    });
+
+    testWidgets('refreshes estimations when pull to refresh', (tester) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      // Add initial estimation
+      addCostEstimationData(
+        EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: 'Initial Estimation',
+        ),
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      expect(find.text('Initial Estimation'), findsOneWidget);
+
+      // Clear and add updated estimations
+      fakeSupabase.clearTableData('cost_estimates');
+      addMultipleCostEstimations([
+        EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: 'Initial Estimation',
+        ),
+        EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-2',
+          projectId: testProjectId,
+          estimateName: 'Updated Estimation',
+        ),
+      ]);
+
+      await tester.drag(find.byType(RefreshIndicator), const Offset(0, 300));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Initial Estimation'), findsOneWidget);
+      expect(find.text('Updated Estimation'), findsOneWidget);
+      expect(find.byType(CostEstimationTile), findsNWidgets(2));
+    });
+  });
+
+  group('Route validation', () {
+    testWidgets('renders empty screen when projectId is missing', (
+      tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      await pumpAppAtRoute(tester, '$fullEstimationLandingRoute/');
+
+      expect(find.byType(SizedBox), findsOneWidget);
+      expect(find.byType(CostEstimationEmptyWidget), findsNothing);
+    });
+  });
 }

@@ -1,22 +1,31 @@
+import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_state.dart';
-import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
+import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class CostEstimationLandingPage extends StatefulWidget {
-  const CostEstimationLandingPage({super.key});
+  final String projectId;
+
+  const CostEstimationLandingPage({super.key, required this.projectId});
 
   @override
   State<CostEstimationLandingPage> createState() =>
       _CostEstimationLandingPageState();
 }
 
-class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
+class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
+    with LocalizationMixin {
   late final AuthBloc _authBloc;
   String userAvatarUrl = '';
 
@@ -43,6 +52,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
         builder: (context, state) {
           if (state is AuthLoadUnauthenticated) {
             return const Scaffold(
+              // TODO: https://ripplearc.youtrack.cloud/issue/CA-458/CostEstimation-Refactor-Loading-Indicators-in-Construculator-App
               body: Center(child: CircularProgressIndicator()),
             );
           }
@@ -52,30 +62,89 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
               context,
             ).extension<AppColorsExtension>()?.pageBackground,
             appBar: Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
-              projectId: '',
+              projectId: widget.projectId,
               avatarImage: userAvatarUrl.isNotEmpty
                   ? NetworkImage(userAvatarUrl)
                   : null,
             ),
-            body: _buildBody(),
+            body: _buildBody(l10n),
           );
         },
       ),
     );
   }
 
-  final List<CostEstimate> estimations = [];
+  Widget _buildBody(AppLocalizations l10n) {
+    return BlocConsumer<CostEstimationListBloc, CostEstimationListState>(
+      listener: (context, state) {
+        if (state is CostEstimationListError) {
+          final message = _mapFailureToMessage(l10n, state.failure);
+          CoreToast.showError(context, message, l10n.closeLabel);
+        }
+      },
+      builder: (context, state) {
+        // TODO: https://ripplearc.youtrack.cloud/issue/CA-459/CoreUI-Implement-Custom-Branded-Pull-to-Refresh
+        return RefreshIndicator(
+          onRefresh: () async {
+            BlocProvider.of<CostEstimationListBloc>(
+              context,
+            ).add(CostEstimationListRefreshEvent(projectId: widget.projectId));
+          },
+          child: _buildContent(state, l10n),
+        );
+      },
+    );
+  }
 
-  Widget _buildBody() {
+  Widget _buildContent(CostEstimationListState state, AppLocalizations l10n) {
+    if (state is CostEstimationListLoading) {
+      // TODO: https://ripplearc.youtrack.cloud/issue/CA-458/CostEstimation-Refactor-Loading-Indicators-in-Construculator-App
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state is CostEstimationListEmpty) {
+      return _buildEmptyState(l10n);
+    }
+
+    if (state is CostEstimationListWithData) {
+      return _buildEstimationsList(state.estimates);
+    }
+
+    return const Center(child: CircularProgressIndicator());
+  }
+
+  Widget _buildEmptyState(AppLocalizations l10n) {
+    return CostEstimationEmptyWidget(message: l10n.costEstimationEmptyMessage);
+  }
+
+  Widget _buildEstimationsList(List<CostEstimate> estimations) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
-      child: Column(
-        children: [
-          ...estimations.map(
-            (estimation) => CostEstimationTile(estimation: estimation),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      child: ListView.builder(
+        itemCount: estimations.length,
+        itemBuilder: (context, index) {
+          final estimation = estimations[index];
+          return CostEstimationTile(
+            estimation: estimation,
+            onTap: () {},
+            onMenuTap: () {},
+          );
+        },
       ),
     );
+  }
+
+  String? _mapFailureToMessage(AppLocalizations l10n, Failure failure) {
+    if (failure is! EstimationFailure) {
+      return l10n.unexpectedErrorMessage;
+    }
+    switch (failure.errorType) {
+      case EstimationErrorType.timeoutError:
+        return l10n.timeoutError;
+      case EstimationErrorType.connectionError:
+        return l10n.connectionError;
+      default:
+        return l10n.unexpectedErrorMessage;
+    }
   }
 }

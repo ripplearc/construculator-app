@@ -17,7 +17,7 @@ import 'package:flutter/material.dart';
 /// class _MyPageState extends State<MyPage> with LocalizationMixin {
 ///   @override
 ///   Widget build(BuildContext context) {
-///     return Text(l10n?.helloWorld ?? "Hello");
+///     return Text(l10n.helloWorld);
 ///   }
 /// }
 /// ```
@@ -25,11 +25,19 @@ mixin LocalizationMixin<T extends StatefulWidget> on State<T> {
   /// Holds the current localization instance for the widget.
   ///
   /// This is updated automatically in `didChangeDependencies`.
-  AppLocalizations? l10n;
+  late AppLocalizations l10n;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    l10n = AppLocalizations.of(context);
+    final localizations = AppLocalizations.of(context);
+    if (localizations == null) {
+      throw StateError(
+        'AppLocalizations not found in the widget tree. '
+        'Ensure that your MaterialApp has localizationsDelegates configured '
+        'and that you are accessing this from a descendant widget.',
+      );
+    }
+    l10n = localizations;
   }
 }

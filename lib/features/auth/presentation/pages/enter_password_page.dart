@@ -40,7 +40,7 @@ class _EnterPasswordPageState extends State<EnterPasswordPage>
       setState(() {
         _canPressContinue = _passwordController.text.isNotEmpty;
         _passwordErrorList = _passwordController.text.isEmpty
-            ? [l10n?.passwordRequiredError ?? '']
+            ? [l10n.passwordRequiredError]
             : null;
       });
     });
@@ -79,13 +79,13 @@ class _EnterPasswordPageState extends State<EnterPasswordPage>
               CoreToast.showError(
                 context,
                 failure.errorType.localizedMessage(context),
-                '${l10n?.continueButton}',
+                l10n.continueButton,
               );
             } else {
               CoreToast.showError(
                 context,
-                l10n?.unexpectedErrorMessage,
-                '${l10n?.continueButton}',
+                l10n.unexpectedErrorMessage,
+                l10n.continueButton,
               );
             }
           }
@@ -94,11 +94,11 @@ class _EnterPasswordPageState extends State<EnterPasswordPage>
             _passwordErrorList = null;
             SuccessModal.show(
               context,
-              message: '${l10n?.loginSuccessMessage}',
+              message: l10n.loginSuccessMessage,
               onPressed: () {
                 _router.navigate(dashboardRoute);
               },
-              buttonLabel: '${l10n?.continueButton}',
+              buttonLabel: l10n.continueButton,
             );
           }
         },
@@ -109,8 +109,8 @@ class _EnterPasswordPageState extends State<EnterPasswordPage>
               children: [
                 const SizedBox(height: 16),
                 AuthHeader(
-                  title: '${l10n?.enterPasswordTitle}',
-                  description: '${l10n?.enterPasswordDescription}',
+                  title: l10n.enterPasswordTitle,
+                  description: l10n.enterPasswordDescription,
                   contact: widget.email,
                   onContactPressed: () => _router.pop(),
                 ),
@@ -118,8 +118,8 @@ class _EnterPasswordPageState extends State<EnterPasswordPage>
                 CoreTextField(
                   controller: _passwordController,
                   obscureText: !_isPasswordVisible,
-                  label: '${l10n?.passwordLabel}',
-                  hintText: '${l10n?.passwordHint}',
+                  label: l10n.passwordLabel,
+                  hintText: l10n.passwordHint,
                   suffix: IconButton(
                     icon: CoreIconWidget(
                       icon: _isPasswordVisible
@@ -140,7 +140,7 @@ class _EnterPasswordPageState extends State<EnterPasswordPage>
                       _router.pushNamed(fullForgotPasswordRoute);
                     },
                     child: Text(
-                      '${l10n?.forgotPasswordTitle}',
+                      l10n.forgotPasswordTitle,
                       style: typography.bodyLargeSemiBold.copyWith(
                         color: CoreTextColors.link,
                       ),
@@ -154,8 +154,8 @@ class _EnterPasswordPageState extends State<EnterPasswordPage>
                       !_canPressContinue || state is EnterPasswordSubmitLoading,
                   centerAlign: true,
                   label: state is EnterPasswordSubmitLoading
-                      ? '${l10n?.loggingInButton}'
-                      : '${l10n?.continueButton}',
+                      ? l10n.loggingInButton
+                      : l10n.continueButton,
                 ),
                 const SizedBox(height: 16),
               ],

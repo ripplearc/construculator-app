@@ -80,13 +80,13 @@ class _CreateAccountPageState extends State<CreateAccountPage>
       CoreToast.showError(
         context,
         failure.errorType.localizedMessage(context),
-        l10n?.closeLabel ?? '',
+        l10n.closeLabel,
       );
     } else {
       CoreToast.showError(
         context,
-        l10n?.unexpectedErrorMessage ?? '',
-        l10n?.closeLabel ?? '',
+        l10n.unexpectedErrorMessage,
+        l10n.closeLabel,
       );
     }
   }
@@ -175,8 +175,8 @@ class _CreateAccountPageState extends State<CreateAccountPage>
   void _showSuccessModal(BuildContext context) {
     SuccessModal.show(
       context,
-      message: l10n?.createAccountSuccessMessage,
-      buttonLabel: l10n?.continueButton ?? '',
+      message: l10n.createAccountSuccessMessage,
+      buttonLabel: l10n.continueButton,
       onPressed: () => _router.navigate(dashboardRoute),
     );
   }
@@ -371,20 +371,20 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                 children: [
                   const SizedBox(height: CoreSpacing.space6),
                   AuthHeader(
-                    title: '${l10n?.createAccountTitle}',
-                    description: '${l10n?.createAccountSubtitle}',
+                    title: l10n.createAccountTitle,
+                    description: l10n.createAccountSubtitle,
                   ),
                   const SizedBox(height: CoreSpacing.space8),
                   CoreTextField(
-                    label: '${l10n?.firstNameLabel}',
-                    hintText: '${l10n?.firstNameHint}',
+                    label: l10n.firstNameLabel,
+                    hintText: l10n.firstNameHint,
                     controller: _firstNameController,
                     errorTextList: _firstNameErrorList,
                   ),
                   const SizedBox(height: CoreSpacing.space6),
                   CoreTextField(
-                    label: '${l10n?.lastNameLabel}',
-                    hintText: '${l10n?.lastNameHint}',
+                    label: l10n.lastNameLabel,
+                    hintText: l10n.lastNameHint,
                     controller: _lastNameController,
                     errorTextList: _lastNameErrorList,
                   ),
@@ -397,22 +397,22 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                     )
                   else if (state is CreateAccountGetProfessionalRolesFailure)
                     Text(
-                      '${l10n?.rolesLoadingError}',
+                      l10n.rolesLoadingError,
                       style: typography.bodySmallRegular.copyWith(
                         color: CoreTextColors.error,
                       ),
                     )
                   else
                     SingleItemSelector<String>(
-                      labelText: '${l10n?.roleLabel}',
-                      hintText: '${l10n?.roleHint}',
+                      labelText: l10n.roleLabel,
+                      hintText: l10n.roleHint,
                       onOpen: _onItemSelectorOpened,
                       selectedItem: _selectedRole?.name,
                       items: _professionalRolesList
                           .map((role) => role.name)
                           .toList(),
                       onItemSelected: _onRoleSelected,
-                      modalTitle: '${l10n?.selectRoleTitle}',
+                      modalTitle: l10n.selectRoleTitle,
                     ),
                   if (_roleErrorList?.isNotEmpty ?? false)
                     Padding(
@@ -439,8 +439,8 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                     ),
                   const SizedBox(height: CoreSpacing.space6),
                   CoreTextField(
-                    label: '${l10n?.emailLabel}',
-                    hintText: '${l10n?.emailHint}',
+                    label: l10n.emailLabel,
+                    hintText: l10n.emailHint,
                     enabled: false,
                     readOnly: true,
                     controller: _emailController,
@@ -453,8 +453,8 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                   ),
                   const SizedBox(height: CoreSpacing.space6),
                   CoreTextField(
-                    label: '${l10n?.mobileNumberLabel}',
-                    hintText: '${l10n?.mobileNumberHint}',
+                    label: l10n.mobileNumberLabel,
+                    hintText: l10n.mobileNumberHint,
                     controller: _mobileNumberController,
                     focusNode: _phoneFocusNode,
                     isPhoneNumber: true,
@@ -483,8 +483,8 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                   ),
                   const SizedBox(height: CoreSpacing.space6),
                   CoreTextField(
-                    label: '${l10n?.passwordLabel}',
-                    hintText: '${l10n?.passwordHint}',
+                    label: l10n.passwordLabel,
+                    hintText: l10n.passwordHint,
                     controller: _passwordController,
                     obscureText: !_isPasswordVisible,
                     suffix: IconButton(
@@ -501,8 +501,8 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                   ),
                   const SizedBox(height: CoreSpacing.space6),
                   CoreTextField(
-                    label: '${l10n?.confirmPasswordLabel}',
-                    hintText: '${l10n?.confirmPasswordHint}',
+                    label: l10n.confirmPasswordLabel,
+                    hintText: l10n.confirmPasswordHint,
                     controller: _confirmPasswordController,
                     obscureText: !_isConfirmPasswordVisible,
                     suffix: IconButton(
@@ -519,10 +519,10 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                   ),
                   const SizedBox(height: CoreSpacing.space6),
                   TermsAndConditionsSection(
-                    termsAndConditionsText: l10n?.termsAndConditionsText ?? '',
-                    termsAndServicesLink: l10n?.termsAndServicesLink ?? '',
-                    privacyPolicyLink: l10n?.privacyPolicyLink ?? '',
-                    andAcknowledge: l10n?.andAcknowledge ?? '',
+                    termsAndConditionsText: l10n.termsAndConditionsText,
+                    termsAndServicesLink: l10n.termsAndServicesLink,
+                    privacyPolicyLink: l10n.privacyPolicyLink,
+                    andAcknowledge: l10n.andAcknowledge,
                     onTermsAndConditionsLinkPressed: () => _openLink(''),
                     onPrivacyPolicyLinkPressed: () => _openLink(''),
                   ),
@@ -535,8 +535,8 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                       _onSubmit(context);
                     },
                     label: state is CreateAccountLoading
-                        ? '${l10n?.creatingAccountButton}'
-                        : '${l10n?.agreeAndContinueButton}',
+                        ? l10n.creatingAccountButton
+                        : l10n.agreeAndContinueButton,
                   ),
                   const SizedBox(height: 32),
                 ],

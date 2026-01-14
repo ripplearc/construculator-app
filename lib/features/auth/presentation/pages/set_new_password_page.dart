@@ -124,22 +124,22 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage>
               CoreToast.showError(
                 context,
                 failure.errorType.localizedMessage(context),
-                '${l10n?.closeLabel}',
+                l10n.closeLabel,
               );
             } else {
               CoreToast.showError(
                 context,
-                l10n?.unexpectedErrorMessage,
-                '${l10n?.closeLabel}',
+                l10n.unexpectedErrorMessage,
+                l10n.closeLabel,
               );
             }
           }
           if (state is SetNewPasswordSuccess) {
             SuccessModal.show(
               context,
-              message: '${l10n?.passwordResetSuccessMessage}',
+              message: l10n.passwordResetSuccessMessage,
               onPressed: () => _router.navigate(dashboardRoute),
-              buttonLabel: '${l10n?.continueButton}',
+              buttonLabel: l10n.continueButton,
             );
           }
         },
@@ -154,12 +154,12 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${l10n?.setNewPasswordTitle}',
+                  l10n.setNewPasswordTitle,
                   style: typography.headlineLargeSemiBold,
                 ),
                 const SizedBox(height: CoreSpacing.space2),
                 Text(
-                  '${l10n?.setNewPasswordDescription}',
+                  l10n.setNewPasswordDescription,
                   style: typography.bodyLargeRegular.copyWith(
                     color: Colors.grey[700],
                   ),
@@ -167,8 +167,8 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage>
                 const SizedBox(height: CoreSpacing.space4),
                 CoreTextField(
                   controller: _passwordController,
-                  label: '${l10n?.newPasswordLabel}',
-                  hintText: '${l10n?.newPasswordHint}',
+                  label: l10n.newPasswordLabel,
+                  hintText: l10n.newPasswordHint,
                   obscureText: !_isPasswordVisible,
                   errorTextList: _passwordErrorList,
                   suffix: IconButton(
@@ -185,8 +185,8 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage>
                 const SizedBox(height: CoreSpacing.space6),
                 CoreTextField(
                   controller: _confirmPasswordController,
-                  label: '${l10n?.confirmPasswordLabel}',
-                  hintText: '${l10n?.confirmPasswordHint}',
+                  label: l10n.confirmPasswordLabel,
+                  hintText: l10n.confirmPasswordHint,
                   obscureText: !_isConfirmPasswordVisible,
                   errorTextList: _confirmPasswordErrorList,
                   suffix: IconButton(
@@ -209,8 +209,8 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage>
                           _confirmPasswordController.text ||
                       state is SetNewPasswordLoading,
                   label: state is SetNewPasswordLoading
-                      ? '${l10n?.settingPasswordButton}'
-                      : '${l10n?.setPasswordButton}',
+                      ? l10n.settingPasswordButton
+                      : l10n.setPasswordButton,
                   centerAlign: true,
                 ),
               ],
