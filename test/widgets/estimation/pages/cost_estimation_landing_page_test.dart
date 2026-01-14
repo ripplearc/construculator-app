@@ -89,6 +89,7 @@ void main() {
   Widget makeApp() {
     return MaterialApp.router(
       routerConfig: Modular.routerConfig,
+      theme: CoreTheme.light(),
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -198,6 +199,44 @@ void main() {
         );
       },
     );
+  });
+
+  group('Add Estimation Button', () {
+    testWidgets(
+      'renders as CoreButton with expected label when cost estimation landing page is loaded',
+      (tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+
+        await pumpAppAtRoute(tester, testEstimationRoute);
+
+        final addButton = find.byType(CoreButton);
+        expect(addButton, findsOneWidget);
+        expect(find.text(l10n().addEstimation), findsOneWidget);
+      },
+    );
+
+    testWidgets('is visible when estimations list has data', (tester) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      addCostEstimationData(
+        EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: 'Test Estimation',
+        ),
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      expect(find.byType(CoreButton), findsOneWidget);
+      expect(find.text(l10n().addEstimation), findsOneWidget);
+    });
   });
 
   group('Cost Estimation Bloc Integration', () {
