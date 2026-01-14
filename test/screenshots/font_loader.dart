@@ -63,7 +63,7 @@ ThemeData createTestTheme() {
   return ThemeData(
     fontFamily: 'Roboto',
     materialTapTargetSize: MaterialTapTargetSize.padded,
-    primaryColor: CoreBrandColors.orient,
+    primaryColor: colors.backgroundDarkOrient,
     extensions: [colors, typography],
   );
 }
