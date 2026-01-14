@@ -6,7 +6,7 @@ import 'package:construculator/features/estimation/data/repositories/cost_estima
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/features/estimation/domain/usecases/get_estimations_usecase.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
-
+import 'package:construculator/features/estimation/presentation/pages/cost_estimation_details_page.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
@@ -41,6 +41,19 @@ class EstimationModule extends Module {
         },
         child: CostEstimationLandingPage(projectId: projectId),
       );
+    }, [AuthGuard()]),
+
+    RouteDefinition(estimationDetailsRoute, (context) {
+      final estimationId = Modular.args.params['estimationId'];
+
+      if (estimationId == null || estimationId.isEmpty) {
+        throw ArgumentError(
+          'estimationId is required for CostEstimationDetailsPage. '
+          'Ensure the route includes a valid estimationId parameter.',
+        );
+      }
+
+      return CostEstimationDetailsPage(estimationId: estimationId);
     }, [AuthGuard()]),
   ];
 

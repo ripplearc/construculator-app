@@ -9,7 +9,9 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
+import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -53,6 +55,7 @@ void main() {
   late FakeSupabaseWrapper fakeSupabase;
   late Clock clock;
   late AppBootstrap appBootstrap;
+  late FakeAppRouter fakeAppRouter;
 
   const testEstimationRoute = '$fullEstimationLandingRoute/$testProjectId';
   BuildContext? buildContext;
@@ -70,6 +73,8 @@ void main() {
     );
     Modular.init(_CostEstimationLandingPageTestModule(appBootstrap));
     Modular.setInitialRoute(testEstimationRoute);
+
+    fakeAppRouter = Modular.get<AppRouter>() as FakeAppRouter;
   });
 
   tearDownAll(() {
@@ -217,7 +222,6 @@ void main() {
         email: 'test@example.com',
       );
 
-      // Add estimations using the test data factory
       addMultipleCostEstimations([
         EstimationTestDataMapFactory.createFakeEstimationData(
           id: 'estimation-1',
@@ -239,6 +243,36 @@ void main() {
       expect(find.byType(CostEstimationEmptyWidget), findsNothing);
       expect(find.text('Kitchen Remodel'), findsOneWidget);
       expect(find.text('Bathroom Renovation'), findsOneWidget);
+    });
+
+    testWidgets('navigates to details page when tile is tapped', (
+      tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      const estimationId = 'estimation-1';
+      addCostEstimationData(
+        EstimationTestDataMapFactory.createFakeEstimationData(
+          id: estimationId,
+          projectId: testProjectId,
+          estimateName: 'Kitchen Remodel',
+          totalCost: 25000.0,
+        ),
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      await tester.tap(find.text('Kitchen Remodel'));
+      await tester.pumpAndSettle();
+
+      final navigatedRoute = fakeAppRouter.navigationHistory.last;
+      expect(
+        navigatedRoute.route,
+        equals('$fullEstimationDetailsRoute/$estimationId'),
+      );
     });
 
     testWidgets('shows timeout error message when timeout error occurs', (
@@ -300,7 +334,6 @@ void main() {
         email: 'test@example.com',
       );
 
-      // Add initial estimation
       addCostEstimationData(
         EstimationTestDataMapFactory.createFakeEstimationData(
           id: 'estimation-1',
@@ -313,7 +346,6 @@ void main() {
 
       expect(find.text('Initial Estimation'), findsOneWidget);
 
-      // Clear and add updated estimations
       fakeSupabase.clearTableData('cost_estimates');
       addMultipleCostEstimations([
         EstimationTestDataMapFactory.createFakeEstimationData(
