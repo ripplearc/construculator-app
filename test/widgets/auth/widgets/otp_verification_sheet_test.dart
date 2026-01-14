@@ -21,6 +21,7 @@ void main() {
   }) async {
     await tester.pumpWidget(
       MaterialApp(
+        theme: CoreTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Builder(

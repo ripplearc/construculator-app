@@ -14,7 +14,10 @@ void main() {
   }) {
     return MaterialApp(
       theme: ThemeData(
-        extensions: <ThemeExtension<dynamic>>[AppTypographyExtension.create()],
+        extensions: <ThemeExtension<dynamic>>[
+          AppColorsExtension.create(),
+          AppTypographyExtension.create(),
+        ],
       ),
       home: Scaffold(
         body: Builder(
@@ -34,6 +37,7 @@ void main() {
   }
 
   group('buildErrorWidget Tests', () {
+      final colors = AppColorsExtension.create();
     testWidgets('renders errorText correctly with proper style', (
       tester,
     ) async {
@@ -43,9 +47,8 @@ void main() {
 
       final errorFinder = find.text(errorText);
       expect(errorFinder, findsOneWidget);
-
       final textWidget = tester.widget<Text>(errorFinder);
-      expect(textWidget.style!.color, CoreTextColors.error);
+      expect(textWidget.style!.color, colors.textError);
 
       final context = tester.element(find.byType(Center));
       final typography = Theme.of(context).coreTypography;
@@ -67,7 +70,7 @@ void main() {
       expect(linkFinder, findsOneWidget);
 
       final textWidget = tester.widget<Text>(linkFinder);
-      expect(textWidget.style!.color, CoreTextColors.link);
+      expect(textWidget.style!.color, colors.textLink);
 
       final context = tester.element(find.byType(Center));
       final typography = Theme.of(context).coreTypography;

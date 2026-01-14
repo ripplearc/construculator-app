@@ -69,7 +69,10 @@ void main() {
   });
 
   Widget makeApp() {
-    return const MaterialApp(home: DashboardPage());
+    return MaterialApp(
+      theme: CoreTheme.light(),
+      home: const DashboardPage(),
+    );
   }
 
   UserCredential createCredential({
