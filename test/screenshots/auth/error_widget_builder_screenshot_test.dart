@@ -20,6 +20,7 @@ void main() {
     }) async {
       await tester.pumpWidget(
         MaterialApp(
+          theme: createTestTheme(),
           home: Scaffold(
             body: Center(
               child: Builder(

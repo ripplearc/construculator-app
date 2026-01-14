@@ -21,6 +21,7 @@ void main() {
     }) async {
       await tester.pumpWidget(
         MaterialApp(
+          theme: createTestTheme(),
           home: Material(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
