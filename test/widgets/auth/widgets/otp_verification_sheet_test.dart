@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import '../../../screenshots/font_loader.dart';
 
 void main() {
   const contact = '+233 123 456 789';
@@ -21,7 +22,7 @@ void main() {
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: CoreTheme.light(),
+        theme: createTestTheme(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Builder(

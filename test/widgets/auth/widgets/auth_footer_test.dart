@@ -2,6 +2,7 @@ import 'package:construculator/features/auth/presentation/widgets/auth_footer.da
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+import '../../../screenshots/font_loader.dart';
 
 void main() {
   const text = 'Don’t have an account?';
@@ -13,12 +14,7 @@ void main() {
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: ThemeData(
-          extensions: <ThemeExtension<dynamic>>[
-            AppColorsExtension.create(),
-            AppTypographyExtension.create(),
-          ],
-        ),
+        theme: createTestTheme(),
         home: Scaffold(
           body: AuthFooter(
             text: text,
