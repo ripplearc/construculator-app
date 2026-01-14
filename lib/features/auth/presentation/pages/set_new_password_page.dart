@@ -107,12 +107,12 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage>
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).extension<AppColorsExtension>();
+    final colors = AppColorsExtension.of(context);
 
     return Scaffold(
-      backgroundColor: colors?.pageBackground,
+      backgroundColor: colors.pageBackground,
       appBar: AppBar(
-        backgroundColor: colors?.pageBackground,
+        backgroundColor: colors.pageBackground,
         elevation: 0,
       ),
       body: BlocConsumer<SetNewPasswordBloc, SetNewPasswordState>(
@@ -163,7 +163,7 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage>
                 Text(
                   l10n.setNewPasswordDescription,
                   style: typography.bodyLargeRegular.copyWith(
-                    color: colors?.textBody,
+                    color: colors.textBody,
                   ),
                 ),
                 const SizedBox(height: CoreSpacing.space4),

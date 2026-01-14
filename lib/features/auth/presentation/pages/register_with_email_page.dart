@@ -158,12 +158,13 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
     BuildContext callingContext,
     String email,
   ) {
+    final colors = AppColorsExtension.of(callingContext);
     showModalBottomSheet(
       context: callingContext,
       isScrollControlled: true,
       isDismissible: false,
       enableDrag: false,
-      backgroundColor: Colors.transparent,
+      backgroundColor: colors.transparent,
       builder: (bottomSheetContext) {
         return _buildOtpVerificationBottomSheet(callingContext, email);
       },
@@ -194,14 +195,14 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
   @override
   Widget build(BuildContext context) {
     final typography = Theme.of(context).coreTypography;
-    final colors = Theme.of(context).extension<AppColorsExtension>();
+    final colors = AppColorsExtension.of(context);
 
     return Theme(
       data: Theme.of(context).copyWith(
-        dividerTheme: const DividerThemeData(color: Colors.transparent),
+        dividerTheme: DividerThemeData(color: colors.transparent),
       ),
       child: Scaffold(
-        backgroundColor: colors?.pageBackground,
+        backgroundColor: colors.pageBackground,
         body: BlocConsumer<RegisterWithEmailBloc, RegisterWithEmailState>(
           listener: (context, state) {
             if (state is RegisterWithEmailEmailCheckCompleted) {
@@ -290,7 +291,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
                       children: [
                         Expanded(
                           child: Divider(
-                            color: colors?.lineLight,
+                            color: colors.lineLight,
                             thickness: 1,
                           ),
                         ),
@@ -301,13 +302,13 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
                           child: Text(
                             l10n.or,
                             style: typography.bodyMediumRegular.copyWith(
-                              color: colors?.textBody,
+                              color: colors.textBody,
                             ),
                           ),
                         ),
                         Expanded(
                           child: Divider(
-                            color: colors?.lineLight,
+                            color: colors.lineLight,
                             thickness: 1,
                           ),
                         ),

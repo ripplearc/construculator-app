@@ -327,12 +327,12 @@ class _CreateAccountPageState extends State<CreateAccountPage>
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).extension<AppColorsExtension>();
+    final colors = AppColorsExtension.of(context);
 
     return Scaffold(
-      backgroundColor: colors?.pageBackground,
+      backgroundColor: colors.pageBackground,
       appBar: AppBar(
-        backgroundColor: colors?.pageBackground,
+        backgroundColor: colors.pageBackground,
         elevation: 0,
       ),
       body: BlocConsumer<CreateAccountBloc, CreateAccountState>(
@@ -394,14 +394,14 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                   if (state is CreateAccountGetProfessionalRolesLoading)
                     Center(
                       child: CircularProgressIndicator(
-                        color: colors?.iconDark,
+                        color: colors.iconDark,
                       ),
                     )
                   else if (state is CreateAccountGetProfessionalRolesFailure)
                     Text(
                       l10n.rolesLoadingError,
                       style: typography.bodySmallRegular.copyWith(
-                        color: colors?.textError,
+                        color: colors.textError,
                       ),
                     )
                   else
@@ -427,13 +427,13 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                           CoreIconWidget(
                             icon: CoreIcons.error,
                             size: 16,
-                            color: colors?.textError,
+                            color: colors.textError,
                           ),
                           const SizedBox(width: CoreSpacing.space1),
                           Text(
                             '${_roleErrorList?.first}',
                             style: typography.bodySmallRegular.copyWith(
-                              color: colors?.textError,
+                              color: colors.textError,
                             ),
                           ),
                         ],
@@ -450,7 +450,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                     errorTextList: _emailErrorList,
                     suffix: CoreIconWidget(
                       icon: CoreIcons.checkCircle,
-                      color: colors?.iconGreen,
+                      color: colors.iconGreen,
                     ),
                   ),
                   const SizedBox(height: CoreSpacing.space6),
@@ -495,7 +495,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                             ? CoreIcons.eye
                             : CoreIcons.eyeOff,
                         size: CoreSpacing.space6,
-                        color: colors?.iconDark,
+                        color: colors.iconDark,
                       ),
                       onPressed: () => _togglePasswordVisibility(),
                     ),
@@ -513,7 +513,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                             ? CoreIcons.eye
                             : CoreIcons.eyeOff,
                         size: CoreSpacing.space6,
-                        color: colors?.iconDark,
+                        color: colors.iconDark,
                       ),
                       onPressed: () => _toggleConfirmPasswordVisibility(),
                     ),
