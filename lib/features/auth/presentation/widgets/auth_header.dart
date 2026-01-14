@@ -22,7 +22,7 @@ class AuthHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = Theme.of(context).coreTypography;
-    final colors = Theme.of(context).extension<AppColorsExtension>();
+    final colors = AppColorsExtension.of(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,7 +57,7 @@ class AuthHeader extends StatelessWidget {
                             Text(
                               '$contact',
                               style: typography.bodyLargeSemiBold.copyWith(
-                                color: colors?.textLink,
+                                color: colors.textLink,
                               ),
                             ),
                             Padding(
@@ -65,7 +65,7 @@ class AuthHeader extends StatelessWidget {
                               child: Icon(
                                 Icons.edit_outlined,
                                 size: 20,
-                                color: colors?.textLink,
+                                color: colors.textLink,
                               ),
                             ),
                           ],

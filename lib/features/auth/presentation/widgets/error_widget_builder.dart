@@ -14,7 +14,7 @@ Widget buildErrorWidgetWithLink({
   required VoidCallback onPressed,
 }) {
   final typography = Theme.of(context).coreTypography;
-  final colors = Theme.of(context).extension<AppColorsExtension>();
+  final colors = AppColorsExtension.of(context);
 
   return Row(
     crossAxisAlignment: CrossAxisAlignment.center,
@@ -24,7 +24,7 @@ Widget buildErrorWidgetWithLink({
         child: Text(
           errorText ?? '',
           style: typography.bodySmallRegular.copyWith(
-            color: colors?.textError,
+            color: colors.textError,
           ),
         ),
       ),
@@ -35,7 +35,7 @@ Widget buildErrorWidgetWithLink({
           child: Text(
             linkText,
             style: typography.bodySmallSemiBold.copyWith(
-              color: colors?.textLink,
+              color: colors.textLink,
             ),
           ),
         ),

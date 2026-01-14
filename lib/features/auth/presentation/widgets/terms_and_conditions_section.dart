@@ -21,13 +21,13 @@ class TermsAndConditionsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = Theme.of(context).coreTypography;
-    final colors = Theme.of(context).extension<AppColorsExtension>();
+    final colors = AppColorsExtension.of(context);
 
     return Text.rich(
       TextSpan(
         text: termsAndConditionsText,
         style: typography.bodyMediumRegular.copyWith(
-          color: colors?.textHeadline,
+          color: colors.textHeadline,
         ),
         children: [
           WidgetSpan(
@@ -36,7 +36,7 @@ class TermsAndConditionsSection extends StatelessWidget {
               child: Text(
                 termsAndServicesLink,
                 style: typography.bodyMediumMedium.copyWith(
-                  color: colors?.textLink,
+                  color: colors.textLink,
                   decoration: TextDecoration.underline,
                 ),
               ),
@@ -49,7 +49,7 @@ class TermsAndConditionsSection extends StatelessWidget {
               child: Text(
                 privacyPolicyLink,
                 style: typography.bodyMediumMedium.copyWith(
-                  color: colors?.textLink,
+                  color: colors.textLink,
                   decoration: TextDecoration.underline,
                 ),
               ),

@@ -98,7 +98,7 @@ class ProjectHeaderAppBar extends StatelessWidget
   Widget _buildProjectName() {
     return BlocBuilder<GetProjectBloc, GetProjectState>(
       builder: (context, state) {
-        final appColorTheme = Theme.of(context).extension<AppColorsExtension>();
+        final appColorTheme = AppColorsExtension.of(context);
         final appTypographyTheme = Theme.of(
           context,
         ).extension<AppTypographyExtension>();
@@ -108,7 +108,7 @@ class ProjectHeaderAppBar extends StatelessWidget
             height: 20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              color: appColorTheme?.textDark,
+              color: appColorTheme.textDark,
             ),
           );
         }
@@ -117,7 +117,7 @@ class ProjectHeaderAppBar extends StatelessWidget
           return Text(
             state.project.projectName,
             style: appTypographyTheme?.titleMediumSemiBold.copyWith(
-              color: appColorTheme?.textHeadline,
+              color: appColorTheme.textHeadline,
             ),
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
@@ -127,7 +127,7 @@ class ProjectHeaderAppBar extends StatelessWidget
           return Text(
             l10n?.projectLoadError ?? 'Unable to load project',
             style: appTypographyTheme?.bodyLargeSemiBold.copyWith(
-              color: appColorTheme?.textError,
+              color: appColorTheme.textError,
             ),
             overflow: TextOverflow.ellipsis,
             maxLines: 1,

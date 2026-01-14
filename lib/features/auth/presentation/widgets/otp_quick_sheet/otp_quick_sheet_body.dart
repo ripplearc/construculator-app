@@ -33,10 +33,10 @@ class OtpQuickSheetBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = Theme.of(context).coreTypography;
-    final colors = Theme.of(context).extension<AppColorsExtension>();
+    final colors = AppColorsExtension.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: colors?.pageBackground,
+        color: colors.pageBackground,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: const EdgeInsets.all(CoreSpacing.space6),
@@ -54,7 +54,7 @@ class OtpQuickSheetBody extends StatelessWidget {
                 width: CoreSpacing.space10,
                 height: CoreSpacing.space1,
                 decoration: BoxDecoration(
-                  color: colors?.textDisable,
+                  color: colors.textDisable,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -86,14 +86,14 @@ class OtpQuickSheetBody extends StatelessWidget {
                           Text(
                             contact,
                             style: typography.bodyLargeSemiBold.copyWith(
-                              color: colors?.textLink,
+                              color: colors.textLink,
                             ),
                           ),
                           SizedBox(width: 4),
                           Icon(
                             Icons.edit_outlined,
                             size: 20,
-                            color: colors?.textLink,
+                            color: colors.textLink,
                           ),
                         ],
                       ),
@@ -110,7 +110,7 @@ class OtpQuickSheetBody extends StatelessWidget {
               defaultPinTheme: pinTheme,
               focusedPinTheme: pinTheme.copyWith(
                 decoration: pinTheme.decoration?.copyWith(
-                  border: Border.all(color: CoreButtonColors.surface),
+                  border: Border.all(color: colors.buttonSurface),
                 ),
               ),
               onChanged: (value) {
@@ -122,7 +122,7 @@ class OtpQuickSheetBody extends StatelessWidget {
               TextSpan(
                 text: '${AppLocalizations.of(context)?.didNotReceiveCode} ',
                 style: typography.bodyMediumRegular.copyWith(
-                  color: colors?.textDark,
+                  color: colors.textDark,
                 ),
 
                 children: [
@@ -134,7 +134,7 @@ class OtpQuickSheetBody extends StatelessWidget {
                             ? '${AppLocalizations.of(context)?.resendingButtonLabel}'
                             : '${AppLocalizations.of(context)?.resendButton}',
                         style: typography.bodyMediumSemiBold.copyWith(
-                          color: colors?.textLink,
+                          color: colors.textLink,
                         ),
                       ),
                     ),
@@ -156,8 +156,8 @@ class OtpQuickSheetBody extends StatelessWidget {
                 icon: CoreIcons.checkCircle,
                 size: 24,
                 color: verifyButtonDisabled
-                    ? colors?.textBody
-                    : colors?.textInverse,
+                    ? colors.textBody
+                    : colors.textInverse,
               ),
             ),
             const SizedBox(height: 16),

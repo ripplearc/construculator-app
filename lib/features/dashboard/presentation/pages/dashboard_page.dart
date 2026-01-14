@@ -57,12 +57,12 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     final typography = Theme.of(context).coreTypography;
-    final colors = Theme.of(context).extension<AppColorsExtension>();
+    final colors = AppColorsExtension.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Construculator'),
         centerTitle: true,
-        backgroundColor: colors?.pageBackground,
+        backgroundColor: colors.pageBackground,
       ),
       body: Container(
         padding: const EdgeInsets.all(24.0),

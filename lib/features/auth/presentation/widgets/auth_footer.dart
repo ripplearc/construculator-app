@@ -23,12 +23,13 @@ class AuthFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = Theme.of(context).coreTypography;
+    final colors = AppColorsExtension.of(context);
 
     return SafeArea(
       child: Container(
         height: CoreSpacing.space16,
         width: double.infinity,
-        color: CoreBackgroundColors.backgroundBlueLight,
+        color: colors.backgroundBlueLight,
         child: Center(
           child: Wrap(
             crossAxisAlignment: WrapCrossAlignment.center,
@@ -40,7 +41,7 @@ class AuthFooter extends StatelessWidget {
                 child: Text(
                   actionText,
                   style: typography.bodyMediumSemiBold.copyWith(
-                    color: CoreTextColors.link,
+                    color: colors.textLink,
                   ),
                 ),
               ),
