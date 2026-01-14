@@ -197,6 +197,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
     final typography = Theme.of(context).coreTypography;
     final colors = AppColorsExtension.of(context);
 
+    // TODO: https://ripplearc.youtrack.cloud/issue/CA-464/Todo-Move-Scaffold-Divider-Override-to-Global-Theme
     return Theme(
       data: Theme.of(context).copyWith(
         dividerTheme: DividerThemeData(color: colors.transparent),
