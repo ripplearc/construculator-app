@@ -427,7 +427,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                           CoreIconWidget(
                             icon: CoreIcons.error,
                             size: 16,
-                            color: colors.textError,
+                            color: colors.iconRed,
                           ),
                           const SizedBox(width: CoreSpacing.space1),
                           Text(
