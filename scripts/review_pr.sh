@@ -32,7 +32,7 @@
 # The AI will provide a comprehensive review that includes:
 # - Changes Overview: Analysis of all modified files with statistics
 # - GitHub-style Diffs: Detailed review of each file's changes
-# - Review Instructions: Feedback based on the 4 review rules
+# - Review Instructions: Feedback based on the 8 review rules
 # - Summary Table: Issues found that need your attention
 #
 # STEP 4: Use Markdown Preview
@@ -269,9 +269,118 @@ echo "- Ensure BLoCs test real UseCases, UseCases test real Services, etc." >> "
 echo "" >> "$OUTPUT_FILE"
 
 # =============================================================================
-# RULE 4: GENERAL CODE REVIEW CRITERIA
+# RULE 4: COREUI COMPONENTS USAGE
 # =============================================================================
-echo "### 🔍 RULE 4: GENERAL CODE REVIEW CRITERIA" >> "$OUTPUT_FILE"
+echo "### 🎨 RULE 4: COREUI COMPONENTS USAGE" >> "$OUTPUT_FILE"
+echo "**Core Principle:** All UI components, styling, and design tokens must use CoreUI package instead of Flutter's default Material components" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Key Requirements:**" >> "$OUTPUT_FILE"
+echo "- ✅ **Spacing:** Use \`CoreSpacing\` (e.g., \`CoreSpacing.space16\`) instead of hardcoded values like \`EdgeInsets.all(24.0)\` or \`SizedBox(height: 24)\`" >> "$OUTPUT_FILE"
+echo "- ✅ **Icons:** Use \`CoreIcons\` and \`CoreIconWidget\` instead of \`Icons.*\` from Material" >> "$OUTPUT_FILE"
+echo "- ✅ **Typography:** Use \`CoreTypography\` (e.g., \`CoreTypography.bodyMediumRegular()\`) instead of \`TextStyle\` with hardcoded font properties" >> "$OUTPUT_FILE"
+echo "- ✅ **Colors:** Use \`CoreTextColors\`, \`CoreBackgroundColors\`, and other CoreUI color classes instead of \`Colors.*\` or \`Theme.of(context).*\` for colors" >> "$OUTPUT_FILE"
+echo "- ✅ **Components:** Use CoreUI components (e.g., \`CoreButton\`, \`CoreTextField\`) instead of Material equivalents (\`ElevatedButton\`, \`TextFormField\`)" >> "$OUTPUT_FILE"
+echo "- ✅ **Theme:** Use \`CoreTheme\` for theme configuration" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Verify all spacing values use \`CoreSpacing\` constants" >> "$OUTPUT_FILE"
+echo "- Check that icons use \`CoreIcons\` and \`CoreIconWidget\`" >> "$OUTPUT_FILE"
+echo "- Ensure typography uses \`CoreTypography\` methods" >> "$OUTPUT_FILE"
+echo "- Confirm colors come from CoreUI color classes, not Material \`Colors\` or theme lookups" >> "$OUTPUT_FILE"
+echo "- Validate that UI components use CoreUI equivalents (e.g., \`CoreButton\` not \`ElevatedButton\`)" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
+# RULE 5: TEST QUALITY AND ROBUST FIND EXPRESSIONS
+# =============================================================================
+echo "### 🧪 RULE 5: TEST QUALITY AND ROBUST FIND EXPRESSIONS" >> "$OUTPUT_FILE"
+echo "**Core Principle:** Tests should focus on widget behavior, not implementation details. Use Keys for reliable widget finding." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Test Behavior, Not Implementation:**" >> "$OUTPUT_FILE"
+echo "- ✅ **Focus on:** What the widget does (user interactions, displayed content, state changes)" >> "$OUTPUT_FILE"
+echo "- ❌ **Avoid:** Testing implementation details (specific widget types, internal structure, exact widget counts)" >> "$OUTPUT_FILE"
+echo "- ✅ **Example Good:** Test that tapping a button triggers a callback or navigates" >> "$OUTPUT_FILE"
+echo "- ❌ **Example Bad:** Test that a widget tree contains exactly 3 \`CoreIconWidget\` instances" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Robust Find Expressions:**" >> "$OUTPUT_FILE"
+echo "- ❌ **Forbidden:** Fragile find expressions that rely on implementation details:" >> "$OUTPUT_FILE"
+echo "  - \`expect(find.byType(CoreIconWidget), findsNWidgets(3))\` - breaks if widget structure changes" >> "$OUTPUT_FILE"
+echo "  - \`find.byType(IconButton).first\` - fragile, order-dependent" >> "$OUTPUT_FILE"
+echo "  - \`find.byType(Row)\` - too generic, may match unintended widgets" >> "$OUTPUT_FILE"
+echo "- ✅ **Preferred:** Use Keys for reliable, semantic widget finding:" >> "$OUTPUT_FILE"
+echo "  - \`find.byKey(const Key('auth_footer_link'))\` - semantic, stable" >> "$OUTPUT_FILE"
+echo "  - \`find.byKey(Key('pin_input'))\` - clear intent, resilient to refactoring" >> "$OUTPUT_FILE"
+echo "- ✅ **Acceptable:** Text-based finds when testing user-visible content:" >> "$OUTPUT_FILE"
+echo "  - \`find.text('Logout')\` - tests visible content" >> "$OUTPUT_FILE"
+echo "  - \`find.widgetWithText(CoreButton, 'Continue')\` - semantic and user-focused" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Verify tests focus on behavior and user interactions, not implementation details" >> "$OUTPUT_FILE"
+echo "- Check that find expressions use Keys for widget identification" >> "$OUTPUT_FILE"
+echo "- Ensure no tests use \`findsNWidgets\` with \`byType\` for implementation-specific widgets" >> "$OUTPUT_FILE"
+echo "- Confirm that widget finding is semantic and resilient to refactoring" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
+# RULE 6: CODE CLARITY OVER COMMENTS
+# =============================================================================
+echo "### 📝 RULE 6: CODE CLARITY OVER COMMENTS" >> "$OUTPUT_FILE"
+echo "**Core Principle:** Prefer clear, self-documenting code with meaningful names over excessive comments" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Key Guidelines:**" >> "$OUTPUT_FILE"
+echo "- ✅ **Prefer:** Descriptive variable and function names that explain intent" >> "$OUTPUT_FILE"
+echo "- ✅ **Prefer:** Well-structured code that reads like documentation" >> "$OUTPUT_FILE"
+echo "- ❌ **Avoid:** Comments that explain what the code does (code should be self-explanatory)" >> "$OUTPUT_FILE"
+echo "- ✅ **Acceptable:** Comments that explain why (business logic, non-obvious decisions, workarounds)" >> "$OUTPUT_FILE"
+echo "- ✅ **Acceptable:** Documentation comments for public APIs (\`///\` in Dart)" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Examples:**" >> "$OUTPUT_FILE"
+echo "- ❌ **Bad:** \`// Calculate total price\` followed by \`total = price * quantity\``" >> "$OUTPUT_FILE"
+echo "- ✅ **Good:** \`final totalPrice = itemPrice * itemQuantity\``" >> "$OUTPUT_FILE"
+echo "- ❌ **Bad:** \`// Check if user is logged in\` followed by \`if (user != null)\``" >> "$OUTPUT_FILE"
+echo "- ✅ **Good:** \`if (isUserLoggedIn) { ... }\``" >> "$OUTPUT_FILE"
+echo "- ✅ **Good:** \`// Using workaround for Flutter issue #12345\` - explains why" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Identify comments that explain what code does (should be removed)" >> "$OUTPUT_FILE"
+echo "- Suggest better variable/function names to replace explanatory comments" >> "$OUTPUT_FILE"
+echo "- Verify that code is self-documenting through clear naming" >> "$OUTPUT_FILE"
+echo "- Ensure only necessary comments remain (why, not what)" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
+# RULE 7: LOCALIZATION USAGE
+# =============================================================================
+echo "### 🌐 RULE 7: LOCALIZATION USAGE" >> "$OUTPUT_FILE"
+echo "**Core Principle:** All user-facing strings must be localized using \`AppLocalizations\` instead of hardcoded strings" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Key Requirements:**" >> "$OUTPUT_FILE"
+echo "- ✅ **User-Facing Text:** All strings displayed to users must use \`AppLocalizations\`" >> "$OUTPUT_FILE"
+echo "- ✅ **Access Methods:** Use \`AppLocalizations.of(context)\` or \`LocalizationMixin\`'s \`l10n\` property" >> "$OUTPUT_FILE"
+echo "- ❌ **Forbidden:** Hardcoded strings in \`Text\` widgets, button labels, titles, error messages shown to users" >> "$OUTPUT_FILE"
+echo "- ✅ **Acceptable:** Technical/debug strings, log messages, internal identifiers, test strings" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Examples:**" >> "$OUTPUT_FILE"
+echo "- ❌ **Bad:** \`Text('Welcome back')\` - hardcoded string" >> "$OUTPUT_FILE"
+echo "- ✅ **Good:** \`Text(AppLocalizations.of(context)?.welcomeMessage ?? '')\`" >> "$OUTPUT_FILE"
+echo "- ❌ **Bad:** \`label: 'Logout'\` - hardcoded label" >> "$OUTPUT_FILE"
+echo "- ✅ **Good:** \`label: '\${AppLocalizations.of(context)?.logoutButton}'\`" >> "$OUTPUT_FILE"
+echo "- ❌ **Bad:** \`title: const Text('Construculator')\` - hardcoded title" >> "$OUTPUT_FILE"
+echo "- ✅ **Good:** \`title: Text(AppLocalizations.of(context)?.appTitle ?? '')\`" >> "$OUTPUT_FILE"
+echo "- ✅ **Good (with mixin):** \`Text(l10n?.welcomeMessage ?? '')\` - using \`LocalizationMixin\`" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Verify all user-facing strings use \`AppLocalizations\`" >> "$OUTPUT_FILE"
+echo "- Check that \`Text\` widgets, button labels, titles, and error messages are localized" >> "$OUTPUT_FILE"
+echo "- Ensure no hardcoded English strings appear in UI code" >> "$OUTPUT_FILE"
+echo "- Confirm that localization keys exist in \`app_en.arb\` for all new strings" >> "$OUTPUT_FILE"
+echo "- Validate proper null-safety handling (use \`?? ''\` or \`?.property\` with null checks)" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
+# RULE 8: GENERAL CODE REVIEW CRITERIA
+# =============================================================================
+echo "### 🔍 RULE 8: GENERAL CODE REVIEW CRITERIA" >> "$OUTPUT_FILE"
 echo "1. 📝 Code quality and best practices" >> "$OUTPUT_FILE"
 echo "2. 🐛 Potential bugs or edge cases" >> "$OUTPUT_FILE"
 echo "3. ⚡ Performance implications" >> "$OUTPUT_FILE"
