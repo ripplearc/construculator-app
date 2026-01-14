@@ -269,20 +269,7 @@ echo "- Ensure BLoCs test real UseCases, UseCases test real Services, etc." >> "
 echo "" >> "$OUTPUT_FILE"
 
 # =============================================================================
-# RULE 4: GENERAL CODE REVIEW CRITERIA
-# =============================================================================
-echo "### 🔍 RULE 4: GENERAL CODE REVIEW CRITERIA" >> "$OUTPUT_FILE"
-echo "1. 📝 Code quality and best practices" >> "$OUTPUT_FILE"
-echo "2. 🐛 Potential bugs or edge cases" >> "$OUTPUT_FILE"
-echo "3. ⚡ Performance implications" >> "$OUTPUT_FILE"
-echo "4. 🔒 Security concerns" >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
-echo "**Review Output Format:**" >> "$OUTPUT_FILE"
-echo "Please provide detailed comments with context for each file. If issues are found that need to be addressed, include the summary table below. If no issues are found, omit the table entirely." >> "$OUTPUT_FILE"
-echo "" >> "$OUTPUT_FILE"
-
-# =============================================================================
-# RULE 5: UI & BUSINESS LOGIC SEPARATION
+# RULE 4: UI & BUSINESS LOGIC SEPARATION
 # =============================================================================
 echo "### 🎨 RULE 5: UI & BUSINESS LOGIC SEPARATION" >> "$OUTPUT_FILE"
 echo "**Reference:** For detailed guidelines and code samples, search: https://gist.github.com/ripplearcgit/f190fecc8f7124e511cb01283f9fbc31" >> "$OUTPUT_FILE"
@@ -299,6 +286,39 @@ echo "" >> "$OUTPUT_FILE"
 echo "**Action Required:**" >> "$OUTPUT_FILE"
 echo "- Ensure the UI only dispatches 'Intents' (Events) and consumes 'States'." >> "$OUTPUT_FILE"
 echo "- Verify that all validation, data fetching, and coordination live in BLoCs or UseCases." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
+# RULE 5: STREAM-BASED PERFORMANCE & LIFECYCLE
+# =============================================================================
+echo "### ⚡ RULE 6: STREAM-BASED PERFORMANCE & LIFECYCLE" >> "$OUTPUT_FILE"
+echo "**Reference:** For detailed guidelines and code samples, search: https://gist.github.com/ripplearcgit/7818b412bf5fbe06269e0c3830e136f5" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Core Principle:** Manage stream lifecycles strictly to prevent memory leaks and minimize redundant network/CPU overhead." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Red Flags (Performance Risks):**" >> "$OUTPUT_FILE"
+echo "- ❌ **Zombies:** Storing \`StreamControllers\` in a Map without using \`onCancel\` to close and remove them when listeners are gone." >> "$OUTPUT_FILE"
+echo "- ❌ **Network Thrashing:** Triggering a full network re-fetch (e.g., \`getEstimations\`) every time a stream-based write occurs." >> "$OUTPUT_FILE"
+echo "- ❌ **Event Flooding:** Forcing UI rebuilds on every stream tick without using \`distinct()\` or \`debounceTime()\` for high-frequency data." >> "$OUTPUT_FILE"
+echo "- ❌ **Dangling Subscriptions:** Creating manual listeners in BLoCs or Services without cancelling them in the \`close()\` or \`dispose()\` method." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Verify that all \`StreamControllers\` have a clear cleanup strategy." >> "$OUTPUT_FILE"
+echo "- Check for 'Optimistic UI' patterns where local state is updated instead of a full server re-fetch." >> "$OUTPUT_FILE"
+echo "- Ensure all BLoC stream subscriptions are cancelled during disposal." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
+# RULE 6: GENERAL CODE REVIEW CRITERIA
+# =============================================================================
+echo "### 🔍 RULE 4: GENERAL CODE REVIEW CRITERIA" >> "$OUTPUT_FILE"
+echo "1. 📝 Code quality and best practices" >> "$OUTPUT_FILE"
+echo "2. 🐛 Potential bugs or edge cases" >> "$OUTPUT_FILE"
+echo "3. ⚡ Performance implications" >> "$OUTPUT_FILE"
+echo "4. 🔒 Security concerns" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Review Output Format:**" >> "$OUTPUT_FILE"
+echo "Please provide detailed comments with context for each file. If issues are found that need to be addressed, include the summary table below. If no issues are found, omit the table entirely." >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # =============================================================================
