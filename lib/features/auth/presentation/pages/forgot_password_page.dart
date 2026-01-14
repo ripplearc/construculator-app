@@ -100,10 +100,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColorsExtension.of(context);
     return Scaffold(
-      backgroundColor: CoreBackgroundColors.pageBackground,
+      backgroundColor: colors.pageBackground,
       appBar: AppBar(
-        backgroundColor: CoreBackgroundColors.pageBackground,
+        backgroundColor: colors.pageBackground,
         elevation: 0,
       ),
       body: BlocConsumer<ForgotPasswordBloc, ForgotPasswordState>(
@@ -228,12 +229,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
     BuildContext callingContext,
     String email,
   ) {
+    final colors = AppColorsExtension.of(callingContext);
     showModalBottomSheet(
       context: callingContext,
       isScrollControlled: true,
       isDismissible: false,
       enableDrag: false,
-      backgroundColor: Colors.transparent,
+      backgroundColor: colors.transparent,
       builder: (context) => _buildOtpVerificationSheet(callingContext, email),
     );
   }

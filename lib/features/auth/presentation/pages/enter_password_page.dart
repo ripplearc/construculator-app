@@ -65,10 +65,11 @@ class _EnterPasswordPageState extends State<EnterPasswordPage>
   @override
   Widget build(BuildContext context) {
     final typography = Theme.of(context).coreTypography;
+    final colors = AppColorsExtension.of(context);
     return Scaffold(
-      backgroundColor: CoreBackgroundColors.pageBackground,
+      backgroundColor: colors.pageBackground,
       appBar: AppBar(
-        backgroundColor: CoreBackgroundColors.pageBackground,
+        backgroundColor: colors.pageBackground,
         elevation: 0,
       ),
       body: BlocConsumer<EnterPasswordBloc, EnterPasswordState>(
@@ -126,7 +127,7 @@ class _EnterPasswordPageState extends State<EnterPasswordPage>
                           ? CoreIcons.eye
                           : CoreIcons.eyeOff,
                       size: CoreSpacing.space6,
-                      color: CoreTextColors.dark,
+                      color: colors.iconDark,
                     ),
                     onPressed: () => _togglePasswordVisibility(),
                   ),
@@ -142,7 +143,7 @@ class _EnterPasswordPageState extends State<EnterPasswordPage>
                     child: Text(
                       l10n.forgotPasswordTitle,
                       style: typography.bodyLargeSemiBold.copyWith(
-                        color: CoreTextColors.link,
+                        color: colors.textLink,
                       ),
                     ),
                   ),

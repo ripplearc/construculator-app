@@ -327,10 +327,12 @@ class _CreateAccountPageState extends State<CreateAccountPage>
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColorsExtension.of(context);
+
     return Scaffold(
-      backgroundColor: CoreBackgroundColors.pageBackground,
+      backgroundColor: colors.pageBackground,
       appBar: AppBar(
-        backgroundColor: CoreBackgroundColors.pageBackground,
+        backgroundColor: colors.pageBackground,
         elevation: 0,
       ),
       body: BlocConsumer<CreateAccountBloc, CreateAccountState>(
@@ -390,16 +392,16 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                   ),
                   const SizedBox(height: CoreSpacing.space6),
                   if (state is CreateAccountGetProfessionalRolesLoading)
-                    const Center(
+                    Center(
                       child: CircularProgressIndicator(
-                        color: CoreIconColors.dark,
+                        color: colors.iconDark,
                       ),
                     )
                   else if (state is CreateAccountGetProfessionalRolesFailure)
                     Text(
                       l10n.rolesLoadingError,
                       style: typography.bodySmallRegular.copyWith(
-                        color: CoreTextColors.error,
+                        color: colors.textError,
                       ),
                     )
                   else
@@ -422,16 +424,16 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
                           SizedBox(width: CoreSpacing.space3),
-                          const CoreIconWidget(
+                          CoreIconWidget(
                             icon: CoreIcons.error,
                             size: 16,
-                            color: CoreIconColors.red,
+                            color: colors.iconRed,
                           ),
                           const SizedBox(width: CoreSpacing.space1),
                           Text(
                             '${_roleErrorList?.first}',
                             style: typography.bodySmallRegular.copyWith(
-                              color: CoreTextColors.error,
+                              color: colors.textError,
                             ),
                           ),
                         ],
@@ -446,9 +448,9 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                     controller: _emailController,
                     focusNode: _emailFocusNode,
                     errorTextList: _emailErrorList,
-                    suffix: const CoreIconWidget(
+                    suffix: CoreIconWidget(
                       icon: CoreIcons.checkCircle,
-                      color: CoreIconColors.green,
+                      color: colors.iconGreen,
                     ),
                   ),
                   const SizedBox(height: CoreSpacing.space6),
@@ -493,7 +495,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                             ? CoreIcons.eye
                             : CoreIcons.eyeOff,
                         size: CoreSpacing.space6,
-                        color: CoreTextColors.dark,
+                        color: colors.iconDark,
                       ),
                       onPressed: () => _togglePasswordVisibility(),
                     ),
@@ -511,7 +513,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                             ? CoreIcons.eye
                             : CoreIcons.eyeOff,
                         size: CoreSpacing.space6,
-                        color: CoreTextColors.dark,
+                        color: colors.iconDark,
                       ),
                       onPressed: () => _toggleConfirmPasswordVisibility(),
                     ),

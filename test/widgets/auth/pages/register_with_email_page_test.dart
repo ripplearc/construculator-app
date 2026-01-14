@@ -24,6 +24,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+import '../../../screenshots/font_loader.dart';
 
 class _RegisterWithEmailPageTestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -54,6 +55,7 @@ void main() {
         ),
       ],
       child: MaterialApp(
+        theme: createTestTheme(),
         home: Builder(
           builder: (context) {
             buildContext = context;
