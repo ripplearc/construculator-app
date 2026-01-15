@@ -183,10 +183,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
         bloc: _authBloc,
         builder: (context, state) {
           if (state is AuthLoadUnauthenticated) {
-            return const Scaffold(
-              // TODO: https://ripplearc.youtrack.cloud/issue/CA-458/CostEstimation-Refactor-Loading-Indicators-in-Construculator-App
-              body: Center(child: CircularProgressIndicator()),
-            );
+            return const Scaffold(body: Center(child: CoreLoadingIndicator()));
           }
 
           return Scaffold(
@@ -229,8 +226,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
 
   Widget _buildContent(CostEstimationListState state, AppLocalizations l10n) {
     if (state is CostEstimationListLoading) {
-      // TODO: https://ripplearc.youtrack.cloud/issue/CA-458/CostEstimation-Refactor-Loading-Indicators-in-Construculator-App
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CoreLoadingIndicator());
     }
 
     if (state is CostEstimationListEmpty) {
@@ -241,7 +237,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
       return _buildEstimationsList(state.estimates);
     }
 
-    return const Center(child: CircularProgressIndicator());
+    return const Center(child: CoreLoadingIndicator());
   }
 
   Widget _buildPositionedAddButton(AppLocalizations l10n) {
@@ -277,8 +273,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
         BlocBuilder<AddCostEstimationBloc, AddCostEstimationState>(
           builder: (context, state) {
             if (state is AddCostEstimationInProgress) {
-              // TODO: https://ripplearc.youtrack.cloud/issue/CA-458/CostEstimation-Refactor-Loading-Indicators-in-Construculator-App
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: CoreLoadingIndicator());
             }
             return CostEstimationEmptyWidget(
               message: l10n.costEstimationEmptyMessage,
@@ -307,13 +302,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
                 itemBuilder: (context, index) {
                   final isLoadingItem = isCreating && index == itemCount - 1;
                   if (isLoadingItem) {
-                    return Center(
-                      child: const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    );
+                    return const CoreLoadingIndicator(size: 50);
                   }
 
                   final estimation = estimations[index];

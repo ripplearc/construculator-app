@@ -393,9 +393,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                   const SizedBox(height: CoreSpacing.space6),
                   if (state is CreateAccountGetProfessionalRolesLoading)
                     Center(
-                      child: CircularProgressIndicator(
-                        color: colors.iconDark,
-                      ),
+                      child: CoreLoadingIndicator(),
                     )
                   else if (state is CreateAccountGetProfessionalRolesFailure)
                     Text(

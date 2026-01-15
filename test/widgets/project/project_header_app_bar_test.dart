@@ -331,7 +331,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(l10n().projectLoadError), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(CoreLoadingIndicator), findsNothing);
     });
   });
 }
