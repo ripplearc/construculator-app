@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -28,7 +29,7 @@ class _DeleteEstimationConfirmationSheetState
     with LocalizationMixin {
   @override
   Widget build(BuildContext context) {
-    final colorTheme = AppColorsExtension.of(context);
+    final colorTheme = context.colorTheme;
     final textTheme = AppTypographyExtension.of(context);
 
     return Container(

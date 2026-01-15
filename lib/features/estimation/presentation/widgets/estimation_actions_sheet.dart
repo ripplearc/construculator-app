@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
@@ -34,7 +35,7 @@ class _EstimationActionsSheetState extends State<EstimationActionsSheet>
     with LocalizationMixin {
   @override
   Widget build(BuildContext context) {
-    final colorTheme = AppColorsExtension.of(context);
+    final colorTheme = context.colorTheme;
     final typographyTheme = AppTypographyExtension.of(context);
 
     return Container(
@@ -162,7 +163,7 @@ class _QuickActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorTheme = AppColorsExtension.of(context);
+    final colorTheme = context.colorTheme;
     final typographyTheme = AppTypographyExtension.of(context);
     return GestureDetector(
       onTap: onTap,
@@ -208,7 +209,7 @@ class _ActionListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorTheme = AppColorsExtension.of(context);
+    final colorTheme = context.colorTheme;
     final typographyTheme = AppTypographyExtension.of(context);
     return GestureDetector(
       onTap: onTap,

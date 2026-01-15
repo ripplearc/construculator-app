@@ -1,4 +1,5 @@
 import 'package:construculator/features/auth/presentation/widgets/error_widget_builder.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -44,7 +45,7 @@ void main() {
       expect(errorFinder, findsOneWidget);
       final textWidget = tester.widget<Text>(errorFinder);
       final context = tester.element(errorFinder);
-      final colors = AppColorsExtension.of(context);
+      final colors = context.colorTheme;
       expect(textWidget.style!.color, colors.textError);
       final typography = Theme.of(context).coreTypography;
 
@@ -66,7 +67,7 @@ void main() {
 
       final textWidget = tester.widget<Text>(linkFinder);
       final context = tester.element(linkFinder);
-      final colors = AppColorsExtension.of(context);
+      final colors = context.colorTheme;
       expect(textWidget.style!.color, colors.textLink);
       final typography = Theme.of(context).coreTypography;
 

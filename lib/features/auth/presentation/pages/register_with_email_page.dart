@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 
 class RegisterWithEmailPage extends StatefulWidget {
   final String email;
@@ -195,13 +196,13 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
   @override
   Widget build(BuildContext context) {
     final typography = Theme.of(context).coreTypography;
-    final colors = AppColorsExtension.of(context);
+    final colors = context.colorTheme;
 
     // TODO: https://ripplearc.youtrack.cloud/issue/CA-464/Todo-Move-Scaffold-Divider-Override-to-Global-Theme
     return Theme(
-      data: Theme.of(context).copyWith(
-        dividerTheme: DividerThemeData(color: colors.transparent),
-      ),
+      data: Theme.of(
+        context,
+      ).copyWith(dividerTheme: DividerThemeData(color: colors.transparent)),
       child: Scaffold(
         backgroundColor: colors.pageBackground,
         body: BlocConsumer<RegisterWithEmailBloc, RegisterWithEmailState>(
@@ -291,10 +292,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
                     Row(
                       children: [
                         Expanded(
-                          child: Divider(
-                            color: colors.lineLight,
-                            thickness: 1,
-                          ),
+                          child: Divider(color: colors.lineLight, thickness: 1),
                         ),
                         Padding(
                           padding: EdgeInsets.symmetric(
@@ -308,10 +306,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
                           ),
                         ),
                         Expanded(
-                          child: Divider(
-                            color: colors.lineLight,
-                            thickness: 1,
-                          ),
+                          child: Divider(color: colors.lineLight, thickness: 1),
                         ),
                       ],
                     ),
