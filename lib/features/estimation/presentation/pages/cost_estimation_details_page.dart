@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// A placeholder page for cost estimation details.
@@ -13,7 +14,7 @@ class CostEstimationDetailsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = AppTypographyExtension.of(context);
-    final colorTheme = AppColorsExtension.of(context);
+    final colorTheme = context.colorTheme;
     return Scaffold(
       appBar: AppBar(
         elevation: 0,

@@ -1,5 +1,6 @@
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 
 /// A widget that displays a header with a title and a description
 /// [title] - The title to display
@@ -22,7 +23,7 @@ class AuthHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = Theme.of(context).coreTypography;
-    final colors = AppColorsExtension.of(context);
+    final colors = context.colorTheme;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,4 +1,5 @@
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -28,7 +29,7 @@ class AuthProviderButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppColorsExtension.of(context);
+    final colors = context.colorTheme;
 
     return Column(
       children: [

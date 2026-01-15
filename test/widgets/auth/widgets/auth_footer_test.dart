@@ -1,4 +1,5 @@
 import 'package:construculator/features/auth/presentation/widgets/auth_footer.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -36,7 +37,7 @@ void main() {
 
         final actionTextFinder = find.text(actionText);
         expect(actionTextFinder, findsOneWidget);
-        final colors = AppColorsExtension.of(context);
+        final colors = context.colorTheme;
 
         final textWidget = tester.widget<Text>(actionTextFinder);
         expect(textWidget.style!.color, colors.textLink);
@@ -67,7 +68,7 @@ void main() {
     testWidgets('has correct container layout and color', (tester) async {
       await pumpFooterWidget(tester: tester, onPressed: () {});
       final context = tester.element(find.byType(AuthFooter));
-      final colors = AppColorsExtension.of(context);
+      final colors = context.colorTheme;
       final containerFinder = find.byType(Container);
       final container = tester.widget<Container>(containerFinder);
       expect(container.color, colors.backgroundBlueLight);

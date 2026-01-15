@@ -1,5 +1,6 @@
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
@@ -107,14 +108,11 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage>
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppColorsExtension.of(context);
+    final colors = context.colorTheme;
 
     return Scaffold(
       backgroundColor: colors.pageBackground,
-      appBar: AppBar(
-        backgroundColor: colors.pageBackground,
-        elevation: 0,
-      ),
+      appBar: AppBar(backgroundColor: colors.pageBackground, elevation: 0),
       body: BlocConsumer<SetNewPasswordBloc, SetNewPasswordState>(
         listener: (context, state) {
           if (state is SetNewPasswordPasswordValidationSuccess) {

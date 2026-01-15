@@ -11,6 +11,7 @@ import 'package:construculator/features/estimation/presentation/widgets/estimati
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -134,7 +135,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
 
   @override
   Widget build(BuildContext context) {
-    final colorTheme = AppColorsExtension.of(context);
+    final colorTheme = context.colorTheme;
 
     return MultiBlocListener(
       listeners: [
@@ -242,7 +243,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
 
   Widget _buildPositionedAddButton(AppLocalizations l10n) {
     final size = MediaQuery.of(context).size;
-    final colorTheme = Theme.of(context).extension<AppColorsExtension>();
+    final colorTheme = context.colorTheme;
     return BlocBuilder<AddCostEstimationBloc, AddCostEstimationState>(
       builder: (context, state) {
         final isCreating = state is AddCostEstimationInProgress;
@@ -258,7 +259,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
             icon: CoreIconWidget(
               icon: CoreIcons.add,
               size: 20,
-              color: colorTheme?.buttonSurface,
+              color: colorTheme.buttonSurface,
             ),
             fullWidth: false,
           ),
@@ -290,7 +291,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
       children: [
         BlocBuilder<AddCostEstimationBloc, AddCostEstimationState>(
           builder: (context, state) {
-            final colorTheme = AppColorsExtension.of(context);
+            final colorTheme = context.colorTheme;
 
             final isCreating = state is AddCostEstimationInProgress;
             final itemCount = estimations.length + (isCreating ? 1 : 0);

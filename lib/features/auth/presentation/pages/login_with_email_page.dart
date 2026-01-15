@@ -12,6 +12,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 
 class LoginWithEmailPage extends StatefulWidget {
   final String email;
@@ -101,12 +102,12 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppColorsExtension.of(context);
+    final colors = context.colorTheme;
 
     return Theme(
-      data: Theme.of(context).copyWith(
-        dividerTheme: DividerThemeData(color: colors.transparent),
-      ),
+      data: Theme.of(
+        context,
+      ).copyWith(dividerTheme: DividerThemeData(color: colors.transparent)),
       child: Scaffold(
         backgroundColor: colors.pageBackground,
         body: BlocConsumer<LoginWithEmailBloc, LoginWithEmailState>(
@@ -162,7 +163,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
 
   Widget _buildLoginWithEmailForm(LoginWithEmailState state) {
     final typography = Theme.of(context).coreTypography;
-    final colors = AppColorsExtension.of(context);
+    final colors = context.colorTheme;
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: CoreSpacing.space6),
@@ -200,12 +201,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
             const SizedBox(height: CoreSpacing.space6),
             Row(
               children: [
-                Expanded(
-                  child: Divider(
-                    color: colors.lineLight,
-                    thickness: 1,
-                  ),
-                ),
+                Expanded(child: Divider(color: colors.lineLight, thickness: 1)),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: CoreSpacing.space2),
                   child: Text(
@@ -215,12 +211,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
                     ),
                   ),
                 ),
-                Expanded(
-                  child: Divider(
-                    color: colors.lineLight,
-                    thickness: 1,
-                  ),
-                ),
+                Expanded(child: Divider(color: colors.lineLight, thickness: 1)),
               ],
             ),
             const SizedBox(height: CoreSpacing.space6),
