@@ -163,7 +163,6 @@ class CostEstimateDto extends Equatable {
   ///
   /// Returns a [Map<String, dynamic>] suitable for JSON serialization.
   Map<String, dynamic> toJson() => {
-    'id': id,
     'project_id': projectId,
     'estimate_name': estimateName,
     'estimate_description': estimateDescription,
@@ -278,6 +277,76 @@ class CostEstimateDto extends Equatable {
       default:
         throw ArgumentError('Unknown MarkupValueType: $raw');
     }
+  }
+
+  /// Creates a [CostEstimateDto] from a domain [CostEstimate] entity.
+  ///
+  /// This factory method performs the transformation from the domain entity's
+  /// nested object structure to the flat DTO structure. It:
+  /// - Extracts markup configuration fields from the [MarkupConfiguration] object
+  /// - Converts enum types to string values
+  /// - Converts [DateTime] objects to ISO 8601 timestamp strings
+  /// - Extracts lock status information
+  factory CostEstimateDto.fromDomain(CostEstimate estimate) {
+    return CostEstimateDto(
+      id: estimate.id,
+      projectId: estimate.projectId,
+      estimateName: estimate.estimateName,
+      estimateDescription: estimate.estimateDescription,
+      creatorUserId: estimate.creatorUserId,
+      markupType: _mapMarkupTypeToString(
+        estimate.markupConfiguration.overallType,
+      ),
+      overallMarkupValueType: _mapMarkupValueTypeToString(
+        estimate.markupConfiguration.overallValue.type,
+      ),
+      overallMarkupValue: estimate.markupConfiguration.overallValue.value,
+      materialMarkupValueType: _getMarkupTypeString(
+        estimate.markupConfiguration.materialValue,
+      ),
+      materialMarkupValue: estimate.markupConfiguration.materialValue?.value,
+      laborMarkupValueType: _getMarkupTypeString(
+        estimate.markupConfiguration.laborValue,
+      ),
+      laborMarkupValue: estimate.markupConfiguration.laborValue?.value,
+      equipmentMarkupValueType: _getMarkupTypeString(
+        estimate.markupConfiguration.equipmentValue,
+      ),
+      equipmentMarkupValue: estimate.markupConfiguration.equipmentValue?.value,
+      totalCost: estimate.totalCost,
+      isLocked: estimate.lockStatus.isLocked,
+      lockedByUserID: estimate.lockStatus.isLocked
+          ? (estimate.lockStatus as LockedStatus).lockedByUserId
+          : null,
+      lockedAt: estimate.lockStatus.isLocked
+          ? (estimate.lockStatus as LockedStatus).lockedAt.toIso8601String()
+          : null,
+      createdAt: estimate.createdAt.toIso8601String(),
+      updatedAt: estimate.updatedAt.toIso8601String(),
+    );
+  }
+
+  static String _mapMarkupTypeToString(MarkupType type) {
+    switch (type) {
+      case MarkupType.overall:
+        return _kMarkupTypeOverall;
+      case MarkupType.granular:
+        return _kMarkupTypeGranular;
+    }
+  }
+
+  static String _mapMarkupValueTypeToString(MarkupValueType type) {
+    switch (type) {
+      case MarkupValueType.percentage:
+        return _kMarkupValuePercentage;
+      case MarkupValueType.amount:
+        return _kMarkupValueAmount;
+    }
+  }
+
+  static String? _getMarkupTypeString(MarkupValue? markupValue) {
+    if (markupValue == null) return null;
+    return _mapMarkupValueTypeToString(markupValue.type);
   }
 
   @override

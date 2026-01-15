@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:construculator/features/estimation/data/data_source/remote_cost_estimation_data_source.dart';
 import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -272,6 +274,122 @@ void main() {
           result.map((e) => e.id),
           containsAll([estimateId1, estimateId3]),
         );
+      });
+    });
+
+    group('createEstimation', () {
+      test('should create cost estimation successfully', () async {
+        final estimationData =
+            EstimationTestDataMapFactory.createFakeEstimationData(
+              id: '1',
+              estimateName: estimateName1,
+              estimateDescription: estimateDesc1,
+              creatorUserId: userId1,
+              totalCost: totalCost1,
+              isLocked: false,
+              createdAt: fakeClock.now().toIso8601String(),
+              updatedAt: fakeClock.now().toIso8601String(),
+            );
+        final estimationDto = CostEstimateDto.fromJson(estimationData);
+
+        final result = await dataSource.createEstimation(estimationDto);
+
+        expect(result, equals(estimationDto));
+      });
+
+      test(
+        'should call supabaseWrapper.insert with correct parameters',
+        () async {
+          final estimationData =
+              EstimationTestDataMapFactory.createFakeEstimationData(
+                id: estimateId1,
+                estimateName: estimateName1,
+                creatorUserId: userId1,
+                totalCost: totalCost1,
+              );
+          final estimationDto = CostEstimateDto.fromJson(estimationData);
+
+          await dataSource.createEstimation(estimationDto);
+
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('insert');
+          expect(methodCalls, hasLength(1));
+
+          final call = methodCalls.first;
+          expect(call['table'], equals(tableName));
+          expect(call['data']['estimate_name'], equals(estimateName1));
+          expect(call['data']['creator_user_id'], equals(userId1));
+          expect(call['data']['total_cost'], equals(totalCost1));
+        },
+      );
+
+      test(
+        'should rethrow exception when supabaseWrapper.insert throws',
+        () async {
+          final estimationData =
+              EstimationTestDataMapFactory.createFakeEstimationData(
+                id: estimateId1,
+              );
+          final estimationDto = CostEstimateDto.fromJson(estimationData);
+
+          fakeSupabaseWrapper.shouldThrowOnInsert = true;
+          fakeSupabaseWrapper.insertExceptionType =
+              SupabaseExceptionType.postgrest;
+          fakeSupabaseWrapper.insertErrorMessage = errorMsgDbConnection;
+
+          expect(
+            () => dataSource.createEstimation(estimationDto),
+            throwsA(isA<supabase.PostgrestException>()),
+          );
+        },
+      );
+
+      test(
+        'should rethrow network exception when supabaseWrapper.insert throws network error',
+        () async {
+          final estimationData =
+              EstimationTestDataMapFactory.createFakeEstimationData(
+                id: estimateId1,
+              );
+          final estimationDto = CostEstimateDto.fromJson(estimationData);
+
+          fakeSupabaseWrapper.shouldThrowOnInsert = true;
+          fakeSupabaseWrapper.insertExceptionType =
+              SupabaseExceptionType.socket;
+          fakeSupabaseWrapper.insertErrorMessage = errorMsgNetwork;
+
+          expect(
+            () => dataSource.createEstimation(estimationDto),
+            throwsA(isA<SocketException>()),
+          );
+        },
+      );
+
+      test('should handle CostEstimateDto with all field types', () async {
+        final estimationData =
+            EstimationTestDataMapFactory.createFakeEstimationData(
+              id: '1',
+              estimateName: estimateNameComplex,
+              estimateDescription: estimateDescComplex,
+              creatorUserId: userIdComplex,
+              markupType: markupTypeGranular,
+              overallMarkupValueType: markupValueTypeAmount,
+              overallMarkupValue: overallMarkup3,
+              materialMarkupValue: materialMarkup3,
+              laborMarkupValueType: markupValueTypeAmount,
+              laborMarkupValue: laborMarkup4,
+              equipmentMarkupValue: equipmentMarkup2,
+              totalCost: totalCostComplex,
+              isLocked: true,
+              lockedByUserId: userIdLocker,
+              lockedAt: timestamp5,
+              createdAt: fakeClock.now().toIso8601String(),
+              updatedAt: fakeClock.now().toIso8601String(),
+            );
+        final estimationDto = CostEstimateDto.fromJson(estimationData);
+
+        final result = await dataSource.createEstimation(estimationDto);
+
+        expect(result, equals(estimationDto));
       });
     });
   });

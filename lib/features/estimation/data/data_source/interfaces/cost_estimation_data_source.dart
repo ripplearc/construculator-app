@@ -7,4 +7,9 @@ abstract class CostEstimationDataSource {
   ///
   /// Returns a [CostEstimateDto] with the cost estimations.
   Future<List<CostEstimateDto>> getEstimations(String projectId);
+
+  /// Used to create a new cost estimation
+  ///
+  /// Returns a [CostEstimateDto] with the created cost estimation.
+  Future<CostEstimateDto> createEstimation(CostEstimateDto estimation);
 }

@@ -66,13 +66,13 @@ void main() {
       expect(dto, equals(expected));
     });
 
-    test('toJson should output the same map as input', () {
+    test('toJson should output the same map as input with out the id', () {
       final sampleData =
           EstimationTestDataMapFactory.createFakeEstimationData();
       final dto = CostEstimateDto.fromJson(sampleData);
       final json = dto.toJson();
 
-      expect(json, equals(sampleData));
+      expect(json, equals(sampleData..remove('id')));
     });
 
     test(
@@ -262,6 +262,51 @@ void main() {
       );
 
       expect(domain, equals(expected));
+    });
+
+    test('fromDomain should convert domain entity to DTO correctly', () {
+      final sampleData = EstimationTestDataMapFactory.createFakeEstimationData(
+        isLocked: true,
+        lockedByUserId: 'locking-user',
+        lockedAt: '2025-01-01T10:00:00.000Z',
+      );
+      final originalDto = CostEstimateDto.fromJson(sampleData);
+      final domain = originalDto.toDomain();
+
+      final convertedDto = CostEstimateDto.fromDomain(domain);
+
+      expect(convertedDto, equals(originalDto));
+    });
+
+    test('fromDomain should map MarkupType.granular correctly', () {
+      final sampleData = EstimationTestDataMapFactory.createFakeEstimationData(
+        markupType: 'granular',
+      );
+      final originalDto = CostEstimateDto.fromJson(sampleData);
+      final domain = originalDto.toDomain();
+
+      final convertedDto = CostEstimateDto.fromDomain(domain);
+
+      expect(convertedDto.markupType, equals('granular'));
+      expect(domain.markupConfiguration.overallType, MarkupType.granular);
+    });
+
+    test('fromDomain should map MarkupValueType.amount correctly', () {
+      final sampleData = EstimationTestDataMapFactory.createFakeEstimationData(
+        overallMarkupValueType: 'amount',
+        materialMarkupValueType: 'amount',
+        laborMarkupValueType: 'amount',
+        equipmentMarkupValueType: 'amount',
+        isLocked: true,
+        lockedByUserId: 'locking-user',
+        lockedAt: '2025-01-01T10:00:00.000Z',
+      );
+      final originalDto = CostEstimateDto.fromJson(sampleData);
+      final domain = originalDto.toDomain();
+
+      final convertedDto = CostEstimateDto.fromDomain(domain);
+
+      expect(convertedDto, equals(originalDto));
     });
   });
 }
