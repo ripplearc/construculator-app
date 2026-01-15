@@ -273,26 +273,19 @@ class AuthManagerImpl implements AuthManager {
   Future<AuthResult<bool>> isEmailRegistered(String email) async {
     _logger.info('Checking if email is registered: $email');
 
-    // Validate email
     final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
       return AuthResult.failure(emailError);
     }
 
     try {
-      final response = await _wrapper.selectSingle(
-        table: 'users',
-        columns: 'id',
-        filterColumn: 'email',
-        filterValue: email,
+      final response = await _wrapper.rpc<bool>(
+        'check_email_exists',
+        params: {'email_input': email},
       );
 
-      final isRegistered = response != null;
-
-      _logger.info(
-        'Email check complete for: $email - Registered: $isRegistered',
-      );
-      return AuthResult.success(isRegistered);
+      _logger.info('Email check complete for: $email - Registered: $response');
+      return AuthResult.success(response);
     } catch (e) {
       return _handleException(e, 'Email registration check');
     }

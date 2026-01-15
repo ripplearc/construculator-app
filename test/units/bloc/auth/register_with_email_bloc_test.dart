@@ -1,5 +1,4 @@
 import 'package:bloc_test/bloc_test.dart';
-import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -11,14 +10,12 @@ import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
-  late Clock clock;
   late RegisterWithEmailBloc bloc;
   const testEmail = 'test@example.com';
 
   setUp(() {
     Modular.init(AuthTestModule());
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
-    clock = Modular.get<Clock>();
     bloc = Modular.get<RegisterWithEmailBloc>();
   });
 
@@ -73,7 +70,10 @@ void main() {
 
       blocTest<RegisterWithEmailBloc, RegisterWithEmailState>(
         'emits [RegisterWithEmailFormFieldValidated, RegisterWithEmailEmailCheckLoading, RegisterWithEmailEmailCheckCompleted] when email is valid and triggers availability check',
-        build: () => bloc,
+        build: () {
+          fakeSupabase.setRpcResponse('check_email_exists', false);
+          return bloc;
+        },
         act: (bloc) => bloc.add(
           const RegisterWithEmailFormFieldChanged(
             field: RegisterWithEmailFormField.email,
@@ -97,13 +97,7 @@ void main() {
       blocTest<RegisterWithEmailBloc, RegisterWithEmailState>(
         'emits [RegisterWithEmailFormFieldValidated, RegisterWithEmailEmailCheckLoading, RegisterWithEmailEmailCheckCompleted] when valid email is already registered',
         build: () {
-          fakeSupabase.addTableData('users', [
-            {
-              'id': '1',
-              'email': testEmail,
-              'created_at': clock.now().toIso8601String(),
-            },
-          ]);
+          fakeSupabase.setRpcResponse('check_email_exists', true);
           return bloc;
         },
         act: (bloc) => bloc.add(
@@ -170,6 +164,7 @@ void main() {
       test(
         'emits [RegisterWithEmailEmailCheckLoading, RegisterWithEmailEmailCheckSuccess] when email is available',
         () async {
+          fakeSupabase.setRpcResponse('check_email_exists', false);
           bloc.add(RegisterWithEmailEmailChanged(testEmail));
           await expectLater(
             bloc.stream,
@@ -184,13 +179,7 @@ void main() {
       test(
         'emits [RegisterWithEmailEmailCheckLoading, RegisterWithEmailEmailCheckSuccess] when email is taken',
         () async {
-          fakeSupabase.addTableData('users', [
-            {
-              'id': '1',
-              'email': testEmail,
-              'created_at': clock.now().toIso8601String(),
-            },
-          ]);
+          fakeSupabase.setRpcResponse('check_email_exists', true);
           bloc.add(RegisterWithEmailEmailChanged(testEmail));
           await expectLater(
             bloc.stream,
