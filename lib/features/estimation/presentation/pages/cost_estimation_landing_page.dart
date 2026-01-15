@@ -120,7 +120,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
 
   Widget _buildPositionedAddButton(AppLocalizations l10n) {
     final size = MediaQuery.of(context).size;
-    final colorTheme = Theme.of(context).extension<AppColorsExtension>();
+    final colorTheme = AppColorsExtension.of(context);
     return Positioned(
       bottom: size.height * CostEstimationLandingPage._buttonBottomRatio,
       right: size.width * CostEstimationLandingPage._buttonRightRatio,
@@ -132,7 +132,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
         icon: CoreIconWidget(
           icon: CoreIcons.add,
           size: 20,
-          color: colorTheme?.buttonSurface,
+          color: colorTheme.buttonSurface,
         ),
         fullWidth: false,
       ),

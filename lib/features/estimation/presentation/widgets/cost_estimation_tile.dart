@@ -17,11 +17,11 @@ class CostEstimationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appColors = Theme.of(context).extension<AppColorsExtension>();
+    final appColors = AppColorsExtension.of(context);
     return Container(
       margin: EdgeInsets.symmetric(vertical: CoreSpacing.space3),
       decoration: BoxDecoration(
-        color: appColors?.pageBackground,
+        color: appColors.pageBackground,
         borderRadius: BorderRadius.circular(12),
         boxShadow: CoreShadows.small,
       ),
@@ -43,14 +43,14 @@ class CostEstimationTile extends StatelessWidget {
   }
 
   Widget _buildTopRow(BuildContext context) {
-    final appColors = Theme.of(context).extension<AppColorsExtension>();
+    final appColors = AppColorsExtension.of(context);
     final typography = Theme.of(context).coreTypography;
     return Row(
       children: [
         CoreIconWidget(
           key: const Key('moneyIcon'),
           icon: CoreIcons.cost,
-          color: appColors?.iconGrayMid,
+          color: appColors.iconGrayMid,
           size: 24,
         ),
         const SizedBox(width: CoreSpacing.space3),
@@ -58,7 +58,7 @@ class CostEstimationTile extends StatelessWidget {
           child: Text(
             estimation.estimateName,
             style: typography.bodyLargeMedium.copyWith(
-              color: appColors?.textDark,
+              color: appColors.textDark,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -69,7 +69,7 @@ class CostEstimationTile extends StatelessWidget {
           child: CoreIconWidget(
             key: const Key('menuIcon'),
             icon: CoreIcons.moreVert,
-            color: appColors?.iconDark,
+            color: appColors.iconDark,
             size: 24,
           ),
         ),
@@ -80,7 +80,7 @@ class CostEstimationTile extends StatelessWidget {
   Widget _buildBottomRow(BuildContext context) {
     final createdAt = estimation.createdAt;
 
-    final appColors = Theme.of(context).extension<AppColorsExtension>();
+    final appColors = AppColorsExtension.of(context);
     final typography = Theme.of(context).coreTypography;
 
     return Row(
@@ -88,7 +88,7 @@ class CostEstimationTile extends StatelessWidget {
         CoreIconWidget(
           key: const Key('calendarIcon'),
           icon: CoreIcons.calendar,
-          color: appColors?.iconGrayMid,
+          color: appColors.iconGrayMid,
           size: 14,
         ),
         const SizedBox(width: CoreSpacing.space2),
@@ -101,7 +101,7 @@ class CostEstimationTile extends StatelessWidget {
           width: 4,
           height: 4,
           decoration: BoxDecoration(
-            color: appColors?.lineDarkOutline,
+            color: appColors.lineDarkOutline,
             shape: BoxShape.circle,
           ),
         ),
@@ -116,7 +116,7 @@ class CostEstimationTile extends StatelessWidget {
             textAlign: TextAlign.right,
             FormattingHelper.formatCurrency(estimation.totalCost),
             style: typography.bodyLargeSemiBold.copyWith(
-              color: appColors?.textDark,
+              color: appColors.textDark,
             ),
           ),
         ),

@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+import '../../../screenshots/font_loader.dart';
 
 class _DashboardPageTestModule extends Module {
   final FakeAuthManager authManager;
@@ -69,7 +70,10 @@ void main() {
   });
 
   Widget makeApp() {
-    return const MaterialApp(home: DashboardPage());
+    return MaterialApp(
+      theme: createTestTheme(),
+      home: const DashboardPage(),
+    );
   }
 
   UserCredential createCredential({

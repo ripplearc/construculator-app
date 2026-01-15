@@ -2,6 +2,7 @@ import 'package:construculator/features/auth/presentation/widgets/error_widget_b
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+import '../../../screenshots/font_loader.dart';
 
 void main() {
   const errorText = 'Something went wrong';
@@ -13,9 +14,7 @@ void main() {
     required VoidCallback onPressed,
   }) {
     return MaterialApp(
-      theme: ThemeData(
-        extensions: <ThemeExtension<dynamic>>[AppTypographyExtension.create()],
-      ),
+      theme: createTestTheme(),
       home: Scaffold(
         body: Builder(
           builder: (context) {
@@ -43,11 +42,10 @@ void main() {
 
       final errorFinder = find.text(errorText);
       expect(errorFinder, findsOneWidget);
-
       final textWidget = tester.widget<Text>(errorFinder);
-      expect(textWidget.style!.color, CoreTextColors.error);
-
-      final context = tester.element(find.byType(Center));
+      final context = tester.element(errorFinder);
+      final colors = AppColorsExtension.of(context);
+      expect(textWidget.style!.color, colors.textError);
       final typography = Theme.of(context).coreTypography;
 
       expect(
@@ -67,9 +65,9 @@ void main() {
       expect(linkFinder, findsOneWidget);
 
       final textWidget = tester.widget<Text>(linkFinder);
-      expect(textWidget.style!.color, CoreTextColors.link);
-
-      final context = tester.element(find.byType(Center));
+      final context = tester.element(linkFinder);
+      final colors = AppColorsExtension.of(context);
+      expect(textWidget.style!.color, colors.textLink);
       final typography = Theme.of(context).coreTypography;
 
       expect(

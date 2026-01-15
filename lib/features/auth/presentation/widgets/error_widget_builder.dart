@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 /// Displays an error message and a link, useful for displaying errors on the login and register pages
 /// With an embedded link for quick navigation to the appropriate page
+/// [context] - The build context to access theme
 /// [errorText] - The error message to display
 /// [linkText] - The text of the link to display
 /// [onPressed] - The callback to be called when the link is pressed
@@ -13,6 +14,7 @@ Widget buildErrorWidgetWithLink({
   required VoidCallback onPressed,
 }) {
   final typography = Theme.of(context).coreTypography;
+  final colors = AppColorsExtension.of(context);
 
   return Row(
     crossAxisAlignment: CrossAxisAlignment.center,
@@ -22,7 +24,7 @@ Widget buildErrorWidgetWithLink({
         child: Text(
           errorText ?? '',
           style: typography.bodySmallRegular.copyWith(
-            color: CoreTextColors.error,
+            color: colors.textError,
           ),
         ),
       ),
@@ -33,7 +35,7 @@ Widget buildErrorWidgetWithLink({
           child: Text(
             linkText,
             style: typography.bodySmallSemiBold.copyWith(
-              color: CoreTextColors.link,
+              color: colors.textLink,
             ),
           ),
         ),

@@ -11,6 +11,7 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class _TestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -73,6 +74,7 @@ void main() {
       ) async {
         await tester.pumpWidget(
           MaterialApp(
+            theme: CoreTheme.light(),
             home: Scaffold(
               appBar: provider.buildProjectHeaderAppbar(
                 projectId: 'my-project-123',

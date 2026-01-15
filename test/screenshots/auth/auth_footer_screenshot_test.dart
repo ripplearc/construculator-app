@@ -21,6 +21,7 @@ void main() {
     }) async {
       await tester.pumpWidget(
         MaterialApp(
+          theme: createTestTheme(),
           home: Material(
             child: AuthFooter(
               text: text,

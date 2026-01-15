@@ -1,6 +1,7 @@
 import 'package:construculator/features/auth/presentation/widgets/terms_and_conditions_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../../screenshots/font_loader.dart';
 
 void main() {
   const termsAndConditionsText =
@@ -16,6 +17,7 @@ void main() {
   }) async {
     await tester.pumpWidget(
       MaterialApp(
+        theme: createTestTheme(),
         home: Scaffold(
           body: Padding(
             padding: const EdgeInsets.all(16.0),
