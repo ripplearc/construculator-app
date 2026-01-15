@@ -698,6 +698,212 @@ void main() {
           },
         );
       });
+
+      group('rpc', () {
+        test('returns configured response for successful RPC call', () async {
+          fakeWrapper.setRpcResponse('check_email_exists', true);
+
+          final result = await fakeWrapper.rpc<bool>(
+            'check_email_exists',
+            params: {'email_input': 'test@example.com'},
+          );
+
+          expect(result, isTrue);
+          expect(fakeWrapper.getMethodCallsFor('rpc'), hasLength(1));
+          final rpcCall = fakeWrapper.getMethodCallsFor('rpc').first;
+          expect(rpcCall['functionName'], equals('check_email_exists'));
+          expect(
+            rpcCall['params'],
+            equals({'email_input': 'test@example.com'}),
+          );
+        });
+
+        test('returns false for configured false response', () async {
+          fakeWrapper.setRpcResponse('check_email_exists', false);
+
+          final result = await fakeWrapper.rpc<bool>(
+            'check_email_exists',
+            params: {'email_input': 'unknown@example.com'},
+          );
+
+          expect(result, isFalse);
+        });
+
+        test('supports different return types (int)', () async {
+          fakeWrapper.setRpcResponse('get_user_count', 42);
+
+          final result = await fakeWrapper.rpc<int>('get_user_count');
+
+          expect(result, equals(42));
+        });
+
+        test('supports different return types (String)', () async {
+          fakeWrapper.setRpcResponse('get_user_role', 'admin');
+
+          final result = await fakeWrapper.rpc<String>(
+            'get_user_role',
+            params: {'user_id': '123'},
+          );
+
+          expect(result, equals('admin'));
+        });
+
+        test('supports different return types (Map)', () async {
+          final expectedData = {'id': '1', 'name': 'Test User'};
+          fakeWrapper.setRpcResponse('get_user_data', expectedData);
+
+          final result = await fakeWrapper.rpc<Map<String, dynamic>>(
+            'get_user_data',
+            params: {'user_id': '1'},
+          );
+
+          expect(result, equals(expectedData));
+        });
+
+        test('throws exception when configured to fail', () async {
+          fakeWrapper.shouldThrowOnRpc = true;
+          fakeWrapper.rpcErrorMessage = 'RPC call failed';
+
+          expect(
+            () async => await fakeWrapper.rpc<bool>(
+              'check_email_exists',
+              params: {'email_input': 'test@example.com'},
+            ),
+            throwsA(
+              isA<ServerException>().having(
+                (e) => e.toString(),
+                'message',
+                contains('RPC call failed'),
+              ),
+            ),
+          );
+        });
+
+        test('throws ServerException when no response is configured', () async {
+          expect(
+            () async => await fakeWrapper.rpc<bool>(
+              'unconfigured_function',
+              params: {'param': 'value'},
+            ),
+            throwsA(
+              isA<ServerException>().having(
+                (e) => e.toString(),
+                'message',
+                contains('No RPC response configured for function'),
+              ),
+            ),
+          );
+        });
+
+        test('throws PostgrestException when configured', () async {
+          fakeWrapper.shouldThrowOnRpc = true;
+          fakeWrapper.rpcErrorMessage = 'Permission denied';
+          fakeWrapper.rpcExceptionType = SupabaseExceptionType.postgrest;
+          fakeWrapper.postgrestErrorCode = PostgresErrorCode.unknownError;
+
+          expect(
+            () async => await fakeWrapper.rpc<bool>(
+              'check_email_exists',
+              params: {'email_input': 'test@example.com'},
+            ),
+            throwsA(
+              isA<supabase.PostgrestException>().having(
+                (e) => e.message,
+                'message',
+                contains('Permission denied'),
+              ),
+            ),
+          );
+        });
+
+        test('records method calls correctly', () async {
+          fakeWrapper.setRpcResponse('function1', 'result1');
+          fakeWrapper.setRpcResponse('function2', 'result2');
+
+          await fakeWrapper.rpc<String>(
+            'function1',
+            params: {'param1': 'value1'},
+          );
+          await fakeWrapper.rpc<String>(
+            'function2',
+            params: {'param2': 'value2'},
+          );
+
+          final rpcCalls = fakeWrapper.getMethodCallsFor('rpc');
+          expect(rpcCalls, hasLength(2));
+          expect(rpcCalls[0]['functionName'], equals('function1'));
+          expect(rpcCalls[0]['params'], equals({'param1': 'value1'}));
+          expect(rpcCalls[1]['functionName'], equals('function2'));
+          expect(rpcCalls[1]['params'], equals({'param2': 'value2'}));
+        });
+
+        test('clearRpcResponses removes all configured responses', () async {
+          fakeWrapper.setRpcResponse('function1', true);
+          fakeWrapper.setRpcResponse('function2', false);
+
+          final result1 = await fakeWrapper.rpc<bool>('function1');
+          expect(result1, isTrue);
+
+          fakeWrapper.clearRpcResponses();
+
+          expect(
+            () async => await fakeWrapper.rpc<bool>('function1'),
+            throwsA(isA<ServerException>()),
+          );
+          expect(
+            () async => await fakeWrapper.rpc<bool>('function2'),
+            throwsA(isA<ServerException>()),
+          );
+        });
+
+        test('handles delayed operations', () async {
+          fakeWrapper.setRpcResponse('delayed_function', true);
+          fakeWrapper.shouldDelayOperations = true;
+          fakeWrapper.completer = Completer();
+
+          final future = fakeWrapper.rpc<bool>(
+            'delayed_function',
+            params: {'test': 'value'},
+          );
+
+          // Method call should not be recorded yet
+          expect(fakeWrapper.getMethodCallsFor('rpc'), isEmpty);
+
+          // Complete the delayed operation
+          fakeWrapper.completer!.complete();
+          final result = await future;
+
+          expect(result, isTrue);
+          expect(fakeWrapper.getMethodCallsFor('rpc'), hasLength(1));
+        });
+
+        test('supports RPC calls without parameters', () async {
+          fakeWrapper.setRpcResponse('get_server_time', '2023-01-01T00:00:00Z');
+
+          final result = await fakeWrapper.rpc<String>('get_server_time');
+
+          expect(result, equals('2023-01-01T00:00:00Z'));
+          final rpcCall = fakeWrapper.getMethodCallsFor('rpc').first;
+          expect(rpcCall['params'], isNull);
+        });
+
+        test('allows multiple calls to same function', () async {
+          fakeWrapper.setRpcResponse('check_email_exists', true);
+
+          final result1 = await fakeWrapper.rpc<bool>(
+            'check_email_exists',
+            params: {'email_input': 'user1@example.com'},
+          );
+          final result2 = await fakeWrapper.rpc<bool>(
+            'check_email_exists',
+            params: {'email_input': 'user2@example.com'},
+          );
+
+          expect(result1, isTrue);
+          expect(result2, isTrue);
+          expect(fakeWrapper.getMethodCallsFor('rpc'), hasLength(2));
+        });
+      });
     });
     group('FakeSupabaseWrapper Fake Implementations', () {
       group('FakeUser Implementation', () {
@@ -1061,6 +1267,7 @@ void main() {
         fakeWrapper.shouldThrowOnUpdate = true;
         fakeWrapper.shouldThrowOnSelectMultiple = true;
         fakeWrapper.shouldThrowOnDelete = true;
+        fakeWrapper.shouldThrowOnRpc = true;
         fakeWrapper.signInErrorMessage = 'Sign in failed';
         fakeWrapper.signUpErrorMessage = 'Sign up failed';
         fakeWrapper.otpErrorMessage = 'OTP failed';
@@ -1071,11 +1278,13 @@ void main() {
         fakeWrapper.insertErrorMessage = 'Insert failed';
         fakeWrapper.updateErrorMessage = 'Update failed';
         fakeWrapper.deleteErrorMessage = 'Delete failed';
+        fakeWrapper.rpcErrorMessage = 'RPC failed';
         fakeWrapper.selectExceptionType = SupabaseExceptionType.postgrest;
         fakeWrapper.selectMultipleExceptionType = SupabaseExceptionType.socket;
         fakeWrapper.insertExceptionType = SupabaseExceptionType.timeout;
         fakeWrapper.updateExceptionType = SupabaseExceptionType.auth;
         fakeWrapper.deleteExceptionType = SupabaseExceptionType.type;
+        fakeWrapper.rpcExceptionType = SupabaseExceptionType.postgrest;
         fakeWrapper.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
         fakeWrapper.shouldReturnNullUser = true;
         fakeWrapper.shouldReturnNullOnSelect = true;
@@ -1084,8 +1293,10 @@ void main() {
         fakeWrapper.shouldEmitStreamErrors = true;
         fakeWrapper.shouldReturnUser = true;
         fakeWrapper.shouldThrowOnGetUserProfile = true;
+        fakeWrapper.setRpcResponse('test_function', true);
 
         expect(fakeWrapper.shouldThrowOnDelete, isTrue);
+        expect(fakeWrapper.shouldThrowOnRpc, isTrue);
         expect(fakeWrapper.deleteErrorMessage, equals('Delete failed'));
         expect(
           fakeWrapper.deleteExceptionType,
@@ -1107,6 +1318,7 @@ void main() {
         expect(fakeWrapper.shouldThrowOnUpdate, isFalse);
         expect(fakeWrapper.shouldThrowOnSelectMultiple, isFalse);
         expect(fakeWrapper.shouldThrowOnDelete, isFalse);
+        expect(fakeWrapper.shouldThrowOnRpc, isFalse);
         expect(fakeWrapper.signInErrorMessage, isNull);
         expect(fakeWrapper.signUpErrorMessage, isNull);
         expect(fakeWrapper.otpErrorMessage, isNull);
@@ -1117,11 +1329,13 @@ void main() {
         expect(fakeWrapper.insertErrorMessage, isNull);
         expect(fakeWrapper.updateErrorMessage, isNull);
         expect(fakeWrapper.deleteErrorMessage, isNull);
+        expect(fakeWrapper.rpcErrorMessage, isNull);
         expect(fakeWrapper.selectExceptionType, isNull);
         expect(fakeWrapper.selectMultipleExceptionType, isNull);
         expect(fakeWrapper.insertExceptionType, isNull);
         expect(fakeWrapper.updateExceptionType, isNull);
         expect(fakeWrapper.deleteExceptionType, isNull);
+        expect(fakeWrapper.rpcExceptionType, isNull);
         expect(fakeWrapper.postgrestErrorCode, isNull);
         expect(fakeWrapper.shouldReturnNullUser, isFalse);
         expect(fakeWrapper.shouldReturnNullOnSelect, isFalse);
@@ -1139,6 +1353,12 @@ void main() {
           filterValue: '1',
         );
         expect(userResult, isNull);
+
+        expect(
+          () async => await fakeWrapper.rpc<bool>('test_function'),
+          throwsA(isA<ServerException>()),
+          reason: 'RPC responses should be cleared after reset',
+        );
       });
     });
   });

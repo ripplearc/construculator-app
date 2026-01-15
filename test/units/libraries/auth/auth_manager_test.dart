@@ -487,25 +487,47 @@ void main() {
         expect(result.errorType, AuthErrorType.serverError);
       });
 
-      test('isEmailRegistered should return true for existing email', () async {
-        supabaseWrapper.addTableData('users', [
-          {'email': testEmail},
-        ]);
-        final result = await authManager.isEmailRegistered(testEmail);
+      test(
+        'isEmailRegistered should invoke check_email_exists with the correct parameters and return true for an existing email',
+        () async {
+          supabaseWrapper.setRpcResponse('check_email_exists', true);
+          final result = await authManager.isEmailRegistered(testEmail);
 
-        expect(result.isSuccess, true);
-        expect(result.data, true);
-      });
+          expect(result.isSuccess, true);
+          expect(result.data, true);
+          expect(supabaseWrapper.getMethodCallsFor('rpc').length, 1);
+          final rpcCall = supabaseWrapper.getMethodCallsFor('rpc').first;
+          expect(rpcCall['functionName'], 'check_email_exists');
+          expect(rpcCall['params'], {'email_input': testEmail});
+        },
+      );
 
       test(
         'isEmailRegistered should return false for non-existing email',
         () async {
+          supabaseWrapper.setRpcResponse('check_email_exists', false);
           final result = await authManager.isEmailRegistered(testEmail);
 
           expect(result.isSuccess, true);
           expect(result.data, false);
+          expect(supabaseWrapper.getMethodCallsFor('rpc').length, 1);
+          final rpcCall = supabaseWrapper.getMethodCallsFor('rpc').first;
+          expect(rpcCall['functionName'], 'check_email_exists');
+          expect(rpcCall['params'], {'email_input': testEmail});
         },
       );
+
+      test('isEmailRegistered should handle RPC errors', () async {
+        supabaseWrapper.shouldThrowOnRpc = true;
+        supabaseWrapper.rpcErrorMessage = 'RPC call failed';
+        supabaseWrapper.rpcExceptionType = SupabaseExceptionType.postgrest;
+        supabaseWrapper.postgrestErrorCode = PostgresErrorCode.unknownError;
+
+        final result = await authManager.isEmailRegistered(testEmail);
+
+        expect(result.isSuccess, false);
+        expect(result.errorType, AuthErrorType.unknownError);
+      });
     });
 
     group('Input Validation', () {
