@@ -32,7 +32,9 @@ abstract class CostEstimationRepository {
   ///
   /// The stream includes their markup configurations, lock status, and
   /// calculated totals.
-  Stream<Either<Failure, List<CostEstimate>>> watchEstimations(String projectId);
+  Stream<Either<Failure, List<CostEstimate>>> watchEstimations(
+    String projectId,
+  );
 
   /// Creates a new cost estimation.
   ///
@@ -40,6 +42,15 @@ abstract class CostEstimationRepository {
   /// the newly created cost estimation with its assigned ID and timestamps.
   Future<Either<Failure, CostEstimate>> createEstimation(
     CostEstimate estimation,
+  );
+
+  /// Deletes a cost estimation by its ID.
+  ///
+  /// Returns a [Future] that completes with an [Either] containing either
+  /// a [Failure] if the deletion fails, or [void] if successful.
+  Future<Either<Failure, void>> deleteEstimation(
+    String estimationId,
+    String projectId,
   );
 
   /// Disposes of all resources used by the repository.
