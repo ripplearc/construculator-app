@@ -176,4 +176,9 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
         .select()
         .single();
   }
+
+  @override
+  Future<T> rpc<T>(String functionName, {Map<String, dynamic>? params}) async {
+    return await _supabaseClient.rpc(functionName, params: params);
+  }
 }
