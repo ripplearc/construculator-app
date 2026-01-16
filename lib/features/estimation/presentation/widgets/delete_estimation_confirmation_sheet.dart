@@ -90,8 +90,8 @@ class _DeleteEstimationConfirmationSheetState
                       child: Container(
                         key: const Key('images_attached_count_container'),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: CoreSpacing.space3,
-                          vertical: CoreSpacing.space3,
+                          horizontal: CoreSpacing.space4,
+                          vertical: CoreSpacing.space2,
                         ),
                         decoration: BoxDecoration(
                           color: colorTheme.backgroundBlueLight,
@@ -116,8 +116,8 @@ class _DeleteEstimationConfirmationSheetState
                       child: Container(
                         key: const Key('documents_attached_count_container'),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: CoreSpacing.space3,
-                          vertical: CoreSpacing.space3,
+                          horizontal: CoreSpacing.space4,
+                          vertical: CoreSpacing.space2,
                         ),
                         decoration: BoxDecoration(
                           color: colorTheme.backgroundBlueLight,
@@ -161,7 +161,6 @@ class _DeleteEstimationConfirmationSheetState
                 ),
               ],
             ),
-            const SizedBox(height: CoreSpacing.space2),
           ],
         ),
       ),
