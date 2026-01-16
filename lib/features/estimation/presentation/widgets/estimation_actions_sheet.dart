@@ -36,7 +36,7 @@ class _EstimationActionsSheetState extends State<EstimationActionsSheet>
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
-    final typographyTheme = AppTypographyExtension.of(context);
+    final typographyTheme = context.textTheme;
 
     return Container(
       decoration: BoxDecoration(
@@ -164,7 +164,7 @@ class _QuickActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
-    final typographyTheme = AppTypographyExtension.of(context);
+    final typographyTheme = context.textTheme;
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -210,7 +210,7 @@ class _ActionListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
-    final typographyTheme = AppTypographyExtension.of(context);
+    final typographyTheme = context.textTheme;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,

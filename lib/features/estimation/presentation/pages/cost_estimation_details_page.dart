@@ -13,7 +13,7 @@ class CostEstimationDetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = AppTypographyExtension.of(context);
+    final textTheme = context.textTheme;
     final colorTheme = context.colorTheme;
     return Scaffold(
       appBar: AppBar(

@@ -195,7 +195,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
 
   @override
   Widget build(BuildContext context) {
-    final typography = Theme.of(context).coreTypography;
+    final typography = context.textTheme;
     final colors = context.colorTheme;
 
     // TODO: https://ripplearc.youtrack.cloud/issue/CA-464/Todo-Move-Scaffold-Divider-Override-to-Global-Theme

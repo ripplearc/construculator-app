@@ -30,7 +30,7 @@ class _DeleteEstimationConfirmationSheetState
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
-    final textTheme = AppTypographyExtension.of(context);
+    final textTheme = context.textTheme;
 
     return Container(
       decoration: BoxDecoration(

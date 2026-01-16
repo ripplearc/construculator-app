@@ -23,7 +23,7 @@ class AuthFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typography = Theme.of(context).coreTypography;
+    final typography = context.textTheme;
     final colors = context.colorTheme;
 
     return SafeArea(

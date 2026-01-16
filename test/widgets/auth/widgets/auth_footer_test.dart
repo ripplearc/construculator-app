@@ -42,7 +42,7 @@ void main() {
         final textWidget = tester.widget<Text>(actionTextFinder);
         expect(textWidget.style!.color, colors.textLink);
 
-        final typography = Theme.of(context).coreTypography;
+        final typography = context.textTheme;
 
         expect(
           textWidget.style!.fontWeight,

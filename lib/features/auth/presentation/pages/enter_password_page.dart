@@ -65,7 +65,7 @@ class _EnterPasswordPageState extends State<EnterPasswordPage>
 
   @override
   Widget build(BuildContext context) {
-    final typography = Theme.of(context).coreTypography;
+    final typography = context.textTheme;
     final colors = context.colorTheme;
     return Scaffold(
       backgroundColor: colors.pageBackground,

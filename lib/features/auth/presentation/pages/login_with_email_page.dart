@@ -162,7 +162,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
   }
 
   Widget _buildLoginWithEmailForm(LoginWithEmailState state) {
-    final typography = Theme.of(context).coreTypography;
+    final typography = context.textTheme;
     final colors = context.colorTheme;
     return SingleChildScrollView(
       child: Padding(

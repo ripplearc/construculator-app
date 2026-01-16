@@ -2,7 +2,6 @@ import 'package:construculator/features/auth/presentation/widgets/otp_quick_shee
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:pinput/pinput.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// A widget that displays the OTP verification sheet
 /// [note] - The note to display
@@ -41,7 +40,7 @@ class OtpVerificationQuickSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typography = Theme.of(context).coreTypography;
+    final typography = context.textTheme;
     final colors = context.colorTheme;
 
     final pinTheme = PinTheme(

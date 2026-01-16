@@ -1,4 +1,3 @@
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 
@@ -21,7 +20,7 @@ class TermsAndConditionsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typography = Theme.of(context).coreTypography;
+    final typography = context.textTheme;
     final colors = context.colorTheme;
 
     return Text.rich(

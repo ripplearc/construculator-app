@@ -20,10 +20,9 @@ class CostEstimationEmptyWidget extends StatelessWidget {
             child: Text(
               message,
               textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .extension<AppTypographyExtension>()
-                  ?.bodyMediumRegular
-                  .copyWith(color: context.colorTheme.textHeadline),
+              style: context.textTheme.bodyMediumRegular.copyWith(
+                color: context.colorTheme.textHeadline,
+              ),
             ),
           ),
         ],

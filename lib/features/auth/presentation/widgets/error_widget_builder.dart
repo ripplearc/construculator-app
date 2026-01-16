@@ -1,4 +1,3 @@
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 
@@ -14,7 +13,7 @@ Widget buildErrorWidgetWithLink({
   String? linkText,
   required VoidCallback onPressed,
 }) {
-  final typography = Theme.of(context).coreTypography;
+  final typography = context.textTheme;
   final colors = context.colorTheme;
 
   return Row(
