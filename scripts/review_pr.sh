@@ -309,7 +309,28 @@ echo "- Ensure all BLoC stream subscriptions are cancelled during disposal." >> 
 echo "" >> "$OUTPUT_FILE"
 
 # =============================================================================
-# RULE 6: GENERAL CODE REVIEW CRITERIA
+# RULE 6: SELF-DOCUMENTING & CLEAN CODE (ANTI-AI ARTIFACTS)
+# =============================================================================
+echo "### 🧹 RULE 6: SELF-DOCUMENTING & CLEAN CODE" >> "$OUTPUT_FILE"
+echo "**Core Principle:** Code must be expressive and clean. Use 'Code Documentation' to define contracts, but avoid 'Implementation Comments' to explain logic." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**✅ What to Keep (Code Documentation):**" >> "$OUTPUT_FILE"
+echo "- **Public APIs:** Brief docstrings for Classes, Interfaces, and public Methods that explain *purpose* and *usage*." >> "$OUTPUT_FILE"
+echo "- **Member Variables:** Documentation explaining the *intent* of a state variable if not immediately obvious." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**❌ Red Flags (Implementation Comments/Vibe Killers):**" >> "$OUTPUT_FILE"
+echo "- **AI Residuals:** Instructional comments left by LLMs like \`// <-- ADD THIS\`, \`// implementation here\`, or \`// Fix: ...\`." >> "$OUTPUT_FILE"
+echo "- **Step-by-Step Narratives:** Comments inside methods explaining *what* each line does. If the logic is complex, extract it into a named private method instead." >> "$OUTPUT_FILE"
+echo "- **Obscure Naming:** Using generic names (\`data\`, \`info\`, \`val\`) that force a comment to explain what the variable actually holds." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- **Purge AI Artifacts:** Delete all instructional placeholders or AI-suggested annotations." >> "$OUTPUT_FILE"
+echo "- **Refactor vs. Explain:** If you feel the urge to write a comment inside a function, refactor that logic into a descriptive variable or helper method instead." >> "$OUTPUT_FILE"
+echo "- **Maintain Contracts:** Ensure docstrings accurately reflect the *behavior* of the code without detailing the *implementation*." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
+# RULE 7: GENERAL CODE REVIEW CRITERIA
 # =============================================================================
 echo "### 🔍 RULE 4: GENERAL CODE REVIEW CRITERIA" >> "$OUTPUT_FILE"
 echo "1. 📝 Code quality and best practices" >> "$OUTPUT_FILE"
