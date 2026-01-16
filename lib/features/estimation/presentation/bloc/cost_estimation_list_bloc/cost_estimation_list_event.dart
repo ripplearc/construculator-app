@@ -11,11 +11,20 @@ abstract class CostEstimationListEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Triggered when the user manually requests a refresh of the cost estimations list
-class CostEstimationListRefreshEvent extends CostEstimationListEvent {
+/// Triggered to start watching estimations for a project
+class CostEstimationListStartWatching extends CostEstimationListEvent {
   final String projectId;
-  const CostEstimationListRefreshEvent({required this.projectId});
+  const CostEstimationListStartWatching({required this.projectId});
 
   @override
   List<Object?> get props => [projectId];
+}
+
+/// Triggered when the stream emits new result (either success or failure)
+class _CostEstimationListUpdated extends CostEstimationListEvent {
+  final Either<Failure, List<CostEstimate>> result;
+  const _CostEstimationListUpdated(this.result);
+
+  @override
+  List<Object?> get props => [result];
 }

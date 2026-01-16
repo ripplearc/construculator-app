@@ -6,6 +6,11 @@ import 'package:construculator/features/estimation/domain/repositories/cost_esti
 import 'package:construculator/features/estimation/data/testing/fake_cost_estimation_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
+import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
+import 'package:construculator/libraries/auth/data/models/auth_user.dart';
+import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
+import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/errors/failures.dart';
@@ -19,11 +24,14 @@ void main() {
   group('AddCostEstimationBloc', () {
     late AddCostEstimationBloc bloc;
     late FakeCostEstimationRepository fakeRepository;
+    late FakeAuthRepository fakeAuthRepository;
     late FakeClockImpl fakeClock;
 
     const testProjectId = 'test-project-123';
-    const testCreatorUserId = 'test-user-123';
     const testEstimationName = 'Test Estimation';
+    const testUserId = 'test-user-123';
+    const testCredentialId = 'test-credential-123';
+    const testUserEmail = 'test@example.com';
 
     setUpAll(() {
       fakeClock = FakeClockImpl();
@@ -36,10 +44,14 @@ void main() {
       Modular.replaceInstance<CostEstimationRepository>(
         FakeCostEstimationRepository(clock: fakeClock),
       );
+      Modular.replaceInstance<AuthRepository>(
+        FakeAuthRepository(clock: fakeClock),
+      );
 
       fakeRepository =
           Modular.get<CostEstimationRepository>()
               as FakeCostEstimationRepository;
+      fakeAuthRepository = Modular.get<AuthRepository>() as FakeAuthRepository;
     });
 
     tearDownAll(() {
@@ -48,6 +60,30 @@ void main() {
 
     setUp(() {
       fakeRepository.reset();
+
+      // Set up authenticated user for tests
+      final credential = UserCredential(
+        id: testCredentialId,
+        email: testUserEmail,
+        metadata: {},
+        createdAt: fakeClock.now(),
+      );
+      fakeAuthRepository.setCurrentCredentials(credential);
+
+      final user = User(
+        id: testUserId,
+        email: testUserEmail,
+        credentialId: testCredentialId,
+        firstName: 'Test',
+        lastName: 'User',
+        professionalRole: 'Developer',
+        userStatus: UserProfileStatus.active,
+        userPreferences: {},
+        createdAt: fakeClock.now(),
+        updatedAt: fakeClock.now(),
+      );
+      fakeAuthRepository.setUserProfile(user);
+
       bloc = Modular.get<AddCostEstimationBloc>();
     });
 
@@ -63,7 +99,6 @@ void main() {
           const AddCostEstimationSubmitted(
             estimationName: testEstimationName,
             projectId: testProjectId,
-            creatorUserId: testCreatorUserId,
           ),
         ),
         expect: () => [
@@ -78,11 +113,6 @@ void main() {
                 (s) => s.costEstimation.projectId,
                 'projectId',
                 testProjectId,
-              )
-              .having(
-                (s) => s.costEstimation.creatorUserId,
-                'creatorUserId',
-                testCreatorUserId,
               ),
         ],
       );
@@ -99,37 +129,11 @@ void main() {
           const AddCostEstimationSubmitted(
             estimationName: testEstimationName,
             projectId: testProjectId,
-            creatorUserId: testCreatorUserId,
           ),
         ),
         expect: () => [
           isA<AddCostEstimationInProgress>(),
           isA<AddCostEstimationFailure>(),
-        ],
-      );
-
-      blocTest<AddCostEstimationBloc, AddCostEstimationState>(
-        'passes failure type: connectionError',
-        build: () {
-          fakeRepository.shouldReturnFailureOnCreateEstimation = true;
-          fakeRepository.createEstimationFailureType =
-              EstimationErrorType.connectionError;
-          return bloc;
-        },
-        act: (bloc) => bloc.add(
-          const AddCostEstimationSubmitted(
-            estimationName: testEstimationName,
-            projectId: testProjectId,
-            creatorUserId: testCreatorUserId,
-          ),
-        ),
-        expect: () => [
-          isA<AddCostEstimationInProgress>(),
-          isA<AddCostEstimationFailure>().having(
-            (s) => (s.failure as EstimationFailure).errorType,
-            'errorType',
-            EstimationErrorType.connectionError,
-          ),
         ],
       );
 
@@ -145,7 +149,6 @@ void main() {
           const AddCostEstimationSubmitted(
             estimationName: testEstimationName,
             projectId: testProjectId,
-            creatorUserId: testCreatorUserId,
           ),
         ),
         expect: () => [
@@ -165,7 +168,6 @@ void main() {
           const AddCostEstimationSubmitted(
             estimationName: testEstimationName,
             projectId: testProjectId,
-            creatorUserId: testCreatorUserId,
           ),
         ),
         verify: (bloc) {

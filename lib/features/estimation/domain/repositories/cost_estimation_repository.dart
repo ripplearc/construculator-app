@@ -23,6 +23,17 @@ abstract class CostEstimationRepository {
   // TODO: https://ripplearc.youtrack.cloud/issue/CA-449/Cost-Estimation-Add-Pagination-for-Fetching-Estimations
   Future<Either<Failure, List<CostEstimate>>> getEstimations(String projectId);
 
+  /// Watches all cost estimates for a specific project.
+  ///
+  /// Returns a [Stream] that emits [Either] containing either a [Failure] or
+  /// lists of [CostEstimate] associated with the specified project ID.
+  /// The stream will emit new values whenever the estimations change
+  /// (e.g., when a new estimation is created or updated).
+  ///
+  /// The stream includes their markup configurations, lock status, and
+  /// calculated totals.
+  Stream<Either<Failure, List<CostEstimate>>> watchEstimations(String projectId);
+
   /// Creates a new cost estimation.
   ///
   /// Returns a [Future] that completes with the created [CostEstimate] containing
@@ -30,4 +41,10 @@ abstract class CostEstimationRepository {
   Future<Either<Failure, CostEstimate>> createEstimation(
     CostEstimate estimation,
   );
+
+  /// Disposes of all resources used by the repository.
+  ///
+  /// This method should be called when the repository is no longer needed.
+  /// It will clean up all stream controllers and caches.
+  void dispose();
 }

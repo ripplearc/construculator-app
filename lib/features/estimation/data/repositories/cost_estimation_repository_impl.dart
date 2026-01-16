@@ -16,6 +16,10 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
   final CostEstimationDataSource _dataSource;
   static final _logger = AppLogger().tag('CostEstimationRepositoryImpl');
 
+  final Map<String, StreamController<Either<Failure, List<CostEstimate>>>>
+  _streamControllers = {};
+  final Map<String, List<CostEstimate>> _cachedEstimations = {};
+
   CostEstimationRepositoryImpl({required CostEstimationDataSource dataSource})
     : _dataSource = dataSource;
 
@@ -108,11 +112,58 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         'Successfully retrieved ${costEstimates.length} cost estimations for project: $projectId',
       );
 
+      _cachedEstimations[projectId] = costEstimates;
+      _emitToStream(projectId, Right(costEstimates));
+
       return Right(costEstimates);
     } catch (e) {
-      return Left(
-        _handleError(e, 'getting cost estimations', projectId: projectId),
+      final failure = _handleError(
+        e,
+        'getting cost estimations',
+        projectId: projectId,
       );
+      _emitToStream(projectId, Left(failure));
+      return Left(failure);
+    }
+  }
+
+  @override
+  Stream<Either<Failure, List<CostEstimate>>> watchEstimations(
+    String projectId,
+  ) {
+    _logger.debug('Watching cost estimations for project: $projectId');
+
+    final controller = _streamControllers.putIfAbsent(projectId, () {
+      final newController =
+          StreamController<Either<Failure, List<CostEstimate>>>.broadcast(
+            onCancel: () {
+              _logger.debug(
+                'Stream cancelled for project: $projectId, cleaning up',
+              );
+              _streamControllers[projectId]?.close();
+              _streamControllers.remove(projectId);
+              _cachedEstimations.remove(projectId);
+            },
+          );
+      getEstimations(projectId);
+      return newController;
+    });
+
+    return controller.stream;
+  }
+
+  void _emitToStream(
+    String projectId,
+    Either<Failure, List<CostEstimate>> result,
+  ) {
+    result.fold(
+      (_) {},
+      (estimations) => _cachedEstimations[projectId] = estimations,
+    );
+
+    if (_streamControllers.containsKey(projectId) &&
+        _streamControllers[projectId]?.isClosed == false) {
+      _streamControllers[projectId]?.add(result);
     }
   }
 
@@ -131,6 +182,9 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       _logger.debug(
         'Successfully created cost estimation: ${createdEstimation.id}',
       );
+
+      _updateStreamWithNewEstimation(estimation.projectId, createdEstimation);
+
       return Right(createdEstimation);
     } catch (e) {
       return Left(
@@ -142,5 +196,35 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         ),
       );
     }
+  }
+
+  void _updateStreamWithNewEstimation(
+    String projectId,
+    CostEstimate newEstimation,
+  ) {
+    if (_streamControllers.containsKey(projectId)) {
+      final cachedEstimations = _cachedEstimations[projectId] ?? [];
+      final updatedEstimations = [...cachedEstimations, newEstimation];
+
+      _logger.debug(
+        'Updating stream with new estimation for project: $projectId',
+      );
+
+      _emitToStream(projectId, Right(updatedEstimations));
+    }
+  }
+
+  @override
+  void dispose() {
+    _logger.debug('Disposing repository and cleaning up resources');
+
+    for (final controller in _streamControllers.values) {
+      if (!controller.isClosed) {
+        controller.close();
+      }
+    }
+
+    _streamControllers.clear();
+    _cachedEstimations.clear();
   }
 }

@@ -372,4 +372,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get projectLoadError => 'Unable to load project';
+
+  @override
+  String get untitledEstimation => 'Untitled Estimation';
+
+  @override
+  String get userIdNotAvailable => 'User ID is not available';
 }

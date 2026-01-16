@@ -72,8 +72,9 @@ void main() {
           return bloc;
         },
         act: (bloc) => bloc.add(
-          const CostEstimationListRefreshEvent(projectId: testProjectId),
+          const CostEstimationListStartWatching(projectId: testProjectId),
         ),
+        wait: const Duration(milliseconds: 400),
         expect: () => [
           isA<CostEstimationListLoading>(),
           isA<CostEstimationListLoaded>()
@@ -100,8 +101,9 @@ void main() {
           return bloc;
         },
         act: (bloc) => bloc.add(
-          const CostEstimationListRefreshEvent(projectId: testProjectId),
+          const CostEstimationListStartWatching(projectId: testProjectId),
         ),
+        wait: const Duration(milliseconds: 400),
         expect: () => [
           isA<CostEstimationListLoading>(),
           isA<CostEstimationListEmpty>(),
@@ -122,8 +124,9 @@ void main() {
           return bloc;
         },
         act: (bloc) => bloc.add(
-          const CostEstimationListRefreshEvent(projectId: testProjectId),
+          const CostEstimationListStartWatching(projectId: testProjectId),
         ),
+        wait: const Duration(milliseconds: 400),
         expect: () => [
           isA<CostEstimationListLoading>(),
           isA<CostEstimationListLoaded>()
@@ -147,8 +150,9 @@ void main() {
           return bloc;
         },
         act: (bloc) => bloc.add(
-          const CostEstimationListRefreshEvent(projectId: testProjectId),
+          const CostEstimationListStartWatching(projectId: testProjectId),
         ),
+        wait: const Duration(milliseconds: 400),
         expect: () => [
           isA<CostEstimationListLoading>(),
           isA<CostEstimationListError>()
@@ -172,8 +176,9 @@ void main() {
           return bloc;
         },
         act: (bloc) => bloc.add(
-          const CostEstimationListRefreshEvent(projectId: testProjectId),
+          const CostEstimationListStartWatching(projectId: testProjectId),
         ),
+        wait: const Duration(milliseconds: 400),
         expect: () => [
           isA<CostEstimationListLoading>(),
           isA<CostEstimationListError>()
@@ -195,8 +200,9 @@ void main() {
           return bloc;
         },
         act: (bloc) => bloc.add(
-          const CostEstimationListRefreshEvent(projectId: testProjectId),
+          const CostEstimationListStartWatching(projectId: testProjectId),
         ),
+        wait: const Duration(milliseconds: 400),
         expect: () => [
           isA<CostEstimationListLoading>(),
           isA<CostEstimationListError>()
@@ -212,7 +218,7 @@ void main() {
 
     group('Edge cases', () {
       blocTest<CostEstimationListBloc, CostEstimationListState>(
-        'should retain existing estimations when refresh returns a failure',
+        'should retain existing estimations when stream emits a failure',
         build: () {
           final estimations = [
             CostEstimate.defaultEstimate(
@@ -226,17 +232,16 @@ void main() {
         },
         act: (bloc) async {
           bloc.add(
-            const CostEstimationListRefreshEvent(projectId: testProjectId),
+            const CostEstimationListStartWatching(projectId: testProjectId),
           );
 
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
 
           fakeRepository.shouldReturnFailureOnGetEstimations = true;
 
-          bloc.add(
-            const CostEstimationListRefreshEvent(projectId: testProjectId),
-          );
+          await fakeRepository.getEstimations(testProjectId);
         },
+        wait: const Duration(milliseconds: 400),
         expect: () => [
           isA<CostEstimationListLoading>(),
           isA<CostEstimationListLoaded>()
@@ -246,7 +251,6 @@ void main() {
                 'estimate name',
                 'Previous Estimation',
               ),
-          isA<CostEstimationListLoading>(),
           isA<CostEstimationListError>()
               .having(
                 (e) => e.failure,
