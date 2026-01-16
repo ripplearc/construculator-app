@@ -362,7 +362,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
           }
         },
         builder: (context, state) {
-          final typography = Theme.of(context).coreTypography;
+          final typography = context.textTheme;
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Form(
