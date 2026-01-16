@@ -137,10 +137,13 @@ run_mutation_tests() {
   BASE_COMMIT=$(git merge-base HEAD origin/$TARGET_BRANCH)
 
   echo "🧬 Checking for changed mutation config files..."
-  CHANGED_FILES=$(git diff --name-only --diff-filter=d "$TARGET_BRANCH" -- "test/mutations/*.xml")
+  CHANGED_FILES=$(git diff --name-only --diff-filter=d "$TARGET_BRANCH" -- \
+    "test/mutations/*.xml" \
+    "test/features/**/mutations/*.xml" \
+    "test/libraries/**/mutations/*.xml")
 
   if [ -z "$CHANGED_FILES" ]; then
-  echo "✅ No changed mutation config files detected. Skipping mutation tests."
+  echo "✅ No changed mutation config files detected (checked test/mutations, test/features/**/mutations, test/libraries/**/mutations). Skipping mutation tests."
   exit 0
   fi
 
@@ -181,11 +184,17 @@ comprehensive_check() {
   local filtered_files=$(echo "$changed_dart_files" | grep -v -E "(lib/generated/|\.g\.dart$|\.freezed\.dart$|lib/l10n/generated/)")
   run_custom_linter "$filtered_files"
 
-  # Unit tests with coverage
-  if [ -d "test/units" ] && [ "$(ls -A test/units)" ]; then
+  # Unit tests with coverages
+  if [ -d "test/units" ] || find test/features -type d -name "units" || find test/features -type d -name "widgets" || find test/libraries -type d -name "units" 2>/dev/null | grep -q .; then
     echo "🧪 Unit tests with coverage..."
     mkdir -p test-results
-    fvm flutter test test/units test/widgets --coverage --machine > test-results/flutter.json
+    fvm flutter test \
+    test/units \
+    test/widgets \
+    test/libraries/**/units \
+    test/features/**/units \
+    test/features/**/widgets \
+    --coverage --machine > test-results/flutter.json
 
     # Process coverage
     if [[ -f "coverage/lcov.info" ||  ! -s "coverage/lcov.info" ]]; then
@@ -232,11 +241,14 @@ comprehensive_check() {
   fi
 
   # Screenshot tests
-  if [ -d "test/screenshots" ] && [ "$(ls -A test/screenshots)" ]; then
+  if find test/screenshots test/features -type f -path "*/screenshots/*.dart" 2>/dev/null | grep -q .; then
     echo "🖼️ Screenshot tests..."
-    fvm flutter test test/screenshots --update-goldens
+    fvm flutter test \
+    test/screenshots \
+    test/features/**/screenshots \
+    --update-goldens
   else
-    echo "⏩ Skipping screenshot tests: test/screenshots directory not found."
+    echo "⏩ Skipping screenshot tests: no screenshot test files found."
   fi
 
   # Build Android
