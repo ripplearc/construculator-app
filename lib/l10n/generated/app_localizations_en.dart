@@ -378,4 +378,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get userIdNotAvailable => 'User ID is not available';
+
+  @override
+  String get renameAction => 'Rename';
+
+  @override
+  String get favouriteAction => 'Favourite';
+
+  @override
+  String get removeAction => 'Remove';
 }
