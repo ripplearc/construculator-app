@@ -152,7 +152,6 @@ void main() {
     fakeSupabase.addTableData('cost_estimates', estimations);
   }
 
-  /// Helper to setup authenticated user and pump app to estimation route
   Future<void> setupAndNavigateToEstimation(
     WidgetTester tester, {
     Map<String, dynamic>? estimationData,
@@ -174,7 +173,6 @@ void main() {
     await pumpAppAtRoute(tester, testEstimationRoute);
   }
 
-  /// Helper to open menu and navigate to delete confirmation sheet
   Future<void> openDeleteConfirmationSheet(WidgetTester tester) async {
     await tester.tap(find.byKey(const Key('menuIcon')));
     await tester.pumpAndSettle();

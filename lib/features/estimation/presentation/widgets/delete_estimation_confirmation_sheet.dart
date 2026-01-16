@@ -54,7 +54,6 @@ class _DeleteEstimationConfirmationSheetState
               ),
             ),
 
-            // Icon
             Container(
               width: 60,
               height: 60,
@@ -71,20 +70,17 @@ class _DeleteEstimationConfirmationSheetState
               ),
             ),
 
-            // Title with estimation name inline
             Text(
               l10n.deleteEstimationConfirmTitle(widget.estimationName),
               style: textTheme.titleMediumSemiBold,
             ),
 
-            // Warning message
             Text(
               l10n.deleteEstimationWarningMessage,
               style: textTheme.bodyMediumRegular,
             ),
             const SizedBox(height: CoreSpacing.space4),
 
-            // Attachment info
             if (widget.imagesAttachedCount != null ||
                 widget.documentsAttachedCount != null)
               Row(
@@ -144,7 +140,6 @@ class _DeleteEstimationConfirmationSheetState
                 widget.documentsAttachedCount != null)
               const SizedBox(height: CoreSpacing.space6),
 
-            // Action buttons
             Row(
               children: [
                 Expanded(

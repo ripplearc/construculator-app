@@ -62,6 +62,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
     CostEstimate estimation,
     AppColorsExtension colorTheme,
   ) {
+    // TODO: https://ripplearc.youtrack.cloud/issue/CA-472/CoreUI-Standardize-bottom-sheets-with-CoreQuickSheet-component (Standardize bottom sheets with CoreQuickSheet component)
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
