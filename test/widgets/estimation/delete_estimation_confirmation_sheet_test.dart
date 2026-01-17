@@ -11,7 +11,7 @@ void main() {
     BuildContext? buildContext;
 
     Widget createWidget({
-      String? estimationName,
+      String estimationName = testEstimationName,
       VoidCallback? onConfirm,
       VoidCallback? onCancel,
       int? imagesAttachedCount,
@@ -27,9 +27,9 @@ void main() {
             buildContext = context;
             return Scaffold(
               body: DeleteEstimationConfirmationSheet(
-                estimationName: estimationName ?? testEstimationName,
-                onConfirm: onConfirm ?? () {},
-                onCancel: onCancel ?? () {},
+                estimationName: estimationName,
+                onConfirm: onConfirm,
+                onCancel: onCancel,
                 imagesAttachedCount: imagesAttachedCount,
                 documentsAttachedCount: documentsAttachedCount,
               ),

@@ -389,6 +389,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get removeAction => 'Remove';
 
   @override
+  String get copyEstimationAction => 'Copy cost estimation';
+
+  @override
+  String get shareExportAction => 'Share / Export';
+
+  @override
+  String get logsAction => 'Logs';
+
+  @override
+  String get lockEstimationAction => 'Lock estimation';
+
+  @override
   String deleteEstimationConfirmTitle(String estimationName) {
     return 'Are you sure you want to remove \"$estimationName\"?';
   }
@@ -415,4 +427,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get estimationDeletedSuccess => 'Estimation deleted successfully';
+
+  @override
+  String get lockLabel => 'Lock';
+
+  @override
+  String get unlockLabel => 'Unlock';
 }

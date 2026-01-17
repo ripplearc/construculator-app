@@ -9,12 +9,22 @@ class EstimationActionsSheet extends StatefulWidget {
     required this.onRename,
     required this.onFavourite,
     required this.onRemove,
+    this.onCopy,
+    this.onShare,
+    this.onLogs,
+    required this.isLocked,
+    this.onLock,
   });
 
   final String estimationName;
   final VoidCallback? onRename;
   final VoidCallback? onFavourite;
   final VoidCallback? onRemove;
+  final VoidCallback? onCopy;
+  final VoidCallback? onShare;
+  final VoidCallback? onLogs;
+  final bool isLocked;
+  final void Function(bool)? onLock;
 
   @override
   State<EstimationActionsSheet> createState() => _EstimationActionsSheetState();
@@ -100,10 +110,39 @@ class _EstimationActionsSheetState extends State<EstimationActionsSheet>
                   ],
                 ),
                 Divider(color: colorTheme.lineMid, thickness: 1),
+                Column(
+                  children: [
+                    _ActionListItem(
+                      icon: CoreIcons.copy,
+                      label: l10n.copyEstimationAction,
+                      onTap: widget.onCopy,
+                    ),
+                    _ActionListItem(
+                      icon: CoreIcons.share,
+                      label: l10n.shareExportAction,
+                      onTap: widget.onShare,
+                    ),
+                    _ActionListItem(
+                      icon: CoreIcons.calendar,
+                      label: l10n.logsAction,
+                      onTap: widget.onLogs,
+                    ),
+                    _ActionListItem(
+                      icon: widget.isLocked ? CoreIcons.lock : CoreIcons.unlock,
+                      label: l10n.lockEstimationAction,
+                      actionWidget: CoreSwitch(
+                        value: widget.isLocked,
+                        onChanged: (value) => widget.onLock?.call(value),
+                        activeLabel: l10n.lockLabel,
+                        inactiveLabel: l10n.unlockLabel,
+                        type: CoreSwitchType.lock,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
-          SizedBox(height: CoreSpacing.space4),
         ],
       ),
     );
@@ -149,6 +188,48 @@ class _QuickActionButton extends StatelessWidget {
           ),
           Text(label, style: typographyTheme.bodyLargeRegular),
         ],
+      ),
+    );
+  }
+}
+
+class _ActionListItem extends StatelessWidget {
+  final CoreIconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final Widget? actionWidget;
+
+  const _ActionListItem({
+    required this.icon,
+    required this.label,
+    this.onTap,
+    this.actionWidget,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorTheme = AppColorsExtension.of(context);
+    final typographyTheme = AppTypographyExtension.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.all(CoreSpacing.space3),
+        child: Row(
+          children: [
+            CoreIconWidget(icon: icon, size: 24, color: colorTheme.iconDark),
+            const SizedBox(width: CoreSpacing.space2),
+            Expanded(
+              child: Text(
+                label,
+                style: typographyTheme.bodyLargeRegular.copyWith(
+                  color: colorTheme.textDark,
+                ),
+              ),
+            ),
+            if (actionWidget != null) actionWidget ?? SizedBox.shrink(),
+          ],
+        ),
       ),
     );
   }
