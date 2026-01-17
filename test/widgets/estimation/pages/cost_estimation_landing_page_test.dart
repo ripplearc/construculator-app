@@ -27,6 +27,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../units/features/estimation/helpers/estimation_test_data_map_factory.dart';
 import 'package:construculator/features/estimation/presentation/widgets/estimation_actions_sheet.dart';
+import 'package:construculator/features/estimation/presentation/widgets/delete_estimation_confirmation_sheet.dart';
 
 class _CostEstimationLandingPageTestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -149,6 +150,34 @@ void main() {
 
   void addMultipleCostEstimations(List<Map<String, dynamic>> estimations) {
     fakeSupabase.addTableData('cost_estimates', estimations);
+  }
+
+  Future<void> setupAndNavigateToEstimation(
+    WidgetTester tester, {
+    Map<String, dynamic>? estimationData,
+    List<Map<String, dynamic>>? multipleEstimations,
+  }) async {
+    setUpAuthenticatedUser(
+      credentialId: 'test-credential-id',
+      email: 'test@example.com',
+    );
+
+    if (estimationData != null) {
+      addCostEstimationData(estimationData);
+    }
+
+    if (multipleEstimations != null) {
+      addMultipleCostEstimations(multipleEstimations);
+    }
+
+    await pumpAppAtRoute(tester, testEstimationRoute);
+  }
+
+  Future<void> openDeleteConfirmationSheet(WidgetTester tester) async {
+    await tester.tap(find.byKey(const Key('menuIcon')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n().removeAction));
+    await tester.pumpAndSettle();
   }
 
   group('Auth and header', () {
@@ -618,6 +647,185 @@ void main() {
 
       expect(fakeAppRouter.popCalls, 1);
     });
+  });
+  group('Delete Estimation', () {
+    testWidgets(
+      'shows delete confirmation sheet when remove action is tapped',
+      (tester) async {
+        const estimationName = 'Kitchen Remodel';
+        await setupAndNavigateToEstimation(
+          tester,
+          estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimation-1',
+            projectId: testProjectId,
+            estimateName: estimationName,
+          ),
+        );
+
+        await openDeleteConfirmationSheet(tester);
+
+        expect(find.byType(DeleteEstimationConfirmationSheet), findsOneWidget);
+        expect(
+          find.text(l10n().deleteEstimationConfirmTitle(estimationName)),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('calls router.pop and triggers delete when confirm is tapped', (
+      tester,
+    ) async {
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: 'Kitchen Remodel',
+        ),
+      );
+
+      expect(fakeAppRouter.popCalls, 0);
+
+      await openDeleteConfirmationSheet(tester);
+
+      // First pop is from closing the actions sheet
+      expect(fakeAppRouter.popCalls, 1);
+
+      await tester.tap(find.text(l10n().yesDeleteButton));
+      await tester.pumpAndSettle();
+
+      // Second pop is from closing the confirmation sheet
+      expect(fakeAppRouter.popCalls, 2);
+    });
+
+    testWidgets('refreshes optimistically when delete', (tester) async {
+      await setupAndNavigateToEstimation(
+        tester,
+        multipleEstimations: [
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimation-1',
+            projectId: testProjectId,
+            estimateName: 'Kitchen Remodel',
+          ),
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimation-2',
+            projectId: testProjectId,
+            estimateName: 'Bathroom Renovation',
+          ),
+        ],
+      );
+
+      expect(find.byType(CostEstimationTile), findsNWidgets(2));
+
+      await tester.tap(find.byKey(const Key('menuIcon')).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n().removeAction));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n().yesDeleteButton));
+      await tester.pump(Duration(milliseconds: 400));
+
+      expect(find.byType(CostEstimationTile), findsOneWidget);
+      expect(find.text('Bathroom Renovation'), findsOneWidget);
+    });
+
+    testWidgets('shows success toast after successful deletion', (
+      tester,
+    ) async {
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: 'Kitchen Remodel',
+        ),
+      );
+
+      await openDeleteConfirmationSheet(tester);
+
+      await tester.tap(find.text(l10n().yesDeleteButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().estimationDeletedSuccess), findsOneWidget);
+    });
+
+    testWidgets('shows error toast when deletion fails with connection error', (
+      tester,
+    ) async {
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: 'Kitchen Remodel',
+        ),
+      );
+
+      await openDeleteConfirmationSheet(tester);
+
+      fakeSupabase.shouldThrowOnDelete = true;
+      fakeSupabase.deleteExceptionType = SupabaseExceptionType.socket;
+
+      await tester.tap(find.text(l10n().yesDeleteButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().connectionError), findsOneWidget);
+      expect(find.byType(CostEstimationTile), findsOneWidget);
+    });
+
+    testWidgets('shows error toast when deletion fails with timeout error', (
+      tester,
+    ) async {
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: 'Kitchen Remodel',
+        ),
+      );
+
+      await openDeleteConfirmationSheet(tester);
+
+      fakeSupabase.shouldThrowOnDelete = true;
+      fakeSupabase.deleteExceptionType = SupabaseExceptionType.timeout;
+
+      await tester.tap(find.text(l10n().yesDeleteButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().timeoutError), findsOneWidget);
+      expect(find.byType(CostEstimationTile), findsOneWidget);
+    });
+
+    testWidgets(
+      'calls router.pop when cancel is tapped and estimation remains',
+      (tester) async {
+        await setupAndNavigateToEstimation(
+          tester,
+          estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimation-1',
+            projectId: testProjectId,
+            estimateName: 'Kitchen Remodel',
+          ),
+        );
+
+        expect(fakeAppRouter.popCalls, 0);
+
+        await openDeleteConfirmationSheet(tester);
+
+        expect(find.byType(DeleteEstimationConfirmationSheet), findsOneWidget);
+        expect(fakeAppRouter.popCalls, 1);
+
+        await tester.tap(find.text(l10n().noKeepButton));
+        await tester.pumpAndSettle();
+
+        // Pop was called to close the confirmation sheet
+        expect(fakeAppRouter.popCalls, 2);
+
+        // Estimation tile should still be in the list
+        expect(find.byType(CostEstimationTile), findsOneWidget);
+      },
+    );
   });
 
   group('Route validation', () {

@@ -589,5 +589,57 @@
   "@removeAction": {
     "description": "Label for remove action button",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53150&t=wjWHI4P6ds90viit-4"
+  },
+  "deleteEstimationConfirmTitle": "Are you sure you want to remove \"{estimationName}\"?",
+  "@deleteEstimationConfirmTitle": {
+    "description": "Title for delete estimation confirmation dialog",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-9013&t=wjWHI4P6ds90viit-4",
+    "placeholders": {
+      "estimationName": {
+        "type": "String",
+        "example": "My Estimation"
+      }
+    }
+  },
+  "deleteEstimationWarningMessage": "By removing you will lose all the Material, Labour and Equipment Cost Calculation Permanently as well as the images and documents attached with that calculation also will be removed",
+  "@deleteEstimationWarningMessage": {
+    "description": "Warning message shown in delete estimation confirmation dialog",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-9013&t=wjWHI4P6ds90viit-4"
+  },
+  "imagesAttachedCount": "{count} images attached",
+  "@imagesAttachedCount": {
+    "description": "Label showing number of images attached",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-9018&t=wjWHI4P6ds90viit-4",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "documentsAttachedCount": "{count} documents attached",
+  "@documentsAttachedCount": {
+    "description": "Label showing number of documents attached",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57376-12706&t=wjWHI4P6ds90viit-4https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57376-12706&t=wjWHI4P6ds90viit-4",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "yesDeleteButton": "Yes, Delete",
+  "@yesDeleteButton": {
+    "description": "Label for confirm delete button",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-9021&t=wjWHI4P6ds90viit-4"
+  },
+  "noKeepButton": "No, Keep",
+  "@noKeepButton": {
+    "description": "Label for cancel/keep button",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-9022&t=wjWHI4P6ds90viit-4"
+  },
+  "estimationDeletedSuccess": "Estimation deleted successfully",
+  "@estimationDeletedSuccess": {
+    "description": "Success message shown when an estimation is deleted"
   }
 }

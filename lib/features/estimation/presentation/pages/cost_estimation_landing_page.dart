@@ -1,10 +1,12 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_state.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
+import 'package:construculator/features/estimation/presentation/widgets/delete_estimation_confirmation_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/estimation_actions_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/errors/failures.dart';
@@ -60,6 +62,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
     CostEstimate estimation,
     AppColorsExtension colorTheme,
   ) {
+    // TODO: https://ripplearc.youtrack.cloud/issue/CA-472/CoreUI-Standardize-bottom-sheets-with-CoreQuickSheet-component (Standardize bottom sheets with CoreQuickSheet component)
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -79,9 +82,49 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
         },
         onRemove: () {
           _router.pop();
-          // TODO:https://ripplearc.youtrack.cloud/issue/CA-86
+          _showDeleteConfirmationSheet(estimation, colorTheme);
         },
       ),
+    );
+  }
+
+  void _showDeleteConfirmationSheet(
+    CostEstimate estimation,
+    AppColorsExtension colorTheme,
+  ) {
+    final deleteCostEstimationBloc = BlocProvider.of<DeleteCostEstimationBloc>(
+      context,
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: colorTheme.transparent,
+      isDismissible: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (_) {
+        return DeleteEstimationConfirmationSheet(
+          estimationName: estimation.estimateName,
+          // TODO: https://ripplearc.youtrack.cloud/issue/CA-269/ConstruculatorCost-Estimation-Cost-Detailss
+          imagesAttachedCount: 10,
+          documentsAttachedCount: 10,
+          onConfirm: () {
+            _router.pop();
+            // TODO: https://ripplearc.youtrack.cloud/issue/CA-467/Refactor-Cost-Estimation-Landing-Page-to-retrieve-Project-ID-via-Bloc
+            deleteCostEstimationBloc.add(
+              DeleteCostEstimationRequested(
+                estimationId: estimation.id,
+                projectId: widget.projectId,
+              ),
+            );
+          },
+          onCancel: () {
+            _router.pop();
+          },
+        );
+      },
     );
   }
 
@@ -109,6 +152,25 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
               if (message != null) {
                 CoreToast.showError(context, message, l10n.closeLabel);
               }
+            }
+          },
+        ),
+        BlocListener<DeleteCostEstimationBloc, DeleteCostEstimationState>(
+          listener: (context, state) {
+            if (state is DeleteCostEstimationSuccess) {
+              CoreToast.showSuccess(
+                context,
+                l10n.estimationDeletedSuccess,
+                l10n.closeLabel,
+              );
+            }
+
+            if (state is DeleteCostEstimationFailure) {
+              CoreToast.showError(
+                context,
+                _mapFailureToMessage(l10n, state.failure),
+                l10n.closeLabel,
+              );
             }
           },
         ),
