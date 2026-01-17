@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <files>
+        <file>lib/libraries/auth/testing/fake_auth_manager.dart</file>
+    </files>
+
+    <rules>
+        <!-- Generic boolean and comparison mutations -->
+        <literal text="&amp;&amp;" id="generic.logical.and-to-or">
+            <mutation text="||"/>
+        </literal>
+        <literal text="||" id="generic.logical.or-to-and">
+            <mutation text="&amp;&amp;"/>
+        </literal>
+        <literal text="==" id="generic.comparison.equals-to-not-equals">
+            <mutation text="!="/>
+        </literal>
+        <literal text="!=" id="generic.comparison.not-equals-to-equals">
+            <mutation text="=="/>
+        </literal>
+        <literal text="??" id="generic.null-coalescing.remove">
+            <mutation text=""/>
+        </literal>
+        <literal text="return true" id="generic.return.true-to-false">
+            <mutation text="return false"/>
+        </literal>
+        <literal text="return false" id="generic.return.false-to-true">
+            <mutation text="return true"/>
+        </literal>
+        <literal text="isEmpty" id="generic.string.is-empty-to-not-empty">
+            <mutation text="isNotEmpty"/>
+        </literal>
+        <literal text="isNotEmpty" id="generic.string.is-not-empty-to-empty">
+            <mutation text="isEmpty"/>
+        </literal>
+        
+        <!-- Generic conditional logic mutation -->
+        <regex pattern="if\s*\((.*)\)\s*{" dotAll="true" id="generic.condition.if-negation">
+            <mutation text="if (!($1)) {"/>
+        </regex>
+
+        <!-- Generic: Mutate boolean flag assignments from true to false -->
+        <regex pattern="([a-zA-Z0-9_]+)\s*=\s*true;" id="generic.assignment.true-to-false">
+            <mutation text="$1 = false;"/>
+        </regex>
+        
+        <!-- Generic: Mutate boolean flag assignments from false to true -->
+        <regex pattern="([a-zA-Z0-9_]+)\s*=\s*false;" id="generic.assignment.false-to-true">
+            <mutation text="$1 = true;"/>
+        </regex>
+
+        <!-- Generic: Invert boolean value in return statements for known boolean variables -->
+        <regex pattern="return (_isAuthenticated|loginShouldSucceed|otpShouldSucceed|resetPasswordShouldSucceed);" id="generic.return.invert-boolean-variable">
+            <mutation text="return !$1;"/>
+        </regex>
+
+        <!-- Generic: Swap AuthStatus enum values in stream controller 'add' calls -->
+        <regex pattern="\.add\(AuthStatus\.(authenticated)\);" id="generic.authstatus.authenticated-to-unauthenticated">
+            <mutation text=".add(AuthStatus.unauthenticated);"/>
+        </regex>
+        <regex pattern="\.add\(AuthStatus\.(unauthenticated)\);" id="generic.authstatus.unauthenticated-to-authenticated">
+            <mutation text=".add(AuthStatus.authenticated);"/>
+        </regex>
+
+        <!-- Generic: Invert boolean result of 'contains' call in return statements -->
+        <regex pattern="return\s+([a-zA-Z0-9_]+\.contains\(.*\));" id="generic.return.invert-contains-check">
+            <mutation text="return !$1;"/>
+        </regex>
+
+        <!-- Generic: Skip notifier calls -->
+        <regex pattern="\s*(_notifier\..*\(.*\));" id="generic.call.skip-notifier-call">
+            <mutation text="// $1"/>
+        </regex>
+
+        <!-- Generic: Skip list clear calls -->
+        <regex pattern="\s*([a-zA-Z0-9_]+\.clear\(\));" id="generic.call.skip-list-clear">
+            <mutation text="// $1"/>
+        </regex>
+        
+        <!-- Generic: Prevent nulling out user/credential objects -->
+        <regex pattern="(_currentUser|_currentCredential)\s*=\s*null;" id="generic.assignment.skip-null-assignment">
+            <mutation text="/* $1 = null; */"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="fake-auth-manager" expected-return="0">flutter test test/libraries/auth/units/fakes/fake_auth_manager_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations> 
