@@ -1,4 +1,5 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/formatting_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -17,7 +18,7 @@ class CostEstimationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appColors = AppColorsExtension.of(context);
+    final appColors = context.colorTheme;
     return Container(
       margin: EdgeInsets.symmetric(vertical: CoreSpacing.space3),
       decoration: BoxDecoration(
@@ -43,7 +44,7 @@ class CostEstimationTile extends StatelessWidget {
   }
 
   Widget _buildTopRow(BuildContext context) {
-    final appColors = AppColorsExtension.of(context);
+    final appColors = context.colorTheme;
     final typography = Theme.of(context).coreTypography;
     return Row(
       children: [
@@ -80,7 +81,7 @@ class CostEstimationTile extends StatelessWidget {
   Widget _buildBottomRow(BuildContext context) {
     final createdAt = estimation.createdAt;
 
-    final appColors = AppColorsExtension.of(context);
+    final appColors = context.colorTheme;
     final typography = Theme.of(context).coreTypography;
 
     return Row(

@@ -10,6 +10,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:construculator/features/auth/presentation/bloc/enter_password_bloc/enter_password_bloc.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 
 class EnterPasswordPage extends StatefulWidget {
   final String email;
@@ -65,13 +66,10 @@ class _EnterPasswordPageState extends State<EnterPasswordPage>
   @override
   Widget build(BuildContext context) {
     final typography = Theme.of(context).coreTypography;
-    final colors = AppColorsExtension.of(context);
+    final colors = context.colorTheme;
     return Scaffold(
       backgroundColor: colors.pageBackground,
-      appBar: AppBar(
-        backgroundColor: colors.pageBackground,
-        elevation: 0,
-      ),
+      appBar: AppBar(backgroundColor: colors.pageBackground, elevation: 0),
       body: BlocConsumer<EnterPasswordBloc, EnterPasswordState>(
         listener: (context, state) {
           if (state is EnterPasswordSubmitFailure) {

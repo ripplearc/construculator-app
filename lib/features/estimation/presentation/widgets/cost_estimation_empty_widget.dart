@@ -1,4 +1,5 @@
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 
 class CostEstimationEmptyWidget extends StatelessWidget {
@@ -22,11 +23,7 @@ class CostEstimationEmptyWidget extends StatelessWidget {
               style: Theme.of(context)
                   .extension<AppTypographyExtension>()
                   ?.bodyMediumRegular
-                  .copyWith(
-                    color: Theme.of(
-                      context,
-                    ).extension<AppColorsExtension>()?.textHeadline,
-                  ),
+                  .copyWith(color: context.colorTheme.textHeadline),
             ),
           ),
         ],

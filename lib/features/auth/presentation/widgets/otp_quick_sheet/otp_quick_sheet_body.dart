@@ -1,4 +1,5 @@
 // coverage:ignore-file
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -33,7 +34,7 @@ class OtpQuickSheetBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = Theme.of(context).coreTypography;
-    final colors = AppColorsExtension.of(context);
+    final colors = context.colorTheme;
     return Container(
       decoration: BoxDecoration(
         color: colors.pageBackground,
@@ -71,10 +72,7 @@ class OtpQuickSheetBody extends StatelessWidget {
                   fontFamily: Theme.of(context).textTheme.bodyLarge?.fontFamily,
                 ),
                 children: [
-                  TextSpan(
-                    text: note,
-                    style: typography.bodyLargeRegular,
-                  ),
+                  TextSpan(text: note, style: typography.bodyLargeRegular),
                   WidgetSpan(
                     child: GestureDetector(
                       key: Key('edit_contact_button'),

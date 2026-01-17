@@ -1,4 +1,5 @@
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 
 /// Displays an error message and a link, useful for displaying errors on the login and register pages
@@ -14,7 +15,7 @@ Widget buildErrorWidgetWithLink({
   required VoidCallback onPressed,
 }) {
   final typography = Theme.of(context).coreTypography;
-  final colors = AppColorsExtension.of(context);
+  final colors = context.colorTheme;
 
   return Row(
     crossAxisAlignment: CrossAxisAlignment.center,
@@ -23,9 +24,7 @@ Widget buildErrorWidgetWithLink({
       Flexible(
         child: Text(
           errorText ?? '',
-          style: typography.bodySmallRegular.copyWith(
-            color: colors.textError,
-          ),
+          style: typography.bodySmallRegular.copyWith(color: colors.textError),
         ),
       ),
       if (linkText != null)

@@ -1,4 +1,5 @@
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 
 /// A widget that displays a footer with a text and an action text
@@ -23,7 +24,7 @@ class AuthFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = Theme.of(context).coreTypography;
-    final colors = AppColorsExtension.of(context);
+    final colors = context.colorTheme;
 
     return SafeArea(
       child: Container(
