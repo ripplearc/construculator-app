@@ -14,4 +14,5 @@ enum EstimationErrorType {
   unexpectedDatabaseError,
   unexpectedError,
   authenticationError,
+  notFoundError,
 }

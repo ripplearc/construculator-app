@@ -39,6 +39,13 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
   /// [createEstimation] when [shouldReturnFailureOnCreateEstimation] is true.
   EstimationErrorType? createEstimationFailureType;
 
+  /// Controls whether [deleteEstimation] should return a [Failure].
+  bool shouldReturnFailureOnDeleteEstimation = false;
+
+  /// Specifies the [EstimationErrorType] for the [Failure] returned by
+  /// [deleteEstimation] when [shouldReturnFailureOnDeleteEstimation] is true.
+  EstimationErrorType? deleteEstimationFailureType;
+
   /// Controls whether operations should be delayed
   bool shouldDelayOperations = false;
 
@@ -145,6 +152,48 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
   }
 
   @override
+  Future<Either<Failure, void>> deleteEstimation(
+    String estimationId,
+    String projectId,
+  ) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    _methodCalls.add({
+      'method': 'deleteEstimation',
+      'estimationId': estimationId,
+      'projectId': projectId,
+    });
+
+    if (shouldReturnFailureOnDeleteEstimation) {
+      return Left(
+        EstimationFailure(
+          errorType:
+              deleteEstimationFailureType ??
+              EstimationErrorType.unexpectedError,
+        ),
+      );
+    }
+
+    final estimations = _projectEstimations[projectId] ?? [];
+    final hadEstimation = estimations.any((est) => est.id == estimationId);
+    if (!hadEstimation) {
+      return const Left(
+        EstimationFailure(errorType: EstimationErrorType.notFoundError),
+      );
+    }
+    estimations.removeWhere((estimation) => estimation.id == estimationId);
+    _projectEstimations[projectId] = estimations;
+
+    if (hadEstimation) {
+      _emitToStream(projectId, Right(estimations));
+    }
+
+    return const Right(null);
+  }
+
+  @override
   void dispose() {
     for (final controller in _streamControllers.values) {
       if (!controller.isClosed) {
@@ -201,6 +250,8 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     getEstimationsFailureType = null;
     shouldReturnFailureOnCreateEstimation = false;
     createEstimationFailureType = null;
+    shouldReturnFailureOnDeleteEstimation = false;
+    deleteEstimationFailureType = null;
     shouldReturnEmptyList = false;
     shouldDelayOperations = false;
     completer = null;

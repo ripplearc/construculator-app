@@ -67,7 +67,9 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         'details=${error.details}, hint=${error.hint}',
       );
       final postgresErrorCode = PostgresErrorCode.fromCode(error.code);
-      if (postgresErrorCode == PostgresErrorCode.connectionFailure ||
+      if (postgresErrorCode == PostgresErrorCode.noDataFound) {
+        return EstimationFailure(errorType: EstimationErrorType.notFoundError);
+      } else if (postgresErrorCode == PostgresErrorCode.connectionFailure ||
           postgresErrorCode == PostgresErrorCode.unableToConnect ||
           postgresErrorCode == PostgresErrorCode.connectionDoesNotExist) {
         return EstimationFailure(
@@ -214,6 +216,24 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     }
   }
 
+  void _updateStreamWithDeletedEstimation(
+    String projectId,
+    String estimationId,
+  ) {
+    if (_streamControllers.containsKey(projectId)) {
+      final cachedEstimations = _cachedEstimations[projectId] ?? [];
+      final updatedEstimations = cachedEstimations
+          .where((estimation) => estimation.id != estimationId)
+          .toList();
+
+      _logger.debug(
+        'Updating stream with deleted estimation for project: $projectId, estimationId: $estimationId',
+      );
+
+      _emitToStream(projectId, Right(updatedEstimations));
+    }
+  }
+
   @override
   void dispose() {
     _logger.debug('Disposing repository and cleaning up resources');
@@ -226,5 +246,37 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
 
     _streamControllers.clear();
     _cachedEstimations.clear();
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteEstimation(
+    String estimationId,
+    String projectId,
+  ) async {
+    try {
+      _logger.debug(
+        'Deleting cost estimation: Estimation id: $estimationId, Project id: $projectId',
+      );
+
+      _updateStreamWithDeletedEstimation(projectId, estimationId);
+
+      await _dataSource.deleteEstimation(estimationId);
+
+      _logger.debug(
+        'Successfully deleted cost estimation: Estimation id: $estimationId, Project id: $projectId',
+      );
+      return const Right(null);
+    } catch (e) {
+      final failure = _handleError(
+        e,
+        'deleting cost estimation',
+        estimationId: estimationId,
+        projectId: projectId,
+      );
+
+      await getEstimations(projectId);
+
+      return Left(failure);
+    }
   }
 }
