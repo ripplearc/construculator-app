@@ -192,7 +192,7 @@ void main() {
       await pumpAppAtRoute(tester, testEstimationRoute);
       await tester.pumpAndSettle();
 
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(CoreLoadingIndicator), findsNothing);
 
       // TODO: https://ripplearc.youtrack.cloud/issue/CA-162/Dashboard-Create-Project-Repository correct this to an actual name from fake project table
       expect(find.text('Sample Construction Project'), findsOneWidget);
@@ -302,7 +302,7 @@ void main() {
         );
         expect(addButton.isDisabled, isTrue);
 
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(CoreLoadingIndicator), findsOneWidget);
 
         fakeSupabase.completer!.complete();
         await tester.pumpAndSettle();
