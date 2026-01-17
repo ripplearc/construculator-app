@@ -174,6 +174,8 @@ extension PostgresErrorCodeExtension on PostgresErrorCode {
         return AuthErrorType.timeout;
       case PostgresErrorCode.unknownError:
         return AuthErrorType.unknownError;
+      default:
+        return AuthErrorType.unknownError;
     }
   }
 }

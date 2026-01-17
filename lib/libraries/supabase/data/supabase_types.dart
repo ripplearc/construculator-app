@@ -6,12 +6,14 @@
 /// [unableToConnect] corresponds to the error code 08001 and is used when the connection to the server is lost
 /// [connectionFailure] corresponds to the error code 08006 and is used when the connection to the server is lost
 /// [connectionDoesNotExist] corresponds to the error code 08003 and is used when the connection to the server is lost
+/// [noDataFound] corresponds to error code PGRST116, thrown when .single() is called but the query returns 0 rows (or multiple rows)
 /// [unknownError] is used when the error is unknown
 enum PostgresErrorCode {
   uniqueViolation,
   unableToConnect,
   connectionFailure,
   connectionDoesNotExist,
+  noDataFound,
   unknownError;
 
   static PostgresErrorCode fromCode(String? code) {
@@ -24,6 +26,8 @@ enum PostgresErrorCode {
         return PostgresErrorCode.connectionFailure;
       case '08003':
         return PostgresErrorCode.connectionDoesNotExist;
+      case 'PGRST116':
+        return PostgresErrorCode.noDataFound;
       default:
         return PostgresErrorCode.unknownError;
     }
@@ -40,6 +44,8 @@ enum PostgresErrorCode {
         return '08006';
       case PostgresErrorCode.connectionDoesNotExist:
         return '08003';
+      case PostgresErrorCode.noDataFound:
+        return 'PGRST116';
       case PostgresErrorCode.unknownError:
         return 'unknown';
     }
@@ -55,6 +61,8 @@ enum PostgresErrorCode {
         return 'The database connection was lost.';
       case PostgresErrorCode.connectionDoesNotExist:
         return 'No existing database connection found.';
+      case PostgresErrorCode.noDataFound:
+        return 'The requested record was not found.';
       case PostgresErrorCode.unknownError:
         return 'An unknown database error occurred.';
     }
