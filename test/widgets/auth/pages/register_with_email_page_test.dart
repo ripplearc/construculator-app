@@ -16,7 +16,6 @@ import 'package:construculator/libraries/router/testing/router_test_module.dart'
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
-import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -40,7 +39,6 @@ class _RegisterWithEmailPageTestModule extends Module {
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
-  late Clock clock;
   late FakeAppRouter router;
   BuildContext? buildContext;
 
@@ -82,7 +80,6 @@ void main() {
     Modular.init(_RegisterWithEmailPageTestModule(appBootstrap));
     Modular.replaceInstance<SupabaseWrapper>(fakeSupabase);
     router = Modular.get<AppRouter>() as FakeAppRouter;
-    clock = Modular.get<Clock>();
   });
 
   tearDownAll(() {
@@ -173,13 +170,7 @@ void main() {
     testWidgets('sees already registered error with login link', (
       tester,
     ) async {
-      fakeSupabase.addTableData('users', [
-        {
-          'id': '1',
-          'email': 'registered@example.com',
-          'created_at': clock.now().toIso8601String(),
-        },
-      ]);
+      fakeSupabase.setRpcResponse('check_email_exists', true);
 
       await renderPage(tester);
       await enterEmail(tester, 'registered@example.com');
@@ -191,28 +182,22 @@ void main() {
 
       expect(isContinueButtonEnabled(tester), isFalse);
 
-      final methodCalls = fakeSupabase.getMethodCallsFor('selectSingle');
+      final methodCalls = fakeSupabase.getMethodCallsFor('rpc');
       expect(methodCalls.length, 1);
     });
 
     testWidgets('can navigate to login from already registered link', (
       tester,
     ) async {
-      fakeSupabase.addTableData('users', [
-        {
-          'id': '1',
-          'email': 'registered@example.com',
-          'created_at': clock.now().toIso8601String(),
-        },
-      ]);
+      fakeSupabase.setRpcResponse('check_email_exists', true);
 
       await renderPage(tester);
       const enteredEmail = 'registered@example.com';
       await enterEmail(tester, enteredEmail);
 
       final loginLink = find.byKey(Key(l10n().logginLink));
-      expect(isContinueButtonEnabled(tester), isFalse);
       await tester.tap(loginLink);
+      expect(isContinueButtonEnabled(tester), isFalse);
       await tester.pumpAndSettle();
 
       expect(router.navigationHistory.first.route, fullLoginRoute);
@@ -413,6 +398,7 @@ void main() {
     testWidgets('can resend OTP code and sees success toast', (tester) async {
       fakeSupabase.clearTableData('users');
 
+      fakeSupabase.setRpcResponse('check_email_exists', false);
       await renderPage(tester);
       await enterEmail(tester, 'newuser@example.com');
       expect(isContinueButtonEnabled(tester), isTrue);
@@ -430,6 +416,7 @@ void main() {
 
     testWidgets('sees error when OTP resend fails', (tester) async {
       fakeSupabase.clearTableData('users');
+      fakeSupabase.setRpcResponse('check_email_exists', false);
 
       await renderPage(tester);
       await enterEmail(tester, 'newuser@example.com');

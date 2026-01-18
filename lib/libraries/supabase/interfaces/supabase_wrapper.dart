@@ -140,4 +140,10 @@ abstract class SupabaseWrapper {
     required String filterColumn,
     required dynamic filterValue,
   });
+
+  /// Call a Supabase RPC function
+  ///
+  /// [functionName] The name of the RPC function to call
+  /// [params] The parameters to pass to the function
+  Future<T> rpc<T>(String functionName, {Map<String, dynamic>? params});
 }
