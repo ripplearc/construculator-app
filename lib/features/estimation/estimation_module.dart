@@ -7,6 +7,7 @@ import 'package:construculator/features/estimation/domain/repositories/cost_esti
 import 'package:construculator/features/estimation/domain/usecases/add_cost_estimation_usecase.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_details_page.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
@@ -90,6 +91,9 @@ class EstimationModule extends Module {
     );
     i.add<AddCostEstimationBloc>(
       () => AddCostEstimationBloc(addCostEstimationUseCase: i.get()),
+    );
+    i.add<DeleteCostEstimationBloc>(
+      () => DeleteCostEstimationBloc(costEstimationRepository: i.get()),
     );
   }
 
