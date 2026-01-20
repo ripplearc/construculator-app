@@ -339,8 +339,18 @@ echo "2. 🐛 Potential bugs or edge cases" >> "$OUTPUT_FILE"
 echo "3. ⚡ Performance implications" >> "$OUTPUT_FILE"
 echo "4. 🔒 Security concerns" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
-echo "**Review Output Format:**" >> "$OUTPUT_FILE"
-echo "Please provide detailed comments with context for each file. If issues are found that need to be addressed, include the summary table below. If no issues are found, omit the table entirely." >> "$OUTPUT_FILE"
+
+# =============================================================================
+# REVIEW OUTPUT FORMAT
+# =============================================================================
+echo "## REVIEW OUTPUT FORMAT" >> "$OUTPUT_FILE"
+echo "Please provide your review in the following structured format:" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "### 1. PR SUMMARY" >> "$OUTPUT_FILE"
+echo "Provide a concise summary of what this PR is doing and its main objective." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "### 2. REVIEW SUMMARY TABLE" >> "$OUTPUT_FILE"
+echo "If issues are found that need to be addressed, include the summary table below. If no issues are found, omit the table entirely." >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # =============================================================================
