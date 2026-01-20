@@ -802,6 +802,30 @@ abstract class AppLocalizations {
   /// **'Remove'**
   String get removeAction;
 
+  /// Label for copy estimation action item
+  ///
+  /// In en, this message translates to:
+  /// **'Copy cost estimation'**
+  String get copyEstimationAction;
+
+  /// Label for share or export estimation action
+  ///
+  /// In en, this message translates to:
+  /// **'Share / Export'**
+  String get shareExportAction;
+
+  /// Label for estimation logs action
+  ///
+  /// In en, this message translates to:
+  /// **'Logs'**
+  String get logsAction;
+
+  /// Label for lock estimation toggle action
+  ///
+  /// In en, this message translates to:
+  /// **'Lock estimation'**
+  String get lockEstimationAction;
+
   /// Title for delete estimation confirmation dialog
   ///
   /// In en, this message translates to:
@@ -843,6 +867,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Estimation deleted successfully'**
   String get estimationDeletedSuccess;
+
+  /// Label for lock action
+  ///
+  /// In en, this message translates to:
+  /// **'Lock'**
+  String get lockLabel;
+
+  /// Label for unlock action
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get unlockLabel;
 }
 
 class _AppLocalizationsDelegate
