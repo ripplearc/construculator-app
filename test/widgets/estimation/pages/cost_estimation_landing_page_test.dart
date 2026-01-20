@@ -688,13 +688,11 @@ void main() {
 
       await openDeleteConfirmationSheet(tester);
 
-      // First pop is from closing the actions sheet
       expect(fakeAppRouter.popCalls, 1);
 
       await tester.tap(find.text(l10n().yesDeleteButton));
       await tester.pumpAndSettle();
 
-      // Second pop is from closing the confirmation sheet
       expect(fakeAppRouter.popCalls, 2);
     });
 
@@ -819,10 +817,8 @@ void main() {
         await tester.tap(find.text(l10n().noKeepButton));
         await tester.pumpAndSettle();
 
-        // Pop was called to close the confirmation sheet
         expect(fakeAppRouter.popCalls, 2);
 
-        // Estimation tile should still be in the list
         expect(find.byType(CostEstimationTile), findsOneWidget);
       },
     );

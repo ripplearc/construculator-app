@@ -192,6 +192,7 @@ void main() {
     testWidgets('sees error and register option when email not registered', (
       tester,
     ) async {
+      fakeSupabase.setRpcResponse('check_email_exists', false);
       await renderPage(tester);
 
       await enterEmail(tester, 'notregistered@example.com');
@@ -204,6 +205,7 @@ void main() {
     testWidgets('can navigate to register page from email not found message', (
       tester,
     ) async {
+      fakeSupabase.setRpcResponse('check_email_exists', false);
       await renderPage(tester);
 
       const unregisteredEmail = 'notregistered@example.com';

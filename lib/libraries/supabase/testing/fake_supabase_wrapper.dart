@@ -26,6 +26,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Tracks method calls for assertions
   final List<Map<String, dynamic>> _methodCalls = [];
 
+  /// Tracks RPC responses for different function names
+  final Map<String, dynamic> _rpcResponses = {};
+
   /// Controls whether [signInWithPassword] throws an exception
   bool shouldThrowOnSignIn = false;
 
@@ -58,6 +61,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Controls whether [delete] throws an exception
   bool shouldThrowOnDelete = false;
+
+  /// Controls whether [rpc] throws an exception
+  bool shouldThrowOnRpc = false;
 
   /// Error message for sign in.
   /// Used to specify the error message thrown when [signInWithPassword] is attempted
@@ -103,6 +109,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Used to specify the error message thrown when [delete] is attempted
   String? deleteErrorMessage;
 
+  /// Error message for RPC.
+  /// Used to specify the error message thrown when [rpc] is attempted
+  String? rpcErrorMessage;
+
   /// Error message for select.
   /// Used to specify the error message thrown when [select] is attempted
   SupabaseExceptionType? selectMultipleExceptionType;
@@ -118,6 +128,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Used to specify the type of exception thrown when [delete] is attempted
   SupabaseExceptionType? deleteExceptionType;
+
+  /// Used to specify the type of exception thrown when [rpc] is attempted
+  SupabaseExceptionType? rpcExceptionType;
 
   /// Used to specify the error code thrown when [signInWithPassword] is attempted
   SupabaseAuthErrorCode? authErrorCode;
@@ -561,6 +574,35 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   }
 
   @override
+  Future<T> rpc<T>(String functionName, {Map<String, dynamic>? params}) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    _methodCalls.add({
+      'method': 'rpc',
+      'functionName': functionName,
+      'params': params,
+    });
+
+    if (shouldThrowOnRpc) {
+      _throwConfiguredException(
+        rpcExceptionType,
+        rpcErrorMessage ?? 'RPC failed',
+      );
+    }
+
+    if (_rpcResponses.containsKey(functionName)) {
+      return _rpcResponses[functionName] as T;
+    }
+
+    throw ServerException(
+      Trace.current(),
+      Exception('No RPC response configured for function: $functionName'),
+    );
+  }
+
+  @override
   Future<List<Map<String, dynamic>>> selectAllProfessionalRoles() async {
     _methodCalls.add({'method': 'selectAllProfessionalRoles'});
 
@@ -670,6 +712,16 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     _methodCalls.clear();
   }
 
+  /// Sets the response for a specific RPC function
+  void setRpcResponse(String functionName, dynamic response) {
+    _rpcResponses[functionName] = response;
+  }
+
+  /// Clears all RPC responses
+  void clearRpcResponses() {
+    _rpcResponses.clear();
+  }
+
   /// Closes the auth state controller
   void dispose() {
     _authStateController.close();
@@ -699,6 +751,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     shouldThrowOnUpdate = false;
     shouldThrowOnSelectMultiple = false;
     shouldThrowOnDelete = false;
+    shouldThrowOnRpc = false;
 
     signInErrorMessage = null;
     signUpErrorMessage = null;
@@ -710,12 +763,14 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     insertErrorMessage = null;
     updateErrorMessage = null;
     deleteErrorMessage = null;
+    rpcErrorMessage = null;
 
     selectExceptionType = null;
     selectMultipleExceptionType = null;
     insertExceptionType = null;
     updateExceptionType = null;
     deleteExceptionType = null;
+    rpcExceptionType = null;
     postgrestErrorCode = null;
 
     shouldReturnNullUser = false;
@@ -729,5 +784,6 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
     clearAllData();
     clearMethodCalls();
+    clearRpcResponses();
   }
 }

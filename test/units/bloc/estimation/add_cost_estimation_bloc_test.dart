@@ -61,7 +61,6 @@ void main() {
     setUp(() {
       fakeRepository.reset();
 
-      // Set up authenticated user for tests
       final credential = UserCredential(
         id: testCredentialId,
         email: testUserEmail,
