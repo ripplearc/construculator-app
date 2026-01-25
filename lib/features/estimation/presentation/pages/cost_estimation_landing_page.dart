@@ -235,7 +235,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
     }
 
     if (state is CostEstimationListEmpty) {
-      return _buildEmptyState(l10n);
+      return _buildEmptyState();
     }
 
     if (state is CostEstimationListWithData) {
@@ -274,7 +274,8 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
     );
   }
 
-  Widget _buildEmptyState(AppLocalizations l10n) {
+  Widget _buildEmptyState() {
+    final l10n = context.l10n;
     return Stack(
       children: [
         BlocBuilder<AddCostEstimationBloc, AddCostEstimationState>(
