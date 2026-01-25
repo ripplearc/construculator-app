@@ -1,4 +1,4 @@
-import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/features/auth/presentation/extensions/auth_error_type_extension.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';

@@ -1,4 +1,4 @@
-import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 
 /// Utility class for validating authentication inputs
 class AuthValidation {

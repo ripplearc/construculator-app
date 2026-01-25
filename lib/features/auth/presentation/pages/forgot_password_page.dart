@@ -1,7 +1,9 @@
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
+import 'package:construculator/features/auth/presentation/extensions/auth_error_type_extension.dart';
+
 import 'package:construculator/features/auth/presentation/widgets/auth_header.dart';
 import 'package:construculator/features/auth/presentation/widgets/otp_quick_sheet/otp_verification_sheet.dart';
-import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
@@ -52,7 +54,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
       if (!state.isValid) {
         if (state.validator != null) {
-          // Field has AuthValidation error
           final errorMessage = state.validator?.localizedMessage(context);
           errorList = errorMessage != null ? [errorMessage] : null;
         }

@@ -1,7 +1,7 @@
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
-import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_manager.dart';
@@ -70,10 +70,7 @@ void main() {
   });
 
   Widget makeApp() {
-    return MaterialApp(
-      theme: createTestTheme(),
-      home: const DashboardPage(),
-    );
+    return MaterialApp(theme: createTestTheme(), home: const DashboardPage());
   }
 
   UserCredential createCredential({

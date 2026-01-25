@@ -1,4 +1,4 @@
-import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:equatable/equatable.dart';
 

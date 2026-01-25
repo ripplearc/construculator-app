@@ -1,7 +1,7 @@
+import 'package:construculator/features/auth/presentation/extensions/auth_error_type_extension.dart';
 import 'package:construculator/features/auth/presentation/widgets/auth_header.dart';
 import 'package:construculator/features/auth/presentation/widgets/terms_and_conditions_section.dart';
 import 'package:construculator/libraries/auth/data/models/professional_role.dart';
-import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';

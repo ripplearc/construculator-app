@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
-import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/domain/validation/auth_validation.dart';
+import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 
 void main() {
   group('AuthValidation', () {
