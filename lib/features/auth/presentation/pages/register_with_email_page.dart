@@ -6,7 +6,6 @@ import 'package:construculator/features/auth/presentation/widgets/error_widget_b
 import 'package:construculator/features/auth/presentation/widgets/otp_quick_sheet/otp_verification_sheet.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/errors/failures.dart';
-import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -24,8 +23,7 @@ class RegisterWithEmailPage extends StatefulWidget {
   State<RegisterWithEmailPage> createState() => _RegisterWithEmailPageState();
 }
 
-class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
-    with LocalizationMixin {
+class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
   final _emailController = TextEditingController();
   final _emailTextFieldFocusNode = FocusNode();
 
@@ -36,6 +34,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
   final AppRouter _router = Modular.get<AppRouter>();
 
   void _handleFailure(Failure failure) {
+    final l10n = context.l10n;
     if (failure is AuthFailure) {
       if (failure.errorType == AuthErrorType.rateLimited) {
         CoreToast.showError(context, l10n.tooManyAttempts, l10n.closeLabel);
@@ -93,6 +92,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
     BuildContext callingContext,
     String email,
   ) {
+    final l10n = context.l10n;
     return BlocProvider.value(
       value: BlocProvider.of<OtpVerificationBloc>(callingContext),
       child: BlocConsumer<OtpVerificationBloc, OtpVerificationState>(
@@ -197,6 +197,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage>
   Widget build(BuildContext context) {
     final typography = context.textTheme;
     final colors = context.colorTheme;
+    final l10n = context.l10n;
 
     // TODO: https://ripplearc.youtrack.cloud/issue/CA-464/Todo-Move-Scaffold-Divider-Override-to-Global-Theme
     return Theme(

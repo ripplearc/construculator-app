@@ -1,12 +1,10 @@
 import 'package:construculator/features/auth/presentation/widgets/auth_header.dart';
 import 'package:construculator/features/auth/presentation/widgets/terms_and_conditions_section.dart';
-import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/professional_role.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
 import 'package:flutter/material.dart';
@@ -27,8 +25,7 @@ class CreateAccountPage extends StatefulWidget {
   State<CreateAccountPage> createState() => _CreateAccountPageState();
 }
 
-class _CreateAccountPageState extends State<CreateAccountPage>
-    with LocalizationMixin {
+class _CreateAccountPageState extends State<CreateAccountPage> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _mobileNumberController = TextEditingController();
@@ -77,6 +74,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
   }
 
   void _handleFailure(Failure failure) {
+    final l10n = context.l10n;
     if (failure is AuthFailure) {
       CoreToast.showError(
         context,
@@ -174,6 +172,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
   }
 
   void _showSuccessModal(BuildContext context) {
+    final l10n = context.l10n;
     SuccessModal.show(
       context,
       message: l10n.createAccountSuccessMessage,
@@ -204,7 +203,6 @@ class _CreateAccountPageState extends State<CreateAccountPage>
 
       if (!state.isValid) {
         if (state.validator != null) {
-          // Field has AuthValidation error
           final errorMessage = state.validator?.localizedMessage(context);
           errorList = errorMessage != null ? [errorMessage] : null;
         }
@@ -363,6 +361,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
         },
         builder: (context, state) {
           final typography = context.textTheme;
+          final l10n = context.l10n;
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Form(
@@ -455,9 +454,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                     focusNode: _phoneFocusNode,
                     isPhoneNumber: true,
                     phonePrefixes: _phonePrefixes,
-                    countryCodePickerTitle: AppLocalizations.of(
-                      context,
-                    )?.selectCountryCode,
+                    countryCodePickerTitle: context.l10n.selectCountryCode,
                     phonePrefix: _selectedPhonePrefix,
                     onPhonePrefixChanged: (prefix) {
                       if (prefix != null) {

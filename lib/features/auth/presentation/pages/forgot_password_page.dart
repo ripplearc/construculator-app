@@ -3,7 +3,6 @@ import 'package:construculator/features/auth/presentation/widgets/auth_header.da
 import 'package:construculator/features/auth/presentation/widgets/otp_quick_sheet/otp_verification_sheet.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/errors/failures.dart';
-import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -20,14 +19,14 @@ class ForgotPasswordPage extends StatefulWidget {
   State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
 
-class _ForgotPasswordPageState extends State<ForgotPasswordPage>
-    with LocalizationMixin {
+class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final TextEditingController _emailController = TextEditingController();
   final focusNode = FocusNode();
   List<String>? _emailErrorList;
   final AppRouter _router = Modular.get<AppRouter>();
 
   void _handleFailure(Failure failure) {
+    final l10n = context.l10n;
     if (failure is AuthFailure) {
       if (failure.errorType == AuthErrorType.rateLimited) {
         CoreToast.showError(context, l10n.tooManyAttempts, l10n.continueButton);
@@ -102,6 +101,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
   @override
   Widget build(BuildContext context) {
     final colors = context.colorTheme;
+    final l10n = context.l10n;
     return Scaffold(
       backgroundColor: colors.pageBackground,
       appBar: AppBar(backgroundColor: colors.pageBackground, elevation: 0),
@@ -159,6 +159,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
   }
 
   Widget _buildOtpVerificationSheet(BuildContext callingContext, String email) {
+    final l10n = context.l10n;
     return BlocProvider.value(
       value: BlocProvider.of<OtpVerificationBloc>(callingContext),
       child: BlocConsumer<OtpVerificationBloc, OtpVerificationState>(

@@ -5,7 +5,6 @@ import 'package:construculator/features/auth/presentation/widgets/auth_provider_
 import 'package:construculator/features/auth/presentation/widgets/error_widget_builder.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/errors/failures.dart';
-import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -22,8 +21,7 @@ class LoginWithEmailPage extends StatefulWidget {
   State<LoginWithEmailPage> createState() => _LoginWithEmailPageState();
 }
 
-class _LoginWithEmailPageState extends State<LoginWithEmailPage>
-    with LocalizationMixin {
+class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
   final TextEditingController _emailController = TextEditingController();
   bool _canPressContinue = false;
   List<String>? _emailErrorList;
@@ -31,6 +29,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
   final AppRouter _router = Modular.get<AppRouter>();
 
   _getContinueButtonText(LoginWithEmailState state) {
+    final l10n = context.l10n;
     if (state is LoginWithEmailLoading) {
       return l10n.loggingInButton;
     }
@@ -41,6 +40,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
   }
 
   _handleFailure(Failure failure) {
+    final l10n = context.l10n;
     if (failure is AuthFailure) {
       CoreToast.showError(
         context,
@@ -103,7 +103,9 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
   @override
   Widget build(BuildContext context) {
     final colors = context.colorTheme;
+    final l10n = context.l10n;
 
+    // TODO: https://ripplearc.youtrack.cloud/issue/CA-464/Todo-Move-Scaffold-Divider-Override-to-Global-Theme
     return Theme(
       data: Theme.of(
         context,
@@ -164,6 +166,8 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage>
   Widget _buildLoginWithEmailForm(LoginWithEmailState state) {
     final typography = context.textTheme;
     final colors = context.colorTheme;
+    final l10n = context.l10n;
+
     return SingleChildScrollView(
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: CoreSpacing.space6),

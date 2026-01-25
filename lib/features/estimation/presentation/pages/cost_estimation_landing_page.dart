@@ -12,7 +12,6 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
@@ -34,8 +33,7 @@ class CostEstimationLandingPage extends StatefulWidget {
       _CostEstimationLandingPageState();
 }
 
-class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
-    with LocalizationMixin {
+class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
   late final AuthBloc _authBloc;
   late final AppRouter _router;
   String userAvatarUrl = '';
@@ -50,6 +48,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
 
   void _createEstimation() {
     final bloc = BlocProvider.of<AddCostEstimationBloc>(context);
+    final l10n = context.l10n;
 
     bloc.add(
       AddCostEstimationSubmitted(
@@ -152,6 +151,8 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
         ),
         BlocListener<AddCostEstimationBloc, AddCostEstimationState>(
           listener: (context, state) {
+            final l10n = context.l10n;
+
             if (state is AddCostEstimationFailure) {
               final message = _mapFailureToMessage(l10n, state.failure);
               if (message != null) {
@@ -162,6 +163,8 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
         ),
         BlocListener<DeleteCostEstimationBloc, DeleteCostEstimationState>(
           listener: (context, state) {
+            final l10n = context.l10n;
+
             if (state is DeleteCostEstimationSuccess) {
               CoreToast.showSuccess(
                 context,
@@ -183,6 +186,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
       child: BlocBuilder<AuthBloc, AuthState>(
         bloc: _authBloc,
         builder: (context, state) {
+          final l10n = context.l10n;
           if (state is AuthLoadUnauthenticated) {
             return const Scaffold(body: Center(child: CoreLoadingIndicator()));
           }
@@ -241,9 +245,11 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
     return const Center(child: CoreLoadingIndicator());
   }
 
-  Widget _buildPositionedAddButton(AppLocalizations l10n) {
+  Widget _buildPositionedAddButton() {
     final size = MediaQuery.of(context).size;
     final colorTheme = context.colorTheme;
+    final l10n = context.l10n;
+
     return BlocBuilder<AddCostEstimationBloc, AddCostEstimationState>(
       builder: (context, state) {
         final isCreating = state is AddCostEstimationInProgress;
@@ -281,7 +287,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
             );
           },
         ),
-        _buildPositionedAddButton(l10n),
+        _buildPositionedAddButton(),
       ],
     );
   }
@@ -318,7 +324,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage>
             );
           },
         ),
-        _buildPositionedAddButton(l10n),
+        _buildPositionedAddButton(),
       ],
     );
   }

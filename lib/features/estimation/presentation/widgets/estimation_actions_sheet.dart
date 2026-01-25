@@ -1,5 +1,4 @@
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
 
@@ -31,12 +30,12 @@ class EstimationActionsSheet extends StatefulWidget {
   State<EstimationActionsSheet> createState() => _EstimationActionsSheetState();
 }
 
-class _EstimationActionsSheetState extends State<EstimationActionsSheet>
-    with LocalizationMixin {
+class _EstimationActionsSheetState extends State<EstimationActionsSheet> {
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
     final typographyTheme = context.textTheme;
+    final l10n = context.l10n;
 
     return Container(
       decoration: BoxDecoration(

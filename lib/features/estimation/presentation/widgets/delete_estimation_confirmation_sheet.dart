@@ -1,5 +1,4 @@
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -25,12 +24,12 @@ class DeleteEstimationConfirmationSheet extends StatefulWidget {
 }
 
 class _DeleteEstimationConfirmationSheetState
-    extends State<DeleteEstimationConfirmationSheet>
-    with LocalizationMixin {
+    extends State<DeleteEstimationConfirmationSheet> {
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
+    final l10n = context.l10n;
 
     return Container(
       decoration: BoxDecoration(
