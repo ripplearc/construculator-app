@@ -10,5 +10,6 @@ This documentation covers development guidelines, architectural decisions, and b
 
 | Guide | Description |
 |-------|-------------|
+| [Testing-Directories](Testing/Directories) | Test directory structure, naming conventions, and CI/CD integration |
 | [Localization](Localization) | How to add and manage translated strings in the app |
 
