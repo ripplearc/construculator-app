@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:construculator/features/auth/presentation/bloc/forgot_password_bloc/forgot_password_bloc.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -100,13 +101,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppColorsExtension.of(context);
+    final colors = context.colorTheme;
     return Scaffold(
       backgroundColor: colors.pageBackground,
-      appBar: AppBar(
-        backgroundColor: colors.pageBackground,
-        elevation: 0,
-      ),
+      appBar: AppBar(backgroundColor: colors.pageBackground, elevation: 0),
       body: BlocConsumer<ForgotPasswordBloc, ForgotPasswordState>(
         listener: (context, state) {
           if (state is ForgotPasswordSuccess) {
@@ -229,7 +227,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
     BuildContext callingContext,
     String email,
   ) {
-    final colors = AppColorsExtension.of(callingContext);
+    final colors = callingContext.colorTheme;
     showModalBottomSheet(
       context: callingContext,
       isScrollControlled: true,

@@ -1,7 +1,7 @@
 import 'package:construculator/features/project/presentation/bloc/get_project_bloc/get_project_bloc.dart';
-import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -24,21 +24,20 @@ class ProjectHeaderAppBar extends StatelessWidget
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final appColorTheme = theme.extension<AppColorsExtension>();
+    final appColorTheme = context.colorTheme;
     return BlocProvider.value(
       value: Modular.get<GetProjectBloc>()
         ..add(GetProjectByIdLoadRequested(projectId)),
       child: Builder(
         builder: (context) {
           return PhysicalModel(
-            color: appColorTheme?.pageBackground ?? theme.colorScheme.surface,
+            color: appColorTheme.pageBackground,
             elevation: 0,
             borderRadius: BorderRadius.zero,
             child: Container(
               decoration: BoxDecoration(
                 boxShadow: CoreShadows.medium,
-                color: appColorTheme?.pageBackground,
+                color: appColorTheme.pageBackground,
               ),
               height: double.infinity,
               padding: EdgeInsets.symmetric(
@@ -46,7 +45,7 @@ class ProjectHeaderAppBar extends StatelessWidget
                 horizontal: CoreSpacing.space4,
               ),
               child: AppBar(
-                backgroundColor: appColorTheme?.pageBackground,
+                backgroundColor: appColorTheme.pageBackground,
                 elevation: 0,
                 titleSpacing: 0,
                 title: InkWell(
@@ -58,7 +57,7 @@ class ProjectHeaderAppBar extends StatelessWidget
                       const SizedBox(width: 4),
                       CoreIconWidget(
                         icon: CoreIcons.arrowDown,
-                        color: appColorTheme?.iconGrayMid,
+                        color: appColorTheme.iconGrayMid,
                         size: 24,
                       ),
                     ],
@@ -70,19 +69,19 @@ class ProjectHeaderAppBar extends StatelessWidget
                     icon: CoreIcons.search,
                     size: 24,
                     onTap: onSearchTap,
-                    color: appColorTheme?.iconDark,
+                    color: appColorTheme.iconDark,
                   ),
                   CoreIconWidget(
                     key: const Key('project_header_notification_button'),
                     onTap: onNotificationTap,
                     icon: CoreIcons.notification,
                     size: 24,
-                    color: appColorTheme?.iconDark,
+                    color: appColorTheme.iconDark,
                   ),
                   SizedBox(width: CoreSpacing.space2),
                   CoreAvatar(
                     radius: 20,
-                    backgroundColor: appColorTheme?.backgroundDarkGray,
+                    backgroundColor: appColorTheme.backgroundDarkGray,
                     // TODO: https://ripplearc.youtrack.cloud/issue/CA-392/Cost-Estimation-Use-letter-when-no-user-avatar-is-present
                     image: avatarImage,
                   ),
@@ -98,10 +97,8 @@ class ProjectHeaderAppBar extends StatelessWidget
   Widget _buildProjectName() {
     return BlocBuilder<GetProjectBloc, GetProjectState>(
       builder: (context, state) {
-        final appColorTheme = AppColorsExtension.of(context);
-        final appTypographyTheme = Theme.of(
-          context,
-        ).extension<AppTypographyExtension>();
+        final appColorTheme = context.colorTheme;
+        final appTypographyTheme = context.textTheme;
         if (state is GetProjectByIdLoading || state is GetProjectInitial) {
           return SizedBox(
             width: 20,
@@ -113,17 +110,17 @@ class ProjectHeaderAppBar extends StatelessWidget
         if (state is GetProjectByIdLoadSuccess) {
           return Text(
             state.project.projectName,
-            style: appTypographyTheme?.titleMediumSemiBold.copyWith(
+            style: appTypographyTheme.titleMediumSemiBold.copyWith(
               color: appColorTheme.textHeadline,
             ),
             overflow: TextOverflow.ellipsis,
             maxLines: 1,
           );
         } else {
-          final l10n = AppLocalizations.of(context);
+          final l10n = context.l10n;
           return Text(
-            l10n?.projectLoadError ?? 'Unable to load project',
-            style: appTypographyTheme?.bodyLargeSemiBold.copyWith(
+            l10n.projectLoadError,
+            style: appTypographyTheme.bodyLargeSemiBold.copyWith(
               color: appColorTheme.textError,
             ),
             overflow: TextOverflow.ellipsis,

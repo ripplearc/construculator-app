@@ -5,6 +5,7 @@ import 'package:construculator/libraries/auth/data/models/professional_role.dart
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
@@ -327,14 +328,11 @@ class _CreateAccountPageState extends State<CreateAccountPage>
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppColorsExtension.of(context);
+    final colors = context.colorTheme;
 
     return Scaffold(
       backgroundColor: colors.pageBackground,
-      appBar: AppBar(
-        backgroundColor: colors.pageBackground,
-        elevation: 0,
-      ),
+      appBar: AppBar(backgroundColor: colors.pageBackground, elevation: 0),
       body: BlocConsumer<CreateAccountBloc, CreateAccountState>(
         listener: (context, state) {
           if (state is CreateAccountSuccess) {
@@ -392,9 +390,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                   ),
                   const SizedBox(height: CoreSpacing.space6),
                   if (state is CreateAccountGetProfessionalRolesLoading)
-                    Center(
-                      child: CoreLoadingIndicator(),
-                    )
+                    Center(child: CoreLoadingIndicator())
                   else if (state is CreateAccountGetProfessionalRolesFailure)
                     Text(
                       l10n.rolesLoadingError,

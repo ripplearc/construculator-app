@@ -1,4 +1,5 @@
 import 'package:construculator/features/auth/presentation/widgets/otp_quick_sheet/otp_quick_sheet_body.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:pinput/pinput.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -41,7 +42,7 @@ class OtpVerificationQuickSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = Theme.of(context).coreTypography;
-    final colors = AppColorsExtension.of(context);
+    final colors = context.colorTheme;
 
     final pinTheme = PinTheme(
       width: 50,
