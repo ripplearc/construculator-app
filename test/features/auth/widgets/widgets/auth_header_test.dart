@@ -1,7 +1,7 @@
 import 'package:construculator/features/auth/presentation/widgets/auth_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../../../../screenshots/font_loader.dart';
+import '../../../../utils/screenshot/font_loader.dart';
 
 void main() {
   const title = 'Welcome Back';

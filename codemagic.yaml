@@ -51,8 +51,8 @@ workflows:
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
 
           # Find changed test files
-          CHANGED_UNIT_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/units/*.dart" "test/features/**/units/*.dart" "test/libraries/**/units/*.dart")
-          CHANGED_WIDGET_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/widgets/*.dart" "test/features/**/widgets/*.dart")
+          CHANGED_UNIT_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/features/**/units/*.dart" "test/libraries/**/units/*.dart")
+          CHANGED_WIDGET_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/features/**/widgets/*.dart")
 
           # Combine all changed tests
           CHANGED_TESTS="$CHANGED_UNIT_TESTS $CHANGED_WIDGET_TESTS"
@@ -125,8 +125,8 @@ workflows:
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
           
           # Find changed test files
-          CHANGED_UNIT_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/units/*.dart" "test/features/**/units/*.dart" "test/libraries/**/units/*.dart")
-          CHANGED_WIDGET_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/widgets/*.dart" "test/features/**/widgets/*.dart")
+          CHANGED_UNIT_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/features/**/units/*.dart" "test/libraries/**/units/*.dart")
+          CHANGED_WIDGET_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/features/**/widgets/*.dart")
 
           # Combine all changed tests
           CHANGED_TESTS="$CHANGED_UNIT_TESTS $CHANGED_WIDGET_TESTS"
@@ -202,7 +202,7 @@ workflows:
           fi
           sudo apt-get install -y lcov
           mkdir -p test-results
-          fvm flutter test test/units test/widgets test/features/**/units test/features/**/widgets test/libraries/**/units --coverage --machine > test-results/flutter.json
+          fvm flutter test test/features/**/units test/features/**/widgets test/libraries/**/units --coverage --machine > test-results/flutter.json
           lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info
           # Compute coverage
           if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
@@ -253,16 +253,16 @@ workflows:
 
       - name: Run Widget Tests
         script: |
-          if find test/widgets test/features -type f -path "*/widgets/*.dart" 2>/dev/null | grep -q .; then
-            fvm flutter test test/widgets test/features/**/widgets
+          if find test/features -type f -path "*/widgets/*.dart" 2>/dev/null | grep -q .; then
+            fvm flutter test test/features/**/widgets
           else
             echo "No widget tests found. Skipping."
           fi
 
       - name: Run Screenshot Tests
         script: |
-          if find test/screenshots test/features -type f -path "*/screenshots/*.dart" 2>/dev/null | grep -q .; then
-            fvm flutter test test/screenshots test/features/**/screenshots
+          if find test/features -type f -path "*/screenshots/*.dart" 2>/dev/null | grep -q .; then
+            fvm flutter test test/features/**/screenshots
           else
             echo "No screenshot tests found. Skipping."
           fi
@@ -279,12 +279,11 @@ workflows:
           fi
           echo "🧬 Checking for changed mutation config files..."
           CHANGED_FILES=$(git diff --name-only --diff-filter=d "$BASE_COMMIT" -- \
-            "test/mutations/*.xml" \
             "test/features/**/mutations/*.xml" \
             "test/libraries/**/mutations/*.xml")
-          
+
           if [ -z "$CHANGED_FILES" ]; then
-          echo "✅ No changed mutation config files detected (checked test/mutations, test/features/**/mutations, test/libraries/**/mutations). Skipping mutation tests."
+          echo "✅ No changed mutation config files detected (checked test/features/**/mutations, test/libraries/**/mutations). Skipping mutation tests."
           exit 0
           fi
           
@@ -365,7 +364,7 @@ workflows:
           fi
           HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
           mkdir -p test-results
-          fvm flutter test test/units test/widgets test/features/**/units test/features/**/widgets test/libraries/**/units --coverage --machine > test-results/flutter.json
+          fvm flutter test test/features/**/units test/features/**/widgets test/libraries/**/units --coverage --machine > test-results/flutter.json
           lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info
           # Compute coverage
           if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
@@ -416,25 +415,25 @@ workflows:
 
       - name: Run Widget Tests
         script: |
-          if find test/widgets test/features -type f -path "*/widgets/*.dart" 2>/dev/null | grep -q .; then
-            fvm flutter test test/widgets test/features/**/widgets
+          if find test/features -type f -path "*/widgets/*.dart" 2>/dev/null | grep -q .; then
+            fvm flutter test test/features/**/widgets
           else
             echo "No widget tests found. Skipping."
           fi
 
       - name: Run Screenshot Tests
         script: |
-          if find test/screenshots test/features -type f -path "*/screenshots/*.dart" 2>/dev/null | grep -q .; then
-            fvm flutter test test/screenshots test/features/**/screenshots
+          if find test/features -type f -path "*/screenshots/*.dart" 2>/dev/null | grep -q .; then
+            fvm flutter test test/features/**/screenshots
           else
             echo "No screenshot tests found. Skipping."
           fi
 
       - name: Mutation Testing
         script: |
-          echo "🧬 Looking for mutation configs in test/mutations, test/features/**/mutations, test/libraries/**/mutations..."
+          echo "🧬 Looking for mutation configs in test/features/**/mutations, test/libraries/**/mutations..."
 
-          CONFIG_FILES=$(find test/mutations test/features test/libraries -type f -path "*/mutations/*.xml" 2>/dev/null | tr '\n' ' ')
+          CONFIG_FILES=$(find test/features test/libraries -type f -path "*/mutations/*.xml" 2>/dev/null | tr '\n' ' ')
 
           if [ -z "$CONFIG_FILES" ]; then
             echo "✅ No mutation config files found. Skipping mutation tests."

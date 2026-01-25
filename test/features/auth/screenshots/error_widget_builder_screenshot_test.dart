@@ -1,7 +1,7 @@
 import 'package:construculator/features/auth/presentation/widgets/error_widget_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../../../screenshots/font_loader.dart';
+import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
   final size = const Size(390, 844);

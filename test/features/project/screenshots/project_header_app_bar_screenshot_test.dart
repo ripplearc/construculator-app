@@ -14,8 +14,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
-import '../font_loader.dart';
-import '../await_images_extension.dart';
+import '../../../utils/screenshot/font_loader.dart';
+import '../../../utils/screenshot/await_images_extension.dart';
 
 ImageProvider _createTestAvatarImage() {
   return const AssetImage('assets/icons/app_icon.png');
@@ -38,8 +38,7 @@ void main() {
     Modular.init(ProjectModule(appBootstrap));
     Modular.replaceInstance<ProjectRepository>(FakeProjectRepository());
     fakeProjectRepository =
-        Modular.get<ProjectRepository>()
-            as FakeProjectRepository;
+        Modular.get<ProjectRepository>() as FakeProjectRepository;
     clock = Modular.get<Clock>();
     await loadAppFontsAll();
   });

@@ -103,7 +103,11 @@ pre_check() {
   fi
 
   # Changed tests
-  local changed_tests=$(git diff --name-only --diff-filter=d "$base_commit" -- "test/*.dart")
+  local changed_tests=$(git diff --name-only --diff-filter=d "$base_commit" -- \
+    "test/features/**/units/*.dart" \
+    "test/features/**/widgets/*.dart" \
+    "test/libraries/**/units/*.dart")
+
   if [[ -z "$changed_tests" ]]; then
     echo "✅ No tests changed"
   else
@@ -138,12 +142,11 @@ run_mutation_tests() {
 
   echo "🧬 Checking for changed mutation config files..."
   CHANGED_FILES=$(git diff --name-only --diff-filter=d "$TARGET_BRANCH" -- \
-    "test/mutations/*.xml" \
     "test/features/**/mutations/*.xml" \
     "test/libraries/**/mutations/*.xml")
 
   if [ -z "$CHANGED_FILES" ]; then
-  echo "✅ No changed mutation config files detected (checked test/mutations, test/features/**/mutations, test/libraries/**/mutations). Skipping mutation tests."
+  echo "✅ No changed mutation config files detected (checked test/features/**/mutations, test/libraries/**/mutations). Skipping mutation tests."
   exit 0
   fi
 
@@ -152,6 +155,7 @@ run_mutation_tests() {
 
   echo "🧪 Running mutation tests..."
   dart run mutation_test $CHANGED_FILES --no-builtin
+  local end=$(date +%s)
   echo "✅ [$(date +'%H:%M:%S')] Mutation tests completed in $((end - start)) seconds"
   return 0
 }
@@ -183,12 +187,12 @@ comprehensive_check() {
   local filtered_files=$(echo "$changed_dart_files" | grep -v -E "(lib/generated/|\.g\.dart$|\.freezed\.dart$|lib/l10n/generated/)")
   run_custom_linter "$filtered_files"
 
-  if [ -d "test/units" ] || find test/features -type d -name "units" || find test/features -type d -name "widgets" || find test/libraries -type d -name "units" 2>/dev/null | grep -q .; then
+  if find test/features -type d -name "units" 2>/dev/null | grep -q . || \
+     find test/features -type d -name "widgets" 2>/dev/null | grep -q . || \
+     find test/libraries -type d -name "units" 2>/dev/null | grep -q .; then
     echo "🧪 Unit tests with coverage..."
     mkdir -p test-results
     fvm flutter test \
-    test/units \
-    test/widgets \
     test/libraries/**/units \
     test/features/**/units \
     test/features/**/widgets \
@@ -228,21 +232,16 @@ comprehensive_check() {
       fi
     else
       echo "⚠️ Coverage file missing after running unit tests. This might indicate an issue with test execution or setup."
-      # Optionally, decide if this should be an exit 1 or just a warning.
-      # For now, it's a warning, as the original script exits.
-      # If skipping unit tests is fine, then missing coverage if tests didn't run is also fine.
-      # However, if tests RAN and coverage is STILL missing, that's an error.
       exit 1
     fi
   else
-    echo "⏩ Skipping unit tests: test/units directory not found."
+    echo "⏩ Skipping unit tests: no test directories found."
   fi
 
   # Screenshot tests
-  if find test/screenshots test/features -type f -path "*/screenshots/*.dart" 2>/dev/null | grep -q .; then
+  if find test/features -type f -path "*/screenshots/*.dart" 2>/dev/null | grep -q .; then
     echo "🖼️ Screenshot tests..."
     fvm flutter test \
-    test/screenshots \
     test/features/**/screenshots \
     --update-goldens
   else

@@ -10,7 +10,7 @@ Future<void> loadAppFonts() async {
   TestWidgetsFlutterBinding.ensureInitialized();
   await loadMaterialIcons();
   await _loadRobotoFonts(
-    fontFiles: ['test/screenshots/fonts/Roboto-Regular.ttf'],
+    fontFiles: ['test/utils/screenshot/fonts/Roboto-Regular.ttf'],
   );
 }
 
@@ -20,9 +20,9 @@ Future<void> loadAppFontsAll() async {
   await loadMaterialIcons();
   await _loadRobotoFonts(
     fontFiles: [
-      'test/screenshots/fonts/Roboto-Regular.ttf',
-      'test/screenshots/fonts/Roboto-Medium.ttf',
-      'test/screenshots/fonts/Roboto-Bold.ttf',
+      'test/utils/screenshot/fonts/Roboto-Regular.ttf',
+      'test/utils/screenshot/fonts/Roboto-Medium.ttf',
+      'test/utils/screenshot/fonts/Roboto-Bold.ttf',
     ],
   );
 }
