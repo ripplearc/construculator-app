@@ -5,3 +5,4 @@ mutation_test_rules.xml @ripplearc/construculator-devop
 analysis_options.yaml @ripplearc/construculator-devop
 run_check.sh.yaml @ripplearc/construculator-devop
 lib/app/app_bootstrap.dart @ripplearc/construculator-devop
+lib/main.dart @SimonDerejeW
