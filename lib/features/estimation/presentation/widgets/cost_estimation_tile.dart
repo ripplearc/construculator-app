@@ -45,7 +45,7 @@ class CostEstimationTile extends StatelessWidget {
 
   Widget _buildTopRow(BuildContext context) {
     final appColors = context.colorTheme;
-    final typography = Theme.of(context).coreTypography;
+    final typography = context.textTheme;
     return Row(
       children: [
         CoreIconWidget(
@@ -82,7 +82,7 @@ class CostEstimationTile extends StatelessWidget {
     final createdAt = estimation.createdAt;
 
     final appColors = context.colorTheme;
-    final typography = Theme.of(context).coreTypography;
+    final typography = context.textTheme;
 
     return Row(
       children: [

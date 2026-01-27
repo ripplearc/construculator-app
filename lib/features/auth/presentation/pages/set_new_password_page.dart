@@ -144,7 +144,7 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage>
           }
         },
         builder: (context, state) {
-          final typography = Theme.of(context).coreTypography;
+          final typography = context.textTheme;
           return SingleChildScrollView(
             padding: EdgeInsets.symmetric(
               horizontal: CoreSpacing.space6,

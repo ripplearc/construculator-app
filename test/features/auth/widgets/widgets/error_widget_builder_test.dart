@@ -47,7 +47,7 @@ void main() {
       final context = tester.element(errorFinder);
       final colors = AppColorsExtension.of(context);
       expect(textWidget.style!.color, colors.textError);
-      final typography = Theme.of(context).coreTypography;
+      final typography = context.textTheme;
 
       expect(
         textWidget.style!.fontWeight,
@@ -69,7 +69,7 @@ void main() {
       final context = tester.element(linkFinder);
       final colors = context.colorTheme;
       expect(textWidget.style!.color, colors.textLink);
-      final typography = Theme.of(context).coreTypography;
+      final typography = context.textTheme;
 
       expect(
         textWidget.style!.fontWeight,
