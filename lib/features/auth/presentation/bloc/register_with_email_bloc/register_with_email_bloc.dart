@@ -1,5 +1,5 @@
-import 'package:construculator/libraries/auth/data/types/auth_types.dart';
-import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
+import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
+import 'package:construculator/libraries/auth/domain/validation/auth_validation.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:equatable/equatable.dart';

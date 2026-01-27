@@ -1,6 +1,6 @@
 import 'package:construculator/libraries/errors/failures.dart';
-import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
-import 'package:construculator/libraries/auth/data/types/auth_types.dart';
+import 'package:construculator/libraries/auth/domain/validation/auth_validation.dart';
+import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:construculator/features/auth/domain/usecases/check_email_availability_usecase.dart';

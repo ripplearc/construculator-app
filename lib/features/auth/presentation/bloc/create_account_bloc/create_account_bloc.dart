@@ -3,8 +3,8 @@ import 'package:construculator/features/auth/domain/usecases/get_professional_ro
 import 'package:construculator/features/auth/domain/usecases/params/create_account_usecase_params.dart';
 import 'package:construculator/features/auth/domain/usecases/send_otp_usecase.dart';
 import 'package:construculator/libraries/auth/data/models/professional_role.dart';
-import 'package:construculator/libraries/auth/data/types/auth_types.dart';
-import 'package:construculator/libraries/auth/data/validation/auth_validation.dart';
+import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
+import 'package:construculator/libraries/auth/domain/validation/auth_validation.dart';
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:equatable/equatable.dart';
