@@ -122,56 +122,30 @@ Then regenerate the files using `flutter gen-l10n`.
 
 ## Using Localized Text in Code
 
-<!-- TODO: https://ripplearc.youtrack.cloud/issue/CA-460/UI-refactorCreate-BuildContext-Extensions-for-UI-Shortcuts -->
-### Using LocalizationMixin (Recommended)
+### Using BuildContext Extension (Recommended)
 
-The recommended way to access localized strings is using the `LocalizationMixin`. This approach eliminates the need for null checks and provides cleaner code:
+The recommended way to access localized strings is using the `BuildContext` extension. This approach eliminates the need for manual null checks and provides a cleaner syntax:
 
 ```dart
-import 'package:construculator/libraries/mixins/localization_mixin.dart';
+import 'package:construculator/libraries/extensions/build_context_extensions.dart';
 
-class MyPage extends StatefulWidget {
-  @override
-  _MyPageState createState() => _MyPageState();
-}
-
-class _MyPageState extends State<MyPage> with LocalizationMixin {
+class MyPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Text(l10n.agreeAndContinueButton);
+    return Text(context.l10n.agreeAndContinueButton);
   }
 }
 ```
 
-The mixin is defined as:
+The extension provides:
+- **Concise syntax**: Access localization via `context.l10n`
+- **Safety**: Throws a clear error if `AppLocalizations` is not found
+- **Convenience**: No need to manually look up `AppLocalizations.of(context)`
 
+To use this, ensure you import the extensions file:
 ```dart
-mixin LocalizationMixin<T extends StatefulWidget> on State<T> {
-  /// Holds the current localization instance for the widget.
-  ///
-  /// This is updated automatically in `didChangeDependencies`.
-  late AppLocalizations l10n;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final localizations = AppLocalizations.of(context);
-    if (localizations == null) {
-      throw StateError(
-        'AppLocalizations not found in the widget tree. '
-        'Ensure that your MaterialApp has localizationsDelegates configured '
-        'and that you are accessing this from a descendant widget.',
-      );
-    }
-    l10n = localizations;
-  }
-}
+import 'package:construculator/libraries/extensions/build_context_extensions.dart';
 ```
-
-**Benefits:**
-- No null checks required (`l10n.key` instead of `l10n?.key ?? ''`)
-- Automatic updates when locale changes
-- Clear error messages if localization is not properly configured
 
 
 ### Standard Approach

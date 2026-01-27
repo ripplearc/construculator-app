@@ -2,7 +2,6 @@
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
-import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:pinput/pinput.dart';
 
 class OtpQuickSheetBody extends StatelessWidget {
@@ -62,7 +61,7 @@ class OtpQuickSheetBody extends StatelessWidget {
             ),
             const SizedBox(height: CoreSpacing.space6),
             Text(
-              '${AppLocalizations.of(context)?.authenticationCodeTitle}',
+              context.l10n.authenticationCodeTitle,
               style: typography.headlineMediumSemiBold,
             ),
             const SizedBox(height: CoreSpacing.space2),
@@ -118,7 +117,7 @@ class OtpQuickSheetBody extends StatelessWidget {
             const SizedBox(height: CoreSpacing.space4),
             Text.rich(
               TextSpan(
-                text: '${AppLocalizations.of(context)?.didNotReceiveCode} ',
+                text: '${context.l10n.didNotReceiveCode} ',
                 style: typography.bodyMediumRegular.copyWith(
                   color: colors.textDark,
                 ),
@@ -129,8 +128,8 @@ class OtpQuickSheetBody extends StatelessWidget {
                       onTap: onResend,
                       child: Text(
                         isResending
-                            ? '${AppLocalizations.of(context)?.resendingButtonLabel}'
-                            : '${AppLocalizations.of(context)?.resendButton}',
+                            ? context.l10n.resendingButtonLabel
+                            : context.l10n.resendButton,
                         style: typography.bodyMediumSemiBold.copyWith(
                           color: colors.textLink,
                         ),
@@ -145,8 +144,8 @@ class OtpQuickSheetBody extends StatelessWidget {
             CoreButton(
               onPressed: onVerify,
               label: isVerifying
-                  ? '${AppLocalizations.of(context)?.verifyingButtonLabel}'
-                  : '${AppLocalizations.of(context)?.verifyOtpButton}',
+                  ? context.l10n.verifyingButtonLabel
+                  : context.l10n.verifyOtpButton,
               isDisabled: verifyButtonDisabled,
               spaceOut: true,
               trailing: true,

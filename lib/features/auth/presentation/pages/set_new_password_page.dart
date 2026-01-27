@@ -1,7 +1,6 @@
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -18,8 +17,7 @@ class SetNewPasswordPage extends StatefulWidget {
   State<SetNewPasswordPage> createState() => _SetNewPasswordPageState();
 }
 
-class _SetNewPasswordPageState extends State<SetNewPasswordPage>
-    with LocalizationMixin {
+class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
@@ -115,6 +113,7 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage>
       appBar: AppBar(backgroundColor: colors.pageBackground, elevation: 0),
       body: BlocConsumer<SetNewPasswordBloc, SetNewPasswordState>(
         listener: (context, state) {
+          final l10n = context.l10n;
           if (state is SetNewPasswordPasswordValidationSuccess) {
             _handlePasswordValidation(state);
           }
@@ -145,6 +144,8 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage>
         },
         builder: (context, state) {
           final typography = context.textTheme;
+          final l10n = context.l10n;
+
           return SingleChildScrollView(
             padding: EdgeInsets.symmetric(
               horizontal: CoreSpacing.space6,

@@ -1,7 +1,6 @@
 import 'package:construculator/features/auth/presentation/widgets/auth_header.dart';
 import 'package:construculator/libraries/auth/data/types/auth_types.dart';
 import 'package:construculator/libraries/errors/failures.dart';
-import 'package:construculator/libraries/mixins/localization_mixin.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
@@ -21,8 +20,7 @@ class EnterPasswordPage extends StatefulWidget {
   State<EnterPasswordPage> createState() => _EnterPasswordPageState();
 }
 
-class _EnterPasswordPageState extends State<EnterPasswordPage>
-    with LocalizationMixin {
+class _EnterPasswordPageState extends State<EnterPasswordPage> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _canPressContinue = false;
@@ -41,7 +39,7 @@ class _EnterPasswordPageState extends State<EnterPasswordPage>
       setState(() {
         _canPressContinue = _passwordController.text.isNotEmpty;
         _passwordErrorList = _passwordController.text.isEmpty
-            ? [l10n.passwordRequiredError]
+            ? [context.l10n.passwordRequiredError]
             : null;
       });
     });
@@ -67,6 +65,7 @@ class _EnterPasswordPageState extends State<EnterPasswordPage>
   Widget build(BuildContext context) {
     final typography = context.textTheme;
     final colors = context.colorTheme;
+    final l10n = context.l10n;
     return Scaffold(
       backgroundColor: colors.pageBackground,
       appBar: AppBar(backgroundColor: colors.pageBackground, elevation: 0),

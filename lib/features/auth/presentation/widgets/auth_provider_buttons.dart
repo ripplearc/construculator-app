@@ -1,4 +1,3 @@
-import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -37,7 +36,7 @@ class AuthProviderButtons extends StatelessWidget {
           onPressed: () {
             onPressed(AuthMethod.google);
           },
-          label: '${AppLocalizations.of(context)?.continueWithGoogle}',
+          label: context.l10n.continueWithGoogle,
           centerAlign: true,
           spaceOut: true,
           icon: CoreIconWidget(
@@ -51,7 +50,7 @@ class AuthProviderButtons extends StatelessWidget {
           onPressed: () {
             onPressed(AuthMethod.apple);
           },
-          label: '${AppLocalizations.of(context)?.continueWithApple}',
+          label: context.l10n.continueWithApple,
           centerAlign: true,
           spaceOut: true,
           icon: CoreIconWidget(
@@ -66,7 +65,7 @@ class AuthProviderButtons extends StatelessWidget {
           onPressed: () {
             onPressed(AuthMethod.microsoft);
           },
-          label: '${AppLocalizations.of(context)?.continueWithMicrosoft}',
+          label: context.l10n.continueWithMicrosoft,
           centerAlign: true,
           spaceOut: true,
           icon: CoreIconWidget(
@@ -81,7 +80,7 @@ class AuthProviderButtons extends StatelessWidget {
             onPressed: () {
               onPressed(AuthMethod.phone);
             },
-            label: '${AppLocalizations.of(context)?.continueWithPhone}',
+            label: context.l10n.continueWithPhone,
             centerAlign: true,
             spaceOut: true,
             icon: CoreIconWidget(
@@ -102,7 +101,7 @@ class AuthProviderButtons extends StatelessWidget {
               size: CoreSpacing.space6,
               color: colors.textInfo,
             ),
-            label: '${AppLocalizations.of(context)?.continueWithEmail}',
+            label: context.l10n.continueWithEmail,
             centerAlign: true,
             spaceOut: true,
             variant: CoreButtonVariant.social,
