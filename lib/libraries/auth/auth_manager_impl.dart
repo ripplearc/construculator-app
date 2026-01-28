@@ -17,15 +17,17 @@ class AuthManagerImpl implements AuthManager {
   final SupabaseWrapper _wrapper;
   final AuthNotifierController _authNotifier;
   final AuthRepository _authRepository;
-  final _logger = AppLogger().tag('AuthManagerImpl');
+  final AppLogger _logger;
 
   AuthManagerImpl({
     required SupabaseWrapper wrapper,
     required AuthRepository authRepository,
     required AuthNotifierController authNotifier,
+    required AppLogger appLogger,
   }) : _wrapper = wrapper,
        _authRepository = authRepository,
-       _authNotifier = authNotifier {
+       _authNotifier = authNotifier,
+       _logger = appLogger.tag('AuthManagerImpl') {
     _initAuthListener();
   }
 

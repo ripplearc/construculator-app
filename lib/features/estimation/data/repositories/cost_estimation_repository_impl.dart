@@ -14,14 +14,17 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 class CostEstimationRepositoryImpl implements CostEstimationRepository {
   final CostEstimationDataSource _dataSource;
-  static final _logger = AppLogger().tag('CostEstimationRepositoryImpl');
+  final AppLogger _logger;
 
   final Map<String, StreamController<Either<Failure, List<CostEstimate>>>>
   _streamControllers = {};
   final Map<String, List<CostEstimate>> _cachedEstimations = {};
 
-  CostEstimationRepositoryImpl({required CostEstimationDataSource dataSource})
-    : _dataSource = dataSource;
+  CostEstimationRepositoryImpl({
+    required CostEstimationDataSource dataSource,
+    required AppLogger appLogger,
+  }) : _dataSource = dataSource,
+       _logger = appLogger.tag('CostEstimationRepositoryImpl');
 
   Failure _handleError(
     Object error,
