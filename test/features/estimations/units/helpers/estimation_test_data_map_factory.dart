@@ -62,8 +62,8 @@ class EstimationTestDataMapFactory {
       'equipment_markup_value': equipmentMarkupValue ?? equipmentMarkupDefault,
       'total_cost': totalCost ?? totalCostDefault,
       'is_locked': isLocked ?? false,
-      'locked_by_user_id': lockedByUserId ?? emptyString,
-      'locked_at': lockedAt ?? emptyString,
+      'locked_by_user_id': lockedByUserId,
+      'locked_at': lockedAt,
       'created_at': createdAt ?? timestampDefault,
       'updated_at': updatedAt ?? timestampDefault,
     };
