@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 
-import '../../../screenshots/font_loader.dart';
+import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
   final size = const Size(390, 300);

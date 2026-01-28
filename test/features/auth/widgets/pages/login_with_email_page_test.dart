@@ -22,7 +22,7 @@ import 'package:construculator/features/auth/presentation/pages/login_with_email
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/features/auth/presentation/bloc/login_with_email_bloc/login_with_email_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
-import '../../../../screenshots/font_loader.dart';
+import '../../../../utils/screenshot/font_loader.dart';
 
 class _LoginWithEmailPageTestModule extends Module {
   final AppBootstrap appBootstrap;
