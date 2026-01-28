@@ -51,6 +51,7 @@ void main() {
     });
 
     tearDown(() {
+      repository.dispose();
       bloc.close();
     });
 
@@ -297,6 +298,54 @@ void main() {
                   ),
                 ).toDomain(),
               ]),
+        ],
+      );
+    });
+
+    group('Stream distinct comparison', () {
+      blocTest<CostEstimationListBloc, CostEstimationListState>(
+        'should compare duplicate failures correctly',
+        build: () {
+          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
+          fakeSupabaseWrapper.selectMultipleExceptionType =
+              SupabaseExceptionType.socket;
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(
+            const CostEstimationListStartWatching(projectId: testProjectId),
+          );
+          await bloc.stream.firstWhere((s) => s is CostEstimationListError);
+          await repository.getEstimations(testProjectId);
+        },
+        wait: streamDebounceWaitDuration,
+        expect: () => [
+          isA<CostEstimationListLoading>(),
+          isA<CostEstimationListError>(),
+        ],
+      );
+
+      blocTest<CostEstimationListBloc, CostEstimationListState>(
+        'should compare duplicate success results correctly',
+        build: () {
+          final estimationMap = buildEstimationMap(
+            id: 'est-1',
+            projectId: testProjectId,
+          );
+          seedEstimationTable([estimationMap]);
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(
+            const CostEstimationListStartWatching(projectId: testProjectId),
+          );
+          await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
+          await repository.getEstimations(testProjectId);
+        },
+        wait: streamDebounceWaitDuration,
+        expect: () => [
+          isA<CostEstimationListLoading>(),
+          isA<CostEstimationListLoaded>(),
         ],
       );
     });
