@@ -10,6 +10,7 @@ import 'package:construculator/features/estimation/presentation/bloc/add_cost_es
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_details_page.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter/material.dart';
@@ -74,19 +75,22 @@ class EstimationModule extends Module {
 
   @override
   void binds(Injector i) {
+    i.addLazySingleton<AppLogger>(() => AppLogger());
+
     i.addLazySingleton<CostEstimationDataSource>(
       () => RemoteCostEstimationDataSource(
         supabaseWrapper: appBootstrap.supabaseWrapper,
+        appLogger: i(),
       ),
     );
 
     i.addLazySingleton<CostEstimationRepository>(
-      () => CostEstimationRepositoryImpl(dataSource: i.get()),
+      () => CostEstimationRepositoryImpl(dataSource: i.get(), appLogger: i()),
       config: BindConfig(onDispose: (repository) => repository.dispose()),
     );
 
     i.addLazySingleton<AddCostEstimationUseCase>(
-      () => AddCostEstimationUseCase(i.get(), i.get(), i.get()),
+      () => AddCostEstimationUseCase(i.get(), i.get(), i.get(), i()),
     );
 
     i.add<CostEstimationListBloc>(

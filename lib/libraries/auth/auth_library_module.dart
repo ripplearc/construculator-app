@@ -6,6 +6,7 @@ import 'package:construculator/libraries/auth/interfaces/auth_notifier_controlle
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/repositories/supabase_repository_impl.dart';
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -17,9 +18,11 @@ class AuthLibraryModule extends Module {
   final AuthNotifierController authNotifierImpl = AuthNotifierImpl();
   @override
   void binds(Injector i) {
+    i.addLazySingleton<AppLogger>(() => AppLogger());
+
     i.addLazySingleton<AuthNotifierController>(() => authNotifierImpl);
     i.addLazySingleton<AuthRepository>(
-      () => SupabaseRepositoryImpl(supabaseWrapper: i()),
+      () => SupabaseRepositoryImpl(supabaseWrapper: i(), appLogger: i()),
     );
   }
 
@@ -28,7 +31,7 @@ class AuthLibraryModule extends Module {
     i.addLazySingleton<AuthNotifier>(() => authNotifierImpl);
     i.addLazySingleton<AuthManager>(
       () =>
-          AuthManagerImpl(wrapper: i(), authRepository: i(), authNotifier: i()),
+          AuthManagerImpl(wrapper: i(), authRepository: i(), authNotifier: i(), appLogger: i()),
     );
   }
 }
