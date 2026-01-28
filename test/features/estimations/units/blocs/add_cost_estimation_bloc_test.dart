@@ -2,20 +2,16 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/domain/entities/enums.dart';
 import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
-import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
-import 'package:construculator/features/estimation/data/testing/fake_cost_estimation_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
-import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
-import 'package:construculator/libraries/auth/data/models/auth_user.dart';
-import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
-import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,8 +19,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('AddCostEstimationBloc', () {
     late AddCostEstimationBloc bloc;
-    late FakeCostEstimationRepository fakeRepository;
-    late FakeAuthRepository fakeAuthRepository;
+    late FakeSupabaseWrapper fakeSupabaseWrapper;
     late FakeClockImpl fakeClock;
 
     const testProjectId = 'test-project-123';
@@ -32,6 +27,42 @@ void main() {
     const testUserId = 'test-user-123';
     const testCredentialId = 'test-credential-123';
     const testUserEmail = 'test@example.com';
+
+    void seedUserProfile({String? userId = testUserId}) {
+      fakeSupabaseWrapper.addTableData('users', [
+        {
+          'id': userId,
+          'credential_id': testCredentialId,
+          'email': testUserEmail,
+          'phone': null,
+          'first_name': 'Test',
+          'last_name': 'User',
+          'professional_role': 'Developer',
+          'profile_photo_url': null,
+          'created_at': fakeClock.now().toIso8601String(),
+          'updated_at': fakeClock.now().toIso8601String(),
+          'user_status': 'active',
+          'user_preferences': <String, dynamic>{},
+        },
+      ]);
+    }
+
+    void setCurrentUser() {
+      fakeSupabaseWrapper.setCurrentUser(
+        FakeUser(
+          id: testCredentialId,
+          email: testUserEmail,
+          createdAt: fakeClock.now().toIso8601String(),
+          appMetadata: const {},
+          userMetadata: const {},
+        ),
+      );
+    }
+
+    void setupAuth() {
+      setCurrentUser();
+      seedUserProfile();
+    }
 
     setUpAll(() {
       fakeClock = FakeClockImpl();
@@ -41,17 +72,9 @@ void main() {
         envLoader: FakeEnvLoader(),
       );
       Modular.init(EstimationModule(bootstrap));
-      Modular.replaceInstance<CostEstimationRepository>(
-        FakeCostEstimationRepository(clock: fakeClock),
-      );
-      Modular.replaceInstance<AuthRepository>(
-        FakeAuthRepository(clock: fakeClock),
-      );
 
-      fakeRepository =
-          Modular.get<CostEstimationRepository>()
-              as FakeCostEstimationRepository;
-      fakeAuthRepository = Modular.get<AuthRepository>() as FakeAuthRepository;
+      fakeSupabaseWrapper =
+          Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     });
 
     tearDownAll(() {
@@ -59,29 +82,9 @@ void main() {
     });
 
     setUp(() {
-      fakeRepository.reset();
+      fakeSupabaseWrapper.reset();
 
-      final credential = UserCredential(
-        id: testCredentialId,
-        email: testUserEmail,
-        metadata: {},
-        createdAt: fakeClock.now(),
-      );
-      fakeAuthRepository.setCurrentCredentials(credential);
-
-      final user = User(
-        id: testUserId,
-        email: testUserEmail,
-        credentialId: testCredentialId,
-        firstName: 'Test',
-        lastName: 'User',
-        professionalRole: 'Developer',
-        userStatus: UserProfileStatus.active,
-        userPreferences: {},
-        createdAt: fakeClock.now(),
-        updatedAt: fakeClock.now(),
-      );
-      fakeAuthRepository.setUserProfile(user);
+      setupAuth();
 
       bloc = Modular.get<AddCostEstimationBloc>();
     });
@@ -119,9 +122,9 @@ void main() {
       blocTest<AddCostEstimationBloc, AddCostEstimationState>(
         'emits [InProgress, Failure] when repository returns failure',
         build: () {
-          fakeRepository.shouldReturnFailureOnCreateEstimation = true;
-          fakeRepository.createEstimationFailureType =
-              EstimationErrorType.connectionError;
+          fakeSupabaseWrapper.shouldThrowOnInsert = true;
+          fakeSupabaseWrapper.insertExceptionType =
+              SupabaseExceptionType.socket;
           return bloc;
         },
         act: (bloc) => bloc.add(
@@ -139,9 +142,8 @@ void main() {
       blocTest<AddCostEstimationBloc, AddCostEstimationState>(
         'passes failure type: parsingError',
         build: () {
-          fakeRepository.shouldReturnFailureOnCreateEstimation = true;
-          fakeRepository.createEstimationFailureType =
-              EstimationErrorType.parsingError;
+          fakeSupabaseWrapper.shouldThrowOnInsert = true;
+          fakeSupabaseWrapper.insertExceptionType = SupabaseExceptionType.type;
           return bloc;
         },
         act: (bloc) => bloc.add(
