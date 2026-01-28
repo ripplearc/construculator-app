@@ -8,6 +8,7 @@ import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
 import 'package:construculator/libraries/auth/auth_manager_impl.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -24,6 +25,7 @@ void main() {
   late FakeSupabaseWrapper supabaseWrapper;
   late AuthManager authManager;
   late Clock clock;
+  late AppLogger appLogger;
   const testEmail = 'test@example.com';
   const testPassword = '5i2Un@D8Y9!';
 
@@ -49,6 +51,7 @@ void main() {
     supabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     authManager = Modular.get<AuthManager>();
     clock = Modular.get<Clock>();
+    appLogger = AppLogger();
   });
 
   tearDown(() {
@@ -82,6 +85,7 @@ void main() {
             wrapper: supabaseWrapper,
             authRepository: authRepository,
             authNotifier: authNotifier,
+            appLogger: appLogger,
           );
           await initialEvent;
           expect(authNotifier.stateChangedEvents.length, 1);
@@ -948,9 +952,10 @@ class _TestAppModule extends Module {
     i.addSingleton<AuthNotifierController>(() => FakeAuthNotifier());
     i.addSingleton<AuthRepository>(() => FakeAuthRepository(clock: i()));
     i.addSingleton<SupabaseWrapper>(() => FakeSupabaseWrapper(clock: i()));
+    i.addSingleton<AppLogger>(() => AppLogger());
     i.add<AuthManager>(
       () =>
-          AuthManagerImpl(wrapper: i(), authRepository: i(), authNotifier: i()),
+          AuthManagerImpl(wrapper: i(), authRepository: i(), authNotifier: i(), appLogger: i()),
     );
   }
 }
