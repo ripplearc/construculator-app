@@ -51,11 +51,10 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       return EstimationFailure(errorType: EstimationErrorType.connectionError);
     }
 
-    if (error is FormatException) {
+    if (error is TypeError) {
       _logger.error(
-        'Parsing error $operation$context: '
-        'message=${error.message}, source=${error.source}, '
-        'offset=${error.offset}',
+        'Parsing error $operation$context: ${error.toString()}',
+        'returning parsing failure',
       );
       return EstimationFailure(errorType: EstimationErrorType.parsingError);
     }
