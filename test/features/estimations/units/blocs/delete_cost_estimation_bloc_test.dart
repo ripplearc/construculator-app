@@ -1,31 +1,79 @@
 import 'package:bloc_test/bloc_test.dart';
-import 'package:construculator/features/estimation/data/testing/fake_cost_estimation_repository.dart';
+import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
+import 'package:construculator/libraries/config/testing/fake_app_config.dart';
+import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../helpers/estimation_test_data_map_factory.dart';
 
 void main() {
   group('DeleteCostEstimationBloc', () {
     late DeleteCostEstimationBloc bloc;
-    late FakeCostEstimationRepository fakeRepository;
+    late FakeSupabaseWrapper fakeSupabaseWrapper;
     late FakeClockImpl fakeClock;
 
     const testProjectId = 'test-project-123';
     const testEstimationId = 'test-estimation-123';
     const testEstimationName = 'Test Estimation';
 
-    setUp(() {
+    setUpAll(() {
       fakeClock = FakeClockImpl();
-      fakeRepository = FakeCostEstimationRepository(clock: fakeClock);
-      bloc = DeleteCostEstimationBloc(costEstimationRepository: fakeRepository);
+      final bootstrap = AppBootstrap(
+        supabaseWrapper: FakeSupabaseWrapper(clock: fakeClock),
+        config: FakeAppConfig(),
+        envLoader: FakeEnvLoader(),
+      );
+      Modular.init(EstimationModule(bootstrap));
+
+      fakeSupabaseWrapper =
+          Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+    });
+
+    tearDownAll(() {
+      Modular.dispose();
+    });
+
+    setUp(() {
+      fakeSupabaseWrapper.reset();
+      bloc = Modular.get<DeleteCostEstimationBloc>();
     });
 
     tearDown(() {
       bloc.close();
-      fakeRepository.reset();
     });
+
+    Map<String, dynamic> buildEstimationMap({
+      String? id,
+      String? projectId,
+      String? estimateName,
+      String? createdAt,
+      String? updatedAt,
+    }) {
+      return EstimationTestDataMapFactory.createFakeEstimationData(
+        id: id,
+        projectId: projectId,
+        estimateName: estimateName,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+      );
+    }
+
+    void seedEstimationTable(List<Map<String, dynamic>> rows) {
+      fakeSupabaseWrapper.addTableData(
+        DatabaseConstants.costEstimatesTable,
+        rows,
+      );
+    }
 
     group('Initialization', () {
       test('should start in initial state', () {
@@ -37,12 +85,12 @@ void main() {
       blocTest<DeleteCostEstimationBloc, DeleteCostEstimationState>(
         'should emit in progress then success when estimation is deleted successfully',
         build: () {
-          final estimation = fakeRepository.createSampleEstimation(
+          final estimationMap = buildEstimationMap(
             id: testEstimationId,
             projectId: testProjectId,
             estimateName: testEstimationName,
           );
-          fakeRepository.addProjectEstimation(testProjectId, estimation);
+          seedEstimationTable([estimationMap]);
           return bloc;
         },
         act: (bloc) => bloc.add(
@@ -64,9 +112,9 @@ void main() {
       blocTest<DeleteCostEstimationBloc, DeleteCostEstimationState>(
         'should emit in progress then failure when repository returns failure',
         build: () {
-          fakeRepository.shouldReturnFailureOnDeleteEstimation = true;
-          fakeRepository.deleteEstimationFailureType =
-              EstimationErrorType.connectionError;
+          fakeSupabaseWrapper.shouldThrowOnDelete = true;
+          fakeSupabaseWrapper.deleteExceptionType =
+              SupabaseExceptionType.socket;
           return bloc;
         },
         act: (bloc) => bloc.add(
@@ -92,9 +140,9 @@ void main() {
       blocTest<DeleteCostEstimationBloc, DeleteCostEstimationState>(
         'should emit failure with timeout error when repository returns timeout error',
         build: () {
-          fakeRepository.shouldReturnFailureOnDeleteEstimation = true;
-          fakeRepository.deleteEstimationFailureType =
-              EstimationErrorType.timeoutError;
+          fakeSupabaseWrapper.shouldThrowOnDelete = true;
+          fakeSupabaseWrapper.deleteExceptionType =
+              SupabaseExceptionType.timeout;
           return bloc;
         },
         act: (bloc) => bloc.add(
@@ -120,9 +168,8 @@ void main() {
       blocTest<DeleteCostEstimationBloc, DeleteCostEstimationState>(
         'should emit failure with parsing error when repository returns parsing error',
         build: () {
-          fakeRepository.shouldReturnFailureOnDeleteEstimation = true;
-          fakeRepository.deleteEstimationFailureType =
-              EstimationErrorType.parsingError;
+          fakeSupabaseWrapper.shouldThrowOnDelete = true;
+          fakeSupabaseWrapper.deleteExceptionType = SupabaseExceptionType.type;
           return bloc;
         },
         act: (bloc) => bloc.add(
@@ -173,18 +220,17 @@ void main() {
       blocTest<DeleteCostEstimationBloc, DeleteCostEstimationState>(
         'should handle multiple deletion events correctly',
         build: () {
-          final estimation1 = fakeRepository.createSampleEstimation(
+          final estimationMap1 = buildEstimationMap(
             id: 'estimation-1',
             projectId: testProjectId,
             estimateName: 'Estimation 1',
           );
-          final estimation2 = fakeRepository.createSampleEstimation(
+          final estimationMap2 = buildEstimationMap(
             id: 'estimation-2',
             projectId: testProjectId,
             estimateName: 'Estimation 2',
           );
-          fakeRepository.addProjectEstimation(testProjectId, estimation1);
-          fakeRepository.addProjectEstimation(testProjectId, estimation2);
+          seedEstimationTable([estimationMap1, estimationMap2]);
           return bloc;
         },
         act: (bloc) async {
@@ -222,12 +268,12 @@ void main() {
       blocTest<DeleteCostEstimationBloc, DeleteCostEstimationState>(
         'should call deleteEstimation with correct ids and succeed',
         build: () {
-          final estimation = fakeRepository.createSampleEstimation(
+          final estimationMap = buildEstimationMap(
             id: testEstimationId,
             projectId: testProjectId,
             estimateName: testEstimationName,
           );
-          fakeRepository.addProjectEstimation(testProjectId, estimation);
+          seedEstimationTable([estimationMap]);
           return bloc;
         },
         act: (bloc) => bloc.add(
@@ -237,10 +283,14 @@ void main() {
           ),
         ),
         verify: (bloc) {
-          final calls = fakeRepository.getMethodCallsFor('deleteEstimation');
+          final calls = fakeSupabaseWrapper.getMethodCallsFor('delete');
           expect(calls, hasLength(1));
-          expect(calls.first['estimationId'], testEstimationId);
-          expect(calls.first['projectId'], testProjectId);
+          expect(
+            calls.first['table'],
+            equals(DatabaseConstants.costEstimatesTable),
+          );
+          expect(calls.first['filterColumn'], equals('id'));
+          expect(calls.first['filterValue'], testEstimationId);
         },
         expect: () => [
           isA<DeleteCostEstimationInProgress>(),
