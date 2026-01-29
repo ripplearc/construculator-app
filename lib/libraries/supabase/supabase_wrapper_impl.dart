@@ -164,17 +164,12 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
   }
 
   @override
-  Future<Map<String, dynamic>> delete({
+  Future<void> delete({
     required String table,
     required String filterColumn,
     required dynamic filterValue,
   }) async {
-    return await _supabaseClient
-        .from(table)
-        .delete()
-        .eq(filterColumn, filterValue)
-        .select()
-        .single();
+    await _supabaseClient.from(table).delete().eq(filterColumn, filterValue);
   }
 
   @override

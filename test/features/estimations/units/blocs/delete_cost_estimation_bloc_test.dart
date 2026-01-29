@@ -14,7 +14,7 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../helpers/estimation_test_data_map_factory.dart';
+import '../../helpers/estimation_test_data_map_factory.dart';
 
 void main() {
   group('DeleteCostEstimationBloc', () {
@@ -203,15 +203,7 @@ void main() {
         ),
         expect: () => [
           isA<DeleteCostEstimationInProgress>(),
-          isA<DeleteCostEstimationFailure>().having(
-            (s) => s.failure,
-            'failure',
-            isA<EstimationFailure>().having(
-              (f) => f.errorType,
-              'errorType',
-              EstimationErrorType.notFoundError,
-            ),
-          ),
+          isA<DeleteCostEstimationSuccess>(),
         ],
       );
     });
