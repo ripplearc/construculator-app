@@ -1,9 +1,13 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/auth/auth_module.dart';
+import 'package:construculator/libraries/config/testing/fake_app_config.dart';
+import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:construculator/features/auth/testing/auth_test_module.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
@@ -14,7 +18,15 @@ void main() {
   const testEmail = 'test@example.com';
 
   setUp(() {
-    Modular.init(AuthTestModule());
+    Modular.init(
+      AuthModule(
+        AppBootstrap(
+          envLoader: FakeEnvLoader(),
+          config: FakeAppConfig(),
+          supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
+        ),
+      ),
+    );
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     bloc = Modular.get<RegisterWithEmailBloc>();
   });
