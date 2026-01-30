@@ -47,14 +47,14 @@ We maintain a single, well-tested **`FakeSupabaseWrapper`** that implements the 
 
 While we prefer testing with real repositories **within the same feature**, we also create fake repositories when:
 
-**✅ Fake a repository when it belongs to another feature:**
+**✅ Fake a repository when it belongs to library:**
 
-If your repository depends on another feature's repository, you should fake it to maintain **feature isolation**. This prevents:
-- Tests breaking when other features change
-- Tight coupling between feature tests
-- Accidentally testing other features' logic
+If your feature depend on a library's repository, you should fake it to maintain **feature isolation**. This prevents:
+- Tests breaking when other features or libraries change
+- Tight coupling between tests
+- Accidentally testing other features' or libraries' logic
 
-**Example**: If your `EstimationRepository` depends on `ProjectRepository` from the project feature, fake the `ProjectRepository` in your estimation feature tests.
+**Example**: If your `EstimationRepository` depends on `ProjectRepository` from the project library, fake the `ProjectRepository` in your estimation feature tests.
 
 ## Architecture Pattern
 
@@ -80,12 +80,12 @@ EstimationUseCase (Real)
    │      ↓
    │   SupabaseWrapper (Fake)
    │
-   └─→ AuthRepository (Fake - from auth feature)
+   └─→ AuthRepository (Fake - from auth library)
 ```
 
 **Key insights**: 
 - By faking only at the wrapper level **within your feature**, we test the real coordination logic in UseCases, Repositories, and DataSources
-- By faking repositories **from other features**, we maintain feature isolation and prevent cascading test failures
+- By faking repositories **from libraries**, we maintain isolation and prevent cascading test failures
 
 ## Example: Testing with Real Implementations
 
@@ -213,11 +213,11 @@ class AddCostEstimationUseCaseTest {
 }
 ```
 
-### Example: Faking Cross-Feature Repository Dependencies
+### Example: Faking Library Repository Dependencies
 
-When your repository depends on another feature's repository, fake it to maintain feature isolation.
+When your feature depends on another library, fake it to maintain isolation.
 
-✅ **Correct approach for cross-feature dependencies:**
+✅ **Correct approach for feature-library dependencies:**
 
 ```dart
 // In your ESTIMATION feature tests
@@ -236,7 +236,7 @@ class AddEstimationItemUseCaseTest {
     // Fake the wrapper (I/O boundary)
     fakeSupabase = FakeSupabaseWrapper(clock: fakeClock);
     
-    // Fake repository from another feature
+    // Fake repository from project library
     fakeProjectRepository = FakeProjectRepository();
     
     // Use REAL data source from this feature
@@ -323,7 +323,7 @@ class AddEstimationItemUseCaseTest {
 - ✅ Tests real EstimationRepository coordination logic
 - ✅ Tests real EstimationDataSource operations  
 - ✅ Tests real AddEstimationItemUseCase business logic
-- ✅ Maintains feature isolation - project feature changes won't break estimation tests
+- ✅ Maintains feature isolation - project library changes won't break estimation tests
 - ✅ Only fakes at boundaries: SupabaseWrapper (I/O) and ProjectRepository (cross-feature)
 
 ## Why This Is Better
@@ -471,19 +471,23 @@ test('handles delayed operations', () async {
 
 ### ✅ Create a fake repository when:
 
-- Your repository depends on a repository from **another feature**
-- You want to maintain **feature isolation** in tests
-- The other feature's repository has complex logic you don't want to test indirectly
-- You want to prevent cascading test failures when other features change
+- You are working on a library repository that may be depended on by other modules
+- You want to maintain **isolation** in tests
 
-**Example**: Create `FakeUserRepository` for use in order feature tests, `FakeProductRepository` for use in cart feature tests, etc.
+**Example**: Create `FakeAuthRepository` for use in estimation feature tests.
+
+### ✅ Use the fake repository when:
+
+- The other library's repository has complex logic you don't want to test indirectly
+- You want to prevent cascading test failures when other features or libraries change
+
+**Example**: Use `FakeAuthRepository` instead of real `SupabaseAuthRepository`.
 
 ### ❌ Don't create a fake when:
 
-- A real implementation is fast and has no external dependencies
-- You're testing pure business logic with no I/O
-- The dependency is a simple value object or data structure
-- The repository belongs to the **same feature** you're testing
+- A real implementation is fast (no external dependencies)
+- You're testing pure business logic (no I/O) or simple value objects
+- It's within the same feature (we usually don't need fakes because other features won’t depend on it)
 
 ## Guidelines for Writing Fakes
 
@@ -620,22 +624,23 @@ final fakeRepo = FakeEstimationRepository();
 final useCase = AddCostEstimationUseCase(fakeRepo);
 ```
 
-### ❌ Not Faking Cross-Feature Dependencies
+### ❌ Not Faking Library Dependencies
 
 ```dart
-// DON'T: Using real repository from another feature creates tight coupling
-final realProjectRepo = ProjectRepository(...); // From project feature
-final estimationRepo = EstimationRepository(
-  dataSource: realEstimationDataSource,
-  projectRepository: realProjectRepo, // Couples estimation tests to project feature
+// DON'T: Using real repositories from other libraries creates tight coupling
+final realProjectRepo = ProjectRepository(...); // From project library
+final realEstimationRepo = EstimationRepository(...); // From estimation feature
+final useCase = AddEstimationUseCase(
+  projectRepository: realProjectRepo, // Couples estimation tests to project library
+  estimationRepository: realEstimationRepo, 
 );
 
-// DO: Fake repositories from other features
+// DO: Fake repositories from other libraries
 final fakeProjectRepo = FakeProjectRepository();
-final estimationRepo = EstimationRepository(
-  dataSource: realEstimationDataSource,
-  projectRepository: fakeProjectRepo, // Feature isolation maintained
-);
+final realEstimationRepo = EstimationRepository(...);
+final useCase = AddEstimationUseCase(
+  projectRepository: fakeProjectRepo,  // Feature isolation maintained
+  estimationRepository: realEstimationRepo, 
 );
 ```
 
