@@ -1,11 +1,17 @@
 import 'dart:io';
 
+import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/remote_cost_estimation_data_source.dart';
 import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
+import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/libraries/config/testing/fake_app_config.dart';
+import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import 'package:flutter_test/flutter_test.dart';
 import '../../helpers/estimation_test_data_map_factory.dart';
@@ -56,15 +62,28 @@ void main() {
     late FakeSupabaseWrapper fakeSupabaseWrapper;
     late FakeClockImpl fakeClock;
 
-    setUp(() {
+    setUpAll(() {
       fakeClock = FakeClockImpl();
       fakeSupabaseWrapper = FakeSupabaseWrapper(clock: fakeClock);
-      dataSource = RemoteCostEstimationDataSource(
-        supabaseWrapper: fakeSupabaseWrapper,
+      Modular.init(
+        EstimationModule(
+          AppBootstrap(
+            config: FakeAppConfig(),
+            envLoader: FakeEnvLoader(),
+            supabaseWrapper: fakeSupabaseWrapper,
+          ),
+        ),
       );
+      dataSource =
+          Modular.get<CostEstimationDataSource>()
+              as RemoteCostEstimationDataSource;
     });
 
-    tearDown(() {
+    tearDownAll(() {
+      Modular.dispose();
+    });
+
+    setUp(() {
       fakeSupabaseWrapper.reset();
     });
 

@@ -1,24 +1,29 @@
+import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/enums.dart';
 import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:construculator/features/estimation/domain/usecases/add_cost_estimation_usecase.dart';
-import 'package:construculator/features/estimation/data/testing/fake_cost_estimation_repository.dart';
-import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
-import 'package:construculator/libraries/auth/data/models/auth_user.dart';
-import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
-import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
+import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/libraries/config/testing/fake_app_config.dart';
+import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/either/interfaces/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../helpers/estimation_test_data_map_factory.dart';
 
 void main() {
   group('AddCostEstimationUseCase', () {
     late AddCostEstimationUseCase useCase;
-    late FakeCostEstimationRepository fakeCostEstimationRepository;
-    late FakeAuthRepository fakeAuthRepository;
+    late FakeSupabaseWrapper fakeSupabaseWrapper;
     late FakeClockImpl fakeClock;
 
     const testProjectId = 'test-project-123';
@@ -27,25 +32,45 @@ void main() {
     const testCredentialId = 'test-credential-123';
     const testUserEmail = 'test@example.com';
 
-    UserCredential createCredential() => UserCredential(
-      id: testCredentialId,
-      email: testUserEmail,
-      metadata: {},
-      createdAt: fakeClock.now(),
-    );
+    void seedUserProfile({String? userId = testUserId}) {
+      fakeSupabaseWrapper.addTableData('users', [
+        {
+          'id': userId,
+          'credential_id': testCredentialId,
+          'email': testUserEmail,
+          'phone': null,
+          'first_name': 'Test',
+          'last_name': 'User',
+          'professional_role': 'Developer',
+          'profile_photo_url': null,
+          'created_at': fakeClock.now().toIso8601String(),
+          'updated_at': fakeClock.now().toIso8601String(),
+          'user_status': 'active',
+          'user_preferences': <String, dynamic>{},
+        },
+      ]);
+    }
 
-    User createUser({String? id = testUserId}) => User(
-      id: id,
-      email: testUserEmail,
-      credentialId: testCredentialId,
-      firstName: 'Test',
-      lastName: 'User',
-      professionalRole: 'Developer',
-      userStatus: UserProfileStatus.active,
-      userPreferences: {},
-      createdAt: fakeClock.now(),
-      updatedAt: fakeClock.now(),
-    );
+    void setCurrentUser() {
+      fakeSupabaseWrapper.setCurrentUser(
+        FakeUser(
+          id: testCredentialId,
+          email: testUserEmail,
+          createdAt: fakeClock.now().toIso8601String(),
+          appMetadata: const {},
+          userMetadata: const {},
+        ),
+      );
+    }
+
+    void createEstimation() {
+      final data = EstimationTestDataMapFactory.createFakeEstimationData(
+        estimateName: testEstimationName,
+        projectId: testProjectId,
+        creatorUserId: testUserId,
+      );
+      fakeSupabaseWrapper.addTableData('cost_estimates', [data]);
+    }
 
     void expectAuthenticationError(Either<Failure, CostEstimate> result) {
       expect(result.isLeft(), true);
@@ -58,26 +83,39 @@ void main() {
       }, (estimation) => fail('Expected failure but got success'));
     }
 
-    setUp(() {
+    setUpAll(() {
       fakeClock = FakeClockImpl();
-      fakeCostEstimationRepository = FakeCostEstimationRepository(
-        clock: fakeClock,
-      );
-      fakeAuthRepository = FakeAuthRepository(clock: fakeClock);
 
-      useCase = AddCostEstimationUseCase(
-        fakeCostEstimationRepository,
-        fakeAuthRepository,
-        fakeClock,
+      Modular.init(
+        EstimationModule(
+          AppBootstrap(
+            supabaseWrapper: FakeSupabaseWrapper(clock: fakeClock),
+            config: FakeAppConfig(),
+            envLoader: FakeEnvLoader(),
+          ),
+        ),
       );
+      fakeSupabaseWrapper =
+          Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
 
-      fakeAuthRepository.setCurrentCredentials(createCredential());
-      fakeAuthRepository.setUserProfile(createUser());
+      useCase = Modular.get<AddCostEstimationUseCase>();
+    });
+
+    tearDownAll(() {
+      Modular.dispose();
+    });
+
+    setUp(() {
+      fakeSupabaseWrapper.reset();
     });
 
     test(
       'creates cost estimation successfully with authenticated user',
       () async {
+        setCurrentUser();
+        seedUserProfile();
+        createEstimation();
+
         final result = await useCase(
           estimationName: testEstimationName,
           projectId: testProjectId,
@@ -100,7 +138,7 @@ void main() {
                   value: 0.0,
                 ),
               ),
-              totalCost: null,
+              totalCost: 0,
               lockStatus: const UnlockedStatus(),
               createdAt: fakeClock.now(),
               updatedAt: fakeClock.now(),
@@ -114,7 +152,8 @@ void main() {
     test(
       'returns authentication error when user credentials are null',
       () async {
-        fakeAuthRepository.setAuthResponse(succeed: false);
+        fakeSupabaseWrapper.setCurrentUser(null);
+        seedUserProfile();
 
         final result = await useCase(
           estimationName: testEstimationName,
@@ -126,7 +165,8 @@ void main() {
     );
 
     test('returns authentication error when user profile is null', () async {
-      fakeAuthRepository.returnNullUserProfile = true;
+      fakeSupabaseWrapper.shouldThrowOnSelect = true;
+      setCurrentUser();
 
       final result = await useCase(
         estimationName: testEstimationName,
@@ -136,9 +176,8 @@ void main() {
       expectAuthenticationError(result);
     });
 
-    test('returns authentication error when user ID is null', () async {
-      fakeAuthRepository.setCurrentCredentials(createCredential());
-      fakeAuthRepository.setUserProfile(createUser(id: null));
+    test('returns authentication error when user profile is null', () async {
+      setCurrentUser();
 
       final result = await useCase(
         estimationName: testEstimationName,
@@ -147,10 +186,25 @@ void main() {
 
       expectAuthenticationError(result);
     });
+
+    test(
+      'returns authentication error when get user profile throws an error',
+      () async {
+        setCurrentUser();
+        fakeSupabaseWrapper.shouldThrowOnSelect = true;
+
+        final result = await useCase(
+          estimationName: testEstimationName,
+          projectId: testProjectId,
+        );
+
+        expectAuthenticationError(result);
+      },
+    );
 
     test('returns authentication error when user ID is empty', () async {
-      fakeAuthRepository.setCurrentCredentials(createCredential());
-      fakeAuthRepository.setUserProfile(createUser(id: ''));
+      seedUserProfile(userId: '');
+      setCurrentUser();
 
       final result = await useCase(
         estimationName: testEstimationName,
@@ -160,10 +214,13 @@ void main() {
       expectAuthenticationError(result);
     });
 
-    test('returns estimation error when repository fails', () async {
-      fakeCostEstimationRepository.shouldReturnFailureOnCreateEstimation = true;
-      fakeCostEstimationRepository.createEstimationFailureType =
-          EstimationErrorType.connectionError;
+    test('returns estimation error when create fails', () async {
+      setCurrentUser();
+      seedUserProfile();
+      createEstimation();
+
+      fakeSupabaseWrapper.shouldThrowOnInsert = true;
+      fakeSupabaseWrapper.insertExceptionType = SupabaseExceptionType.socket;
 
       final result = await useCase(
         estimationName: testEstimationName,
@@ -179,31 +236,5 @@ void main() {
         );
       }, (estimation) => fail('Expected failure but got success'));
     });
-
-    test('calls auth repository to get credentials', () async {
-      fakeAuthRepository.getCurrentUserCallCount = 0;
-
-      await useCase(
-        estimationName: testEstimationName,
-        projectId: testProjectId,
-      );
-
-      expect(fakeAuthRepository.getCurrentUserCallCount, 1);
-    });
-
-    test(
-      'calls auth repository to get user profile with credential ID',
-      () async {
-        fakeAuthRepository.getUserProfileCalls.clear();
-
-        await useCase(
-          estimationName: testEstimationName,
-          projectId: testProjectId,
-        );
-
-        expect(fakeAuthRepository.getUserProfileCalls.length, 1);
-        expect(fakeAuthRepository.getUserProfileCalls.first, testCredentialId);
-      },
-    );
   });
 }
