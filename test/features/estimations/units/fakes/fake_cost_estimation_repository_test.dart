@@ -897,4 +897,80 @@ void main() {
       );
     });
   });
+
+  group('Stream Management', () {
+    test('watchEstimations should track method calls', () {
+      const projectId = 'test-project-123';
+
+      expect(fakeRepository.getMethodCallsFor('watchEstimations'), isEmpty);
+
+      fakeRepository.watchEstimations(projectId);
+
+      final calls = fakeRepository.getMethodCallsFor('watchEstimations');
+      expect(calls, hasLength(1));
+      expect(calls.first['projectId'], equals(projectId));
+    });
+
+    test(
+      'watchEstimations should create stream and emit initial data',
+      () async {
+        const projectId = 'test-project-123';
+        final testEstimation = fakeRepository.createSampleEstimation(
+          projectId: projectId,
+        );
+        fakeRepository.addProjectEstimation(projectId, testEstimation);
+
+        final stream = fakeRepository.watchEstimations(projectId);
+        final result = await stream.first;
+
+        expect(result.isRight(), isTrue);
+        result.fold((_) => fail('Expected success but got failure'), (
+          estimations,
+        ) {
+          expect(estimations, isNotEmpty);
+          expect(estimations.length, 1);
+          expect(estimations.first, equals(testEstimation));
+        });
+      },
+    );
+
+    test('watchEstimations should emit errors from getEstimations', () async {
+      const projectId = 'test-project-123';
+      fakeRepository.shouldReturnFailureOnGetEstimations = true;
+      fakeRepository.getEstimationsFailureType =
+          EstimationErrorType.connectionError;
+
+      final stream = fakeRepository.watchEstimations(projectId);
+      final result = await stream.first;
+
+      expect(result.isLeft(), isTrue);
+      result.fold(
+        (failure) => expect(
+          failure,
+          EstimationFailure(errorType: EstimationErrorType.connectionError),
+        ),
+        (_) => fail('Expected failure but got success'),
+      );
+    });
+
+    test('dispose should close all stream controllers', () async {
+      const projectId = 'test-project-123';
+      final testEstimation = fakeRepository.createSampleEstimation(
+        projectId: projectId,
+      );
+
+      bool streamClosed = false;
+      fakeRepository
+          .watchEstimations(projectId)
+          .listen((_) {}, onDone: () => streamClosed = true);
+
+      fakeRepository.addProjectEstimation(projectId, testEstimation);
+
+      fakeRepository.dispose();
+
+      await pumpEventQueue();
+
+      expect(streamClosed, isTrue);
+    });
+  });
 }

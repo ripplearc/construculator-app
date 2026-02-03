@@ -1,7 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
+import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_repository_impl.dart';
-import 'package:construculator/features/estimation/data/testing/fake_cost_estimation_data_source.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
@@ -11,6 +10,8 @@ import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -36,7 +37,7 @@ void main() {
 
   group('CostEstimationRepositoryImpl', () {
     late CostEstimationRepositoryImpl repository;
-    late FakeCostEstimationDataSource fakeDataSource;
+    late FakeSupabaseWrapper fakeSupabaseWrapper;
     late FakeClockImpl fakeClock;
 
     setUpAll(() {
@@ -50,12 +51,8 @@ void main() {
           ),
         ),
       );
-      Modular.replaceInstance<CostEstimationDataSource>(
-        FakeCostEstimationDataSource(clock: fakeClock),
-      );
-      fakeDataSource =
-          Modular.get<CostEstimationDataSource>()
-              as FakeCostEstimationDataSource;
+      fakeSupabaseWrapper =
+          Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
       repository =
           Modular.get<CostEstimationRepository>()
               as CostEstimationRepositoryImpl;
@@ -67,12 +64,76 @@ void main() {
 
     setUp(() {
       repository.dispose();
-      fakeDataSource.reset();
+      fakeSupabaseWrapper.reset();
     });
+
+    Map<String, dynamic> buildEstimationMap({
+      String? id,
+      String? projectId,
+      String? estimateName,
+      String? estimateDescription,
+      String? creatorUserId,
+      double? totalCost,
+      bool? isLocked,
+      String? lockedByUserId,
+      String? lockedAt,
+      String? createdAt,
+      String? updatedAt,
+    }) {
+      return EstimationTestDataMapFactory.createFakeEstimationData(
+        id: id,
+        projectId: projectId,
+        estimateName: estimateName,
+        estimateDescription: estimateDescription,
+        creatorUserId: creatorUserId,
+        totalCost: totalCost,
+        isLocked: isLocked,
+        lockedByUserId: lockedByUserId,
+        lockedAt: lockedAt,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+      );
+    }
+
+    CostEstimateDto buildEstimationDto({
+      String? id,
+      String? projectId,
+      String? estimateName,
+      String? estimateDescription,
+      String? creatorUserId,
+      double? totalCost,
+      bool? isLocked,
+      String? lockedByUserId,
+      String? lockedAt,
+      String? createdAt,
+      String? updatedAt,
+    }) {
+      final map = buildEstimationMap(
+        id: id,
+        projectId: projectId,
+        estimateName: estimateName,
+        estimateDescription: estimateDescription,
+        creatorUserId: creatorUserId,
+        totalCost: totalCost,
+        isLocked: isLocked,
+        lockedByUserId: lockedByUserId,
+        lockedAt: lockedAt,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+      );
+      return CostEstimateDto.fromJson(map);
+    }
+
+    void seedEstimationTable(List<Map<String, dynamic>> rows) {
+      fakeSupabaseWrapper.addTableData(
+        DatabaseConstants.costEstimatesTable,
+        rows,
+      );
+    }
 
     group('getEstimations', () {
       test('should return cost estimates when data exists', () async {
-        final estimation1 = fakeDataSource.createSampleEstimation(
+        final estimationMap1 = buildEstimationMap(
           id: estimateIdDefault,
           projectId: testProjectId,
           estimateName: estimateNameDefault,
@@ -80,11 +141,11 @@ void main() {
           creatorUserId: userIdDefault,
           totalCost: totalCostDefault,
           isLocked: false,
-          createdAt: DateTime.parse(timestampDefault),
-          updatedAt: DateTime.parse(timestampDefault),
+          createdAt: timestampDefault,
+          updatedAt: timestampDefault,
         );
 
-        final estimation2 = fakeDataSource.createSampleEstimation(
+        final estimationMap2 = buildEstimationMap(
           id: estimateId2,
           projectId: testProjectId,
           estimateName: estimateName2,
@@ -92,15 +153,16 @@ void main() {
           creatorUserId: userId2,
           totalCost: totalCost2,
           isLocked: true,
-          lockedByUserID: userId2,
-          createdAt: DateTime.parse(timestamp2),
-          updatedAt: DateTime.parse(timestamp2),
+          lockedByUserId: userId2,
+          lockedAt: timestamp2,
+          createdAt: timestamp2,
+          updatedAt: timestamp2,
         );
 
-        fakeDataSource.addProjectEstimations(testProjectId, [
-          estimation1,
-          estimation2,
-        ]);
+        final estimation1 = CostEstimateDto.fromJson(estimationMap1);
+        final estimation2 = CostEstimateDto.fromJson(estimationMap2);
+
+        seedEstimationTable([estimationMap1, estimationMap2]);
 
         final result = await repository.getEstimations(testProjectId);
 
@@ -127,16 +189,13 @@ void main() {
       test(
         'should return empty list when no estimations for specific project',
         () async {
-          final otherProjectEstimation = fakeDataSource.createSampleEstimation(
+          final otherProjectEstimationMap = buildEstimationMap(
             id: estimateIdDefault,
             projectId: otherProjectId,
             estimateName: estimateNameDefault,
           );
 
-          fakeDataSource.addProjectEstimation(
-            otherProjectId,
-            otherProjectEstimation,
-          );
+          seedEstimationTable([otherProjectEstimationMap]);
 
           final result = await repository.getEstimations(testProjectId);
 
@@ -148,23 +207,31 @@ void main() {
         },
       );
 
-      test('should call data source with correct project ID', () async {
-        fakeDataSource.addProjectEstimations(testProjectId, []);
+      test('should call supabaseWrapper with correct project ID', () async {
+        seedEstimationTable([]);
 
         await repository.getEstimations(testProjectId);
 
-        final methodCalls = fakeDataSource.getMethodCallsFor('getEstimations');
+        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('select');
         expect(methodCalls, hasLength(1));
-        expect(methodCalls.first['projectId'], equals(testProjectId));
+        expect(
+          methodCalls.first['table'],
+          equals(DatabaseConstants.costEstimatesTable),
+        );
+        expect(
+          methodCalls.first['filterColumn'],
+          equals(DatabaseConstants.projectIdColumn),
+        );
+        expect(methodCalls.first['filterValue'], equals(testProjectId));
       });
 
       test(
         'should return unexpected failure when data source throws server exception',
         () async {
-          fakeDataSource.shouldThrowOnGetEstimations = true;
-          fakeDataSource.getEstimationsExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
+          fakeSupabaseWrapper.selectMultipleExceptionType =
               SupabaseExceptionType.unknown;
-          fakeDataSource.getEstimationsErrorMessage = errorMsgServer;
+          fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgServer;
 
           final result = await repository.getEstimations(testProjectId);
 
@@ -179,10 +246,10 @@ void main() {
       test(
         'should return timeout error when data source throws timeout',
         () async {
-          fakeDataSource.shouldThrowOnGetEstimations = true;
-          fakeDataSource.getEstimationsExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
+          fakeSupabaseWrapper.selectMultipleExceptionType =
               SupabaseExceptionType.timeout;
-          fakeDataSource.getEstimationsErrorMessage = errorMsgTimeout;
+          fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgTimeout;
 
           final result = await repository.getEstimations(testProjectId);
 
@@ -200,10 +267,10 @@ void main() {
       test(
         'should return connection error when data source throws SocketException',
         () async {
-          fakeDataSource.shouldThrowOnGetEstimations = true;
-          fakeDataSource.getEstimationsExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
+          fakeSupabaseWrapper.selectMultipleExceptionType =
               SupabaseExceptionType.socket;
-          fakeDataSource.getEstimationsErrorMessage = 'Connection failed';
+          fakeSupabaseWrapper.selectMultipleErrorMessage = 'Connection failed';
 
           final result = await repository.getEstimations(testProjectId);
 
@@ -221,10 +288,10 @@ void main() {
       test(
         'should return parsing error when data source throws FormatException',
         () async {
-          fakeDataSource.getEstimationsErrorMessage = 'Format error';
-          fakeDataSource.getEstimationsExceptionType =
+          fakeSupabaseWrapper.selectMultipleErrorMessage = 'Format error';
+          fakeSupabaseWrapper.selectMultipleExceptionType =
               SupabaseExceptionType.type;
-          fakeDataSource.shouldThrowOnGetEstimations = true;
+          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
 
           final result = await repository.getEstimations(testProjectId);
 
@@ -241,12 +308,12 @@ void main() {
       test(
         'should return connection error when data source throws PostgrestException with connection failure',
         () async {
-          fakeDataSource.shouldThrowOnGetEstimations = true;
-          fakeDataSource.getEstimationsExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
+          fakeSupabaseWrapper.selectMultipleExceptionType =
               SupabaseExceptionType.postgrest;
-          fakeDataSource.postgrestErrorCode =
+          fakeSupabaseWrapper.postgrestErrorCode =
               PostgresErrorCode.connectionFailure;
-          fakeDataSource.getEstimationsErrorMessage = 'Connection lost';
+          fakeSupabaseWrapper.selectMultipleErrorMessage = 'Connection lost';
 
           final result = await repository.getEstimations(testProjectId);
 
@@ -264,11 +331,12 @@ void main() {
       test(
         'should return unexpected database error when data source throws PostgrestException with unique violation',
         () async {
-          fakeDataSource.shouldThrowOnGetEstimations = true;
-          fakeDataSource.getEstimationsExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
+          fakeSupabaseWrapper.selectMultipleExceptionType =
               SupabaseExceptionType.postgrest;
-          fakeDataSource.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
-          fakeDataSource.getEstimationsErrorMessage = 'Unique violation';
+          fakeSupabaseWrapper.postgrestErrorCode =
+              PostgresErrorCode.uniqueViolation;
+          fakeSupabaseWrapper.selectMultipleErrorMessage = 'Unique violation';
 
           final result = await repository.getEstimations(testProjectId);
 
@@ -288,7 +356,7 @@ void main() {
       test(
         'should handle multiple estimations with different configurations',
         () async {
-          final estimation1 = fakeDataSource.createSampleEstimation(
+          final estimationMap1 = buildEstimationMap(
             id: estimateIdDefault,
             projectId: testProjectId,
             estimateName: estimateNameDefault,
@@ -296,11 +364,11 @@ void main() {
             creatorUserId: userIdDefault,
             totalCost: totalCostDefault,
             isLocked: false,
-            createdAt: DateTime.parse(timestampDefault),
-            updatedAt: DateTime.parse(timestampDefault),
+            createdAt: timestampDefault,
+            updatedAt: timestampDefault,
           );
 
-          final estimation2 = fakeDataSource.createSampleEstimation(
+          final estimationMap2 = buildEstimationMap(
             id: estimateId2,
             projectId: testProjectId,
             estimateName: estimateName2,
@@ -308,12 +376,13 @@ void main() {
             creatorUserId: userId2,
             totalCost: totalCost2,
             isLocked: true,
-            lockedByUserID: userId2,
-            createdAt: DateTime.parse(timestamp2),
-            updatedAt: DateTime.parse(timestamp2),
+            lockedByUserId: userId2,
+            lockedAt: timestamp2,
+            createdAt: timestamp2,
+            updatedAt: timestamp2,
           );
 
-          final estimation3 = fakeDataSource.createSampleEstimation(
+          final estimationMap3 = buildEstimationMap(
             id: estimateId3,
             projectId: testProjectId,
             estimateName: estimateName3,
@@ -321,15 +390,15 @@ void main() {
             creatorUserId: userIdDefault,
             totalCost: totalCost3,
             isLocked: false,
-            createdAt: DateTime.parse(timestamp3),
-            updatedAt: DateTime.parse(timestamp3),
+            createdAt: timestamp3,
+            updatedAt: timestamp3,
           );
 
-          fakeDataSource.addProjectEstimations(testProjectId, [
-            estimation1,
-            estimation2,
-            estimation3,
-          ]);
+          final estimation1 = CostEstimateDto.fromJson(estimationMap1);
+          final estimation2 = CostEstimateDto.fromJson(estimationMap2);
+          final estimation3 = CostEstimateDto.fromJson(estimationMap3);
+
+          seedEstimationTable([estimationMap1, estimationMap2, estimationMap3]);
 
           final result = await repository.getEstimations(testProjectId);
 
@@ -349,13 +418,14 @@ void main() {
 
     group('watchEstimations', () {
       test('should emit estimations when stream is watched', () async {
-        final estimation1 = fakeDataSource.createSampleEstimation(
+        final estimationMap = buildEstimationMap(
           id: estimateIdDefault,
           projectId: testProjectId,
           estimateName: estimateNameDefault,
         );
+        final estimation1 = CostEstimateDto.fromJson(estimationMap);
 
-        fakeDataSource.addProjectEstimation(testProjectId, estimation1);
+        seedEstimationTable([estimationMap]);
 
         final stream = repository.watchEstimations(testProjectId);
 
@@ -377,7 +447,7 @@ void main() {
       });
 
       test('should share stream emissions across multiple listeners', () async {
-        fakeDataSource.addProjectEstimations(testProjectId, []);
+        seedEstimationTable([]);
 
         final stream1 = repository.watchEstimations(testProjectId);
         final stream2 = repository.watchEstimations(testProjectId);
@@ -396,39 +466,51 @@ void main() {
 
     group('createEstimation', () {
       test('should return created estimation on success', () async {
-        final estimationDto = fakeDataSource.createSampleEstimation(
+        final estimationDto = buildEstimationDto(
           id: estimateIdDefault,
           projectId: testProjectId,
           estimateName: estimateNameDefault,
           estimateDescription: estimateDescDefault,
           creatorUserId: userIdDefault,
           totalCost: totalCostDefault,
+          createdAt: timestampDefault,
+          updatedAt: timestampDefault,
         );
         final estimation = estimationDto.toDomain();
 
         final result = await repository.createEstimation(estimation);
 
         expect(result.isRight(), isTrue);
-        result.fold(
-          (_) => fail('Expected success but got failure'),
-          (created) => expect(created, equals(estimation)),
-        );
+        result.fold((_) => fail('Expected success but got failure'), (created) {
+          final insertTimestamp = fakeClock.now().toIso8601String();
+          final createdDto = CostEstimateDto.fromJson({
+            ...estimationDto.toJson(),
+            'id': '1',
+            'created_at': insertTimestamp,
+            'updated_at': insertTimestamp,
+          });
+          expect(created, equals(createdDto.toDomain()));
+        });
       });
 
       test('should call data source with correct estimation', () async {
-        final estimationDto = fakeDataSource.createSampleEstimation(
+        final estimationDto = buildEstimationDto(
           projectId: testProjectId,
           estimateName: estimateNameDefault,
+          createdAt: timestampDefault,
+          updatedAt: timestampDefault,
         );
         final estimation = estimationDto.toDomain();
 
         await repository.createEstimation(estimation);
 
-        final methodCalls = fakeDataSource.getMethodCallsFor(
-          'createEstimation',
-        );
+        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('insert');
         expect(methodCalls, hasLength(1));
-        final estimationJson = methodCalls.first['estimation'];
+        expect(
+          methodCalls.first['table'],
+          equals(DatabaseConstants.costEstimatesTable),
+        );
+        Map<String, dynamic> estimationJson = methodCalls.first['data'];
 
         expect(estimationJson, estimationDto.toJson());
       });
@@ -436,12 +518,15 @@ void main() {
       test(
         'should return timeout failure when data source throws timeout',
         () async {
-          fakeDataSource.shouldThrowOnCreateEstimation = true;
-          fakeDataSource.createEstimationExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnInsert = true;
+          fakeSupabaseWrapper.insertExceptionType =
               SupabaseExceptionType.timeout;
-          fakeDataSource.createEstimationErrorMessage = errorMsgTimeout;
+          fakeSupabaseWrapper.insertErrorMessage = errorMsgTimeout;
 
-          final estimationDto = fakeDataSource.createSampleEstimation();
+          final estimationDto = buildEstimationDto(
+            createdAt: timestampDefault,
+            updatedAt: timestampDefault,
+          );
           final estimation = estimationDto.toDomain();
 
           final result = await repository.createEstimation(estimation);
@@ -460,12 +545,15 @@ void main() {
       test(
         'should return connection failure when data source throws SocketException',
         () async {
-          fakeDataSource.shouldThrowOnCreateEstimation = true;
-          fakeDataSource.createEstimationExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnInsert = true;
+          fakeSupabaseWrapper.insertExceptionType =
               SupabaseExceptionType.socket;
-          fakeDataSource.createEstimationErrorMessage = 'Connection failed';
+          fakeSupabaseWrapper.insertErrorMessage = 'Connection failed';
 
-          final estimationDto = fakeDataSource.createSampleEstimation();
+          final estimationDto = buildEstimationDto(
+            createdAt: timestampDefault,
+            updatedAt: timestampDefault,
+          );
           final estimation = estimationDto.toDomain();
 
           final result = await repository.createEstimation(estimation);
@@ -484,12 +572,15 @@ void main() {
       test(
         'should return unexpected failure when data source throws unknown error',
         () async {
-          fakeDataSource.shouldThrowOnCreateEstimation = true;
-          fakeDataSource.createEstimationExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnInsert = true;
+          fakeSupabaseWrapper.insertExceptionType =
               SupabaseExceptionType.unknown;
-          fakeDataSource.createEstimationErrorMessage = errorMsgServer;
+          fakeSupabaseWrapper.insertErrorMessage = errorMsgServer;
 
-          final estimationDto = fakeDataSource.createSampleEstimation();
+          final estimationDto = buildEstimationDto(
+            createdAt: timestampDefault,
+            updatedAt: timestampDefault,
+          );
           final estimation = estimationDto.toDomain();
 
           final result = await repository.createEstimation(estimation);
@@ -505,16 +596,16 @@ void main() {
       test(
         'should update stream with newly created estimation using cached data',
         () async {
-          final existingEstimation = fakeDataSource.createSampleEstimation(
+          final existingEstimationMap = buildEstimationMap(
             id: estimateIdDefault,
             projectId: testProjectId,
             estimateName: estimateNameDefault,
           );
-
-          fakeDataSource.addProjectEstimation(
-            testProjectId,
-            existingEstimation,
+          final existingEstimation = CostEstimateDto.fromJson(
+            existingEstimationMap,
           );
+
+          seedEstimationTable([existingEstimationMap]);
 
           final stream = repository.watchEstimations(testProjectId);
           final streamResults = <Either<Failure, List<CostEstimate>>>[];
@@ -532,10 +623,12 @@ void main() {
             equals(1),
           );
 
-          final newEstimationDto = fakeDataSource.createSampleEstimation(
+          final newEstimationDto = buildEstimationDto(
             id: estimateId2,
             projectId: testProjectId,
             estimateName: estimateName2,
+            createdAt: timestampDefault,
+            updatedAt: timestampDefault,
           );
           final newEstimation = newEstimationDto.toDomain();
 
@@ -555,8 +648,15 @@ void main() {
           streamResults[1].fold(
             (_) => fail('Expected success but got failure'),
             (estimations) {
+              final insertTimestamp = fakeClock.now().toIso8601String();
+              final createdDto = CostEstimateDto.fromJson({
+                ...newEstimationDto.toJson(),
+                'id': '2',
+                'created_at': insertTimestamp,
+                'updated_at': insertTimestamp,
+              });
               expect(estimations[0], equals(existingEstimation.toDomain()));
-              expect(estimations[1], equals(newEstimation));
+              expect(estimations[1], equals(createdDto.toDomain()));
             },
           );
 
@@ -567,8 +667,7 @@ void main() {
 
     group('dispose', () {
       test('should close all stream controllers and clear caches', () async {
-        fakeDataSource.addProjectEstimations(testProjectId, []);
-        fakeDataSource.addProjectEstimations(otherProjectId, []);
+        seedEstimationTable([]);
 
         repository.watchEstimations(testProjectId);
         repository.watchEstimations(otherProjectId);
@@ -588,7 +687,7 @@ void main() {
       test(
         'should close stream controllers that are not already closed',
         () async {
-          fakeDataSource.addProjectEstimations(testProjectId, []);
+          seedEstimationTable([]);
 
           final stream = repository.watchEstimations(testProjectId);
           final subscription = stream.listen((_) {});
@@ -606,11 +705,11 @@ void main() {
 
     group('deleteEstimation', () {
       test('should return Right(null) when deletion is successful', () async {
-        final estimationDto = fakeDataSource.createSampleEstimation(
+        final estimationMap = buildEstimationMap(
           id: estimateIdDefault,
           projectId: testProjectId,
         );
-        fakeDataSource.addProjectEstimation(testProjectId, estimationDto);
+        seedEstimationTable([estimationMap]);
 
         final result = await repository.deleteEstimation(
           estimateIdDefault,
@@ -623,11 +722,12 @@ void main() {
       test(
         'should return notFoundError when data source throws PGRST116',
         () async {
-          fakeDataSource.shouldThrowOnDeleteEstimation = true;
-          fakeDataSource.deleteEstimationExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnDelete = true;
+          fakeSupabaseWrapper.deleteExceptionType =
               SupabaseExceptionType.postgrest;
-          fakeDataSource.postgrestErrorCode = PostgresErrorCode.noDataFound;
-          fakeDataSource.deleteEstimationErrorMessage = 'No data found';
+          fakeSupabaseWrapper.postgrestErrorCode =
+              PostgresErrorCode.noDataFound;
+          fakeSupabaseWrapper.deleteErrorMessage = 'No data found';
 
           final result = await repository.deleteEstimation(
             estimateIdDefault,
@@ -648,28 +748,29 @@ void main() {
       test('should call data source with correct estimation ID', () async {
         await repository.deleteEstimation(estimateIdDefault, testProjectId);
 
-        final methodCalls = fakeDataSource.getMethodCallsFor(
-          'deleteEstimation',
-        );
+        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('delete');
         expect(methodCalls, hasLength(1));
-        expect(methodCalls.first['estimationId'], equals(estimateIdDefault));
+        expect(
+          methodCalls.first['table'],
+          equals(DatabaseConstants.costEstimatesTable),
+        );
+        expect(methodCalls.first['filterColumn'], equals('id'));
+        expect(methodCalls.first['filterValue'], equals(estimateIdDefault));
       });
 
       test(
         'should update stream optimistically by removing deleted estimation',
         () async {
-          final estimation1 = fakeDataSource.createSampleEstimation(
+          final estimationMap1 = buildEstimationMap(
             id: estimateIdDefault,
             projectId: testProjectId,
           );
-          final estimation2 = fakeDataSource.createSampleEstimation(
+          final estimationMap2 = buildEstimationMap(
             id: estimateId2,
             projectId: testProjectId,
           );
-          fakeDataSource.addProjectEstimations(testProjectId, [
-            estimation1,
-            estimation2,
-          ]);
+          final estimation2 = CostEstimateDto.fromJson(estimationMap2);
+          seedEstimationTable([estimationMap1, estimationMap2]);
 
           final stream = repository.watchEstimations(testProjectId);
           final updates = <Either<Failure, List<CostEstimate>>>[];
@@ -703,10 +804,9 @@ void main() {
       );
 
       test('should timeout failure when data source throws timeout', () async {
-        fakeDataSource.shouldThrowOnDeleteEstimation = true;
-        fakeDataSource.deleteEstimationExceptionType =
-            SupabaseExceptionType.timeout;
-        fakeDataSource.deleteEstimationErrorMessage = errorMsgTimeout;
+        fakeSupabaseWrapper.shouldThrowOnDelete = true;
+        fakeSupabaseWrapper.deleteExceptionType = SupabaseExceptionType.timeout;
+        fakeSupabaseWrapper.deleteErrorMessage = errorMsgTimeout;
 
         final result = await repository.deleteEstimation(
           estimateIdDefault,
@@ -726,10 +826,10 @@ void main() {
       test(
         'should return connection failure when data source throws SocketException',
         () async {
-          fakeDataSource.shouldThrowOnDeleteEstimation = true;
-          fakeDataSource.deleteEstimationExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnDelete = true;
+          fakeSupabaseWrapper.deleteExceptionType =
               SupabaseExceptionType.socket;
-          fakeDataSource.deleteEstimationErrorMessage = 'Connection failed';
+          fakeSupabaseWrapper.deleteErrorMessage = 'Connection failed';
 
           final result = await repository.deleteEstimation(
             estimateIdDefault,
@@ -750,10 +850,10 @@ void main() {
       test(
         'should return unexpected failure when data source throws unknown error',
         () async {
-          fakeDataSource.shouldThrowOnDeleteEstimation = true;
-          fakeDataSource.deleteEstimationExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnDelete = true;
+          fakeSupabaseWrapper.deleteExceptionType =
               SupabaseExceptionType.unknown;
-          fakeDataSource.deleteEstimationErrorMessage = errorMsgServer;
+          fakeSupabaseWrapper.deleteErrorMessage = errorMsgServer;
 
           final result = await repository.deleteEstimation(
             estimateIdDefault,
@@ -771,12 +871,12 @@ void main() {
       test(
         'should return connection error when data source throws PostgrestException with connection failure',
         () async {
-          fakeDataSource.shouldThrowOnDeleteEstimation = true;
-          fakeDataSource.deleteEstimationExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnDelete = true;
+          fakeSupabaseWrapper.deleteExceptionType =
               SupabaseExceptionType.postgrest;
-          fakeDataSource.postgrestErrorCode =
+          fakeSupabaseWrapper.postgrestErrorCode =
               PostgresErrorCode.connectionFailure;
-          fakeDataSource.deleteEstimationErrorMessage = 'Connection lost';
+          fakeSupabaseWrapper.deleteErrorMessage = 'Connection lost';
 
           final result = await repository.deleteEstimation(
             estimateIdDefault,
@@ -797,11 +897,12 @@ void main() {
       test(
         'should return unexpected database error when data source throws PostgrestException with other error',
         () async {
-          fakeDataSource.shouldThrowOnDeleteEstimation = true;
-          fakeDataSource.deleteEstimationExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnDelete = true;
+          fakeSupabaseWrapper.deleteExceptionType =
               SupabaseExceptionType.postgrest;
-          fakeDataSource.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
-          fakeDataSource.deleteEstimationErrorMessage = 'Database error';
+          fakeSupabaseWrapper.postgrestErrorCode =
+              PostgresErrorCode.uniqueViolation;
+          fakeSupabaseWrapper.deleteErrorMessage = 'Database error';
 
           final result = await repository.deleteEstimation(
             estimateIdDefault,
