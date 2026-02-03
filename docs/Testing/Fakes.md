@@ -49,10 +49,10 @@ While we prefer testing with real repositories **within the same feature**, we a
 
 **✅ Fake a repository when it belongs to library:**
 
-If your feature depend on a library's repository, you should fake it to maintain **feature isolation**. This prevents:
-- Tests breaking when other features or libraries change
+If your feature depend on a library's repository, you should fake the libraries repositories to maintain **feature isolation**. This prevents:
+- Tests breaking when other libraries change
 - Tight coupling between tests
-- Accidentally testing other features' or libraries' logic
+- Accidentally testing other libraries' logic
 
 **Example**: If your `EstimationRepository` depends on `ProjectRepository` from the project library, fake the `ProjectRepository` in your estimation feature tests.
 
@@ -70,7 +70,7 @@ DataSource (Real)
 SupabaseWrapper (Fake in tests, Real in production)
 ```
 
-### With Cross-Feature Dependencies
+### With Feature-Library Dependencies
 
 ```
 EstimationUseCase (Real)
@@ -324,7 +324,7 @@ class AddEstimationItemUseCaseTest {
 - ✅ Tests real EstimationDataSource operations  
 - ✅ Tests real AddEstimationItemUseCase business logic
 - ✅ Maintains feature isolation - project library changes won't break estimation tests
-- ✅ Only fakes at boundaries: SupabaseWrapper (I/O) and ProjectRepository (cross-feature)
+- ✅ Only fakes at boundaries: SupabaseWrapper (I/O) and ProjectRepository (Library)
 
 ## Why This Is Better
 
@@ -502,9 +502,9 @@ When you need to create a new wrapper fake:
 5. **Document expected behavior** - Make it clear how the fake differs from reality
 6. **Keep it simple** - Don't replicate complex production logic, just the interface
 
-### For Repository Fakes (for cross-feature dependencies)
+### For Repository Fakes (for library dependencies)
 
-When you need to fake a repository from another feature:
+When you need to fake a repository from another library:
 
 1. **Implement only what you need** - Don't implement the entire interface unless necessary
 2. **Use simple, predictable behavior** - Return configured values, don't replicate business logic
@@ -595,8 +595,8 @@ Is it an external service (database, network, file system)?
 ├─ YES → Use wrapper fake (e.g., FakeSupabaseWrapper)
 └─ NO → Continue...
 
-Is it a repository from ANOTHER feature?
-├─ YES → Create/use fake repository (e.g., FakeUserRepository)
+Is it a repository from ANOTHER library?
+├─ YES → Use fake repository (e.g., FakeUserRepository)
 └─ NO → Continue...
 
 Is it from the SAME feature?
@@ -684,36 +684,36 @@ test('use case and repository coordinate correctly', () {
 
 ## Summary
 
-**The Golden Rule**: Use real implementations wherever possible. Only fake at boundaries (I/O and cross-feature).
+**The Golden Rule**: Use real implementations wherever possible. Only fake at boundaries (I/O and libraries).
 
 **Our Pattern**:
 - Real UseCases (always)
 - Real Repositories (within same feature)
 - Real DataSources (within same feature)
 - Fake Wrappers (SupabaseWrapper, etc.) - for I/O boundaries
-- Fake Repositories (from other features) - for feature isolation
+- Fake Repositories (from other libraries) - for feature isolation
 
 **What to Fake**:
 - ✅ External service wrappers (SupabaseWrapper, LocalStorageWrapper)
-- ✅ Repositories from other features (ProjectRepository in estimation tests)
+- ✅ Repositories from other libraries (ProjectRepository in estimation tests)
 - ❌ Repositories from the same feature
 - ❌ UseCases from the same feature
 - ❌ DataSources from the same feature
 
 **Benefits**:
 - High test fidelity within features
-- Feature isolation across features
+- Feature isolation across feature-library dependency
 - Fast test execution
 - Easy refactoring
 - Fewer tests to update when implementation changes
 - Bugs caught early when they exist in production code
-- Prevents cascading test failures across features
+- Prevents cascading test failures across modules
 
 **Next Steps**:
 1. Identify external dependencies in your feature
 2. Check if a wrapper already exists (e.g., SupabaseWrapper)
-3. Identify dependencies on other features' repositories
-4. Create fake repositories for cross-feature dependencies
+3. Identify dependencies on external libraries' repositories
+4. Create fake repositories for library dependencies
 5. Write tests using real UseCases and Repositories (from your feature)
-6. Only fake wrappers and cross-feature repositories
+6. Only fake wrappers and library repositories
 7. Test both happy paths and error scenarios
