@@ -118,6 +118,11 @@ void main() {
     group('App Config Functionality Tests', () {
       group('Environment File Loading', () {
         test('should successfully load environment files', () async {
+          final createConfigWithEnvLoader =
+              Modular.get<Config Function(EnvLoader)>(
+            key: 'createConfigWithEnvLoader',
+          );
+
           final environments = [
             Environment.dev,
             Environment.qa,
@@ -126,7 +131,7 @@ void main() {
 
           for (final environment in environments) {
             final freshFakeDotEnvLoader = FakeEnvLoader();
-            final freshConfig = appConfig;
+            final freshConfig = createConfigWithEnvLoader(freshFakeDotEnvLoader);
             freshFakeDotEnvLoader.setEnvVar(
               'SUPABASE_URL',
               'https://test.supabase.co',
@@ -209,6 +214,11 @@ void main() {
         test(
           'should set debug features correctly for each environment',
           () async {
+            final createConfigWithEnvLoader =
+                Modular.get<Config Function(EnvLoader)>(
+              key: 'createConfigWithEnvLoader',
+            );
+
             final testCases = [
               (Environment.dev, true),
               (Environment.qa, true),
@@ -217,7 +227,7 @@ void main() {
 
             for (final testCase in testCases) {
               final freshFakeDotEnvLoader = FakeEnvLoader();
-              final freshConfig = appConfig;
+              final freshConfig = createConfigWithEnvLoader(freshFakeDotEnvLoader);
 
               freshFakeDotEnvLoader.setEnvVar('APP_NAME', 'TestApp');
               freshFakeDotEnvLoader.setEnvVar('API_URL', 'https://api.com');
