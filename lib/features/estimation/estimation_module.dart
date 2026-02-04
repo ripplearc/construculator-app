@@ -10,7 +10,7 @@ import 'package:construculator/features/estimation/presentation/bloc/add_cost_es
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_details_page.dart';
-import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/logging/logging_module.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter/material.dart';
@@ -71,12 +71,10 @@ class EstimationModule extends Module {
   ];
 
   @override
-  List<Module> get imports => [AuthModule(appBootstrap)];
+  List<Module> get imports => [AuthModule(appBootstrap), LoggingModule()];
 
   @override
   void binds(Injector i) {
-    i.addLazySingleton<AppLogger>(() => AppLogger());
-
     i.addLazySingleton<CostEstimationDataSource>(
       () => RemoteCostEstimationDataSource(
         supabaseWrapper: appBootstrap.supabaseWrapper,
