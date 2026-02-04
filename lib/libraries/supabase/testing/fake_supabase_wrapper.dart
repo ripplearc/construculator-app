@@ -173,6 +173,16 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Sets the current user
   void setCurrentUser(FakeUser? user) {
     _currentUser = user;
+
+    if (user != null) {
+      _authStateController.add(
+        _createAuthState(signInEvent, user),
+      );
+    } else {
+      _authStateController.add(
+        _createAuthState(supabase.AuthChangeEvent.signedOut, null),
+      );
+    }
   }
 
   @override
