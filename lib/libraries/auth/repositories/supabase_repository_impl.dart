@@ -8,12 +8,9 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 class SupabaseRepositoryImpl implements AuthRepository {
   final SupabaseWrapper supabaseWrapper;
-  final AppLogger _logger;
+  final _logger = AppLogger().tag('SupabaseRepositoryImpl');
 
-  SupabaseRepositoryImpl({
-    required this.supabaseWrapper,
-    required AppLogger appLogger,
-  }) : _logger = appLogger.tag('SupabaseRepositoryImpl');
+  SupabaseRepositoryImpl({required this.supabaseWrapper});
 
   UserCredential _mapSupabaseUserToCredential(supabase.User user) {
     return UserCredential(

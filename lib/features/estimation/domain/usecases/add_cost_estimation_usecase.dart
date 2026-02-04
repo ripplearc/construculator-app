@@ -21,14 +21,9 @@ class AddCostEstimationUseCase {
   final CostEstimationRepository _repository;
   final AuthRepository _authRepository;
   final Clock _clock;
-  final AppLogger _logger;
+  static final _logger = AppLogger().tag('AddCostEstimationUseCase');
 
-  AddCostEstimationUseCase(
-    this._repository,
-    this._authRepository,
-    this._clock,
-    AppLogger appLogger,
-  ) : _logger = appLogger.tag('AddCostEstimationUseCase');
+  AddCostEstimationUseCase(this._repository, this._authRepository, this._clock);
 
   /// Creates a new cost estimation with the specified name.
   ///

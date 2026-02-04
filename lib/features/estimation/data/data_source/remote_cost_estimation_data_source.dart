@@ -6,7 +6,7 @@ import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.da
 
 class RemoteCostEstimationDataSource implements CostEstimationDataSource {
   final SupabaseWrapper supabaseWrapper;
-  final AppLogger _logger;
+  static final _logger = AppLogger().tag('RemoteCostEstimationDataSource');
 
   /// database table names and columns
   static const String costEstimatesTable = DatabaseConstants.costEstimatesTable;
@@ -14,8 +14,7 @@ class RemoteCostEstimationDataSource implements CostEstimationDataSource {
 
   RemoteCostEstimationDataSource({
     required this.supabaseWrapper,
-    required AppLogger appLogger,
-  }) : _logger = appLogger.tag('RemoteCostEstimationDataSource');
+  });
 
   @override
   Future<List<CostEstimateDto>> getEstimations(String projectId) async {

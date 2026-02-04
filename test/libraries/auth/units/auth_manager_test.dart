@@ -8,7 +8,6 @@ import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
 import 'package:construculator/libraries/auth/auth_manager_impl.dart';
-import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -944,10 +943,9 @@ class _TestAppModule extends Module {
     i.addSingleton<AuthNotifierController>(() => FakeAuthNotifier());
     i.addSingleton<AuthRepository>(() => FakeAuthRepository(clock: i()));
     i.addSingleton<SupabaseWrapper>(() => FakeSupabaseWrapper(clock: i()));
-    i.addSingleton<AppLogger>(() => AppLogger());
     i.add<AuthManager>(
       () =>
-          AuthManagerImpl(wrapper: i(), authRepository: i(), authNotifier: i(), appLogger: i()),
+          AuthManagerImpl(wrapper: i(), authRepository: i(), authNotifier: i()),
     );
   }
 }
