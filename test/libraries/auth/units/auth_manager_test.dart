@@ -25,7 +25,6 @@ void main() {
   late FakeSupabaseWrapper supabaseWrapper;
   late AuthManager authManager;
   late Clock clock;
-  late AppLogger appLogger;
   const testEmail = 'test@example.com';
   const testPassword = '5i2Un@D8Y9!';
 
@@ -51,7 +50,6 @@ void main() {
     supabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     authManager = Modular.get<AuthManager>();
     clock = Modular.get<Clock>();
-    appLogger = AppLogger();
   });
 
   tearDown(() {
@@ -63,8 +61,6 @@ void main() {
       test(
         'should initialize with authenticated state when user exists',
         () async {
-          supabaseWrapper = FakeSupabaseWrapper(clock: clock);
-          authNotifier = FakeAuthNotifier();
           supabaseWrapper.setCurrentUser(
             FakeUser(
               email: testEmail,
@@ -73,6 +69,8 @@ void main() {
               appMetadata: {},
             ),
           );
+          authNotifier.reset();
+
           final initialEvent = expectLater(
             authNotifier.onAuthStateChanged,
             emits(
@@ -80,12 +78,6 @@ void main() {
                 (state) => state.status == AuthStatus.authenticated,
               ),
             ),
-          );
-          AuthManagerImpl(
-            wrapper: supabaseWrapper,
-            authRepository: authRepository,
-            authNotifier: authNotifier,
-            appLogger: appLogger,
           );
           await initialEvent;
           expect(authNotifier.stateChangedEvents.length, 1);
