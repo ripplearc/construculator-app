@@ -87,7 +87,6 @@ void main() {
 
     group('Environment Name Tests', () {
       test('should return correct environment names', () {
-        final appConfig = AppConfigImpl(envLoader: FakeEnvLoader());
 
         expect(
           appConfig.getEnvironmentName(Environment.dev),
@@ -100,7 +99,6 @@ void main() {
         );
       });
       test('should return correct environment aliases', () {
-        final appConfig = AppConfigImpl(envLoader: FakeEnvLoader());
 
         expect(
           appConfig.getEnvironmentName(Environment.dev, isAlias: true),
@@ -128,9 +126,7 @@ void main() {
 
           for (final environment in environments) {
             final freshFakeDotEnvLoader = FakeEnvLoader();
-            final freshConfig = AppConfigImpl(
-              envLoader: freshFakeDotEnvLoader,
-            );
+            final freshConfig = appConfig;
             freshFakeDotEnvLoader.setEnvVar(
               'SUPABASE_URL',
               'https://test.supabase.co',
@@ -178,6 +174,11 @@ void main() {
 
       group('App Name Formatting', () {
         test('should format app name correctly for each environment', () async {
+          final createConfigWithEnvLoader =
+              Modular.get<Config Function(EnvLoader)>(
+            key: 'createConfigWithEnvLoader',
+          );
+
           final testCases = [
             (Environment.dev, 'DevApp', 'DevApp (Fishfood)'),
             (Environment.qa, 'QAApp', 'QAApp (Dogfood)'),
@@ -186,7 +187,7 @@ void main() {
 
           for (final testCase in testCases) {
             final freshFakeDotEnvLoader = FakeEnvLoader();
-            final freshConfig = AppConfigImpl(envLoader: freshFakeDotEnvLoader);
+            final freshConfig = createConfigWithEnvLoader(freshFakeDotEnvLoader);
 
             freshFakeDotEnvLoader.setEnvVar('APP_NAME', testCase.$2);
             freshFakeDotEnvLoader.setEnvVar('API_URL', 'https://api.com');
@@ -216,9 +217,7 @@ void main() {
 
             for (final testCase in testCases) {
               final freshFakeDotEnvLoader = FakeEnvLoader();
-              final freshConfig = AppConfigImpl(
-                envLoader: freshFakeDotEnvLoader,
-              );
+              final freshConfig = appConfig;
 
               freshFakeDotEnvLoader.setEnvVar('APP_NAME', 'TestApp');
               freshFakeDotEnvLoader.setEnvVar('API_URL', 'https://api.com');
