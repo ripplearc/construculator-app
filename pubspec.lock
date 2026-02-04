@@ -929,10 +929,10 @@ packages:
     dependency: "direct main"
     description:
       name: ripplearc_linter
-      sha256: "9cf7ccb2ef37450aecf4762028f4462c94f5c9cd227c64317bacf61b01926f6e"
+      sha256: "2169921eed771427b88643d05bb60c4252b9621efa8675d5a8d99f5b614c569d"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.1"
+    version: "0.2.3"
   rxdart:
     dependency: "direct main"
     description:
