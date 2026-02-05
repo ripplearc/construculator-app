@@ -12,7 +12,7 @@ void main() {
 
     setUpAll(() {
       Modular.init(_TestModule());
-      repository = ProjectRepositoryImpl();
+      repository = Modular.get<ProjectRepositoryImpl>();
     });
     tearDownAll(() {
       Modular.dispose();
@@ -87,5 +87,6 @@ class _TestModule extends Module {
   @override
   void binds(Injector i) {
     i.add<Clock>(() => FakeClockImpl(DateTime(2025, 10, 1, 10, 30)));
+    i.add<ProjectRepositoryImpl>(() => ProjectRepositoryImpl());
   }
 }

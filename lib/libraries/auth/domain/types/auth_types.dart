@@ -1,6 +1,7 @@
 // coverage:ignore-file
 
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:equatable/equatable.dart';
 
 /// Tracks the authentication status of a user
 ///
@@ -117,7 +118,7 @@ extension PostgresErrorCodeExtension on PostgresErrorCode {
 }
 
 /// Generic result class for authentication operations
-class AuthResult<T> {
+class AuthResult<T> extends Equatable {
   /// The data returned from the operation
   final T? data;
 
@@ -127,6 +128,9 @@ class AuthResult<T> {
   /// Indicates if the operation was successful
   final bool isSuccess;
 
-  AuthResult.success(this.data) : isSuccess = true, errorType = null;
-  AuthResult.failure(this.errorType) : isSuccess = false, data = null;
+  const AuthResult.success(this.data) : isSuccess = true, errorType = null;
+  const AuthResult.failure(this.errorType) : isSuccess = false, data = null;
+
+  @override
+  List<Object?> get props => [data, errorType, isSuccess];
 }

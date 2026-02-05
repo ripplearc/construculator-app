@@ -17,5 +17,12 @@ class ConfigTestModule extends Module {
       () => AppConfigImpl(envLoader: i()),
       key: 'appConfigWithFakeDep',
     );
+
+    i.add<Config Function(EnvLoader)>(
+      () =>
+          (EnvLoader loader) => AppConfigImpl(envLoader: loader),
+
+      key: 'createConfigWithEnvLoader',
+    );
   }
 }

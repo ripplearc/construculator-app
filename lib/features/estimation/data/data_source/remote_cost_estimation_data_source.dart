@@ -12,7 +12,9 @@ class RemoteCostEstimationDataSource implements CostEstimationDataSource {
   static const String costEstimatesTable = DatabaseConstants.costEstimatesTable;
   static const String projectIdColumn = DatabaseConstants.projectIdColumn;
 
-  RemoteCostEstimationDataSource({required this.supabaseWrapper});
+  RemoteCostEstimationDataSource({
+    required this.supabaseWrapper,
+  });
 
   @override
   Future<List<CostEstimateDto>> getEstimations(String projectId) async {

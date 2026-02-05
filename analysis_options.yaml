@@ -24,7 +24,7 @@ custom_lint:
     - prefer_fake_over_mock
     - forbid_forced_unwrapping
     - no_optional_operators_in_tests
-    - no_direct_instantiation: false
+    - no_direct_instantiation
     - document_fake_parameters
     - document_interface
     - todo_with_story_links
@@ -37,6 +37,11 @@ custom_lint:
     - avoid_static_colors
     - avoid_static_typography
 
+  no_direct_instantiation:
+    ast_type_prefixes:
+        - 'Fake'
+        - 'AppBootstrap'
+        - 'AppLogger'
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

@@ -20,8 +20,9 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
   _streamControllers = {};
   final Map<String, List<CostEstimate>> _cachedEstimations = {};
 
-  CostEstimationRepositoryImpl({required CostEstimationDataSource dataSource})
-    : _dataSource = dataSource;
+  CostEstimationRepositoryImpl({
+    required CostEstimationDataSource dataSource,
+  }) : _dataSource = dataSource;
 
   Failure _handleError(
     Object error,

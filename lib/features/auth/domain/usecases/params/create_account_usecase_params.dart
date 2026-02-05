@@ -1,5 +1,7 @@
+import 'package:equatable/equatable.dart';
+
 /// Input Parameters for the [CreateAccountUseCase]
-class CreateAccountUseCaseParams {
+class CreateAccountUseCaseParams extends Equatable {
   /// The user's email address, this can be null if [registrationType] is [AccountRegistrationType.phoneRegistration]
   final String? email;
 
@@ -20,7 +22,7 @@ class CreateAccountUseCaseParams {
   /// The user's password
   final String password;
 
-  CreateAccountUseCaseParams({
+  const CreateAccountUseCaseParams({
     this.email,
     this.phone,
     this.countryCode,
@@ -29,4 +31,15 @@ class CreateAccountUseCaseParams {
     required this.professionalRole,
     required this.password,
   });
+
+  @override
+  List<Object?> get props => [
+        email,
+        phone,
+        countryCode,
+        firstName,
+        lastName,
+        professionalRole,
+        password,
+      ];
 }

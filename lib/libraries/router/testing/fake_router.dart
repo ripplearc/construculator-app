@@ -1,14 +1,18 @@
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:equatable/equatable.dart';
 
 /// A class to store the route and arguments for a navigation call.
-class RouteCall {
+class RouteCall extends Equatable {
   /// The route that was called.
   final String route;
 
   /// The arguments that were passed to the route.
   final Object? arguments;
 
-  RouteCall(this.route, this.arguments);
+  const RouteCall(this.route, this.arguments);
+
+  @override
+  List<Object?> get props => [route, arguments];
 }
 
 /// A fake implementation of the [AppRouter].

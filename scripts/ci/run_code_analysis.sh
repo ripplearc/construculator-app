@@ -59,7 +59,7 @@ if [ -z "$FILTERED_FILES" ]; then
   echo "✅ No non-generated Dart files changed, skipping custom linter"
 else
   echo "🔍 Running custom linter (ripplearc_linter rules) on changed files..."
-  ALL_RULES="prefer_fake_over_mock,forbid_forced_unwrapping,no_optional_operators_in_tests,document_fake_parameters,document_interface,todo_with_story_links,no_internal_method_docs,specific_exception_types,avoid_test_timeouts,private_subject,sealed_over_dynamic,avoid_static_colors,avoid_static_typography"
+  ALL_RULES="prefer_fake_over_mock,forbid_forced_unwrapping,no_optional_operators_in_tests,document_fake_parameters,document_interface,todo_with_story_links,no_internal_method_docs,specific_exception_types,avoid_test_timeouts,private_subject,sealed_over_dynamic,avoid_static_colors,avoid_static_typography,no_direct_instantiation"
   fvm dart run ripplearc_linter:standalone_checker --rules $ALL_RULES $FILTERED_FILES
 fi
 

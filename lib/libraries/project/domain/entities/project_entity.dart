@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
+import 'package:equatable/equatable.dart';
 
 /// Represents a project in the system.
 ///
@@ -7,7 +8,7 @@ import 'package:construculator/libraries/project/domain/entities/enums.dart';
 /// export folder link, export storage provider, created at, updated at, and status.
 ///
 /// The project can be active or archived.
-class Project {
+class Project extends Equatable {
   /// Unique identifier for the project.
   final String id;
 
@@ -38,7 +39,7 @@ class Project {
   /// The current status of the project (e.g., active, archived).
   final ProjectStatus status;
 
-  Project({
+  const Project({
     required this.id,
     required this.projectName,
     this.description,
@@ -50,4 +51,18 @@ class Project {
     required this.updatedAt,
     required this.status,
   });
+
+  @override
+  List<Object?> get props => [
+        id,
+        projectName,
+        description,
+        creatorUserId,
+        owningCompanyId,
+        exportFolderLink,
+        exportStorageProvider,
+        createdAt,
+        updatedAt,
+        status,
+      ];
 }
