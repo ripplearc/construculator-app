@@ -25,7 +25,6 @@
 ## Overview
 
 Construculator is a mobile application designed for construction professionals to:
-- Perform construction-related calculations using an intuitive interface featuring suggestion chips.
 - Create quick cost estimates (materials, labor, equipment)
 - Collaborate with team members on cost estimation.
 - Track calculations and project data
@@ -37,7 +36,6 @@ Construculator is a mobile application designed for construction professionals t
 - **Supabase** - Backend as a Service (PostgreSQL + Auth + API)
 - **BLoC Pattern** - State management with flutter_bloc
 - **Clean Architecture** - Feature-based modules with clear layer separation
-- **Freezed** - Immutable data classes with code generation
 - **Modular** - Dependency injection and routing
 
 ### Documentation
@@ -50,6 +48,8 @@ Construculator is a mobile application designed for construction professionals t
 ## Architecture
 
 **Design Documentation:** [RippleArc Engineering Best Practice](https://docs.google.com/document/d/1gJKQ_9kEZaQfbFBDHxrS7zQct9ubsc37EcdqPpsXURk/edit?tab=t.cftu3k9in6u#heading=h.sxep7l3m4lxv)
+
+**Wiki Documentation:** [construculator-app Wiki](https://github.com/ripplearc/construculator-app/wiki)
 
 ### Project Structure
 
@@ -236,6 +236,7 @@ When you run `supabase start` or `supabase db reset`, the database is seeded wit
 |----------------|-------------|
 | `get_cost_estimations` | View cost estimates |
 | `add_cost_estimation` | Create cost estimates |
+| `delete_cost_estimations` | Delete cost estimates |
 
 #### Test User
 
@@ -244,7 +245,7 @@ When you run `supabase start` or `supabase db reset`, the database is seeded wit
 - **Professional Role:** Project Manager
 - **Credential ID:** `850e8400-e29b-41d4-a716-446655440000` (hardcoded - **needs to be updated**)
 
-**⚠️ Important:** The test user currently uses a hardcoded `credential_id`. After signing up a new user through the app, you must update this credential ID to match the authenticated user's ID from Supabase Auth.
+**⚠️ Important:** The test user currently uses a hardcoded `credential_id`. After signing up a new user through Supabase studio, you must update this credential ID to match the authenticated user's ID from Supabase Auth.
 
 **Steps to Update credential_id:**
 
@@ -314,12 +315,6 @@ Row Level Security is PostgreSQL's built-in security feature that controls which
 2. No RLS policy exists that allows the current authenticated user to read that data
 3. The migration files enable RLS but don't create policies yet
 
-**This is EXTREMELY frustrating because:**
-- Supabase returns `[]` instead of throwing an error
-- The data exists in the database (you can see it in Studio)
-- Your code looks correct but doesn't work
-- It's hard to debug without knowing about RLS
-
 #### Checking RLS Status
 
 **Via Supabase Studio:**
@@ -328,49 +323,9 @@ Row Level Security is PostgreSQL's built-in security feature that controls which
 3. Look for the shield icon 🛡️ next to the table name
 4. If it's enabled, you'll see "RLS enabled"
 
-**Via SQL:**
-```sql
--- Check RLS status for all tables
-SELECT
-    schemaname,
-    tablename,
-    rowsecurity
-FROM pg_tables
-WHERE schemaname = 'public';
-
--- rowsecurity = true means RLS is enabled
-```
-
 #### Solution Options
 
-You have three options when RLS blocks your access:
-
-##### Option 1: Disable RLS for Local Development (Quick Fix)
-
-**⚠️ WARNING:** Only use this for local development. **NEVER** disable RLS in production.
-
-**Via Supabase Studio:**
-1. Go to **Authentication** → **Policies**
-2. Select the table (e.g., `users`)
-3. Click **"Disable RLS"** button
-
-**Via SQL:**
-```sql
--- Disable RLS for specific table
-ALTER TABLE public.users DISABLE ROW LEVEL SECURITY;
-
--- Disable for multiple tables
-ALTER TABLE public.projects DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.cost_estimates DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.cost_items DISABLE ROW LEVEL SECURITY;
-```
-
-**When to use this:**
-- Quick local testing
-- Prototyping features
-- When you don't need security yet
-
-##### Option 2: Implement Proper RLS Policies (Production-Ready)
+##### Implement Proper RLS Policies (Production-Ready)
 
 Create proper security policies based on business logic:
 
@@ -402,12 +357,6 @@ USING (
   )
 );
 ```
-
-**When to use this:**
-- For production code
-- When implementing actual features
-- When security matters
-- **Important:** Add these policies to migration files in the backend repo
 
 #### Important Notes on RLS
 
@@ -548,6 +497,9 @@ fvm flutter pub get
 
 # Generate code (Freezed, JSON serialization)
 fvm flutter pub run build_runner build --delete-conflicting-outputs
+
+# Generate Localization Files
+fvm flutter gen-l10n
 ```
 
 ### 5. Run the Application
@@ -592,11 +544,19 @@ The app will load the corresponding environment file (`assets/env/.env.<flavor>`
 
 ```
 test/
-├── units/              # Unit tests (business logic)
-├── widgets/            # Widget tests (UI components)
-├── screenshots/        # Golden tests (visual regression)
-└── mutations/          # Mutation test configurations
+├── features/
+│   └── <feature_name>/
+│       ├── units/          # Unit tests (blocs, providers, etc.)
+│       ├── widgets/        # Widget tests
+│       ├── screenshots/    # Golden/screenshot tests
+│       └── mutations/      # Mutation test configs (.xml)
+└── libraries/
+    └── <library_name>/
+        ├── units/          # Unit tests
+        └── mutations/      # Mutation test configs (.xml)
 ```
+
+You can read further from our [Directories Wiki](https://github.com/ripplearc/construculator-app/wiki/Directories)
 
 ### Running Tests Locally
 
@@ -605,7 +565,7 @@ test/
 fvm flutter test
 
 # Run specific test file
-fvm flutter test test/units/libraries/auth/auth_notifier_test.dart
+fvm flutter test test/libraries/auth/units/auth_notifier_test.dart
 
 # Run tests with coverage
 fvm flutter test --coverage
@@ -616,7 +576,7 @@ fvm flutter test < PATH-SCREENSHOT-FEATURE > --update-goldens
 
 ### Coverage Requirements
 
-- **Target:** 95% code coverage (enforced by CI)
+- **Target:** 94% code coverage (enforced by CI)
 - **Exclusions:** Generated files (`*.g.dart`, `*.freezed.dart`, `l10n/**`)
 - **Tool:** lcov
 
@@ -629,6 +589,20 @@ fvm flutter test --coverage
 lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info
 
 # Generate HTML coverage report
+genhtml coverage/lcov.info -o coverage/html
+
+# Open coverage report (OS-specific), or open the file in any browser manually
+# macOS:
+open coverage/html/index.html
+# Linux:
+xdg-open coverage/html/index.html
+# Windows:
+start coverage/html/index.html
+```
+
+**Or we can see the coverage report after running script/run_check.sh :**
+
+```bash
 genhtml coverage/lcov.info -o coverage/html
 
 # Open coverage report (OS-specific), or open the file in any browser manually
@@ -665,7 +639,7 @@ start coverage/html/index.html
 4. **Run golden tests inside container:**
    ```bash
    # Verify golden tests
-   flutter test test/screenshots
+   flutter test test/features/**/screenshots
 
    # Update golden images ( Only run when a visual change is intended in a specific directory )
    flutter test <PATH-TO-TEST> --update-goldens
@@ -706,16 +680,16 @@ Comprehensive quality assurance script that runs analysis, tests, and builds. Sc
 
 ```bash
 # Pre-check (fast, changed files only)
-./scripts/run_check.sh --pre --target main
+./scripts/run_check.sh --pre
 
 # Comprehensive check (full codebase)
-./scripts/run_check.sh --comp --target main
+./scripts/run_check.sh --comp
 
 # Both pre-check and comprehensive
-./scripts/run_check.sh --all --target main
+./scripts/run_check.sh --all
 
 # Mutation tests only
-./scripts/run_check.sh --mutations --target main
+./scripts/run_check.sh --mutations
 ```
 
 **What Each Mode Does:**
@@ -738,7 +712,7 @@ Comprehensive quality assurance script that runs analysis, tests, and builds. Sc
   - Screenshot/golden tests with `--update-goldens`
   - Android APK build (fishfood flavor)
   - Mutation testing (if configs changed)
-- **Time:** ~15-30 minutes
+- **Time:** ~5-15 minutes
 - **Artifacts:** APK, coverage reports, mutation reports
 
 #### Mutation Tests (`--mutations`)
@@ -792,7 +766,7 @@ Generates AI-friendly code review documents for use with Claude/Cursor.
 **Workflow:**
 1. Run the script to generate review document
 2. Copy the content from `reviews/pr_review_for_cursor.txt`
-3. Paste into Claude/Cursor for AI-assisted code review
+3. Paste into Claude/Cursor/Antigravity for AI-assisted code review
 4. Address feedback and update PR
 
 ---
@@ -861,98 +835,6 @@ This will trigger all workflows (pre-check, comprehensive-check, ios-debug-build
 
 ### Supabase Issues
 
-#### ⚠️ Tables Appear Empty (MOST COMMON ISSUE)
-
-**Symptom:** Querying tables from your Flutter app returns `[]` (empty array) even though data exists in Supabase Studio.
-
-**Cause:** **Row Level Security (RLS)** is enabled on the table, and no policy allows the current user to access the data. This is the default behavior for all tables.
-
-**Why This Happens:**
-- All tables have RLS enabled by default in the migrations
-- RLS policies haven't been created yet (or are incomplete)
-- Supabase returns `[]` instead of throwing an error (confusing!)
-- Studio shows data because it uses the service_role key which bypasses RLS
-
-**How to Identify RLS Issues:**
-1. Data exists in Supabase Studio but not in your app → RLS is blocking
-2. Queries return `[]` with no errors → RLS is blocking
-3. Same query works in Studio's SQL editor → RLS is the culprit
-
-**Quick Fix (Local Development Only):**
-
-```sql
--- Disable RLS for the table (DO NOT USE IN PRODUCTION)
-ALTER TABLE public.users DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.projects DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.cost_estimates DISABLE ROW LEVEL SECURITY;
-```
-
-**Via Supabase Studio:**
-1. Open `http://localhost:54323`
-2. Go to **Authentication** → **Policies**
-3. Select the table
-4. Click **"Disable RLS"**
-
-**Production Fix (Create Policies):**
-
-If you're implementing the feature for real, create proper RLS policies:
-
-```sql
--- Example: Allow users to read their own data
-CREATE POLICY "Users can view own data" ON public.users
-FOR SELECT
-TO authenticated
-USING (auth.uid() = credential_id);
-```
-
-**Important:** Add policies to migration files in the [construculator-backend](https://github.com/ripplearc/construculator-backend) repo.
-
-**See Section 8** for detailed RLS documentation.
-
----
-
-#### ⚠️ User Signup Fails - Missing country_code Field
-
-**Symptom:** User signup through the app fails with an error about `country_code` field being missing or invalid.
-
-**Cause:** The `users` table is missing the `country_code` column that the app expects to send during registration.
-
-**Quick Fix:**
-
-1. Open Supabase Studio: `http://localhost:54323`
-2. Go to **Table Editor** → `users` table
-3. Click **"New Column"**
-4. Add column:
-   - **Name:** `country_code`
-   - **Type:** `text`
-   - **Nullable:** Yes (check the box)
-5. Click **"Save"**
-
-**Production Fix:**
-
-Create a migration in the backend repo:
-
-```bash
-cd construculator-backend
-npx supabase migration new add_country_code_to_users
-```
-
-Edit the migration file:
-
-```sql
-ALTER TABLE public.users
-ADD COLUMN IF NOT EXISTS country_code TEXT;
-```
-
-Apply the migration:
-
-```bash
-npx supabase db reset
-```
-
-Commit and push the migration to the backend repo.
-
----
 #### OTP Code Not Received
 
 **Symptom:** User signup/login requires OTP but email is never received.
@@ -967,28 +849,10 @@ Commit and push the migration to the backend repo.
 
 **Symptom:** App repeatedly crashes after ```supabase start```.
 
-**Emulator workaround:**
+**Workaround:**
 1. Reset and reseed local Supabase (no backup):
 ```bash
 npx supabase stop --no-backup
-```
-
-#### Seeded Data Not Visible
-
-**Symptom:** After `supabase start`, expected seeded data doesn't appear in tables.
-
-**Possible Causes:**
-1. **RLS is blocking access** - Most common (see above)
-2. Seeder files weren't applied
-3. Migration errors occurred during startup
-
-**Fix:**
-```bash
-# Reset database completely
-npx supabase db reset
-
-# Check for errors in output
-# If seeder errors occur, check supabase/seeders/ in backend repo
 ```
 
 #### Migration Errors
@@ -1006,15 +870,6 @@ npx supabase db reset
 
 ### Flutter Issues
 
-#### Build Runner Conflicts
-
-**Symptom:** `build_runner` fails with conflicts.
-
-**Fix:**
-```bash
-fvm flutter pub run build_runner build --delete-conflicting-outputs
-```
-
 #### Golden Test Failures
 
 **Symptom:** Golden tests fail with "pixel mismatch" errors.
@@ -1024,7 +879,7 @@ fvm flutter pub run build_runner build --delete-conflicting-outputs
    ```bash
    docker-compose up -d
    docker exec -it construculator-app-flutter-1 bash
-   flutter test test/screenshots --update-goldens
+   flutter test test/features/**/screenshots --update-goldens
    exit
    ```
 2. Commit the updated golden files
@@ -1033,7 +888,7 @@ fvm flutter pub run build_runner build --delete-conflicting-outputs
 
 #### Coverage Below 95%
 
-**Symptom:** `run_check.sh --pre` fails with "Low coverage" error.
+**Symptom:** `run_check.sh --comp` fails with "Low coverage" error.
 
 **Fix:**
 1. Identify untested code:
@@ -1058,19 +913,20 @@ fvm flutter pub run build_runner build --delete-conflicting-outputs
 - **Supabase Documentation:** [https://supabase.com/docs](https://supabase.com/docs)
 - **Flutter Documentation:** [https://docs.flutter.dev](https://docs.flutter.dev)
 - **BLoC Pattern:** [https://bloclibrary.dev](https://bloclibrary.dev)
+- **Jujutsu (jj):** [Migration from Graphite to Jujutsu (jj)](https://docs.google.com/document/d/1apOp9YNEAWjBPE1pFRu5chM96A9j_jZS0cm1yvdAG6g/edit?tab=t.0)
 
 ---
 
 ## Contributing
 
-1. Create a feature branch with naming convention: `MM-DD-[feat|chore|docs|refactor]_descriptive_name`
-2. Make your changes with atomic commits
+1. Create a feature branch with naming convention: `[feat|chore|docs|refactor]_descriptive_name`
+2. Keep PRs small; use stacked PRs via [Jujutsu (jj)](https://docs.jj-vcs.dev/latest/) 
 3. Run `./scripts/run_check.sh --pre` before pushing
-4. Create a PR with descriptive title and summary
-5. Generate PR review: `./scripts/review_pr.sh <branch> main`
-6. Request code review from team
-7. Address feedback and ensure CI passes
-
+4. Run `./scripts/run_check.sh --comp` after pushing
+5. Create a PR with descriptive title and summary
+6. Generate PR review: `./scripts/review_pr.sh <branch> main`
+7. Request code review from team
+8. Address feedback and ensure CI passes
 
 ---
 
