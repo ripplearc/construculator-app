@@ -14,7 +14,7 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import 'package:flutter_test/flutter_test.dart';
-import '../../helpers/estimation_test_data_map_factory.dart';
+import '../../../helpers/estimation_test_data_map_factory.dart';
 
 void main() {
   const String testProjectId = 'test-project-123';
@@ -414,16 +414,6 @@ void main() {
 
     group('deleteEstimation', () {
       test(
-        'should throw exception when attempting to delete non-existent estimation',
-        () async {
-          expect(
-            () => dataSource.deleteEstimation(estimateId1),
-            throwsA(isA<supabase.PostgrestException>()),
-          );
-        },
-      );
-
-      test(
         'should call supabaseWrapper.delete with correct parameters',
         () async {
           final estimationData =
@@ -449,27 +439,6 @@ void main() {
           expect(call['filterValue'], equals(estimateId1));
         },
       );
-
-      test('should return deleted estimation DTO', () async {
-        final estimationData =
-            EstimationTestDataMapFactory.createFakeEstimationData(
-              id: estimateId1,
-              estimateName: estimateName1,
-              estimateDescription: estimateDesc1,
-              creatorUserId: userId1,
-              totalCost: totalCost1,
-              isLocked: false,
-              createdAt: fakeClock.now().toIso8601String(),
-              updatedAt: fakeClock.now().toIso8601String(),
-            );
-        fakeSupabaseWrapper.addTableData(tableName, [estimationData]);
-
-        final result = await dataSource.deleteEstimation(estimateId1);
-
-        final expectedDto = CostEstimateDto.fromJson(estimationData);
-
-        expect(result, equals(expectedDto));
-      });
 
       test(
         'should rethrow exception when supabaseWrapper.delete throws',

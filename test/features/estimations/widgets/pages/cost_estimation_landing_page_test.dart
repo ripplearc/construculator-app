@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
@@ -25,7 +24,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-import '../../units/helpers/estimation_test_data_map_factory.dart';
+import '../../helpers/estimation_test_data_map_factory.dart';
 import 'package:construculator/features/estimation/presentation/widgets/estimation_actions_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/delete_estimation_confirmation_sheet.dart';
 
@@ -41,13 +40,6 @@ class _CostEstimationLandingPageTestModule extends Module {
     ProjectModule(appBootstrap),
     AuthLibraryModule(appBootstrap),
   ];
-
-  @override
-  void binds(Injector i) {
-    i.add<AuthBloc>(
-      () => AuthBloc(authManager: i(), authNotifier: i(), router: i()),
-    );
-  }
 
   @override
   void routes(RouteManager r) {

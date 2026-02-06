@@ -536,7 +536,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   }
 
   @override
-  Future<Map<String, dynamic>> delete({
+  Future<void> delete({
     required String table,
     required String filterColumn,
     required dynamic filterValue,
@@ -561,26 +561,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
     final tableData = _tables[table] ?? [];
 
-    Map<String, dynamic>? deletedRow;
-    for (final row in tableData) {
-      if (row[filterColumn] == filterValue) {
-        deletedRow = Map<String, dynamic>.from(row);
-        break;
-      }
-    }
-
     final filteredData = tableData
         .where((row) => row[filterColumn] != filterValue)
         .toList();
     _tables[table] = filteredData;
-    if (deletedRow == null) {
-      throw supabase.PostgrestException(
-        code: PostgresErrorCode.noDataFound.toString(),
-        message: 'No data found for delete operation',
-      );
-    }
-
-    return deletedRow;
   }
 
   @override

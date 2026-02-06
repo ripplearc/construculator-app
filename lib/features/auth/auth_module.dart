@@ -6,7 +6,6 @@ import 'package:construculator/features/auth/domain/usecases/send_otp_usecase.da
 import 'package:construculator/features/auth/domain/usecases/verify_otp_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/login_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/set_new_password_usecase.dart';
-import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/enter_password_bloc/enter_password_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/forgot_password_bloc/forgot_password_bloc.dart';
@@ -170,13 +169,5 @@ void _registerDependencies(Injector i) {
   );
   i.add<SetNewPasswordBloc>(
     () => SetNewPasswordBloc(setNewPasswordUseCase: i()),
-  );
-  
-  i.addLazySingleton<AuthBloc>(
-    () => AuthBloc(
-      authManager: i(),
-      authNotifier: i(),
-      router: i(),
-    ),
   );
 }

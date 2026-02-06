@@ -14,16 +14,13 @@ import 'package:construculator/features/auth/presentation/bloc/forgot_password_b
 import 'package:construculator/features/auth/presentation/bloc/login_with_email_bloc/login_with_email_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
-import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/set_new_password_bloc/set_new_password_bloc.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
-import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -49,13 +46,12 @@ class AuthTestModule extends Module {
 
   @override
   void binds(Injector i) {
-    // Override with fake implementations for testing
     i.addSingleton<AuthNotifierController>(() => FakeAuthNotifier());
-    i.addSingleton<AuthNotifier>(() => i<AuthNotifierController>() as AuthNotifier);
-    i.addSingleton<AuthRepository>(
-      () => FakeAuthRepository(clock: i<Clock>()),
+    i.addSingleton<AuthNotifier>(
+      () => i<AuthNotifierController>() as AuthNotifier,
     );
-    
+    i.addSingleton<AuthRepository>(() => FakeAuthRepository(clock: i<Clock>()));
+
     i.add<ResetPasswordUseCase>(() => ResetPasswordUseCase(i()));
     i.add<GetProfessionalRolesUseCase>(() => GetProfessionalRolesUseCase(i()));
     i.add<CheckEmailAvailabilityUseCase>(
@@ -91,13 +87,6 @@ class AuthTestModule extends Module {
     );
     i.add<SetNewPasswordBloc>(
       () => SetNewPasswordBloc(setNewPasswordUseCase: i()),
-    );
-    i.add<AuthBloc>(
-      () => AuthBloc(
-        authManager: i<AuthManager>(),
-        authNotifier: i<AuthNotifier>(),
-        router: i<AppRouter>(),
-      ),
     );
   }
 }

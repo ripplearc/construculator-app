@@ -135,7 +135,7 @@ abstract class SupabaseWrapper {
   /// [table] The table to delete from
   /// [filterColumn] The column to filter by
   /// [filterValue] The value to filter by
-  Future<Map<String, dynamic>> delete({
+  Future<void> delete({
     required String table,
     required String filterColumn,
     required dynamic filterValue,
