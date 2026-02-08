@@ -3,6 +3,7 @@ import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
+import 'package:construculator/libraries/ui/core_icon_sizes.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -177,6 +178,7 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
                       icon: _isPasswordVisible
                           ? CoreIcons.eye
                           : CoreIcons.eyeOff,
+                      size: CoreIconSizes.medium,
                     ),
                     onPressed: () {
                       _togglePasswordVisibility();
@@ -195,6 +197,7 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
                       icon: _isConfirmPasswordVisible
                           ? CoreIcons.eye
                           : CoreIcons.eyeOff,
+                      size: CoreIconSizes.medium,
                     ),
                     onPressed: () {
                       _toggleConfirmPasswordVisibility();

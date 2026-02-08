@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/ui/core_icon_sizes.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// A placeholder page for cost estimation details.
@@ -34,7 +35,7 @@ class CostEstimationDetailsPage extends StatelessWidget {
             children: [
               CoreIconWidget(
                 icon: CoreIcons.divide,
-                size: 64,
+                size: CoreIconSizes.xxLarge,
                 color: colorTheme.textDisable,
               ),
               const SizedBox(height: CoreSpacing.space8),

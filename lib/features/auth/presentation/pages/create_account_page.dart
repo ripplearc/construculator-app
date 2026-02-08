@@ -7,6 +7,7 @@ import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
+import 'package:construculator/libraries/ui/core_icon_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -419,7 +420,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                           SizedBox(width: CoreSpacing.space3),
                           CoreIconWidget(
                             icon: CoreIcons.error,
-                            size: 16,
+                            size: CoreIconSizes.xSmall,
                             color: colors.iconRed,
                           ),
                           const SizedBox(width: CoreSpacing.space1),
@@ -485,7 +486,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                         icon: _isPasswordVisible
                             ? CoreIcons.eye
                             : CoreIcons.eyeOff,
-                        size: CoreSpacing.space6,
+                        size: CoreIconSizes.medium,
                         color: colors.iconDark,
                       ),
                       onPressed: () => _togglePasswordVisibility(),
@@ -503,7 +504,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                         icon: _isConfirmPasswordVisible
                             ? CoreIcons.eye
                             : CoreIcons.eyeOff,
-                        size: CoreSpacing.space6,
+                        size: CoreIconSizes.medium,
                         color: colors.iconDark,
                       ),
                       onPressed: () => _toggleConfirmPasswordVisibility(),
