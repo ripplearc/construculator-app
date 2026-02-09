@@ -9,15 +9,25 @@ class SplashPage extends StatefulWidget {
   State<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage>
-    with TickerProviderStateMixin {
-  late AnimationController _calculatorController;
-  late AnimationController _buttonController;
-  late AnimationController _textController;
-  
-  late Animation<double> _calculatorAnimation;
-  late Animation<double> _buttonAnimation;
-  late Animation<double> _textAnimation;
+class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
+  static const Duration _initialDelay = Duration(milliseconds: 200);
+  static const Duration _event2Duration = Duration(milliseconds: 400);
+  static const Duration _event3Duration = Duration(milliseconds: 600);
+  static const Duration _finalDelay = Duration(milliseconds: 1200);
+
+  static const double _animationStart = 0.0;
+  static const double _animationEnd = 1.0;
+  static const double _event2Target = 1.0;
+  static const double _event3Target = 2.0;
+  static const double _imageSize = 120.0;
+  static const double _textBottomPosition = 50.0;
+  static const double _edgePosition = 0.0;
+  static const double _divisionFactor = 2.0;
+  static const double _fontSize = 28.0;
+  static const FontWeight _fontWeight = FontWeight.w600;
+
+  late AnimationController _imageTransitionController;
+  late Animation<double> _imageTransitionAnimation;
 
   @override
   void initState() {
@@ -27,171 +37,98 @@ class _SplashPageState extends State<SplashPage>
   }
 
   void _setupAnimations() {
-    // Calculator animation controller (150ms + 450ms = 600ms total)
-    _calculatorController = AnimationController(
-      duration: const Duration(milliseconds: 600),
+    _imageTransitionController = AnimationController(
+      duration: _event2Duration + _event3Duration,
       vsync: this,
     );
 
-    // Button animation controller (100ms for blink)
-    _buttonController = AnimationController(
-      duration: const Duration(milliseconds: 100),
-      vsync: this,
-    );
-
-    // Text animation controller (fade in)
-    _textController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-
-    // Calculator animation: starts from bottom (behind roof) to fully visible
-    _calculatorAnimation = Tween<double>(
-      begin: 1.0, // Start from bottom (fully behind roof)
-      end: 0.0,   // End at top (fully visible)
-    ).animate(CurvedAnimation(
-      parent: _calculatorController,
-      curve: const Interval(
-        0.0,
-        1.0,
-        curve: Cubic(0.25, 0.46, 0.45, 0.94), // Custom curve for accel/deaccel
-      ),
-    ));
-
-    // Button blink animation: opacity from 1 to 0 to 1
-    _buttonAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.0,
-    ).animate(CurvedAnimation(
-      parent: _buttonController,
-      curve: Curves.easeInOut,
-    ));
-
-    // Text fade in animation
-    _textAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _textController,
-      curve: Curves.easeIn,
-    ));
+    _imageTransitionAnimation =
+        Tween<double>(begin: _animationStart, end: _event3Target).animate(
+          CurvedAnimation(
+            parent: _imageTransitionController,
+            curve: const Interval(
+              _animationStart,
+              _animationEnd,
+              curve: Curves.linear,
+            ),
+          ),
+        );
   }
 
   void _startAnimationSequence() async {
-    // Event 1: Only roof visible (initial state)
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future.delayed(_initialDelay);
 
-    // Event 2: Calculator rising to half visible (150ms)
-    _calculatorController.forward();
-    await _calculatorController.animateTo(0.25); // 25% of animation = half visible
+    await _imageTransitionController.animateTo(
+      _event2Target / _divisionFactor,
+      duration: _event2Duration,
+      curve: Curves.easeInQuad,
+    );
 
-    // Event 3: Calculator continues to fully visible (450ms)
-    // Event 4: Button blinks (starts 100ms before calculator animation ends)
-    
-    // Start button blink 100ms before calculator animation completes
-    Future.delayed(const Duration(milliseconds: 400), () {
-      if (mounted) {
-        _buttonController.forward().then((_) {
-          _buttonController.reverse(); // Complete the blink
-        });
-      }
-    });
+    await _imageTransitionController.animateTo(
+      _event3Target,
+      duration: _event3Duration,
+      curve: Curves.easeOutQuad,
+    );
 
-    // Complete calculator animation
-    await _calculatorController.forward();
-
-    // Show text after calculator animation completes
     if (mounted) {
-      _textController.forward();
-    }
-
-    // Navigate to main app after animation completes
-    if (mounted) {
-      await Future.delayed(const Duration(milliseconds: 800));
+      await Future.delayed(_finalDelay);
       Modular.to.navigate('/auth');
     }
   }
 
   @override
   void dispose() {
-    _calculatorController.dispose();
-    _buttonController.dispose();
-    _textController.dispose();
+    _imageTransitionController.dispose();
     super.dispose();
+  }
+
+  String _getCurrentImage() {
+    double value = _imageTransitionAnimation.value;
+    if (value < _event2Target) {
+      return 'assets/images/first.png';
+    } else if (value < _event3Target) {
+      return 'assets/images/second.png';
+    } else {
+      return 'assets/images/third.png';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colorTheme;
     return Scaffold(
-      backgroundColor: const Color(0xFF015B7C), // Dark teal background
-      body: Center(
-        child: AnimatedBuilder(
-          animation: Listenable.merge([_calculatorController, _buttonController, _textController]),
-          builder: (context, child) {
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Icon stack (roof + calculator + button)
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Roof image (always visible)
-                    Image.asset(
-                      'assets/images/roof.png',
-                      width: 120,
-                      height: 120,
-                    ),
-                    
-                    // Calculator image (animated)
-                    Positioned(
-                      bottom: 60 * _calculatorAnimation.value,
-                      child: Image.asset(
-                        'assets/images/calculator.png',
-                        width: 100,
-                        height: 100,
-                      ),
-                    ),
-                    
-                    // Blue button overlay (for blinking effect)
-                    Positioned(
-                      bottom: 60 * _calculatorAnimation.value + 40, // Position on calculator button
-                      left: 0,
-                      right: 0,
-                      child: Center(
-                        child: Opacity(
-                          opacity: 1.0 - _buttonAnimation.value, // Invert for blink effect
-                          child: Container(
-                            width: 16,
-                            height: 16,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF2196F3), // Blue color
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+      backgroundColor: colors.backgroundDarkOrient,
+      body: Stack(
+        children: [
+          Center(
+            child: AnimatedBuilder(
+              animation: _imageTransitionController,
+              builder: (context, child) {
+                return Image.asset(
+                  _getCurrentImage(),
+                  width: _imageSize,
+                  height: _imageSize,
+                );
+              },
+            ),
+          ),
+
+          Positioned(
+            bottom: _textBottomPosition,
+            left: _edgePosition,
+            right: _edgePosition,
+            child: Center(
+              child: Text(
+                'Construculator',
+                style: context.textTheme.headlineMediumSemiBold.copyWith(
+                  color: colors.textInverse,
+                  fontSize: _fontSize,
+                  fontWeight: _fontWeight,
                 ),
-                
-                const SizedBox(height: 40),
-                
-                // Construculator text (fade in)
-                Opacity(
-                  opacity: _textAnimation.value,
-                  child: Text(
-                    'Construculator',
-                    style: context.textTheme.headlineMediumSemiBold.copyWith(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
