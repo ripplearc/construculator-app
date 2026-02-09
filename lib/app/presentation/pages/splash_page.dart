@@ -72,7 +72,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
 
     if (mounted) {
       await Future.delayed(_finalDelay);
-      Modular.to.navigate('/auth');
+      Modular.to.navigate('/auth/login-with-email');
     }
   }
 
