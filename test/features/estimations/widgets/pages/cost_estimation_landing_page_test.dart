@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/estimation/data/repositories/cost_estimation_repository_impl.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
@@ -263,7 +264,7 @@ void main() {
     });
 
     testWidgets(
-      'shows trailing loading indicator and disables add button while creating',
+      'shows leading loading indicator and disables add button while creating',
       (tester) async {
         setUpAuthenticatedUser(
           credentialId: 'test-credential-id',
@@ -521,6 +522,7 @@ void main() {
       ]);
 
       await tester.drag(find.byType(RefreshIndicator), const Offset(0, 300));
+
       await tester.pumpAndSettle();
 
       expect(find.text('Initial Estimation'), findsOneWidget);
@@ -812,6 +814,100 @@ void main() {
         expect(fakeAppRouter.popCalls, 2);
 
         expect(find.byType(CostEstimationTile), findsOneWidget);
+      },
+    );
+  });
+
+  group('Pagination', () {
+    testWidgets('shows loading indicator at bottom when loading more', (
+      tester,
+    ) async {
+      final pageSize = CostEstimationRepositoryImpl.defaultPageSize + 5;
+      final estimations = List.generate(
+        pageSize,
+        (i) => EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-$i',
+          projectId: testProjectId,
+          estimateName: 'Estimation $i',
+        ),
+      );
+
+      await setupAndNavigateToEstimation(
+        tester,
+        multipleEstimations: estimations,
+      );
+
+      expect(find.byType(CostEstimationTile), findsWidgets);
+
+      fakeSupabase.shouldDelayOperations = true;
+      fakeSupabase.completer = Completer();
+
+      final listView = tester.widget<ListView>(find.byType(ListView));
+      final controller = listView.controller!;
+
+      controller.jumpTo(controller.position.maxScrollExtent);
+      await tester.pump();
+      controller.jumpTo(controller.position.maxScrollExtent);
+      await tester.pump();
+
+      expect(find.byType(CoreLoadingIndicator), findsOneWidget);
+
+      fakeSupabase.completer!.complete();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('loads more estimations when scrolled near bottom', (
+      tester,
+    ) async {
+      final pageSize = CostEstimationRepositoryImpl.defaultPageSize;
+      final totalEstimations = pageSize + 3;
+      final estimations = List.generate(
+        totalEstimations,
+        (i) => EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-$i',
+          projectId: testProjectId,
+          estimateName: 'Estimation $i',
+        ),
+      );
+
+      await setupAndNavigateToEstimation(
+        tester,
+        multipleEstimations: estimations,
+      );
+
+      expect(find.byType(CostEstimationTile), findsWidgets);
+      expect(find.text('Estimation $pageSize'), findsNothing);
+
+      final listView = tester.widget<ListView>(find.byType(ListView));
+      final controller = listView.controller!;
+      controller.jumpTo(controller.position.maxScrollExtent);
+      await tester.pumpAndSettle();
+
+      controller.jumpTo(controller.position.maxScrollExtent);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Estimation $pageSize'), findsOneWidget);
+    });
+
+    testWidgets(
+      'does not show loading indicator when all estimations are loaded',
+      (tester) async {
+        final estimations = List.generate(
+          3,
+          (i) => EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimation-$i',
+            projectId: testProjectId,
+            estimateName: 'Estimation $i',
+          ),
+        );
+
+        await setupAndNavigateToEstimation(
+          tester,
+          multipleEstimations: estimations,
+        );
+
+        expect(find.byType(CostEstimationTile), findsNWidgets(3));
+        expect(find.byType(CoreLoadingIndicator), findsNothing);
       },
     );
   });
