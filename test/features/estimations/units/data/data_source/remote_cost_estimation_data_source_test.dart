@@ -43,7 +43,7 @@ void main() {
   const String markupValueTypeAmount = 'amount';
   const String tableName = 'cost_estimates';
   const String allColumns = '*';
-  const String selectMethod = 'select';
+  const String selectMethod = 'selectPaginated';
   const String timestamp4 = '2024-01-10T09:15:30.456Z';
   const String timestamp5 = '2024-01-15T14:30:45.123Z';
   const double totalCost1 = 120000.0;
@@ -108,7 +108,11 @@ void main() {
 
         fakeSupabaseWrapper.addTableData(tableName, expectedEstimations);
 
-        final result = await dataSource.getEstimations(testProjectId);
+        final result = await dataSource.getEstimations(
+          projectId: testProjectId,
+          offset: 0,
+          limit: 20,
+        );
 
         final expectedDto1 = CostEstimateDto.fromJson(data1);
         final expectedDto2 = CostEstimateDto.fromJson(data2);
@@ -120,7 +124,11 @@ void main() {
       });
 
       test('should return empty list when no estimations found', () async {
-        final result = await dataSource.getEstimations(testProjectId);
+        final result = await dataSource.getEstimations(
+          projectId: testProjectId,
+          offset: 0,
+          limit: 20,
+        );
 
         expect(result, isEmpty);
       });
@@ -136,18 +144,26 @@ void main() {
 
           fakeSupabaseWrapper.addTableData(tableName, otherProjectEstimations);
 
-          final result = await dataSource.getEstimations(testProjectId);
+          final result = await dataSource.getEstimations(
+            projectId: testProjectId,
+            offset: 0,
+            limit: 20,
+          );
 
           expect(result, isEmpty);
         },
       );
 
       test(
-        'should call supabaseWrapper.select with correct parameters',
+        'should call supabaseWrapper.selectPaginated with correct parameters',
         () async {
           fakeSupabaseWrapper.addTableData(tableName, []);
 
-          await dataSource.getEstimations(testProjectId);
+          await dataSource.getEstimations(
+            projectId: testProjectId,
+            offset: 0,
+            limit: 20,
+          );
 
           final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
             selectMethod,
@@ -156,70 +172,94 @@ void main() {
 
           final call = methodCalls.first;
           expect(call['table'], equals(tableName));
+          expect(call['columns'], equals(allColumns));
           expect(
             call['filterColumn'],
             equals(DatabaseConstants.projectIdColumn),
           );
           expect(call['filterValue'], equals(testProjectId));
-          expect(call['columns'], equals(allColumns));
+          expect(
+            call['orderColumn'],
+            equals(DatabaseConstants.createdAtColumn),
+          );
+          expect(call['ascending'], isFalse);
+          expect(call['rangeFrom'], equals(0));
+          expect(call['rangeTo'], equals(19));
         },
       );
 
       test(
-        'should rethrow exception when supabaseWrapper.select throws',
+        'should rethrow exception when supabaseWrapper.selectPaginated throws',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.postgrest;
-          fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgDbConnection;
+          fakeSupabaseWrapper.selectPaginatedErrorMessage =
+              errorMsgDbConnection;
 
           expect(
-            () => dataSource.getEstimations(testProjectId),
+            () => dataSource.getEstimations(
+              projectId: testProjectId,
+              offset: 0,
+              limit: 20,
+            ),
             throwsA(isA<supabase.PostgrestException>()),
           );
         },
       );
 
       test(
-        'should rethrow auth exception when supabaseWrapper.select throws auth error',
+        'should rethrow auth exception when supabaseWrapper.selectPaginated throws auth error',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.auth;
-          fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgAuth;
+          fakeSupabaseWrapper.selectPaginatedErrorMessage = errorMsgAuth;
 
           expect(
-            () => dataSource.getEstimations(testProjectId),
+            () => dataSource.getEstimations(
+              projectId: testProjectId,
+              offset: 0,
+              limit: 20,
+            ),
             throwsA(isA<supabase.AuthException>()),
           );
         },
       );
 
       test(
-        'should rethrow socket exception when supabaseWrapper.select throws socket error',
+        'should rethrow socket exception when supabaseWrapper.selectPaginated throws socket error',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.socket;
-          fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgNetwork;
+          fakeSupabaseWrapper.selectPaginatedErrorMessage = errorMsgNetwork;
 
           expect(
-            () => dataSource.getEstimations(testProjectId),
+            () => dataSource.getEstimations(
+              projectId: testProjectId,
+              offset: 0,
+              limit: 20,
+            ),
             throwsA(isA<Exception>()),
           );
         },
       );
 
       test(
-        'should rethrow timeout exception when supabaseWrapper.select throws timeout error',
+        'should rethrow timeout exception when supabaseWrapper.selectPaginated throws timeout error',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.timeout;
-          fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgTimeout;
+          fakeSupabaseWrapper.selectPaginatedErrorMessage = errorMsgTimeout;
 
           expect(
-            () => dataSource.getEstimations(testProjectId),
+            () => dataSource.getEstimations(
+              projectId: testProjectId,
+              offset: 0,
+              limit: 20,
+            ),
             throwsA(isA<Exception>()),
           );
         },
@@ -251,7 +291,11 @@ void main() {
 
           fakeSupabaseWrapper.addTableData(tableName, [estimationData]);
 
-          final result = await dataSource.getEstimations(testProjectId);
+          final result = await dataSource.getEstimations(
+            projectId: testProjectId,
+            offset: 0,
+            limit: 20,
+          );
 
           expect(result, hasLength(1));
           final estimation = result.first;
@@ -282,7 +326,11 @@ void main() {
 
         fakeSupabaseWrapper.addTableData(tableName, mixedEstimations);
 
-        final result = await dataSource.getEstimations(testProjectId);
+        final result = await dataSource.getEstimations(
+          projectId: testProjectId,
+          offset: 0,
+          limit: 20,
+        );
 
         expect(result, hasLength(2));
         expect(

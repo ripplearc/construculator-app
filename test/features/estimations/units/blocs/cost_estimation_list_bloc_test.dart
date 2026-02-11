@@ -177,8 +177,8 @@ void main() {
       blocTest<CostEstimationListBloc, CostEstimationListState>(
         'should emit loading then error state with connection error when repository returns connection failure',
         build: () {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.socket;
           return bloc;
         },
@@ -203,8 +203,8 @@ void main() {
       blocTest<CostEstimationListBloc, CostEstimationListState>(
         'should emit loading then error state with parsing error when repository returns parsing failure',
         build: () {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.type;
           return bloc;
         },
@@ -227,8 +227,8 @@ void main() {
       blocTest<CostEstimationListBloc, CostEstimationListState>(
         'should emit loading then error state with timeout error when repository returns timeout failure',
         build: () {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.timeout;
           return bloc;
         },
@@ -269,8 +269,8 @@ void main() {
 
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
 
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.unknown;
 
           await repository.getEstimations(testProjectId);
@@ -306,8 +306,8 @@ void main() {
       blocTest<CostEstimationListBloc, CostEstimationListState>(
         'should compare duplicate failures correctly',
         build: () {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.socket;
           return bloc;
         },

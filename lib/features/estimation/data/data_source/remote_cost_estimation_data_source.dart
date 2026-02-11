@@ -11,24 +11,37 @@ class RemoteCostEstimationDataSource implements CostEstimationDataSource {
   /// database table names and columns
   static const String costEstimatesTable = DatabaseConstants.costEstimatesTable;
   static const String projectIdColumn = DatabaseConstants.projectIdColumn;
+  static const String createdAtColumn = DatabaseConstants.createdAtColumn;
 
   RemoteCostEstimationDataSource({
     required this.supabaseWrapper,
   });
 
   @override
-  Future<List<CostEstimateDto>> getEstimations(String projectId) async {
+  Future<List<CostEstimateDto>> getEstimations({
+    required String projectId,
+    required int offset,
+    required int limit,
+  }) async {
     try {
-      _logger.debug('Getting cost estimations for project: $projectId');
-      final response = await supabaseWrapper.select(
+      _logger.debug(
+        'Getting cost estimations for project: $projectId, '
+        'offset: $offset, limit: $limit',
+      );
+      final response = await supabaseWrapper.selectPaginated(
         table: costEstimatesTable,
         filterColumn: projectIdColumn,
         filterValue: projectId,
+        orderColumn: createdAtColumn,
+        ascending: false,
+        rangeFrom: offset,
+        rangeTo: offset + limit - 1,
       );
 
       if (response.isEmpty) {
-        _logger.warning('No cost estimations found for project: $projectId');
-
+        _logger.warning(
+          'No cost estimations found for project: $projectId at offset: $offset',
+        );
         return [];
       }
 

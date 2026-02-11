@@ -134,18 +134,6 @@ void main() {
     group('getEstimations', () {
       test('should return cost estimates when data exists', () async {
         final estimationMap1 = buildEstimationMap(
-          id: estimateIdDefault,
-          projectId: testProjectId,
-          estimateName: estimateNameDefault,
-          estimateDescription: estimateDescDefault,
-          creatorUserId: userIdDefault,
-          totalCost: totalCostDefault,
-          isLocked: false,
-          createdAt: timestampDefault,
-          updatedAt: timestampDefault,
-        );
-
-        final estimationMap2 = buildEstimationMap(
           id: estimateId2,
           projectId: testProjectId,
           estimateName: estimateName2,
@@ -157,6 +145,18 @@ void main() {
           lockedAt: timestamp2,
           createdAt: timestamp2,
           updatedAt: timestamp2,
+        );
+
+        final estimationMap2 = buildEstimationMap(
+          id: estimateIdDefault,
+          projectId: testProjectId,
+          estimateName: estimateNameDefault,
+          estimateDescription: estimateDescDefault,
+          creatorUserId: userIdDefault,
+          totalCost: totalCostDefault,
+          isLocked: false,
+          createdAt: timestampDefault,
+          updatedAt: timestampDefault,
         );
 
         final estimation1 = CostEstimateDto.fromJson(estimationMap1);
@@ -212,7 +212,9 @@ void main() {
 
         await repository.getEstimations(testProjectId);
 
-        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('select');
+        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
+          'selectPaginated',
+        );
         expect(methodCalls, hasLength(1));
         expect(
           methodCalls.first['table'],
@@ -228,10 +230,10 @@ void main() {
       test(
         'should return unexpected failure when data source throws server exception',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.unknown;
-          fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgServer;
+          fakeSupabaseWrapper.selectPaginatedErrorMessage = errorMsgServer;
 
           final result = await repository.getEstimations(testProjectId);
 
@@ -246,10 +248,10 @@ void main() {
       test(
         'should return timeout error when data source throws timeout',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.timeout;
-          fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgTimeout;
+          fakeSupabaseWrapper.selectPaginatedErrorMessage = errorMsgTimeout;
 
           final result = await repository.getEstimations(testProjectId);
 
@@ -267,10 +269,10 @@ void main() {
       test(
         'should return connection error when data source throws SocketException',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.socket;
-          fakeSupabaseWrapper.selectMultipleErrorMessage = 'Connection failed';
+          fakeSupabaseWrapper.selectPaginatedErrorMessage = 'Connection failed';
 
           final result = await repository.getEstimations(testProjectId);
 
@@ -288,10 +290,10 @@ void main() {
       test(
         'should return parsing error when data source throws FormatException',
         () async {
-          fakeSupabaseWrapper.selectMultipleErrorMessage = 'Format error';
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.selectPaginatedErrorMessage = 'Format error';
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.type;
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
 
           final result = await repository.getEstimations(testProjectId);
 
@@ -308,12 +310,12 @@ void main() {
       test(
         'should return connection error when data source throws PostgrestException with connection failure',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.postgrest;
           fakeSupabaseWrapper.postgrestErrorCode =
               PostgresErrorCode.connectionFailure;
-          fakeSupabaseWrapper.selectMultipleErrorMessage = 'Connection lost';
+          fakeSupabaseWrapper.selectPaginatedErrorMessage = 'Connection lost';
 
           final result = await repository.getEstimations(testProjectId);
 
@@ -331,12 +333,12 @@ void main() {
       test(
         'should return unexpected database error when data source throws PostgrestException with unique violation',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.postgrest;
           fakeSupabaseWrapper.postgrestErrorCode =
               PostgresErrorCode.uniqueViolation;
-          fakeSupabaseWrapper.selectMultipleErrorMessage = 'Unique violation';
+          fakeSupabaseWrapper.selectPaginatedErrorMessage = 'Unique violation';
 
           final result = await repository.getEstimations(testProjectId);
 
@@ -357,15 +359,15 @@ void main() {
         'should handle multiple estimations with different configurations',
         () async {
           final estimationMap1 = buildEstimationMap(
-            id: estimateIdDefault,
+            id: estimateId3,
             projectId: testProjectId,
-            estimateName: estimateNameDefault,
-            estimateDescription: estimateDescDefault,
+            estimateName: estimateName3,
+            estimateDescription: estimateDesc3,
             creatorUserId: userIdDefault,
-            totalCost: totalCostDefault,
+            totalCost: totalCost3,
             isLocked: false,
-            createdAt: timestampDefault,
-            updatedAt: timestampDefault,
+            createdAt: timestamp3,
+            updatedAt: timestamp3,
           );
 
           final estimationMap2 = buildEstimationMap(
@@ -383,15 +385,15 @@ void main() {
           );
 
           final estimationMap3 = buildEstimationMap(
-            id: estimateId3,
+            id: estimateIdDefault,
             projectId: testProjectId,
-            estimateName: estimateName3,
-            estimateDescription: estimateDesc3,
+            estimateName: estimateNameDefault,
+            estimateDescription: estimateDescDefault,
             creatorUserId: userIdDefault,
-            totalCost: totalCost3,
+            totalCost: totalCostDefault,
             isLocked: false,
-            createdAt: timestamp3,
-            updatedAt: timestamp3,
+            createdAt: timestampDefault,
+            updatedAt: timestampDefault,
           );
 
           final estimation1 = CostEstimateDto.fromJson(estimationMap1);

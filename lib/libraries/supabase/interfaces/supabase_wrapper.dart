@@ -141,6 +141,27 @@ abstract class SupabaseWrapper {
     required dynamic filterValue,
   });
 
+  /// Select a paginated set of rows from a table, ordered and ranged.
+  ///
+  /// [table] The table to select from
+  /// [columns] The columns to select, defaults to '*'
+  /// [filterColumn] The column to filter by
+  /// [filterValue] The value to filter by
+  /// [orderColumn] The column to order by
+  /// [ascending] Whether to order ascending (default false = newest first)
+  /// [rangeFrom] The starting index (inclusive, 0-based)
+  /// [rangeTo] The ending index (inclusive, 0-based)
+  Future<List<Map<String, dynamic>>> selectPaginated({
+    required String table,
+    String columns = '*',
+    required String filterColumn,
+    required dynamic filterValue,
+    required String orderColumn,
+    bool ascending = false,
+    required int rangeFrom,
+    required int rangeTo,
+  });
+
   /// Call a Supabase RPC function
   ///
   /// [functionName] The name of the RPC function to call

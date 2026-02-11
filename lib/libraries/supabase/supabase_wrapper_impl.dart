@@ -173,6 +173,25 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
   }
 
   @override
+  Future<List<Map<String, dynamic>>> selectPaginated({
+    required String table,
+    String columns = '*',
+    required String filterColumn,
+    required dynamic filterValue,
+    required String orderColumn,
+    bool ascending = false,
+    required int rangeFrom,
+    required int rangeTo,
+  }) async {
+    return await _supabaseClient
+        .from(table)
+        .select(columns)
+        .eq(filterColumn, filterValue)
+        .order(orderColumn, ascending: ascending)
+        .range(rangeFrom, rangeTo);
+  }
+
+  @override
   Future<T> rpc<T>(String functionName, {Map<String, dynamic>? params}) async {
     return await _supabaseClient.rpc(functionName, params: params);
   }
