@@ -443,8 +443,8 @@ void main() {
         email: 'test@example.com',
       );
 
-      fakeSupabase.shouldThrowOnSelectMultiple = true;
-      fakeSupabase.selectMultipleExceptionType = SupabaseExceptionType.timeout;
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
 
       await pumpAppAtRoute(tester, testEstimationRoute);
 
@@ -462,8 +462,8 @@ void main() {
         email: 'test@example.com',
       );
 
-      fakeSupabase.shouldThrowOnSelectMultiple = true;
-      fakeSupabase.selectMultipleExceptionType = SupabaseExceptionType.socket;
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.socket;
 
       await pumpAppAtRoute(tester, testEstimationRoute);
 
@@ -479,8 +479,8 @@ void main() {
         email: 'test@example.com',
       );
 
-      fakeSupabase.shouldThrowOnSelectMultiple = true;
-      fakeSupabase.selectMultipleExceptionType = SupabaseExceptionType.type;
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.type;
 
       await pumpAppAtRoute(tester, testEstimationRoute);
 

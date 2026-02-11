@@ -482,6 +482,121 @@ void main() {
         );
       });
 
+      group('selectPaginated', () {
+        test('returns filtered and paginated data', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1', 'created_at': '2024-01-03'},
+            {'id': '2', 'project_id': 'p1', 'created_at': '2024-01-01'},
+            {'id': '3', 'project_id': 'p2', 'created_at': '2024-01-02'},
+            {'id': '4', 'project_id': 'p1', 'created_at': '2024-01-02'},
+          ]);
+
+          final result = await fakeWrapper.selectPaginated(
+            table: 'items',
+            filterColumn: 'project_id',
+            filterValue: 'p1',
+            orderColumn: 'created_at',
+            ascending: false,
+            rangeFrom: 0,
+            rangeTo: 1,
+          );
+
+          expect(result, hasLength(2));
+          expect(result[0]['id'], equals('1'));
+          expect(result[1]['id'], equals('4'));
+        });
+
+        test('returns ascending order when ascending is true', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1', 'created_at': '2024-01-03'},
+            {'id': '2', 'project_id': 'p1', 'created_at': '2024-01-01'},
+            {'id': '3', 'project_id': 'p1', 'created_at': '2024-01-02'},
+          ]);
+
+          final result = await fakeWrapper.selectPaginated(
+            table: 'items',
+            filterColumn: 'project_id',
+            filterValue: 'p1',
+            orderColumn: 'created_at',
+            ascending: true,
+            rangeFrom: 0,
+            rangeTo: 2,
+          );
+
+          expect(result, hasLength(3));
+          expect(result[0]['id'], equals('2'));
+          expect(result[1]['id'], equals('3'));
+          expect(result[2]['id'], equals('1'));
+        });
+
+        test('returns empty list when range exceeds data', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1', 'created_at': '2024-01-01'},
+          ]);
+
+          final result = await fakeWrapper.selectPaginated(
+            table: 'items',
+            filterColumn: 'project_id',
+            filterValue: 'p1',
+            orderColumn: 'created_at',
+            rangeFrom: 5,
+            rangeTo: 10,
+          );
+
+          expect(result, isEmpty);
+        });
+
+        test('records method call with all parameters', () async {
+          fakeWrapper.addTableData('items', []);
+
+          await fakeWrapper.selectPaginated(
+            table: 'items',
+            columns: 'id,name',
+            filterColumn: 'project_id',
+            filterValue: 'p1',
+            orderColumn: 'created_at',
+            ascending: false,
+            rangeFrom: 0,
+            rangeTo: 9,
+          );
+
+          final calls = fakeWrapper.getMethodCallsFor('selectPaginated');
+          expect(calls, hasLength(1));
+          final call = calls.first;
+          expect(call['table'], equals('items'));
+          expect(call['columns'], equals('id,name'));
+          expect(call['filterColumn'], equals('project_id'));
+          expect(call['filterValue'], equals('p1'));
+          expect(call['orderColumn'], equals('created_at'));
+          expect(call['ascending'], isFalse);
+          expect(call['rangeFrom'], equals(0));
+          expect(call['rangeTo'], equals(9));
+        });
+
+        test('throws exception when configured to fail', () async {
+          fakeWrapper.shouldThrowOnSelectPaginated = true;
+          fakeWrapper.selectPaginatedErrorMessage = 'Paginated failed';
+
+          expect(
+            () async => await fakeWrapper.selectPaginated(
+              table: 'items',
+              filterColumn: 'project_id',
+              filterValue: 'p1',
+              orderColumn: 'created_at',
+              rangeFrom: 0,
+              rangeTo: 9,
+            ),
+            throwsA(
+              isA<ServerException>().having(
+                (e) => e.toString(),
+                'message',
+                contains('Paginated failed'),
+              ),
+            ),
+          );
+        });
+      });
+
       group('insert', () {
         test(
           'adds data to table and returns it with generated fields',
@@ -1261,6 +1376,7 @@ void main() {
         fakeWrapper.shouldThrowOnInsert = true;
         fakeWrapper.shouldThrowOnUpdate = true;
         fakeWrapper.shouldThrowOnSelectMultiple = true;
+        fakeWrapper.shouldThrowOnSelectPaginated = true;
         fakeWrapper.shouldThrowOnDelete = true;
         fakeWrapper.shouldThrowOnRpc = true;
         fakeWrapper.signInErrorMessage = 'Sign in failed';
@@ -1276,6 +1392,9 @@ void main() {
         fakeWrapper.rpcErrorMessage = 'RPC failed';
         fakeWrapper.selectExceptionType = SupabaseExceptionType.postgrest;
         fakeWrapper.selectMultipleExceptionType = SupabaseExceptionType.socket;
+        fakeWrapper.selectPaginatedExceptionType =
+            SupabaseExceptionType.postgrest;
+        fakeWrapper.selectPaginatedErrorMessage = 'Paginated select failed';
         fakeWrapper.insertExceptionType = SupabaseExceptionType.timeout;
         fakeWrapper.updateExceptionType = SupabaseExceptionType.auth;
         fakeWrapper.deleteExceptionType = SupabaseExceptionType.type;
@@ -1312,6 +1431,7 @@ void main() {
         expect(fakeWrapper.shouldThrowOnInsert, isFalse);
         expect(fakeWrapper.shouldThrowOnUpdate, isFalse);
         expect(fakeWrapper.shouldThrowOnSelectMultiple, isFalse);
+        expect(fakeWrapper.shouldThrowOnSelectPaginated, isFalse);
         expect(fakeWrapper.shouldThrowOnDelete, isFalse);
         expect(fakeWrapper.shouldThrowOnRpc, isFalse);
         expect(fakeWrapper.signInErrorMessage, isNull);
@@ -1327,6 +1447,8 @@ void main() {
         expect(fakeWrapper.rpcErrorMessage, isNull);
         expect(fakeWrapper.selectExceptionType, isNull);
         expect(fakeWrapper.selectMultipleExceptionType, isNull);
+        expect(fakeWrapper.selectPaginatedExceptionType, isNull);
+        expect(fakeWrapper.selectPaginatedErrorMessage, isNull);
         expect(fakeWrapper.insertExceptionType, isNull);
         expect(fakeWrapper.updateExceptionType, isNull);
         expect(fakeWrapper.deleteExceptionType, isNull);

@@ -62,6 +62,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Controls whether [delete] throws an exception
   bool shouldThrowOnDelete = false;
 
+  /// Controls whether [selectPaginated] throws an exception
+  bool shouldThrowOnSelectPaginated = false;
+
   /// Controls whether [rpc] throws an exception
   bool shouldThrowOnRpc = false;
 
@@ -109,6 +112,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Used to specify the error message thrown when [delete] is attempted
   String? deleteErrorMessage;
 
+  /// Error message for selectPaginated.
+  /// Used to specify the error message thrown when [selectPaginated] is attempted
+  String? selectPaginatedErrorMessage;
+
   /// Error message for RPC.
   /// Used to specify the error message thrown when [rpc] is attempted
   String? rpcErrorMessage;
@@ -128,6 +135,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Used to specify the type of exception thrown when [delete] is attempted
   SupabaseExceptionType? deleteExceptionType;
+
+  /// Used to specify the type of exception thrown when [selectPaginated] is attempted
+  SupabaseExceptionType? selectPaginatedExceptionType;
 
   /// Used to specify the type of exception thrown when [rpc] is attempted
   SupabaseExceptionType? rpcExceptionType;
@@ -175,9 +185,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     _currentUser = user;
 
     if (user != null) {
-      _authStateController.add(
-        _createAuthState(signInEvent, user),
-      );
+      _authStateController.add(_createAuthState(signInEvent, user));
     } else {
       _authStateController.add(
         _createAuthState(supabase.AuthChangeEvent.signedOut, null),
@@ -389,6 +397,58 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
         .where((row) => row[filterColumn] == filterValue)
         .toList();
     return filteredData;
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> selectPaginated({
+    required String table,
+    String columns = '*',
+    required String filterColumn,
+    required dynamic filterValue,
+    required String orderColumn,
+    bool ascending = false,
+    required int rangeFrom,
+    required int rangeTo,
+  }) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+    _methodCalls.add({
+      'method': 'selectPaginated',
+      'table': table,
+      'columns': columns,
+      'filterColumn': filterColumn,
+      'filterValue': filterValue,
+      'orderColumn': orderColumn,
+      'ascending': ascending,
+      'rangeFrom': rangeFrom,
+      'rangeTo': rangeTo,
+    });
+
+    if (shouldThrowOnSelectPaginated) {
+      _throwConfiguredException(
+        selectPaginatedExceptionType,
+        selectPaginatedErrorMessage ?? 'Select paginated failed',
+      );
+    }
+
+    final tableData = _tables[table] ?? [];
+    var filteredData = tableData
+        .where((row) => row[filterColumn] == filterValue)
+        .toList();
+
+    filteredData.sort((a, b) {
+      final aVal = a[orderColumn];
+      final bVal = b[orderColumn];
+      if (aVal is Comparable && bVal is Comparable) {
+        return ascending ? aVal.compareTo(bVal) : bVal.compareTo(aVal);
+      }
+      return 0;
+    });
+
+    final from = rangeFrom.clamp(0, filteredData.length);
+    final to = (rangeTo + 1).clamp(0, filteredData.length);
+    return filteredData.sublist(from, to);
   }
 
   @override
@@ -744,6 +804,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     shouldThrowOnInsert = false;
     shouldThrowOnUpdate = false;
     shouldThrowOnSelectMultiple = false;
+    shouldThrowOnSelectPaginated = false;
     shouldThrowOnDelete = false;
     shouldThrowOnRpc = false;
 
@@ -754,12 +815,14 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     resetPasswordErrorMessage = null;
     signOutErrorMessage = null;
     selectErrorMessage = null;
+    selectPaginatedErrorMessage = null;
     insertErrorMessage = null;
     updateErrorMessage = null;
     deleteErrorMessage = null;
     rpcErrorMessage = null;
 
     selectExceptionType = null;
+    selectPaginatedExceptionType = null;
     selectMultipleExceptionType = null;
     insertExceptionType = null;
     updateExceptionType = null;

@@ -20,9 +20,8 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
   _streamControllers = {};
   final Map<String, List<CostEstimate>> _cachedEstimations = {};
 
-  CostEstimationRepositoryImpl({
-    required CostEstimationDataSource dataSource,
-  }) : _dataSource = dataSource;
+  CostEstimationRepositoryImpl({required CostEstimationDataSource dataSource})
+    : _dataSource = dataSource;
 
   Failure _handleError(
     Object error,
@@ -104,7 +103,11 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     try {
       _logger.debug('Getting cost estimations for project: $projectId');
 
-      final costEstimateDtos = await _dataSource.getEstimations(projectId);
+      final costEstimateDtos = await _dataSource.getEstimations(
+        projectId: projectId,
+        offset: 0,
+        limit: 1000,
+      );
 
       final costEstimates = costEstimateDtos
           .map((dto) => dto.toDomain())
