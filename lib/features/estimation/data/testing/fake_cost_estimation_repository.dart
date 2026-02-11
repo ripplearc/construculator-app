@@ -46,6 +46,16 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
   /// [deleteEstimation] when [shouldReturnFailureOnDeleteEstimation] is true.
   EstimationErrorType? deleteEstimationFailureType;
 
+  /// Controls whether [loadMoreEstimations] should return a [Failure].
+  bool shouldReturnFailureOnLoadMore = false;
+
+  /// Specifies the [EstimationErrorType] for the [Failure] returned by
+  /// [loadMoreEstimations] when [shouldReturnFailureOnLoadMore] is true.
+  EstimationErrorType? loadMoreFailureType;
+
+  /// Tracks pagination state per project
+  final Map<String, bool> _hasMoreEstimationsMap = {};
+
   /// Controls whether operations should be delayed
   bool shouldDelayOperations = false;
 
@@ -85,6 +95,34 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     final estimations = _projectEstimations[projectId] ?? [];
     _emitToStream(projectId, Right(estimations));
     return Right(estimations);
+  }
+
+  @override
+  Future<Either<Failure, List<CostEstimate>>> loadMoreEstimations(
+    String projectId,
+  ) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    _methodCalls.add({'method': 'loadMoreEstimations', 'projectId': projectId});
+
+    if (shouldReturnFailureOnLoadMore) {
+      return Left(
+        EstimationFailure(
+          errorType: loadMoreFailureType ?? EstimationErrorType.unexpectedError,
+        ),
+      );
+    }
+
+    final estimations = _projectEstimations[projectId] ?? [];
+    _emitToStream(projectId, Right(estimations));
+    return Right(estimations);
+  }
+
+  @override
+  bool hasMoreEstimations(String projectId) {
+    return _hasMoreEstimationsMap[projectId] ?? true;
   }
 
   @override
@@ -244,6 +282,11 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     _methodCalls.clear();
   }
 
+  /// Sets whether there are more estimations to load for a project
+  void setHasMoreEstimations(String projectId, bool hasMore) {
+    _hasMoreEstimationsMap[projectId] = hasMore;
+  }
+
   /// Resets all fake configurations, clears data
   void reset() {
     shouldReturnFailureOnGetEstimations = false;
@@ -252,6 +295,8 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     createEstimationFailureType = null;
     shouldReturnFailureOnDeleteEstimation = false;
     deleteEstimationFailureType = null;
+    shouldReturnFailureOnLoadMore = false;
+    loadMoreFailureType = null;
     shouldReturnEmptyList = false;
     shouldDelayOperations = false;
     completer = null;
@@ -260,6 +305,7 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
       controller.close();
     }
     _streamControllers.clear();
+    _hasMoreEstimationsMap.clear();
 
     clearAllData();
     clearMethodCalls();
