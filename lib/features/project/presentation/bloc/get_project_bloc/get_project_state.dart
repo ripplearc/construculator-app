@@ -20,12 +20,21 @@ class GetProjectByIdLoading extends GetProjectState {
 }
 
 class GetProjectByIdLoadSuccess extends GetProjectState {
-  final Project project;
+  final ProjectHeaderData headerData;
 
-  const GetProjectByIdLoadSuccess({required this.project});
+  const GetProjectByIdLoadSuccess({required this.headerData});
+
+  /// Convenience getter for backward compatibility
+  Project get project => headerData.project;
+
+  /// Convenience getter for user avatar URL
+  String? get userAvatarUrl => headerData.userAvatarUrl;
+
+  /// Convenience getter for user avatar ImageProvider
+  ImageProvider? get userAvatarImage => headerData.userAvatarImage;
 
   @override
-  List<Object?> get props => [project];
+  List<Object?> get props => [headerData];
 }
 
 class GetProjectByIdLoadFailure extends GetProjectState {

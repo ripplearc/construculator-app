@@ -1,7 +1,8 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/project/presentation/bloc/get_project_bloc/get_project_bloc.dart';
 import 'package:construculator/features/project/presentation/project_ui_provider_impl.dart';
-import 'package:construculator/features/project/domain/usecases/get_project_usecase.dart';
+import 'package:construculator/features/project/domain/usecases/get_project_header_usecase.dart';
+import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/time/clock_module.dart';
@@ -13,9 +14,10 @@ class ProjectModule extends Module {
 
   @override
   List<Module> get imports => [
-    ClockModule(),
-    ProjectLibraryModule(appBootstrap),
-  ];
+        ClockModule(),
+        ProjectLibraryModule(appBootstrap),
+        AuthLibraryModule(appBootstrap),
+      ];
 
   @override
   void routes(RouteManager r) {}
@@ -27,7 +29,9 @@ class ProjectModule extends Module {
 void _registerDependencies(Injector i) {
   i.addLazySingleton<ProjectUIProvider>(() => ProjectUIProviderImpl());
 
-  i.addLazySingleton<GetProjectUseCase>(() => GetProjectUseCase(i()));
+  i.addLazySingleton<GetProjectHeaderUseCase>(
+    () => GetProjectHeaderUseCase(i(), i()),
+  );
 
-  i.add<GetProjectBloc>(() => GetProjectBloc(getProjectUseCase: i()));
+  i.add<GetProjectBloc>(() => GetProjectBloc(getProjectHeaderUseCase: i()));
 }

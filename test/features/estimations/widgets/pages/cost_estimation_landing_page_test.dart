@@ -4,7 +4,6 @@ import 'package:construculator/features/estimation/data/repositories/cost_estima
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
-import 'package:construculator/features/project/presentation/widgets/project_header_app_bar.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
@@ -190,40 +189,6 @@ void main() {
       // TODO: https://ripplearc.youtrack.cloud/issue/CA-162/Dashboard-Create-Project-Repository correct this to an actual name from fake project table
       expect(find.text('Sample Construction Project'), findsOneWidget);
     });
-
-    testWidgets(
-      'passes project id and avatar image to ProjectHeaderAppBar when user has photo',
-      (tester) async {
-        const avatarUrl = 'https://example.com/avatar.jpg';
-
-        setUpAuthenticatedUser(
-          credentialId: 'test-credential-id',
-          email: 'test@example.com',
-          profilePhotoUrl: avatarUrl,
-        );
-
-        final originalOnError = FlutterError.onError;
-        FlutterError.onError = (details) {
-          if (details.exception is NetworkImageLoadException) return;
-          originalOnError!.call(details);
-        };
-        addTearDown(() => FlutterError.onError = originalOnError);
-
-        await pumpAppAtRoute(tester, testEstimationRoute);
-
-        final projectHeaderAppBar = tester.widget<ProjectHeaderAppBar>(
-          find.byType(ProjectHeaderAppBar),
-        );
-
-        expect(projectHeaderAppBar.projectId, testProjectId);
-        expect(projectHeaderAppBar.avatarImage, isNotNull);
-        expect(projectHeaderAppBar.avatarImage, isA<NetworkImage>());
-        expect(
-          (projectHeaderAppBar.avatarImage! as NetworkImage).url,
-          avatarUrl,
-        );
-      },
-    );
   });
 
   group('Add Estimation Button', () {

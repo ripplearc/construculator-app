@@ -11,7 +11,6 @@ class ProjectHeaderAppBar extends StatelessWidget
   final VoidCallback? onProjectTap;
   final VoidCallback? onSearchTap;
   final VoidCallback? onNotificationTap;
-  final ImageProvider? avatarImage;
 
   const ProjectHeaderAppBar({
     super.key,
@@ -19,7 +18,6 @@ class ProjectHeaderAppBar extends StatelessWidget
     this.onProjectTap,
     this.onSearchTap,
     this.onNotificationTap,
-    this.avatarImage,
   });
 
   @override
@@ -79,18 +77,32 @@ class ProjectHeaderAppBar extends StatelessWidget
                     color: appColorTheme.iconDark,
                   ),
                   SizedBox(width: CoreSpacing.space2),
-                  CoreAvatar(
-                    radius: 20,
-                    backgroundColor: appColorTheme.backgroundDarkGray,
-                    // TODO: https://ripplearc.youtrack.cloud/issue/CA-392/Cost-Estimation-Use-letter-when-no-user-avatar-is-present
-                    image: avatarImage,
-                  ),
+                  _buildAvatar(),
                 ],
               ),
             ),
           );
         },
       ),
+    );
+  }
+
+  Widget _buildAvatar() {
+    return BlocBuilder<GetProjectBloc, GetProjectState>(
+      builder: (context, state) {
+        final appColorTheme = context.colorTheme;
+
+        final avatarImage = state is GetProjectByIdLoadSuccess
+            ? state.userAvatarImage
+            : null;
+
+        return CoreAvatar(
+          radius: 20,
+          backgroundColor: appColorTheme.backgroundDarkGray,
+          // TODO: https://ripplearc.youtrack.cloud/issue/CA-392/Cost-Estimation-Use-letter-when-no-user-avatar-is-present
+          image: avatarImage,
+        );
+      },
     );
   }
 

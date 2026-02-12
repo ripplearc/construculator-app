@@ -17,10 +17,6 @@ import 'package:flutter_modular/flutter_modular.dart';
 import '../../../utils/screenshot/font_loader.dart';
 import '../../../utils/screenshot/await_images_extension.dart';
 
-ImageProvider _createTestAvatarImage() {
-  return const AssetImage('assets/icons/app_icon.png');
-}
-
 void main() {
   final size = const Size(390, 56);
   final ratio = 1.0;
@@ -60,7 +56,6 @@ void main() {
       VoidCallback? onProjectTap,
       VoidCallback? onSearchTap,
       VoidCallback? onNotificationTap,
-      ImageProvider? avatarImage,
     }) async {
       final project = Project(
         id: projectId,
@@ -82,7 +77,6 @@ void main() {
               onProjectTap: onProjectTap,
               onSearchTap: onSearchTap,
               onNotificationTap: onNotificationTap,
-              avatarImage: avatarImage,
             ),
             body: const SizedBox.shrink(),
           ),
@@ -106,7 +100,6 @@ void main() {
         onProjectTap: () {},
         onSearchTap: () {},
         onNotificationTap: () {},
-        avatarImage: _createTestAvatarImage(),
       );
 
       await expectLater(
@@ -130,7 +123,6 @@ void main() {
         onProjectTap: () {},
         onSearchTap: () {},
         onNotificationTap: () {},
-        avatarImage: _createTestAvatarImage(),
       );
 
       await expectLater(
