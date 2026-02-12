@@ -13,9 +13,7 @@ class RemoteCostEstimationDataSource implements CostEstimationDataSource {
   static const String projectIdColumn = DatabaseConstants.projectIdColumn;
   static const String createdAtColumn = DatabaseConstants.createdAtColumn;
 
-  RemoteCostEstimationDataSource({
-    required this.supabaseWrapper,
-  });
+  RemoteCostEstimationDataSource({required this.supabaseWrapper});
 
   @override
   Future<List<CostEstimateDto>> getEstimations({
@@ -76,12 +74,39 @@ class RemoteCostEstimationDataSource implements CostEstimationDataSource {
       _logger.debug('Deleting cost estimation: $estimationId');
       await supabaseWrapper.delete(
         table: costEstimatesTable,
-        filterColumn: 'id',
+        filterColumn: DatabaseConstants.idColumn,
         filterValue: estimationId,
       );
       _logger.debug('Successfully deleted cost estimation: $estimationId');
     } catch (e) {
       _logger.error('Error deleting cost estimation: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<CostEstimateDto> changeLockStatus({
+    required String estimationId,
+    required bool isLocked,
+  }) async {
+    try {
+      _logger.debug(
+        'Changing lock status for estimation: $estimationId to $isLocked',
+      );
+
+      final Map<String, dynamic> data;
+      data = {DatabaseConstants.isLockedColumn: isLocked};
+
+      final response = await supabaseWrapper.update(
+        table: costEstimatesTable,
+        data: data,
+        filterColumn: DatabaseConstants.idColumn,
+        filterValue: estimationId,
+      );
+
+      return CostEstimateDto.fromJson(response);
+    } catch (e) {
+      _logger.error('Error changing lock status: $e');
       rethrow;
     }
   }

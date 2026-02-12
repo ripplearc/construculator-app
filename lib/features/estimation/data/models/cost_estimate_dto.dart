@@ -319,7 +319,7 @@ class CostEstimateDto extends Equatable {
           ? (estimate.lockStatus as LockedStatus).lockedByUserId
           : null,
       lockedAt: estimate.lockStatus.isLocked
-          ? (estimate.lockStatus as LockedStatus).lockedAt.toIso8601String()
+          ? (estimate.lockStatus as LockedStatus).lockedAt?.toIso8601String()
           : null,
       createdAt: estimate.createdAt.toIso8601String(),
       updatedAt: estimate.updatedAt.toIso8601String(),

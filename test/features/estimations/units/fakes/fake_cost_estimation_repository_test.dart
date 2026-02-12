@@ -1,10 +1,10 @@
 import 'dart:async';
-
 import 'package:construculator/features/estimation/data/testing/fake_cost_estimation_repository.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/enums.dart';
 import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
+import 'package:construculator/libraries/either/interfaces/either.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -1142,5 +1142,121 @@ void main() {
 
       expect(streamClosed, isTrue);
     });
+  });
+
+  group('Change Lock Status', () {
+    test('changeLockStatus should track method calls', () async {
+      const projectId = 'test-project-123';
+      const estimationId = 'estimation-1';
+      final testEstimation = fakeRepository.createSampleEstimation(
+        id: estimationId,
+        projectId: projectId,
+        isLocked: false,
+      );
+      fakeRepository.addProjectEstimation(projectId, testEstimation);
+
+      expect(fakeRepository.getMethodCallsFor('changeLockStatus'), isEmpty);
+
+      await fakeRepository.changeLockStatus(
+        estimationId: estimationId,
+        isLocked: true,
+        projectId: projectId,
+      );
+
+      final calls = fakeRepository.getMethodCallsFor('changeLockStatus');
+      expect(calls, hasLength(1));
+      expect(calls.first['estimationId'], equals(estimationId));
+      expect(calls.first['isLocked'], isTrue);
+      expect(calls.first['projectId'], equals(projectId));
+    });
+
+    test('changeLockStatus should update estimation lock status', () async {
+      const projectId = 'test-project-123';
+      const estimationId = 'estimation-1';
+      final testEstimation = fakeRepository.createSampleEstimation(
+        id: estimationId,
+        projectId: projectId,
+        isLocked: false,
+      );
+      fakeRepository.addProjectEstimation(projectId, testEstimation);
+
+      final result = await fakeRepository.changeLockStatus(
+        estimationId: estimationId,
+        isLocked: true,
+        projectId: projectId,
+      );
+
+      expect(result.isRight(), isTrue);
+      result.fold((_) => fail('Expected success'), (updated) {
+        expect(updated.id, equals(estimationId));
+        expect(updated.lockStatus.isLocked, isTrue);
+      });
+
+      // Verify in-memory update
+      final getResult = await fakeRepository.getEstimations(projectId);
+      getResult.fold((_) => fail('Expected success'), (estimations) {
+        final stored = estimations.firstWhere((e) => e.id == estimationId);
+        expect(stored.lockStatus.isLocked, isTrue);
+      });
+    });
+
+    test(
+      'changeLockStatus should emit updated estimation list to stream',
+      () async {
+        const projectId = 'test-project-123';
+        const estimationId = 'estimation-1';
+        final testEstimation = fakeRepository.createSampleEstimation(
+          id: estimationId,
+          projectId: projectId,
+          isLocked: false,
+        );
+        fakeRepository.addProjectEstimation(projectId, testEstimation);
+
+        final stream = fakeRepository.watchEstimations(projectId);
+        final updates = <Either<Failure, List<CostEstimate>>>[];
+        final subscription = stream.listen(updates.add);
+
+        await pumpEventQueue(); // Initial emission
+
+        await fakeRepository.changeLockStatus(
+          estimationId: estimationId,
+          isLocked: true,
+          projectId: projectId,
+        );
+
+        await pumpEventQueue();
+
+        expect(updates, hasLength(2));
+        updates[1].fold((_) => fail('Expected success'), (estimations) {
+          final updated = estimations.firstWhere((e) => e.id == estimationId);
+          expect(updated.lockStatus.isLocked, isTrue);
+        });
+
+        await subscription.cancel();
+      },
+    );
+
+    test(
+      'changeLockStatus should return notFound if estimation missing',
+      () async {
+        const projectId = 'test-project-123';
+        const estimationId = 'missing-id';
+
+        final result = await fakeRepository.changeLockStatus(
+          estimationId: estimationId,
+          isLocked: true,
+          projectId: projectId,
+        );
+
+        expect(result.isLeft(), isTrue);
+        result.fold(
+          (failure) => expect(
+            failure,
+            EstimationFailure(errorType: EstimationErrorType.notFoundError),
+          ),
+          (_) => fail('Expected failure'),
+        );
+      },
+    );
   });
 }

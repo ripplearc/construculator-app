@@ -23,4 +23,15 @@ abstract class CostEstimationDataSource {
 
   /// Deletes a cost estimation by its ID.
   Future<void> deleteEstimation(String estimationId);
+
+  /// Changes the lock status of a cost estimation.
+  ///
+  /// [estimationId] The ID of the estimation to update.
+  /// [isLocked] Whether the estimation should be locked or unlocked.
+  ///
+  /// Returns a [CostEstimateDto] with the updated lock state.
+  Future<CostEstimateDto> changeLockStatus({
+    required String estimationId,
+    required bool isLocked,
+  });
 }
