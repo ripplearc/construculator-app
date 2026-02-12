@@ -13,6 +13,9 @@ class FakeProjectRepository implements ProjectRepository {
   /// Tracks project data for assertions during [getProject]
   final Map<String, Project> _projects = {};
 
+  /// Tracks permission results keyed by "projectId:permissionKey:userId"
+  final Map<String, bool> _permissions = {};
+
   /// Controls whether [getProject] throws an exception
   bool shouldThrowOnGetProject = false;
 
@@ -25,6 +28,16 @@ class FakeProjectRepository implements ProjectRepository {
 
   /// Used to specify the error code thrown during [getProject]
   PostgresErrorCode? postgrestErrorCode;
+
+  /// Controls whether [hasPermission] throws an exception
+  bool shouldThrowOnHasPermission = false;
+
+  /// Error message for has permission.
+  /// Used to specify the error message thrown when [hasPermission] is attempted
+  String? hasPermissionErrorMessage;
+
+  /// Used to specify the type of exception thrown when [hasPermission] is attempted
+  SupabaseExceptionType? hasPermissionExceptionType;
 
   /// Controls whether operations should be delayed
   bool shouldDelayOperations = false;
@@ -61,6 +74,34 @@ class FakeProjectRepository implements ProjectRepository {
     return project;
   }
 
+  @override
+  Future<bool> hasPermission({
+    required String projectId,
+    required String permissionKey,
+    required String userCredentialId,
+  }) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    _methodCalls.add({
+      'method': 'hasPermission',
+      'projectId': projectId,
+      'permissionKey': permissionKey,
+      'userCredentialId': userCredentialId,
+    });
+
+    if (shouldThrowOnHasPermission) {
+      _throwConfiguredException(
+        hasPermissionExceptionType,
+        hasPermissionErrorMessage ?? 'Has permission check failed',
+      );
+    }
+
+    final key = '$projectId:$permissionKey:$userCredentialId';
+    return _permissions[key] ?? false;
+  }
+
   void _throwConfiguredException(
     SupabaseExceptionType? exceptionType,
     String message,
@@ -85,9 +126,26 @@ class FakeProjectRepository implements ProjectRepository {
     _projects.remove(id);
   }
 
+  /// Sets the permission result for a specific project, permission key, and user.
+  void setPermission({
+    required String projectId,
+    required String permissionKey,
+    required String userCredentialId,
+    required bool hasPermission,
+  }) {
+    final key = '$projectId:$permissionKey:$userCredentialId';
+    _permissions[key] = hasPermission;
+  }
+
+  /// Clears all permission data
+  void clearPermissions() {
+    _permissions.clear();
+  }
+
   /// Clears all project data and method calls
   void clearAllData() {
     _projects.clear();
+    _permissions.clear();
     _methodCalls.clear();
   }
 
@@ -114,6 +172,9 @@ class FakeProjectRepository implements ProjectRepository {
     getProjectErrorMessage = null;
     getProjectExceptionType = null;
     postgrestErrorCode = null;
+    shouldThrowOnHasPermission = false;
+    hasPermissionErrorMessage = null;
+    hasPermissionExceptionType = null;
     shouldDelayOperations = false;
     completer = null;
 

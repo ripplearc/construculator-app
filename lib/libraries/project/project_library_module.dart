@@ -1,4 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/libraries/project/data/data_source/interfaces/project_data_source.dart';
+import 'package:construculator/libraries/project/data/data_source/remote_project_data_source.dart';
 import 'package:construculator/libraries/project/data/repositories/project_repository_impl.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/time/clock_module.dart';
@@ -15,9 +17,16 @@ class ProjectLibraryModule extends Module {
   void routes(RouteManager r) {}
 
   @override
-  void exportedBinds(Injector i) => _registerDependencies(i);
+  void exportedBinds(Injector i) => _registerDependencies(i, appBootstrap);
 }
 
-void _registerDependencies(Injector i) {
-  i.addLazySingleton<ProjectRepository>(() => ProjectRepositoryImpl());
+void _registerDependencies(Injector i, AppBootstrap appBootstrap) {
+  i.addLazySingleton<ProjectDataSource>(
+    () =>
+        RemoteProjectDataSource(supabaseWrapper: appBootstrap.supabaseWrapper),
+  );
+
+  i.addLazySingleton<ProjectRepository>(
+    () => ProjectRepositoryImpl(dataSource: i.get()),
+  );
 }

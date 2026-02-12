@@ -287,6 +287,202 @@ void main() {
     });
   });
 
+  group('Permission Check', () {
+    test(
+      'hasPermission should return false by default when no permission is set',
+      () async {
+        final result = await fakeRepository.hasPermission(
+          projectId: 'project-1',
+          permissionKey: 'get_cost_estimations',
+          userCredentialId: 'user-1',
+        );
+
+        expect(result, isFalse);
+      },
+    );
+
+    test(
+      'hasPermission should return true when permission is set to true',
+      () async {
+        fakeRepository.setPermission(
+          projectId: 'project-1',
+          permissionKey: 'get_cost_estimations',
+          userCredentialId: 'user-1',
+          hasPermission: true,
+        );
+
+        final result = await fakeRepository.hasPermission(
+          projectId: 'project-1',
+          permissionKey: 'get_cost_estimations',
+          userCredentialId: 'user-1',
+        );
+
+        expect(result, isTrue);
+      },
+    );
+
+    test(
+      'hasPermission should return false when permission is set to false',
+      () async {
+        fakeRepository.setPermission(
+          projectId: 'project-1',
+          permissionKey: 'get_cost_estimations',
+          userCredentialId: 'user-1',
+          hasPermission: false,
+        );
+
+        final result = await fakeRepository.hasPermission(
+          projectId: 'project-1',
+          permissionKey: 'get_cost_estimations',
+          userCredentialId: 'user-1',
+        );
+
+        expect(result, isFalse);
+      },
+    );
+
+    test('hasPermission should track method calls', () async {
+      await fakeRepository.hasPermission(
+        projectId: 'project-1',
+        permissionKey: 'get_cost_estimations',
+        userCredentialId: 'user-1',
+      );
+
+      final calls = fakeRepository.getMethodCallsFor('hasPermission');
+      expect(calls, hasLength(1));
+      expect(calls.first['projectId'], equals('project-1'));
+      expect(calls.first['permissionKey'], equals('get_cost_estimations'));
+      expect(calls.first['userCredentialId'], equals('user-1'));
+    });
+
+    test(
+      'hasPermission should differentiate permissions by project, key, and user',
+      () async {
+        fakeRepository.setPermission(
+          projectId: 'project-1',
+          permissionKey: 'get_cost_estimations',
+          userCredentialId: 'user-1',
+          hasPermission: true,
+        );
+        fakeRepository.setPermission(
+          projectId: 'project-1',
+          permissionKey: 'delete_cost_estimations',
+          userCredentialId: 'user-1',
+          hasPermission: false,
+        );
+        fakeRepository.setPermission(
+          projectId: 'project-2',
+          permissionKey: 'get_cost_estimations',
+          userCredentialId: 'user-1',
+          hasPermission: false,
+        );
+
+        expect(
+          await fakeRepository.hasPermission(
+            projectId: 'project-1',
+            permissionKey: 'get_cost_estimations',
+            userCredentialId: 'user-1',
+          ),
+          isTrue,
+        );
+        expect(
+          await fakeRepository.hasPermission(
+            projectId: 'project-1',
+            permissionKey: 'delete_cost_estimations',
+            userCredentialId: 'user-1',
+          ),
+          isFalse,
+        );
+        expect(
+          await fakeRepository.hasPermission(
+            projectId: 'project-2',
+            permissionKey: 'get_cost_estimations',
+            userCredentialId: 'user-1',
+          ),
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      'hasPermission should throw ServerException when shouldThrowOnHasPermission is true',
+      () async {
+        fakeRepository.shouldThrowOnHasPermission = true;
+        fakeRepository.hasPermissionErrorMessage = 'Permission check failed';
+
+        expect(
+          () => fakeRepository.hasPermission(
+            projectId: 'project-1',
+            permissionKey: 'get_cost_estimations',
+            userCredentialId: 'user-1',
+          ),
+          throwsA(isA<ServerException>()),
+        );
+      },
+    );
+
+    test(
+      'hasPermission should throw TimeoutException when configured with timeout type',
+      () async {
+        fakeRepository.shouldThrowOnHasPermission = true;
+        fakeRepository.hasPermissionExceptionType =
+            SupabaseExceptionType.timeout;
+
+        expect(
+          () => fakeRepository.hasPermission(
+            projectId: 'project-1',
+            permissionKey: 'get_cost_estimations',
+            userCredentialId: 'user-1',
+          ),
+          throwsA(isA<TimeoutException>()),
+        );
+      },
+    );
+
+    test(
+      'hasPermission should throw TypeError when configured with type exception',
+      () async {
+        fakeRepository.shouldThrowOnHasPermission = true;
+        fakeRepository.hasPermissionExceptionType = SupabaseExceptionType.type;
+
+        expect(
+          () => fakeRepository.hasPermission(
+            projectId: 'project-1',
+            permissionKey: 'get_cost_estimations',
+            userCredentialId: 'user-1',
+          ),
+          throwsA(isA<TypeError>()),
+        );
+      },
+    );
+
+    test('hasPermission should handle delayed operations', () async {
+      fakeRepository.setPermission(
+        projectId: 'project-1',
+        permissionKey: 'get_cost_estimations',
+        userCredentialId: 'user-1',
+        hasPermission: true,
+      );
+      fakeRepository.shouldDelayOperations = true;
+      fakeRepository.completer = Completer();
+
+      final future = fakeRepository.hasPermission(
+        projectId: 'project-1',
+        permissionKey: 'get_cost_estimations',
+        userCredentialId: 'user-1',
+      );
+
+      bool completedImmediately = false;
+      future.then((_) => completedImmediately = true);
+      expect(completedImmediately, isFalse);
+
+      fakeRepository.completer!.complete();
+      final result = await future;
+
+      expect(result, isTrue);
+    });
+  });
+
   group('Repository Reset', () {
     test('reset should clear all configurations and data', () async {
       final testProject = createFakeProject(id: 'test-id');
@@ -325,6 +521,32 @@ void main() {
       expect(
         () => fakeRepository.getProject('test-id'),
         throwsA(isA<ServerException>()),
+      );
+    });
+
+    test('reset should clear permission configurations and data', () async {
+      fakeRepository.shouldThrowOnHasPermission = true;
+      fakeRepository.hasPermissionErrorMessage = 'Permission error';
+      fakeRepository.hasPermissionExceptionType = SupabaseExceptionType.timeout;
+      fakeRepository.setPermission(
+        projectId: 'project-1',
+        permissionKey: 'get_cost_estimations',
+        userCredentialId: 'user-1',
+        hasPermission: true,
+      );
+
+      fakeRepository.reset();
+
+      expect(fakeRepository.shouldThrowOnHasPermission, isFalse);
+      expect(fakeRepository.hasPermissionErrorMessage, isNull);
+      expect(fakeRepository.hasPermissionExceptionType, isNull);
+      expect(
+        await fakeRepository.hasPermission(
+          projectId: 'project-1',
+          permissionKey: 'get_cost_estimations',
+          userCredentialId: 'user-1',
+        ),
+        isFalse,
       );
     });
   });

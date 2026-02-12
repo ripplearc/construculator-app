@@ -14,4 +14,17 @@ abstract class ProjectRepository {
   /// all project details including name, description, creator, company,
   /// export settings, and status.
   Future<Project> getProject(String id);
+
+  /// Checks whether a user has a specific permission on a project.
+  ///
+  /// [projectId] The ID of the project to check permission for.
+  /// [permissionKey] The permission key to check (e.g., "get_cost_estimations").
+  /// [userCredentialId] The credential ID of the user to check.
+  ///
+  /// Returns `true` if the user has the specified permission, `false` otherwise.
+  Future<bool> hasPermission({
+    required String projectId,
+    required String permissionKey,
+    required String userCredentialId,
+  });
 }

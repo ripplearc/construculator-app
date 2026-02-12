@@ -1,6 +1,12 @@
+import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/libraries/config/testing/fake_app_config.dart';
+import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/project/data/repositories/project_repository_impl.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/project_library_module.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -11,8 +17,15 @@ void main() {
     late ProjectRepositoryImpl repository;
 
     setUpAll(() {
-      Modular.init(_TestModule());
-      repository = Modular.get<ProjectRepositoryImpl>();
+      final appBootstrap = AppBootstrap(
+        envLoader: FakeEnvLoader(),
+        config: FakeAppConfig(),
+        supabaseWrapper: FakeSupabaseWrapper(
+          clock: FakeClockImpl(DateTime(2025, 10, 1, 10, 30)),
+        ),
+      );
+      Modular.init(_TestModule(appBootstrap: appBootstrap));
+      repository = Modular.get<ProjectRepository>() as ProjectRepositoryImpl;
     });
     tearDownAll(() {
       Modular.dispose();
@@ -84,9 +97,14 @@ void main() {
 }
 
 class _TestModule extends Module {
+  final AppBootstrap appBootstrap;
+  _TestModule({required this.appBootstrap});
+
+  @override
+  List<Module> get imports => [ProjectLibraryModule(appBootstrap)];
+
   @override
   void binds(Injector i) {
     i.add<Clock>(() => FakeClockImpl(DateTime(2025, 10, 1, 10, 30)));
-    i.add<ProjectRepositoryImpl>(() => ProjectRepositoryImpl());
   }
 }
