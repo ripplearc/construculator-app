@@ -236,6 +236,47 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
   }
 
   @override
+  Future<Either<Failure, CostEstimate>> changeLockStatus({
+    required String estimationId,
+    required bool isLocked,
+    required String projectId,
+  }) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    _methodCalls.add({
+      'method': 'changeLockStatus',
+      'estimationId': estimationId,
+      'isLocked': isLocked,
+      'projectId': projectId,
+    });
+
+    final estimations = _projectEstimations[projectId] ?? [];
+    final index = estimations.indexWhere((e) => e.id == estimationId);
+
+    if (index == -1) {
+      return const Left(
+        EstimationFailure(errorType: EstimationErrorType.notFoundError),
+      );
+    }
+
+    final originalEstimation = estimations[index];
+    final updatedEstimation = originalEstimation.copyWith(
+      lockStatus: isLocked
+          ? LockStatus.locked('fake-user-id', clock.now())
+          : const LockStatus.unlocked(),
+    );
+
+    estimations[index] = updatedEstimation;
+    _projectEstimations[projectId] = estimations;
+
+    _emitToStream(projectId, Right(estimations));
+
+    return Right(updatedEstimation);
+  }
+
+  @override
   void dispose() {
     for (final controller in _streamControllers.values) {
       if (!controller.isClosed) {

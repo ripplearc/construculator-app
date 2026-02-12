@@ -66,6 +66,20 @@ abstract class CostEstimationRepository {
     String projectId,
   );
 
+  /// Changes the lock status of a cost estimation.
+  ///
+  /// [estimationId] The ID of the estimation to update.
+  /// [isLocked] Whether the estimation should be locked or unlocked.
+  /// [projectId] The ID of the project the estimation belongs to (required for cache/stream updates).
+  ///
+  /// Returns a [Future] that completes with an [Either] containing either
+  /// a [Failure] or the updated [CostEstimate].
+  Future<Either<Failure, CostEstimate>> changeLockStatus({
+    required String estimationId,
+    required bool isLocked,
+    required String projectId,
+  });
+
   /// Disposes of all resources used by the repository.
   ///
   /// This method should be called when the repository is no longer needed.

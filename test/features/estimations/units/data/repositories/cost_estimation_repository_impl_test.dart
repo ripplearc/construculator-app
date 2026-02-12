@@ -1404,5 +1404,240 @@ void main() {
         await subscription.cancel();
       });
     });
+
+    group('changeLockStatus', () {
+      test(
+        'should return updated estimation and update stream when locking succeeds',
+        () async {
+          final initialMap = buildEstimationMap(
+            id: estimateIdDefault,
+            projectId: testProjectId,
+            isLocked: false,
+          );
+          seedEstimationTable([initialMap]);
+
+          final stream = repository.watchEstimations(testProjectId);
+          final updates = <Either<Failure, List<CostEstimate>>>[];
+          stream.listen(updates.add);
+
+          await pumpEventQueue();
+
+          final result = await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+
+          await pumpEventQueue();
+
+          expect(result.isRight(), isTrue);
+          result.fold((_) => fail('Blocking failed'), (updatedEstimation) {
+            expect(updatedEstimation.lockStatus.isLocked, isTrue);
+          });
+
+          // Expect 3 emissions: initial + optimistic + final
+          expect(updates, hasLength(3));
+          updates.last.fold((_) => fail('Stream update failed'), (estimations) {
+            expect(estimations, hasLength(1));
+            expect(estimations.first.lockStatus.isLocked, isTrue);
+          });
+        },
+      );
+
+      test(
+        'should return updated estimation and update stream when unlocking succeeds',
+        () async {
+          final initialMap = buildEstimationMap(
+            id: estimateIdDefault,
+            projectId: testProjectId,
+            isLocked: true,
+            lockedByUserId: userIdDefault,
+            lockedAt: timestampDefault,
+          );
+          seedEstimationTable([initialMap]);
+
+          final stream = repository.watchEstimations(testProjectId);
+          final updates = <Either<Failure, List<CostEstimate>>>[];
+          stream.listen(updates.add);
+
+          await pumpEventQueue();
+
+          final result = await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: false,
+            projectId: testProjectId,
+          );
+
+          await pumpEventQueue();
+
+          expect(result.isRight(), isTrue);
+          result.fold((_) => fail('Unlocking failed'), (updatedEstimation) {
+            expect(updatedEstimation.lockStatus.isLocked, isFalse);
+          });
+
+          expect(updates, hasLength(3));
+          updates.last.fold((_) => fail('Stream update failed'), (estimations) {
+            expect(estimations, hasLength(1));
+            expect(estimations.first.lockStatus.isLocked, isFalse);
+          });
+        },
+      );
+
+      test(
+        'should return timeout failure when data source throws timeout',
+        () async {
+          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+          fakeSupabaseWrapper.updateExceptionType =
+              SupabaseExceptionType.timeout;
+          fakeSupabaseWrapper.updateErrorMessage = errorMsgTimeout;
+
+          final result = await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+
+          expect(result.isLeft(), isTrue);
+          result.fold(
+            (failure) => expect(
+              failure,
+              EstimationFailure(errorType: EstimationErrorType.timeoutError),
+            ),
+            (_) => fail('Expected failure but got success'),
+          );
+        },
+      );
+
+      test(
+        'should return notFoundError when data source throws PGRST116',
+        () async {
+          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+          fakeSupabaseWrapper.updateExceptionType =
+              SupabaseExceptionType.postgrest;
+          fakeSupabaseWrapper.postgrestErrorCode =
+              PostgresErrorCode.noDataFound;
+          fakeSupabaseWrapper.updateErrorMessage = 'No data found';
+
+          final result = await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+
+          expect(result.isLeft(), isTrue);
+          result.fold(
+            (failure) => expect(
+              failure,
+              EstimationFailure(errorType: EstimationErrorType.notFoundError),
+            ),
+            (_) => fail('Expected failure but got success'),
+          );
+        },
+      );
+
+      test(
+        'should emit optimistic update to stream before API call completes',
+        () async {
+          final initialMap = buildEstimationMap(
+            id: estimateIdDefault,
+            projectId: testProjectId,
+            isLocked: false,
+          );
+          seedEstimationTable([initialMap]);
+
+          final stream = repository.watchEstimations(testProjectId);
+          final updates = <Either<Failure, List<CostEstimate>>>[];
+          stream.listen(updates.add);
+
+          await pumpEventQueue();
+
+          expect(updates, hasLength(1));
+          updates[0].fold((_) => fail('Initial load failed'), (estimations) {
+            expect(estimations.first.lockStatus.isLocked, isFalse);
+          });
+
+          final resultFuture = repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+
+          await pumpEventQueue();
+
+          expect(updates.length, greaterThan(1));
+          updates[1].fold((_) => fail('Optimistic update failed'), (
+            estimations,
+          ) {
+            expect(estimations.first.lockStatus.isLocked, isTrue);
+          });
+
+          await resultFuture;
+
+          await pumpEventQueue();
+          final lastUpdate = updates.last;
+          lastUpdate.fold((_) => fail('Final update failed'), (estimations) {
+            expect(estimations.first.lockStatus.isLocked, isTrue);
+          });
+        },
+      );
+
+      test('should revert optimistic update when data source throws', () async {
+        final initialMap = buildEstimationMap(
+          id: estimateIdDefault,
+          projectId: testProjectId,
+          isLocked: false,
+        );
+        seedEstimationTable([initialMap]);
+
+        final stream = repository.watchEstimations(testProjectId);
+        final updates = <Either<Failure, List<CostEstimate>>>[];
+        stream.listen(updates.add);
+
+        await pumpEventQueue();
+
+        fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+        fakeSupabaseWrapper.updateExceptionType = SupabaseExceptionType.timeout;
+        fakeSupabaseWrapper.updateErrorMessage = errorMsgTimeout;
+
+        final result = await repository.changeLockStatus(
+          estimationId: estimateIdDefault,
+          isLocked: true,
+          projectId: testProjectId,
+        );
+
+        expect(result.isLeft(), isTrue);
+
+        await pumpEventQueue();
+
+        expect(updates.length, greaterThanOrEqualTo(3));
+        updates[1].fold((_) => fail('Optimistic update failed'), (estimations) {
+          expect(estimations.first.lockStatus.isLocked, isTrue);
+        });
+
+        updates.last.fold((_) => fail('Rollback update failed'), (estimations) {
+          expect(estimations.first.lockStatus.isLocked, isFalse);
+        });
+      });
+
+      test('should succeed without active stream listeners', () async {
+        final initialMap = buildEstimationMap(
+          id: estimateIdDefault,
+          projectId: testProjectId,
+          isLocked: false,
+        );
+        seedEstimationTable([initialMap]);
+
+        final result = await repository.changeLockStatus(
+          estimationId: estimateIdDefault,
+          isLocked: true,
+          projectId: testProjectId,
+        );
+
+        expect(result.isRight(), isTrue);
+        result.fold((_) => fail('Expected success'), (updated) {
+          expect(updated.lockStatus.isLocked, isTrue);
+        });
+      });
+    });
   });
 }

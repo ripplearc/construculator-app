@@ -5,6 +5,7 @@ import 'package:construculator/features/estimation/data/data_source/interfaces/c
 import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/features/estimation/data/models/pagination_state.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
@@ -390,6 +391,83 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       await fetchInitialEstimations(projectId);
 
       return Left(failure);
+    }
+  }
+
+  @override
+  Future<Either<Failure, CostEstimate>> changeLockStatus({
+    required String estimationId,
+    required bool isLocked,
+    required String projectId,
+  }) async {
+    CostEstimate? previousEstimation;
+    if (_streamControllers.containsKey(projectId)) {
+      previousEstimation = (_cachedEstimations[projectId] ?? []).firstWhere(
+        (e) => e.id == estimationId,
+      );
+    }
+
+    try {
+      _logger.debug(
+        'Changing lock status for estimation: $estimationId to $isLocked',
+      );
+
+      if (_streamControllers.containsKey(projectId)) {
+        final cachedEstimations = _cachedEstimations[projectId] ?? [];
+        final updatedList = cachedEstimations.map((e) {
+          return e.id == estimationId
+              ? e.copyWith(
+                  lockStatus: isLocked
+                      ? LockStatus.locked()
+                      : LockStatus.unlocked(),
+                )
+              : e;
+        }).toList();
+
+        _emitToStream(projectId, Right(updatedList));
+      }
+
+      final updatedDto = await _dataSource.changeLockStatus(
+        estimationId: estimationId,
+        isLocked: isLocked,
+      );
+
+      final updatedEstimation = updatedDto.toDomain();
+
+      if (_streamControllers.containsKey(projectId)) {
+        final cachedEstimations = _cachedEstimations[projectId] ?? [];
+        final updatedList = cachedEstimations.map((e) {
+          return e.id == estimationId ? updatedEstimation : e;
+        }).toList();
+
+        _logger.debug(
+          'Updating stream with locked/unlocked estimation for project: $projectId',
+        );
+
+        _emitToStream(projectId, Right(updatedList));
+      }
+
+      return Right(updatedEstimation);
+    } catch (e) {
+      if (previousEstimation != null &&
+          _streamControllers.containsKey(projectId)) {
+        final cachedEstimations = _cachedEstimations[projectId] ?? [];
+        final updatedList = cachedEstimations.map((e) {
+          return e.id == estimationId
+              ? e.copyWith(lockStatus: previousEstimation?.lockStatus)
+              : e;
+        }).toList();
+
+        _emitToStream(projectId, Right(updatedList));
+      }
+      return Left(
+        _handleError(
+          e,
+          'changing lock status',
+          estimationId: estimationId,
+          projectId: projectId,
+        ),
+      );
     }
   }
 }

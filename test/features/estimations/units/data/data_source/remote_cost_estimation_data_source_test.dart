@@ -533,5 +533,89 @@ void main() {
         },
       );
     });
+
+    group('changeLockStatus', () {
+      test('should lock estimation and return updated DTO', () async {
+        final estimationData =
+            EstimationTestDataMapFactory.createFakeEstimationData(
+              id: estimateId1,
+              estimateName: estimateName1,
+              creatorUserId: userId1,
+              isLocked: false,
+            );
+        fakeSupabaseWrapper.addTableData(tableName, [estimationData]);
+
+        final result = await dataSource.changeLockStatus(
+          estimationId: estimateId1,
+          isLocked: true,
+        );
+
+        expect(result.isLocked, isTrue);
+      });
+
+      test('should unlock estimation and return updated DTO', () async {
+        final estimationData =
+            EstimationTestDataMapFactory.createFakeEstimationData(
+              id: estimateId1,
+              estimateName: estimateName1,
+              creatorUserId: userId1,
+              isLocked: true,
+              lockedByUserId: userId1,
+              lockedAt: timestamp5,
+            );
+        fakeSupabaseWrapper.addTableData(tableName, [estimationData]);
+
+        final result = await dataSource.changeLockStatus(
+          estimationId: estimateId1,
+          isLocked: false,
+        );
+
+        expect(result.isLocked, isFalse);
+      });
+
+      test(
+        'should call supabaseWrapper.update with correct parameters when locking',
+        () async {
+          final estimationData =
+              EstimationTestDataMapFactory.createFakeEstimationData(
+                id: estimateId1,
+                isLocked: false,
+              );
+          fakeSupabaseWrapper.addTableData(tableName, [estimationData]);
+
+          await dataSource.changeLockStatus(
+            estimationId: estimateId1,
+            isLocked: true,
+          );
+
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
+          expect(methodCalls, hasLength(1));
+
+          final call = methodCalls.first;
+          expect(call['table'], equals(tableName));
+          expect(call['data']['is_locked'], isTrue);
+          expect(call['filterColumn'], equals('id'));
+          expect(call['filterValue'], equals(estimateId1));
+        },
+      );
+
+      test(
+        'should rethrow exception when supabaseWrapper.update throws',
+        () async {
+          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+          fakeSupabaseWrapper.updateExceptionType =
+              SupabaseExceptionType.postgrest;
+          fakeSupabaseWrapper.updateErrorMessage = errorMsgDbConnection;
+
+          await expectLater(
+            () => dataSource.changeLockStatus(
+              estimationId: estimateId1,
+              isLocked: true,
+            ),
+            throwsA(isA<supabase.PostgrestException>()),
+          );
+        },
+      );
+    });
   });
 }
