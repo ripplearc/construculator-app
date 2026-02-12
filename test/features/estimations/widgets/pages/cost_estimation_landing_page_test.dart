@@ -916,6 +916,114 @@ void main() {
     );
   });
 
+  group('Lock Status Integration', () {
+    testWidgets(
+      'calls router.pop and shows success toast when locked successfully',
+      (tester) async {
+        const estimationName = 'Kitchen Remodel';
+        await setupAndNavigateToEstimation(
+          tester,
+          estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimation-1',
+            projectId: testProjectId,
+            estimateName: estimationName,
+            isLocked: false,
+          ),
+        );
+
+        await tester.tap(find.byKey(const Key('menuIcon')).first);
+        await tester.pumpAndSettle();
+
+        expect(fakeAppRouter.popCalls, 0);
+
+        await tester.tap(find.byType(CoreSwitch));
+        await tester.pumpAndSettle();
+
+        expect(fakeAppRouter.popCalls, 1);
+        expect(find.text(l10n().estimationLockedSuccessTitle), findsOneWidget);
+      },
+    );
+
+    testWidgets('shows success toast when unlocked successfully', (
+      tester,
+    ) async {
+      const estimationName = 'Kitchen Remodel';
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: estimationName,
+          isLocked: true,
+        ),
+      );
+
+      await tester.tap(find.byKey(const Key('menuIcon')).first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(CoreSwitch));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().estimationUnlockedSuccessTitle), findsOneWidget);
+    });
+
+    testWidgets('shows error toast when lock action fails', (tester) async {
+      const estimationName = 'Kitchen Remodel';
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: estimationName,
+          isLocked: false,
+        ),
+      );
+
+      fakeSupabase.shouldThrowOnUpdate = true;
+      fakeSupabase.updateExceptionType = SupabaseExceptionType.socket;
+
+      await tester.tap(find.byKey(const Key('menuIcon')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(CoreSwitch));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().connectionError), findsOneWidget);
+    });
+
+    testWidgets('rolls back switch value when lock update fails', (
+      tester,
+    ) async {
+      const estimationName = 'Kitchen Remodel';
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: estimationName,
+          isLocked: false,
+        ),
+      );
+
+      fakeSupabase.shouldThrowOnUpdate = true;
+      fakeSupabase.updateExceptionType = SupabaseExceptionType.socket;
+
+      await tester.tap(find.byKey(const Key('menuIcon')));
+      await tester.pumpAndSettle();
+
+      final switchBefore = tester.widget<CoreSwitch>(find.byType(CoreSwitch));
+      expect(switchBefore.value, isFalse);
+
+      await tester.tap(find.byType(CoreSwitch));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().connectionError), findsOneWidget);
+
+      final switchAfter = tester.widget<CoreSwitch>(find.byType(CoreSwitch));
+      expect(switchAfter.value, isFalse);
+    });
+  });
+
   group('Route validation', () {
     testWidgets('renders empty screen when projectId is missing', (
       tester,
