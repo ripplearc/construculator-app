@@ -4,6 +4,7 @@ import 'package:construculator/features/estimation/domain/entities/cost_estimate
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/change_lock_status_bloc/change_lock_status_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/features/estimation/presentation/widgets/delete_estimation_confirmation_sheet.dart';
@@ -136,7 +137,14 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           _showDeleteConfirmationSheet(estimation, colorTheme);
         },
         onLock: (bool isLocked) {
-          // TODO:https://ripplearc.youtrack.cloud/issue/CA-88
+          _router.pop();
+          BlocProvider.of<ChangeLockStatusBloc>(context).add(
+            ChangeLockStatusRequested(
+              estimationId: estimation.id,
+              isLocked: isLocked,
+              projectId: widget.projectId,
+            ),
+          );
         },
         isLocked: estimation.lockStatus.isLocked,
       ),
@@ -213,6 +221,33 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
             }
 
             if (state is DeleteCostEstimationFailure) {
+              CoreToast.showError(
+                context,
+                _mapFailureToMessage(l10n, state.failure),
+                l10n.closeLabel,
+              );
+            }
+          },
+        ),
+        BlocListener<ChangeLockStatusBloc, ChangeLockStatusState>(
+          listener: (context, state) {
+            final l10n = context.l10n;
+            if (state is ChangeLockStatusSuccess) {
+              if (state.isLocked) {
+                CoreToast.showWarning(
+                  context,
+                  l10n.estimationLockedSuccessTitle,
+                  l10n.closeLabel,
+                );
+              } else {
+                CoreToast.showSuccess(
+                  context,
+                  l10n.estimationUnlockedSuccessTitle,
+                  l10n.closeLabel,
+                );
+              }
+            }
+            if (state is ChangeLockStatusFailure) {
               CoreToast.showError(
                 context,
                 _mapFailureToMessage(l10n, state.failure),
