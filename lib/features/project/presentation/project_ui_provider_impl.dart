@@ -9,14 +9,12 @@ class ProjectUIProviderImpl extends ProjectUIProvider {
     VoidCallback? onProjectTap,
     VoidCallback? onSearchTap,
     VoidCallback? onNotificationTap,
-    ImageProvider<Object>? avatarImage,
   }) {
     return ProjectHeaderAppBar(
       projectId: projectId,
       onProjectTap: onProjectTap,
       onSearchTap: onSearchTap,
       onNotificationTap: onNotificationTap,
-      avatarImage: avatarImage,
     );
   }
 }

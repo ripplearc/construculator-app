@@ -1,3 +1,5 @@
+// coverage:ignore-file
+
 part of 'change_lock_status_bloc.dart';
 
 /// Base class for events that modify an estimation lock status.

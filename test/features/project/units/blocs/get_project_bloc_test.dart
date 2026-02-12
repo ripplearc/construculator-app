@@ -1,7 +1,10 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/project/domain/entities/project_header_data.dart';
 import 'package:construculator/features/project/presentation/bloc/get_project_bloc/get_project_bloc.dart';
 import 'package:construculator/features/project/project_module.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
+import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/errors/failures.dart';
@@ -53,16 +56,17 @@ void main() {
     late FakeProjectRepository fakeProjectRepository;
 
     setUpAll(() {
+      clock = FakeClockImpl();
       final appBootstrap = AppBootstrap(
         config: FakeAppConfig(),
         envLoader: FakeEnvLoader(),
-        supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
+        supabaseWrapper: FakeSupabaseWrapper(clock: clock),
       );
       Modular.init(ProjectModule(appBootstrap));
       Modular.replaceInstance<ProjectRepository>(FakeProjectRepository());
+      Modular.replaceInstance<AuthRepository>(FakeAuthRepository(clock: clock));
       fakeProjectRepository =
           Modular.get<ProjectRepository>() as FakeProjectRepository;
-      clock = Modular.get<Clock>();
     });
 
     tearDownAll(() {
@@ -98,6 +102,11 @@ void main() {
         expect: () => [
           GetProjectByIdLoading(),
           isA<GetProjectByIdLoadSuccess>()
+              .having(
+                (state) => state.headerData,
+                'headerData',
+                isA<ProjectHeaderData>(),
+              )
               .having((state) => state.project.id, 'project.id', testProjectId)
               .having(
                 (state) => state.project.projectName,
@@ -140,7 +149,7 @@ void main() {
           isA<GetProjectByIdLoadFailure>().having(
             (state) => state.failure,
             'failure',
-            isA<UnexpectedFailure>(),
+            isA<ServerFailure>(),
           ),
         ],
       );
@@ -162,7 +171,7 @@ void main() {
           isA<GetProjectByIdLoadFailure>().having(
             (state) => state.failure,
             'failure',
-            isA<UnexpectedFailure>(),
+            isA<NetworkFailure>(),
           ),
         ],
       );
@@ -179,7 +188,7 @@ void main() {
           isA<GetProjectByIdLoadFailure>().having(
             (state) => state.failure,
             'failure',
-            isA<UnexpectedFailure>(),
+            isA<ServerFailure>(),
           ),
         ],
       );

@@ -52,6 +52,23 @@ class FakeAuthRepository implements AuthRepository {
   /// Constructor for fake auth repository
   FakeAuthRepository({required Clock clock}) : _clock = clock;
 
+  /// Resets all fake state and recorded calls
+  void reset() {
+    _currentUser = null;
+    _userProfiles.clear();
+    _errorMessage = null;
+    _authShouldSucceed = true;
+    returnNullUserProfile = false;
+    shouldThrowOnGetUserProfile = false;
+    exceptionMessage = 'Test exception';
+    getUserProfileCalls.clear();
+    createProfileCalls.clear();
+    updateProfileCalls.clear();
+    updateEmailCalls.clear();
+    updatePasswordCalls.clear();
+    getCurrentUserCallCount = 0;
+  }
+
   /// Sets the current user credentials for testing
   void setCurrentCredentials(UserCredential credentials) {
     _currentUser = credentials;
