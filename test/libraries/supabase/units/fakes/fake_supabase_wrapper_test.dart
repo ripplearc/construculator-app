@@ -539,22 +539,17 @@ void main() {
       });
 
       group('delete', () {
-        test('removes record from table and returns deleted row', () async {
+        test('removes record from table', () async {
           fakeWrapper.addTableData('users', [
             {'id': '1', 'email': 'test@example.com', 'name': 'Test User'},
             {'id': '2', 'email': 'other@example.com', 'name': 'Other User'},
           ]);
 
-          final deletedRow = await fakeWrapper.delete(
+          await fakeWrapper.delete(
             table: 'users',
             filterColumn: 'id',
             filterValue: '1',
           );
-
-          expect(deletedRow, isNotNull);
-          expect(deletedRow['id'], equals('1'));
-          expect(deletedRow['email'], equals('test@example.com'));
-          expect(deletedRow['name'], equals('Test User'));
 
           final deletedUser = await fakeWrapper.selectSingle(
             table: 'users',
