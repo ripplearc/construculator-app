@@ -32,7 +32,7 @@
 # The AI will provide a comprehensive review that includes:
 # - Changes Overview: Analysis of all modified files with statistics
 # - GitHub-style Diffs: Detailed review of each file's changes
-# - Review Instructions: Feedback based on the 4 review rules
+# - Review Instructions: Feedback based on the 8 review rules
 # - Summary Table: Issues found that need your attention
 #
 # STEP 4: Use Markdown Preview
@@ -270,7 +270,31 @@ echo "- Ensure BLoCs test real UseCases, UseCases test real Services, etc." >> "
 echo "" >> "$OUTPUT_FILE"
 
 # =============================================================================
-# RULE 4: UI & BUSINESS LOGIC SEPARATION
+# RULE 4: COREUI COMPONENTS USAGE
+# =============================================================================
+echo "### 🎨 RULE 4: COREUI COMPONENTS USAGE" >> "$OUTPUT_FILE"
+echo "**Core Principle:** All UI components, styling, and design tokens must use CoreUI package instead of Flutter's default Material components" >> "$OUTPUT_FILE"
+echo "**Core Principle:** For the latest CoreUI theme tokens and design system details, use the CoreUI README:
+https://github.com/ripplearc/coreui#readme" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Key Requirements:**" >> "$OUTPUT_FILE"
+echo "- ✅ **Spacing:** Use \`CoreSpacing\` (e.g., \`CoreSpacing.space16\`) instead of hardcoded values like \`EdgeInsets.all(24.0)\` or \`SizedBox(height: 24)\`" >> "$OUTPUT_FILE"
+echo "- ✅ **Icons:** Use \`CoreIcons\` and \`CoreIconWidget\` instead of \`Icons.*\` from Material" >> "$OUTPUT_FILE"
+echo "- ✅ **Typography:** Use \`CoreTypography\` (e.g., \`CoreTypography.bodyMediumRegular()\`) instead of \`TextStyle\` with hardcoded font properties" >> "$OUTPUT_FILE"
+echo "- ✅ **Colors:** Use \`CoreTextColors\`, \`CoreBackgroundColors\`, and other CoreUI color classes instead of \`Colors.*\` or \`Theme.of(context).*\` for colors" >> "$OUTPUT_FILE"
+echo "- ✅ **Components:** Use CoreUI components (e.g., \`CoreButton\`, \`CoreTextField\`) instead of Material equivalents (\`ElevatedButton\`, \`TextFormField\`)" >> "$OUTPUT_FILE"
+echo "- ✅ **Theme:** Use \`CoreTheme\` for theme configuration" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Verify all spacing values use \`CoreSpacing\` constants" >> "$OUTPUT_FILE"
+echo "- Check that icons use \`CoreIcons\` and \`CoreIconWidget\`" >> "$OUTPUT_FILE"
+echo "- Ensure typography uses \`CoreTypography\` methods" >> "$OUTPUT_FILE"
+echo "- Confirm colors come from CoreUI color classes, not Material \`Colors\` or theme lookups" >> "$OUTPUT_FILE"
+echo "- Validate that UI components use CoreUI equivalents (e.g., \`CoreButton\` not \`ElevatedButton\`)" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
+# RULE 5: UI & BUSINESS LOGIC SEPARATION
 # =============================================================================
 echo "### 🎨 RULE 5: UI & BUSINESS LOGIC SEPARATION" >> "$OUTPUT_FILE"
 echo "**Reference:** For detailed guidelines and code samples, search: https://gist.github.com/ripplearcgit/f190fecc8f7124e511cb01283f9fbc31" >> "$OUTPUT_FILE"
@@ -290,7 +314,7 @@ echo "- Verify that all validation, data fetching, and coordination live in BLoC
 echo "" >> "$OUTPUT_FILE"
 
 # =============================================================================
-# RULE 5: STREAM-BASED PERFORMANCE & LIFECYCLE
+# RULE 6: STREAM-BASED PERFORMANCE & LIFECYCLE
 # =============================================================================
 echo "### ⚡ RULE 6: STREAM-BASED PERFORMANCE & LIFECYCLE" >> "$OUTPUT_FILE"
 echo "**Reference:** For detailed guidelines and code samples, search: https://gist.github.com/ripplearcgit/7818b412bf5fbe06269e0c3830e136f5" >> "$OUTPUT_FILE"
@@ -310,9 +334,9 @@ echo "- Ensure all BLoC stream subscriptions are cancelled during disposal." >> 
 echo "" >> "$OUTPUT_FILE"
 
 # =============================================================================
-# RULE 6: SELF-DOCUMENTING & CLEAN CODE (ANTI-AI ARTIFACTS)
+# RULE 7: SELF-DOCUMENTING & CLEAN CODE (ANTI-AI ARTIFACTS)
 # =============================================================================
-echo "### 🧹 RULE 6: SELF-DOCUMENTING & CLEAN CODE" >> "$OUTPUT_FILE"
+echo "### 🧹 RULE 7: SELF-DOCUMENTING & CLEAN CODE" >> "$OUTPUT_FILE"
 echo "**Core Principle:** Code must be expressive and clean. Use 'Code Documentation' to define contracts, but avoid 'Implementation Comments' to explain logic." >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 echo "**✅ What to Keep (Code Documentation):**" >> "$OUTPUT_FILE"
@@ -331,9 +355,86 @@ echo "- **Maintain Contracts:** Ensure docstrings accurately reflect the *behavi
 echo "" >> "$OUTPUT_FILE"
 
 # =============================================================================
-# RULE 7: GENERAL CODE REVIEW CRITERIA
+# RULE 8: WIDGET TEST BEHAVIOR & ROBUST FIND EXPRESSIONS
 # =============================================================================
-echo "### 🔍 RULE 4: GENERAL CODE REVIEW CRITERIA" >> "$OUTPUT_FILE"
+echo "### 🧪 RULE 8: WIDGET TEST BEHAVIOR & ROBUST FIND EXPRESSIONS" >> "$OUTPUT_FILE"
+echo "**Core Principle:** Widget tests should focus on behavior, not implementation details. Use Keys for reliable widget finding." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Test Behavior, Not Implementation:**" >> "$OUTPUT_FILE"
+echo "- ✅ **Focus on:** What the widget does (user interactions, displayed content, state changes)" >> "$OUTPUT_FILE"
+echo "- ❌ **Avoid:** Testing implementation details (specific widget types, internal structure, exact widget counts)" >> "$OUTPUT_FILE"
+echo "- ✅ **Example Good:** Test that tapping a button triggers a callback or navigates" >> "$OUTPUT_FILE"
+echo "- ❌ **Example Bad:** Test that a widget tree contains exactly 3 \`CoreIconWidget\` instances" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Robust Find Expressions:**" >> "$OUTPUT_FILE"
+echo "- ❌ **Forbidden:** Fragile find expressions that rely on implementation details:" >> "$OUTPUT_FILE"
+echo "  - \`expect(find.byType(CoreIconWidget), findsNWidgets(3))\` - breaks if widget structure changes" >> "$OUTPUT_FILE"
+echo "  - \`find.byType(IconButton).first\` - fragile, order-dependent" >> "$OUTPUT_FILE"
+echo "  - \`find.byType(Row)\` - too generic, may match unintended widgets" >> "$OUTPUT_FILE"
+echo "- ✅ **Preferred:** Use Keys for reliable, semantic widget finding:" >> "$OUTPUT_FILE"
+echo "  - \`find.byKey(const Key('auth_footer_link'))\` - semantic, stable" >> "$OUTPUT_FILE"
+echo "  - \`find.byKey(Key('pin_input'))\` - clear intent, resilient to refactoring" >> "$OUTPUT_FILE"
+echo "- ✅ **Acceptable:** Text-based finds when testing user-visible content:" >> "$OUTPUT_FILE"
+echo "  - \`find.text('Logout')\` - tests visible content" >> "$OUTPUT_FILE"
+echo "  - \`find.widgetWithText(CoreButton, 'Continue')\` - semantic and user-focused" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Verify tests focus on behavior and user interactions, not implementation details" >> "$OUTPUT_FILE"
+echo "- Check that find expressions use Keys for widget identification" >> "$OUTPUT_FILE"
+echo "- Ensure no tests use \`findsNWidgets\` with \`byType\` for implementation-specific widgets" >> "$OUTPUT_FILE"
+echo "- Confirm that widget finding is semantic and resilient to refactoring" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
+# RULE 9: UNIT TESTS — BEHAVIOR OVER IMPLEMENTATION
+# =============================================================================
+echo "### 🧪 RULE 9: UNIT TESTS — BEHAVIOR OVER IMPLEMENTATION" >> "$OUTPUT_FILE"
+echo "**Core Principle:** Unit tests (BLoC, Service, Repository, UseCase) should assert observable behavior and outputs, not internal structure." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Test Behavior, Not Implementation:**" >> "$OUTPUT_FILE"
+echo "- ✅ **Focus on:** Public API outputs, emitted states, returned values, side-effects at boundaries" >> "$OUTPUT_FILE"
+echo "- ❌ **Avoid:** Internal method calls, private state, internal data structures" >> "$OUTPUT_FILE"
+echo "- ✅ **Example Good:** Service returns expected domain model for a given input" >> "$OUTPUT_FILE"
+echo "- ❌ **Example Bad:** Asserting a private internal helper method was called" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Verify unit tests assert observable behavior and outputs and have good coverage" >> "$OUTPUT_FILE"
+echo "- Ensure refactors that keep behavior intact do not break tests" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
+# RULE 10: LOCALIZATION USAGE
+# =============================================================================
+echo "### 🌐 RULE 10: LOCALIZATION USAGE" >> "$OUTPUT_FILE"
+echo "**Core Principle:** All user-facing strings must be localized using \`AppLocalizations\` instead of hardcoded strings" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Key Requirements:**" >> "$OUTPUT_FILE"
+echo "- ✅ **User-Facing Text:** All strings displayed to users must use \`AppLocalizations\`" >> "$OUTPUT_FILE"
+echo "- ✅ **Access Methods:** Use \`AppLocalizations.of(context)\` or \`LocalizationMixin\`'s \`l10n\` property" >> "$OUTPUT_FILE"
+echo "- ❌ **Forbidden:** Hardcoded strings in \`Text\` widgets, button labels, titles, error messages shown to users" >> "$OUTPUT_FILE"
+echo "- ✅ **Acceptable:** Technical/debug strings, log messages, internal identifiers, test strings" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Examples:**" >> "$OUTPUT_FILE"
+echo "- ❌ **Bad:** \`Text('Welcome back')\` - hardcoded string" >> "$OUTPUT_FILE"
+echo "- ✅ **Good:** \`Text(AppLocalizations.of(context)?.welcomeMessage ?? '')\`" >> "$OUTPUT_FILE"
+echo "- ❌ **Bad:** \`label: 'Logout'\` - hardcoded label" >> "$OUTPUT_FILE"
+echo "- ✅ **Good:** \`label: '\${AppLocalizations.of(context)?.logoutButton}'\`" >> "$OUTPUT_FILE"
+echo "- ❌ **Bad:** \`title: const Text('Construculator')\` - hardcoded title" >> "$OUTPUT_FILE"
+echo "- ✅ **Good:** \`title: Text(AppLocalizations.of(context)?.appTitle ?? '')\`" >> "$OUTPUT_FILE"
+echo "- ✅ **Good (with mixin):** \`Text(l10n?.welcomeMessage ?? '')\` - using \`LocalizationMixin\`" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Verify all user-facing strings use \`AppLocalizations\`" >> "$OUTPUT_FILE"
+echo "- Check that \`Text\` widgets, button labels, titles, and error messages are localized" >> "$OUTPUT_FILE"
+echo "- Ensure no hardcoded English strings appear in UI code" >> "$OUTPUT_FILE"
+echo "- Confirm that localization keys exist in \`app_en.arb\` for all new strings" >> "$OUTPUT_FILE"
+echo "- Validate proper null-safety handling (use \`?? ''\` or \`?.property\` with null checks)" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
+# RULE 11: GENERAL CODE REVIEW CRITERIA
+# =============================================================================
+echo "### 🔍 RULE 11: GENERAL CODE REVIEW CRITERIA" >> "$OUTPUT_FILE"
 echo "1. 📝 Code quality and best practices" >> "$OUTPUT_FILE"
 echo "2. 🐛 Potential bugs or edge cases" >> "$OUTPUT_FILE"
 echo "3. ⚡ Performance implications" >> "$OUTPUT_FILE"
