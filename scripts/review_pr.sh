@@ -432,7 +432,31 @@ echo "- Validate proper null-safety handling (use \`?? ''\` or \`?.property\` wi
 echo "" >> "$OUTPUT_FILE"
 
 # =============================================================================
-# RULE 11: GENERAL CODE REVIEW CRITERIA
+# RULE 11: PRECISION VS. ABSTRACTION (LEVEL-BASED NAMING)
+# =============================================================================
+echo "### 🏷️ RULE 11: PRECISION VS. ABSTRACTION (LEVEL-BASED NAMING)" >> "$OUTPUT_FILE"
+echo "**Core Principle:** Naming precision must be inversely proportional to the abstraction level. The lower the level (Data/Repo), the more explicit the name; the higher the level (UI/UseCase), the more abstract the name." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**The Abstraction Scale:**" >> "$OUTPUT_FILE"
+echo "1. **High Level (UI/Domain):** Focus on 'What'. Use abstract terms (e.g., \`getEstimations\`)." >> "$OUTPUT_FILE"
+echo "2. **Low Level (Repository/Data Source):** Focus on 'How' and 'Scope'. Use explicit terms (e.g., \`fetchInitialProjectEstimations\`)." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Key Requirements:**" >> "$OUTPUT_FILE"
+echo "- ✅ **Avoid Ambiguity at the Bottom:** Repository methods must explicitly state if they perform network fetches, handle pagination resets, or have 'get-or-create' side effects." >> "$OUTPUT_FILE"
+echo "- ✅ **Contract Clarity:** Ensure lower-level names include the lookup key (e.g., \`ByProjectId\`) and the operation type (fetch, find, ensure)." >> "$OUTPUT_FILE"
+echo "- ❌ **Hidden Logic:** Never hide initialization or state-reset logic behind a generic 'get' name in the Data Layer." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Examples:**" >> "$OUTPUT_FILE"
+echo "- ❌ **Bad (Data Layer):** \`getEstimations(id)\` — Is it from cache? Does it reset pagination? Does it create a project if missing?" >> "$OUTPUT_FILE"
+echo "- ✅ **Good (Data Layer):** \`fetchInitialEstimationsByProjectId(id)\` — Clearly defines the source (fetch), the intent (initial/reset), and the scope (by ID)." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Audit [cost_estimation_repository.dart](https://github.com/ripplearc/construculator-app/tree/main443) and its [implementation](url?id=9873) for ambiguous names." >> "$OUTPUT_FILE"
+echo "- Rename methods that perform complex logic (like resetting pagination) to reflect their full impact." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
+# RULE 12: GENERAL CODE REVIEW CRITERIA
 # =============================================================================
 echo "### 🔍 RULE 11: GENERAL CODE REVIEW CRITERIA" >> "$OUTPUT_FILE"
 echo "1. 📝 Code quality and best practices" >> "$OUTPUT_FILE"
