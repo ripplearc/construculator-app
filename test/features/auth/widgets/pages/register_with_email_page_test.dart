@@ -23,6 +23,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+
+import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 
 class _RegisterWithEmailPageTestModule extends Module {
@@ -42,7 +44,7 @@ void main() {
   late FakeAppRouter router;
   BuildContext? buildContext;
 
-  Widget makeTestableWidget({required Widget child}) {
+  Widget makeTestableWidget({required Widget child, ThemeData? theme}) {
     return MultiBlocProvider(
       providers: [
         BlocProvider<RegisterWithEmailBloc>(
@@ -53,7 +55,7 @@ void main() {
         ),
       ],
       child: MaterialApp(
-        theme: createTestTheme(),
+        theme: theme ?? createTestTheme(),
         home: Builder(
           builder: (context) {
             buildContext = context;
@@ -466,5 +468,112 @@ void main() {
         findsOneWidget,
       );
     });
+  });
+
+  group('RegisterWithEmailPage – accessibility', () {
+    testWidgets('meets a11y guidelines for continue button in both themes',
+        (tester) async {
+      fakeSupabase.clearTableData('users');
+      fakeSupabase.setRpcResponse('check_email_exists', false);
+      await setupA11yTest(tester);
+
+      await renderPage(tester, email: 'newuser@example.com');
+      await enterEmail(tester, 'newuser@example.com');
+      await tester.pumpAndSettle();
+
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        (theme) {
+          fakeSupabase.clearTableData('users');
+          fakeSupabase.setRpcResponse('check_email_exists', false);
+          return makeTestableWidget(
+            theme: theme,
+            child: const RegisterWithEmailPage(email: 'newuser@example.com'),
+          );
+        },
+        find.text(l10n().continueButton),
+      );
+    });
+
+    testWidgets('meets a11y guidelines for login link in both themes',
+        (tester) async {
+      await setupA11yTest(tester);
+
+      await renderPage(tester);
+
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        (theme) => makeTestableWidget(
+          theme: theme,
+          child: const RegisterWithEmailPage(email: ''),
+        ),
+        find.byKey(const Key('auth_footer_link')),
+      );
+    });
+
+    testWidgets(
+      'meets a11y guidelines when email already registered (error with login link) in both themes',
+      (tester) async {
+        fakeSupabase.setRpcResponse('check_email_exists', true);
+        await setupA11yTest(tester);
+        await renderPage(tester);
+        await enterEmail(tester, 'registered@example.com');
+        await tester.pumpAndSettle();
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) {
+            fakeSupabase.setRpcResponse('check_email_exists', true);
+            return makeTestableWidget(
+              theme: theme,
+              child: const RegisterWithEmailPage(email: 'registered@example.com'),
+            );
+          },
+          find.byKey(Key(l10n().logginLink)),
+        );
+      },
+    );
+
+    testWidgets(
+      'meets a11y guidelines when validation error shown in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        await renderPage(tester);
+        await enterEmail(tester, 'invalid-email');
+        await tester.pumpAndSettle();
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(
+            theme: theme,
+            child: const RegisterWithEmailPage(email: 'invalid-email'),
+          ),
+          find.text(l10n().invalidEmailError),
+        );
+      },
+    );
+
+    testWidgets(
+      'meets a11y guidelines when server error toast shown in both themes',
+      (tester) async {
+        fakeSupabase.shouldThrowOnSelect = true;
+        await setupA11yTest(tester);
+        await renderPage(tester);
+        await enterEmail(tester, 'error@example.com');
+        await tester.pumpAndSettle();
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) {
+            fakeSupabase.shouldThrowOnSelect = true;
+            return makeTestableWidget(
+              theme: theme,
+              child: const RegisterWithEmailPage(email: 'error@example.com'),
+            );
+          },
+          find.byKey(const Key('toast_close_button')),
+        );
+      },
+    );
   });
 }
