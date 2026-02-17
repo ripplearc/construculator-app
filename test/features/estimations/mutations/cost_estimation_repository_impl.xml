@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- COST ESTIMATION REPOSITORY IMPLEMENTATION MUTATION TESTING -->
+    <!-- Targets: Repository implementation for cost estimations -->
+
+    <files>
+        <file>lib/features/estimation/data/repositories/cost_estimation_repository_impl.dart</file>
+    </files>
+
+    <exclude>
+        <!-- Exclude logging statements -->
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+
+        <!-- Exclude try-catch structure -->
+        <regex pattern="try\s*{" dotAll="false"/>
+        <regex pattern="catch\s*\(" dotAll="false"/>
+
+        <!-- Exclude override annotations -->
+        <regex pattern="@override" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- RULE 1: In fetchInitialEstimations, wrong offset value -->
+        <regex pattern="offset: 0," dotAll="true" id="repo.pagination.wrong_initial_offset">
+            <mutation text="offset: 10,"/>
+        </regex>
+
+        <!-- RULE 2: In fetchInitialEstimations, invert hasMore calculation -->
+        <regex pattern="final hasMore = costEstimates\.length >= defaultPageSize;" dotAll="true" id="repo.pagination.invert_hasmore">
+            <mutation text="final hasMore = costEstimates.length &lt; defaultPageSize;"/>
+        </regex>
+
+        <!-- RULE 3: In loadMoreEstimations, skip hasMore guard check -->
+        <regex pattern="if \(!paginationState\.hasMore\) \{" dotAll="true" id="repo.pagination.skip_hasmore_check">
+            <mutation text="if (paginationState.hasMore) {"/>
+        </regex>
+
+        <!-- RULE 4: In loadMoreEstimations, use wrong offset -->
+        <regex pattern="offset: paginationState\.currentOffset," dotAll="true" id="repo.pagination.wrong_offset">
+            <mutation text="offset: 0,"/>
+        </regex>
+
+        <!-- RULE 5: In loadMoreEstimations, don't append new data to existing -->
+        <regex pattern="final allEstimates = \[\.\.\.existingEstimates, \.\.\.newEstimates\];" dotAll="true" id="repo.data.skip_append">
+            <mutation text="final allEstimates = newEstimates;"/>
+        </regex>
+
+        <!-- RULE 6: In loadMoreEstimations, use wrong offset calculation -->
+        <regex pattern="currentOffset: allEstimates\.length," dotAll="true" id="repo.pagination.wrong_offset_calculation">
+            <mutation text="currentOffset: newEstimates.length,"/>
+        </regex>
+
+        <!-- RULE 7: In hasMoreEstimations, return wrong default value -->
+        <regex pattern="return _paginationStates\[projectId\]\?\.hasMore \?\? true;" dotAll="true" id="repo.pagination.wrong_default_hasmore">
+            <mutation text="return _paginationStates[projectId]?.hasMore ?? false;"/>
+        </regex>
+
+        <!-- RULE 8: In _emitToStream, skip emitting to stream -->
+        <regex pattern="_streamControllers\[projectId\]\?\.add\(result\);" dotAll="true" id="repo.stream.skip_emit">
+            <mutation text="// _streamControllers[projectId]?.add(result);"/>
+        </regex>
+
+        <!-- RULE 9: In _updateStreamWithNewEstimation, fail to increment offset -->
+        <regex pattern="currentOffset: paginationState\.currentOffset \+ 1," dotAll="true" id="repo.pagination.skip_increment">
+            <mutation text="currentOffset: paginationState.currentOffset,"/>
+        </regex>
+
+        <!-- RULE 10: In _updateStreamWithNewEstimation, add to end instead of beginning -->
+        <regex pattern="final updatedEstimations = \[newEstimation, \.\.\.cachedEstimations\];" dotAll="true" id="repo.data.wrong_insert_position">
+            <mutation text="final updatedEstimations = [...cachedEstimations, newEstimation];"/>
+        </regex>
+
+        <!-- RULE 11: In _updateStreamWithDeletedEstimation, fail to decrement offset -->
+        <regex pattern="currentOffset: \(paginationState\.currentOffset - 1\)\.clamp\(" dotAll="true" id="repo.pagination.skip_decrement">
+            <mutation text="currentOffset: paginationState.currentOffset.clamp("/>
+        </regex>
+
+        <!-- RULE 12: Skip emitting to stream on success -->
+        <regex pattern="_emitToStream\(projectId, Right\(costEstimates\)\);" dotAll="true" id="repo.stream.skip_emit_success">
+            <mutation text="// _emitToStream(projectId, Right(costEstimates));"/>
+        </regex>
+
+        <!-- RULE 13: Skip emitting to stream on error -->
+        <regex pattern="_emitToStream\(projectId, Left\(failure\)\);" dotAll="true" id="repo.stream.skip_emit_error">
+            <mutation text="// _emitToStream(projectId, Left(failure));"/>
+        </regex>
+
+        <!-- RULE 14: In deleteEstimation, skip updating stream before delete -->
+        <regex pattern="_updateStreamWithDeletedEstimation\(projectId, estimationId\);" dotAll="true" id="repo.delete.skip_stream_update">
+            <mutation text="// _updateStreamWithDeletedEstimation(projectId, estimationId);"/>
+        </regex>
+
+        <!-- RULE 15: In deleteEstimation, skip refetch on error -->
+        <regex pattern="await fetchInitialEstimations\(projectId\);" dotAll="true" id="repo.delete.skip_refetch_on_error">
+            <mutation text="// await fetchInitialEstimations(projectId);"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="cost_estimation_repository" expected-return="0">flutter test test/features/estimations/units/data/repositories/cost_estimation_repository_impl_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

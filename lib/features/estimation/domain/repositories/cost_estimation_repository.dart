@@ -20,7 +20,9 @@ abstract class CostEstimationRepository {
   /// Returns a [Future] that completes with an [Either] containing either
   /// a [Failure] or a [List<CostEstimate>] associated with the specified
   /// project ID.
-  Future<Either<Failure, List<CostEstimate>>> getEstimations(String projectId);
+  Future<Either<Failure, List<CostEstimate>>> fetchInitialEstimations(
+    String projectId,
+  );
 
   /// Loads the next page of cost estimates for a specific project.
   ///

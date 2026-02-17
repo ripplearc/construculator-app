@@ -101,7 +101,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
   }
 
   @override
-  Future<Either<Failure, List<CostEstimate>>> getEstimations(
+  Future<Either<Failure, List<CostEstimate>>> fetchInitialEstimations(
     String projectId,
   ) async {
     try {
@@ -109,9 +109,6 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         'Getting first page of estimations for project: $projectId',
       );
 
-      _paginationStates[projectId] = const PaginationState(
-        pageSize: defaultPageSize,
-      );
       _cachedEstimations[projectId] = [];
 
       final costEstimateDtos = await _dataSource.getEstimations(
@@ -162,22 +159,15 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       _logger.warning(
         'loadMore called before initial fetch for project: $projectId',
       );
-      return getEstimations(projectId);
+      return fetchInitialEstimations(projectId);
     }
 
-    if (paginationState.isLoadingMore || !paginationState.hasMore) {
-      _logger.debug(
-        'Skipping loadMore: isLoadingMore=${paginationState.isLoadingMore}, '
-        'hasMore=${paginationState.hasMore}',
-      );
+    if (!paginationState.hasMore) {
+      _logger.debug('Skipping loadMore: hasMore=${paginationState.hasMore}');
       return Right(_cachedEstimations[projectId] ?? []);
     }
 
     try {
-      _paginationStates[projectId] = paginationState.copyWith(
-        isLoadingMore: true,
-      );
-
       _logger.debug(
         'Loading more estimations for project: $projectId, '
         'offset: ${paginationState.currentOffset}',
@@ -215,10 +205,6 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
 
       return Right(allEstimates);
     } catch (e) {
-      _paginationStates[projectId] = paginationState.copyWith(
-        isLoadingMore: false,
-      );
-
       final failure = _handleError(
         e,
         'loading more estimations',
@@ -254,7 +240,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
               _paginationStates.remove(projectId);
             },
           );
-      getEstimations(projectId);
+      fetchInitialEstimations(projectId);
       return newController;
     });
 
@@ -401,7 +387,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         projectId: projectId,
       );
 
-      await getEstimations(projectId);
+      await fetchInitialEstimations(projectId);
 
       return Left(failure);
     }
