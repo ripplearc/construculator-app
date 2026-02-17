@@ -28,6 +28,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
 
   late AnimationController _imageTransitionController;
   late Animation<double> _imageTransitionAnimation;
+  bool _showImage = false;
 
   @override
   void initState() {
@@ -58,6 +59,11 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   void _startAnimationSequence() async {
     await Future.delayed(_initialDelay);
 
+    if (!mounted) return;
+    setState(() {
+      _showImage = true;
+    });
+
     await _imageTransitionController.animateTo(
       _event2Target / _divisionFactor,
       duration: _event2Duration,
@@ -72,7 +78,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
 
     if (mounted) {
       await Future.delayed(_finalDelay);
-      Modular.to.navigate('/auth/login-with-email');
+      Modular.to.navigate('/dashboard/');
     }
   }
 
@@ -104,10 +110,13 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
             child: AnimatedBuilder(
               animation: _imageTransitionController,
               builder: (context, child) {
+                if (!_showImage) return const SizedBox.shrink();
+
                 return Image.asset(
                   _getCurrentImage(),
                   width: _imageSize,
                   height: _imageSize,
+                  fit: BoxFit.contain,
                 );
               },
             ),
