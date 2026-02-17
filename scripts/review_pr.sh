@@ -456,9 +456,9 @@ echo "- Rename methods that perform complex logic (like resetting pagination) to
 echo "" >> "$OUTPUT_FILE"
 
 # =============================================================================
-# RULE 12: GENERAL CODE REVIEW CRITERIA
+# GENERAL CODE REVIEW CRITERIA
 # =============================================================================
-echo "### 🔍 RULE 11: GENERAL CODE REVIEW CRITERIA" >> "$OUTPUT_FILE"
+echo "### 🔍 GENERAL CODE REVIEW CRITERIA" >> "$OUTPUT_FILE"
 echo "1. 📝 Code quality and best practices" >> "$OUTPUT_FILE"
 echo "2. 🐛 Potential bugs or edge cases" >> "$OUTPUT_FILE"
 echo "3. ⚡ Performance implications" >> "$OUTPUT_FILE"
