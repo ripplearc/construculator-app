@@ -131,235 +131,245 @@ void main() {
   }
 
   group('CostEstimationLandingPage – accessibility', () {
-    testWidgets('meets a11y guidelines for add estimation button in both themes',
-        (tester) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
+    testWidgets(
+      'meets a11y guidelines for add estimation button in both themes',
+      (tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
 
-      await setupA11yTest(tester);
-      await pumpAppAtRoute(tester, testEstimationRoute);
-      final addLabel = l10n().addEstimation;
-      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-        tester,
-        (theme) => makeApp(theme: theme),
-        find.text(addLabel),
-        setupAfterPump: (t) async {
-          Modular.to.navigate(testEstimationRoute);
-          await t.pumpAndSettle();
-        },
-      );
-    });
+        await setupA11yTest(tester);
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        final addLabel = l10n().addEstimation;
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeApp(theme: theme),
+          find.text(addLabel),
+          setupAfterPump: (t) async {
+            Modular.to.navigate(testEstimationRoute);
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
 
     testWidgets(
-        'meets a11y guidelines for add estimation button with list in both themes',
-        (tester) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
+      'meets a11y guidelines for add estimation button with list in both themes',
+      (tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
 
-      addCostEstimationData(
-        EstimationTestDataMapFactory.createFakeEstimationData(
-          id: 'estimation-1',
-          projectId: testProjectId,
-          estimateName: 'Kitchen Remodel',
-        ),
-      );
+        addCostEstimationData(
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimation-1',
+            projectId: testProjectId,
+            estimateName: 'Kitchen Remodel',
+          ),
+        );
 
-      await setupA11yTest(tester);
-      await pumpAppAtRoute(tester, testEstimationRoute);
-      final addLabel = l10n().addEstimation;
-      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-        tester,
-        (theme) => makeApp(theme: theme),
-        find.text(addLabel),
-        setupAfterPump: (t) async {
-          Modular.to.navigate(testEstimationRoute);
-          await t.pumpAndSettle();
-        },
-      );
-    });
-
-    testWidgets(
-        'meets a11y guidelines for error toast close button in both themes',
-        (tester) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
-
-      fakeSupabase.shouldThrowOnSelectMultiple = true;
-      fakeSupabase.selectMultipleExceptionType = SupabaseExceptionType.timeout;
-
-      await setupA11yTest(tester);
-      await pumpAppAtRoute(tester, testEstimationRoute);
-      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-        tester,
-        (theme) => makeApp(theme: theme),
-        find.byKey(const Key('toast_close_button')),
-        setupAfterPump: (t) async {
-          Modular.to.navigate(testEstimationRoute);
-          await t.pumpAndSettle();
-        },
-      );
-    });
+        await setupA11yTest(tester);
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        final addLabel = l10n().addEstimation;
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeApp(theme: theme),
+          find.text(addLabel),
+          setupAfterPump: (t) async {
+            Modular.to.navigate(testEstimationRoute);
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
 
     testWidgets(
-        'meets a11y guidelines for delete confirmation yes button in both themes',
-        (tester) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
+      'meets a11y guidelines for error toast close button in both themes',
+      (tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
 
-      addCostEstimationData(
-        EstimationTestDataMapFactory.createFakeEstimationData(
-          id: 'estimation-1',
-          projectId: testProjectId,
-          estimateName: 'Kitchen Remodel',
-        ),
-      );
+        fakeSupabase.shouldThrowOnSelectPaginated = true;
+        fakeSupabase.selectPaginatedExceptionType =
+            SupabaseExceptionType.timeout;
 
-      await setupA11yTest(tester);
-      await pumpAppAtRoute(tester, testEstimationRoute);
-      final yesLabel = l10n().yesDeleteButton;
-      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-        tester,
-        (theme) => makeApp(theme: theme),
-        find.text(yesLabel),
-        setupAfterPump: (t) async {
-          Modular.to.navigate(testEstimationRoute);
-          await t.pumpAndSettle();
-          final menuFinder = find.byKey(const Key('menuIcon'));
-          await t.ensureVisible(menuFinder);
-          await t.tapAt(t.getCenter(menuFinder));
-          await t.pumpAndSettle();
-          await t.tap(find.text(l10n().removeAction));
-          await t.pumpAndSettle();
-        },
-      );
-    });
+        await setupA11yTest(tester);
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeApp(theme: theme),
+          find.byKey(const Key('toast_close_button')),
+          setupAfterPump: (t) async {
+            Modular.to.navigate(testEstimationRoute);
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
 
     testWidgets(
-        'meets a11y guidelines for delete confirmation no button in both themes',
-        (tester) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
+      'meets a11y guidelines for delete confirmation yes button in both themes',
+      (tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
 
-      addCostEstimationData(
-        EstimationTestDataMapFactory.createFakeEstimationData(
-          id: 'estimation-1',
-          projectId: testProjectId,
-          estimateName: 'Kitchen Remodel',
-        ),
-      );
+        addCostEstimationData(
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimation-1',
+            projectId: testProjectId,
+            estimateName: 'Kitchen Remodel',
+          ),
+        );
 
-      await setupA11yTest(tester);
-      await pumpAppAtRoute(tester, testEstimationRoute);
-      final noLabel = l10n().noKeepButton;
-      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-        tester,
-        (theme) => makeApp(theme: theme),
-        find.text(noLabel),
-        setupAfterPump: (t) async {
-          Modular.to.navigate(testEstimationRoute);
-          await t.pumpAndSettle();
-          final menuFinder = find.byKey(const Key('menuIcon'));
-          await t.ensureVisible(menuFinder);
-          await t.tapAt(t.getCenter(menuFinder));
-          await t.pumpAndSettle();
-          await t.tap(find.text(l10n().removeAction));
-          await t.pumpAndSettle();
-        },
-      );
-    });
-
-    testWidgets(
-        'meets a11y guidelines for estimation tile menu icon in both themes',
-        (tester) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
-
-      addCostEstimationData(
-        EstimationTestDataMapFactory.createFakeEstimationData(
-          id: 'estimation-1',
-          projectId: testProjectId,
-          estimateName: 'Kitchen Remodel',
-        ),
-      );
-
-      await setupA11yTest(tester);
-      await pumpAppAtRoute(tester, testEstimationRoute);
-      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-        tester,
-        (theme) => makeApp(theme: theme),
-        find.byKey(const Key('menuIcon')),
-        // checkTextContrast: false,
-        setupAfterPump: (t) async {
-          Modular.to.navigate(testEstimationRoute);
-          await t.pumpAndSettle();
-        },
-      );
-    });
+        await setupA11yTest(tester);
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        final yesLabel = l10n().yesDeleteButton;
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeApp(theme: theme),
+          find.text(yesLabel),
+          setupAfterPump: (t) async {
+            Modular.to.navigate(testEstimationRoute);
+            await t.pumpAndSettle();
+            final menuFinder = find.byKey(const Key('menuIcon'));
+            await t.ensureVisible(menuFinder);
+            await t.tapAt(t.getCenter(menuFinder));
+            await t.pumpAndSettle();
+            await t.tap(find.text(l10n().removeAction));
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
 
     testWidgets(
-        'meets a11y guidelines for estimation tile tap target in both themes',
-        (tester) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
+      'meets a11y guidelines for delete confirmation no button in both themes',
+      (tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
 
-      addCostEstimationData(
-        EstimationTestDataMapFactory.createFakeEstimationData(
-          id: 'estimation-1',
-          projectId: testProjectId,
-          estimateName: 'Kitchen Remodel',
-        ),
-      );
+        addCostEstimationData(
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimation-1',
+            projectId: testProjectId,
+            estimateName: 'Kitchen Remodel',
+          ),
+        );
 
-      await setupA11yTest(tester);
-      await pumpAppAtRoute(tester, testEstimationRoute);
-      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-        tester,
-        (theme) => makeApp(theme: theme),
-        find.byKey(const Key('tileGestureDetector')),
-        checkTextContrast: false,
-        setupAfterPump: (t) async {
-          Modular.to.navigate(testEstimationRoute);
-          await t.pumpAndSettle();
-        },
-      );
-    });
+        await setupA11yTest(tester);
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        final noLabel = l10n().noKeepButton;
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeApp(theme: theme),
+          find.text(noLabel),
+          setupAfterPump: (t) async {
+            Modular.to.navigate(testEstimationRoute);
+            await t.pumpAndSettle();
+            final menuFinder = find.byKey(const Key('menuIcon'));
+            await t.ensureVisible(menuFinder);
+            await t.tapAt(t.getCenter(menuFinder));
+            await t.pumpAndSettle();
+            await t.tap(find.text(l10n().removeAction));
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
 
     testWidgets(
-        'meets a11y text contrast for empty state message in both themes',
-        (tester) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
+      'meets a11y guidelines for estimation tile menu icon in both themes',
+      (tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
 
-      await setupA11yTest(tester);
-      await pumpAppAtRoute(tester, testEstimationRoute);
-      final emptyMessage = l10n().costEstimationEmptyMessage;
-      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-        tester,
-        (theme) => makeApp(theme: theme),
-        find.text(emptyMessage),
-        checkTapTargetSize: false,
-        checkLabeledTapTarget: false,
-        setupAfterPump: (t) async {
-          Modular.to.navigate(testEstimationRoute);
-          await t.pumpAndSettle();
-        },
-      );
-    });
+        addCostEstimationData(
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimation-1',
+            projectId: testProjectId,
+            estimateName: 'Kitchen Remodel',
+          ),
+        );
+
+        await setupA11yTest(tester);
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeApp(theme: theme),
+          find.byKey(const Key('menuIcon')),
+          // checkTextContrast: false,
+          setupAfterPump: (t) async {
+            Modular.to.navigate(testEstimationRoute);
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
+
+    testWidgets(
+      'meets a11y guidelines for estimation tile tap target in both themes',
+      (tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+
+        addCostEstimationData(
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimation-1',
+            projectId: testProjectId,
+            estimateName: 'Kitchen Remodel',
+          ),
+        );
+
+        await setupA11yTest(tester);
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeApp(theme: theme),
+          find.byKey(const Key('tileGestureDetector')),
+          checkTextContrast: false,
+          setupAfterPump: (t) async {
+            Modular.to.navigate(testEstimationRoute);
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
+
+    testWidgets(
+      'meets a11y text contrast for empty state message in both themes',
+      (tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+
+        await setupA11yTest(tester);
+        await pumpAppAtRoute(tester, testEstimationRoute);
+        final emptyMessage = l10n().costEstimationEmptyMessage;
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeApp(theme: theme),
+          find.text(emptyMessage),
+          checkTapTargetSize: false,
+          checkLabeledTapTarget: false,
+          setupAfterPump: (t) async {
+            Modular.to.navigate(testEstimationRoute);
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
   });
 }

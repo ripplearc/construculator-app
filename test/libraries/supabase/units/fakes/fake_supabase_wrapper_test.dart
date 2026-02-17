@@ -389,7 +389,7 @@ void main() {
     });
 
     group('FakeSupabaseWrapper Database Operations', () {
-      group('select', () {
+      group('selectSingle', () {
         test('returns data when a matching record exists', () async {
           fakeWrapper.addTableData('users', [
             {'id': '1', 'email': 'test@example.com', 'name': 'Test User'},
@@ -480,6 +480,123 @@ void main() {
             );
           },
         );
+      });
+
+      group('select', () {
+        test('returns list of matching records', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1', 'name': 'Item 1'},
+            {'id': '2', 'project_id': 'p2', 'name': 'Item 2'},
+            {'id': '3', 'project_id': 'p1', 'name': 'Item 3'},
+          ]);
+
+          final result = await fakeWrapper.select(
+            table: 'items',
+            filterColumn: 'project_id',
+            filterValue: 'p1',
+          );
+
+          expect(result, isNotEmpty);
+          expect(result, hasLength(2));
+          expect(
+            result,
+            equals([
+              {'id': '1', 'project_id': 'p1', 'name': 'Item 1'},
+              {'id': '3', 'project_id': 'p1', 'name': 'Item 3'},
+            ]),
+          );
+        });
+
+        test('returns empty list when no records exist', () async {
+          final result = await fakeWrapper.select(
+            table: 'nonexistent',
+            filterColumn: 'id',
+            filterValue: '1',
+          );
+
+          expect(result, isEmpty);
+        });
+
+        test('records method call with all parameters', () async {
+          fakeWrapper.addTableData('users', []);
+
+          await fakeWrapper.select(
+            table: 'users',
+            columns: 'id,name,email',
+            filterColumn: 'status',
+            filterValue: 'active',
+          );
+
+          final calls = fakeWrapper.getMethodCallsFor('select');
+          expect(calls, hasLength(1));
+          final call = calls.first;
+          expect(call['table'], equals('users'));
+          expect(call['columns'], equals('id,name,email'));
+          expect(call['filterColumn'], equals('status'));
+          expect(call['filterValue'], equals('active'));
+        });
+
+        test('throws exception when configured to fail', () async {
+          fakeWrapper.shouldThrowOnSelectMultiple = true;
+          fakeWrapper.selectMultipleErrorMessage = 'Select multiple failed';
+
+          expect(
+            () async => await fakeWrapper.select(
+              table: 'items',
+              filterColumn: 'id',
+              filterValue: '1',
+            ),
+            throwsA(
+              isA<ServerException>().having(
+                (e) => e.toString(),
+                'message',
+                contains('Select multiple failed'),
+              ),
+            ),
+          );
+        });
+
+        test('returns empty list when configured to return null', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'name': 'Item 1'},
+          ]);
+          fakeWrapper.shouldReturnNullOnSelectMultiple = true;
+
+          final result = await fakeWrapper.select(
+            table: 'items',
+            filterColumn: 'id',
+            filterValue: '1',
+          );
+
+          expect(result, isEmpty);
+        });
+
+        test('uses columns parameter correctly', () async {
+          fakeWrapper.addTableData('users', []);
+
+          await fakeWrapper.select(
+            table: 'users',
+            columns: 'id,email',
+            filterColumn: 'status',
+            filterValue: 'active',
+          );
+
+          final calls = fakeWrapper.getMethodCallsFor('select');
+          expect(calls.first['columns'], equals('id,email'));
+        });
+
+        test('defaults to all columns when columns not specified', () async {
+          fakeWrapper.addTableData('users', []);
+
+          await fakeWrapper.select(
+            table: 'users',
+            filterColumn: 'status',
+            filterValue: 'active',
+          );
+
+          final calls = fakeWrapper.getMethodCallsFor('select');
+          expect(calls.first['columns'], equals('*'));
+        });
       });
 
       group('selectPaginated', () {
