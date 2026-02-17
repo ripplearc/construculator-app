@@ -20,6 +20,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+
+import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 
 class _ForgotPasswordPageTestModule extends Module {
@@ -63,7 +65,7 @@ void main() {
     fakeSupabase.reset();
   });
 
-  Widget makeTestableWidget({required Widget child}) {
+  Widget makeTestableWidget({required Widget child, ThemeData? theme}) {
     return MultiBlocProvider(
       providers: [
         BlocProvider<ForgotPasswordBloc>(
@@ -74,7 +76,7 @@ void main() {
         ),
       ],
       child: MaterialApp(
-        theme: createTestTheme(),
+        theme: theme ?? createTestTheme(),
         home: Builder(
           builder: (context) {
             buildContext = context;
@@ -292,5 +294,175 @@ void main() {
 
       expect(find.text(l10n().emailLabel), findsOneWidget);
     });
+  });
+
+  group('ForgotPasswordPage – accessibility', () {
+    testWidgets('meets a11y guidelines for continue button in both themes',
+        (tester) async {
+      await setupA11yTest(tester);
+      await renderPage(tester);
+
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        (theme) => makeTestableWidget(
+          theme: theme,
+          child: const ForgotPasswordPage(),
+        ),
+        find.text(l10n().continueButton),
+        setupAfterPump: (t) async {
+          await enterEmail(t, 'reset@example.com');
+          await t.pumpAndSettle();
+        },
+      );
+    });
+
+    testWidgets(
+      'meets a11y guidelines when email required error shown in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        await renderPage(tester);
+        await enterEmail(tester, '');
+        await tester.pumpAndSettle();
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(
+            theme: theme,
+            child: const ForgotPasswordPage(),
+          ),
+          find.text(l10n().emailRequiredError),
+        );
+      },
+    );
+
+    testWidgets(
+      'meets a11y guidelines when invalid email error shown in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        await renderPage(tester);
+        await enterEmail(tester, 'invalid-email');
+        await tester.pumpAndSettle();
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(
+            theme: theme,
+            child: const ForgotPasswordPage(),
+          ),
+          find.text(l10n().invalidEmailError),
+        );
+      },
+    );
+
+    testWidgets(
+      'meets a11y guidelines for verify OTP button in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        await renderPage(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(
+            theme: theme,
+            child: const ForgotPasswordPage(),
+          ),
+          find.text(l10n().verifyOtpButton),
+          setupAfterPump: (t) async {
+            await enterEmail(t, 'reset@example.com');
+            await tapContinueButton(t);
+            await enterOtp(t, '123456');
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
+
+    testWidgets(
+      'meets a11y guidelines for edit contact button in OTP modal in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        await renderPage(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(
+            theme: theme,
+            child: const ForgotPasswordPage(),
+          ),
+          find.byKey(const Key('edit_contact_button')),
+          setupAfterPump: (t) async {
+            await enterEmail(t, 'reset@example.com');
+            await tapContinueButton(t);
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
+
+    testWidgets(
+      'meets a11y guidelines when OTP error toast shown in both themes',
+      (tester) async {
+        fakeSupabase.shouldThrowOnVerifyOtp = true;
+        fakeSupabase.authErrorCode =
+            SupabaseAuthErrorCode.invalidCredentials;
+        await setupA11yTest(tester);
+        await renderPage(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) {
+            fakeSupabase.shouldThrowOnVerifyOtp = true;
+            fakeSupabase.authErrorCode =
+                SupabaseAuthErrorCode.invalidCredentials;
+            return makeTestableWidget(
+              theme: theme,
+              child: const ForgotPasswordPage(),
+            );
+          },
+          find.byKey(const Key('toast_close_button')),
+          setupAfterPump: (t) async {
+            await enterEmail(t, 'reset@example.com');
+            await t.tap(find.descendant(
+              of: find.byType(SingleChildScrollView),
+              matching: find.text(l10n().continueButton),
+            ));
+            await t.pumpAndSettle();
+            await enterOtp(t, '123456');
+            await tapVerifyButton(t);
+          },
+        );
+      },
+    );
+
+    testWidgets(
+      'meets a11y guidelines when backend error toast shown in both themes',
+      (tester) async {
+        fakeSupabase.shouldThrowOnResetPassword = true;
+        fakeSupabase.authErrorCode = SupabaseAuthErrorCode.rateLimited;
+        await setupA11yTest(tester);
+        await renderPage(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) {
+            fakeSupabase.shouldThrowOnResetPassword = true;
+            fakeSupabase.authErrorCode = SupabaseAuthErrorCode.rateLimited;
+            return makeTestableWidget(
+              theme: theme,
+              child: const ForgotPasswordPage(),
+            );
+          },
+          find.byKey(const Key('toast_close_button')),
+          setupAfterPump: (t) async {
+            await enterEmail(t, 'error@example.com');
+            await t.tap(find.descendant(
+              of: find.byType(SingleChildScrollView),
+              matching: find.text(l10n().continueButton),
+            ));
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
   });
 }
