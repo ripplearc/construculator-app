@@ -455,6 +455,46 @@ echo "- Audit [cost_estimation_repository.dart](https://github.com/ripplearc/con
 echo "- Rename methods that perform complex logic (like resetting pagination) to reflect their full impact." >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
+
+# =============================================================================
+# RULE 12: CLEAN PRESENTATION & STATE DERIVATION
+# =============================================================================
+echo "### 🏗️ RULE 12: CLEAN PRESENTATION & STATE DERIVATION" >> "$OUTPUT_FILE"
+echo "**Core Principle:** UI components should be 'Passive Viewers.' They may decide *how* to present data, but must not derive *new meaning* from it. If a value requires business rules, cross-state coordination, or non-trivial computation, it belongs in the BLoC or a Usecase." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Red Flags (Logic Contamination):**" >> "$OUTPUT_FILE"
+echo "- ❌ **Derived Value Calculation:** Performing math or logic that reshapes or reinterprets state data (e.g., \`itemCount: base + (loading ? 1 : 0)\`)." >> "$OUTPUT_FILE"
+echo "- ❌ **Index Manipulation:** Manually adjusting indices to 'fit' data into a layout (e.g., \`data[index - 1]\`)." >> "$OUTPUT_FILE"
+echo "- ❌ **Cross-State Coordination:** Writing logic that compares multiple BLoC states to derive a single UI result." >> "$OUTPUT_FILE"
+echo "- ❌ **Complex Conditionals:** Using nested ternary operators or long if-else chains to decide which widget to render." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**✅ Preferred Patterns:**" >> "$OUTPUT_FILE"
+echo "- **Composed UI Models:** The BLoC should emit a state specifically shaped for the UI, where structural decisions (like loading placeholders or separators) are already resolved." >> "$OUTPUT_FILE"
+echo "- **Structural Separation:** Use layout-native solutions (like \`Slivers\`, \`Column\` children, or \`Stack\`) to handle optional elements instead of forcing them into a single dynamic builder." >> "$OUTPUT_FILE"
+echo "- **View Helpers:** If logic is strictly visual and does not reinterpret or combine state sources, extract it into descriptive getters or private methods to keep the \`build\` method declarative." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Flag any UI code performing arithmetic (\`+\`, \`-\`, \`*\`) or coordinating between multiple state sources to derive meaning." >> "$OUTPUT_FILE"
+echo "- Suggest moving derived or coordinated state into the BLoC's \`mapEventToState\` logic or a dedicated UI Mapper." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
+# RULE 13: MUTATION TESTING FOR LOGIC-HEAVY CHANGES
+# =============================================================================
+echo "### 🧬 RULE 13: MUTATION TESTING FOR LOGIC-HEAVY CHANGES" >> "$OUTPUT_FILE"
+echo "**Core Principle:** PRs that introduce or modify complex business logic, mathematical calculations, or data transformations (e.g., pagination, filtering) must be validated with mutation testing on the affected logic files." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Key Requirements:**" >> "$OUTPUT_FILE"
+echo "- ✅ **Threshold:** Achieve a mutation score of 80% or higher for the specific files modified." >> "$OUTPUT_FILE"
+echo "- ✅ **Targeted execution:** Run mutation tests only on logic-heavy components (Repositories, DataSources, BLoCs, Usecases) to keep feedback cycles fast." >> "$OUTPUT_FILE"
+echo "- ❌ **No Surviving Mutants in Critical Logic:** Any surviving mutant in boundary conditions or core decision paths indicates a missing or insufficient unit test." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Identify files with 'heavy logic' (e.g., \`cost_estimation_repository_impl.dart\`)." >> "$OUTPUT_FILE"
+echo "- Verify mutation tests were run and surviving mutants were analyzed or eliminated in those files." >> "$OUTPUT_FILE"
+echo "- Ensure unit tests are added to cover the gaps exposed by surviving mutants." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
 # =============================================================================
 # GENERAL CODE REVIEW CRITERIA
 # =============================================================================
