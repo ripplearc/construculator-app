@@ -423,10 +423,12 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                             color: colors.iconRed,
                           ),
                           const SizedBox(width: CoreSpacing.space1),
-                          Text(
-                            '${_roleErrorList?.first}',
-                            style: typography.bodySmallRegular.copyWith(
-                              color: colors.textError,
+                          Expanded(
+                            child: Text(
+                              '${_roleErrorList?.first}',
+                              style: typography.bodySmallRegular.copyWith(
+                                color: colors.textError,
+                              ),
                             ),
                           ),
                         ],
@@ -489,6 +491,9 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                         color: colors.iconDark,
                       ),
                       onPressed: () => _togglePasswordVisibility(),
+                      tooltip: _isPasswordVisible
+                          ? l10n.hidePasswordLabel
+                          : l10n.showPasswordLabel,
                     ),
                     errorTextList: _passwordErrorList,
                   ),
@@ -507,6 +512,9 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                         color: colors.iconDark,
                       ),
                       onPressed: () => _toggleConfirmPasswordVisibility(),
+                      tooltip: _isConfirmPasswordVisible
+                          ? l10n.hidePasswordLabel
+                          : l10n.showPasswordLabel,
                     ),
                     errorTextList: _confirmPasswordErrorList,
                   ),

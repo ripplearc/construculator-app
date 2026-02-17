@@ -520,6 +520,18 @@ abstract class AppLocalizations {
   /// **'Password is required'**
   String get passwordRequiredError;
 
+  /// Accessibility label for password visibility toggle when password is hidden
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get showPasswordLabel;
+
+  /// Accessibility label for password visibility toggle when password is visible
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get hidePasswordLabel;
+
   /// Success message shown after password reset
   ///
   /// In en, this message translates to:

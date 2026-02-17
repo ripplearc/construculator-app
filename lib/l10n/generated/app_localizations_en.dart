@@ -238,6 +238,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordRequiredError => 'Password is required';
 
   @override
+  String get showPasswordLabel => 'Show password';
+
+  @override
+  String get hidePasswordLabel => 'Hide password';
+
+  @override
   String get passwordResetSuccessMessage =>
       'Your password has been reset successfully!';
 
