@@ -10,7 +10,7 @@ class SplashPage extends StatefulWidget {
 }
 
 class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
-  static const Duration _initialDelay = Duration(milliseconds: 200);
+  static const Duration _initialDelay = Duration.zero;
   static const Duration _event2Duration = Duration(milliseconds: 400);
   static const Duration _event3Duration = Duration(milliseconds: 600);
   static const Duration _finalDelay = Duration(milliseconds: 1200);
