@@ -325,64 +325,62 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
   }
 
   Widget _buildEstimationsList(List<CostEstimate> estimations) {
+    final colorTheme = context.colorTheme;
     return Stack(
       children: [
-        BlocBuilder<AddCostEstimationBloc, AddCostEstimationState>(
-          builder: (context, addState) {
-            final colorTheme = context.colorTheme;
+        CustomScrollView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            BlocBuilder<AddCostEstimationBloc, AddCostEstimationState>(
+              builder: (context, state) {
+                if (state is AddCostEstimationInProgress) {
+                  return const SliverPadding(
+                    padding: EdgeInsets.only(top: 16),
+                    sliver: SliverToBoxAdapter(
+                      child: CoreLoadingIndicator(size: 50),
+                    ),
+                  );
+                }
+                return const SliverToBoxAdapter(child: SizedBox.shrink());
+              },
+            ),
 
-            return BlocBuilder<CostEstimationListBloc, CostEstimationListState>(
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              sliver: SliverList.builder(
+                itemCount: estimations.length,
+                itemBuilder: (context, index) {
+                  final estimation = estimations[index];
+                  return CostEstimationTile(
+                    estimation: estimation,
+                    onTap: () => _navigateToDetails(estimation.id),
+                    onMenuTap: () =>
+                        _showEstimationActionsSheet(estimation, colorTheme),
+                  );
+                },
+              ),
+            ),
+
+            BlocBuilder<CostEstimationListBloc, CostEstimationListState>(
               buildWhen: (previous, current) {
                 if (previous is CostEstimationListWithData &&
                     current is CostEstimationListWithData) {
-                  return previous.isLoadingMore != current.isLoadingMore ||
-                      previous.hasMore != current.hasMore;
+                  return previous.isLoadingMore != current.isLoadingMore;
                 }
                 return false;
               },
-              builder: (context, listState) {
-                final isCreating = addState is AddCostEstimationInProgress;
-                final isLoadingMore =
-                    listState is CostEstimationListWithData &&
-                    listState.isLoadingMore;
-
-                final baseCount = estimations.length;
-                final creatingCount = isCreating ? 1 : 0;
-                final loadMoreCount = isLoadingMore ? 1 : 0;
-                final itemCount = baseCount + creatingCount + loadMoreCount;
-
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    itemCount: itemCount,
-                    itemBuilder: (context, index) {
-                      final effectiveIndex = index - creatingCount;
-                      if (isCreating && index == 0) {
-                        return const CoreLoadingIndicator(size: 50);
-                      }
-
-                      if (index >= baseCount + creatingCount) {
-                        return const CoreLoadingIndicator(size: 50);
-                      }
-
-                      final estimation = estimations[effectiveIndex];
-                      return CostEstimationTile(
-                        estimation: estimation,
-                        onTap: () => _navigateToDetails(estimation.id),
-                        onMenuTap: () =>
-                            _showEstimationActionsSheet(estimation, colorTheme),
-                      );
-                    },
-                  ),
-                );
+              builder: (context, state) {
+                if (state is CostEstimationListWithData &&
+                    state.isLoadingMore) {
+                  return const SliverToBoxAdapter(
+                    child: CoreLoadingIndicator(size: 50),
+                  );
+                }
+                return const SliverToBoxAdapter(child: SizedBox.shrink());
               },
-            );
-          },
+            ),
+          ],
         ),
         _buildPositionedAddButton(),
       ],
