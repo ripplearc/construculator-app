@@ -54,6 +54,21 @@
         <regex pattern="(rethrow;)" id="estimation.error.skip_rethrow">
             <mutation text="// rethrow skipped"/>
         </regex>
+
+        <!-- RULE 8: In `changeLockStatus`, use wrong lock status value -->
+        <regex pattern="(DatabaseConstants\.isLockedColumn:\s*isLocked)" id="estimation.lock.invert_status">
+            <mutation text="DatabaseConstants.isLockedColumn: !isLocked"/>
+        </regex>
+
+        <!-- RULE 9: In `changeLockStatus`, use wrong filter column -->
+        <regex pattern="(filterColumn:\s*DatabaseConstants\.idColumn,\s*filterValue:\s*estimationId,)" id="estimation.lock.wrong_filter_column">
+            <mutation text="filterColumn: DatabaseConstants.projectIdColumn, filterValue: estimationId,"/>
+        </regex>
+
+        <!-- RULE 10: In `changeLockStatus`, use empty filter value -->
+        <regex pattern="(filterValue:\s*estimationId,)" id="estimation.lock.empty_filter">
+            <mutation text="filterValue: '',"/>
+        </regex>
     </rules>
 
     <commands>

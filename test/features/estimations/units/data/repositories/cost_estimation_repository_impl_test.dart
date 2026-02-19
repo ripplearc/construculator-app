@@ -1431,11 +1431,10 @@ void main() {
           await pumpEventQueue();
 
           expect(result.isRight(), isTrue);
-          result.fold((_) => fail('Blocking failed'), (updatedEstimation) {
+          expectRight(result, (updatedEstimation) {
             expect(updatedEstimation.lockStatus.isLocked, isTrue);
           });
 
-          // Expect 3 emissions: initial + optimistic + final
           expect(updates, hasLength(3));
           updates.last.fold((_) => fail('Stream update failed'), (estimations) {
             expect(estimations, hasLength(1));
@@ -1638,6 +1637,74 @@ void main() {
           expect(updated.lockStatus.isLocked, isTrue);
         });
       });
+
+      test(
+        'should call supabaseWrapper with correct parameters when locking',
+        () async {
+          final initialMap = buildEstimationMap(
+            id: estimateIdDefault,
+            projectId: testProjectId,
+            isLocked: false,
+          );
+          seedEstimationTable([initialMap]);
+
+          await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
+          expect(methodCalls, hasLength(1));
+
+          final call = methodCalls.first;
+          expect(
+            call,
+            equals({
+              'method': 'update',
+              'table': DatabaseConstants.costEstimatesTable,
+              'data': {DatabaseConstants.isLockedColumn: true},
+              'filterColumn': DatabaseConstants.idColumn,
+              'filterValue': estimateIdDefault,
+            }),
+          );
+        },
+      );
+
+      test(
+        'should call supabaseWrapper with correct parameters when unlocking',
+        () async {
+          final initialMap = buildEstimationMap(
+            id: estimateIdDefault,
+            projectId: testProjectId,
+            isLocked: true,
+            lockedByUserId: userIdDefault,
+            lockedAt: timestampDefault,
+          );
+          seedEstimationTable([initialMap]);
+
+          await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: false,
+            projectId: testProjectId,
+          );
+
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
+          expect(methodCalls, hasLength(1));
+
+          final call = methodCalls.first;
+          expect(
+            call,
+            equals({
+              'method': 'update',
+              'table': DatabaseConstants.costEstimatesTable,
+              'data': {DatabaseConstants.isLockedColumn: false},
+              'filterColumn': DatabaseConstants.idColumn,
+              'filterValue': estimateIdDefault,
+            }),
+          );
+        },
+      );
     });
   });
 }
