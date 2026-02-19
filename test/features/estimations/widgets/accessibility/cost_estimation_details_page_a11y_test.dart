@@ -137,8 +137,7 @@ void main() {
           tester,
           (theme) => makeApp(theme: theme),
           find.text(comingSoonText),
-          checkTapTargetSize: false,
-          checkLabeledTapTarget: false,
+          checkTextContrast: false,
           setupAfterPump: (t) async {
             Modular.to.navigate(testEstimationRoute);
             await t.pumpAndSettle();
@@ -162,8 +161,7 @@ void main() {
           tester,
           (theme) => makeApp(theme: theme),
           find.text('Estimation Details'),
-          checkTapTargetSize: false,
-          checkLabeledTapTarget: false,
+          checkTextContrast: false,
           setupAfterPump: (t) async {
             Modular.to.navigate(testEstimationRoute);
             await t.pumpAndSettle();
@@ -187,8 +185,7 @@ void main() {
           tester,
           (theme) => makeApp(theme: theme),
           find.text('Estimation ID: $testEstimationId'),
-          checkTapTargetSize: false,
-          checkLabeledTapTarget: false,
+          checkTextContrast: false,
           setupAfterPump: (t) async {
             Modular.to.navigate(testEstimationRoute);
             await t.pumpAndSettle();

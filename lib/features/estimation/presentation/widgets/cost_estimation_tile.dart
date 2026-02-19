@@ -65,13 +65,24 @@ class CostEstimationTile extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        GestureDetector(
-          onTap: onMenuTap,
-          child: CoreIconWidget(
-            key: const Key('menuIcon'),
-            icon: CoreIcons.moreVert,
-            color: appColors.iconDark,
-            size: 24,
+        Semantics(
+          label: context.l10n.estimationMenuLabel(estimation.estimateName),
+          button: true,
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: GestureDetector(
+              onTap: onMenuTap,
+              behavior: HitTestBehavior.opaque,
+              child: Center(
+                child: CoreIconWidget(
+                  key: const Key('menuIcon'),
+                  icon: CoreIcons.moreVert,
+                  color: appColors.iconDark,
+                  size: 24,
+                ),
+              ),
+            ),
           ),
         ),
       ],

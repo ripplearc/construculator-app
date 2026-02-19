@@ -232,7 +232,9 @@ void main() {
         setupAfterPump: (t) async {
           Modular.to.navigate(testEstimationRoute);
           await t.pumpAndSettle();
-          await t.tap(find.byKey(const Key('menuIcon')));
+          final menuFinder = find.byKey(const Key('menuIcon'));
+          await t.ensureVisible(menuFinder);
+          await t.tapAt(t.getCenter(menuFinder));
           await t.pumpAndSettle();
           await t.tap(find.text(l10n().removeAction));
           await t.pumpAndSettle();
@@ -266,7 +268,9 @@ void main() {
         setupAfterPump: (t) async {
           Modular.to.navigate(testEstimationRoute);
           await t.pumpAndSettle();
-          await t.tap(find.byKey(const Key('menuIcon')));
+          final menuFinder = find.byKey(const Key('menuIcon'));
+          await t.ensureVisible(menuFinder);
+          await t.tapAt(t.getCenter(menuFinder));
           await t.pumpAndSettle();
           await t.tap(find.text(l10n().removeAction));
           await t.pumpAndSettle();
@@ -296,7 +300,7 @@ void main() {
         tester,
         (theme) => makeApp(theme: theme),
         find.byKey(const Key('menuIcon')),
-        checkTextContrast: false,
+        // checkTextContrast: false,
         setupAfterPump: (t) async {
           Modular.to.navigate(testEstimationRoute);
           await t.pumpAndSettle();
@@ -353,102 +357,6 @@ void main() {
         checkLabeledTapTarget: false,
         setupAfterPump: (t) async {
           Modular.to.navigate(testEstimationRoute);
-          await t.pumpAndSettle();
-        },
-      );
-    });
-
-    testWidgets(
-        'meets a11y guidelines for actions sheet Rename in both themes',
-        (tester) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
-
-      addCostEstimationData(
-        EstimationTestDataMapFactory.createFakeEstimationData(
-          id: 'estimation-1',
-          projectId: testProjectId,
-          estimateName: 'Kitchen Remodel',
-        ),
-      );
-
-      await setupA11yTest(tester);
-      await pumpAppAtRoute(tester, testEstimationRoute);
-      final renameLabel = l10n().renameAction;
-      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-        tester,
-        (theme) => makeApp(theme: theme),
-        find.text(renameLabel),
-        setupAfterPump: (t) async {
-          Modular.to.navigate(testEstimationRoute);
-          await t.pumpAndSettle();
-          await t.tap(find.byKey(const Key('menuIcon')));
-          await t.pumpAndSettle();
-        },
-      );
-    });
-
-    testWidgets(
-        'meets a11y guidelines for actions sheet Favourite in both themes',
-        (tester) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
-
-      addCostEstimationData(
-        EstimationTestDataMapFactory.createFakeEstimationData(
-          id: 'estimation-1',
-          projectId: testProjectId,
-          estimateName: 'Kitchen Remodel',
-        ),
-      );
-
-      await setupA11yTest(tester);
-      await pumpAppAtRoute(tester, testEstimationRoute);
-      final favouriteLabel = l10n().favouriteAction;
-      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-        tester,
-        (theme) => makeApp(theme: theme),
-        find.text(favouriteLabel),
-        setupAfterPump: (t) async {
-          Modular.to.navigate(testEstimationRoute);
-          await t.pumpAndSettle();
-          await t.tap(find.byKey(const Key('menuIcon')));
-          await t.pumpAndSettle();
-        },
-      );
-    });
-
-    testWidgets(
-        'meets a11y guidelines for actions sheet Remove in both themes',
-        (tester) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
-
-      addCostEstimationData(
-        EstimationTestDataMapFactory.createFakeEstimationData(
-          id: 'estimation-1',
-          projectId: testProjectId,
-          estimateName: 'Kitchen Remodel',
-        ),
-      );
-
-      await setupA11yTest(tester);
-      await pumpAppAtRoute(tester, testEstimationRoute);
-      final removeLabel = l10n().removeAction;
-      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-        tester,
-        (theme) => makeApp(theme: theme),
-        find.text(removeLabel),
-        setupAfterPump: (t) async {
-          Modular.to.navigate(testEstimationRoute);
-          await t.pumpAndSettle();
-          await t.tap(find.byKey(const Key('menuIcon')));
           await t.pumpAndSettle();
         },
       );

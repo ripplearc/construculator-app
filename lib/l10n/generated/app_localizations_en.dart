@@ -439,4 +439,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unlockLabel => 'Unlock';
+
+  @override
+  String estimationMenuLabel(String estimationName) {
+    return 'Open menu for $estimationName';
+  }
 }
