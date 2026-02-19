@@ -263,6 +263,73 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     }
   }
 
+  CostEstimate? _getOriginalEstimation(String projectId, String estimationId) {
+    if (!_streamControllers.containsKey(projectId)) {
+      return null;
+    }
+
+    final cachedEstimations = _cachedEstimations[projectId] ?? [];
+    return cachedEstimations.firstWhere((e) => e.id == estimationId);
+  }
+
+  void _emitOptimisticUpdate({
+    required String projectId,
+    required String estimationId,
+    required LockStatus newLockStatus,
+  }) {
+    if (!_streamControllers.containsKey(projectId)) {
+      return;
+    }
+
+    final cachedEstimations = _cachedEstimations[projectId] ?? [];
+    final updatedList = cachedEstimations.map((e) {
+      return e.id == estimationId ? e.copyWith(lockStatus: newLockStatus) : e;
+    }).toList();
+
+    _emitToStream(projectId, Right(updatedList));
+  }
+
+  void _finalizeOptimisticUpdate(
+    String projectId,
+    String estimationId,
+    CostEstimate updatedEstimation,
+  ) {
+    if (!_streamControllers.containsKey(projectId)) {
+      return;
+    }
+
+    final cachedEstimations = _cachedEstimations[projectId] ?? [];
+    final updatedList = cachedEstimations.map((e) {
+      return e.id == estimationId ? updatedEstimation : e;
+    }).toList();
+
+    _logger.debug(
+      'Updating stream with locked/unlocked estimation for project: $projectId',
+    );
+
+    _emitToStream(projectId, Right(updatedList));
+  }
+
+  void _rollbackOptimisticUpdate(
+    String projectId,
+    String estimationId,
+    CostEstimate? originalEstimation,
+  ) {
+    if (originalEstimation == null ||
+        !_streamControllers.containsKey(projectId)) {
+      return;
+    }
+
+    final cachedEstimations = _cachedEstimations[projectId] ?? [];
+    final updatedList = cachedEstimations.map((e) {
+      return e.id == estimationId
+          ? e.copyWith(lockStatus: originalEstimation.lockStatus)
+          : e;
+    }).toList();
+
+    _emitToStream(projectId, Right(updatedList));
+  }
+
   @override
   Future<Either<Failure, CostEstimate>> createEstimation(
     CostEstimate estimation,
@@ -400,32 +467,18 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     required bool isLocked,
     required String projectId,
   }) async {
-    CostEstimate? previousEstimation;
-    if (_streamControllers.containsKey(projectId)) {
-      previousEstimation = (_cachedEstimations[projectId] ?? []).firstWhere(
-        (e) => e.id == estimationId,
-      );
-    }
+    final originalEstimation = _getOriginalEstimation(projectId, estimationId);
 
     try {
       _logger.debug(
         'Changing lock status for estimation: $estimationId to $isLocked',
       );
 
-      if (_streamControllers.containsKey(projectId)) {
-        final cachedEstimations = _cachedEstimations[projectId] ?? [];
-        final updatedList = cachedEstimations.map((e) {
-          return e.id == estimationId
-              ? e.copyWith(
-                  lockStatus: isLocked
-                      ? LockStatus.locked()
-                      : LockStatus.unlocked(),
-                )
-              : e;
-        }).toList();
-
-        _emitToStream(projectId, Right(updatedList));
-      }
+      _emitOptimisticUpdate(
+        projectId: projectId,
+        estimationId: estimationId,
+        newLockStatus: isLocked ? LockStatus.locked() : LockStatus.unlocked(),
+      );
 
       final updatedDto = await _dataSource.changeLockStatus(
         estimationId: estimationId,
@@ -434,32 +487,11 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
 
       final updatedEstimation = updatedDto.toDomain();
 
-      if (_streamControllers.containsKey(projectId)) {
-        final cachedEstimations = _cachedEstimations[projectId] ?? [];
-        final updatedList = cachedEstimations.map((e) {
-          return e.id == estimationId ? updatedEstimation : e;
-        }).toList();
-
-        _logger.debug(
-          'Updating stream with locked/unlocked estimation for project: $projectId',
-        );
-
-        _emitToStream(projectId, Right(updatedList));
-      }
+      _finalizeOptimisticUpdate(projectId, estimationId, updatedEstimation);
 
       return Right(updatedEstimation);
     } catch (e) {
-      if (previousEstimation != null &&
-          _streamControllers.containsKey(projectId)) {
-        final cachedEstimations = _cachedEstimations[projectId] ?? [];
-        final updatedList = cachedEstimations.map((e) {
-          return e.id == estimationId
-              ? e.copyWith(lockStatus: previousEstimation?.lockStatus)
-              : e;
-        }).toList();
-
-        _emitToStream(projectId, Right(updatedList));
-      }
+      _rollbackOptimisticUpdate(projectId, estimationId, originalEstimation);
       return Left(
         _handleError(
           e,

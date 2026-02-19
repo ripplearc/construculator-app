@@ -136,14 +136,14 @@ void main() {
       );
     }
 
-    void expectRight<L, R>(
+    void expectResult<L, R>(
       Either<L, R> result,
       void Function(R value) assertions,
     ) {
       result.fold((_) => fail('Expected success but got failure'), assertions);
     }
 
-    void expectLeft<L, R>(
+    void expectFailure<L, R>(
       Either<L, R> result,
       void Function(L error) assertions,
     ) {
@@ -214,7 +214,7 @@ void main() {
         final result = await repository.fetchInitialEstimations(testProjectId);
 
         expect(result.isRight(), isTrue);
-        expectRight(result, (estimates) {
+        expectResult(result, (estimates) {
           expect(estimates, hasLength(2));
           expect(
             estimates,
@@ -227,7 +227,7 @@ void main() {
         final result = await repository.fetchInitialEstimations(testProjectId);
 
         expect(result.isRight(), isTrue);
-        expectRight(result, (estimates) => expect(estimates, isEmpty));
+        expectResult(result, (estimates) => expect(estimates, isEmpty));
       });
 
       test(
@@ -246,7 +246,7 @@ void main() {
           );
 
           expect(result.isRight(), isTrue);
-          expectRight(result, (estimates) => expect(estimates, isEmpty));
+          expectResult(result, (estimates) => expect(estimates, isEmpty));
         },
       );
 
@@ -290,7 +290,10 @@ void main() {
           );
 
           expect(result.isLeft(), isTrue);
-          expectLeft(result, (failure) => expect(failure, UnexpectedFailure()));
+          expectFailure(
+            result,
+            (failure) => expect(failure, UnexpectedFailure()),
+          );
         },
       );
 
@@ -307,7 +310,7 @@ void main() {
           );
 
           expect(result.isLeft(), isTrue);
-          expectLeft(
+          expectFailure(
             result,
             (failure) => expect(
               failure,
@@ -330,7 +333,7 @@ void main() {
           );
 
           expect(result.isLeft(), isTrue);
-          expectLeft(
+          expectFailure(
             result,
             (failure) => expect(
               failure,
@@ -353,7 +356,7 @@ void main() {
           );
 
           expect(result.isLeft(), isTrue);
-          expectLeft(result, (failure) {
+          expectFailure(result, (failure) {
             expect(
               failure,
               EstimationFailure(errorType: EstimationErrorType.parsingError),
@@ -377,7 +380,7 @@ void main() {
           );
 
           expect(result.isLeft(), isTrue);
-          expectLeft(
+          expectFailure(
             result,
             (failure) => expect(
               failure,
@@ -402,7 +405,7 @@ void main() {
           );
 
           expect(result.isLeft(), isTrue);
-          expectLeft(
+          expectFailure(
             result,
             (failure) => expect(
               failure,
@@ -466,7 +469,7 @@ void main() {
           );
 
           expect(result.isRight(), isTrue);
-          expectRight(result, (estimates) {
+          expectResult(result, (estimates) {
             expect(estimates, [
               estimation1.toDomain(),
               estimation2.toDomain(),
@@ -539,7 +542,7 @@ void main() {
 
           expect(streamUpdates, hasLength(1));
           expect(streamUpdates[0].isLeft(), isTrue);
-          expectLeft(
+          expectFailure(
             streamUpdates[0],
             (failure) => expect(
               failure,
@@ -646,7 +649,7 @@ void main() {
 
         final result = await repository.loadMoreEstimations(testProjectId);
         expect(result.isRight(), isTrue);
-        expectRight(result, (estimates) {
+        expectResult(result, (estimates) {
           expect(estimates, hasLength(smallDatasetSize));
           expect(estimates, mapsToDomainEntities(maps.reversed.toList()));
         });
@@ -659,7 +662,7 @@ void main() {
 
           final result = await repository.loadMoreEstimations(testProjectId);
           expect(result.isRight(), isTrue);
-          expectRight(result, (estimates) {
+          expectResult(result, (estimates) {
             expect(estimates, hasLength(smallDatasetSize));
             expect(estimates, mapsToDomainEntities(maps.reversed.toList()));
           });
@@ -688,7 +691,7 @@ void main() {
           final result = await repository.loadMoreEstimations(testProjectId);
 
           expect(result.isLeft(), isTrue);
-          expectLeft(
+          expectFailure(
             result,
             (failure) => expect(
               failure,
@@ -700,7 +703,7 @@ void main() {
 
           expect(streamUpdates, hasLength(2));
           expect(streamUpdates[1].isLeft(), isTrue);
-          expectLeft(
+          expectFailure(
             streamUpdates[1],
             (failure) => expect(
               failure,
@@ -872,7 +875,7 @@ void main() {
           final result = await repository.createEstimation(estimation);
 
           expect(result.isLeft(), isTrue);
-          expectLeft(
+          expectFailure(
             result,
             (failure) => expect(
               failure,
@@ -899,7 +902,7 @@ void main() {
           final result = await repository.createEstimation(estimation);
 
           expect(result.isLeft(), isTrue);
-          expectLeft(
+          expectFailure(
             result,
             (failure) => expect(
               failure,
@@ -926,7 +929,10 @@ void main() {
           final result = await repository.createEstimation(estimation);
 
           expect(result.isLeft(), isTrue);
-          expectLeft(result, (failure) => expect(failure, UnexpectedFailure()));
+          expectFailure(
+            result,
+            (failure) => expect(failure, UnexpectedFailure()),
+          );
         },
       );
 
@@ -1111,7 +1117,7 @@ void main() {
           );
 
           expect(result.isLeft(), isTrue);
-          expectLeft(
+          expectFailure(
             result,
             (failure) => expect(
               failure,
@@ -1190,7 +1196,7 @@ void main() {
         );
 
         expect(result.isLeft(), isTrue);
-        expectLeft(
+        expectFailure(
           result,
           (failure) => expect(
             failure,
@@ -1213,7 +1219,7 @@ void main() {
           );
 
           expect(result.isLeft(), isTrue);
-          expectLeft(
+          expectFailure(
             result,
             (failure) => expect(
               failure,
@@ -1237,7 +1243,10 @@ void main() {
           );
 
           expect(result.isLeft(), isTrue);
-          expectLeft(result, (failure) => expect(failure, UnexpectedFailure()));
+          expectFailure(
+            result,
+            (failure) => expect(failure, UnexpectedFailure()),
+          );
         },
       );
 
@@ -1257,7 +1266,7 @@ void main() {
           );
 
           expect(result.isLeft(), isTrue);
-          expectLeft(
+          expectFailure(
             result,
             (failure) => expect(
               failure,
@@ -1283,7 +1292,7 @@ void main() {
           );
 
           expect(result.isLeft(), isTrue);
-          expectLeft(
+          expectFailure(
             result,
             (failure) => expect(
               failure,
@@ -1367,7 +1376,7 @@ void main() {
         await pumpEventQueue();
 
         expect(updates, hasLength(1));
-        expectRight(updates[0], (estimates) {
+        expectResult(updates[0], (estimates) {
           expect(estimates, hasLength(smallDatasetSize));
           expect(estimates, equals(expectedEstimations));
         });
@@ -1386,7 +1395,7 @@ void main() {
 
         expect(updates, hasLength(3));
 
-        expectRight(updates[1], (estimates) {
+        expectResult(updates[1], (estimates) {
           expect(estimates, hasLength(smallDatasetSize - 1));
           expect(
             estimates,
@@ -1396,7 +1405,7 @@ void main() {
           );
         });
 
-        expectRight(updates[2], (estimates) {
+        expectResult(updates[2], (estimates) {
           expect(estimates, hasLength(smallDatasetSize));
           expect(estimates, equals(expectedEstimations));
         });
@@ -1431,11 +1440,10 @@ void main() {
           await pumpEventQueue();
 
           expect(result.isRight(), isTrue);
-          result.fold((_) => fail('Blocking failed'), (updatedEstimation) {
+          expectResult(result, (updatedEstimation) {
             expect(updatedEstimation.lockStatus.isLocked, isTrue);
           });
 
-          // Expect 3 emissions: initial + optimistic + final
           expect(updates, hasLength(3));
           updates.last.fold((_) => fail('Stream update failed'), (estimations) {
             expect(estimations, hasLength(1));
@@ -1638,6 +1646,74 @@ void main() {
           expect(updated.lockStatus.isLocked, isTrue);
         });
       });
+
+      test(
+        'should call supabaseWrapper with correct parameters when locking',
+        () async {
+          final initialMap = buildEstimationMap(
+            id: estimateIdDefault,
+            projectId: testProjectId,
+            isLocked: false,
+          );
+          seedEstimationTable([initialMap]);
+
+          await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
+          expect(methodCalls, hasLength(1));
+
+          final call = methodCalls.first;
+          expect(
+            call,
+            equals({
+              'method': 'update',
+              'table': DatabaseConstants.costEstimatesTable,
+              'data': {DatabaseConstants.isLockedColumn: true},
+              'filterColumn': DatabaseConstants.idColumn,
+              'filterValue': estimateIdDefault,
+            }),
+          );
+        },
+      );
+
+      test(
+        'should call supabaseWrapper with correct parameters when unlocking',
+        () async {
+          final initialMap = buildEstimationMap(
+            id: estimateIdDefault,
+            projectId: testProjectId,
+            isLocked: true,
+            lockedByUserId: userIdDefault,
+            lockedAt: timestampDefault,
+          );
+          seedEstimationTable([initialMap]);
+
+          await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: false,
+            projectId: testProjectId,
+          );
+
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
+          expect(methodCalls, hasLength(1));
+
+          final call = methodCalls.first;
+          expect(
+            call,
+            equals({
+              'method': 'update',
+              'table': DatabaseConstants.costEstimatesTable,
+              'data': {DatabaseConstants.isLockedColumn: false},
+              'filterColumn': DatabaseConstants.idColumn,
+              'filterValue': estimateIdDefault,
+            }),
+          );
+        },
+      );
     });
   });
 }
