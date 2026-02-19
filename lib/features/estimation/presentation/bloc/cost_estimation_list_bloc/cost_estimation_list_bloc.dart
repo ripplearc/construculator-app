@@ -77,7 +77,7 @@ class CostEstimationListBloc
   ) async {
     if (state is CostEstimationListLoading) return;
 
-    await _repository.getEstimations(event.projectId);
+    await _repository.fetchInitialEstimations(event.projectId);
   }
 
   void _onUpdated(

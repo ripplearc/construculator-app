@@ -842,7 +842,9 @@ void main() {
       fakeSupabase.shouldDelayOperations = true;
       fakeSupabase.completer = Completer();
 
-      final listView = tester.widget<ListView>(find.byType(ListView));
+      final listView = tester.widget<CustomScrollView>(
+        find.byType(CustomScrollView),
+      );
       final controller = listView.controller!;
 
       controller.jumpTo(controller.position.maxScrollExtent);
@@ -878,7 +880,9 @@ void main() {
       expect(find.byType(CostEstimationTile), findsWidgets);
       expect(find.text('Estimation $pageSize'), findsNothing);
 
-      final listView = tester.widget<ListView>(find.byType(ListView));
+      final listView = tester.widget<CustomScrollView>(
+        find.byType(CustomScrollView),
+      );
       final controller = listView.controller!;
       controller.jumpTo(controller.position.maxScrollExtent);
       await tester.pumpAndSettle();

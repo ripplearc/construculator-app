@@ -632,6 +632,39 @@ void main() {
         ],
       );
     });
+
+    group('Bloc lifecycle', () {
+      blocTest<CostEstimationListBloc, CostEstimationListState>(
+        'should cancel stream subscription when bloc is fetched again',
+        build: () {
+          final estimationMap = buildEstimationMap(
+            id: 'est-1',
+            projectId: testProjectId,
+          );
+          seedEstimationTable([estimationMap]);
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(
+            const CostEstimationListStartWatching(projectId: testProjectId),
+          );
+          await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
+          bloc.add(
+            const CostEstimationListStartWatching(projectId: testProjectId),
+          );
+        },
+        wait: streamDebounceWaitDuration,
+        expect: () => [
+          isA<CostEstimationListLoading>(),
+          isA<CostEstimationListLoaded>(),
+          isA<CostEstimationListLoading>(),
+          isA<CostEstimationListLoaded>(),
+        ],
+        verify: (_) async {
+          await repository.fetchInitialEstimations(testProjectId);
+        },
+      );
+    });
   });
 }
 
