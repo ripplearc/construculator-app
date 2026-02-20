@@ -891,6 +891,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unlock'**
   String get unlockLabel;
+
+  /// Label for estimation tile menu button
+  ///
+  /// In en, this message translates to:
+  /// **'Open menu for {estimationName}'**
+  String estimationMenuLabel(String estimationName);
 }
 
 class _AppLocalizationsDelegate

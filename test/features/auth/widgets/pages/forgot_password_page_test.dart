@@ -20,6 +20,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+
 import '../../../../utils/screenshot/font_loader.dart';
 
 class _ForgotPasswordPageTestModule extends Module {
@@ -63,7 +64,7 @@ void main() {
     fakeSupabase.reset();
   });
 
-  Widget makeTestableWidget({required Widget child}) {
+  Widget makeTestableWidget({required Widget child, ThemeData? theme}) {
     return MultiBlocProvider(
       providers: [
         BlocProvider<ForgotPasswordBloc>(
@@ -74,7 +75,7 @@ void main() {
         ),
       ],
       child: MaterialApp(
-        theme: createTestTheme(),
+        theme: theme ?? createTestTheme(),
         home: Builder(
           builder: (context) {
             buildContext = context;
