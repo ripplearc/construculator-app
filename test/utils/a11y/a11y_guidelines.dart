@@ -50,6 +50,7 @@ Future<void> expectMeetsTapTargetAndLabelGuidelines(
   bool checkTapTargetSize = true,
   bool checkLabeledTapTarget = true,
   bool checkTextContrast = true,
+  Future<void> Function(WidgetTester tester)? setupAfterPump,
 }) async {
   final semanticsHandle = tester.ensureSemantics();
   try {
@@ -83,6 +84,10 @@ Future<void> expectMeetsTapTargetAndLabelGuidelines(
 /// [buildWidget] should return the full app (e.g. MaterialApp with BlocProviders)
 /// for screen tests.
 ///
+/// [setupAfterPump] is an optional callback run after each theme's pump, before
+/// the guideline check. Use it for form filling, scrolling, or other setup needed
+/// to make the target visible or interactive.
+///
 /// Example:
 /// ```dart
 /// await setupA11yTest(tester);
@@ -99,11 +104,15 @@ Future<void> expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
   bool checkTapTargetSize = true,
   bool checkLabeledTapTarget = true,
   bool checkTextContrast = true,
+  Future<void> Function(WidgetTester tester)? setupAfterPump,
 }) async {
   for (final theme in kA11yTestThemes) {
     final widget = buildWidget(theme);
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();
+    if (setupAfterPump != null) {
+      await setupAfterPump(tester);
+    }
     await expectMeetsTapTargetAndLabelGuidelines(
       tester,
       targetFinder,
