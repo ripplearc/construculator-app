@@ -137,7 +137,6 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           _showDeleteConfirmationSheet(estimation, colorTheme);
         },
         onLock: (bool isLocked) {
-          _router.pop();
           BlocProvider.of<ChangeLockStatusBloc>(context).add(
             ChangeLockStatusRequested(
               estimationId: estimation.id,

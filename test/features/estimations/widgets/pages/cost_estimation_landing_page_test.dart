@@ -917,32 +917,28 @@ void main() {
   });
 
   group('Lock Status Integration', () {
-    testWidgets(
-      'calls router.pop and shows success toast when locked successfully',
-      (tester) async {
-        const estimationName = 'Kitchen Remodel';
-        await setupAndNavigateToEstimation(
-          tester,
-          estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
-            id: 'estimation-1',
-            projectId: testProjectId,
-            estimateName: estimationName,
-            isLocked: false,
-          ),
-        );
+    testWidgets('calls shows success toast when locked successfully', (
+      tester,
+    ) async {
+      const estimationName = 'Kitchen Remodel';
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: estimationName,
+          isLocked: false,
+        ),
+      );
 
-        await tester.tap(find.byKey(const Key('menuIcon')).first);
-        await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('menuIcon')).first);
+      await tester.pumpAndSettle();
 
-        expect(fakeAppRouter.popCalls, 0);
+      await tester.tap(find.byType(CoreSwitch));
+      await tester.pumpAndSettle();
 
-        await tester.tap(find.byType(CoreSwitch));
-        await tester.pumpAndSettle();
-
-        expect(fakeAppRouter.popCalls, 1);
-        expect(find.text(l10n().estimationLockedSuccessTitle), findsOneWidget);
-      },
-    );
+      expect(find.text(l10n().estimationLockedSuccessTitle), findsOneWidget);
+    });
 
     testWidgets('shows success toast when unlocked successfully', (
       tester,

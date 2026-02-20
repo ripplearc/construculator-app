@@ -60,15 +60,18 @@ RUN cd /home/flutter/android-sdk && \
 # Set working directory and ensure proper ownership
 WORKDIR /app
 
-# Install FVM globally using dart
-RUN dart pub global activate fvm
-
 # Copy .fvmrc to use project's Flutter version
 COPY --chown=flutter:flutter .fvmrc ./
+
+# Install FVM globally using dart
+RUN dart pub global activate fvm
 
 # Install Flutter using FVM based on .fvmrc and set it as default
 RUN fvm install && \
     fvm global ${FLUTTER_VERSION}
+
+# Reactivate FVM with the Flutter-managed Dart version
+RUN fvm dart pub global activate fvm
 
 # Ensure PATH and SSH alias are exported in interactive shells
 RUN echo 'export PATH="$PATH:$HOME/.pub-cache/bin:$HOME/fvm/default/bin:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools"' >> ~/.bashrc
