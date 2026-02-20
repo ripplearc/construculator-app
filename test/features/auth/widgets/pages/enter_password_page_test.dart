@@ -64,11 +64,11 @@ void main() {
     fakeSupabase.reset();
   });
 
-  Widget makeTestableWidget({required Widget child, ThemeData? theme}) {
+  Widget makeTestableWidget({required Widget child}) {
     return BlocProvider<EnterPasswordBloc>(
       create: (context) => Modular.get<EnterPasswordBloc>(),
       child: MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: createTestTheme(),
         home: Builder(
           builder: (context) {
             buildContext = context;

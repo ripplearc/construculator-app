@@ -64,7 +64,7 @@ void main() {
     fakeSupabase.reset();
   });
 
-  Widget makeTestableWidget({required Widget child, ThemeData? theme}) {
+  Widget makeTestableWidget({required Widget child}) {
     return MultiBlocProvider(
       providers: [
         BlocProvider<ForgotPasswordBloc>(
@@ -75,7 +75,7 @@ void main() {
         ),
       ],
       child: MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: createTestTheme(),
         home: Builder(
           builder: (context) {
             buildContext = context;
