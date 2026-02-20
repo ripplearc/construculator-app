@@ -12,4 +12,5 @@ This documentation covers development guidelines, architectural decisions, and b
 |-------|-------------|
 | [Testing-Directories](Testing/Directories) | Test directory structure, naming conventions, and CI/CD integration |
 | [Localization](Localization) | How to add and manage translated strings in the app |
+| [Launcher-Icons-Configuration](Launcher-Icons-Configuration) | Configure and generate launcher icons for all flavor variants |
 
