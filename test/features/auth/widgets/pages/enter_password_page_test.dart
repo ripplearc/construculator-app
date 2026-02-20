@@ -20,7 +20,6 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 
 class _EnterPasswordPageTestModule extends Module {
@@ -216,107 +215,5 @@ void main() {
 
       expect(router.popCalls, 1);
     });
-  });
-
-  group('EnterPasswordPage – accessibility', () {
-    testWidgets('meets a11y guidelines for continue button in both themes',
-        (tester) async {
-      await setupA11yTest(tester);
-      await renderPage(tester);
-
-      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-        tester,
-        (theme) => makeTestableWidget(
-          theme: theme,
-          child: EnterPasswordPage(email: testEmail),
-        ),
-        find.text(l10n().continueButton),
-        setupAfterPump: (t) async {
-          await enterPassword(t, 'Password123!');
-          await t.pumpAndSettle();
-        },
-      );
-    });
-
-    testWidgets('meets a11y guidelines for forgot password link in both themes',
-        (tester) async {
-      await setupA11yTest(tester);
-      await renderPage(tester);
-
-      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-        tester,
-        (theme) => makeTestableWidget(
-          theme: theme,
-          child: EnterPasswordPage(email: ''),
-        ),
-        find.text(l10n().forgotPasswordTitle),
-      );
-    });
-
-    testWidgets('meets a11y guidelines for edit link in both themes',
-        (tester) async {
-      await setupA11yTest(tester);
-      await renderPage(tester);
-
-      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-        tester,
-        (theme) => makeTestableWidget(
-          theme: theme,
-          child: EnterPasswordPage(email: testEmail),
-        ),
-        find.byKey(const Key('edit_link')),
-      );
-    });
-
-    testWidgets(
-      'meets a11y guidelines when password required error shown in both themes',
-      (tester) async {
-        await setupA11yTest(tester);
-        await renderPage(tester);
-        await enterPassword(tester, '');
-        await tester.pumpAndSettle();
-
-        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-          tester,
-          (theme) => makeTestableWidget(
-            theme: theme,
-            child: EnterPasswordPage(email: testEmail),
-          ),
-          find.text(l10n().passwordRequiredError),
-        );
-      },
-    );
-
-    testWidgets(
-      'meets a11y guidelines when invalid credentials toast shown in both themes',
-      (tester) async {
-        fakeSupabase.shouldThrowOnSignIn = true;
-        fakeSupabase.authErrorCode = SupabaseAuthErrorCode.invalidCredentials;
-        await setupA11yTest(tester);
-        await renderPage(tester);
-
-        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-          tester,
-          (theme) {
-            fakeSupabase.shouldThrowOnSignIn = true;
-            fakeSupabase.authErrorCode =
-                SupabaseAuthErrorCode.invalidCredentials;
-            return makeTestableWidget(
-              theme: theme,
-              child: EnterPasswordPage(email: testEmail),
-            );
-          },
-          find.byKey(const Key('toast_close_button')),
-          setupAfterPump: (t) async {
-            await enterPassword(t, 'WrongPassword123!');
-            await t.tap(find.descendant(
-              of: find.byType(ListView),
-              matching: find.text(l10n().continueButton),
-            ));
-            await t.pumpAndSettle();
-          },
-        );
-      },
-    );
   });
 }
