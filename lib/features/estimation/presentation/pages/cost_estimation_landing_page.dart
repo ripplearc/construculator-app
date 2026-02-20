@@ -1,14 +1,16 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
-import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
-import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_state.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/features/estimation/presentation/widgets/delete_estimation_confirmation_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/estimation_actions_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
@@ -35,16 +37,41 @@ class CostEstimationLandingPage extends StatefulWidget {
 }
 
 class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
-  late final AuthBloc _authBloc;
   late final AppRouter _router;
+  late final AuthNotifier _authNotifier;
+  StreamSubscription? _userProfileSub;
   String userAvatarUrl = '';
+
+  void fetchUserProfile() async {
+    final authManager = Modular.get<AuthManager>();
+    final cred = authManager.getCurrentCredentials();
+    if (cred.data?.id != null) {
+      authManager.getUserProfile(cred.data?.id ?? '');
+    }
+  }
 
   @override
   void initState() {
-    super.initState();
-    _authBloc = Modular.get<AuthBloc>();
+    _authNotifier = Modular.get<AuthNotifier>();
+
+    _userProfileSub = _authNotifier.onUserProfileChanged.listen((user) {
+      //TODO: https://ripplearc.youtrack.cloud/issue/CA-466/CostEstimation-State-Synchronization-in-costestimationlandingpage.dart (move this logic to project usecase)
+      if (!mounted) return;
+      setState(() {
+        userAvatarUrl = user?.profilePhotoUrl ?? '';
+      });
+    });
+
+    fetchUserProfile();
+
     _router = Modular.get<AppRouter>();
-    _authBloc.initialize();
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _userProfileSub?.cancel();
+    super.dispose();
   }
 
   void _createEstimation() {
@@ -136,24 +163,12 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
+    final l10n = context.l10n;
 
     return MultiBlocListener(
       listeners: [
-        BlocListener<AuthBloc, AuthState>(
-          bloc: _authBloc,
-          listener: (context, state) {
-            if (state is AuthLoadSuccess) {
-              //TODO: https://ripplearc.youtrack.cloud/issue/CA-466/CostEstimation-State-Synchronization-in-costestimationlandingpage.dart
-              setState(() {
-                userAvatarUrl = state.avatarUrl ?? '';
-              });
-            }
-          },
-        ),
         BlocListener<AddCostEstimationBloc, AddCostEstimationState>(
           listener: (context, state) {
-            final l10n = context.l10n;
-
             if (state is AddCostEstimationFailure) {
               final message = _mapFailureToMessage(l10n, state.failure);
               if (message != null) {
@@ -184,25 +199,15 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           },
         ),
       ],
-      child: BlocBuilder<AuthBloc, AuthState>(
-        bloc: _authBloc,
-        builder: (context, state) {
-          final l10n = context.l10n;
-          if (state is AuthLoadUnauthenticated) {
-            return const Scaffold(body: Center(child: CoreLoadingIndicator()));
-          }
-
-          return Scaffold(
-            backgroundColor: colorTheme.pageBackground,
-            appBar: Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
-              projectId: widget.projectId,
-              avatarImage: userAvatarUrl.isNotEmpty
-                  ? NetworkImage(userAvatarUrl)
-                  : null,
-            ),
-            body: _buildBody(l10n, colorTheme),
-          );
-        },
+      child: Scaffold(
+        backgroundColor: colorTheme.pageBackground,
+        appBar: Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
+          projectId: widget.projectId,
+          avatarImage: userAvatarUrl.isNotEmpty
+              ? NetworkImage(userAvatarUrl)
+              : null,
+        ),
+        body: _buildBody(l10n, colorTheme),
       ),
     );
   }
@@ -268,7 +273,6 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
               size: CoreIconSizes.small,
               color: colorTheme.buttonSurface,
             ),
-            fullWidth: false,
           ),
         );
       },

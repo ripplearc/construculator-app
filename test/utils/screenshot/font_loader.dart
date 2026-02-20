@@ -68,6 +68,20 @@ ThemeData createTestTheme() {
   );
 }
 
+/// Creates a dark test theme with Roboto font for a11y tests.
+ThemeData createTestThemeDark() {
+  final baseTheme = CoreTheme.dark();
+  final typography = baseTheme.extension<AppTypographyExtension>()!;
+  final colors = baseTheme.extension<AppColorsExtension>()!;
+
+  return ThemeData(
+    fontFamily: 'Roboto',
+    materialTapTargetSize: MaterialTapTargetSize.padded,
+    primaryColor: colors.backgroundDarkOrient,
+    extensions: [colors, typography],
+  );
+}
+
 String derivedFontFamily(Map<String, dynamic> fontDefinition) {
   if (!fontDefinition.containsKey('family')) return '';
 

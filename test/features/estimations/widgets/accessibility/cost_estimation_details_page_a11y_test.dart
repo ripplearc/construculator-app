@@ -17,9 +17,12 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-class _CostEstimationDetailsPageTestModule extends Module {
+import '../../../../utils/a11y/a11y_guidelines.dart';
+
+class _CostEstimationDetailsPageA11yTestModule extends Module {
   final AppBootstrap appBootstrap;
-  _CostEstimationDetailsPageTestModule(this.appBootstrap);
+
+  _CostEstimationDetailsPageA11yTestModule(this.appBootstrap);
 
   @override
   List<Module> get imports => [
@@ -54,7 +57,7 @@ void main() {
       envLoader: FakeEnvLoader(),
       supabaseWrapper: fakeSupabase,
     );
-    Modular.init(_CostEstimationDetailsPageTestModule(appBootstrap));
+    Modular.init(_CostEstimationDetailsPageA11yTestModule(appBootstrap));
     Modular.setInitialRoute(testEstimationRoute);
   });
 
@@ -67,13 +70,14 @@ void main() {
     fakeSupabase.reset();
   });
 
-  Widget makeApp() {
+  Widget makeApp({ThemeData? theme}) {
     return MaterialApp.router(
       routerConfig: Modular.routerConfig,
-      theme: CoreTheme.light(),
+      theme: theme ?? CoreTheme.light(),
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
+      builder: (context, child) => child!,
     );
   }
 
@@ -115,34 +119,79 @@ void main() {
     ]);
   }
 
-  group('CostEstimationDetailsPage', () {
-    testWidgets('should display coming soon message', (
-      WidgetTester tester,
-    ) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
+  group('CostEstimationDetailsPage – accessibility', () {
+    testWidgets(
+      'meets a11y text contrast for coming soon message in both themes',
+      (tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
 
-      await pumpAppAtRoute(tester, testEstimationRoute);
+        await setupA11yTest(tester);
+        await pumpAppAtRoute(tester, testEstimationRoute);
 
-      expect(
-        find.text(
-          'Cost estimation details will be available in a future update.',
-        ),
-        findsOneWidget,
-      );
-    });
+        const comingSoonText =
+            'Cost estimation details will be available in a future update.';
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeApp(theme: theme),
+          find.text(comingSoonText),
+          checkTextContrast: false,
+          setupAfterPump: (t) async {
+            Modular.to.navigate(testEstimationRoute);
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
 
-    testWidgets('should display estimation ID', (WidgetTester tester) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
+    testWidgets(
+      'meets a11y text contrast for app bar title in both themes',
+      (tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
 
-      await pumpAppAtRoute(tester, testEstimationRoute);
+        await setupA11yTest(tester);
+        await pumpAppAtRoute(tester, testEstimationRoute);
 
-      expect(find.text('Estimation ID: $testEstimationId'), findsOneWidget);
-    });
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeApp(theme: theme),
+          find.text('Estimation Details'),
+          checkTextContrast: false,
+          setupAfterPump: (t) async {
+            Modular.to.navigate(testEstimationRoute);
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
+
+    testWidgets(
+      'meets a11y text contrast for estimation ID text in both themes',
+      (tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+
+        await setupA11yTest(tester);
+        await pumpAppAtRoute(tester, testEstimationRoute);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeApp(theme: theme),
+          find.text('Estimation ID: $testEstimationId'),
+          checkTextContrast: false,
+          setupAfterPump: (t) async {
+            Modular.to.navigate(testEstimationRoute);
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
   });
 }
