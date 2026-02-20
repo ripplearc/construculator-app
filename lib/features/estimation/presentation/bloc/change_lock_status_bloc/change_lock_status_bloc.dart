@@ -20,6 +20,8 @@ class ChangeLockStatusBloc
     ChangeLockStatusRequested event,
     Emitter<ChangeLockStatusState> emit,
   ) async {
+    if (state is ChangeLockStatusInProgress) return;
+
     emit(const ChangeLockStatusInProgress());
 
     final result = await _repository.changeLockStatus(

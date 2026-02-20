@@ -686,7 +686,7 @@
         "type": "String",
         "example": "Kitchen Remodel"
       }
-    }
+    },
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53163&t=72cjZpZMiulKp3Yl-4"
   },
   "estimationLockedSuccessTitle": "You have locked the estimation",
