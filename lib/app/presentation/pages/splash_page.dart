@@ -29,11 +29,29 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   late AnimationController _imageTransitionController;
   late Animation<double> _imageTransitionAnimation;
   bool _showImage = false;
+  bool _imagesPrecached = false;
 
   @override
   void initState() {
     super.initState();
     _setupAnimations();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_imagesPrecached) {
+      _imagesPrecached = true;
+      _precacheImagesAndStart();
+    }
+  }
+
+  Future<void> _precacheImagesAndStart() async {
+    await Future.wait([
+      precacheImage(const AssetImage('assets/images/first.png'), context),
+      precacheImage(const AssetImage('assets/images/second.png'), context),
+      precacheImage(const AssetImage('assets/images/third.png'), context),
+    ]);
     _startAnimationSequence();
   }
 
