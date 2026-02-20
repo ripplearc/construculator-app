@@ -8,5 +8,5 @@ flutter_launcher_icons:
   adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "assets/icons/app_icon_fishfood.png"
   web:
-    generate: true
+    generate: false
     image_path: "assets/icons/app_icon_fishfood.png"
