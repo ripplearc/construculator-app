@@ -261,18 +261,20 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
         return Positioned(
           bottom: size.height * CostEstimationLandingPage._buttonBottomRatio,
           right: size.width * CostEstimationLandingPage._buttonRightRatio,
-          child: CoreButton(
-            label: l10n.addEstimation,
-            onPressed: _createEstimation,
-            isDisabled: isCreating,
-            variant: CoreButtonVariant.secondary,
-            size: CoreButtonSize.medium,
-            icon: CoreIconWidget(
-              icon: CoreIcons.add,
-              size: 20,
-              color: colorTheme.buttonSurface,
+          child: IntrinsicWidth(
+            child: CoreButton(
+              label: l10n.addEstimation,
+              onPressed: _createEstimation,
+              isDisabled: isCreating,
+              variant: CoreButtonVariant.secondary,
+              size: CoreButtonSize.medium,
+              icon: CoreIconWidget(
+                icon: CoreIcons.add,
+                size: 20,
+                color: colorTheme.buttonSurface,
+              ),
+              fullWidth: false,
             ),
-            fullWidth: false,
           ),
         );
       },
