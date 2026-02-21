@@ -33,7 +33,21 @@ dependencies:
 
 ### 3.1 Environment Variables
 
-Add `SENTRY_DSN` to environment files:
+Add `SENTRY_DSN` to environment files.
+
+`SENTRY_DSN` is the Sentry project connection string (Data Source Name) that tells the SDK where to send events. When it is empty, the SDK is disabled.
+
+## Finding SENTRY_DSN in the Dashboard
+
+1. Log in to your Sentry account at https://sentry.io
+2. Navigate to **Settings** → **Projects**
+3. Select your project
+4. Go to **Client Keys (DSN)** in the left sidebar
+5. Copy the DSN value displayed under "Your DSN"
+
+The DSN configures the protocol, public key, server address, and project identifier. It is composed of the following parts:
+
+{PROTOCOL}://{PUBLIC_KEY}:{SECRET_KEY}@{HOST}{PATH}/{PROJECT_ID}
 
 ```dotenv
 # .env.dev - Empty DSN disables Sentry
@@ -47,6 +61,34 @@ SENTRY_DSN=https://your-prod-dsn@sentry.io/project
 ```
 
 > ⚠️ **Never commit `.env.qa` or `.env.prod` files to source control.**
+
+### 3.1.1 CI/CD (Codemagic) Setup
+
+Use **Environment Groups** in Codemagic to organize secure variables per environment, then generate the complete env file during the build.
+
+**Setup:**
+1. Create environment groups in Codemagic (e.g., `construculator_dev`, `construculator_qa`, `construculator_prod`)
+2. Add variables to each group: `SENTRY_DSN`, `ENVIRONMENT`, and any other sensitive values
+3. Reference the appropriate group in each workflow
+
+**Pre-build Script:**
+```sh
+# Generate the complete env file from environment group variables
+cat > assets/env/.env.$ENVIRONMENT <<EOF
+SENTRY_DSN=$SENTRY_DSN
+# Add all other environment variables your app requires
+# API_BASE_URL=$API_BASE_URL
+# API_KEY=$API_KEY
+EOF
+```
+
+**Build Command:**
+```sh
+# Use $ENVIRONMENT from the environment group
+fvm flutter build apk --flavor fishfood --dart-define=ENVIRONMENT=$ENVIRONMENT
+```
+
+This approach keeps sensitive variables organized by environment and generates env files at build time without committing them to source control.
 
 ### 3.2 Initialize Sentry in main.dart
 
@@ -74,7 +116,6 @@ Future<void> main() async {
       options.attachScreenshot = false;  // Privacy
       options.enableAutoSessionTracking = true;
       options.captureFailedRequests = true;
-      options.debug = false;
     },
     appRunner: () => runApp(
       ModularApp(module: AppModule(appBootstrap), child: const AppWidget()),
@@ -197,7 +238,7 @@ await Sentry.configureScope((scope) {
 });
 ```
 
-Add this to your authentication flow (BLoC/use case).
+Add this to your authentication flow (Inside a repository during signin, login and logout).
 
 ---
 
@@ -205,15 +246,34 @@ Add this to your authentication flow (BLoC/use case).
 
 ### 6.1 Navigation Tracking
 
-Track screen navigation automatically using `SentryNavigatorObserver`:
+Track screen navigation automatically using `SentryNavigatorObserver` with `flutter_modular`.
+
+Add the observer in your `AppWidget` where you use `MaterialApp.router`:
 
 ```dart
-MaterialApp(
-  navigatorObservers: [
-    SentryNavigatorObserver(),
-  ],
-  // ...
-);
+import 'package:sentry_flutter/sentry_flutter.dart';
+
+class AppWidget extends StatelessWidget {
+  const AppWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final routerDelegate = Modular.routerDelegate;
+    routerDelegate.setObservers(  
+      [
+        SentryNavigatorObserver(),
+      ]
+    );
+    routerDeligate.setNavipapp
+    return MaterialApp.router(
+      title: 'Construculator',
+      routerDeligate: Modula
+      routerConfig: Modular.routerConfig
+      routerDeligate: routerDeligate,
+      // ... rest of your config
+    );
+  }
+}
 ```
 
 **What this gives you:**
@@ -230,51 +290,29 @@ ERROR: Failed to save estimation
 
 ### 6.2 Performance Monitoring
 
-Currently disabled (`tracesSampleRate = 0.0`), but can be enabled for specific metrics:
+Sentry provides performance monitoring capabilities to track app performance metrics.
 
-#### App Start Time
-Automatically measured when performance monitoring is enabled:
-
+**Automatic Metrics:**
+Enable in `main.dart` Sentry initialization:
 ```dart
 options.tracesSampleRate = 0.2; // Sample 20% of sessions
 options.enableAutoPerformanceTracking = true;
+options.enableTimeToFullDisplayTracing = true;
 ```
 
-Sentry tracks:
-- Cold start time (app launch from scratch)
-- Warm start time (app resume from background)
-
-#### Time to Initial Display (TTID) / Time to Full Display (TTFD)
-
-Time to full display (TTFD) provides insight into how long it would take your Widget to launch and load all of its content. This is measured by adding a span for each navigation to a Widget. The SDK then sets the span operation to ui.load.full-display and the span description to the Widget's route name, followed by full display (for example, MyWidget full display).
-
-```dart
-// In main.dart
-    options.enableTimeToFullDisplayTracing = true;
-
-```
-
-Sentry automatically tracks:
+This tracks:
+- App start time (cold/warm starts)
+- Screen load time (TTID/TTFD)
 - Route transition duration
-- Widget build time
-- Frame rendering time
 
-#### Custom Performance Tracking
-
-For critical operations, manually track performance:
-
+**Custom Tracking:**
+For critical operations:
 ```dart
-final transaction = Sentry.startTransaction(
-  'load_estimations',
-  'task',
-  bindToScope: true,
-);
-
+final transaction = Sentry.startTransaction('load_estimations', 'task');
 try {
   final span = transaction.startChild('database_fetch');
   final result = await repository.fetchEstimations();
   span.finish(status: SpanStatus.ok());
-
   transaction.finish(status: SpanStatus.ok());
 } catch (e) {
   transaction.finish(status: SpanStatus.internalError());
@@ -282,21 +320,18 @@ try {
 }
 ```
 
-**Use sparingly** - only for critical user journeys like:
-- Initial app load
-- Create/save estimation
-- Generate PDF report
-
 ### 6.3 HTTP Request Tracking
 
-Already enabled via `options.captureFailedRequests = true`.
+Enable automatic tracking of failed HTTP requests:
 
-Sentry automatically captures:
+```dart
+options.captureFailedRequests = true;
+```
+
+This captures:
 - Failed HTTP requests (4xx, 5xx)
 - Request URL, method, status code
 - Request/response headers (sanitized)
-
-For Supabase calls through our `SupabaseWrapper`, failed requests are automatically tracked.
 
 ### 6.4 User Feedback
 
@@ -306,15 +341,15 @@ Collect user feedback when errors occur:
 final eventId = await Sentry.captureException(exception);
 
 if (eventId != null) {
-  final userFeedback = await showDialog<String>(
+  final userFeedback = await showDialog<String?>(
     context: context,
     builder: (_) => UserFeedbackDialog(),
   );
 
   if (userFeedback != null) {
-    await Sentry.captureUserFeedback(SentryUserFeedback(
-      eventId: eventId,
-      comments: userFeedback,
+    await Sentry.captureUserFeedback(SentryFeedback(
+      associatedEventId: eventId,
+      message: userFeedback,
     ));
   }
 }
@@ -472,14 +507,14 @@ _logger.warning('Network slow - retrying');
 
 ## 10. Environment Strategy
 
-**Dev (.env.dev):**
+**Fishfood (.env.dev):**
 ```dotenv
 SENTRY_DSN=  # Empty - disabled
 ```
 - Avoids noise from local development
 - Only enable temporarily for testing Sentry integration
 
-**QA (.env.qa):**
+**Dogfood (.env.qa):**
 ```dotenv
 SENTRY_DSN=https://your-qa-dsn@sentry.io/project
 ```
