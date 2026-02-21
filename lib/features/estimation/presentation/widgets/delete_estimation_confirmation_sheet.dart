@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/ui/core_icon_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -67,7 +68,7 @@ class _DeleteEstimationConfirmationSheetState
                 child: Center(
                   child: CoreIconWidget(
                     icon: CoreIcons.delete,
-                    size: 32,
+                    size: CoreIconSizes.large,
                     color: colorTheme.iconRed,
                   ),
                 ),

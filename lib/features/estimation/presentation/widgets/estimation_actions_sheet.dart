@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/ui/core_icon_sizes.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
 
@@ -171,8 +172,8 @@ class _QuickActionButton extends StatelessWidget {
         spacing: CoreSpacing.space2,
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: CoreIconSizes.xLarge,
+            height: CoreIconSizes.xLarge,
             decoration: BoxDecoration(
               color: colorTheme.pageBackground,
               shape: BoxShape.circle,
@@ -181,7 +182,7 @@ class _QuickActionButton extends StatelessWidget {
             child: Center(
               child: CoreIconWidget(
                 icon: icon,
-                size: 24,
+                size: CoreIconSizes.medium,
                 color: colorTheme.iconDark,
               ),
             ),
@@ -217,7 +218,11 @@ class _ActionListItem extends StatelessWidget {
         padding: const EdgeInsets.all(CoreSpacing.space3),
         child: Row(
           children: [
-            CoreIconWidget(icon: icon, size: 24, color: colorTheme.iconDark),
+            CoreIconWidget(
+              icon: icon,
+              size: CoreIconSizes.medium,
+              color: colorTheme.iconDark,
+            ),
             const SizedBox(width: CoreSpacing.space2),
             Expanded(
               child: Text(

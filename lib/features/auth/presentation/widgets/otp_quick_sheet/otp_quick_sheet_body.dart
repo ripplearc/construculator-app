@@ -1,5 +1,6 @@
 // coverage:ignore-file
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/ui/core_icon_sizes.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
 import 'package:pinput/pinput.dart';
@@ -89,7 +90,7 @@ class OtpQuickSheetBody extends StatelessWidget {
                           SizedBox(width: 4),
                           Icon(
                             Icons.edit_outlined,
-                            size: 20,
+                            size: CoreIconSizes.small,
                             color: colors.textLink,
                           ),
                         ],
@@ -151,7 +152,7 @@ class OtpQuickSheetBody extends StatelessWidget {
               trailing: true,
               icon: CoreIconWidget(
                 icon: CoreIcons.checkCircle,
-                size: 24,
+                size: CoreIconSizes.medium,
                 color: verifyButtonDisabled
                     ? colors.textBody
                     : colors.textInverse,

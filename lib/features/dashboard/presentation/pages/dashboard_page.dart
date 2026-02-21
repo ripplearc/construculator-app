@@ -4,6 +4,7 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
+import 'package:construculator/libraries/ui/core_icon_sizes.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -73,7 +74,7 @@ class _DashboardPageState extends State<DashboardPage> {
             children: [
               Icon(
                 Icons.dashboard,
-                size: 64,
+                size: CoreIconSizes.xxLarge,
                 color: Theme.of(context).primaryColor,
               ),
               const SizedBox(height: 24),

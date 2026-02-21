@@ -1,6 +1,7 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/formatting_helper.dart';
+import 'package:construculator/libraries/ui/core_icon_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -52,7 +53,7 @@ class CostEstimationTile extends StatelessWidget {
           key: const Key('moneyIcon'),
           icon: CoreIcons.cost,
           color: appColors.iconGrayMid,
-          size: 24,
+          size: CoreIconSizes.medium,
         ),
         const SizedBox(width: CoreSpacing.space3),
         Expanded(
@@ -65,24 +66,13 @@ class CostEstimationTile extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        Semantics(
-          label: context.l10n.estimationMenuLabel(estimation.estimateName),
-          button: true,
-          child: SizedBox(
-            width: 48,
-            height: 48,
-            child: GestureDetector(
-              onTap: onMenuTap,
-              behavior: HitTestBehavior.opaque,
-              child: Center(
-                child: CoreIconWidget(
-                  key: const Key('menuIcon'),
-                  icon: CoreIcons.moreVert,
-                  color: appColors.iconDark,
-                  size: 24,
-                ),
-              ),
-            ),
+        GestureDetector(
+          onTap: onMenuTap,
+          child: CoreIconWidget(
+            key: const Key('menuIcon'),
+            icon: CoreIcons.moreVert,
+            color: appColors.iconDark,
+            size: CoreIconSizes.medium,
           ),
         ),
       ],
@@ -101,7 +91,7 @@ class CostEstimationTile extends StatelessWidget {
           key: const Key('calendarIcon'),
           icon: CoreIcons.calendar,
           color: appColors.iconGrayMid,
-          size: 14,
+          size: CoreIconSizes.xxSmall,
         ),
         const SizedBox(width: CoreSpacing.space2),
         Text(
