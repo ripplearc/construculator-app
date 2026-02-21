@@ -15,4 +15,5 @@ class DatabaseConstants {
 
   // Column names
   static const String projectIdColumn = 'project_id';
+  static const String createdAtColumn = 'created_at';
 }

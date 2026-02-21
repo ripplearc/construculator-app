@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- REMOTE COST ESTIMATION DATA SOURCE MUTATION TESTING -->
+    <!-- Targets: Remote data source implementation for cost estimations -->
+
+    <files>
+        <file>lib/features/estimation/data/data_source/remote_cost_estimation_data_source.dart</file>
+    </files>
+
+    <exclude>
+        <!-- Exclude logging statements -->
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+
+        <!-- Exclude try-catch structure -->
+        <regex pattern="try\s*{" dotAll="false"/>
+        <regex pattern="catch\s*\(" dotAll="false"/>
+
+        <!-- Exclude override annotations -->
+        <regex pattern="@override" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- RULE 1: In `getEstimations`, break pagination calculation - remove the -1 -->
+        <regex pattern="(rangeTo:\s*offset\s*\+\s*limit\s*-\s*1)" id="estimation.pagination.rangeto_off_by_one">
+            <mutation text="rangeTo: offset + limit"/>
+        </regex>
+
+        <!-- RULE 2: In `getEstimations`, break pagination calculation - wrong operator -->
+        <regex pattern="(rangeTo:\s*offset\s*\+\s*limit\s*-\s*1)" id="estimation.pagination.rangeto_wrong_operator">
+            <mutation text="rangeTo: offset - limit + 1"/>
+        </regex>
+
+        <!-- RULE 3: In `getEstimations`, invert sort order from descending to ascending -->
+        <regex pattern="(ascending:\s*false,)" id="estimation.sort.invert_order">
+            <mutation text="ascending: true,"/>
+        </regex>
+
+        <!-- RULE 4: In `getEstimations`, use wrong filter value -->
+        <regex pattern="(filterValue:\s*projectId,)" id="estimation.filter.wrong_value">
+            <mutation text="filterValue: '',"/>
+        </regex>
+
+        <!-- RULE 5: In `getEstimations`, return empty list instead of mapping -->
+        <regex pattern="(return response\s*\.map\(\(costEstimate\) => CostEstimateDto\.fromJson\(costEstimate\)\)\s*\.toList\(\);)" id="estimation.mapping.return_empty">
+            <mutation text="return [];"/>
+        </regex>
+
+        <!-- RULE 6: In `getEstimations`, use wrong order column -->
+        <regex pattern="(orderColumn:\s*createdAtColumn,)" id="estimation.sort.wrong_column">
+            <mutation text="orderColumn: projectIdColumn,"/>
+        </regex>
+
+        <!-- RULE 7: In all methods, skip rethrowing exceptions -->
+        <regex pattern="(rethrow;)" id="estimation.error.skip_rethrow">
+            <mutation text="// rethrow skipped"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="estimation_data_source" expected-return="0">flutter test test/features/estimations/units/data/data_source/remote_cost_estimation_data_source_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
