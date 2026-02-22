@@ -33,17 +33,23 @@ class CostEstimationListEmpty extends CostEstimationListState {
 
 /// Abstract base class for states that can contain cost estimation data.
 abstract class CostEstimationListWithData extends CostEstimationListState {
-  /// Read-only list of cost estimations to prevent mutation outside the bloc.
   final UnmodifiableListView<CostEstimate> estimates;
 
-  CostEstimationListWithData({required List<CostEstimate> estimates})
-    : estimates = UnmodifiableListView<CostEstimate>(
-        List<CostEstimate>.from(estimates),
-      );
+  final bool hasMore;
+
+  final bool isLoadingMore;
+
+  CostEstimationListWithData({
+    required List<CostEstimate> estimates,
+    this.hasMore = true,
+    this.isLoadingMore = false,
+  }) : estimates = UnmodifiableListView<CostEstimate>(
+         List<CostEstimate>.from(estimates),
+       );
 
   /// List of properties that will be used to compare states
   @override
-  List<Object?> get props => [estimates];
+  List<Object?> get props => [estimates, hasMore, isLoadingMore];
 }
 
 /// State when loading cost estimations fails but we have previous data
@@ -51,16 +57,37 @@ class CostEstimationListError extends CostEstimationListWithData {
   /// The error message describing what went wrong
   final Failure failure;
 
-  CostEstimationListError({required this.failure, required super.estimates});
+  CostEstimationListError({
+    required this.failure,
+    required super.estimates,
+    super.hasMore,
+    super.isLoadingMore,
+  });
 
   @override
-  List<Object?> get props => [failure, estimates];
+  List<Object?> get props => [failure, estimates, hasMore, isLoadingMore];
 }
 
 /// State when the cost estimations are loaded successfully with data
 class CostEstimationListLoaded extends CostEstimationListWithData {
-  CostEstimationListLoaded({required super.estimates});
+  CostEstimationListLoaded({
+    required super.estimates,
+    super.hasMore,
+    super.isLoadingMore,
+  });
+
+  CostEstimationListLoaded copyWith({
+    List<CostEstimate>? estimates,
+    bool? hasMore,
+    bool? isLoadingMore,
+  }) {
+    return CostEstimationListLoaded(
+      estimates: estimates ?? this.estimates.toList(),
+      hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+    );
+  }
 
   @override
-  List<Object?> get props => [estimates];
+  List<Object?> get props => [estimates, hasMore, isLoadingMore];
 }

@@ -38,8 +38,11 @@ class CostEstimationLandingPage extends StatefulWidget {
 class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
   late final AppRouter _router;
   late final AuthNotifier _authNotifier;
+  late final ScrollController _scrollController;
   StreamSubscription? _userProfileSub;
   String userAvatarUrl = '';
+
+  static const double _loadMoreThreshold = 200.0;
 
   void fetchUserProfile() async {
     final authManager = Modular.get<AuthManager>();
@@ -51,6 +54,8 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
 
   @override
   void initState() {
+    super.initState();
+    _scrollController = ScrollController()..addListener(_onScroll);
     _authNotifier = Modular.get<AuthNotifier>();
 
     _userProfileSub = _authNotifier.onUserProfileChanged.listen((user) {
@@ -64,11 +69,30 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
     fetchUserProfile();
 
     _router = Modular.get<AppRouter>();
-    super.initState();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.position.pixels;
+
+    if (maxScroll - currentScroll <= _loadMoreThreshold) {
+      final bloc = BlocProvider.of<CostEstimationListBloc>(context);
+      final state = bloc.state;
+
+      if (state is CostEstimationListWithData &&
+          state.hasMore &&
+          !state.isLoadingMore) {
+        bloc.add(CostEstimationListLoadMore(projectId: widget.projectId));
+      }
+    }
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _userProfileSub?.cancel();
     super.dispose();
   }
@@ -225,7 +249,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           onRefresh: () async {
             BlocProvider.of<CostEstimationListBloc>(
               context,
-            ).add(CostEstimationListStartWatching(projectId: widget.projectId));
+            ).add(CostEstimationListRefresh(projectId: widget.projectId));
           },
           color: colorTheme.buttonSurface,
           child: _buildContent(state, l10n),
@@ -301,25 +325,32 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
   }
 
   Widget _buildEstimationsList(List<CostEstimate> estimations) {
+    final colorTheme = context.colorTheme;
     return Stack(
       children: [
-        BlocBuilder<AddCostEstimationBloc, AddCostEstimationState>(
-          builder: (context, state) {
-            final colorTheme = context.colorTheme;
+        CustomScrollView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            BlocBuilder<AddCostEstimationBloc, AddCostEstimationState>(
+              builder: (context, state) {
+                if (state is AddCostEstimationInProgress) {
+                  return const SliverPadding(
+                    padding: EdgeInsets.only(top: 16),
+                    sliver: SliverToBoxAdapter(
+                      child: CoreLoadingIndicator(size: 50),
+                    ),
+                  );
+                }
+                return const SliverToBoxAdapter(child: SizedBox.shrink());
+              },
+            ),
 
-            final isCreating = state is AddCostEstimationInProgress;
-            final itemCount = estimations.length + (isCreating ? 1 : 0);
-
-            return Padding(
+            SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              child: ListView.builder(
-                itemCount: itemCount,
+              sliver: SliverList.builder(
+                itemCount: estimations.length,
                 itemBuilder: (context, index) {
-                  final isLoadingItem = isCreating && index == itemCount - 1;
-                  if (isLoadingItem) {
-                    return const CoreLoadingIndicator(size: 50);
-                  }
-
                   final estimation = estimations[index];
                   return CostEstimationTile(
                     estimation: estimation,
@@ -329,8 +360,27 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
                   );
                 },
               ),
-            );
-          },
+            ),
+
+            BlocBuilder<CostEstimationListBloc, CostEstimationListState>(
+              buildWhen: (previous, current) {
+                if (previous is CostEstimationListWithData &&
+                    current is CostEstimationListWithData) {
+                  return previous.isLoadingMore != current.isLoadingMore;
+                }
+                return false;
+              },
+              builder: (context, state) {
+                if (state is CostEstimationListWithData &&
+                    state.isLoadingMore) {
+                  return const SliverToBoxAdapter(
+                    child: CoreLoadingIndicator(size: 50),
+                  );
+                }
+                return const SliverToBoxAdapter(child: SizedBox.shrink());
+              },
+            ),
+          ],
         ),
         _buildPositionedAddButton(),
       ],
