@@ -444,4 +444,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String estimationMenuLabel(String estimationName) {
     return 'Open menu for $estimationName';
   }
+
+  @override
+  String get estimationLockedSuccessTitle => 'You have locked the estimation';
+
+  @override
+  String get estimationLockedSuccessDescription =>
+      'If you want to unlock it again press the same unlock button';
+
+  @override
+  String get estimationUnlockedSuccessTitle =>
+      'You have unlocked the estimation';
+
+  @override
+  String get estimationUnlockedSuccessDescription =>
+      'If you want to lock it again press the same lock button';
 }

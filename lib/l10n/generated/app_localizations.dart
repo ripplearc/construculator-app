@@ -897,6 +897,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open menu for {estimationName}'**
   String estimationMenuLabel(String estimationName);
+
+  /// Success message title shown when an estimation is locked
+  ///
+  /// In en, this message translates to:
+  /// **'You have locked the estimation'**
+  String get estimationLockedSuccessTitle;
+
+  /// Success message description shown when an estimation is locked
+  ///
+  /// In en, this message translates to:
+  /// **'If you want to unlock it again press the same unlock button'**
+  String get estimationLockedSuccessDescription;
+
+  /// Success message title shown when an estimation is unlocked
+  ///
+  /// In en, this message translates to:
+  /// **'You have unlocked the estimation'**
+  String get estimationUnlockedSuccessTitle;
+
+  /// Success message description shown when an estimation is unlocked
+  ///
+  /// In en, this message translates to:
+  /// **'If you want to lock it again press the same lock button'**
+  String get estimationUnlockedSuccessDescription;
 }
 
 class _AppLocalizationsDelegate
