@@ -14,14 +14,27 @@ import 'package:construculator/libraries/errors/failures.dart';
 ///
 /// Details can be found in the detailed design document: https://docs.google.com/document/d/1MHn-LanxVJ96-HSe47C9Km0evtkPcyQDw9eDzFD60AA/edit?tab=t.m4ek8adycklb#heading=h.pvhts1v5ct4j
 abstract class CostEstimationRepository {
-  /// Retrieves all cost estimates for a specific project.
+  /// Retrieves the first page of cost estimates for a specific project.
   ///
+  /// Resets pagination state and fetches the initial page.
   /// Returns a [Future] that completes with an [Either] containing either
   /// a [Failure] or a [List<CostEstimate>] associated with the specified
-  /// project ID. The estimates include their markup configurations, lock
-  /// status, and calculated totals.
-  // TODO: https://ripplearc.youtrack.cloud/issue/CA-449/Cost-Estimation-Add-Pagination-for-Fetching-Estimations
-  Future<Either<Failure, List<CostEstimate>>> getEstimations(String projectId);
+  /// project ID.
+  Future<Either<Failure, List<CostEstimate>>> fetchInitialEstimations(
+    String projectId,
+  );
+
+  /// Loads the next page of cost estimates for a specific project.
+  ///
+  /// Accumulates results with previously loaded pages.
+  /// Returns [Either] containing a [Failure] or [List<CostEstimate>]
+  /// representing the full accumulated list.
+  Future<Either<Failure, List<CostEstimate>>> loadMoreEstimations(
+    String projectId,
+  );
+
+  /// Returns whether there are more pages to load for a project.
+  bool hasMoreEstimations(String projectId);
 
   /// Watches all cost estimates for a specific project.
   ///

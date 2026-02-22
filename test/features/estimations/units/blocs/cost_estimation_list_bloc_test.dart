@@ -273,7 +273,7 @@ void main() {
           fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.unknown;
 
-          await repository.getEstimations(testProjectId);
+          await repository.fetchInitialEstimations(testProjectId);
         },
         wait: streamDebounceWaitDuration,
         expect: () => [
@@ -316,7 +316,7 @@ void main() {
             const CostEstimationListStartWatching(projectId: testProjectId),
           );
           await bloc.stream.firstWhere((s) => s is CostEstimationListError);
-          await repository.getEstimations(testProjectId);
+          await repository.fetchInitialEstimations(testProjectId);
         },
         wait: streamDebounceWaitDuration,
         expect: () => [
@@ -340,7 +340,7 @@ void main() {
             const CostEstimationListStartWatching(projectId: testProjectId),
           );
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
-          await repository.getEstimations(testProjectId);
+          await repository.fetchInitialEstimations(testProjectId);
         },
         wait: streamDebounceWaitDuration,
         expect: () => [
