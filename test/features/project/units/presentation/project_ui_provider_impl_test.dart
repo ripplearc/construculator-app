@@ -58,7 +58,6 @@ void main() {
                   onProjectTap: () {},
                   onSearchTap: () {},
                   onNotificationTap: () {},
-                  avatarImage: const AssetImage('assets/images/avatar.png'),
                 )
                 as ProjectHeaderAppBar;
 
@@ -66,7 +65,6 @@ void main() {
         expect(projectAppbarHeader.onProjectTap, isNotNull);
         expect(projectAppbarHeader.onSearchTap, isNotNull);
         expect(projectAppbarHeader.onNotificationTap, isNotNull);
-        expect(projectAppbarHeader.avatarImage, isA<ImageProvider>());
       });
 
       testWidgets('renders inside Scaffold and is discoverable', (
