@@ -15,21 +15,21 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
   /// Tracks method calls for assertions
   final List<Map<String, dynamic>> _methodCalls = [];
 
-  /// Tracks cost estimation data for assertions during [getEstimations]
+  /// Tracks cost estimation data for assertions during [fetchInitialEstimations]
   final Map<String, List<CostEstimate>> _projectEstimations = {};
 
   /// Stream controllers for each project
   final Map<String, StreamController<Either<Failure, List<CostEstimate>>>>
   _streamControllers = {};
 
-  /// Controls whether [getEstimations] should return a [Failure].s
-  bool shouldReturnFailureOnGetEstimations = false;
+  /// Controls whether [fetchInitialEstimations] should return a [Failure].s
+  bool shouldReturnFailureOnFetchInitialEstimations = false;
 
   /// Specifies the [EstimationErrorType] for the [Failure] returned by
-  /// [getEstimations] when [shouldReturnFailureOnGetEstimations] is true.
-  EstimationErrorType? getEstimationsFailureType;
+  /// [fetchInitialEstimations] when [shouldReturnFailureOnFetchInitialEstimations] is true.
+  EstimationErrorType? fetchInitialEstimationsFailureType;
 
-  /// Controls whether [getEstimations] returns an empty list
+  /// Controls whether [fetchInitialEstimations] returns an empty list
   bool shouldReturnEmptyList = false;
 
   /// Controls whether [createEstimation] should return a [Failure].
@@ -46,6 +46,16 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
   /// [deleteEstimation] when [shouldReturnFailureOnDeleteEstimation] is true.
   EstimationErrorType? deleteEstimationFailureType;
 
+  /// Controls whether [loadMoreEstimations] should return a [Failure].
+  bool shouldReturnFailureOnLoadMore = false;
+
+  /// Specifies the [EstimationErrorType] for the [Failure] returned by
+  /// [loadMoreEstimations] when [shouldReturnFailureOnLoadMore] is true.
+  EstimationErrorType? loadMoreFailureType;
+
+  /// Tracks pagination state per project
+  final Map<String, bool> _hasMoreEstimationsMap = {};
+
   /// Controls whether operations should be delayed
   bool shouldDelayOperations = false;
 
@@ -59,19 +69,23 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
   FakeCostEstimationRepository({required this.clock});
 
   @override
-  Future<Either<Failure, List<CostEstimate>>> getEstimations(
+  Future<Either<Failure, List<CostEstimate>>> fetchInitialEstimations(
     String projectId,
   ) async {
     if (shouldDelayOperations) {
       await completer?.future;
     }
 
-    _methodCalls.add({'method': 'getEstimations', 'projectId': projectId});
+    _methodCalls.add({
+      'method': 'fetchInitialEstimations',
+      'projectId': projectId,
+    });
 
-    if (shouldReturnFailureOnGetEstimations) {
+    if (shouldReturnFailureOnFetchInitialEstimations) {
       final failure = EstimationFailure(
         errorType:
-            getEstimationsFailureType ?? EstimationErrorType.unexpectedError,
+            fetchInitialEstimationsFailureType ??
+            EstimationErrorType.unexpectedError,
       );
       _emitToStream(projectId, Left(failure));
       return Left(failure);
@@ -88,6 +102,34 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
   }
 
   @override
+  Future<Either<Failure, List<CostEstimate>>> loadMoreEstimations(
+    String projectId,
+  ) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    _methodCalls.add({'method': 'loadMoreEstimations', 'projectId': projectId});
+
+    if (shouldReturnFailureOnLoadMore) {
+      return Left(
+        EstimationFailure(
+          errorType: loadMoreFailureType ?? EstimationErrorType.unexpectedError,
+        ),
+      );
+    }
+
+    final estimations = _projectEstimations[projectId] ?? [];
+    _emitToStream(projectId, Right(estimations));
+    return Right(estimations);
+  }
+
+  @override
+  bool hasMoreEstimations(String projectId) {
+    return _hasMoreEstimationsMap[projectId] ?? true;
+  }
+
+  @override
   Stream<Either<Failure, List<CostEstimate>>> watchEstimations(
     String projectId,
   ) {
@@ -101,7 +143,7 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
               _streamControllers.remove(projectId);
             },
           );
-      Future.microtask(() => getEstimations(projectId));
+      Future.microtask(() => fetchInitialEstimations(projectId));
     }
 
     final controller = _streamControllers[projectId];
@@ -244,14 +286,21 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     _methodCalls.clear();
   }
 
+  /// Sets whether there are more estimations to load for a project
+  void setHasMoreEstimations(String projectId, bool hasMore) {
+    _hasMoreEstimationsMap[projectId] = hasMore;
+  }
+
   /// Resets all fake configurations, clears data
   void reset() {
-    shouldReturnFailureOnGetEstimations = false;
-    getEstimationsFailureType = null;
+    shouldReturnFailureOnFetchInitialEstimations = false;
+    fetchInitialEstimationsFailureType = null;
     shouldReturnFailureOnCreateEstimation = false;
     createEstimationFailureType = null;
     shouldReturnFailureOnDeleteEstimation = false;
     deleteEstimationFailureType = null;
+    shouldReturnFailureOnLoadMore = false;
+    loadMoreFailureType = null;
     shouldReturnEmptyList = false;
     shouldDelayOperations = false;
     completer = null;
@@ -260,6 +309,7 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
       controller.close();
     }
     _streamControllers.clear();
+    _hasMoreEstimationsMap.clear();
 
     clearAllData();
     clearMethodCalls();

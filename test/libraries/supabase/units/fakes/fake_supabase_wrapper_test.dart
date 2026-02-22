@@ -1493,7 +1493,6 @@ void main() {
         fakeWrapper.shouldThrowOnInsert = true;
         fakeWrapper.shouldThrowOnUpdate = true;
         fakeWrapper.shouldThrowOnSelectMultiple = true;
-        fakeWrapper.shouldThrowOnSelectPaginated = true;
         fakeWrapper.shouldThrowOnDelete = true;
         fakeWrapper.shouldThrowOnRpc = true;
         fakeWrapper.signInErrorMessage = 'Sign in failed';
@@ -1509,9 +1508,6 @@ void main() {
         fakeWrapper.rpcErrorMessage = 'RPC failed';
         fakeWrapper.selectExceptionType = SupabaseExceptionType.postgrest;
         fakeWrapper.selectMultipleExceptionType = SupabaseExceptionType.socket;
-        fakeWrapper.selectPaginatedExceptionType =
-            SupabaseExceptionType.postgrest;
-        fakeWrapper.selectPaginatedErrorMessage = 'Paginated select failed';
         fakeWrapper.insertExceptionType = SupabaseExceptionType.timeout;
         fakeWrapper.updateExceptionType = SupabaseExceptionType.auth;
         fakeWrapper.deleteExceptionType = SupabaseExceptionType.type;
@@ -1548,7 +1544,6 @@ void main() {
         expect(fakeWrapper.shouldThrowOnInsert, isFalse);
         expect(fakeWrapper.shouldThrowOnUpdate, isFalse);
         expect(fakeWrapper.shouldThrowOnSelectMultiple, isFalse);
-        expect(fakeWrapper.shouldThrowOnSelectPaginated, isFalse);
         expect(fakeWrapper.shouldThrowOnDelete, isFalse);
         expect(fakeWrapper.shouldThrowOnRpc, isFalse);
         expect(fakeWrapper.signInErrorMessage, isNull);
@@ -1564,8 +1559,6 @@ void main() {
         expect(fakeWrapper.rpcErrorMessage, isNull);
         expect(fakeWrapper.selectExceptionType, isNull);
         expect(fakeWrapper.selectMultipleExceptionType, isNull);
-        expect(fakeWrapper.selectPaginatedExceptionType, isNull);
-        expect(fakeWrapper.selectPaginatedErrorMessage, isNull);
         expect(fakeWrapper.insertExceptionType, isNull);
         expect(fakeWrapper.updateExceptionType, isNull);
         expect(fakeWrapper.deleteExceptionType, isNull);

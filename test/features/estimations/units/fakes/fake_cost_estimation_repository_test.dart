@@ -24,58 +24,66 @@ void main() {
   });
 
   group('Estimation Retrieval', () {
-    test('getEstimations should track method calls', () async {
+    test('fetchInitialEstimations should track method calls', () async {
       const projectId = 'test-project-123';
       final testEstimation = fakeRepository.createSampleEstimation(
         projectId: projectId,
       );
       fakeRepository.addProjectEstimation(projectId, testEstimation);
 
-      expect(fakeRepository.getMethodCallsFor('getEstimations'), isEmpty);
+      expect(
+        fakeRepository.getMethodCallsFor('fetchInitialEstimations'),
+        isEmpty,
+      );
 
-      await fakeRepository.getEstimations(projectId);
+      await fakeRepository.fetchInitialEstimations(projectId);
 
-      final calls = fakeRepository.getMethodCallsFor('getEstimations');
+      final calls = fakeRepository.getMethodCallsFor('fetchInitialEstimations');
       expect(calls, hasLength(1));
       expect(calls.first['projectId'], equals(projectId));
     });
 
-    test('getEstimations should return estimations when they exist', () async {
-      const projectId = 'test-project-123';
-      final testEstimation1 = fakeRepository.createSampleEstimation(
-        id: 'estimation-1',
-        projectId: projectId,
-        estimateName: 'Test Estimation 1',
-        totalCost: 10000.0,
-      );
-      final testEstimation2 = fakeRepository.createSampleEstimation(
-        id: 'estimation-2',
-        projectId: projectId,
-        estimateName: 'Test Estimation 2',
-        totalCost: 20000.0,
-      );
+    test(
+      'fetchInitialEstimations should return estimations when they exist',
+      () async {
+        const projectId = 'test-project-123';
+        final testEstimation1 = fakeRepository.createSampleEstimation(
+          id: 'estimation-1',
+          projectId: projectId,
+          estimateName: 'Test Estimation 1',
+          totalCost: 10000.0,
+        );
+        final testEstimation2 = fakeRepository.createSampleEstimation(
+          id: 'estimation-2',
+          projectId: projectId,
+          estimateName: 'Test Estimation 2',
+          totalCost: 20000.0,
+        );
 
-      fakeRepository.addProjectEstimations(projectId, [
-        testEstimation1,
-        testEstimation2,
-      ]);
+        fakeRepository.addProjectEstimations(projectId, [
+          testEstimation1,
+          testEstimation2,
+        ]);
 
-      final result = await fakeRepository.getEstimations(projectId);
+        final result = await fakeRepository.fetchInitialEstimations(projectId);
 
-      expect(result.isRight(), isTrue);
-      result.fold((_) => fail('Expected success but got failure'), (estimates) {
-        expect(estimates, hasLength(2));
-        expect(estimates[0], equals(testEstimation1));
-        expect(estimates[1], equals(testEstimation2));
-      });
-    });
+        expect(result.isRight(), isTrue);
+        result.fold((_) => fail('Expected success but got failure'), (
+          estimates,
+        ) {
+          expect(estimates, hasLength(2));
+          expect(estimates[0], equals(testEstimation1));
+          expect(estimates[1], equals(testEstimation2));
+        });
+      },
+    );
 
     test(
-      'getEstimations should return empty list when no estimations exist',
+      'fetchInitialEstimations should return empty list when no estimations exist',
       () async {
         const projectId = 'non-existent-project';
 
-        final result = await fakeRepository.getEstimations(projectId);
+        final result = await fakeRepository.fetchInitialEstimations(projectId);
 
         expect(result.isRight(), isTrue);
         result.fold(
@@ -86,7 +94,7 @@ void main() {
     );
 
     test(
-      'getEstimations should return empty list when shouldReturnEmptyList is true',
+      'fetchInitialEstimations should return empty list when shouldReturnEmptyList is true',
       () async {
         const projectId = 'test-project-123';
         final testEstimation = fakeRepository.createSampleEstimation(
@@ -95,7 +103,7 @@ void main() {
         fakeRepository.addProjectEstimation(projectId, testEstimation);
         fakeRepository.shouldReturnEmptyList = true;
 
-        final result = await fakeRepository.getEstimations(projectId);
+        final result = await fakeRepository.fetchInitialEstimations(projectId);
         expect(result.isRight(), isTrue);
         result.fold(
           (_) => fail('Expected success but got failure'),
@@ -105,13 +113,15 @@ void main() {
     );
 
     test(
-      'getEstimations should return unexpected failure when shouldThrowOnGetEstimations is true',
+      'fetchInitialEstimations should return unexpected failure when shouldReturnFailureOnGetEstimations is true',
       () async {
-        fakeRepository.shouldReturnFailureOnGetEstimations = true;
-        fakeRepository.getEstimationsFailureType =
+        fakeRepository.shouldReturnFailureOnFetchInitialEstimations = true;
+        fakeRepository.fetchInitialEstimationsFailureType =
             EstimationErrorType.unexpectedError;
 
-        final result = await fakeRepository.getEstimations('any-project-id');
+        final result = await fakeRepository.fetchInitialEstimations(
+          'any-project-id',
+        );
 
         expect(result.isLeft(), isTrue);
         result.fold(
@@ -125,13 +135,15 @@ void main() {
     );
 
     test(
-      'getEstimations should return connection error when configured with socket type',
+      'fetchInitialEstimations should return connection error when configured with socket type',
       () async {
-        fakeRepository.shouldReturnFailureOnGetEstimations = true;
-        fakeRepository.getEstimationsFailureType =
+        fakeRepository.shouldReturnFailureOnFetchInitialEstimations = true;
+        fakeRepository.fetchInitialEstimationsFailureType =
             EstimationErrorType.connectionError;
 
-        final result = await fakeRepository.getEstimations('any-project-id');
+        final result = await fakeRepository.fetchInitialEstimations(
+          'any-project-id',
+        );
 
         expect(result.isLeft(), isTrue);
         result.fold(
@@ -145,13 +157,15 @@ void main() {
     );
 
     test(
-      'getEstimations should return parsing error when configured with type exception',
+      'fetchInitialEstimations should return parsing error when configured with type exception',
       () async {
-        fakeRepository.shouldReturnFailureOnGetEstimations = true;
-        fakeRepository.getEstimationsFailureType =
+        fakeRepository.shouldReturnFailureOnFetchInitialEstimations = true;
+        fakeRepository.fetchInitialEstimationsFailureType =
             EstimationErrorType.parsingError;
 
-        final result = await fakeRepository.getEstimations('any-project-id');
+        final result = await fakeRepository.fetchInitialEstimations(
+          'any-project-id',
+        );
 
         expect(result.isLeft(), isTrue);
         result.fold(
@@ -164,7 +178,7 @@ void main() {
       },
     );
 
-    test('getEstimations should handle delayed operations', () async {
+    test('fetchInitialEstimations should handle delayed operations', () async {
       const projectId = 'test-project-123';
       final testEstimation = fakeRepository.createSampleEstimation(
         projectId: projectId,
@@ -173,7 +187,7 @@ void main() {
       fakeRepository.shouldDelayOperations = true;
       fakeRepository.completer = Completer();
 
-      final future = fakeRepository.getEstimations(projectId);
+      final future = fakeRepository.fetchInitialEstimations(projectId);
       var completed = false;
       future.then((_) => completed = true);
       expect(
@@ -210,7 +224,7 @@ void main() {
         fakeRepository.addProjectEstimation(projectId, existingEstimation);
         fakeRepository.addProjectEstimation(projectId, newEstimation);
 
-        final result = await fakeRepository.getEstimations(projectId);
+        final result = await fakeRepository.fetchInitialEstimations(projectId);
         expect(result.isRight(), isTrue);
         result.fold((_) => fail('Expected success but got failure'), (
           estimates,
@@ -231,7 +245,7 @@ void main() {
         );
         fakeRepository.addProjectEstimation(projectId, testEstimation);
 
-        final result = await fakeRepository.getEstimations(projectId);
+        final result = await fakeRepository.fetchInitialEstimations(projectId);
         expect(result.isRight(), isTrue);
         result.fold(
           (_) => fail('Expected success but got failure'),
@@ -240,7 +254,9 @@ void main() {
 
         fakeRepository.clearProjectEstimations(projectId);
 
-        final clearedResult = await fakeRepository.getEstimations(projectId);
+        final clearedResult = await fakeRepository.fetchInitialEstimations(
+          projectId,
+        );
         expect(clearedResult.isRight(), isTrue);
         clearedResult.fold(
           (_) => fail('Expected success but got failure'),
@@ -264,16 +280,23 @@ void main() {
         fakeRepository.addProjectEstimation(projectId1, estimation1);
         fakeRepository.addProjectEstimation(projectId2, estimation2);
 
-        await fakeRepository.getEstimations(projectId1);
+        await fakeRepository.fetchInitialEstimations(projectId1);
 
         expect(fakeRepository.getMethodCalls(), isNotEmpty);
-        expect(fakeRepository.getMethodCallsFor('getEstimations'), isNotEmpty);
+        expect(
+          fakeRepository.getMethodCallsFor('fetchInitialEstimations'),
+          isNotEmpty,
+        );
 
         fakeRepository.clearAllData();
 
         expect(fakeRepository.getMethodCalls(), isEmpty);
-        final result1 = await fakeRepository.getEstimations(projectId1);
-        final result2 = await fakeRepository.getEstimations(projectId2);
+        final result1 = await fakeRepository.fetchInitialEstimations(
+          projectId1,
+        );
+        final result2 = await fakeRepository.fetchInitialEstimations(
+          projectId2,
+        );
         expect(result1.isRight(), isTrue);
         expect(result2.isRight(), isTrue);
         result1.fold(
@@ -296,13 +319,13 @@ void main() {
       );
       fakeRepository.addProjectEstimation(projectId, testEstimation);
 
-      await fakeRepository.getEstimations(projectId);
-      await fakeRepository.getEstimations(projectId);
+      await fakeRepository.fetchInitialEstimations(projectId);
+      await fakeRepository.fetchInitialEstimations(projectId);
 
       final allCalls = fakeRepository.getMethodCalls();
       expect(allCalls, hasLength(2));
       expect(
-        allCalls.every((call) => call['method'] == 'getEstimations'),
+        allCalls.every((call) => call['method'] == 'fetchInitialEstimations'),
         isTrue,
       );
     });
@@ -322,12 +345,12 @@ void main() {
         fakeRepository.addProjectEstimation(projectId1, estimation1);
         fakeRepository.addProjectEstimation(projectId2, estimation2);
 
-        await fakeRepository.getEstimations(projectId1);
-        await fakeRepository.getEstimations(projectId2);
+        await fakeRepository.fetchInitialEstimations(projectId1);
+        await fakeRepository.fetchInitialEstimations(projectId2);
 
         final lastCall = fakeRepository.getLastMethodCall();
         expect(lastCall, isNotNull);
-        expect(lastCall!['method'], equals('getEstimations'));
+        expect(lastCall!['method'], equals('fetchInitialEstimations'));
         expect(lastCall['projectId'], equals(projectId2));
       },
     );
@@ -344,15 +367,17 @@ void main() {
       );
       fakeRepository.addProjectEstimation(projectId, testEstimation);
 
-      await fakeRepository.getEstimations(projectId);
-      await fakeRepository.getEstimations(projectId);
+      await fakeRepository.fetchInitialEstimations(projectId);
+      await fakeRepository.fetchInitialEstimations(projectId);
 
       final getEstimationsCalls = fakeRepository.getMethodCallsFor(
-        'getEstimations',
+        'fetchInitialEstimations',
       );
       expect(getEstimationsCalls, hasLength(2));
       expect(
-        getEstimationsCalls.every((call) => call['method'] == 'getEstimations'),
+        getEstimationsCalls.every(
+          (call) => call['method'] == 'fetchInitialEstimations',
+        ),
         isTrue,
       );
 
@@ -369,7 +394,7 @@ void main() {
       );
       fakeRepository.addProjectEstimation(projectId, testEstimation);
 
-      await fakeRepository.getEstimations(projectId);
+      await fakeRepository.fetchInitialEstimations(projectId);
       expect(fakeRepository.getMethodCalls(), isNotEmpty);
 
       fakeRepository.clearMethodCalls();
@@ -384,9 +409,9 @@ void main() {
         projectId: projectId,
       );
       fakeRepository.addProjectEstimation(projectId, testEstimation);
-      await fakeRepository.getEstimations(projectId);
-      fakeRepository.shouldReturnFailureOnGetEstimations = true;
-      fakeRepository.getEstimationsFailureType =
+      await fakeRepository.fetchInitialEstimations(projectId);
+      fakeRepository.shouldReturnFailureOnFetchInitialEstimations = true;
+      fakeRepository.fetchInitialEstimationsFailureType =
           EstimationErrorType.timeoutError;
       fakeRepository.shouldReturnFailureOnCreateEstimation = true;
       fakeRepository.createEstimationFailureType =
@@ -394,14 +419,19 @@ void main() {
       fakeRepository.shouldReturnFailureOnDeleteEstimation = true;
       fakeRepository.deleteEstimationFailureType =
           EstimationErrorType.unexpectedError;
+      fakeRepository.shouldReturnFailureOnLoadMore = true;
+      fakeRepository.loadMoreFailureType = EstimationErrorType.connectionError;
       fakeRepository.shouldReturnEmptyList = true;
       fakeRepository.shouldDelayOperations = true;
       fakeRepository.completer = Completer();
       fakeRepository.completer!.complete();
 
-      expect(fakeRepository.shouldReturnFailureOnGetEstimations, isTrue);
       expect(
-        fakeRepository.getEstimationsFailureType,
+        fakeRepository.shouldReturnFailureOnFetchInitialEstimations,
+        isTrue,
+      );
+      expect(
+        fakeRepository.fetchInitialEstimationsFailureType,
         equals(EstimationErrorType.timeoutError),
       );
       expect(fakeRepository.shouldReturnFailureOnCreateEstimation, isTrue);
@@ -414,6 +444,11 @@ void main() {
         fakeRepository.deleteEstimationFailureType,
         equals(EstimationErrorType.unexpectedError),
       );
+      expect(fakeRepository.shouldReturnFailureOnLoadMore, isTrue);
+      expect(
+        fakeRepository.loadMoreFailureType,
+        equals(EstimationErrorType.connectionError),
+      );
       expect(fakeRepository.shouldReturnEmptyList, isTrue);
       expect(fakeRepository.shouldDelayOperations, isTrue);
       expect(fakeRepository.completer, isNotNull);
@@ -421,17 +456,22 @@ void main() {
 
       fakeRepository.reset();
 
-      expect(fakeRepository.shouldReturnFailureOnGetEstimations, isFalse);
-      expect(fakeRepository.getEstimationsFailureType, isNull);
+      expect(
+        fakeRepository.shouldReturnFailureOnFetchInitialEstimations,
+        isFalse,
+      );
+      expect(fakeRepository.fetchInitialEstimationsFailureType, isNull);
       expect(fakeRepository.shouldReturnFailureOnCreateEstimation, isFalse);
       expect(fakeRepository.createEstimationFailureType, isNull);
       expect(fakeRepository.shouldReturnFailureOnDeleteEstimation, isFalse);
       expect(fakeRepository.deleteEstimationFailureType, isNull);
+      expect(fakeRepository.shouldReturnFailureOnLoadMore, isFalse);
+      expect(fakeRepository.loadMoreFailureType, isNull);
       expect(fakeRepository.shouldReturnEmptyList, isFalse);
       expect(fakeRepository.shouldDelayOperations, isFalse);
       expect(fakeRepository.completer, isNull);
       expect(fakeRepository.getMethodCalls(), isEmpty);
-      final result = await fakeRepository.getEstimations(projectId);
+      final result = await fakeRepository.fetchInitialEstimations(projectId);
       expect(result.isRight(), isTrue);
       result.fold((_) => fail('Expected success but got failure'), (estimates) {
         expect(estimates, isEmpty);
@@ -697,7 +737,9 @@ void main() {
           projectId: projectId,
         );
 
-        final getResult = await fakeRepository.getEstimations(projectId);
+        final getResult = await fakeRepository.fetchInitialEstimations(
+          projectId,
+        );
         expect(getResult.isRight(), isTrue);
         getResult.fold(
           (_) => fail('Expected success'),
@@ -712,7 +754,7 @@ void main() {
           (created) => expect(created, equals(testEstimation)),
         );
 
-        final projectEstimations = await fakeRepository.getEstimations(
+        final projectEstimations = await fakeRepository.fetchInitialEstimations(
           projectId,
         );
         expect(projectEstimations.isRight(), isTrue);
@@ -789,7 +831,9 @@ void main() {
       );
       fakeRepository.addProjectEstimation(projectId, testEstimation);
 
-      final beforeDelete = await fakeRepository.getEstimations(projectId);
+      final beforeDelete = await fakeRepository.fetchInitialEstimations(
+        projectId,
+      );
       expect(beforeDelete.isRight(), isTrue);
       beforeDelete.fold(
         (_) => fail('Expected success'),
@@ -803,7 +847,9 @@ void main() {
 
       expect(result.isRight(), isTrue);
 
-      final afterDelete = await fakeRepository.getEstimations(projectId);
+      final afterDelete = await fakeRepository.fetchInitialEstimations(
+        projectId,
+      );
       expect(afterDelete.isRight(), isTrue);
       afterDelete.fold(
         (_) => fail('Expected success'),
@@ -898,6 +944,127 @@ void main() {
     });
   });
 
+  group('Load More Estimations', () {
+    test('loadMoreEstimations should track method calls', () async {
+      const projectId = 'test-project-123';
+
+      expect(fakeRepository.getMethodCallsFor('loadMoreEstimations'), isEmpty);
+
+      await fakeRepository.loadMoreEstimations(projectId);
+
+      final calls = fakeRepository.getMethodCallsFor('loadMoreEstimations');
+      expect(calls, hasLength(1));
+      expect(calls.first['projectId'], equals(projectId));
+    });
+
+    test('loadMoreEstimations should return estimations', () async {
+      const projectId = 'test-project-123';
+      final testEstimation = fakeRepository.createSampleEstimation(
+        projectId: projectId,
+      );
+      fakeRepository.addProjectEstimation(projectId, testEstimation);
+
+      final result = await fakeRepository.loadMoreEstimations(projectId);
+
+      expect(result.isRight(), isTrue);
+      result.fold((_) => fail('Expected success but got failure'), (estimates) {
+        expect(estimates, hasLength(1));
+        expect(estimates.first, equals(testEstimation));
+      });
+    });
+
+    test('loadMoreEstimations should return failure when configured', () async {
+      fakeRepository.shouldReturnFailureOnLoadMore = true;
+      fakeRepository.loadMoreFailureType = EstimationErrorType.connectionError;
+
+      final result = await fakeRepository.loadMoreEstimations('any-project-id');
+
+      expect(result.isLeft(), isTrue);
+      result.fold(
+        (failure) => expect(
+          failure,
+          EstimationFailure(errorType: EstimationErrorType.connectionError),
+        ),
+        (_) => fail('Expected failure but got success'),
+      );
+    });
+
+    test(
+      'loadMoreEstimations should return unexpected failure by default',
+      () async {
+        fakeRepository.shouldReturnFailureOnLoadMore = true;
+
+        final result = await fakeRepository.loadMoreEstimations(
+          'any-project-id',
+        );
+
+        expect(result.isLeft(), isTrue);
+        result.fold(
+          (failure) => expect(
+            failure,
+            EstimationFailure(errorType: EstimationErrorType.unexpectedError),
+          ),
+          (_) => fail('Expected failure but got success'),
+        );
+      },
+    );
+
+    test('loadMoreEstimations should handle delay operations', () async {
+      const projectId = 'test-project-123';
+      final testEstimation = fakeRepository.createSampleEstimation(
+        projectId: projectId,
+      );
+      fakeRepository.addProjectEstimation(projectId, testEstimation);
+      fakeRepository.shouldDelayOperations = true;
+      fakeRepository.completer = Completer<void>();
+
+      final future = fakeRepository.loadMoreEstimations(projectId);
+
+      expect(fakeRepository.getMethodCallsFor('loadMoreEstimations'), isEmpty);
+
+      fakeRepository.completer!.complete();
+      final result = await future;
+
+      expect(result.isRight(), isTrue);
+      expect(
+        fakeRepository.getMethodCallsFor('loadMoreEstimations'),
+        hasLength(1),
+      );
+    });
+  });
+
+  group('Has More Estimations', () {
+    test('hasMoreEstimations should return true by default', () {
+      expect(fakeRepository.hasMoreEstimations('any-project'), isTrue);
+    });
+
+    test('hasMoreEstimations should return configured value', () {
+      const projectId = 'test-project-123';
+      fakeRepository.setHasMoreEstimations(projectId, false);
+
+      expect(fakeRepository.hasMoreEstimations(projectId), isFalse);
+    });
+
+    test('hasMoreEstimations should be per-project', () {
+      const projectId1 = 'project-1';
+      const projectId2 = 'project-2';
+      fakeRepository.setHasMoreEstimations(projectId1, false);
+      fakeRepository.setHasMoreEstimations(projectId2, true);
+
+      expect(fakeRepository.hasMoreEstimations(projectId1), isFalse);
+      expect(fakeRepository.hasMoreEstimations(projectId2), isTrue);
+    });
+
+    test('hasMoreEstimations should be cleared on reset', () {
+      const projectId = 'test-project-123';
+      fakeRepository.setHasMoreEstimations(projectId, false);
+
+      fakeRepository.reset();
+
+      expect(fakeRepository.hasMoreEstimations(projectId), isTrue);
+    });
+  });
+
   group('Stream Management', () {
     test('watchEstimations should track method calls', () {
       const projectId = 'test-project-123';
@@ -934,24 +1101,27 @@ void main() {
       },
     );
 
-    test('watchEstimations should emit errors from getEstimations', () async {
-      const projectId = 'test-project-123';
-      fakeRepository.shouldReturnFailureOnGetEstimations = true;
-      fakeRepository.getEstimationsFailureType =
-          EstimationErrorType.connectionError;
+    test(
+      'watchEstimations should emit errors from fetchInitialEstimations',
+      () async {
+        const projectId = 'test-project-123';
+        fakeRepository.shouldReturnFailureOnFetchInitialEstimations = true;
+        fakeRepository.fetchInitialEstimationsFailureType =
+            EstimationErrorType.connectionError;
 
-      final stream = fakeRepository.watchEstimations(projectId);
-      final result = await stream.first;
+        final stream = fakeRepository.watchEstimations(projectId);
+        final result = await stream.first;
 
-      expect(result.isLeft(), isTrue);
-      result.fold(
-        (failure) => expect(
-          failure,
-          EstimationFailure(errorType: EstimationErrorType.connectionError),
-        ),
-        (_) => fail('Expected failure but got success'),
-      );
-    });
+        expect(result.isLeft(), isTrue);
+        result.fold(
+          (failure) => expect(
+            failure,
+            EstimationFailure(errorType: EstimationErrorType.connectionError),
+          ),
+          (_) => fail('Expected failure but got success'),
+        );
+      },
+    );
 
     test('dispose should close all stream controllers', () async {
       const projectId = 'test-project-123';
