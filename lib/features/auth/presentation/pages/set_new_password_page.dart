@@ -183,6 +183,9 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
                     onPressed: () {
                       _togglePasswordVisibility();
                     },
+                    tooltip: _isPasswordVisible
+                        ? l10n.hidePasswordLabel
+                        : l10n.showPasswordLabel,
                   ),
                 ),
                 const SizedBox(height: CoreSpacing.space6),
@@ -202,6 +205,9 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
                     onPressed: () {
                       _toggleConfirmPasswordVisibility();
                     },
+                    tooltip: _isConfirmPasswordVisible
+                        ? l10n.hidePasswordLabel
+                        : l10n.showPasswordLabel,
                   ),
                 ),
                 const SizedBox(height: CoreSpacing.space6),

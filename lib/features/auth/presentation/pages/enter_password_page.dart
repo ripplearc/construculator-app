@@ -128,6 +128,9 @@ class _EnterPasswordPageState extends State<EnterPasswordPage> {
                       color: colors.iconDark,
                     ),
                     onPressed: () => _togglePasswordVisibility(),
+                    tooltip: _isPasswordVisible
+                        ? l10n.hidePasswordLabel
+                        : l10n.showPasswordLabel,
                   ),
                   errorTextList: _passwordErrorList,
                 ),

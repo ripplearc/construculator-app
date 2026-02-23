@@ -5,7 +5,7 @@ import 'package:construculator/features/estimation/domain/entities/lock_status_e
 import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../helpers/estimation_test_data_map_factory.dart';
+import '../../../helpers/estimation_test_data_map_factory.dart';
 
 void main() {
   const jsonWithNulls = {

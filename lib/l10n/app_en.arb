@@ -355,6 +355,16 @@
     "description": "Error message when password is required",
     "context": "N/A"
   },
+  "showPasswordLabel": "Show password",
+  "@showPasswordLabel": {
+    "description": "Accessibility label for password visibility toggle when password is hidden",
+    "context": "N/A"
+  },
+  "hidePasswordLabel": "Hide password",
+  "@hidePasswordLabel": {
+    "description": "Accessibility label for password visibility toggle when password is visible",
+    "context": "N/A"
+  },
   "passwordResetSuccessMessage": "Your password has been reset successfully!",
   "@passwordResetSuccessMessage": {
     "description": "Success message shown after password reset",
@@ -667,5 +677,15 @@
   "@unlockLabel": {
     "description": "Label for unlock action",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53163&t=72cjZpZMiulKp3Yl-4https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53163&t=72cjZpZMiulKp3Yl-4"
+  },
+  "estimationMenuLabel": "Open menu for {estimationName}",
+  "@estimationMenuLabel": {
+    "description": "Label for estimation tile menu button",
+    "placeholders": {
+      "estimationName": {
+        "type": "String",
+        "example": "Kitchen Remodel"
+      }
+    }
   }
 }

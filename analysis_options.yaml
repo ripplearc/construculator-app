@@ -38,10 +38,13 @@ custom_lint:
     - avoid_static_typography
 
   no_direct_instantiation:
+    ignored_base_classes:
+        - 'State'
     ast_type_prefixes:
         - 'Fake'
         - 'AppBootstrap'
         - 'AppLogger'
+        - 'Map'
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`
