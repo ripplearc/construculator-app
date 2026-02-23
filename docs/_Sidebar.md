@@ -9,6 +9,7 @@
 
 ## Security
 - [Secure Storage](Secure-Storage)
+- [SSL Pinning](SSL-Pinning-Implementation-Guide)
 
 ## Logs And Monitoring
 - [Sentry][Sentry]
