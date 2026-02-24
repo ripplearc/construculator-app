@@ -17,6 +17,7 @@ class DatabaseConstants {
   static const String idColumn = 'id';
   static const String projectIdColumn = 'project_id';
   static const String createdAtColumn = 'created_at';
+  static const String estimateNameColumn = 'estimate_name';
   static const String isLockedColumn = 'is_locked';
   static const String lockedByUserIdColumn = 'locked_by_user_id';
   static const String lockedAtColumn = 'locked_at';

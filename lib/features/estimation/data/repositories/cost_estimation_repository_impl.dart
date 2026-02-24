@@ -275,7 +275,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
   void _emitOptimisticUpdate({
     required String projectId,
     required String estimationId,
-    required LockStatus newLockStatus,
+    required CostEstimate Function(CostEstimate) updateFn,
   }) {
     if (!_streamControllers.containsKey(projectId)) {
       return;
@@ -283,7 +283,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
 
     final cachedEstimations = _cachedEstimations[projectId] ?? [];
     final updatedList = cachedEstimations.map((e) {
-      return e.id == estimationId ? e.copyWith(lockStatus: newLockStatus) : e;
+      return e.id == estimationId ? updateFn(e) : e;
     }).toList();
 
     _emitToStream(projectId, Right(updatedList));
@@ -322,9 +322,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
 
     final cachedEstimations = _cachedEstimations[projectId] ?? [];
     final updatedList = cachedEstimations.map((e) {
-      return e.id == estimationId
-          ? e.copyWith(lockStatus: originalEstimation.lockStatus)
-          : e;
+      return e.id == estimationId ? originalEstimation : e;
     }).toList();
 
     _emitToStream(projectId, Right(updatedList));
@@ -477,7 +475,9 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       _emitOptimisticUpdate(
         projectId: projectId,
         estimationId: estimationId,
-        newLockStatus: isLocked ? LockStatus.locked() : LockStatus.unlocked(),
+        updateFn: (e) => e.copyWith(
+          lockStatus: isLocked ? LockStatus.locked() : LockStatus.unlocked(),
+        ),
       );
 
       final updatedDto = await _dataSource.changeLockStatus(
@@ -496,6 +496,46 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         _handleError(
           e,
           'changing lock status',
+          estimationId: estimationId,
+          projectId: projectId,
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Either<Failure, CostEstimate>> renameEstimation({
+    required String estimationId,
+    required String newName,
+    required String projectId,
+  }) async {
+    final originalEstimation = _getOriginalEstimation(projectId, estimationId);
+
+    try {
+      _logger.debug('Renaming estimation: $estimationId to $newName');
+
+      _emitOptimisticUpdate(
+        projectId: projectId,
+        estimationId: estimationId,
+        updateFn: (e) => e.copyWith(estimateName: newName),
+      );
+
+      final updatedDto = await _dataSource.renameEstimation(
+        estimationId: estimationId,
+        newName: newName,
+      );
+
+      final updatedEstimation = updatedDto.toDomain();
+
+      _finalizeOptimisticUpdate(projectId, estimationId, updatedEstimation);
+
+      return Right(updatedEstimation);
+    } catch (e) {
+      _rollbackOptimisticUpdate(projectId, estimationId, originalEstimation);
+      return Left(
+        _handleError(
+          e,
+          'renaming estimation',
           estimationId: estimationId,
           projectId: projectId,
         ),

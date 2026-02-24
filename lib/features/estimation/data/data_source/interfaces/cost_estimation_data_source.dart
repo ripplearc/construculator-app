@@ -34,4 +34,15 @@ abstract class CostEstimationDataSource {
     required String estimationId,
     required bool isLocked,
   });
+
+  /// Renames a cost estimation.
+  ///
+  /// [estimationId] The ID of the estimation to rename.
+  /// [newName] The new name for the estimation.
+  ///
+  /// Returns a [CostEstimateDto] with the updated name.
+  Future<CostEstimateDto> renameEstimation({
+    required String estimationId,
+    required String newName,
+  });
 }

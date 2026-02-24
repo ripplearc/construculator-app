@@ -96,8 +96,8 @@
         </regex>
 
         <!-- RULE 16: In changeLockStatus, skip optimistic update -->
-        <regex pattern="_emitOptimisticUpdate\(\s*projectId: projectId,\s*estimationId: estimationId,\s*newLockStatus: isLocked \? LockStatus\.locked\(\) : LockStatus\.unlocked\(\),\s*\);" dotAll="true" id="repo.lock.skip_optimistic_update">
-            <mutation text="// _emitOptimisticUpdate(projectId: projectId, estimationId: estimationId, newLockStatus: isLocked ? LockStatus.locked() : LockStatus.unlocked());"/>
+        <regex pattern="_emitOptimisticUpdate\(\s*projectId: projectId,\s*estimationId: estimationId,\s*updateFn: \(e\) =&gt; e\.copyWith\(\s*lockStatus: isLocked \? LockStatus\.locked\(\) : LockStatus\.unlocked\(\),\s*\),\s*\);" dotAll="true" id="repo.lock.skip_optimistic_update">
+            <mutation text="// _emitOptimisticUpdate(projectId: projectId, estimationId: estimationId, updateFn: (e) => e.copyWith(lockStatus: isLocked ? LockStatus.locked() : LockStatus.unlocked()));"/>
         </regex>
 
         <!-- RULE 17: In changeLockStatus, skip final stream update -->
@@ -111,18 +111,18 @@
         </regex>
 
         <!-- RULE 19: In _emitOptimisticUpdate, update all estimations instead of target -->
-        <regex pattern="return e\.id == estimationId\s*\? e\.copyWith\(lockStatus: newLockStatus\)\s*: e;" dotAll="true" id="repo.lock.update_all_optimistic">
-            <mutation text="return e.copyWith(lockStatus: newLockStatus);"/>
+        <regex pattern="return e\.id == estimationId\s*\? updateFn\(e\)\s*: e;" dotAll="true" id="repo.optimistic.update_all">
+            <mutation text="return updateFn(e);"/>
         </regex>
 
         <!-- RULE 20: In _updateStreamWithEstimation, update all estimations instead of target -->
-        <regex pattern="return e\.id == estimationId \? updatedEstimation : e;" dotAll="true" id="repo.lock.update_all_final">
+        <regex pattern="return e\.id == estimationId \? updatedEstimation : e;" dotAll="true" id="repo.stream.update_all_final">
             <mutation text="return updatedEstimation;"/>
         </regex>
 
         <!-- RULE 21: In _rollbackOptimisticUpdate, update all estimations instead of target -->
-        <regex pattern="return e\.id == estimationId\s*\? e\.copyWith\(lockStatus: originalEstimation\.lockStatus\)\s*: e;" dotAll="true" id="repo.lock.rollback_all">
-            <mutation text="return e.copyWith(lockStatus: originalEstimation.lockStatus);"/>
+        <regex pattern="return e\.id == estimationId\s*\? originalEstimation\s*: e;" dotAll="true" id="repo.rollback.update_all">
+            <mutation text="return originalEstimation;"/>
         </regex>
 
         <!-- RULE 22: In _emitOptimisticUpdate, skip stream emission -->
@@ -131,13 +131,38 @@
         </regex>
 
         <!-- RULE 23: In _getOriginalEstimation, always return null -->
-        <regex pattern="if \(!_streamControllers\.containsKey\(projectId\)\) \{\s*return null;\s*\}" dotAll="true" id="repo.lock.always_null_original">
+        <regex pattern="if \(!_streamControllers\.containsKey\(projectId\)\) \{\s*return null;\s*\}" dotAll="true" id="repo.get_original.always_null">
             <mutation text="return null;"/>
         </regex>
 
         <!-- RULE 24: In changeLockStatus, invert lock status in optimistic update -->
-        <regex pattern="newLockStatus: isLocked \? LockStatus\.locked\(\) : LockStatus\.unlocked\(\)" dotAll="true" id="repo.lock.invert_optimistic_status">
-            <mutation text="newLockStatus: !isLocked ? LockStatus.locked() : LockStatus.unlocked()"/>
+        <regex pattern="lockStatus: isLocked \? LockStatus\.locked\(\) : LockStatus\.unlocked\(\)" dotAll="true" id="repo.lock.invert_optimistic_status">
+            <mutation text="lockStatus: !isLocked ? LockStatus.locked() : LockStatus.unlocked()"/>
+        </regex>
+
+        <!-- RULE 25: In renameEstimation, skip optimistic update -->
+        <regex pattern="_emitOptimisticUpdate\(\s*projectId: projectId,\s*estimationId: estimationId,\s*updateFn: \(e\) =&gt; e\.copyWith\(estimateName: newName\),\s*\);" dotAll="true" id="repo.rename.skip_optimistic_update">
+            <mutation text="// _emitOptimisticUpdate(projectId: projectId, estimationId: estimationId, updateFn: (e) => e.copyWith(estimateName: newName));"/>
+        </regex>
+
+        <!-- RULE 26: In renameEstimation, skip final stream update -->
+        <regex pattern="_updateStreamWithEstimation\(projectId, estimationId, updatedEstimation\);" dotAll="true" id="repo.rename.skip_final_update">
+            <mutation text="// _updateStreamWithEstimation(projectId, estimationId, updatedEstimation);"/>
+        </regex>
+
+        <!-- RULE 27: In renameEstimation, skip rollback on error -->
+        <regex pattern="_rollbackOptimisticUpdate\(projectId, estimationId, originalEstimation\);" dotAll="true" id="repo.rename.skip_rollback">
+            <mutation text="// _rollbackOptimisticUpdate(projectId, estimationId, originalEstimation);"/>
+        </regex>
+
+        <!-- RULE 28: In renameEstimation, use empty string instead of newName -->
+        <regex pattern="updateFn: \(e\) =&gt; e\.copyWith\(estimateName: newName\)" dotAll="true" id="repo.rename.empty_name">
+            <mutation text="updateFn: (e) => e.copyWith(estimateName: '')"/>
+        </regex>
+
+        <!-- RULE 29: In renameEstimation, use wrong field in optimistic update -->
+        <regex pattern="e\.copyWith\(estimateName: newName\)" dotAll="true" id="repo.rename.wrong_field">
+            <mutation text="e.copyWith(estimateDescription: newName)"/>
         </regex>
     </rules>
 

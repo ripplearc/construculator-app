@@ -69,6 +69,21 @@
         <regex pattern="(filterValue:\s*estimationId,)" id="estimation.lock.empty_filter">
             <mutation text="filterValue: '',"/>
         </regex>
+
+        <!-- RULE 11: In `renameEstimation`, use wrong column name -->
+        <regex pattern="(DatabaseConstants\.estimateNameColumn:\s*newName)" id="estimation.rename.wrong_column">
+            <mutation text="DatabaseConstants.projectIdColumn: newName"/>
+        </regex>
+
+        <!-- RULE 12: In `renameEstimation`, use empty name value -->
+        <regex pattern="(\{DatabaseConstants\.estimateNameColumn:\s*newName\})" id="estimation.rename.empty_value">
+            <mutation text="{DatabaseConstants.estimateNameColumn: ''}"/>
+        </regex>
+
+        <!-- RULE 13: In `renameEstimation`, use wrong filter column -->
+        <regex pattern="(filterColumn:\s*DatabaseConstants\.idColumn,\s*filterValue:\s*estimationId,)" id="estimation.rename.wrong_filter_column">
+            <mutation text="filterColumn: DatabaseConstants.projectIdColumn, filterValue: estimationId,"/>
+        </regex>
     </rules>
 
     <commands>
