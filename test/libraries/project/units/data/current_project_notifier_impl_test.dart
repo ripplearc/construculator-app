@@ -108,7 +108,6 @@ void main() {
         notifier.setCurrentProjectId('third');
 
         await pumpEventQueue();
-
         expect(emittedIds, ['first', 'second', null, 'third']);
 
         await subscription.cancel();

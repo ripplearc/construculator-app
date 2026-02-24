@@ -35,39 +35,33 @@ class EstimationModule extends Module {
   final AppBootstrap appBootstrap;
   EstimationModule(this.appBootstrap);
 
+  /// Exposes the Estimation Feature's UI entry point, hiding its Bloc dependencies.
+  static Widget landingPage({required String projectId}) {
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<CostEstimationListBloc>(
+          create: (context) =>
+              Modular.get<CostEstimationListBloc>()
+                ..add(CostEstimationListStartWatching(projectId: projectId)),
+        ),
+        BlocProvider<AddCostEstimationBloc>(
+          create: (context) => Modular.get<AddCostEstimationBloc>(),
+        ),
+        BlocProvider<DeleteCostEstimationBloc>(
+          create: (context) => Modular.get<DeleteCostEstimationBloc>(),
+        ),
+        BlocProvider<ChangeLockStatusBloc>(
+          create: (context) => Modular.get<ChangeLockStatusBloc>(),
+        ),
+        BlocProvider<RenameEstimationBloc>(
+          create: (context) => Modular.get<RenameEstimationBloc>(),
+        ),
+      ],
+      child: CostEstimationLandingPage(projectId: projectId),
+    );
+  }
+
   final List<RouteDefinition> _routeDefinitions = [
-    RouteDefinition(estimationLandingRoute, (context) {
-      final projectId = Modular.args.params['projectId'];
-      // TODO: https://ripplearc.youtrack.cloud/issue/CA-119/Dashboard-Enable-Project-Selection-and-Switching (Fall back to the currently selected project id)
-      if (projectId == null || projectId.isEmpty) {
-        return const SizedBox.shrink();
-      }
-
-      return MultiBlocProvider(
-        providers: [
-          BlocProvider<CostEstimationListBloc>(
-            create: (context) {
-              return Modular.get<CostEstimationListBloc>()
-                ..add(CostEstimationListStartWatching(projectId: projectId));
-            },
-          ),
-          BlocProvider(
-            create: (context) => Modular.get<AddCostEstimationBloc>(),
-          ),
-          BlocProvider(
-            create: (context) => Modular.get<DeleteCostEstimationBloc>(),
-          ),
-          BlocProvider(
-            create: (context) => Modular.get<ChangeLockStatusBloc>(),
-          ),
-          BlocProvider(
-            create: (context) => Modular.get<RenameEstimationBloc>(),
-          ),
-        ],
-        child: CostEstimationLandingPage(projectId: projectId),
-      );
-    }, [AuthGuard()]),
-
     RouteDefinition(estimationDetailsRoute, (context) {
       final estimationId = Modular.args.params['estimationId'];
 

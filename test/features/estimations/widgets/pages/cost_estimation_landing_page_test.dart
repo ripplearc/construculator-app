@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_repository_impl.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
+
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/features/estimation/presentation/widgets/delete_estimation_confirmation_sheet.dart';
@@ -13,6 +14,7 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -24,6 +26,7 @@ import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -41,11 +44,20 @@ class _CostEstimationLandingPageTestModule extends Module {
     ClockTestModule(),
     ProjectModule(appBootstrap),
     AuthLibraryModule(appBootstrap),
+    EstimationModule(appBootstrap),
   ];
 
   @override
   void routes(RouteManager r) {
     r.module(estimationBaseRoute, module: EstimationModule(appBootstrap));
+    r.child(
+      '/test-landing/:projectId',
+      guards: [AuthGuard()],
+      child: (context) {
+        final projectId = Modular.args.params['projectId'];
+        return EstimationModule.landingPage(projectId: projectId);
+      },
+    );
   }
 }
 
@@ -55,16 +67,14 @@ void main() {
   late AppBootstrap appBootstrap;
   late FakeAppRouter fakeAppRouter;
 
-  const testEstimationRoute = '$fullEstimationLandingRoute/$testProjectId';
   const debounceWaitTime = Duration(milliseconds: 400);
+  const testEstimationRoute = '/test-landing/$testProjectId';
   BuildContext? buildContext;
 
   setUpAll(() {
     CoreToast.disableTimers();
-
     clock = FakeClockImpl();
     fakeSupabase = FakeSupabaseWrapper(clock: clock);
-
     appBootstrap = AppBootstrap(
       config: FakeAppConfig(),
       envLoader: FakeEnvLoader(),
@@ -188,9 +198,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(CoreLoadingIndicator), findsNothing);
-
       // TODO: https://ripplearc.youtrack.cloud/issue/CA-162/Dashboard-Create-Project-Repository correct this to an actual name from fake project table
-      expect(find.text('Sample Construction Project'), findsOneWidget);
+
+      expect(find.byType(CostEstimationEmptyWidget), findsOneWidget);
     });
   });
 
@@ -1155,21 +1165,5 @@ void main() {
         expect(find.text(l10n().connectionError), findsOneWidget);
       },
     );
-  });
-
-  group('Route validation', () {
-    testWidgets('renders empty screen when projectId is missing', (
-      tester,
-    ) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
-
-      await pumpAppAtRoute(tester, '$fullEstimationLandingRoute/');
-
-      expect(find.byType(SizedBox), findsOneWidget);
-      expect(find.byType(CostEstimationEmptyWidget), findsNothing);
-    });
   });
 }
