@@ -5,7 +5,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 
 /// A fake implementation of [CurrentProjectNotifier] for testing purposes.
 class FakeCurrentProjectNotifier implements CurrentProjectNotifier, Disposable {
-  final _controller = StreamController<String?>.broadcast(sync: true);
+  final _controller = StreamController<String?>.broadcast();
 
   /// The list of project id changes for test assertions.
   final List<String?> projectIdChangedEvents = [];
@@ -14,7 +14,9 @@ class FakeCurrentProjectNotifier implements CurrentProjectNotifier, Disposable {
 
   /// Creates a new [FakeCurrentProjectNotifier] with optional initial project id.
   FakeCurrentProjectNotifier({String? initialProjectId})
-    : _currentProjectId = initialProjectId;
+    : _currentProjectId = initialProjectId {
+    _controller.stream.listen((id) => projectIdChangedEvents.add(id));
+  }
 
   @override
   Stream<String?> get onCurrentProjectChanged => _controller.stream;
@@ -25,7 +27,6 @@ class FakeCurrentProjectNotifier implements CurrentProjectNotifier, Disposable {
   @override
   void setCurrentProjectId(String? projectId) {
     _currentProjectId = projectId;
-    projectIdChangedEvents.add(projectId);
     _controller.add(projectId);
   }
 
