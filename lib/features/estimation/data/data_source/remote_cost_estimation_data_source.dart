@@ -21,67 +21,52 @@ class RemoteCostEstimationDataSource implements CostEstimationDataSource {
     required int offset,
     required int limit,
   }) async {
-    try {
-      _logger.debug(
-        'Getting cost estimations for project: $projectId, '
-        'offset: $offset, limit: $limit',
-      );
-      final response = await supabaseWrapper.selectPaginated(
-        table: costEstimatesTable,
-        filterColumn: projectIdColumn,
-        filterValue: projectId,
-        orderColumn: createdAtColumn,
-        ascending: false,
-        rangeFrom: offset,
-        rangeTo: offset + limit - 1,
-      );
+    _logger.debug(
+      'Getting cost estimations for project: $projectId, '
+      'offset: $offset, limit: $limit',
+    );
+    final response = await supabaseWrapper.selectPaginated(
+      table: costEstimatesTable,
+      filterColumn: projectIdColumn,
+      filterValue: projectId,
+      orderColumn: createdAtColumn,
+      ascending: false,
+      rangeFrom: offset,
+      rangeTo: offset + limit - 1,
+    );
 
-      if (response.isEmpty) {
-        _logger.warning(
-          'No cost estimations found for project: $projectId at offset: $offset',
-        );
-        return [];
-      }
-
-      return response
-          .map((costEstimate) => CostEstimateDto.fromJson(costEstimate))
-          .toList();
-    } catch (e) {
-      _logger.error('Error getting cost estimations: $e');
-      rethrow;
+    if (response.isEmpty) {
+      _logger.warning(
+        'No cost estimations found for project: $projectId at offset: $offset',
+      );
+      return [];
     }
+
+    return response
+        .map((costEstimate) => CostEstimateDto.fromJson(costEstimate))
+        .toList();
   }
 
   @override
   Future<CostEstimateDto> createEstimation(CostEstimateDto estimation) async {
-    try {
-      _logger.debug('Creating cost estimation: ${estimation.id}');
-      final response = await supabaseWrapper.insert(
-        table: costEstimatesTable,
-        data: estimation.toJson(),
-      );
+    _logger.debug('Creating cost estimation: ${estimation.id}');
+    final response = await supabaseWrapper.insert(
+      table: costEstimatesTable,
+      data: estimation.toJson(),
+    );
 
-      return CostEstimateDto.fromJson(response);
-    } catch (e) {
-      _logger.error('Error creating cost estimation: $e');
-      rethrow;
-    }
+    return CostEstimateDto.fromJson(response);
   }
 
   @override
   Future<void> deleteEstimation(String estimationId) async {
-    try {
-      _logger.debug('Deleting cost estimation: $estimationId');
-      await supabaseWrapper.delete(
-        table: costEstimatesTable,
-        filterColumn: DatabaseConstants.idColumn,
-        filterValue: estimationId,
-      );
-      _logger.debug('Successfully deleted cost estimation: $estimationId');
-    } catch (e) {
-      _logger.error('Error deleting cost estimation: $e');
-      rethrow;
-    }
+    _logger.debug('Deleting cost estimation: $estimationId');
+    await supabaseWrapper.delete(
+      table: costEstimatesTable,
+      filterColumn: DatabaseConstants.idColumn,
+      filterValue: estimationId,
+    );
+    _logger.debug('Successfully deleted cost estimation: $estimationId');
   }
 
   @override
@@ -89,25 +74,38 @@ class RemoteCostEstimationDataSource implements CostEstimationDataSource {
     required String estimationId,
     required bool isLocked,
   }) async {
-    try {
-      _logger.debug(
-        'Changing lock status for estimation: $estimationId to $isLocked',
-      );
+    _logger.debug(
+      'Changing lock status for estimation: $estimationId to $isLocked',
+    );
 
-      final Map<String, dynamic> data;
-      data = {DatabaseConstants.isLockedColumn: isLocked};
+    final Map<String, dynamic> data = {
+      DatabaseConstants.isLockedColumn: isLocked,
+    };
 
-      final response = await supabaseWrapper.update(
-        table: costEstimatesTable,
-        data: data,
-        filterColumn: DatabaseConstants.idColumn,
-        filterValue: estimationId,
-      );
+    final response = await supabaseWrapper.update(
+      table: costEstimatesTable,
+      data: data,
+      filterColumn: DatabaseConstants.idColumn,
+      filterValue: estimationId,
+    );
 
-      return CostEstimateDto.fromJson(response);
-    } catch (e) {
-      _logger.error('Error changing lock status: $e');
-      rethrow;
-    }
+    return CostEstimateDto.fromJson(response);
+  }
+
+  @override
+  Future<CostEstimateDto> renameEstimation({
+    required String estimationId,
+    required String newName,
+  }) async {
+    _logger.debug('Renaming estimation: $estimationId to $newName');
+
+    final response = await supabaseWrapper.update(
+      table: costEstimatesTable,
+      data: {DatabaseConstants.estimateNameColumn: newName},
+      filterColumn: DatabaseConstants.idColumn,
+      filterValue: estimationId,
+    );
+
+    return CostEstimateDto.fromJson(response);
   }
 }

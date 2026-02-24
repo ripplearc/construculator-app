@@ -617,5 +617,76 @@ void main() {
         },
       );
     });
+
+    group('renameEstimation', () {
+      const String newEstimateName = 'Updated Estimate Name';
+
+      test('should rename estimation and return updated DTO', () async {
+        final estimationData =
+            EstimationTestDataMapFactory.createFakeEstimationData(
+              id: estimateId1,
+              estimateName: estimateName1,
+              creatorUserId: userId1,
+            );
+        fakeSupabaseWrapper.addTableData(tableName, [estimationData]);
+
+        final result = await dataSource.renameEstimation(
+          estimationId: estimateId1,
+          newName: newEstimateName,
+        );
+
+        expect(result.estimateName, equals(newEstimateName));
+      });
+
+      test(
+        'should call supabaseWrapper.update with correct parameters',
+        () async {
+          final estimationData =
+              EstimationTestDataMapFactory.createFakeEstimationData(
+                id: estimateId1,
+                estimateName: estimateName1,
+              );
+          fakeSupabaseWrapper.addTableData(tableName, [estimationData]);
+
+          await dataSource.renameEstimation(
+            estimationId: estimateId1,
+            newName: newEstimateName,
+          );
+
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
+          expect(methodCalls, hasLength(1));
+
+          final call = methodCalls.first;
+          expect(
+            call,
+            equals({
+              'method': 'update',
+              'table': tableName,
+              'data': {DatabaseConstants.estimateNameColumn: newEstimateName},
+              'filterColumn': DatabaseConstants.idColumn,
+              'filterValue': estimateId1,
+            }),
+          );
+        },
+      );
+
+      test(
+        'should rethrow exception when supabaseWrapper.update throws',
+        () async {
+          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+          fakeSupabaseWrapper.updateExceptionType =
+              SupabaseExceptionType.postgrest;
+          fakeSupabaseWrapper.updateErrorMessage = errorMsgDbConnection;
+
+          await expectLater(
+            () => dataSource.renameEstimation(
+              estimationId: estimateId1,
+              newName: newEstimateName,
+            ),
+            throwsA(isA<supabase.PostgrestException>()),
+          );
+        },
+      );
+    });
   });
 }
