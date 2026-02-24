@@ -88,6 +88,7 @@ void main() {
 
       test('reset should clear tracked events', () async {
         fakeNotifier.setCurrentProjectId('some-id');
+        await Future<void>.delayed(Duration.zero);
 
         pumpEventQueue();
 
