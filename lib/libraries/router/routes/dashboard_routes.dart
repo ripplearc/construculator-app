@@ -1,1 +1,1 @@
-const String dashboardRoute = '/';
+const String dashboardRoute = '/dashboard';
