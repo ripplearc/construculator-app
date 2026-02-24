@@ -1,4 +1,5 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/app/shell/app_shell_page.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
@@ -19,7 +20,6 @@ class ShellModule extends Module {
     r.child(
       '/',
       child: (_) => const Scaffold(
-        body: Center(child: Text('Shell not implemented yet')),
       ),
       children: [
         ModuleRoute(
@@ -29,4 +29,3 @@ class ShellModule extends Module {
       ],
     );
   }
-}

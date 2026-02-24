@@ -1,15 +1,17 @@
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/app/shell/default_tab_providers.dart';
-import 'package:construculator/app/shell/module_model.dart';
+import 'package:construculator/features/dashboard/dashboard_module.dart';
+import 'package:construculator/features/calculations/calculations_module.dart';
+import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/features/members/members_module.dart';
 
 enum ShellTab { home, calculations, estimation, members }
 
-class TabModuleManager {
+class TabModuleLoader {
   final AppBootstrap appBootstrap;
   final Set<ShellTab> _loadedTabs = {};
 
-  TabModuleManager(this.appBootstrap);
+  TabModuleLoader(this.appBootstrap);
 
   Future<void> ensureTabModuleLoaded(ShellTab tab) async {
     if (_loadedTabs.contains(tab)) return;
