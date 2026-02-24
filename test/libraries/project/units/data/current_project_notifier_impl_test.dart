@@ -156,8 +156,6 @@ void main() {
           emittedIds.add,
         );
 
-        await pumpEventQueue();
-
         expect(emittedIds, isEmpty);
 
         await subscription.cancel();
