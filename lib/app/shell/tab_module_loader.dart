@@ -1,31 +1,18 @@
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/app/shell/default_tab_providers.dart';
-import 'package:construculator/app/shell/module_model.dart';
+import 'package:construculator/features/dashboard/dashboard_module.dart';
+import 'package:construculator/features/calculations/calculations_module.dart';
+import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/features/members/members_module.dart';
 
-/// Represents the tabs available in the app shell's bottom navigation bar.
-enum ShellTab {
-  /// The home/dashboard tab.
-  home,
+enum ShellTab { home, calculations, estimation, members }
 
-  /// The calculations feature tab.
-  calculations,
-
-  /// The cost estimation feature tab.
-  estimation,
-
-  /// The team members feature tab.
-  members,
-}
-
-class TabModuleManager {
+class TabModuleLoader {
   final AppBootstrap appBootstrap;
   final Set<ShellTab> _loadedTabs = {};
 
-  TabModuleManager(this.appBootstrap);
+  TabModuleLoader(this.appBootstrap);
 
-  /// Ensures the module for [tab] is loaded, calling its provider exactly once.
-  /// Subsequent calls for the same tab are no-ops.
   Future<void> ensureTabModuleLoaded(ShellTab tab) async {
     if (_loadedTabs.contains(tab)) return;
     switch (tab) {
@@ -45,6 +32,5 @@ class TabModuleManager {
     _loadedTabs.add(tab);
   }
 
-  /// Returns `true` if the module for [tab] has already been loaded.
   bool isLoaded(ShellTab tab) => _loadedTabs.contains(tab);
 }
