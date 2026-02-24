@@ -1,6 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/app/shell/default_tab_providers.dart';
+import 'package:construculator/app/shell/module_model.dart';
 
 enum ShellTab { home, calculations, estimation, members }
 

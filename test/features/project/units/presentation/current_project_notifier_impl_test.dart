@@ -1,57 +1,62 @@
-import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/libraries/config/testing/fake_app_config.dart';
-import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/project/data/current_project_notifier_impl.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
-import 'package:construculator/libraries/project/project_library_module.dart';
-import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
-import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-class _TestModule extends Module {
-  final AppBootstrap appBootstrap;
-  _TestModule(this.appBootstrap);
+class _CurrentProjectNotifierTestModule extends Module {
+  final String? initialProjectId;
+
+  _CurrentProjectNotifierTestModule({this.initialProjectId});
 
   @override
-  List<Module> get imports => [ProjectLibraryModule(appBootstrap)];
+  void binds(Injector i) {
+    i.add<CurrentProjectNotifier>(
+      () => CurrentProjectNotifierImpl(initialProjectId: initialProjectId),
+    );
+  }
 }
 
 void main() {
   group('CurrentProjectNotifierImpl', () {
     late CurrentProjectNotifierImpl notifier;
-    late AppBootstrap appBootstrap;
 
-    setUpAll(() {
-      appBootstrap = AppBootstrap(
-        envLoader: FakeEnvLoader(),
-        config: FakeAppConfig(),
-        supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
-      );
-      Modular.init(_TestModule(appBootstrap));
-    });
-
-    tearDownAll(() {
+    tearDown(() {
+      notifier.dispose();
       Modular.destroy();
     });
 
-    setUp(() {
-      notifier =
-          Modular.get<CurrentProjectNotifier>() as CurrentProjectNotifierImpl;
-      // Reset state for each test since the same singleton instance is shared
-      notifier.setCurrentProjectId('950e8400-e29b-41d4-a716-446655440001');
-    });
-
     group('constructor', () {
-      test('initializes with default projectId', () {
-        expect(
-          notifier.currentProjectId,
-          '950e8400-e29b-41d4-a716-446655440001',
+      test(
+        'initializes with null projectId when no initialProjectId provided',
+        () {
+          Modular.init(_CurrentProjectNotifierTestModule());
+          notifier =
+              Modular.get<CurrentProjectNotifier>()
+                  as CurrentProjectNotifierImpl;
+
+          expect(notifier.currentProjectId, isNull);
+        },
+      );
+
+      test('initializes with provided initialProjectId', () {
+        const testId = 'test-project-123';
+        Modular.init(
+          _CurrentProjectNotifierTestModule(initialProjectId: testId),
         );
+        notifier =
+            Modular.get<CurrentProjectNotifier>() as CurrentProjectNotifierImpl;
+
+        expect(notifier.currentProjectId, testId);
       });
     });
 
     group('setCurrentProjectId', () {
+      setUp(() {
+        Modular.init(_CurrentProjectNotifierTestModule());
+        notifier =
+            Modular.get<CurrentProjectNotifier>() as CurrentProjectNotifierImpl;
+      });
+
       test('updates currentProjectId', () {
         const newId = 'new-project-456';
 
@@ -61,6 +66,13 @@ void main() {
       });
 
       test('updates currentProjectId to null', () {
+        Modular.destroy();
+        Modular.init(
+          _CurrentProjectNotifierTestModule(initialProjectId: 'initial-id'),
+        );
+        notifier =
+            Modular.get<CurrentProjectNotifier>() as CurrentProjectNotifierImpl;
+
         notifier.setCurrentProjectId(null);
 
         expect(notifier.currentProjectId, isNull);
@@ -69,37 +81,82 @@ void main() {
       test('emits new projectId on onCurrentProjectChanged stream', () async {
         const newId = 'emitted-project-789';
 
-        expectLater(notifier.onCurrentProjectChanged, emits(newId));
+        final emittedIds = <String?>[];
+        final subscription = notifier.onCurrentProjectChanged.listen(
+          emittedIds.add,
+        );
 
         notifier.setCurrentProjectId(newId);
+
+        await pumpEventQueue();
+
+        expect(emittedIds, [newId]);
+
+        await subscription.cancel();
       });
 
       test('emits each projectId change sequentially', () async {
-        expectLater(
-          notifier.onCurrentProjectChanged,
-          emitsInOrder(['first', 'second', null, 'third']),
+        final emittedIds = <String?>[];
+        final subscription = notifier.onCurrentProjectChanged.listen(
+          emittedIds.add,
         );
 
         notifier.setCurrentProjectId('first');
         notifier.setCurrentProjectId('second');
         notifier.setCurrentProjectId(null);
         notifier.setCurrentProjectId('third');
+
+        await pumpEventQueue();
+
+        expect(emittedIds, ['first', 'second', null, 'third']);
+
+        await subscription.cancel();
       });
     });
 
     group('onCurrentProjectChanged', () {
+      setUp(() {
+        Modular.init(_CurrentProjectNotifierTestModule());
+        notifier =
+            Modular.get<CurrentProjectNotifier>() as CurrentProjectNotifierImpl;
+      });
+
       test('is a broadcast stream allowing multiple listeners', () async {
-        expectLater(notifier.onCurrentProjectChanged, emits('shared-event'));
-        expectLater(notifier.onCurrentProjectChanged, emits('shared-event'));
+        final listener1Events = <String?>[];
+        final listener2Events = <String?>[];
+
+        final sub1 = notifier.onCurrentProjectChanged.listen(
+          listener1Events.add,
+        );
+        final sub2 = notifier.onCurrentProjectChanged.listen(
+          listener2Events.add,
+        );
 
         notifier.setCurrentProjectId('shared-event');
+
+        await pumpEventQueue();
+
+        expect(listener1Events, ['shared-event']);
+        expect(listener2Events, ['shared-event']);
+
+        await sub1.cancel();
+        await sub2.cancel();
       });
 
       test('does not emit initial value on subscribe', () async {
+        Modular.destroy();
+        Modular.init(
+          _CurrentProjectNotifierTestModule(initialProjectId: 'existing'),
+        );
+        notifier =
+            Modular.get<CurrentProjectNotifier>() as CurrentProjectNotifierImpl;
+
         final emittedIds = <String?>[];
         final subscription = notifier.onCurrentProjectChanged.listen(
           emittedIds.add,
         );
+
+        await pumpEventQueue();
 
         expect(emittedIds, isEmpty);
 
@@ -109,6 +166,10 @@ void main() {
 
     group('dispose', () {
       test('closes stream and prevents further emissions', () async {
+        Modular.init(_CurrentProjectNotifierTestModule());
+        notifier =
+            Modular.get<CurrentProjectNotifier>() as CurrentProjectNotifierImpl;
+
         var errorOccurred = false;
         final subscription = notifier.onCurrentProjectChanged.listen(
           (_) {},

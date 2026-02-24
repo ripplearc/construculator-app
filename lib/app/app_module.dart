@@ -1,6 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/features/auth/auth_module.dart';
 import 'package:construculator/app/shell/shell_module.dart';
+import 'package:construculator/features/auth/auth_module.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/config/config_module.dart';
