@@ -18,6 +18,7 @@ import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart'
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -28,19 +29,17 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-class _FakeProjectUiProvider extends ProjectUIProvider {
+class FakeTabModuleLoader extends TabModuleManager {
+  final List<ShellTab> loadedTabs = [];
+  FakeTabModuleLoader(super.bootstrap);
   @override
-  PreferredSizeWidget buildProjectHeaderAppbar({
-    required String projectId,
-    VoidCallback? onProjectTap,
-    VoidCallback? onSearchTap,
-    VoidCallback? onNotificationTap,
-    ImageProvider<Object>? avatarImage,
-  }) {
-    return AppBar(title: Text(projectId));
+  Future<void> ensureTabModuleLoaded(ShellTab tab) async {
+    loadedTabs.add(tab);
   }
+
+  @override
+  bool isLoaded(ShellTab tab) => loadedTabs.contains(tab);
 }
 
 class _TestEstimationTabModuleProvider implements TabModuleProvider {
@@ -86,15 +85,7 @@ class _AppShellTestModule extends Module {
 }
 
 void main() {
-  late FakeCurrentProjectNotifier fakeProjectNotifier;
-
-  setUpAll(() {
-    CoreToast.disableTimers();
-  });
-
-  tearDownAll(() {
-    CoreToast.enableTimers();
-  });
+  late FakeTabModuleLoader loader;
 
   setUp(() {
     final clock = FakeClockImpl();
@@ -130,7 +121,6 @@ void main() {
 
   tearDown(() {
     Modular.destroy();
-  });
 
   BuildContext? buildContext;
 
