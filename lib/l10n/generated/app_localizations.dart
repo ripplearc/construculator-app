@@ -1299,6 +1299,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Members'**
   String get membersTab;
+
+  /// Label for cost estimation tab in bottom navigation
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Estimation'**
+  String get costEstimationTab;
 }
 
 class _AppLocalizationsDelegate
