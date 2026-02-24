@@ -687,5 +687,21 @@
         "example": "Kitchen Remodel"
       }
     }
+  },
+  "navHome": "Home",
+  "@navHome": {
+    "description": "Bottom navigation label for home tab"
+  },
+  "navCalculations": "Calculations",
+  "@navCalculations": {
+    "description": "Bottom navigation label for calculations tab"
+  },
+  "navCostEstimation": "Cost Estimation",
+  "@navCostEstimation": {
+    "description": "Bottom navigation label for cost estimation tab"
+  },
+  "navMembers": "Members",
+  "@navMembers": {
+    "description": "Bottom navigation label for members tab"
   }
 }
