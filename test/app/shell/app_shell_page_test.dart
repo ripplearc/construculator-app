@@ -1,3 +1,5 @@
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
 import 'package:construculator/app/shell/shell_module.dart';
@@ -23,35 +25,20 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-class _FakeProjectUiProvider extends ProjectUIProvider {
+class FakeTabModuleLoader extends TabModuleManager {
+  final List<ShellTab> loadedTabs = [];
+  FakeTabModuleLoader(super.bootstrap);
   @override
-  PreferredSizeWidget buildProjectHeaderAppbar({
-    required String projectId,
-    VoidCallback? onProjectTap,
-    VoidCallback? onSearchTap,
-    VoidCallback? onNotificationTap,
-    ImageProvider<Object>? avatarImage,
-  }) {
-    return AppBar(title: Text(projectId));
+  Future<void> ensureTabModuleLoaded(ShellTab tab) async {
+    loadedTabs.add(tab);
   }
+
+  @override
+  bool isLoaded(ShellTab tab) => loadedTabs.contains(tab);
 }
 
-class _AppShellTestModule extends Module {
-  final FakeAuthManager authManager;
-  final FakeAuthNotifier authNotifier;
-  final FakeCurrentProjectNotifier currentProjectNotifier;
-  final AppBootstrap appBootstrap;
-
-  _AppShellTestModule({
-    required this.authManager,
-    required this.authNotifier,
-    required this.currentProjectNotifier,
-    required this.appBootstrap,
-  });
-
+class _TestModule extends Module {
   @override
   void binds(Injector i) {
     i.addLazySingleton<AuthManager>(() => authManager);
@@ -69,50 +56,10 @@ class _AppShellTestModule extends Module {
 }
 
 void main() {
-  late FakeCurrentProjectNotifier fakeProjectNotifier;
-
-  setUpAll(() {
-    CoreToast.disableTimers();
-  });
-
-  tearDownAll(() {
-    CoreToast.enableTimers();
-  });
+  late FakeTabModuleLoader loader;
 
   setUp(() {
-    final clock = FakeClockImpl();
-    final fakeSupabase = FakeSupabaseWrapper(clock: clock);
-    final authNotifier = FakeAuthNotifier();
-    final authRepository = FakeAuthRepository(clock: clock);
-    final authManager = FakeAuthManager(
-      authNotifier: authNotifier,
-      authRepository: authRepository,
-      wrapper: fakeSupabase,
-      clock: clock,
-    );
-    fakeProjectNotifier = FakeCurrentProjectNotifier(
-      initialProjectId: '950e8400-e29b-41d4-a716-446655440001',
-    );
-
-    final appBootstrap = AppBootstrap(
-      config: FakeAppConfig(),
-      envLoader: FakeEnvLoader(),
-      supabaseWrapper: fakeSupabase,
-    );
-
-    Modular.init(
-      _AppShellTestModule(
-        authManager: authManager,
-        authNotifier: authNotifier,
-        currentProjectNotifier: fakeProjectNotifier,
-        appBootstrap: appBootstrap,
-      ),
-    );
-  });
-
-  tearDown(() {
     Modular.destroy();
-  });
 
   Widget makeApp() {
     return MaterialApp(

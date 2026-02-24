@@ -8,8 +8,7 @@ class CalculationsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Text(
-        //TODO:change this hardcoded calculations tab to use localization
-        'Calculations',
+        context.l10n.calculationsTab,
         style: context.textTheme.headlineMediumSemiBold,
       ),
     );

@@ -672,4 +672,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get membersTab => 'Members';
+
+  @override
+  String get costEstimationTab => 'Cost Estimation';
 }

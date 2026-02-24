@@ -25,9 +25,7 @@ class ShellModule extends Module {
     i.addSingleton<TabModuleManager>(
       () => TabModuleManager(
         appBootstrap,
-        providers: {
-          ShellTab.estimation: const EstimationTabModuleProvider(),
-        },
+        providers: {ShellTab.estimation: const EstimationTabModuleProvider()},
       ),
     );
   }

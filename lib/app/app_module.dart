@@ -20,7 +20,6 @@ class AppModule extends Module {
     AuthLibraryModule(appBootstrap),
     ProjectModule(appBootstrap),
   ];
-
   @override
   void routes(RouteManager r) {
     r.module('/auth', module: AuthModule(appBootstrap));
