@@ -3,7 +3,6 @@ import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
-import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -96,17 +95,6 @@ class _DashboardPageState extends State<DashboardPage> {
                   _router.navigate(fullLoginRoute);
                 },
                 label: 'Logout',
-                centerAlign: true,
-              ),
-              const SizedBox(height: 16),
-              //TODO: https://ripplearc.youtrack.cloud/issue/CA-108/Dashboard-Show-Recent-Cost-Estimations
-              CoreButton(
-                onPressed: () {
-                  _router.navigate(
-                    '$fullEstimationLandingRoute/950e8400-e29b-41d4-a716-446655440001',
-                  );
-                },
-                label: 'Cost Estimation for Project 950e...',
                 centerAlign: true,
               ),
             ],
