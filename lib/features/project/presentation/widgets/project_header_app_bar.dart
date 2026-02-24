@@ -1,4 +1,5 @@
 import 'package:construculator/features/project/presentation/bloc/get_project_bloc/get_project_bloc.dart';
+import 'package:construculator/libraries/ui/core_icon_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
@@ -58,7 +59,7 @@ class ProjectHeaderAppBar extends StatelessWidget
                       CoreIconWidget(
                         icon: CoreIcons.arrowDown,
                         color: appColorTheme.iconGrayMid,
-                        size: 24,
+                        size: CoreIconSizes.medium,
                       ),
                     ],
                   ),
@@ -67,7 +68,7 @@ class ProjectHeaderAppBar extends StatelessWidget
                   CoreIconWidget(
                     key: const Key('project_header_search_button'),
                     icon: CoreIcons.search,
-                    size: 24,
+                    size: CoreIconSizes.medium,
                     onTap: onSearchTap,
                     color: appColorTheme.iconDark,
                   ),
@@ -75,7 +76,7 @@ class ProjectHeaderAppBar extends StatelessWidget
                     key: const Key('project_header_notification_button'),
                     onTap: onNotificationTap,
                     icon: CoreIcons.notification,
-                    size: 24,
+                    size: CoreIconSizes.medium,
                     color: appColorTheme.iconDark,
                   ),
                   SizedBox(width: CoreSpacing.space2),
@@ -100,11 +101,7 @@ class ProjectHeaderAppBar extends StatelessWidget
         final appColorTheme = context.colorTheme;
         final appTypographyTheme = context.textTheme;
         if (state is GetProjectByIdLoading || state is GetProjectInitial) {
-          return SizedBox(
-            width: 20,
-            height: 20,
-            child: CoreLoadingIndicator(),
-          );
+          return SizedBox(width: 20, height: 20, child: CoreLoadingIndicator());
         }
 
         if (state is GetProjectByIdLoadSuccess) {

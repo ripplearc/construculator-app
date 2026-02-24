@@ -17,6 +17,7 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
+import 'package:construculator/libraries/ui/core_icon_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -285,19 +286,16 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
         return Positioned(
           bottom: size.height * CostEstimationLandingPage._buttonBottomRatio,
           right: size.width * CostEstimationLandingPage._buttonRightRatio,
-          child: IntrinsicWidth(
-            child: CoreButton(
-              label: l10n.addEstimation,
-              onPressed: _createEstimation,
-              isDisabled: isCreating,
-              variant: CoreButtonVariant.secondary,
-              size: CoreButtonSize.medium,
-              icon: CoreIconWidget(
-                icon: CoreIcons.add,
-                size: 20,
-                color: colorTheme.buttonSurface,
-              ),
-              fullWidth: false,
+          child: CoreButton(
+            label: l10n.addEstimation,
+            onPressed: _createEstimation,
+            isDisabled: isCreating,
+            variant: CoreButtonVariant.secondary,
+            size: CoreButtonSize.medium,
+            icon: CoreIconWidget(
+              icon: CoreIcons.add,
+              size: CoreIconSizes.small,
+              color: colorTheme.buttonSurface,
             ),
           ),
         );

@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/ui/core_icon_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -41,7 +42,7 @@ class AuthProviderButtons extends StatelessWidget {
           spaceOut: true,
           icon: CoreIconWidget(
             icon: CoreIcons.google,
-            size: CoreSpacing.space6,
+            size: CoreIconSizes.medium,
           ),
           variant: CoreButtonVariant.social,
         ),
@@ -55,7 +56,7 @@ class AuthProviderButtons extends StatelessWidget {
           spaceOut: true,
           icon: CoreIconWidget(
             icon: CoreIcons.apple,
-            size: CoreSpacing.space6,
+            size: CoreIconSizes.medium,
             color: colors.textDark,
           ),
           variant: CoreButtonVariant.social,
@@ -70,7 +71,7 @@ class AuthProviderButtons extends StatelessWidget {
           spaceOut: true,
           icon: CoreIconWidget(
             icon: CoreIcons.microsoft,
-            size: CoreSpacing.space6,
+            size: CoreIconSizes.medium,
           ),
           variant: CoreButtonVariant.social,
         ),
@@ -85,7 +86,7 @@ class AuthProviderButtons extends StatelessWidget {
             spaceOut: true,
             icon: CoreIconWidget(
               icon: CoreIcons.phone,
-              size: CoreSpacing.space6,
+              size: CoreIconSizes.medium,
               color: colors.textInfo,
             ),
 
@@ -98,7 +99,7 @@ class AuthProviderButtons extends StatelessWidget {
             },
             icon: CoreIconWidget(
               icon: CoreIcons.email,
-              size: CoreSpacing.space6,
+              size: CoreIconSizes.medium,
               color: colors.textInfo,
             ),
             label: context.l10n.continueWithEmail,

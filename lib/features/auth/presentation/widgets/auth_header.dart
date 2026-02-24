@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/ui/core_icon_sizes.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
@@ -65,7 +66,7 @@ class AuthHeader extends StatelessWidget {
                               padding: EdgeInsets.only(left: 4.0),
                               child: Icon(
                                 Icons.edit_outlined,
-                                size: 20,
+                                size: CoreIconSizes.small,
                                 color: colors.textLink,
                               ),
                             ),
