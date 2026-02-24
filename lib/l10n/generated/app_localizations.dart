@@ -897,6 +897,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open menu for {estimationName}'**
   String estimationMenuLabel(String estimationName);
+
+  /// Bottom navigation label for home tab
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get navHome;
+
+  /// Bottom navigation label for calculations tab
+  ///
+  /// In en, this message translates to:
+  /// **'Calculations'**
+  String get navCalculations;
+
+  /// Bottom navigation label for cost estimation tab
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Estimation'**
+  String get navCostEstimation;
+
+  /// Bottom navigation label for members tab
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get navMembers;
 }
 
 class _AppLocalizationsDelegate
