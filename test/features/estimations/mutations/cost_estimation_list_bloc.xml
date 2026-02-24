@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- COST ESTIMATION LIST BLOC MUTATION TESTING -->
+    <!-- Targets: BLoC for managing cost estimation list state -->
+
+    <files>
+        <file>lib/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart</file>
+    </files>
+
+    <exclude>
+        <!-- Exclude logging (if any added later) -->
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+
+        <!-- Exclude super calls -->
+        <regex pattern="super\." dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- RULE 1: In _onStartWatching, skip emitting initial loading state -->
+        <regex pattern="emit\(const CostEstimationListLoading\(\)\);" dotAll="true" id="bloc.state.skip_initial_loading">
+            <mutation text="// emit(const CostEstimationListLoading());"/>
+        </regex>
+
+        <!-- RULE 2: In _onStartWatching, skip canceling previous subscription -->
+        <regex pattern="_streamSubscription\?\.cancel\(\);" dotAll="true" id="bloc.stream.skip_cancel_previous">
+            <mutation text="// _streamSubscription?.cancel();"/>
+        </regex>
+
+
+        <!-- RULE 4: In _onStartWatching, remove debounce -->
+        <regex pattern="\.debounceTime\(const Duration\(milliseconds: 300\)\)" dotAll="true" id="bloc.stream.skip_debounce">
+            <mutation text="debounceTime(const Duration(milliseconds: 500))"/>
+        </regex>
+
+
+        <!-- RULE 6: In _onStartWatching, don't pass hasMore from repository -->
+        <regex pattern="final hasMore = _repository\.hasMoreEstimations\(event\.projectId\);" dotAll="true" id="bloc.pagination.skip_hasmore_fetch">
+            <mutation text="final hasMore = true;"/>
+        </regex>
+
+        <!-- RULE 10: In _onRefreshed, skip guard check for loading state -->
+        <regex pattern="if \(state is CostEstimationListLoading\) return;" dotAll="true" id="bloc.refresh.skip_loading_guard">
+            <mutation text="// Skip loading guard"/>
+        </regex>
+
+        <!-- RULE 11: In _onUpdated, skip preserving current estimations on error -->
+        <regex pattern="final currentEstimations = state is CostEstimationListWithData" dotAll="true" id="bloc.error.skip_preserve_estimations">
+            <mutation text="final currentEstimations = false"/>
+        </regex>
+
+        <!-- RULE 12: In _onUpdated, return empty list on error instead of current -->
+        <regex pattern=": &lt;CostEstimate&gt;\[\];" dotAll="true" id="bloc.error.wrong_default_estimations">
+            <mutation text=": null;"/>
+        </regex>
+
+        <!-- RULE 14: In _onUpdated, emit loaded instead of empty when list is empty -->
+        <regex pattern="if \(estimations\.isEmpty\) \{" dotAll="true" id="bloc.state.skip_empty_check">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 15: In _onLoadMore, skip type guard -->
+        <regex pattern="if \(state is! CostEstimationListLoaded\) return;" dotAll="true" id="bloc.loadmore.skip_type_guard">
+            <mutation text="// Skip type guard"/>
+        </regex>
+
+        <!-- RULE 16: In _onLoadMore, skip isLoadingMore guard -->
+        <regex pattern="if \(currentState\.isLoadingMore \|\| !currentState\.hasMore\) return;" dotAll="true" id="bloc.loadmore.skip_guards">
+            <mutation text="// Skip guards"/>
+        </regex>
+
+        <!-- RULE 17: In _onLoadMore, invert hasMore guard -->
+        <regex pattern="\|\| !currentState\.hasMore" dotAll="true" id="bloc.loadmore.invert_hasmore">
+            <mutation text="|| currentState.hasMore"/>
+        </regex>
+
+        <!-- RULE 18: In _onLoadMore, skip emitting isLoadingMore=true -->
+        <regex pattern="emit\(currentState\.copyWith\(isLoadingMore: true\)\);" dotAll="true" id="bloc.state.skip_loading_true">
+            <mutation text="// emit(currentState.copyWith(isLoadingMore: true));"/>
+        </regex>
+
+        <!-- RULE 19: In _onLoadMore, skip updating hasMore after load -->
+        <regex pattern="final hasMore = _repository\.hasMoreEstimations\(event\.projectId\);" dotAll="true" id="bloc.loadmore.skip_hasmore_update">
+            <mutation text="final hasMore = currentState.hasMore;"/>
+        </regex>
+
+        <!-- RULE 20: In _onLoadMore, skip emitting final state -->
+        <regex pattern="emit\(currentState\.copyWith\(hasMore: hasMore, isLoadingMore: false\)\);" dotAll="true" id="bloc.state.skip_final_emit">
+            <mutation text="// emit(currentState.copyWith(hasMore: hasMore, isLoadingMore: false));"/>
+        </regex>
+
+        <!-- RULE 21: In _onLoadMore, keep isLoadingMore=true after success -->
+        <regex pattern="isLoadingMore: false" dotAll="true" id="bloc.state.wrong_loading_flag">
+            <mutation text="isLoadingMore: true"/>
+        </regex>
+
+        <!-- RULE 22: In close, skip canceling stream subscription -->
+        <regex pattern="_streamSubscription\?\.cancel\(\);" dotAll="true" id="bloc.cleanup.skip_cancel">
+            <mutation text="// _streamSubscription?.cancel();"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="cost_estimation_list_bloc" expected-return="0">flutter test test/features/estimations/units/blocs/cost_estimation_list_bloc_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

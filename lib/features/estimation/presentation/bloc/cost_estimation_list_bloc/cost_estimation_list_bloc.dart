@@ -21,6 +21,8 @@ class CostEstimationListBloc
     : _repository = repository,
       super(const CostEstimationListInitial()) {
     on<CostEstimationListStartWatching>(_onStartWatching);
+    on<CostEstimationListLoadMore>(_onLoadMore);
+    on<CostEstimationListRefresh>(_onRefreshed);
     on<_CostEstimationListUpdated>(_onUpdated);
   }
 
@@ -43,7 +45,8 @@ class CostEstimationListBloc
         .distinct(_compareEstimationResults)
         .debounceTime(const Duration(milliseconds: 300))
         .listen((result) {
-          add(_CostEstimationListUpdated(result));
+          final hasMore = _repository.hasMoreEstimations(event.projectId);
+          add(_CostEstimationListUpdated(result, hasMore: hasMore));
         });
   }
 
@@ -68,6 +71,15 @@ class CostEstimationListBloc
     );
   }
 
+  Future<void> _onRefreshed(
+    CostEstimationListRefresh event,
+    Emitter<CostEstimationListState> emit,
+  ) async {
+    if (state is CostEstimationListLoading) return;
+
+    await _repository.fetchInitialEstimations(event.projectId);
+  }
+
   void _onUpdated(
     _CostEstimationListUpdated event,
     Emitter<CostEstimationListState> emit,
@@ -77,10 +89,14 @@ class CostEstimationListBloc
         final currentEstimations = state is CostEstimationListWithData
             ? (state as CostEstimationListWithData).estimates.toList()
             : <CostEstimate>[];
+        final currentHasMore = state is CostEstimationListWithData
+            ? (state as CostEstimationListWithData).hasMore
+            : true;
         emit(
           CostEstimationListError(
             failure: failure,
             estimates: currentEstimations,
+            hasMore: currentHasMore,
           ),
         );
       },
@@ -88,9 +104,35 @@ class CostEstimationListBloc
         if (estimations.isEmpty) {
           emit(const CostEstimationListEmpty());
         } else {
-          emit(CostEstimationListLoaded(estimates: estimations));
+          emit(
+            CostEstimationListLoaded(
+              estimates: estimations,
+              hasMore: event.hasMore,
+            ),
+          );
         }
       },
     );
+  }
+
+  Future<void> _onLoadMore(
+    CostEstimationListLoadMore event,
+    Emitter<CostEstimationListState> emit,
+  ) async {
+    if (state is! CostEstimationListLoaded) return;
+
+    final currentState = state as CostEstimationListLoaded;
+
+    if (currentState.isLoadingMore || !currentState.hasMore) return;
+
+    emit(currentState.copyWith(isLoadingMore: true));
+
+    final result = await _repository.loadMoreEstimations(event.projectId);
+
+    result.fold((failure) {}, (estimations) {
+      final hasMore = _repository.hasMoreEstimations(event.projectId);
+
+      emit(currentState.copyWith(hasMore: hasMore, isLoadingMore: false));
+    });
   }
 }
