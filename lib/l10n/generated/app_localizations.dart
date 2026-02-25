@@ -939,6 +939,172 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save cost name'**
   String get saveCostNameButton;
+
+  /// Activity log message for cost estimation created
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Estimation Created'**
+  String get activityCostEstimationCreated;
+
+  /// Activity log message for cost estimation renamed with old and new names
+  ///
+  /// In en, this message translates to:
+  /// **'Renamed from {oldName} to {newName}'**
+  String activityCostEstimationRenamed(String oldName, String newName);
+
+  /// Activity log message for cost estimation renamed without details
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Estimation Renamed'**
+  String get activityCostEstimationRenamedSimple;
+
+  /// Activity log message for cost estimation exported
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Estimation Exported'**
+  String get activityCostEstimationExported;
+
+  /// Activity log message for cost estimation locked
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Estimation Locked'**
+  String get activityCostEstimationLocked;
+
+  /// Activity log message for cost estimation unlocked
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Estimation Unlocked'**
+  String get activityCostEstimationUnlocked;
+
+  /// Activity log message for cost estimation deleted
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Estimation Deleted'**
+  String get activityCostEstimationDeleted;
+
+  /// Activity log message for cost item added with item name
+  ///
+  /// In en, this message translates to:
+  /// **'Added cost item: {itemName}'**
+  String activityCostItemAdded(String itemName);
+
+  /// Activity log message for cost item added without details
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Item Added'**
+  String get activityCostItemAddedSimple;
+
+  /// Activity log message for cost item edited with item name
+  ///
+  /// In en, this message translates to:
+  /// **'Edited cost item: {itemName}'**
+  String activityCostItemEdited(String itemName);
+
+  /// Activity log message for cost item edited without details
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Item Edited'**
+  String get activityCostItemEditedSimple;
+
+  /// Activity log message for cost item removed with item name
+  ///
+  /// In en, this message translates to:
+  /// **'Removed cost item: {itemName}'**
+  String activityCostItemRemoved(String itemName);
+
+  /// Activity log message for cost item removed without details
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Item Removed'**
+  String get activityCostItemRemovedSimple;
+
+  /// Activity log message for cost item duplicated with item name
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicated cost item: {itemName}'**
+  String activityCostItemDuplicated(String itemName);
+
+  /// Activity log message for cost item duplicated without details
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Item Duplicated'**
+  String get activityCostItemDuplicatedSimple;
+
+  /// Activity log message for task assigned with task and assignee names
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned {taskName} to {assigneeName}'**
+  String activityTaskAssigned(String taskName, String assigneeName);
+
+  /// Activity log message for task assigned without details
+  ///
+  /// In en, this message translates to:
+  /// **'Task Assigned'**
+  String get activityTaskAssignedSimple;
+
+  /// Activity log message for task unassigned with task name
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned task: {taskName}'**
+  String activityTaskUnassigned(String taskName);
+
+  /// Activity log message for task unassigned without details
+  ///
+  /// In en, this message translates to:
+  /// **'Task Unassigned'**
+  String get activityTaskUnassignedSimple;
+
+  /// Activity log message for cost file uploaded with old and new quantities
+  ///
+  /// In en, this message translates to:
+  /// **'Cost File Copied\n\nFrom: Qty {oldQuantity}  •  To: Qty {newQuantity}'**
+  String activityCostFileUploaded(
+    String fileName,
+    int oldQuantity,
+    int newQuantity,
+  );
+
+  /// Activity log message for cost file uploaded without details
+  ///
+  /// In en, this message translates to:
+  /// **'Cost File Copied'**
+  String get activityCostFileUploadedSimple;
+
+  /// Activity log message for cost file deleted with file name
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted cost file: {fileName}'**
+  String activityCostFileDeleted(String fileName);
+
+  /// Activity log message for cost file deleted without details
+  ///
+  /// In en, this message translates to:
+  /// **'Cost File Deleted'**
+  String get activityCostFileDeletedSimple;
+
+  /// Activity log message for attachment added with file name
+  ///
+  /// In en, this message translates to:
+  /// **'Added attachment: {fileName}'**
+  String activityAttachmentAdded(String fileName);
+
+  /// Activity log message for attachment added without details
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment Added'**
+  String get activityAttachmentAddedSimple;
+
+  /// Activity log message for attachment removed with file name
+  ///
+  /// In en, this message translates to:
+  /// **'Removed attachment: {fileName}'**
+  String activityAttachmentRemoved(String fileName);
+
+  /// Activity log message for attachment removed without details
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment Removed'**
+  String get activityAttachmentRemovedSimple;
 }
 
 class _AppLocalizationsDelegate

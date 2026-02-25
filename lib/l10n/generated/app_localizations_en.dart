@@ -468,4 +468,111 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get saveCostNameButton => 'Save cost name';
+
+  @override
+  String get activityCostEstimationCreated => 'Cost Estimation Created';
+
+  @override
+  String activityCostEstimationRenamed(String oldName, String newName) {
+    return 'Renamed from $oldName to $newName';
+  }
+
+  @override
+  String get activityCostEstimationRenamedSimple => 'Cost Estimation Renamed';
+
+  @override
+  String get activityCostEstimationExported => 'Cost Estimation Exported';
+
+  @override
+  String get activityCostEstimationLocked => 'Cost Estimation Locked';
+
+  @override
+  String get activityCostEstimationUnlocked => 'Cost Estimation Unlocked';
+
+  @override
+  String get activityCostEstimationDeleted => 'Cost Estimation Deleted';
+
+  @override
+  String activityCostItemAdded(String itemName) {
+    return 'Added cost item: $itemName';
+  }
+
+  @override
+  String get activityCostItemAddedSimple => 'Cost Item Added';
+
+  @override
+  String activityCostItemEdited(String itemName) {
+    return 'Edited cost item: $itemName';
+  }
+
+  @override
+  String get activityCostItemEditedSimple => 'Cost Item Edited';
+
+  @override
+  String activityCostItemRemoved(String itemName) {
+    return 'Removed cost item: $itemName';
+  }
+
+  @override
+  String get activityCostItemRemovedSimple => 'Cost Item Removed';
+
+  @override
+  String activityCostItemDuplicated(String itemName) {
+    return 'Duplicated cost item: $itemName';
+  }
+
+  @override
+  String get activityCostItemDuplicatedSimple => 'Cost Item Duplicated';
+
+  @override
+  String activityTaskAssigned(String taskName, String assigneeName) {
+    return 'Assigned $taskName to $assigneeName';
+  }
+
+  @override
+  String get activityTaskAssignedSimple => 'Task Assigned';
+
+  @override
+  String activityTaskUnassigned(String taskName) {
+    return 'Unassigned task: $taskName';
+  }
+
+  @override
+  String get activityTaskUnassignedSimple => 'Task Unassigned';
+
+  @override
+  String activityCostFileUploaded(
+    String fileName,
+    int oldQuantity,
+    int newQuantity,
+  ) {
+    return 'Cost File Copied\n\nFrom: Qty $oldQuantity  •  To: Qty $newQuantity';
+  }
+
+  @override
+  String get activityCostFileUploadedSimple => 'Cost File Copied';
+
+  @override
+  String activityCostFileDeleted(String fileName) {
+    return 'Deleted cost file: $fileName';
+  }
+
+  @override
+  String get activityCostFileDeletedSimple => 'Cost File Deleted';
+
+  @override
+  String activityAttachmentAdded(String fileName) {
+    return 'Added attachment: $fileName';
+  }
+
+  @override
+  String get activityAttachmentAddedSimple => 'Attachment Added';
+
+  @override
+  String activityAttachmentRemoved(String fileName) {
+    return 'Removed attachment: $fileName';
+  }
+
+  @override
+  String get activityAttachmentRemovedSimple => 'Attachment Removed';
 }

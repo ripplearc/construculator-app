@@ -723,5 +723,207 @@
   "@saveCostNameButton": {
     "description": "Label for save cost name button",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57414-15469&t=zB64L7ji12g2HAVH-4"
+  },
+  "activityCostEstimationCreated": "Cost Estimation Created",
+  "@activityCostEstimationCreated": {
+    "description": "Activity log message for cost estimation created",
+    "context": "N/A"
+  },
+  "activityCostEstimationRenamed": "Renamed from {oldName} to {newName}",
+  "@activityCostEstimationRenamed": {
+    "description": "Activity log message for cost estimation renamed with old and new names",
+    "placeholders": {
+      "oldName": {
+        "type": "String"
+      },
+      "newName": {
+        "type": "String"
+      }
+    },
+    "context": "N/A"
+  },
+  "activityCostEstimationRenamedSimple": "Cost Estimation Renamed",
+  "@activityCostEstimationRenamedSimple": {
+    "description": "Activity log message for cost estimation renamed without details",
+    "context": "N/A"
+  },
+  "activityCostEstimationExported": "Cost Estimation Exported",
+  "@activityCostEstimationExported": {
+    "description": "Activity log message for cost estimation exported",
+    "context": "N/A"
+  },
+  "activityCostEstimationLocked": "Cost Estimation Locked",
+  "@activityCostEstimationLocked": {
+    "description": "Activity log message for cost estimation locked",
+    "context": "N/A"
+  },
+  "activityCostEstimationUnlocked": "Cost Estimation Unlocked",
+  "@activityCostEstimationUnlocked": {
+    "description": "Activity log message for cost estimation unlocked",
+    "context": "N/A"
+  },
+  "activityCostEstimationDeleted": "Cost Estimation Deleted",
+  "@activityCostEstimationDeleted": {
+    "description": "Activity log message for cost estimation deleted",
+    "context": "N/A"
+  },
+  "activityCostItemAdded": "Added cost item: {itemName}",
+  "@activityCostItemAdded": {
+    "description": "Activity log message for cost item added with item name",
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    },
+    "context": "N/A"
+  },
+  "activityCostItemAddedSimple": "Cost Item Added",
+  "@activityCostItemAddedSimple": {
+    "description": "Activity log message for cost item added without details",
+    "context": "N/A"
+  },
+  "activityCostItemEdited": "Edited cost item: {itemName}",
+  "@activityCostItemEdited": {
+    "description": "Activity log message for cost item edited with item name",
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    },
+    "context": "N/A"
+  },
+  "activityCostItemEditedSimple": "Cost Item Edited",
+  "@activityCostItemEditedSimple": {
+    "description": "Activity log message for cost item edited without details",
+    "context": "N/A"
+  },
+  "activityCostItemRemoved": "Removed cost item: {itemName}",
+  "@activityCostItemRemoved": {
+    "description": "Activity log message for cost item removed with item name",
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    },
+    "context": "N/A"
+  },
+  "activityCostItemRemovedSimple": "Cost Item Removed",
+  "@activityCostItemRemovedSimple": {
+    "description": "Activity log message for cost item removed without details",
+    "context": "N/A"
+  },
+  "activityCostItemDuplicated": "Duplicated cost item: {itemName}",
+  "@activityCostItemDuplicated": {
+    "description": "Activity log message for cost item duplicated with item name",
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    },
+    "context": "N/A"
+  },
+  "activityCostItemDuplicatedSimple": "Cost Item Duplicated",
+  "@activityCostItemDuplicatedSimple": {
+    "description": "Activity log message for cost item duplicated without details",
+    "context": "N/A"
+  },
+  "activityTaskAssigned": "Assigned {taskName} to {assigneeName}",
+  "@activityTaskAssigned": {
+    "description": "Activity log message for task assigned with task and assignee names",
+    "placeholders": {
+      "taskName": {
+        "type": "String"
+      },
+      "assigneeName": {
+        "type": "String"
+      }
+    },
+    "context": "N/A"
+  },
+  "activityTaskAssignedSimple": "Task Assigned",
+  "@activityTaskAssignedSimple": {
+    "description": "Activity log message for task assigned without details",
+    "context": "N/A"
+  },
+  "activityTaskUnassigned": "Unassigned task: {taskName}",
+  "@activityTaskUnassigned": {
+    "description": "Activity log message for task unassigned with task name",
+    "placeholders": {
+      "taskName": {
+        "type": "String"
+      }
+    },
+    "context": "N/A"
+  },
+  "activityTaskUnassignedSimple": "Task Unassigned",
+  "@activityTaskUnassignedSimple": {
+    "description": "Activity log message for task unassigned without details",
+    "context": "N/A"
+  },
+  "activityCostFileUploaded": "Cost File Copied\n\nFrom: Qty {oldQuantity}  •  To: Qty {newQuantity}",
+  "@activityCostFileUploaded": {
+    "description": "Activity log message for cost file uploaded with old and new quantities",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      },
+      "oldQuantity": {
+        "type": "int"
+      },
+      "newQuantity": {
+        "type": "int"
+      }
+    },
+    "context": "N/A"
+  },
+  "activityCostFileUploadedSimple": "Cost File Copied",
+  "@activityCostFileUploadedSimple": {
+    "description": "Activity log message for cost file uploaded without details",
+    "context": "N/A"
+  },
+  "activityCostFileDeleted": "Deleted cost file: {fileName}",
+  "@activityCostFileDeleted": {
+    "description": "Activity log message for cost file deleted with file name",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    },
+    "context": "N/A"
+  },
+  "activityCostFileDeletedSimple": "Cost File Deleted",
+  "@activityCostFileDeletedSimple": {
+    "description": "Activity log message for cost file deleted without details",
+    "context": "N/A"
+  },
+  "activityAttachmentAdded": "Added attachment: {fileName}",
+  "@activityAttachmentAdded": {
+    "description": "Activity log message for attachment added with file name",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    },
+    "context": "N/A"
+  },
+  "activityAttachmentAddedSimple": "Attachment Added",
+  "@activityAttachmentAddedSimple": {
+    "description": "Activity log message for attachment added without details",
+    "context": "N/A"
+  },
+  "activityAttachmentRemoved": "Removed attachment: {fileName}",
+  "@activityAttachmentRemoved": {
+    "description": "Activity log message for attachment removed with file name",
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    },
+    "context": "N/A"
+  },
+  "activityAttachmentRemovedSimple": "Attachment Removed",
+  "@activityAttachmentRemovedSimple": {
+    "description": "Activity log message for attachment removed without details",
+    "context": "N/A"
   }
 }
