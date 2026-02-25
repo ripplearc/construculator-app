@@ -9,6 +9,7 @@ import 'package:construculator/features/estimation/presentation/bloc/cost_estima
 import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/change_lock_status_bloc/change_lock_status_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_details_page.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
@@ -53,6 +54,9 @@ class EstimationModule extends Module {
           ),
           BlocProvider(
             create: (context) => Modular.get<ChangeLockStatusBloc>(),
+          ),
+          BlocProvider(
+            create: (context) => Modular.get<RenameEstimationBloc>(),
           ),
         ],
         child: CostEstimationLandingPage(projectId: projectId),
@@ -104,6 +108,9 @@ class EstimationModule extends Module {
     );
     i.add<ChangeLockStatusBloc>(
       () => ChangeLockStatusBloc(repository: i.get()),
+    );
+    i.add<RenameEstimationBloc>(
+      () => RenameEstimationBloc(repository: i.get()),
     );
   }
 
