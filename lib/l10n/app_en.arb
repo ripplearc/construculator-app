@@ -671,7 +671,7 @@
   "lockLabel": "Lock",
   "@lockLabel": {
     "description": "Label for lock action",
-    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53163&t=72cjZpZMiulKp3Yl-4https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53163&t=72cjZpZMiulKp3Yl-4" 
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53163&t=72cjZpZMiulKp3Yl-4" 
   },
   "unlockLabel": "Unlock",
   "@unlockLabel": {
@@ -686,6 +686,27 @@
         "type": "String",
         "example": "Kitchen Remodel"
       }
-    }
+    },
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53163&t=72cjZpZMiulKp3Yl-4"
+  },
+  "estimationLockedSuccessTitle": "You have locked the estimation",
+  "@estimationLockedSuccessTitle": {
+    "description": "Success message title shown when an estimation is locked",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57933-44513&t=uQsjOysCTq7oJAda-4"
+  },
+  "estimationLockedSuccessDescription": "If you want to unlock it again press the same unlock button",
+  "@estimationLockedSuccessDescription": {
+    "description": "Success message description shown when an estimation is locked",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57933-44513&t=uQsjOysCTq7oJAda-4"
+  },
+  "estimationUnlockedSuccessTitle": "You have unlocked the estimation",
+  "@estimationUnlockedSuccessTitle": {
+    "description": "Success message title shown when an estimation is unlocked",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57933-44583&t=uQsjOysCTq7oJAda-4"
+  },
+  "estimationUnlockedSuccessDescription": "If you want to lock it again press the same lock button",
+  "@estimationUnlockedSuccessDescription": {
+    "description": "Success message description shown when an estimation is unlocked",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57933-44583&t=uQsjOysCTq7oJAda-4"
   }
 }
