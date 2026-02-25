@@ -14,7 +14,8 @@ sealed class LockStatus extends Equatable {
   const LockStatus();
 
   /// Creates a locked status with the specified user and timestamp.
-  const factory LockStatus.locked(String userId, DateTime at) = LockedStatus;
+  const factory LockStatus.locked([String? userId, DateTime? at]) =
+      LockedStatus;
 
   /// Creates an unlocked status.
   const factory LockStatus.unlocked() = UnlockedStatus;
@@ -35,13 +36,13 @@ sealed class LockStatus extends Equatable {
 /// This information is essential for access control and audit trails.
 class LockedStatus extends LockStatus {
   /// The ID of the user who locked the entity.
-  final String lockedByUserId;
+  final String? lockedByUserId;
 
   /// The timestamp when the entity was locked.
-  final DateTime lockedAt;
+  final DateTime? lockedAt;
 
   /// Creates a locked status with the specified user and timestamp.
-  const LockedStatus(this.lockedByUserId, this.lockedAt);
+  const LockedStatus([this.lockedByUserId, this.lockedAt]);
 
   @override
   bool get isLocked => true;

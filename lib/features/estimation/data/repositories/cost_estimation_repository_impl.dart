@@ -5,6 +5,7 @@ import 'package:construculator/features/estimation/data/data_source/interfaces/c
 import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/features/estimation/data/models/pagination_state.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
@@ -262,6 +263,73 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     }
   }
 
+  CostEstimate? _getOriginalEstimation(String projectId, String estimationId) {
+    if (!_streamControllers.containsKey(projectId)) {
+      return null;
+    }
+
+    final cachedEstimations = _cachedEstimations[projectId] ?? [];
+    return cachedEstimations.firstWhere((e) => e.id == estimationId);
+  }
+
+  void _emitOptimisticUpdate({
+    required String projectId,
+    required String estimationId,
+    required LockStatus newLockStatus,
+  }) {
+    if (!_streamControllers.containsKey(projectId)) {
+      return;
+    }
+
+    final cachedEstimations = _cachedEstimations[projectId] ?? [];
+    final updatedList = cachedEstimations.map((e) {
+      return e.id == estimationId ? e.copyWith(lockStatus: newLockStatus) : e;
+    }).toList();
+
+    _emitToStream(projectId, Right(updatedList));
+  }
+
+  void _finalizeOptimisticUpdate(
+    String projectId,
+    String estimationId,
+    CostEstimate updatedEstimation,
+  ) {
+    if (!_streamControllers.containsKey(projectId)) {
+      return;
+    }
+
+    final cachedEstimations = _cachedEstimations[projectId] ?? [];
+    final updatedList = cachedEstimations.map((e) {
+      return e.id == estimationId ? updatedEstimation : e;
+    }).toList();
+
+    _logger.debug(
+      'Updating stream with locked/unlocked estimation for project: $projectId',
+    );
+
+    _emitToStream(projectId, Right(updatedList));
+  }
+
+  void _rollbackOptimisticUpdate(
+    String projectId,
+    String estimationId,
+    CostEstimate? originalEstimation,
+  ) {
+    if (originalEstimation == null ||
+        !_streamControllers.containsKey(projectId)) {
+      return;
+    }
+
+    final cachedEstimations = _cachedEstimations[projectId] ?? [];
+    final updatedList = cachedEstimations.map((e) {
+      return e.id == estimationId
+          ? e.copyWith(lockStatus: originalEstimation.lockStatus)
+          : e;
+    }).toList();
+
+    _emitToStream(projectId, Right(updatedList));
+  }
+
   @override
   Future<Either<Failure, CostEstimate>> createEstimation(
     CostEstimate estimation,
@@ -390,6 +458,48 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       await fetchInitialEstimations(projectId);
 
       return Left(failure);
+    }
+  }
+
+  @override
+  Future<Either<Failure, CostEstimate>> changeLockStatus({
+    required String estimationId,
+    required bool isLocked,
+    required String projectId,
+  }) async {
+    final originalEstimation = _getOriginalEstimation(projectId, estimationId);
+
+    try {
+      _logger.debug(
+        'Changing lock status for estimation: $estimationId to $isLocked',
+      );
+
+      _emitOptimisticUpdate(
+        projectId: projectId,
+        estimationId: estimationId,
+        newLockStatus: isLocked ? LockStatus.locked() : LockStatus.unlocked(),
+      );
+
+      final updatedDto = await _dataSource.changeLockStatus(
+        estimationId: estimationId,
+        isLocked: isLocked,
+      );
+
+      final updatedEstimation = updatedDto.toDomain();
+
+      _finalizeOptimisticUpdate(projectId, estimationId, updatedEstimation);
+
+      return Right(updatedEstimation);
+    } catch (e) {
+      _rollbackOptimisticUpdate(projectId, estimationId, originalEstimation);
+      return Left(
+        _handleError(
+          e,
+          'changing lock status',
+          estimationId: estimationId,
+          projectId: projectId,
+        ),
+      );
     }
   }
 }
