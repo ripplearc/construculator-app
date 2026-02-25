@@ -921,6 +921,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'If you want to lock it again press the same lock button'**
   String get estimationUnlockedSuccessDescription;
+
+  /// Title for add cost name bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Add a cost name'**
+  String get addCostName;
+
+  /// Label for estimation name input field
+  ///
+  /// In en, this message translates to:
+  /// **'Cost name'**
+  String get estimationNameLabel;
+
+  /// Label for save cost name button
+  ///
+  /// In en, this message translates to:
+  /// **'Save cost name'**
+  String get saveCostNameButton;
 }
 
 class _AppLocalizationsDelegate
