@@ -3,10 +3,12 @@ import 'package:construculator/features/estimation/presentation/bloc/cost_estima
 import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/change_lock_status_bloc/change_lock_status_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/features/estimation/presentation/widgets/delete_estimation_confirmation_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/estimation_actions_sheet.dart';
+import 'package:construculator/features/estimation/presentation/widgets/estimation_rename_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
@@ -98,7 +100,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
         estimationName: estimation.estimateName,
         onRename: () {
           _router.pop();
-          // TODO:https://ripplearc.youtrack.cloud/issue/CA-100
+          _showRenameSheet(estimation, colorTheme);
         },
         onFavourite: () {
           _router.pop();
@@ -119,6 +121,32 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
         },
         isLocked: estimation.lockStatus.isLocked,
       ),
+    );
+  }
+
+  void _showRenameSheet(
+    CostEstimate estimation,
+    AppColorsExtension colorTheme,
+  ) {
+    final renameEstimationBloc = BlocProvider.of<RenameEstimationBloc>(context);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: colorTheme.transparent,
+      isDismissible: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (_) {
+        return BlocProvider.value(
+          value: renameEstimationBloc,
+          child: EstimationRenameSheet(
+            estimationId: estimation.id,
+            projectId: widget.projectId,
+          ),
+        );
+      },
     );
   }
 
@@ -224,6 +252,16 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
                 _mapFailureToMessage(l10n, state.failure),
                 l10n.closeLabel,
               );
+            }
+          },
+        ),
+        BlocListener<RenameEstimationBloc, RenameEstimationState>(
+          listener: (context, state) {
+            if (state is RenameEstimationFailure) {
+              final message = _mapFailureToMessage(context.l10n, state.failure);
+              if (message != null) {
+                CoreToast.showError(context, message, context.l10n.closeLabel);
+              }
             }
           },
         ),

@@ -459,4 +459,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get estimationUnlockedSuccessDescription =>
       'If you want to lock it again press the same lock button';
+
+  @override
+  String get addCostName => 'Add a cost name';
+
+  @override
+  String get estimationNameLabel => 'Cost name';
+
+  @override
+  String get saveCostNameButton => 'Save cost name';
 }
