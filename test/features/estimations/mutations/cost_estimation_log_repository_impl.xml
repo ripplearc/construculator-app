@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- COST ESTIMATION LOG REPOSITORY IMPLEMENTATION MUTATION TESTING -->
+    <!-- Targets: Repository implementation for cost estimation logs -->
+
+    <files>
+        <file>lib/features/estimation/data/repositories/cost_estimation_log_repository_impl.dart</file>
+    </files>
+
+    <exclude>
+        <!-- Exclude try-catch structure -->
+        <regex pattern="try\s*{" dotAll="false"/>
+        <regex pattern="catch\s*\(" dotAll="false"/>
+
+        <!-- Exclude override annotations -->
+        <regex pattern="@override" dotAll="false"/>
+
+        <!-- Exclude imports -->
+        <regex pattern="^import\s" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- RULE 1: In fetchInitialLogs, use wrong rangeFrom -->
+        <regex pattern="rangeFrom: 0," dotAll="true" id="log_repo.pagination.wrong_initial_rangefrom">
+            <mutation text="rangeFrom: 10,"/>
+        </regex>
+
+        <!-- RULE 2: In fetchInitialLogs, use wrong rangeTo calculation -->
+        <regex pattern="rangeTo: state\.pageSize - 1," dotAll="true" id="log_repo.pagination.wrong_rangeto">
+            <mutation text="rangeTo: state.pageSize,"/>
+        </regex>
+
+        <!-- RULE 3: In fetchInitialLogs, invert hasMore calculation -->
+        <regex pattern="hasMore: dtos\.length == state\.pageSize," dotAll="true" id="log_repo.pagination.invert_hasmore">
+            <mutation text="hasMore: dtos.length != state.pageSize,"/>
+        </regex>
+
+        <!-- RULE 4: In fetchInitialLogs, use wrong offset value -->
+        <regex pattern="currentOffset: state\.pageSize," dotAll="true" id="log_repo.pagination.wrong_offset_initial">
+            <mutation text="currentOffset: 0,"/>
+        </regex>
+
+        <!-- RULE 5: In fetchInitialLogs, always set hasMore to false -->
+        <regex pattern="hasMore: dtos\.length == state\.pageSize," dotAll="true" id="log_repo.pagination.always_false_hasmore">
+            <mutation text="hasMore: false,"/>
+        </regex>
+
+        <!-- RULE 6: In fetchInitialLogs, skip pagination state reset -->
+        <regex pattern="_paginationStates\[estimateId\] = const PaginationState\(" dotAll="true" id="log_repo.pagination.skip_reset">
+            <mutation text="// _paginationStates[estimateId] = const PaginationState("/>
+        </regex>
+
+        <!-- RULE 7: In loadMoreLogs, return when state exists instead of null -->
+        <regex pattern="if \(state == null \|\| !state\.hasMore\) \{" dotAll="true" id="log_repo.pagination.invert_guard">
+            <mutation text="if (state != null &amp;&amp; state.hasMore) {"/>
+        </regex>
+
+        <!-- RULE 8: In loadMoreLogs, use wrong rangeFrom -->
+        <regex pattern="rangeFrom: state\.currentOffset," dotAll="true" id="log_repo.pagination.wrong_rangefrom">
+            <mutation text="rangeFrom: 0,"/>
+        </regex>
+
+        <!-- RULE 9: In loadMoreLogs, use wrong rangeTo calculation -->
+        <regex pattern="rangeTo: state\.currentOffset \+ state\.pageSize - 1," dotAll="true" id="log_repo.pagination.wrong_rangeto_load">
+            <mutation text="rangeTo: state.currentOffset + state.pageSize,"/>
+        </regex>
+
+        <!-- RULE 10: In loadMoreLogs, skip offset increment -->
+        <regex pattern="currentOffset: state\.currentOffset \+ state\.pageSize," dotAll="true" id="log_repo.pagination.skip_increment">
+            <mutation text="currentOffset: state.currentOffset,"/>
+        </regex>
+
+        <!-- RULE 11: In loadMoreLogs, always set hasMore to true -->
+        <regex pattern="hasMore: dtos\.length == state\.pageSize," dotAll="true" id="log_repo.pagination.always_true_hasmore">
+            <mutation text="hasMore: true,"/>
+        </regex>
+
+        <!-- RULE 12: In hasMoreLogs, return true instead of false as default -->
+        <regex pattern="return state\?\.hasMore \?\? false;" dotAll="true" id="log_repo.pagination.wrong_default_hasmore">
+            <mutation text="return state?.hasMore ?? true;"/>
+        </regex>
+
+        <!-- RULE 13: In hasMoreLogs, always return false -->
+        <regex pattern="return state\?\.hasMore \?\? false;" dotAll="true" id="log_repo.pagination.always_false">
+            <mutation text="return false;"/>
+        </regex>
+
+        <!-- RULE 14: In dispose, don't clear pagination states -->
+        <regex pattern="_paginationStates\.clear\(\);" dotAll="true" id="log_repo.lifecycle.skip_clear">
+            <mutation text="// _paginationStates.clear();"/>
+        </regex>
+
+        <!-- RULE 15: In fetchInitialLogs, use pageSize instead of pageSize - 1 -->
+        <regex pattern="rangeTo: state\.pageSize - 1," dotAll="true" id="log_repo.pagination.off_by_one_rangeto">
+            <mutation text="rangeTo: state.pageSize + 1,"/>
+        </regex>
+
+        <!-- RULE 16: In fetchInitialLogs, skip updating pagination state after fetch -->
+        <regex pattern="_paginationStates\[estimateId\] = state\.copyWith\(" dotAll="true" id="log_repo.pagination.skip_state_update">
+            <mutation text="// _paginationStates[estimateId] = state.copyWith("/>
+        </regex>
+
+        <!-- RULE 17: In loadMoreLogs, skip updating pagination state after fetch -->
+        <regex pattern="_paginationStates\[estimateId\] = state\.copyWith\(" dotAll="true" id="log_repo.pagination.skip_state_update_load">
+            <mutation text="// _paginationStates[estimateId] = state.copyWith("/>
+        </regex>
+
+        <!-- RULE 18: In fetchInitialLogs, use wrong estimateId for pagination state -->
+        <regex pattern="_paginationStates\[estimateId\] = const PaginationState\(" dotAll="true" id="log_repo.pagination.wrong_key_initial">
+            <mutation text="_paginationStates['wrong-id'] = const PaginationState("/>
+        </regex>
+
+        <!-- RULE 19: In loadMoreLogs, compare with wrong page size -->
+        <regex pattern="hasMore: dtos\.length == state\.pageSize," dotAll="true" id="log_repo.pagination.wrong_pagesize_comparison">
+            <mutation text="hasMore: dtos.length >= state.pageSize,"/>
+        </regex>
+
+        <!-- RULE 20: In fetchInitialLogs, increment offset incorrectly -->
+        <regex pattern="currentOffset: state\.pageSize," dotAll="true" id="log_repo.pagination.double_increment">
+            <mutation text="currentOffset: state.pageSize * 2,"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="cost_estimation_log_repository" expected-return="0">flutter test test/features/estimation/data/repositories/cost_estimation_log_repository_impl_test.dart</command>
+    </commands>
+
+    <threshold failure="80">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
