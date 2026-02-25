@@ -12,6 +12,7 @@ class DatabaseConstants {
 
   // Table names
   static const String costEstimatesTable = 'cost_estimates';
+  static const String costEstimationLogsTable = 'cost_estimation_logs';
 
   // Column names
   static const String idColumn = 'id';
@@ -21,4 +22,11 @@ class DatabaseConstants {
   static const String isLockedColumn = 'is_locked';
   static const String lockedByUserIdColumn = 'locked_by_user_id';
   static const String lockedAtColumn = 'locked_at';
+
+  // Cost Estimation Logs columns
+  static const String estimateIdColumn = 'estimate_id';
+  static const String activityColumn = 'activity';
+  static const String userColumn = 'user';
+  static const String activityDetailsColumn = 'activity_details';
+  static const String loggedAtColumn = 'logged_at';
 }
