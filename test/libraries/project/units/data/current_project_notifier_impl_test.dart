@@ -1,8 +1,6 @@
 import 'package:construculator/libraries/project/data/current_project_notifier_impl.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/auth/data/models/professional_role.dart';
-import 'package:construculator/features/project/presentation/current_project_notifier_impl.dart';
-import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
