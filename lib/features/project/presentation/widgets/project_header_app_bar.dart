@@ -11,7 +11,6 @@ class ProjectHeaderAppBar extends StatelessWidget
   final VoidCallback? onProjectTap;
   final VoidCallback? onSearchTap;
   final VoidCallback? onNotificationTap;
-  final ImageProvider? avatarImage;
 
   const ProjectHeaderAppBar({
     super.key,
@@ -19,7 +18,6 @@ class ProjectHeaderAppBar extends StatelessWidget
     this.onProjectTap,
     this.onSearchTap,
     this.onNotificationTap,
-    this.avatarImage,
   });
 
   @override
@@ -40,13 +38,11 @@ class ProjectHeaderAppBar extends StatelessWidget
                 color: appColorTheme.pageBackground,
               ),
               height: double.infinity,
-              padding: EdgeInsets.symmetric(
-                vertical: CoreSpacing.space2,
-                horizontal: CoreSpacing.space4,
-              ),
+              padding: EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
               child: AppBar(
                 backgroundColor: appColorTheme.pageBackground,
                 elevation: 0,
+                scrolledUnderElevation: 0,
                 titleSpacing: 0,
                 title: InkWell(
                   onTap: onProjectTap,
@@ -68,6 +64,7 @@ class ProjectHeaderAppBar extends StatelessWidget
                     key: const Key('project_header_search_button'),
                     icon: CoreIcons.search,
                     size: 24,
+                    padding: const EdgeInsets.all(CoreSpacing.space3),
                     onTap: onSearchTap,
                     color: appColorTheme.iconDark,
                   ),
@@ -76,15 +73,10 @@ class ProjectHeaderAppBar extends StatelessWidget
                     onTap: onNotificationTap,
                     icon: CoreIcons.notification,
                     size: 24,
+                    padding: const EdgeInsets.all(CoreSpacing.space3),
                     color: appColorTheme.iconDark,
                   ),
-                  SizedBox(width: CoreSpacing.space2),
-                  CoreAvatar(
-                    radius: 20,
-                    backgroundColor: appColorTheme.backgroundDarkGray,
-                    // TODO: https://ripplearc.youtrack.cloud/issue/CA-392/Cost-Estimation-Use-letter-when-no-user-avatar-is-present
-                    image: avatarImage,
-                  ),
+                  _buildAvatar(),
                 ],
               ),
             ),
@@ -94,17 +86,32 @@ class ProjectHeaderAppBar extends StatelessWidget
     );
   }
 
+  Widget _buildAvatar() {
+    return BlocBuilder<GetProjectBloc, GetProjectState>(
+      builder: (context, state) {
+        final appColorTheme = context.colorTheme;
+
+        final avatarImage = state is GetProjectByIdLoadSuccess
+            ? state.userAvatarImage
+            : null;
+
+        return CoreAvatar(
+          radius: 20,
+          backgroundColor: appColorTheme.backgroundDarkGray,
+          // TODO: https://ripplearc.youtrack.cloud/issue/CA-392/Cost-Estimation-Use-letter-when-no-user-avatar-is-present
+          image: avatarImage,
+        );
+      },
+    );
+  }
+
   Widget _buildProjectName() {
     return BlocBuilder<GetProjectBloc, GetProjectState>(
       builder: (context, state) {
         final appColorTheme = context.colorTheme;
         final appTypographyTheme = context.textTheme;
         if (state is GetProjectByIdLoading || state is GetProjectInitial) {
-          return SizedBox(
-            width: 20,
-            height: 20,
-            child: CoreLoadingIndicator(),
-          );
+          return SizedBox(width: 20, height: 20, child: CoreLoadingIndicator());
         }
 
         if (state is GetProjectByIdLoadSuccess) {
