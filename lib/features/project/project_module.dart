@@ -1,9 +1,7 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/project/presentation/bloc/get_project_bloc/get_project_bloc.dart';
-import 'package:construculator/features/project/presentation/current_project_notifier_impl.dart';
 import 'package:construculator/features/project/presentation/project_ui_provider_impl.dart';
 import 'package:construculator/features/project/domain/usecases/get_project_usecase.dart';
-import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/time/clock_module.dart';
@@ -27,12 +25,6 @@ class ProjectModule extends Module {
 }
 
 void _registerDependencies(Injector i) {
-  i.addLazySingleton<CurrentProjectNotifier>(
-    () => CurrentProjectNotifierImpl(
-      initialProjectId: '950e8400-e29b-41d4-a716-446655440001',
-    ),
-  );
-
   i.addLazySingleton<ProjectUIProvider>(() => ProjectUIProviderImpl());
 
   i.addLazySingleton<GetProjectUseCase>(() => GetProjectUseCase(i()));
