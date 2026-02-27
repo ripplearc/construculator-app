@@ -27,6 +27,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import '../../helpers/estimation_test_data_map_factory.dart';
 import 'package:construculator/features/estimation/presentation/widgets/estimation_actions_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/delete_estimation_confirmation_sheet.dart';
+import 'package:construculator/features/estimation/presentation/widgets/estimation_rename_sheet.dart';
 
 class _CostEstimationLandingPageTestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -54,6 +55,7 @@ void main() {
   late FakeAppRouter fakeAppRouter;
 
   const testEstimationRoute = '$fullEstimationLandingRoute/$testProjectId';
+  const debounceWaitTime = Duration(milliseconds: 400);
   BuildContext? buildContext;
 
   setUpAll(() {
@@ -288,7 +290,7 @@ void main() {
       expect(find.byType(CostEstimationTile), findsOneWidget);
 
       await tester.tap(find.text(l10n().addEstimation));
-      await tester.pump(Duration(milliseconds: 400));
+      await tester.pump(debounceWaitTime);
 
       expect(find.byType(CostEstimationTile), findsNWidgets(2));
       expect(find.text(l10n().untitledEstimation), findsOneWidget);
@@ -680,7 +682,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.text(l10n().yesDeleteButton));
-      await tester.pump(Duration(milliseconds: 400));
+      await tester.pump(debounceWaitTime);
 
       expect(find.byType(CostEstimationTile), findsOneWidget);
       expect(find.text('Bathroom Renovation'), findsOneWidget);
@@ -983,6 +985,175 @@ void main() {
       final switchAfter = tester.widget<CoreSwitch>(find.byType(CoreSwitch));
       expect(switchAfter.value, isFalse);
     });
+  });
+
+  group('Rename Estimation', () {
+    Future<void> openRenameSheet(WidgetTester tester) async {
+      await tester.tap(find.byKey(const Key('menuIcon')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n().renameAction));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('shows rename sheet when rename action is tapped', (
+      tester,
+    ) async {
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: 'Kitchen Remodel',
+        ),
+      );
+
+      await openRenameSheet(tester);
+
+      expect(find.byType(EstimationRenameSheet), findsOneWidget);
+    });
+
+    testWidgets('closes rename sheet on successful rename', (tester) async {
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: 'Kitchen Remodel',
+        ),
+      );
+
+      final initialPopCalls = fakeAppRouter.popCalls;
+
+      await openRenameSheet(tester);
+      expect(fakeAppRouter.popCalls, initialPopCalls + 1);
+
+      await tester.enterText(find.byType(CoreTextField), 'Bathroom Renovation');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n().saveCostNameButton));
+      await tester.pumpAndSettle();
+
+      expect(fakeAppRouter.popCalls, initialPopCalls + 2);
+    });
+
+    testWidgets('shows error toast and keeps sheet open when rename fails', (
+      tester,
+    ) async {
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: 'Kitchen Remodel',
+        ),
+      );
+
+      final initialPopCalls = fakeAppRouter.popCalls;
+
+      await openRenameSheet(tester);
+
+      fakeSupabase.shouldThrowOnUpdate = true;
+      fakeSupabase.updateExceptionType = SupabaseExceptionType.socket;
+
+      await tester.enterText(find.byType(CoreTextField), 'New Name');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n().saveCostNameButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().connectionError), findsOneWidget);
+      expect(find.byType(EstimationRenameSheet), findsOneWidget);
+      expect(fakeAppRouter.popCalls, initialPopCalls + 1);
+    });
+
+    testWidgets(
+      'updates estimation name in list after successful rename (optimistic update)',
+      (tester) async {
+        const originalName = 'Kitchen Remodel';
+        const newName = 'Bathroom Renovation';
+
+        await setupAndNavigateToEstimation(
+          tester,
+          estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimation-1',
+            projectId: testProjectId,
+            estimateName: originalName,
+          ),
+        );
+
+        final tileFinder = find.byType(CostEstimationTile);
+        final originalTextFinder = find.descendant(
+          of: tileFinder,
+          matching: find.text(originalName),
+        );
+        expect(originalTextFinder, findsOneWidget);
+
+        await openRenameSheet(tester);
+
+        await tester.enterText(find.byType(CoreTextField), newName);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(l10n().saveCostNameButton));
+
+        await tester.pump(debounceWaitTime);
+        await tester.pumpAndSettle();
+
+        final updatedTextFinder = find.descendant(
+          of: tileFinder,
+          matching: find.text(newName),
+        );
+        expect(updatedTextFinder, findsOneWidget);
+
+        expect(originalTextFinder, findsNothing);
+      },
+    );
+
+    testWidgets(
+      'rolls back to original name in list when rename fails (optimistic rollback)',
+      (tester) async {
+        const originalName = 'Kitchen Remodel';
+        const attemptedNewName = 'Bathroom Renovation';
+
+        await setupAndNavigateToEstimation(
+          tester,
+          estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimation-1',
+            projectId: testProjectId,
+            estimateName: originalName,
+          ),
+        );
+
+        final tileFinder = find.byType(CostEstimationTile);
+        final originalTextFinder = find.descendant(
+          of: tileFinder,
+          matching: find.text(originalName),
+        );
+        expect(originalTextFinder, findsOneWidget);
+
+        await openRenameSheet(tester);
+
+        fakeSupabase.shouldThrowOnUpdate = true;
+        fakeSupabase.updateExceptionType = SupabaseExceptionType.socket;
+
+        await tester.enterText(find.byType(CoreTextField), attemptedNewName);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(l10n().saveCostNameButton));
+
+        await tester.pump(debounceWaitTime);
+        await tester.pumpAndSettle();
+
+        expect(originalTextFinder, findsOneWidget);
+
+        final attemptedTextFinder = find.descendant(
+          of: tileFinder,
+          matching: find.text(attemptedNewName),
+        );
+        expect(attemptedTextFinder, findsNothing);
+
+        expect(find.text(l10n().connectionError), findsOneWidget);
+      },
+    );
   });
 
   group('Route validation', () {
