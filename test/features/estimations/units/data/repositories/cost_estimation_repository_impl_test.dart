@@ -1715,5 +1715,231 @@ void main() {
         },
       );
     });
+
+    group('renameEstimation', () {
+      const String newEstimateName = 'Renamed Estimate';
+
+      test(
+        'should return updated estimation and update stream when rename succeeds',
+        () async {
+          fakeClock.set(DateTime.parse(timestamp2));
+          final initialMap = buildEstimationMap(
+            id: estimateIdDefault,
+            projectId: testProjectId,
+            estimateName: estimateNameDefault,
+            createdAt: timestamp2,
+            updatedAt: timestamp2,
+          );
+          seedEstimationTable([initialMap]);
+
+          final stream = repository.watchEstimations(testProjectId);
+          final updates = <Either<Failure, List<CostEstimate>>>[];
+          stream.listen(updates.add);
+
+          await pumpEventQueue();
+
+          final result = await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+
+          await pumpEventQueue();
+
+          final expectedEstimation = CostEstimateDto.fromJson(
+            initialMap,
+          ).toDomain();
+
+          expect(result.isRight(), isTrue);
+          expectResult(result, (updatedEstimation) {
+            expect(
+              updatedEstimation,
+              equals(
+                expectedEstimation.copyWith(estimateName: newEstimateName),
+              ),
+            );
+          });
+
+          expect(updates, hasLength(3));
+          updates.last.fold((_) => fail('Stream update failed'), (estimations) {
+            expect(estimations, hasLength(1));
+            expect(
+              estimations.first,
+              equals(
+                expectedEstimation.copyWith(estimateName: newEstimateName),
+              ),
+            );
+          });
+        },
+      );
+
+      test(
+        'should emit optimistic update to stream before API call completes',
+        () async {
+          fakeClock.set(DateTime.parse(timestamp2));
+          final initialMap = buildEstimationMap(
+            id: estimateIdDefault,
+            projectId: testProjectId,
+            estimateName: estimateNameDefault,
+            createdAt: timestamp2,
+            updatedAt: timestamp2,
+          );
+          seedEstimationTable([initialMap]);
+
+          final stream = repository.watchEstimations(testProjectId);
+          final updates = <Either<Failure, List<CostEstimate>>>[];
+          stream.listen(updates.add);
+
+          await pumpEventQueue();
+
+          final expectedEstimation = CostEstimateDto.fromJson(
+            initialMap,
+          ).toDomain();
+
+          expect(updates, hasLength(1));
+          updates[0].fold((_) => fail('Initial load failed'), (estimations) {
+            expect(estimations.first, equals(expectedEstimation));
+          });
+
+          final resultFuture = repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+
+          await pumpEventQueue();
+
+          expect(updates.length, greaterThan(1));
+          updates[1].fold((_) => fail('Optimistic update failed'), (
+            estimations,
+          ) {
+            expect(
+              estimations.first,
+              equals(
+                expectedEstimation.copyWith(estimateName: newEstimateName),
+              ),
+            );
+          });
+
+          await resultFuture;
+
+          await pumpEventQueue();
+          final lastUpdate = updates.last;
+          lastUpdate.fold((_) => fail('Final update failed'), (estimations) {
+            expect(
+              estimations.first,
+              equals(
+                expectedEstimation.copyWith(estimateName: newEstimateName),
+              ),
+            );
+          });
+        },
+      );
+
+      test(
+        'should return notFoundError when data source throws PostgrestException with no data found',
+        () async {
+          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+          fakeSupabaseWrapper.updateExceptionType =
+              SupabaseExceptionType.postgrest;
+          fakeSupabaseWrapper.postgrestErrorCode =
+              PostgresErrorCode.noDataFound;
+          fakeSupabaseWrapper.updateErrorMessage = 'No data found';
+
+          final result = await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+
+          expect(result.isLeft(), isTrue);
+          expectFailure(
+            result,
+            (failure) => expect(
+              failure,
+              EstimationFailure(errorType: EstimationErrorType.notFoundError),
+            ),
+          );
+        },
+      );
+
+      test('should revert optimistic update when data source throws', () async {
+        fakeClock.set(DateTime.parse(timestamp2));
+        final initialMap = buildEstimationMap(
+          id: estimateIdDefault,
+          projectId: testProjectId,
+          estimateName: estimateNameDefault,
+          createdAt: timestamp2,
+          updatedAt: timestamp2,
+        );
+        seedEstimationTable([initialMap]);
+
+        final stream = repository.watchEstimations(testProjectId);
+        final updates = <Either<Failure, List<CostEstimate>>>[];
+        stream.listen(updates.add);
+
+        await pumpEventQueue();
+
+        final expectedEstimation = CostEstimateDto.fromJson(
+          initialMap,
+        ).toDomain();
+
+        fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+        fakeSupabaseWrapper.updateExceptionType = SupabaseExceptionType.timeout;
+        fakeSupabaseWrapper.updateErrorMessage = errorMsgTimeout;
+
+        final result = await repository.renameEstimation(
+          estimationId: estimateIdDefault,
+          newName: newEstimateName,
+          projectId: testProjectId,
+        );
+
+        expect(result.isLeft(), isTrue);
+
+        await pumpEventQueue();
+
+        expect(updates.length, greaterThanOrEqualTo(3));
+        updates[1].fold((_) => fail('Optimistic update failed'), (estimations) {
+          expect(
+            estimations.first,
+            equals(expectedEstimation.copyWith(estimateName: newEstimateName)),
+          );
+        });
+
+        updates.last.fold((_) => fail('Rollback update failed'), (estimations) {
+          expect(estimations.first, equals(expectedEstimation));
+        });
+      });
+
+      test('should call supabaseWrapper with correct parameters', () async {
+        final initialMap = buildEstimationMap(
+          id: estimateIdDefault,
+          projectId: testProjectId,
+          estimateName: estimateNameDefault,
+        );
+        seedEstimationTable([initialMap]);
+
+        await repository.renameEstimation(
+          estimationId: estimateIdDefault,
+          newName: newEstimateName,
+          projectId: testProjectId,
+        );
+
+        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
+        expect(methodCalls, hasLength(1));
+
+        final call = methodCalls.first;
+        expect(
+          call,
+          equals({
+            'method': 'update',
+            'table': DatabaseConstants.costEstimatesTable,
+            'data': {DatabaseConstants.estimateNameColumn: newEstimateName},
+            'filterColumn': DatabaseConstants.idColumn,
+            'filterValue': estimateIdDefault,
+          }),
+        );
+      });
+    });
   });
 }

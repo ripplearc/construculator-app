@@ -80,6 +80,20 @@ abstract class CostEstimationRepository {
     required String projectId,
   });
 
+  /// Renames a cost estimation.
+  ///
+  /// [estimationId] The ID of the estimation to rename.
+  /// [newName] The new name for the estimation.
+  /// [projectId] The ID of the project the estimation belongs to (required for cache/stream updates).
+  ///
+  /// Returns a [Future] that completes with an [Either] containing either
+  /// a [Failure] or the updated [CostEstimate].
+  Future<Either<Failure, CostEstimate>> renameEstimation({
+    required String estimationId,
+    required String newName,
+    required String projectId,
+  });
+
   /// Disposes of all resources used by the repository.
   ///
   /// This method should be called when the repository is no longer needed.
