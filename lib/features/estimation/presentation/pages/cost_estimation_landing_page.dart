@@ -11,7 +11,6 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter/material.dart';
@@ -21,16 +20,11 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class CostEstimationLandingPage extends StatefulWidget {
   final String projectId;
-  final bool showScaffold;
 
   static const double _buttonBottomRatio = 0.135;
   static const double _buttonRightRatio = 0.05;
 
-  const CostEstimationLandingPage({
-    super.key,
-    required this.projectId,
-    this.showScaffold = true,
-  });
+  const CostEstimationLandingPage({super.key, required this.projectId});
 
   @override
   State<CostEstimationLandingPage> createState() =>
@@ -233,12 +227,9 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           },
         ),
       ],
-      child: Scaffold(
-        backgroundColor: colorTheme.pageBackground,
-        appBar: Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
-          projectId: widget.projectId,
-        ),
-        body: _buildBody(l10n, colorTheme),
+      child: ColoredBox(
+        color: colorTheme.pageBackground,
+        child: _buildBody(l10n, colorTheme),
       ),
     );
   }
