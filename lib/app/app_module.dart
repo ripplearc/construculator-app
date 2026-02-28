@@ -1,8 +1,6 @@
 import 'package:construculator/features/auth/auth_module.dart';
-import 'package:construculator/features/calculations/calculations_module.dart';
-import 'package:construculator/features/dashboard/dashboard_module.dart';
-import 'package:construculator/features/estimation/estimation_module.dart';
-import 'package:construculator/features/members/members_module.dart';
+// ...existing code...
+import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
@@ -24,21 +22,14 @@ class AppModule extends Module {
     SupabaseModule(appBootstrap),
     AuthLibraryModule(appBootstrap),
     ProjectModule(appBootstrap),
-    EstimationModule(appBootstrap),
+    // Feature modules are now loaded lazily per tab
   ];
+  // No shell binds here; handled by ShellModule
+
   @override
   void routes(RouteManager r) {
     r.module('/auth', module: AuthModule(appBootstrap));
-    r.child('/', guards: [AuthGuard()], child: (_) => const AppShellPage());
-    r.child(
-      shellRoute,
-      guards: [AuthGuard()],
-      child: (_) => const AppShellPage(),
-    );
-
-    r.module('/dashboard', module: DashboardModule(appBootstrap));
-    r.module('/calculations', module: CalculationsModule(appBootstrap));
-    r.module('/members', module: MembersModule(appBootstrap));
-    r.module('/estimation', module: EstimationModule(appBootstrap));
+    r.module('/', module: ShellModule(appBootstrap));
+    // Feature modules are loaded lazily per tab
   }
 }
