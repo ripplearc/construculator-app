@@ -444,4 +444,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String estimationMenuLabel(String estimationName) {
     return 'Open menu for $estimationName';
   }
+
+  @override
+  String get navHome => 'Home';
+
+  @override
+  String get navCalculations => 'Calculations';
+
+  @override
+  String get navCostEstimation => 'Cost Estimation';
+
+  @override
+  String get navMembers => 'Members';
 }
