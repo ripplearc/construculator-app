@@ -496,6 +496,26 @@ echo "- Ensure unit tests are added to cover the gaps exposed by surviving mutan
 echo "" >> "$OUTPUT_FILE"
 
 # =============================================================================
+# RULE 14: ACCESSIBILITY (A11Y) TESTING
+# =============================================================================
+echo "### ♿ RULE 14: ACCESSIBILITY (A11Y) TESTING" >> "$OUTPUT_FILE"
+echo "**Core Principle:** User-facing flows must remain perceivable, operable, and understandable for assistive technology users. Accessibility-focused widget tests must be added or updated when UI structure, semantics, or interaction patterns change." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Key Requirements:**" >> "$OUTPUT_FILE"
+echo "- ✅ **Semantic labels:** Interactive elements (buttons, tappable icons, toggles) must expose meaningful labels via \`Semantics\`, \`Tooltip\`, or appropriate CoreUI APIs—never rely solely on visual icons." >> "$OUTPUT_FILE"
+echo "- ✅ **Logical focus order:** Focus traversal should follow the visual reading order and not trap users; verify with \`WidgetTester\` focus expectations where relevant." >> "$OUTPUT_FILE"
+echo "- ✅ **Accessible test layout:** A11y widget tests live under \`test/features/**/widgets/accessibility/*_a11y_test.dart\` and exercise real user flows (e.g., landing pages, primary actions)." >> "$OUTPUT_FILE"
+echo "- ✅ **Theme & Layout Testing:** Tests must utilize \`setupA11yTest(tester)\` to prevent false overflows and verify compliance in both light and dark themes using \`expectMeetsTapTargetAndLabelGuidelinesForEachTheme\`." >> "$OUTPUT_FILE"
+echo "- ✅ **Regression coverage:** When modifying key screens (e.g., cost estimation flows, authentication, navigation hubs), existing a11y tests must be updated to cover new states and widgets." >> "$OUTPUT_FILE"
+echo "- ❌ **Forbidden:** Removing or bypassing semantics (e.g., \`excludeFromSemantics: true\`) for interactive content without a strong documented reason." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Check that screens touched in this PR have corresponding a11y widget tests (or justify why not in the review)." >> "$OUTPUT_FILE"
+echo "- Verify tests assert meaningful semantics (labels, hints) and focus behavior instead of raw widget counts or types." >> "$OUTPUT_FILE"
+echo "- Ensure \`*_a11y_test.dart\` files are updated to reflect any new interactive elements or flows introduced by this PR." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
 # GENERAL CODE REVIEW CRITERIA
 # =============================================================================
 echo "### 🔍 GENERAL CODE REVIEW CRITERIA" >> "$OUTPUT_FILE"
