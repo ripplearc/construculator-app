@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
@@ -6,6 +7,7 @@ import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -21,22 +23,32 @@ class FakeTabModuleLoader extends TabModuleLoader {
   bool isLoaded(ShellTab tab) => loadedTabs.contains(tab);
 }
 
-class _TestModule extends Module {}
+class _TestModule extends Module {
+  @override
+  void binds(Injector i) {
+    i.addLazySingleton<TabModuleLoader>(
+      () => FakeTabModuleLoader(Modular.get<AppBootstrap>()),
+    );
+    i.addLazySingleton<CurrentProjectNotifier>(
+      () => FakeCurrentProjectNotifier(initialProjectId: 'test-project-id'),
+    );
+    i.addLazySingleton<AppBootstrap>(
+      () => AppBootstrap(
+        config: FakeAppConfig(),
+        envLoader: FakeEnvLoader(),
+        supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
+      ),
+    );
+  }
+}
 
 void main() {
-  late AppBootstrap appBootstrap;
   late FakeTabModuleLoader loader;
 
   setUp(() {
-    appBootstrap = AppBootstrap(
-      config: FakeAppConfig(),
-      envLoader: FakeEnvLoader(),
-      supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
-    );
-    loader = FakeTabModuleLoader(appBootstrap);
+    Modular.destroy();
     Modular.init(_TestModule());
-    Modular.bindModule(_TestModule());
-    Modular.replaceInstance<TabModuleLoader>(loader);
+    loader = Modular.get<TabModuleLoader>() as FakeTabModuleLoader;
   });
 
   Widget makeApp() {
