@@ -446,6 +446,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get appTitle => 'Construculator';
+
+  @override
+  String get homeTab => 'Home';
+
+  @override
+  String get calculationsTab => 'Calculations';
+
+  @override
+  String get membersTab => 'Members';
+
+  @override
   String get navHome => 'Home';
 
   @override

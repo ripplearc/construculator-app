@@ -898,6 +898,30 @@ abstract class AppLocalizations {
   /// **'Open menu for {estimationName}'**
   String estimationMenuLabel(String estimationName);
 
+  /// Application title displayed in app bar
+  ///
+  /// In en, this message translates to:
+  /// **'Construculator'**
+  String get appTitle;
+
+  /// Label for home tab in bottom navigation
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get homeTab;
+
+  /// Label for calculations tab in bottom navigation
+  ///
+  /// In en, this message translates to:
+  /// **'Calculations'**
+  String get calculationsTab;
+
+  /// Label for members tab in bottom navigation
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get membersTab;
+
   /// Bottom navigation label for home tab
   ///
   /// In en, this message translates to:
