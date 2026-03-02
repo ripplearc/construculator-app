@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
-import 'package:construculator/app/shell/tab_module_loader.dart';
+import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/app/shell/widgets/tab_navigator.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
@@ -30,7 +30,7 @@ class _AppShellPageState extends State<AppShellPage> {
   final AppShellBloc _bloc = AppShellBloc();
   final CurrentProjectNotifier _currentProjectNotifier =
       Modular.get<CurrentProjectNotifier>();
-  final TabModuleLoader _moduleLoader = Modular.get<TabModuleLoader>();
+  final TabModuleManager _moduleLoader = Modular.get<TabModuleManager>();
 
   final List<GlobalKey<NavigatorState>> _tabNavigatorKeys = List.generate(
     4,
@@ -51,7 +51,6 @@ class _AppShellPageState extends State<AppShellPage> {
             _projectId = projectId;
           });
         });
-    // Ensure first tab's module is loaded
     _moduleLoader.ensureTabModuleLoaded(ShellTab.home);
   }
 
@@ -79,7 +78,6 @@ class _AppShellPageState extends State<AppShellPage> {
       return;
     }
 
-    // Allow system to handle back (exit app)
     SystemNavigator.pop();
   }
 

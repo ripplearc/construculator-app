@@ -1,6 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
-import 'package:construculator/app/shell/tab_module_loader.dart';
+import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
@@ -57,7 +57,7 @@ class _AppShellTestModule extends Module {
     i.addLazySingleton<AppRouter>(FakeAppRouter.new);
     i.addLazySingleton<CurrentProjectNotifier>(() => currentProjectNotifier);
     i.addLazySingleton<ProjectUIProvider>(() => _FakeProjectUiProvider());
-    i.addLazySingleton<TabModuleLoader>(() => TabModuleLoader(appBootstrap));
+    i.addLazySingleton<TabModuleManager>(() => TabModuleManager(appBootstrap));
   }
 }
 
