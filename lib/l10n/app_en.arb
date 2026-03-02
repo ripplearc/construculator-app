@@ -707,5 +707,10 @@
   "@membersTab": {
     "description": "Label for members tab in bottom navigation",
     "context": "AppShellPage"
+  },
+  "costEstimationTab": "Cost Estimation",
+  "@costEstimationTab": {
+    "description": "Label for cost estimation tab in bottom navigation",
+    "context": "AppShellPage"
   }
 }

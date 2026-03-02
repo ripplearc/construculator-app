@@ -8,7 +8,7 @@ class CalculationsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Text(
-        context.l10n.navCalculations,
+        context.l10n.calculationsTab,
         style: context.textTheme.headlineMediumSemiBold,
       ),
     );
