@@ -7,11 +7,11 @@ import 'package:construculator/features/members/members_module.dart';
 
 enum ShellTab { home, calculations, estimation, members }
 
-class TabModuleLoader {
+class TabModuleManager {
   final AppBootstrap appBootstrap;
   final Set<ShellTab> _loadedTabs = {};
 
-  TabModuleLoader(this.appBootstrap);
+  TabModuleManager(this.appBootstrap);
 
   Future<void> ensureTabModuleLoaded(ShellTab tab) async {
     if (_loadedTabs.contains(tab)) return;
