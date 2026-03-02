@@ -687,5 +687,25 @@
         "example": "Kitchen Remodel"
       }
     }
+  },
+  "appTitle": "Construculator",
+  "@appTitle": {
+    "description": "Application title displayed in app bar",
+    "context": "AppShellPage"
+  },
+  "homeTab": "Home",
+  "@homeTab": {
+    "description": "Label for home tab in bottom navigation",
+    "context": "AppShellPage"
+  },
+  "calculationsTab": "Calculations",
+  "@calculationsTab": {
+    "description": "Label for calculations tab in bottom navigation",
+    "context": "AppShellPage"
+  },
+  "membersTab": "Members",
+  "@membersTab": {
+    "description": "Label for members tab in bottom navigation",
+    "context": "AppShellPage"
   }
 }

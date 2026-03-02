@@ -33,7 +33,7 @@ class _AppShellPageState extends State<AppShellPage> {
   final TabModuleManager _moduleLoader = Modular.get<TabModuleManager>();
 
   final List<GlobalKey<NavigatorState>> _tabNavigatorKeys = List.generate(
-    4,
+    ShellTab.values.length,
     (_) => GlobalKey<NavigatorState>(),
   );
 
@@ -51,7 +51,6 @@ class _AppShellPageState extends State<AppShellPage> {
             _projectId = projectId;
           });
         });
-    // Ensure first tab's module is loaded
     _moduleLoader.ensureTabModuleLoaded(ShellTab.home);
   }
 
@@ -79,7 +78,6 @@ class _AppShellPageState extends State<AppShellPage> {
       return;
     }
 
-    // Allow system to handle back (exit app)
     SystemNavigator.pop();
   }
 
@@ -89,17 +87,16 @@ class _AppShellPageState extends State<AppShellPage> {
     _bloc.add(AppShellTabSelected(index));
   }
 
-  Widget _buildTabRoot(int tabIndex) {
-    final tab = ShellTab.values[tabIndex];
+  Widget _buildTabRoot(ShellTab tab) {
     if (!_moduleLoader.isLoaded(tab)) {
       return const Center(child: CircularProgressIndicator());
     }
-    switch (tabIndex) {
-      case 0:
+    switch (tab) {
+      case ShellTab.home:
         return const DashboardPage();
-      case 1:
+      case ShellTab.calculations:
         return const CalculationsPage();
-      case 2:
+      case ShellTab.estimation:
         final projectId = _projectId;
         if (projectId == null || projectId.isEmpty) {
           return const SizedBox.shrink();
@@ -121,10 +118,8 @@ class _AppShellPageState extends State<AppShellPage> {
           ],
           child: CostEstimationLandingPage(projectId: projectId),
         );
-      case 3:
+      case ShellTab.members:
         return const MembersPage();
-      default:
-        return const SizedBox.shrink();
     }
   }
 
@@ -148,7 +143,7 @@ class _AppShellPageState extends State<AppShellPage> {
             elevation: 0,
             centerTitle: true,
             titleSpacing: 0,
-            title: const Text('Construculator'),
+            title: Text(context.l10n.appTitle),
           ),
         ),
       );
@@ -170,14 +165,15 @@ class _AppShellPageState extends State<AppShellPage> {
           child: Scaffold(
             appBar: _buildAppBar(context),
             body: Stack(
-              children: List.generate(4, (index) {
+              children: List.generate(ShellTab.values.length, (index) {
+                final tab = ShellTab.values[index];
                 final isLoaded = state.loadedTabIndexes.contains(index);
                 return Offstage(
                   offstage: state.selectedTabIndex != index,
                   child: isLoaded
                       ? TabNavigator(
                           navigatorKey: _tabNavigatorKeys[index],
-                          rootBuilder: (_) => _buildTabRoot(index),
+                          rootBuilder: (_) => _buildTabRoot(tab),
                         )
                       : const SizedBox.shrink(),
                 );
@@ -187,16 +183,22 @@ class _AppShellPageState extends State<AppShellPage> {
               minimum: const EdgeInsets.all(CoreSpacing.space4),
               child: CoreBottomNavBar(
                 tabs: [
-                  BottomNavTab(icon: CoreIcons.home, label: 'Home'),
+                  BottomNavTab(
+                    icon: CoreIcons.home,
+                    label: context.l10n.homeTab,
+                  ),
                   BottomNavTab(
                     icon: CoreIcons.calculate,
-                    label: 'Calculations',
+                    label: context.l10n.calculationsTab,
                   ),
                   BottomNavTab(
                     icon: CoreIcons.cost,
                     label: context.l10n.costEstimation,
                   ),
-                  BottomNavTab(icon: CoreIcons.members, label: 'Members'),
+                  BottomNavTab(
+                    icon: CoreIcons.members,
+                    label: context.l10n.membersTab,
+                  ),
                 ],
                 selectedIndex: state.selectedTabIndex,
                 onTabSelected: _handleTabTap,
