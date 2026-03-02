@@ -8,7 +8,7 @@ class MembersPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Text(
-        context.l10n.navMembers,
+        context.l10n.membersTab,
         style: context.textTheme.headlineMediumSemiBold,
       ),
     );
