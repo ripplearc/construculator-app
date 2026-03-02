@@ -458,14 +458,5 @@ class AppLocalizationsEn extends AppLocalizations {
   String get membersTab => 'Members';
 
   @override
-  String get navHome => 'Home';
-
-  @override
-  String get navCalculations => 'Calculations';
-
-  @override
-  String get navCostEstimation => 'Cost Estimation';
-
-  @override
-  String get navMembers => 'Members';
+  String get costEstimationTab => 'Cost Estimation';
 }
