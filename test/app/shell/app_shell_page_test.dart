@@ -2,7 +2,7 @@ import 'package:construculator/libraries/project/interfaces/current_project_noti
 import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
-import 'package:construculator/app/shell/tab_module_loader.dart';
+import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -11,7 +11,7 @@ import 'package:construculator/libraries/project/testing/fake_current_project_no
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
-class FakeTabModuleLoader extends TabModuleLoader {
+class FakeTabModuleLoader extends TabModuleManager {
   final List<ShellTab> loadedTabs = [];
   FakeTabModuleLoader(super.bootstrap);
   @override
@@ -26,7 +26,7 @@ class FakeTabModuleLoader extends TabModuleLoader {
 class _TestModule extends Module {
   @override
   void binds(Injector i) {
-    i.addLazySingleton<TabModuleLoader>(
+    i.addLazySingleton<TabModuleManager>(
       () => FakeTabModuleLoader(Modular.get<AppBootstrap>()),
     );
     i.addLazySingleton<CurrentProjectNotifier>(
@@ -48,7 +48,7 @@ void main() {
   setUp(() {
     Modular.destroy();
     Modular.init(_TestModule());
-    loader = Modular.get<TabModuleLoader>() as FakeTabModuleLoader;
+    loader = Modular.get<TabModuleManager>() as FakeTabModuleLoader;
   });
 
   Widget makeApp() {

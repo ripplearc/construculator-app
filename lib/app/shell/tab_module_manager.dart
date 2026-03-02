@@ -20,13 +20,13 @@ class TabModuleManager {
         Modular.bindModule(DashboardModule(appBootstrap));
         break;
       case ShellTab.calculations:
-        Modular.bindModule(CalculationsModule(appBootstrap));
+        Modular.bindModule(CalculationsModule());
         break;
       case ShellTab.estimation:
         Modular.bindModule(EstimationModule(appBootstrap));
         break;
       case ShellTab.members:
-        Modular.bindModule(MembersModule(appBootstrap));
+        Modular.bindModule(MembersModule());
         break;
     }
     _loadedTabs.add(tab);
