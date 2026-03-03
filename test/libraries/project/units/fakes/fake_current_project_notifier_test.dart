@@ -76,9 +76,6 @@ void main() {
           fakeNotifier.setCurrentProjectId('second');
           fakeNotifier.setCurrentProjectId(null);
 
-          // Allow stream to process
-          await Future<void>.delayed(Duration.zero);
-
           expect(fakeNotifier.projectIdChangedEvents, [
             'first',
             'second',
@@ -89,7 +86,6 @@ void main() {
 
       test('reset should clear tracked events', () async {
         fakeNotifier.setCurrentProjectId('some-id');
-        await Future<void>.delayed(Duration.zero);
 
         fakeNotifier.reset();
 
@@ -117,8 +113,6 @@ void main() {
         );
 
         fakeNotifier.setCurrentProjectId('shared');
-
-        await Future<void>.delayed(Duration.zero);
 
         expect(listener1Events, ['shared']);
         expect(listener2Events, ['shared']);
