@@ -69,26 +69,18 @@ void main() {
     });
 
     group('Test Utility Features', () {
-      test(
-        'should track project id change events for test verification',
-        () async {
-          fakeNotifier.setCurrentProjectId('first');
-          fakeNotifier.setCurrentProjectId('second');
-          fakeNotifier.setCurrentProjectId(null);
+      test('should track project id change events for test verification', () {
+        fakeNotifier.setCurrentProjectId('first');
+        fakeNotifier.setCurrentProjectId('second');
+        fakeNotifier.setCurrentProjectId(null);
 
-          pumpEventQueue();
+        pumpEventQueue();
 
-          expect(fakeNotifier.projectIdChangedEvents, [
-            'first',
-            'second',
-            null,
-          ]);
-        },
-      );
+        expect(fakeNotifier.projectIdChangedEvents, ['first', 'second', null]);
+      });
 
-      test('reset should clear tracked events', () async {
+      test('reset should clear tracked events', () {
         fakeNotifier.setCurrentProjectId('some-id');
-        await Future<void>.delayed(Duration.zero);
 
         pumpEventQueue();
 
@@ -111,10 +103,10 @@ void main() {
         final listener2Events = <String?>[];
 
         final sub1 = fakeNotifier.onCurrentProjectChanged.listen(
-          listener1Events.add,
+          (event) => listener1Events.add(event),
         );
         final sub2 = fakeNotifier.onCurrentProjectChanged.listen(
-          listener2Events.add,
+          (event) => listener2Events.add(event),
         );
 
         fakeNotifier.setCurrentProjectId('shared');
