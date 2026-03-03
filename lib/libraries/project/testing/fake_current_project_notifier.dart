@@ -5,7 +5,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 
 /// A fake implementation of [CurrentProjectNotifier] for testing purposes.
 class FakeCurrentProjectNotifier implements CurrentProjectNotifier, Disposable {
-  final _controller = StreamController<String?>.broadcast();
+  final _controller = StreamController<String?>.broadcast(sync: true);
 
   /// The list of project id changes for test assertions.
   final List<String?> projectIdChangedEvents = [];
