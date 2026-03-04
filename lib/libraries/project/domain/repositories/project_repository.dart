@@ -19,4 +19,7 @@ abstract class ProjectRepository {
   ///
   /// Includes projects created by the user and projects shared with them.
   Future<List<Project>> getProjects();
+
+  /// Emits accessible projects whenever project access changes.
+  Stream<List<Project>> watchProjects();
 }
