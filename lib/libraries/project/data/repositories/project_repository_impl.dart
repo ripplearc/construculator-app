@@ -17,8 +17,9 @@ class ProjectRepositoryImpl implements ProjectRepository {
   static final _logger = AppLogger().tag('ProjectRepositoryImpl');
   StreamController<List<Project>>? _projectsController;
   StreamSubscription<void>? _projectChangesSubscription;
-  List<Project> _lastEmittedProjects = const [];
+  List<Project>? _lastEmittedProjects;
   bool _isRefreshing = false;
+  bool _hasPendingRefresh = false;
 
   ProjectRepositoryImpl({
     required ProjectDataSource projectDataSource,
@@ -126,31 +127,39 @@ class ProjectRepositoryImpl implements ProjectRepository {
     }
     _projectChangesSubscription?.cancel();
     _projectChangesSubscription = null;
-    _lastEmittedProjects = const [];
+    _lastEmittedProjects = null;
   }
 
   Future<void> _refreshProjects() async {
     if (_isRefreshing) {
+      _hasPendingRefresh = true;
       return;
     }
     _isRefreshing = true;
 
     try {
-      final projects = await getProjects();
-      _emitProjects(projects);
-    } catch (error, stackTrace) {
-      _logger.error(
-        'Error while refreshing accessible projects: $error',
-        stackTrace.toString(),
-      );
-      _projectsController?.addError(error, stackTrace);
+      do {
+        _hasPendingRefresh = false;
+        try {
+          final projects = await getProjects();
+          _emitProjects(projects);
+        } catch (error, stackTrace) {
+          _logger.error(
+            'Error while refreshing accessible projects: $error',
+            stackTrace.toString(),
+          );
+          _projectsController?.addError(error, stackTrace);
+        }
+      } while (_hasPendingRefresh);
     } finally {
       _isRefreshing = false;
     }
   }
 
   void _emitProjects(List<Project> projects) {
-    if (_projectsAreEqual(_lastEmittedProjects, projects)) {
+    final lastEmittedProjects = _lastEmittedProjects;
+    if (lastEmittedProjects != null &&
+        _projectsAreEqual(lastEmittedProjects, projects)) {
       return;
     }
 

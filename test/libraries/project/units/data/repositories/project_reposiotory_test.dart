@@ -223,6 +223,66 @@ void main() {
           );
         },
       );
+
+      test(
+        'queues a follow-up refresh when changes arrive mid-refresh',
+        () async {
+          supabaseWrapper.setCurrentUser(
+            FakeUser(
+              id: 'user-123',
+              email: 'test@example.com',
+              createdAt: clock.now().toIso8601String(),
+            ),
+          );
+
+          projectDataSource.ownedProjects = [
+            _createProjectDto(
+              id: 'owned-project',
+              projectName: 'Owned V1',
+              creatorUserId: 'user-123',
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ];
+
+          projectDataSource.firstGetOwnedProjectsStartedCompleter =
+              Completer<void>();
+          projectDataSource.nextGetOwnedProjectsCompleter = Completer<void>();
+
+          final emittedBatches = <List<Project>>[];
+          final subscription = repository.watchProjects().listen(
+            emittedBatches.add,
+          );
+
+          await projectDataSource.firstGetOwnedProjectsStartedCompleter!.future;
+
+          // While first refresh is in-flight, update data and emit a second tick.
+          projectDataSource.ownedProjects = [
+            _createProjectDto(
+              id: 'owned-project',
+              projectName: 'Owned V2',
+              creatorUserId: 'user-123',
+              updatedAt: DateTime(2025, 1, 2),
+            ),
+          ];
+          projectDataSource.emitProjectChange();
+
+          projectDataSource.nextGetOwnedProjectsCompleter!.complete();
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+
+          await subscription.cancel();
+
+          expect(projectDataSource.getOwnedProjectsCalls, greaterThanOrEqualTo(2));
+          expect(emittedBatches.length, greaterThanOrEqualTo(2));
+          expect(
+            emittedBatches.first.firstWhere((project) => project.id == 'owned-project').projectName,
+            'Owned V1',
+          );
+          expect(
+            emittedBatches.last.firstWhere((project) => project.id == 'owned-project').projectName,
+            'Owned V2',
+          );
+        },
+      );
     });
   });
 }
@@ -248,13 +308,29 @@ class _FakeProjectDataSource implements ProjectDataSource {
   List<ProjectDto> sharedProjects = [];
   String? lastOwnedUserId;
   String? lastSharedUserId;
+  int getOwnedProjectsCalls = 0;
+  Completer<void>? firstGetOwnedProjectsStartedCompleter;
+  Completer<void>? nextGetOwnedProjectsCompleter;
   final StreamController<void> _changesController =
       StreamController<void>.broadcast();
 
   @override
   Future<List<ProjectDto>> getOwnedProjects(String userId) async {
     lastOwnedUserId = userId;
-    return ownedProjects;
+    getOwnedProjectsCalls++;
+
+    final snapshot = List<ProjectDto>.from(ownedProjects);
+    if (firstGetOwnedProjectsStartedCompleter?.isCompleted == false) {
+      firstGetOwnedProjectsStartedCompleter?.complete();
+    }
+
+    final pendingDelay = nextGetOwnedProjectsCompleter;
+    if (pendingDelay != null) {
+      nextGetOwnedProjectsCompleter = null;
+      await pendingDelay.future;
+    }
+
+    return snapshot;
   }
 
   @override
