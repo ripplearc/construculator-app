@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:async';
 
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
@@ -11,38 +12,76 @@ part 'project_dropdown_state.dart';
 class ProjectDropdownBloc
     extends Bloc<ProjectDropdownEvent, ProjectDropdownState> {
   final ProjectRepository _projectRepository;
+  StreamSubscription<List<Project>>? _projectsSubscription;
 
   ProjectDropdownBloc({required ProjectRepository projectRepository})
     : _projectRepository = projectRepository,
       super(const ProjectDropdownInitial()) {
     on<ProjectDropdownStarted>(_onStarted);
     on<ProjectDropdownSelected>(_onSelected);
+    on<_ProjectDropdownProjectsUpdated>(_onProjectsUpdated);
+    on<_ProjectDropdownProjectsLoadFailed>(_onProjectsLoadFailed);
+  }
+
+  @override
+  Future<void> close() {
+    _projectsSubscription?.cancel();
+    return super.close();
   }
 
   Future<void> _onStarted(
     ProjectDropdownStarted event,
     Emitter<ProjectDropdownState> emit,
   ) async {
-    await _loadProjects(emit);
-  }
-
-  Future<void> _loadProjects(Emitter<ProjectDropdownState> emit) async {
     emit(const ProjectDropdownLoadInProgress());
 
-    final projects = await _projectRepository.getProjects();
-    if (projects.isEmpty) {
+    await _projectsSubscription?.cancel();
+    _projectsSubscription = _projectRepository.watchProjects().listen(
+      (projects) => add(_ProjectDropdownProjectsUpdated(projects)),
+      onError: (Object error, StackTrace stackTrace) {
+        add(_ProjectDropdownProjectsLoadFailed(error.toString()));
+      },
+    );
+  }
+
+  void _onProjectsUpdated(
+    _ProjectDropdownProjectsUpdated event,
+    Emitter<ProjectDropdownState> emit,
+  ) {
+    if (event.projects.isEmpty) {
       emit(
         ProjectDropdownLoadSuccess(projects: const [], selectedProject: null),
       );
       return;
     }
 
+    final currentState = state;
+    Project selectedProject = event.projects.first;
+
+    if (currentState is ProjectDropdownLoadSuccess &&
+        currentState.selectedProject != null) {
+      final currentSelection = currentState.selectedProject!;
+      for (final project in event.projects) {
+        if (project.id == currentSelection.id) {
+          selectedProject = project;
+          break;
+        }
+      }
+    }
+
     emit(
       ProjectDropdownLoadSuccess(
-        projects: projects,
-        selectedProject: projects.first,
+        projects: event.projects,
+        selectedProject: selectedProject,
       ),
     );
+  }
+
+  void _onProjectsLoadFailed(
+    _ProjectDropdownProjectsLoadFailed event,
+    Emitter<ProjectDropdownState> emit,
+  ) {
+    emit(ProjectDropdownLoadFailure(event.message));
   }
 
   void _onSelected(
