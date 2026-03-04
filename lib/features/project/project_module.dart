@@ -14,10 +14,10 @@ class ProjectModule extends Module {
 
   @override
   List<Module> get imports => [
-        ClockModule(),
-        ProjectLibraryModule(appBootstrap),
-        AuthLibraryModule(appBootstrap),
-      ];
+    ClockModule(),
+    ProjectLibraryModule(appBootstrap),
+    AuthLibraryModule(appBootstrap),
+  ];
 
   @override
   void routes(RouteManager r) {}
