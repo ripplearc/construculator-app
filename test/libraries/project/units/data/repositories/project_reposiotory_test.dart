@@ -246,7 +246,8 @@ void main() {
 
           projectDataSource.firstGetOwnedProjectsStartedCompleter =
               Completer<void>();
-          projectDataSource.nextGetOwnedProjectsCompleter = Completer<void>();
+          final firstRefreshCompleter = Completer<void>();
+          projectDataSource.nextGetOwnedProjectsCompleter = firstRefreshCompleter;
 
           final emittedBatches = <List<Project>>[];
           final subscription = repository.watchProjects().listen(
@@ -266,7 +267,7 @@ void main() {
           ];
           projectDataSource.emitProjectChange();
 
-          projectDataSource.nextGetOwnedProjectsCompleter!.complete();
+          firstRefreshCompleter.complete();
           await Future<void>.delayed(const Duration(milliseconds: 20));
 
           await subscription.cancel();
