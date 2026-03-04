@@ -1,6 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
-import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
@@ -101,8 +100,9 @@ void main() {
         ]);
         return ProjectDropdownBloc(projectRepository: fakeProjectRepository);
       },
-      act: (bloc) {
+      act: (bloc) async {
         bloc.add(const ProjectDropdownStarted());
+        await Future<void>.delayed(const Duration(milliseconds: 10));
         bloc.add(const ProjectDropdownSelected('project-2'));
       },
       expect: () => [
@@ -121,16 +121,60 @@ void main() {
     );
 
     blocTest<ProjectDropdownBloc, ProjectDropdownState>(
-      'emits loading and surfaces error when repository throws on getProjects',
+      'emits failure when watchProjects throws',
       build: () {
-        fakeProjectRepository.shouldThrowOnGetProjects = true;
-        fakeProjectRepository.getProjectsErrorMessage =
+        fakeProjectRepository.shouldThrowOnWatchProjects = true;
+        fakeProjectRepository.watchProjectsErrorMessage =
             'Unable to fetch projects';
         return ProjectDropdownBloc(projectRepository: fakeProjectRepository);
       },
       act: (bloc) => bloc.add(const ProjectDropdownStarted()),
-      expect: () => [const ProjectDropdownLoadInProgress()],
-      errors: () => [isA<ServerException>()],
+      expect: () => [
+        const ProjectDropdownLoadInProgress(),
+        isA<ProjectDropdownLoadFailure>().having(
+          (state) => state.message,
+          'message',
+          contains('Unable to fetch projects'),
+        ),
+      ],
+    );
+
+    blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+      'emits updated state when repository stream pushes new list',
+      build: () {
+        fakeProjectRepository.setAccessibleProjects([
+          project(
+            id: 'project-1',
+            name: 'Project 1',
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+        ]);
+        return ProjectDropdownBloc(projectRepository: fakeProjectRepository);
+      },
+      act: (bloc) async {
+        bloc.add(const ProjectDropdownStarted());
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        fakeProjectRepository.setAccessibleProjects([
+          project(
+            id: 'project-1',
+            name: 'Project 1 Updated',
+            updatedAt: DateTime(2025, 1, 2),
+          ),
+        ]);
+      },
+      expect: () => [
+        const ProjectDropdownLoadInProgress(),
+        isA<ProjectDropdownLoadSuccess>().having(
+          (state) => state.selectedProject?.projectName,
+          'selectedProject.projectName',
+          'Project 1',
+        ),
+        isA<ProjectDropdownLoadSuccess>().having(
+          (state) => state.selectedProject?.projectName,
+          'selectedProject.projectName',
+          'Project 1 Updated',
+        ),
+      ],
     );
   });
 }

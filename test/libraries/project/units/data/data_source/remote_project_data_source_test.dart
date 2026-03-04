@@ -90,6 +90,41 @@ void main() {
       });
       expect(result.length, 2);
     });
+
+    test(
+      'watchProjectChanges emits when shared project data changes',
+      () async {
+        final emissions = <void>[];
+        final subscription = dataSource
+            .watchProjectChanges('user-1')
+            .listen((_) => emissions.add(null));
+
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        final initialEmissionCount = emissions.length;
+
+        supabaseWrapper.addTableData(DatabaseConstants.projectMembersTable, [
+          {
+            DatabaseConstants.idColumn: 'member-1',
+            DatabaseConstants.projectIdColumn: 'project-1',
+            DatabaseConstants.userIdColumn: 'user-1',
+          },
+        ]);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+          _projectRow(
+            id: 'project-1',
+            projectName: 'Shared Project Updated',
+            creatorUserId: 'owner-1',
+          ),
+        ]);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        await subscription.cancel();
+
+        expect(emissions.length, greaterThan(initialEmissionCount));
+      },
+    );
   });
 }
 

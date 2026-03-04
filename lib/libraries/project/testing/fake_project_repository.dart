@@ -16,11 +16,18 @@ class FakeProjectRepository implements ProjectRepository {
   /// Tracks accessible projects returned by [getProjects].
   final List<Project> _accessibleProjects = [];
 
+  /// Emits project list updates for [watchProjects].
+  final StreamController<List<Project>> _projectsController =
+      StreamController<List<Project>>.broadcast();
+
   /// Controls whether [getProject] throws an exception
   bool shouldThrowOnGetProject = false;
 
   /// Controls whether [getProjects] throws an exception.
   bool shouldThrowOnGetProjects = false;
+
+  /// Controls whether [watchProjects] throws an exception.
+  bool shouldThrowOnWatchProjects = false;
 
   /// Error message for get project.
   /// Used to specify the error message thrown when [getProject] is attempted
@@ -30,11 +37,18 @@ class FakeProjectRepository implements ProjectRepository {
   /// Used to specify the error message thrown when [getProjects] is attempted.
   String? getProjectsErrorMessage;
 
+  /// Error message for watch projects.
+  /// Used to specify the error thrown when [watchProjects] is attempted.
+  String? watchProjectsErrorMessage;
+
   /// Used to specify the type of exception thrown when [getProject] is attempted
   SupabaseExceptionType? getProjectExceptionType;
 
   /// Used to specify the type of exception thrown when [getProjects] is attempted.
   SupabaseExceptionType? getProjectsExceptionType;
+
+  /// Used to specify the type of exception thrown when [watchProjects] is attempted.
+  SupabaseExceptionType? watchProjectsExceptionType;
 
   /// Used to specify the error code thrown during [getProject]
   PostgresErrorCode? postgrestErrorCode;
@@ -92,6 +106,21 @@ class FakeProjectRepository implements ProjectRepository {
     return List<Project>.from(_accessibleProjects);
   }
 
+  @override
+  Stream<List<Project>> watchProjects() async* {
+    _methodCalls.add({'method': 'watchProjects'});
+
+    if (shouldThrowOnWatchProjects) {
+      _throwConfiguredException(
+        watchProjectsExceptionType,
+        watchProjectsErrorMessage ?? 'Watch projects failed',
+      );
+    }
+
+    yield List<Project>.from(_accessibleProjects);
+    yield* _projectsController.stream;
+  }
+
   void _throwConfiguredException(
     SupabaseExceptionType? exceptionType,
     String message,
@@ -115,12 +144,14 @@ class FakeProjectRepository implements ProjectRepository {
     } else {
       _accessibleProjects[existingIndex] = project;
     }
+    _emitProjectsUpdate();
   }
 
   /// Clears project data for a specific project ID
   void clearProject(String id) {
     _projects.remove(id);
     _accessibleProjects.removeWhere((project) => project.id == id);
+    _emitProjectsUpdate();
   }
 
   /// Sets accessible projects returned by [getProjects].
@@ -128,6 +159,7 @@ class FakeProjectRepository implements ProjectRepository {
     _accessibleProjects
       ..clear()
       ..addAll(projects);
+    _emitProjectsUpdate();
   }
 
   /// Clears all project data and method calls
@@ -135,6 +167,24 @@ class FakeProjectRepository implements ProjectRepository {
     _projects.clear();
     _accessibleProjects.clear();
     _methodCalls.clear();
+    _emitProjectsUpdate();
+  }
+
+  /// Emits current accessible projects to active [watchProjects] listeners.
+  void emitProjectsUpdate() {
+    _emitProjectsUpdate();
+  }
+
+  /// Emits an error to active [watchProjects] listeners.
+  void emitProjectsError(Object error, [StackTrace? stackTrace]) {
+    _projectsController.addError(error, stackTrace);
+  }
+
+  void _emitProjectsUpdate() {
+    if (_projectsController.isClosed) {
+      return;
+    }
+    _projectsController.add(List<Project>.from(_accessibleProjects));
   }
 
   /// Returns a list of all method calls
@@ -158,10 +208,13 @@ class FakeProjectRepository implements ProjectRepository {
   void reset() {
     shouldThrowOnGetProject = false;
     shouldThrowOnGetProjects = false;
+    shouldThrowOnWatchProjects = false;
     getProjectErrorMessage = null;
     getProjectsErrorMessage = null;
+    watchProjectsErrorMessage = null;
     getProjectExceptionType = null;
     getProjectsExceptionType = null;
+    watchProjectsExceptionType = null;
     postgrestErrorCode = null;
     shouldDelayOperations = false;
     completer = null;

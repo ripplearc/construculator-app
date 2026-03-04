@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_data_source.dart';
 import 'package:construculator/libraries/project/data/models/project_dto.dart';
 import 'package:construculator/libraries/project/data/repositories/project_repository_impl.dart';
@@ -160,6 +162,68 @@ void main() {
         },
       );
     });
+
+    group('watchProjects', () {
+      test(
+        'emits initial projects and realtime updates for shared projects',
+        () async {
+          supabaseWrapper.setCurrentUser(
+            FakeUser(
+              id: 'user-123',
+              email: 'test@example.com',
+              createdAt: clock.now().toIso8601String(),
+            ),
+          );
+
+          projectDataSource.ownedProjects = [
+            _createProjectDto(
+              id: 'owned-project',
+              projectName: 'Owned',
+              creatorUserId: 'user-123',
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ];
+          projectDataSource.sharedProjects = [
+            _createProjectDto(
+              id: 'shared-project',
+              projectName: 'Shared V1',
+              creatorUserId: 'other-user',
+              updatedAt: DateTime(2025, 1, 2),
+            ),
+          ];
+
+          final emittedBatches = <List<Project>>[];
+          final subscription = repository.watchProjects().listen(
+            emittedBatches.add,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+
+          projectDataSource.sharedProjects = [
+            _createProjectDto(
+              id: 'shared-project',
+              projectName: 'Shared V2',
+              creatorUserId: 'other-user',
+              updatedAt: DateTime(2025, 1, 3),
+            ),
+          ];
+          projectDataSource.emitProjectChange();
+
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+
+          await subscription.cancel();
+
+          expect(emittedBatches.length, greaterThanOrEqualTo(2));
+          expect(emittedBatches.first.length, 2);
+          expect(
+            emittedBatches.last
+                .firstWhere((project) => project.id == 'shared-project')
+                .projectName,
+            'Shared V2',
+          );
+        },
+      );
+    });
   });
 }
 
@@ -184,6 +248,8 @@ class _FakeProjectDataSource implements ProjectDataSource {
   List<ProjectDto> sharedProjects = [];
   String? lastOwnedUserId;
   String? lastSharedUserId;
+  final StreamController<void> _changesController =
+      StreamController<void>.broadcast();
 
   @override
   Future<List<ProjectDto>> getOwnedProjects(String userId) async {
@@ -195,6 +261,13 @@ class _FakeProjectDataSource implements ProjectDataSource {
   Future<List<ProjectDto>> getSharedProjects(String userId) async {
     lastSharedUserId = userId;
     return sharedProjects;
+  }
+
+  @override
+  Stream<void> watchProjectChanges(String userId) => _changesController.stream;
+
+  void emitProjectChange() {
+    _changesController.add(null);
   }
 }
 
