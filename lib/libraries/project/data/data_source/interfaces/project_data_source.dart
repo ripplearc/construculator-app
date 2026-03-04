@@ -7,4 +7,7 @@ abstract class ProjectDataSource {
 
   /// Returns projects shared with the given [userId].
   Future<List<ProjectDto>> getSharedProjects(String userId);
+
+  /// Emits whenever project accessibility data changes for [userId].
+  Stream<void> watchProjectChanges(String userId);
 }

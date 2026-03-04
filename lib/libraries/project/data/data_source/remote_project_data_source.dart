@@ -3,6 +3,7 @@ import 'package:construculator/libraries/project/data/data_source/interfaces/pro
 import 'package:construculator/libraries/project/data/models/project_dto.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:rxdart/rxdart.dart';
 
 class RemoteProjectDataSource implements ProjectDataSource {
   final SupabaseWrapper _supabaseWrapper;
@@ -73,5 +74,44 @@ class RemoteProjectDataSource implements ProjectDataSource {
       );
       rethrow;
     }
+  }
+
+  @override
+  Stream<void> watchProjectChanges(String userId) {
+    final ownedProjectsStream = _supabaseWrapper
+        .watchTableFiltered(
+          table: DatabaseConstants.projectsTable,
+          primaryKey: const [DatabaseConstants.idColumn],
+          filterColumn: DatabaseConstants.creatorUserIdColumn,
+          filterValue: userId,
+        )
+        .map((_) {});
+
+    final sharedMembershipsStream = _supabaseWrapper
+        .watchTableFiltered(
+          table: DatabaseConstants.projectMembersTable,
+          primaryKey: const [DatabaseConstants.idColumn],
+          filterColumn: DatabaseConstants.userIdColumn,
+          filterValue: userId,
+        )
+        .map((_) {});
+
+    final allProjectsStream = _supabaseWrapper
+        .watchTable(
+          table: DatabaseConstants.projectsTable,
+          primaryKey: const [DatabaseConstants.idColumn],
+        )
+        .map((_) {});
+
+    return MergeStream<void>([
+      ownedProjectsStream,
+      sharedMembershipsStream,
+      allProjectsStream,
+    ]).doOnError((Object error, StackTrace stackTrace) {
+      _logger.error(
+        'Error while watching project changes for userId: $userId, error: $error',
+        stackTrace.toString(),
+      );
+    });
   }
 }
