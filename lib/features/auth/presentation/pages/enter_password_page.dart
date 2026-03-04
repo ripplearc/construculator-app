@@ -123,7 +123,7 @@ class _EnterPasswordPageState extends State<EnterPasswordPage> {
                       icon: _isPasswordVisible
                           ? CoreIcons.eye
                           : CoreIcons.eyeOff,
-                      size: CoreSpacing.space6,
+                      size: 24,
                       color: colors.iconDark,
                     ),
                     onPressed: () => _togglePasswordVisibility(),

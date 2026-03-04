@@ -39,10 +39,7 @@ class AuthProviderButtons extends StatelessWidget {
           label: context.l10n.continueWithGoogle,
           centerAlign: true,
           spaceOut: true,
-          icon: CoreIconWidget(
-            icon: CoreIcons.google,
-            size: CoreSpacing.space6,
-          ),
+          icon: CoreIconWidget(icon: CoreIcons.google, size: 24),
           variant: CoreButtonVariant.social,
         ),
         const SizedBox(height: CoreSpacing.space4),
@@ -55,7 +52,7 @@ class AuthProviderButtons extends StatelessWidget {
           spaceOut: true,
           icon: CoreIconWidget(
             icon: CoreIcons.apple,
-            size: CoreSpacing.space6,
+            size: 24,
             color: colors.textDark,
           ),
           variant: CoreButtonVariant.social,
@@ -68,10 +65,7 @@ class AuthProviderButtons extends StatelessWidget {
           label: context.l10n.continueWithMicrosoft,
           centerAlign: true,
           spaceOut: true,
-          icon: CoreIconWidget(
-            icon: CoreIcons.microsoft,
-            size: CoreSpacing.space6,
-          ),
+          icon: CoreIconWidget(icon: CoreIcons.microsoft, size: 24),
           variant: CoreButtonVariant.social,
         ),
         const SizedBox(height: CoreSpacing.space4),
@@ -85,7 +79,7 @@ class AuthProviderButtons extends StatelessWidget {
             spaceOut: true,
             icon: CoreIconWidget(
               icon: CoreIcons.phone,
-              size: CoreSpacing.space6,
+              size: 24,
               color: colors.textInfo,
             ),
 
@@ -98,7 +92,7 @@ class AuthProviderButtons extends StatelessWidget {
             },
             icon: CoreIconWidget(
               icon: CoreIcons.email,
-              size: CoreSpacing.space6,
+              size: 24,
               color: colors.textInfo,
             ),
             label: context.l10n.continueWithEmail,

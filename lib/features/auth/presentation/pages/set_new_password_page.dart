@@ -177,6 +177,7 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
                       icon: _isPasswordVisible
                           ? CoreIcons.eye
                           : CoreIcons.eyeOff,
+                      size: 24,
                     ),
                     onPressed: () {
                       _togglePasswordVisibility();
@@ -198,6 +199,7 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
                       icon: _isConfirmPasswordVisible
                           ? CoreIcons.eye
                           : CoreIcons.eyeOff,
+                      size: 24,
                     ),
                     onPressed: () {
                       _toggleConfirmPasswordVisibility();

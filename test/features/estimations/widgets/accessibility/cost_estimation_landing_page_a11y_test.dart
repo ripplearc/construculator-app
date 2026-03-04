@@ -193,8 +193,8 @@ void main() {
           email: 'test@example.com',
         );
 
-        fakeSupabase.shouldThrowOnSelectPaginated = true;
-        fakeSupabase.selectPaginatedExceptionType =
+        fakeSupabase.shouldThrowOnSelectMultiple = true;
+        fakeSupabase.selectMultipleExceptionType =
             SupabaseExceptionType.timeout;
 
         await setupA11yTest(tester);

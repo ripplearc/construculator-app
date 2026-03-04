@@ -183,12 +183,7 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
     required int rangeFrom,
     required int rangeTo,
   }) async {
-    return await _supabaseClient
-        .from(table)
-        .select(columns)
-        .eq(filterColumn, filterValue)
-        .order(orderColumn, ascending: ascending)
-        .range(rangeFrom, rangeTo);
+    await _supabaseClient.from(table).delete().eq(filterColumn, filterValue);
   }
 
   @override

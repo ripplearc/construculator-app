@@ -1,13 +1,16 @@
+import 'dart:async';
+
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
-import 'package:construculator/features/estimation/presentation/bloc/change_lock_status_bloc/change_lock_status_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/features/estimation/presentation/widgets/delete_estimation_confirmation_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/estimation_actions_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
@@ -34,39 +37,39 @@ class CostEstimationLandingPage extends StatefulWidget {
 
 class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
   late final AppRouter _router;
-  late final ScrollController _scrollController;
+  late final AuthNotifier _authNotifier;
+  StreamSubscription? _userProfileSub;
+  String userAvatarUrl = '';
 
-  static const double _loadMoreThreshold = 200.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController()..addListener(_onScroll);
-    _router = Modular.get<AppRouter>();
-  }
-
-  void _onScroll() {
-    if (!_scrollController.hasClients) return;
-
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.position.pixels;
-
-    if (maxScroll - currentScroll <= _loadMoreThreshold) {
-      final bloc = BlocProvider.of<CostEstimationListBloc>(context);
-      final state = bloc.state;
-
-      if (state is CostEstimationListWithData &&
-          state.hasMore &&
-          !state.isLoadingMore) {
-        bloc.add(CostEstimationListLoadMore(projectId: widget.projectId));
-      }
+  void fetchUserProfile() async {
+    final authManager = Modular.get<AuthManager>();
+    final cred = authManager.getCurrentCredentials();
+    if (cred.data?.id != null) {
+      authManager.getUserProfile(cred.data?.id ?? '');
     }
   }
 
   @override
+  void initState() {
+    _authNotifier = Modular.get<AuthNotifier>();
+
+    _userProfileSub = _authNotifier.onUserProfileChanged.listen((user) {
+      //TODO: https://ripplearc.youtrack.cloud/issue/CA-466/CostEstimation-State-Synchronization-in-costestimationlandingpage.dart (move this logic to project usecase)
+      if (!mounted) return;
+      setState(() {
+        userAvatarUrl = user?.profilePhotoUrl ?? '';
+      });
+    });
+
+    fetchUserProfile();
+
+    _router = Modular.get<AppRouter>();
+    super.initState();
+  }
+
+  @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
+    _userProfileSub?.cancel();
     super.dispose();
   }
 
@@ -200,38 +203,14 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
             }
           },
         ),
-        BlocListener<ChangeLockStatusBloc, ChangeLockStatusState>(
-          listener: (context, state) {
-            final l10n = context.l10n;
-            if (state is ChangeLockStatusSuccess) {
-              if (state.isLocked) {
-                CoreToast.showWarning(
-                  context,
-                  l10n.estimationLockedSuccessTitle,
-                  l10n.closeLabel,
-                );
-              } else {
-                CoreToast.showSuccess(
-                  context,
-                  l10n.estimationUnlockedSuccessTitle,
-                  l10n.closeLabel,
-                );
-              }
-            }
-            if (state is ChangeLockStatusFailure) {
-              CoreToast.showError(
-                context,
-                _mapFailureToMessage(l10n, state.failure),
-                l10n.closeLabel,
-              );
-            }
-          },
-        ),
       ],
       child: Scaffold(
         backgroundColor: colorTheme.pageBackground,
         appBar: Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
           projectId: widget.projectId,
+          avatarImage: userAvatarUrl.isNotEmpty
+              ? NetworkImage(userAvatarUrl)
+              : null,
         ),
         body: _buildBody(l10n, colorTheme),
       ),
@@ -288,19 +267,16 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
         return Positioned(
           bottom: size.height * CostEstimationLandingPage._buttonBottomRatio,
           right: size.width * CostEstimationLandingPage._buttonRightRatio,
-          child: IntrinsicWidth(
-            child: CoreButton(
-              label: l10n.addEstimation,
-              onPressed: _createEstimation,
-              isDisabled: isCreating,
-              variant: CoreButtonVariant.secondary,
-              size: CoreButtonSize.medium,
-              icon: CoreIconWidget(
-                icon: CoreIcons.add,
-                size: 20,
-                color: colorTheme.buttonSurface,
-              ),
-              fullWidth: false,
+          child: CoreButton(
+            label: l10n.addEstimation,
+            onPressed: _createEstimation,
+            isDisabled: isCreating,
+            variant: CoreButtonVariant.secondary,
+            size: CoreButtonSize.medium,
+            icon: CoreIconWidget(
+              icon: CoreIcons.add,
+              size: CoreIconSizes.small,
+              color: colorTheme.buttonSurface,
             ),
           ),
         );

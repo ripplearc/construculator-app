@@ -487,7 +487,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                         icon: _isPasswordVisible
                             ? CoreIcons.eye
                             : CoreIcons.eyeOff,
-                        size: CoreSpacing.space6,
+                        size: 24,
                         color: colors.iconDark,
                       ),
                       onPressed: () => _togglePasswordVisibility(),
@@ -508,7 +508,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                         icon: _isConfirmPasswordVisible
                             ? CoreIcons.eye
                             : CoreIcons.eyeOff,
-                        size: CoreSpacing.space6,
+                        size: 24,
                         color: colors.iconDark,
                       ),
                       onPressed: () => _toggleConfirmPasswordVisibility(),
