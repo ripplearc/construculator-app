@@ -1,21 +1,32 @@
+import 'package:construculator/libraries/project/data/data_source/interfaces/project_data_source.dart';
+import 'package:construculator/libraries/project/data/models/project_dto.dart';
 import 'package:construculator/libraries/project/data/repositories/project_repository_impl.dart';
-import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
-import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('ProjectRepositoryImpl', () {
+    late FakeClockImpl clock;
+    late FakeSupabaseWrapper supabaseWrapper;
+    late _FakeProjectDataSource projectDataSource;
     late ProjectRepositoryImpl repository;
 
-    setUpAll(() {
-      Modular.init(_TestModule());
+    setUp(() {
+      clock = FakeClockImpl(DateTime(2025, 10, 1, 10, 30));
+      Modular.init(_ProjectRepositoryTestModule(clock: clock));
+      supabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+      projectDataSource = Modular.get<_FakeProjectDataSource>();
       repository = Modular.get<ProjectRepositoryImpl>();
     });
-    tearDownAll(() {
-      Modular.dispose();
+
+    tearDown(() {
+      Modular.destroy();
     });
 
     group('getProject', () {
@@ -80,13 +91,133 @@ void main() {
         },
       );
     });
+
+    group('getProjects', () {
+      test('returns empty list when current user is not available', () async {
+        final result = await repository.getProjects();
+
+        expect(result, isEmpty);
+        expect(projectDataSource.lastOwnedUserId, isNull);
+        expect(projectDataSource.lastSharedUserId, isNull);
+      });
+
+      test(
+        'merges owned/shared projects, deduplicates, and sorts by updatedAt',
+        () async {
+          supabaseWrapper.setCurrentUser(
+            FakeUser(
+              id: 'user-123',
+              email: 'test@example.com',
+              createdAt: clock.now().toIso8601String(),
+            ),
+          );
+
+          projectDataSource.ownedProjects = [
+            _createProjectDto(
+              id: 'owned-old',
+              projectName: 'Owned Old',
+              creatorUserId: 'user-123',
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+            _createProjectDto(
+              id: 'duplicate-project',
+              projectName: 'Owned Duplicate (older)',
+              creatorUserId: 'user-123',
+              updatedAt: DateTime(2025, 1, 2),
+            ),
+          ];
+
+          projectDataSource.sharedProjects = [
+            _createProjectDto(
+              id: 'shared-new',
+              projectName: 'Shared Newest',
+              creatorUserId: 'another-user',
+              updatedAt: DateTime(2025, 1, 4),
+            ),
+            _createProjectDto(
+              id: 'duplicate-project',
+              projectName: 'Shared Duplicate (newer)',
+              creatorUserId: 'another-user',
+              updatedAt: DateTime(2025, 1, 3),
+            ),
+          ];
+
+          final result = await repository.getProjects();
+
+          expect(projectDataSource.lastOwnedUserId, 'user-123');
+          expect(projectDataSource.lastSharedUserId, 'user-123');
+          expect(result.map((project) => project.id).toList(), [
+            'shared-new',
+            'duplicate-project',
+            'owned-old',
+          ]);
+          expect(
+            result
+                .firstWhere((project) => project.id == 'duplicate-project')
+                .projectName,
+            'Shared Duplicate (newer)',
+          );
+        },
+      );
+    });
   });
 }
 
-class _TestModule extends Module {
+ProjectDto _createProjectDto({
+  required String id,
+  required String projectName,
+  required String creatorUserId,
+  required DateTime updatedAt,
+}) {
+  return ProjectDto(
+    id: id,
+    projectName: projectName,
+    creatorUserId: creatorUserId,
+    createdAt: DateTime(2025, 1, 1),
+    updatedAt: updatedAt,
+    status: ProjectStatus.active,
+  );
+}
+
+class _FakeProjectDataSource implements ProjectDataSource {
+  List<ProjectDto> ownedProjects = [];
+  List<ProjectDto> sharedProjects = [];
+  String? lastOwnedUserId;
+  String? lastSharedUserId;
+
+  @override
+  Future<List<ProjectDto>> getOwnedProjects(String userId) async {
+    lastOwnedUserId = userId;
+    return ownedProjects;
+  }
+
+  @override
+  Future<List<ProjectDto>> getSharedProjects(String userId) async {
+    lastSharedUserId = userId;
+    return sharedProjects;
+  }
+}
+
+class _ProjectRepositoryTestModule extends Module {
+  final FakeClockImpl clock;
+
+  _ProjectRepositoryTestModule({required this.clock});
+
   @override
   void binds(Injector i) {
-    i.add<Clock>(() => FakeClockImpl(DateTime(2025, 10, 1, 10, 30)));
-    i.add<ProjectRepositoryImpl>(() => ProjectRepositoryImpl());
+    i.addLazySingleton<SupabaseWrapper>(
+      () => FakeSupabaseWrapper(clock: clock),
+    );
+    i.addLazySingleton<_FakeProjectDataSource>(() => _FakeProjectDataSource());
+    i.addLazySingleton<ProjectDataSource>(
+      () => i.get<_FakeProjectDataSource>(),
+    );
+    i.addLazySingleton<ProjectRepositoryImpl>(
+      () => ProjectRepositoryImpl(
+        projectDataSource: i.get<ProjectDataSource>(),
+        supabaseWrapper: i.get<SupabaseWrapper>(),
+        clock: clock,
+      ),
+    );
   }
 }
