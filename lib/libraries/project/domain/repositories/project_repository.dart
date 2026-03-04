@@ -14,4 +14,9 @@ abstract class ProjectRepository {
   /// all project details including name, description, creator, company,
   /// export settings, and status.
   Future<Project> getProject(String id);
+
+  /// Retrieves all projects accessible by the current user.
+  ///
+  /// Includes projects created by the user and projects shared with them.
+  Future<List<Project>> getProjects();
 }
