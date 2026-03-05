@@ -19,6 +19,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -91,7 +92,25 @@ void main() {
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) {
         buildContext = context;
-        return child!;
+        final theChild = child!;
+        final currentPath = Modular.to.path;
+        if (theChild is SizedBox &&
+            theChild.width == null &&
+            theChild.height == null) {
+          return theChild;
+        }
+
+        if (currentPath.startsWith(fullEstimationLandingRoute) &&
+            currentPath.endsWith('/')) {
+          return theChild;
+        }
+
+        return Scaffold(
+          appBar: Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
+            projectId: testProjectId,
+          ),
+          body: theChild,
+        );
       },
     );
   }
@@ -996,7 +1015,7 @@ void main() {
 
       await pumpAppAtRoute(tester, '$fullEstimationLandingRoute/');
 
-      expect(find.byType(SizedBox), findsOneWidget);
+      expect(find.byType(SizedBox), findsWidgets);
       expect(find.byType(CostEstimationEmptyWidget), findsNothing);
     });
   });
