@@ -43,7 +43,7 @@ run_custom_linter() {
   fi
   
   echo "🔍 Running custom linter (ripplearc_linter rules) on changed files..."
-  local all_rules="prefer_fake_over_mock,forbid_forced_unwrapping,no_optional_operators_in_tests,document_fake_parameters,document_interface,todo_with_story_links,no_internal_method_docs,specific_exception_types,avoid_test_timeouts,private_subject,sealed_over_dynamic"
+  local all_rules="prefer_fake_over_mock,forbid_forced_unwrapping,no_optional_operators_in_tests,document_fake_parameters,document_interface,todo_with_story_links,no_internal_method_docs,specific_exception_types,avoid_test_timeouts,private_subject,sealed_over_dynamic,avoid_static_colors,avoid_static_typography,no_direct_instantiation"
   fvm dart run ripplearc_linter:standalone_checker --rules $all_rules $files
 }
 
@@ -113,11 +113,11 @@ pre_check() {
   else
     echo "🧪 Running changed tests..."
     fvm flutter test $changed_tests --update-goldens --coverage
-    lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' -o coverage/lcov.info
+    lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' -o coverage/lcov.info --ignore-errors unused
 
     # Process coverage
     if [[ -s "coverage/lcov.info" ]]; then
-      lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info
+      lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info --ignore-errors unused
       local lf=$(grep '^LF:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
       local lh=$(grep '^LH:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
       local coverage=$(echo "scale=2; $lh*100/$lf" | bc)
@@ -200,7 +200,7 @@ comprehensive_check() {
 
     # Process coverage
     if [[ -s "coverage/lcov.info" ]]; then
-      lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info
+      lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info --ignore-errors unused
       
       # Show individual file coverage
       echo "📊 Individual file coverage:"
