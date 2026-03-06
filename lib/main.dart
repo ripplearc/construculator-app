@@ -12,7 +12,10 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final appBootstrap = await _initializeApp();
-  runApp(ModularApp(module: AppModule(appBootstrap), child: const AppWidget()));
+  runApp(ModularApp(
+    module: AppModule(appBootstrap),
+    child: const AppWidget(),
+  ));
 }
 
 Future<AppBootstrap> _initializeApp() async {
