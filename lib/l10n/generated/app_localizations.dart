@@ -1108,6 +1108,18 @@ abstract class AppLocalizations {
   /// **'To: '**
   String get activityTo;
 
+  /// Label for export format in activity log tile
+  ///
+  /// In en, this message translates to:
+  /// **'Format: '**
+  String get activityExportFormat;
+
+  /// Label for item type in activity log tile
+  ///
+  /// In en, this message translates to:
+  /// **'Item Type: '**
+  String get activityItemType;
+
   /// Label for edited field item_type in activity logs
   ///
   /// In en, this message translates to:
