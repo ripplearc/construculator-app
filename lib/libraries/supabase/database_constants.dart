@@ -12,11 +12,17 @@ class DatabaseConstants {
 
   // Table names
   static const String costEstimatesTable = 'cost_estimates';
+  static const String projectsTable = 'projects';
+  static const String projectMembersTable = 'project_members';
 
   // Column names
   static const String idColumn = 'id';
   static const String projectIdColumn = 'project_id';
+  static const String userIdColumn = 'user_id';
+  static const String creatorUserIdColumn = 'creator_user_id';
   static const String createdAtColumn = 'created_at';
+  static const String updatedAtColumn = 'updated_at';
+  static const String statusColumn = 'status';
   static const String isLockedColumn = 'is_locked';
   static const String lockedByUserIdColumn = 'locked_by_user_id';
   static const String lockedAtColumn = 'locked_at';
