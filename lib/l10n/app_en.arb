@@ -708,5 +708,20 @@
   "@estimationUnlockedSuccessDescription": {
     "description": "Success message description shown when an estimation is unlocked",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57933-44583&t=uQsjOysCTq7oJAda-4"
+  },
+  "addCostName": "Add a cost name",
+  "@addCostName": {
+    "description": "Title for add cost name bottom sheet",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57414-15452&t=zB64L7ji12g2HAVH-4"
+  },
+  "estimationNameLabel": "Cost name",
+  "@estimationNameLabel": {
+    "description": "Label for estimation name input field",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57414-15417&t=zB64L7ji12g2HAVH-4"
+  },
+  "saveCostNameButton": "Save cost name",
+  "@saveCostNameButton": {
+    "description": "Label for save cost name button",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57414-15469&t=zB64L7ji12g2HAVH-4"
   }
 }
