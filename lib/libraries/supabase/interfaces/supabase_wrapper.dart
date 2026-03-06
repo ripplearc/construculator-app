@@ -162,6 +162,24 @@ abstract class SupabaseWrapper {
     required int rangeTo,
   });
 
+  /// Watch all rows for a table in real-time.
+  ///
+  /// [primaryKey] must contain the table primary key columns.
+  Stream<List<Map<String, dynamic>>> watchTable({
+    required String table,
+    required List<String> primaryKey,
+  });
+
+  /// Watch filtered table rows in real-time.
+  ///
+  /// [primaryKey] must contain the table primary key columns.
+  Stream<List<Map<String, dynamic>>> watchTableFiltered({
+    required String table,
+    required List<String> primaryKey,
+    required String filterColumn,
+    required dynamic filterValue,
+  });
+
   /// Call a Supabase RPC function
   ///
   /// [functionName] The name of the RPC function to call
