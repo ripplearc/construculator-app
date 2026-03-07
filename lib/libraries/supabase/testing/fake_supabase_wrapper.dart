@@ -23,6 +23,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Tracks table data for assertions during [select], [selectSingle], [insert], and [update]
   final Map<String, List<Map<String, dynamic>>> _tables = {};
 
+  /// Tracks live table stream controllers for real-time table updates.
+  final Map<String, StreamController<List<Map<String, dynamic>>>>
+  _tableDataControllers = {};
+
   /// Tracks method calls for assertions
   final List<Map<String, dynamic>> _methodCalls = [];
 
@@ -452,6 +456,49 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   }
 
   @override
+  Stream<List<Map<String, dynamic>>> watchTable({
+    required String table,
+    required List<String> primaryKey,
+  }) async* {
+    _methodCalls.add({
+      'method': 'watchTable',
+      'table': table,
+      'primaryKey': List<String>.from(primaryKey),
+    });
+
+    final controller = _getOrCreateTableController(table);
+    yield _cloneRows(_tables[table] ?? const []);
+    yield* controller.stream;
+  }
+
+  @override
+  Stream<List<Map<String, dynamic>>> watchTableFiltered({
+    required String table,
+    required List<String> primaryKey,
+    required String filterColumn,
+    required dynamic filterValue,
+  }) async* {
+    _methodCalls.add({
+      'method': 'watchTableFiltered',
+      'table': table,
+      'primaryKey': List<String>.from(primaryKey),
+      'filterColumn': filterColumn,
+      'filterValue': filterValue,
+    });
+
+    final controller = _getOrCreateTableController(table);
+    List<Map<String, dynamic>> applyFilter(List<Map<String, dynamic>> rows) {
+      return rows
+          .where((row) => row[filterColumn] == filterValue)
+          .map((row) => Map<String, dynamic>.from(row))
+          .toList();
+    }
+
+    yield applyFilter(_tables[table] ?? const []);
+    yield* controller.stream.map(applyFilter);
+  }
+
+  @override
   Future<Map<String, dynamic>?> selectSingle({
     required String table,
     String columns = '*',
@@ -522,6 +569,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
     tableData.add(insertData);
     _tables[table] = tableData;
+    _emitTableData(table);
 
     return Map<String, dynamic>.from(insertData);
   }
@@ -558,6 +606,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
         tableData[i] = updatedData;
         _tables[table] = tableData;
+        _emitTableData(table);
 
         return Map<String, dynamic>.from(updatedData);
       }
@@ -625,6 +674,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
         .where((row) => row[filterColumn] != filterValue)
         .toList();
     _tables[table] = filteredData;
+    _emitTableData(table);
   }
 
   @override
@@ -732,21 +782,48 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     }
   }
 
+  StreamController<List<Map<String, dynamic>>> _getOrCreateTableController(
+    String table,
+  ) {
+    return _tableDataControllers.putIfAbsent(
+      table,
+      () => StreamController<List<Map<String, dynamic>>>.broadcast(),
+    );
+  }
+
+  void _emitTableData(String table) {
+    final controller = _tableDataControllers[table];
+    if (controller == null || controller.isClosed) {
+      return;
+    }
+    controller.add(_cloneRows(_tables[table] ?? const []));
+  }
+
+  List<Map<String, dynamic>> _cloneRows(List<Map<String, dynamic>> rows) {
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  }
+
   /// Adds data to a specific table
   void addTableData(String table, List<Map<String, dynamic>> data) {
     _tables[table] = data;
+    _emitTableData(table);
   }
 
   /// Clears all data for a specific table
   void clearTableData(String table) {
     _tables[table] = [];
+    _emitTableData(table);
   }
 
   /// Clears all table data and the currently authenticated user
   void clearAllData() {
+    final affectedTables = _tables.keys.toList();
     _tables.clear();
     _methodCalls.clear();
     _currentUser = null;
+    for (final table in affectedTables) {
+      _emitTableData(table);
+    }
   }
 
   /// Returns a list of all method calls
@@ -779,6 +856,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Closes the auth state controller
   void dispose() {
     _authStateController.close();
+    for (final controller in _tableDataControllers.values) {
+      controller.close();
+    }
+    _tableDataControllers.clear();
   }
 
   /// Sets an auth stream error

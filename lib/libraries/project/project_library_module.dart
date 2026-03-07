@@ -1,8 +1,12 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/project/data/current_project_notifier_impl.dart';
+import 'package:construculator/libraries/project/data/data_source/interfaces/project_data_source.dart';
+import 'package:construculator/libraries/project/data/data_source/remote_project_data_source.dart';
 import 'package:construculator/libraries/project/data/repositories/project_repository_impl.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:construculator/libraries/time/clock_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -11,7 +15,7 @@ class ProjectLibraryModule extends Module {
   ProjectLibraryModule(this.appBootstrap);
 
   @override
-  List<Module> get imports => [ClockModule()];
+  List<Module> get imports => [ClockModule(), SupabaseModule(appBootstrap)];
 
   @override
   void routes(RouteManager r) {}
@@ -27,5 +31,13 @@ void _registerDependencies(Injector i) {
     ),
   );
 
-  i.addLazySingleton<ProjectRepository>(() => ProjectRepositoryImpl());
+  i.addLazySingleton<ProjectDataSource>(
+    () => RemoteProjectDataSource(supabaseWrapper: i.get<SupabaseWrapper>()),
+  );
+  i.addLazySingleton<ProjectRepository>(
+    () => ProjectRepositoryImpl(
+      projectDataSource: i.get<ProjectDataSource>(),
+      supabaseWrapper: i.get<SupabaseWrapper>(),
+    ),
+  );
 }
