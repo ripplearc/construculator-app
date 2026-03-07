@@ -200,135 +200,130 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
     final colors = context.colorTheme;
     final l10n = context.l10n;
 
-    // TODO: https://ripplearc.youtrack.cloud/issue/CA-464/Todo-Move-Scaffold-Divider-Override-to-Global-Theme
-    return Theme(
-      data: Theme.of(
-        context,
-      ).copyWith(dividerTheme: DividerThemeData(color: colors.transparent)),
-      child: Scaffold(
-        backgroundColor: colors.pageBackground,
-        body: BlocConsumer<RegisterWithEmailBloc, RegisterWithEmailState>(
-          listener: (context, state) {
-            if (state is RegisterWithEmailEmailCheckCompleted) {
-              if (state.isEmailRegistered) {
-                _emailErrorTextList = null;
-                _emailErrorWidgetList = [
-                  buildErrorWidgetWithLink(
-                    context: context,
-                    errorText: l10n.emailAlreadyRegistered,
-                    linkText: l10n.logginLink,
+    return Scaffold(
+      backgroundColor: colors.pageBackground,
+      body: BlocConsumer<RegisterWithEmailBloc, RegisterWithEmailState>(
+        listener: (context, state) {
+          if (state is RegisterWithEmailEmailCheckCompleted) {
+            if (state.isEmailRegistered) {
+              _emailErrorTextList = null;
+              _emailErrorWidgetList = [
+                buildErrorWidgetWithLink(
+                  context: context,
+                  errorText: l10n.emailAlreadyRegistered,
+                  linkText: l10n.logginLink,
+                  onPressed: () {
+                    // navigate to the login page with the currently entered email
+                    _router.navigate(
+                      fullLoginRoute,
+                      arguments: _emailController.text,
+                    );
+                  },
+                ),
+              ];
+            }
+            _canPressContinue = !state.isEmailRegistered;
+          }
+          if (state is RegisterWithEmailEmailCheckFailure) {
+            _handleFailure(state.failure);
+          }
+          if (state is RegisterWithEmailOtpSendingSuccess) {
+            _showEmailVerificationBottomSheet(context, _emailController.text);
+          }
+          if (state is RegisterWithEmailOtpSendingFailure) {
+            _handleFailure(state.failure);
+          }
+          if (state is RegisterWithEmailEditUserEmail) {
+            // when edit email is triggered on otp bottom sheet
+            // close bottomsheet and focus on the email input
+            Navigator.pop(context);
+            _emailTextFieldFocusNode.requestFocus();
+          }
+          if (state is RegisterWithEmailFormFieldValidated) {
+            _handleFieldValidation(state);
+          }
+        },
+        builder: (context, state) {
+          return SingleChildScrollView(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: CoreSpacing.space6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: CoreSpacing.space20),
+                  AuthHeader(
+                    title: l10n.letsGetStarted,
+                    description: l10n.heyEnterYourDetailsToRegisterWithUs,
+                  ),
+                  const SizedBox(height: CoreSpacing.space10),
+                  CoreTextField(
+                    focusNode: _emailTextFieldFocusNode,
+                    controller: _emailController,
+                    label: l10n.emailLabel,
+                    hintText: l10n.emailHint,
+                    errorTextList: _emailErrorTextList,
+                    errorWidgetList: _emailErrorWidgetList,
+                  ),
+                  const SizedBox(height: CoreSpacing.space6),
+                  CoreButton(
                     onPressed: () {
-                      // navigate to the login page with the currently entered email
-                      _router.navigate(
-                        fullLoginRoute,
-                        arguments: _emailController.text,
+                      _emailTextFieldFocusNode.unfocus();
+                      BlocProvider.of<RegisterWithEmailBloc>(context).add(
+                        RegisterWithEmailContinuePressed(_emailController.text),
                       );
                     },
+                    isDisabled:
+                        !_canPressContinue ||
+                        state is RegisterWithEmailOtpSendingLoading ||
+                        state is RegisterWithEmailEmailCheckLoading,
+                    label: state is RegisterWithEmailOtpSendingLoading
+                        ? l10n.sendingOtpButton
+                        : state is RegisterWithEmailEmailCheckLoading
+                        ? l10n.checkingAvailabilityButton
+                        : l10n.continueButton,
+                    centerAlign: true,
                   ),
-                ];
-              }
-              _canPressContinue = !state.isEmailRegistered;
-            }
-            if (state is RegisterWithEmailEmailCheckFailure) {
-              _handleFailure(state.failure);
-            }
-            if (state is RegisterWithEmailOtpSendingSuccess) {
-              _showEmailVerificationBottomSheet(context, _emailController.text);
-            }
-            if (state is RegisterWithEmailOtpSendingFailure) {
-              _handleFailure(state.failure);
-            }
-            if (state is RegisterWithEmailEditUserEmail) {
-              // when edit email is triggered on otp bottom sheet
-              // close bottomsheet and focus on the email input
-              Navigator.pop(context);
-              _emailTextFieldFocusNode.requestFocus();
-            }
-            if (state is RegisterWithEmailFormFieldValidated) {
-              _handleFieldValidation(state);
-            }
-          },
-          builder: (context, state) {
-            return SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: CoreSpacing.space6),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: CoreSpacing.space20),
-                    AuthHeader(
-                      title: l10n.letsGetStarted,
-                      description: l10n.heyEnterYourDetailsToRegisterWithUs,
-                    ),
-                    const SizedBox(height: CoreSpacing.space10),
-                    CoreTextField(
-                      focusNode: _emailTextFieldFocusNode,
-                      controller: _emailController,
-                      label: l10n.emailLabel,
-                      hintText: l10n.emailHint,
-                      errorTextList: _emailErrorTextList,
-                      errorWidgetList: _emailErrorWidgetList,
-                    ),
-                    const SizedBox(height: CoreSpacing.space6),
-                    CoreButton(
-                      onPressed: () {
-                        _emailTextFieldFocusNode.unfocus();
-                        BlocProvider.of<RegisterWithEmailBloc>(context).add(
-                          RegisterWithEmailContinuePressed(
-                            _emailController.text,
-                          ),
-                        );
-                      },
-                      isDisabled:
-                          !_canPressContinue ||
-                          state is RegisterWithEmailOtpSendingLoading ||
-                          state is RegisterWithEmailEmailCheckLoading,
-                      label: state is RegisterWithEmailOtpSendingLoading
-                          ? l10n.sendingOtpButton
-                          : state is RegisterWithEmailEmailCheckLoading
-                          ? l10n.checkingAvailabilityButton
-                          : l10n.continueButton,
-                      centerAlign: true,
-                    ),
-                    const SizedBox(height: CoreSpacing.space6),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Divider(color: colors.lineLight, thickness: 1),
+                  const SizedBox(height: CoreSpacing.space6),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Divider(color: colors.lineLight, thickness: 1),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: CoreSpacing.space2,
                         ),
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: CoreSpacing.space2,
-                          ),
-                          child: Text(
-                            l10n.or,
-                            style: typography.bodyMediumRegular.copyWith(
-                              color: colors.textBody,
-                            ),
+                        child: Text(
+                          l10n.or,
+                          style: typography.bodyMediumRegular.copyWith(
+                            color: colors.textBody,
                           ),
                         ),
-                        Expanded(
-                          child: Divider(color: colors.lineLight, thickness: 1),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: CoreSpacing.space6),
-                    AuthProviderButtons(onPressed: (method) {}),
-                  ],
-                ),
+                      ),
+                      Expanded(
+                        child: Divider(color: colors.lineLight, thickness: 1),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: CoreSpacing.space6),
+                  AuthProviderButtons(onPressed: (method) {}),
+                ],
               ),
-            );
-          },
-        ),
-        persistentFooterButtons: [
-          AuthFooter(
+            ),
+          );
+        },
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space2),
+          child: AuthFooter(
             text: l10n.alreadyHaveAccount,
             actionText: l10n.logginLink,
             onPressed: () {
               _router.navigate(fullLoginRoute);
             },
           ),
-        ],
+        ),
       ),
     );
   }
