@@ -4,6 +4,9 @@
 ## Getting Started
 - [Localization](Localization)
 
+## Configuration
+- [Launcher Icons](Launcher-Icons-Configuration)
+
 ## Security
 - [Secure Storage](Secure-Storage)
 
