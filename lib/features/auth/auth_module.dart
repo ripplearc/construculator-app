@@ -171,12 +171,8 @@ void _registerDependencies(Injector i) {
   i.add<SetNewPasswordBloc>(
     () => SetNewPasswordBloc(setNewPasswordUseCase: i()),
   );
-  
+
   i.addLazySingleton<AuthBloc>(
-    () => AuthBloc(
-      authManager: i(),
-      authNotifier: i(),
-      router: i(),
-    ),
+    () => AuthBloc(authManager: i(), authNotifier: i(), router: i()),
   );
 }

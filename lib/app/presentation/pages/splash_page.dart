@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -19,52 +20,34 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   static const double _animationEnd = 1.0;
   static const double _event2Target = 1.0;
   static const double _event3Target = 2.0;
-  static const double _imageSize = 120.0;
+  static const double _iconSize = 120.0;
   static const double _textBottomPosition = 50.0;
   static const double _edgePosition = 0.0;
   static const double _divisionFactor = 2.0;
   static const double _fontSize = 28.0;
   static const FontWeight _fontWeight = FontWeight.w600;
 
-  late AnimationController _imageTransitionController;
-  late Animation<double> _imageTransitionAnimation;
-  bool _showImage = false;
-  bool _imagesPrecached = false;
+  late AnimationController _iconTransitionController;
+  late Animation<double> _iconTransitionAnimation;
+  bool _showIcon = false;
 
   @override
   void initState() {
     super.initState();
     _setupAnimations();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_imagesPrecached) {
-      _imagesPrecached = true;
-      _precacheImagesAndStart();
-    }
-  }
-
-  Future<void> _precacheImagesAndStart() async {
-    await Future.wait([
-      precacheImage(const AssetImage('assets/images/first.png'), context),
-      precacheImage(const AssetImage('assets/images/second.png'), context),
-      precacheImage(const AssetImage('assets/images/third.png'), context),
-    ]);
     _startAnimationSequence();
   }
 
   void _setupAnimations() {
-    _imageTransitionController = AnimationController(
+    _iconTransitionController = AnimationController(
       duration: _event2Duration + _event3Duration,
       vsync: this,
     );
 
-    _imageTransitionAnimation =
+    _iconTransitionAnimation =
         Tween<double>(begin: _animationStart, end: _event3Target).animate(
           CurvedAnimation(
-            parent: _imageTransitionController,
+            parent: _iconTransitionController,
             curve: const Interval(
               _animationStart,
               _animationEnd,
@@ -79,16 +62,16 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
 
     if (!mounted) return;
     setState(() {
-      _showImage = true;
+      _showIcon = true;
     });
 
-    await _imageTransitionController.animateTo(
+    await _iconTransitionController.animateTo(
       _event2Target / _divisionFactor,
       duration: _event2Duration,
       curve: Curves.easeInQuad,
     );
 
-    await _imageTransitionController.animateTo(
+    await _iconTransitionController.animateTo(
       _event3Target,
       duration: _event3Duration,
       curve: Curves.easeOutQuad,
@@ -102,18 +85,18 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _imageTransitionController.dispose();
+    _iconTransitionController.dispose();
     super.dispose();
   }
 
-  String _getCurrentImage() {
-    double value = _imageTransitionAnimation.value;
+  CoreIconData _getCurrentIcon() {
+    double value = _iconTransitionAnimation.value;
     if (value < _event2Target) {
-      return 'assets/images/first.png';
+      return CoreIcons.splashFirstState;
     } else if (value < _event3Target) {
-      return 'assets/images/second.png';
+      return CoreIcons.splashSecondState;
     } else {
-      return 'assets/images/third.png';
+      return CoreIcons.splashThirdState;
     }
   }
 
@@ -126,15 +109,13 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
         children: [
           Center(
             child: AnimatedBuilder(
-              animation: _imageTransitionController,
+              animation: _iconTransitionController,
               builder: (context, child) {
-                if (!_showImage) return const SizedBox.shrink();
+                if (!_showIcon) return const SizedBox.shrink();
 
-                return Image.asset(
-                  _getCurrentImage(),
-                  width: _imageSize,
-                  height: _imageSize,
-                  fit: BoxFit.contain,
+                return CoreIconWidget(
+                  icon: _getCurrentIcon(),
+                  size: _iconSize,
                 );
               },
             ),
