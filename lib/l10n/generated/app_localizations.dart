@@ -772,6 +772,12 @@ abstract class AppLocalizations {
   /// **'Cost Estimation'**
   String get costEstimation;
 
+  /// Dashboard empty state message for quick access
+  ///
+  /// In en, this message translates to:
+  /// **'Add your favorite calculations and cost estimation for a quick access....'**
+  String get dashboardQuickAccessMessage;
+
   /// Empty state message shown when no cost estimations exist
   ///
   /// In en, this message translates to:

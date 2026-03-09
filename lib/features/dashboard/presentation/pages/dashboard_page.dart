@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
-import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -16,101 +19,101 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  final notifier = Modular.get<AuthNotifier>();
-  final authManager = Modular.get<AuthManager>();
-  String userInfo = '...';
+  static const String _fallbackProjectId =
+      '950e8400-e29b-41d4-a716-446655440001';
+
+  final AuthNotifier _notifier = Modular.get<AuthNotifier>();
+  final AuthManager _authManager = Modular.get<AuthManager>();
+  final CurrentProjectNotifier _currentProjectNotifier =
+      Modular.get<CurrentProjectNotifier>();
   final AppRouter _router = Modular.get<AppRouter>();
+
+  StreamSubscription<String?>? _projectChangedSubscription;
+  StreamSubscription? _userProfileChangedSubscription;
+  late String _projectId;
+
+  String _resolveProjectId(String? projectId) =>
+      projectId ?? _fallbackProjectId;
+
+  @override
+  void initState() {
+    super.initState();
+    _projectId = _resolveProjectId(_currentProjectNotifier.currentProjectId);
+
+    _projectChangedSubscription = _currentProjectNotifier
+        .onCurrentProjectChanged
+        .listen((projectId) {
+          if (!mounted) return;
+          setState(() {
+            _projectId = _resolveProjectId(projectId);
+          });
+        });
+
+    _userProfileChangedSubscription = _notifier.onUserProfileChanged.listen((
+      event,
+    ) {
+      if (event == null) {
+        final credentials = _authManager.getCurrentCredentials();
+        _router.navigate(
+          fullCreateAccountRoute,
+          arguments: credentials.data?.email,
+        );
+      }
+    });
+
+    final credentials = _authManager.getCurrentCredentials();
+    final credentialId = credentials.data?.id;
+    if (credentialId == null) {
+      _router.navigate(fullLoginRoute);
+      return;
+    }
+
+    _loadUserProfile(credentialId);
+  }
+
+  Future<void> _loadUserProfile(String credentialId) async {
+    try {
+      await _authManager.getUserProfile(credentialId);
+    } catch (_) {
+      if (!mounted) return;
+      CoreToast.showError(context, 'Failed to load profile', 'Close');
+    }
+  }
+
   @override
   void dispose() {
+    _projectChangedSubscription?.cancel();
+    _userProfileChangedSubscription?.cancel();
     super.dispose();
   }
 
   @override
-  void initState() {
-    notifier.onUserProfileChanged.listen((event) {
-      if (event == null) {
-        final cred = authManager.getCurrentCredentials();
-        _router.navigate(fullCreateAccountRoute, arguments: cred.data?.email);
-      }
-    });
-    final cred = authManager.getCurrentCredentials();
-    if (cred.data?.id == null) {
-      _router.navigate(fullLoginRoute);
-    } else {
-      authManager
-          .getUserProfile(cred.data?.id ?? '')
-          .then((result) {
-            if (result.isSuccess && result.data != null) {
-              setState(() {
-                userInfo =
-                    '${result.data?.firstName} ${result.data?.lastName}!';
-              });
-            }
-          })
-          .catchError((error) {
-            if (!mounted) return;
-            CoreToast.showError(context, 'Failed to load profile', 'Close');
-          });
-    }
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final typography = context.textTheme;
     final colors = context.colorTheme;
+    final l10n = context.l10n;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Construculator'),
-        centerTitle: true,
-        backgroundColor: colors.pageBackground,
+      backgroundColor: colors.pageBackground,
+      appBar: Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
+        projectId: _projectId,
       ),
-      body: Container(
-        padding: const EdgeInsets.all(24.0),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.dashboard,
-                size: 64,
-                color: Theme.of(context).primaryColor,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Welcome back, $userInfo',
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CoreIconWidget(icon: CoreIcons.emptyEstimation),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: MediaQuery.of(context).size.width * 0.7,
+              child: Text(
+                l10n.dashboardQuickAccessMessage,
                 textAlign: TextAlign.center,
-                style: typography.headlineMediumSemiBold,
+                style: context.textTheme.bodyMediumRegular.copyWith(
+                  color: context.colorTheme.textHeadline,
+                ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                'You are now logged in to your account',
-                textAlign: TextAlign.center,
-                style: typography.bodyLargeRegular,
-              ),
-              const SizedBox(height: 32),
-              CoreButton(
-                onPressed: () {
-                  final authManager = Modular.get<AuthManager>();
-                  authManager.logout();
-                  _router.navigate(fullLoginRoute);
-                },
-                label: 'Logout',
-                centerAlign: true,
-              ),
-              const SizedBox(height: 16),
-              //TODO: https://ripplearc.youtrack.cloud/issue/CA-108/Dashboard-Show-Recent-Cost-Estimations
-              CoreButton(
-                onPressed: () {
-                  _router.navigate(
-                    '$fullEstimationLandingRoute/950e8400-e29b-41d4-a716-446655440001',
-                  );
-                },
-                label: 'Cost Estimation for Project 950e...',
-                centerAlign: true,
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
