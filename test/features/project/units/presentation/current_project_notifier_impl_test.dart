@@ -1,4 +1,4 @@
-import 'package:construculator/features/project/presentation/current_project_notifier_impl.dart';
+import 'package:construculator/libraries/project/data/current_project_notifier_impl.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -88,8 +88,7 @@ void main() {
 
         notifier.setCurrentProjectId(newId);
 
-        // Allow stream to emit
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         expect(emittedIds, [newId]);
 
@@ -107,8 +106,7 @@ void main() {
         notifier.setCurrentProjectId(null);
         notifier.setCurrentProjectId('third');
 
-        // Allow stream to emit
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         expect(emittedIds, ['first', 'second', null, 'third']);
 
@@ -136,7 +134,7 @@ void main() {
 
         notifier.setCurrentProjectId('shared-event');
 
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         expect(listener1Events, ['shared-event']);
         expect(listener2Events, ['shared-event']);
@@ -158,8 +156,7 @@ void main() {
           emittedIds.add,
         );
 
-        // Allow potential emissions
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         expect(emittedIds, isEmpty);
 
@@ -182,8 +179,6 @@ void main() {
 
         notifier.dispose();
 
-        // Stream should be closed; setting project should not cause issues
-        // but also should not emit
         expect(
           () => notifier.setCurrentProjectId('after-dispose'),
           throwsA(anything),
