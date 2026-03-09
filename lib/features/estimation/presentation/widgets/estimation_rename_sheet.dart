@@ -11,10 +11,12 @@ class EstimationRenameSheet extends StatefulWidget {
     super.key,
     required this.estimationId,
     required this.projectId,
+    required this.currentName,
   });
 
   final String estimationId;
   final String projectId;
+  final String currentName;
 
   @override
   State<EstimationRenameSheet> createState() => _EstimationRenameSheetState();
@@ -27,7 +29,7 @@ class _EstimationRenameSheetState extends State<EstimationRenameSheet> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController();
+    _nameController = TextEditingController(text: widget.currentName);
     _bloc = BlocProvider.of<RenameEstimationBloc>(context);
     _nameController.addListener(_onTextChanged);
   }
@@ -103,7 +105,7 @@ class _EstimationRenameSheetState extends State<EstimationRenameSheet> {
                 ),
               ),
             ),
-            SizedBox(height: CoreSpacing.space3),
+            const SizedBox(height: CoreSpacing.space3),
             Padding(
               padding: const EdgeInsets.symmetric(
                 vertical: CoreSpacing.space3,
@@ -114,7 +116,7 @@ class _EstimationRenameSheetState extends State<EstimationRenameSheet> {
                 label: l10n.estimationNameLabel,
               ),
             ),
-            SizedBox(height: CoreSpacing.space6),
+            const SizedBox(height: CoreSpacing.space6),
             Container(
               decoration: BoxDecoration(
                 boxShadow: CoreShadows.sticky,

@@ -130,6 +130,8 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
   ) {
     final renameEstimationBloc = BlocProvider.of<RenameEstimationBloc>(context);
 
+    renameEstimationBloc.add(const RenameEstimationReset());
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -144,6 +146,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           child: EstimationRenameSheet(
             estimationId: estimation.id,
             projectId: widget.projectId,
+            currentName: estimation.estimateName,
           ),
         );
       },

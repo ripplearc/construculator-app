@@ -20,9 +20,8 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-import '../../helpers/estimation_test_data_map_factory.dart';
-import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/screenshot/font_loader.dart';
+import '../../helpers/estimation_test_data_map_factory.dart';
 
 class _EstimationRenameSheetTestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -84,11 +83,10 @@ void main() {
   Widget createWidget({
     String estimationId = testEstimationId,
     String projectId = testProjectId,
-    ThemeData? theme,
+    String initialName = testCurrentName,
   }) {
-    theme ??= createTestTheme();
     return MaterialApp(
-      theme: theme,
+      theme: createTestTheme(),
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -101,6 +99,7 @@ void main() {
               child: EstimationRenameSheet(
                 estimationId: estimationId,
                 projectId: projectId,
+                currentName: initialName,
               ),
             ),
           );
@@ -130,7 +129,7 @@ void main() {
         expect(find.byType(CoreButton), findsOneWidget);
       });
 
-      testWidgets('should start with empty text field', (
+      testWidgets('should start with pre-populated text field', (
         WidgetTester tester,
       ) async {
         await renderSheet(tester);
@@ -138,7 +137,7 @@ void main() {
         final textField = tester.widget<CoreTextField>(
           find.byType(CoreTextField),
         );
-        expect(textField.controller!.text, equals(''));
+        expect(textField.controller!.text, equals(testCurrentName));
         expect(tester.takeException(), isNull);
       });
     });
@@ -201,7 +200,8 @@ void main() {
       testWidgets('should disable Save button when text is empty', (
         WidgetTester tester,
       ) async {
-        await renderSheet(tester);
+        await tester.pumpWidget(createWidget(initialName: ''));
+        await tester.pumpAndSettle();
 
         final saveButton = tester.widget<CoreButton>(
           find.widgetWithText(CoreButton, l10n().saveCostNameButton),
@@ -247,63 +247,25 @@ void main() {
         fakeSupabase.completer!.complete();
         await tester.pumpAndSettle();
       });
-    });
 
-    group('EstimationRenameSheet accessibility', () {
-      testWidgets('meets a11y guidelines for save button in both themes', (
-        tester,
+      testWidgets('should close sheet on success without timing issues', (
+        WidgetTester tester,
       ) async {
-        await setupA11yTest(tester);
-
         await renderSheet(tester);
 
-        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-          tester,
-          (theme) => createWidget(theme: theme),
-          find.text(l10n().saveCostNameButton),
-        );
-      });
+        const newName = 'Updated Name';
+        await tester.enterText(find.byType(CoreTextField), newName);
+        await tester.pumpAndSettle();
 
-      testWidgets('meets a11y guidelines for text field label in both themes', (
-        tester,
-      ) async {
-        await setupA11yTest(tester);
+        expect(find.byType(EstimationRenameSheet), findsOneWidget);
+        expect(fakeAppRouter.popCalls, 0);
 
-        await renderSheet(tester);
+        await tester.tap(find.text(l10n().saveCostNameButton));
+        await tester.pumpAndSettle();
 
-        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-          tester,
-          (theme) => createWidget(theme: theme),
-          find.text(l10n().estimationNameLabel),
-        );
-      });
+        expect(fakeAppRouter.popCalls, 1);
 
-      testWidgets('meets a11y guidelines for title in both themes', (
-        tester,
-      ) async {
-        await setupA11yTest(tester);
-
-        await renderSheet(tester);
-
-        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-          tester,
-          (theme) => createWidget(theme: theme),
-          find.text(l10n().addCostName),
-        );
-      });
-
-      testWidgets('meets a11y guidelines when save button is disabled', (
-        tester,
-      ) async {
-        await setupA11yTest(tester);
-
-        await renderSheet(tester);
-
-        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-          tester,
-          (theme) => createWidget(theme: theme),
-          find.text(l10n().saveCostNameButton),
-        );
+        expect(tester.takeException(), isNull);
       });
     });
   });

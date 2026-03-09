@@ -5,7 +5,6 @@ import 'package:construculator/features/estimation/presentation/widgets/estimati
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
-import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -16,14 +15,9 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/screenshot/font_loader.dart';
 
-class FakeAppRouter extends Fake implements AppRouter {
-  @override
-  void pop() {}
-}
-
 void main() {
-  final size = const Size(390, 300);
-  final ratio = 1.0;
+  const size = Size(390, 300);
+  const ratio = 1.0;
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
@@ -48,7 +42,7 @@ void main() {
       required WidgetTester tester,
       required String estimationId,
       required String projectId,
-      RenameEstimationState? state,
+      required String initialName,
     }) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -62,6 +56,7 @@ void main() {
               child: EstimationRenameSheet(
                 estimationId: estimationId,
                 projectId: projectId,
+                currentName: initialName,
               ),
             ),
           ),
@@ -70,26 +65,26 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets(
-      'displays rename sheet with empty text field and disabled save button',
-      (tester) async {
-        tester.view.physicalSize = size;
-        tester.view.devicePixelRatio = ratio;
+    testWidgets('displays rename sheet with pre-populated text field', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
 
-        await pumpRenameSheet(
-          tester: tester,
-          estimationId: 'test-estimation-123',
-          projectId: 'test-project-123',
-        );
+      await pumpRenameSheet(
+        tester: tester,
+        estimationId: 'test-estimation-123',
+        projectId: 'test-project-123',
+        initialName: 'Existing Estimation Name',
+      );
 
-        await expectLater(
-          find.byType(EstimationRenameSheet),
-          matchesGoldenFile(
-            'goldens/estimation_rename_sheet/${size.width}x${size.height}/estimation_rename_sheet_default.png',
-          ),
-        );
-      },
-    );
+      await expectLater(
+        find.byType(EstimationRenameSheet),
+        matchesGoldenFile(
+          'goldens/estimation_rename_sheet/${size.width}x${size.height}/estimation_rename_sheet_default.png',
+        ),
+      );
+    });
 
     testWidgets(
       'displays rename sheet with estimation name text filled in and enabled save button',
@@ -101,6 +96,7 @@ void main() {
           tester: tester,
           estimationId: 'test-estimation-123',
           projectId: 'test-project-123',
+          initialName: 'Old Name',
         );
 
         await tester.enterText(
