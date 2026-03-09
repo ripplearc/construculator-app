@@ -29,6 +29,7 @@ class RenameEstimationBloc
     RenameEstimationRequested event,
     Emitter<RenameEstimationState> emit,
   ) async {
+    // TODO: https://github.com/Flutterando/modular/issues/331 (Handle permission checks and other edgecases as well)s
     final trimmedName = event.newName.trim();
     final isSaveEnabled = trimmedName.isNotEmpty;
 

@@ -53,22 +53,6 @@ void main() {
       bloc.close();
     });
 
-    Map<String, dynamic> buildEstimationMap({
-      String? id,
-      String? projectId,
-      String? estimateName,
-      String? createdAt,
-      String? updatedAt,
-    }) {
-      return EstimationTestDataMapFactory.createFakeEstimationData(
-        id: id,
-        projectId: projectId,
-        estimateName: estimateName,
-        createdAt: createdAt,
-        updatedAt: updatedAt,
-      );
-    }
-
     void seedEstimationTable(List<Map<String, dynamic>> rows) {
       fakeSupabaseWrapper.addTableData(
         DatabaseConstants.costEstimatesTable,
@@ -141,11 +125,12 @@ void main() {
       blocTest<RenameEstimationBloc, RenameEstimationState>(
         'should emit in progress then success with new name when renaming succeeds',
         build: () {
-          final estimationMap = buildEstimationMap(
-            id: testEstimationId,
-            projectId: testProjectId,
-            estimateName: testEstimationName,
-          );
+          final estimationMap =
+              EstimationTestDataMapFactory.createFakeEstimationData(
+                id: testEstimationId,
+                projectId: testProjectId,
+                estimateName: testEstimationName,
+              );
           seedEstimationTable([estimationMap]);
           return bloc;
         },
@@ -169,11 +154,12 @@ void main() {
       blocTest<RenameEstimationBloc, RenameEstimationState>(
         'should trim whitespace from new name',
         build: () {
-          final estimationMap = buildEstimationMap(
-            id: testEstimationId,
-            projectId: testProjectId,
-            estimateName: testEstimationName,
-          );
+          final estimationMap =
+              EstimationTestDataMapFactory.createFakeEstimationData(
+                id: testEstimationId,
+                projectId: testProjectId,
+                estimateName: testEstimationName,
+              );
           seedEstimationTable([estimationMap]);
           return bloc;
         },
@@ -296,11 +282,12 @@ void main() {
           fakeSupabaseWrapper.updateExceptionType =
               SupabaseExceptionType.socket;
 
-          final estimationMap = buildEstimationMap(
-            id: testEstimationId,
-            projectId: testProjectId,
-            estimateName: testEstimationName,
-          );
+          final estimationMap =
+              EstimationTestDataMapFactory.createFakeEstimationData(
+                id: testEstimationId,
+                projectId: testProjectId,
+                estimateName: testEstimationName,
+              );
           seedEstimationTable([estimationMap]);
           return bloc;
         },
