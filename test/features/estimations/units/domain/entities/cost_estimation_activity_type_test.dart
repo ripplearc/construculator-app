@@ -7,8 +7,8 @@ void main() {
       test('has all expected activity types', () {
         expect(
           CostEstimationActivityType.values.length,
-          16,
-          reason: 'Should have exactly 16 activity types',
+          17,
+          reason: 'Should have exactly 17 activity types',
         );
 
         expect(
@@ -30,6 +30,7 @@ void main() {
             CostEstimationActivityType.costFileDeleted,
             CostEstimationActivityType.attachmentAdded,
             CostEstimationActivityType.attachmentRemoved,
+            CostEstimationActivityType.unknown,
           ]),
         );
       });
@@ -37,38 +38,38 @@ void main() {
 
     group('CostEstimationActivityTypeExtension', () {
       group('toJson', () {
-        test('converts costEstimationCreated to string', () {
+        test('converts costEstimationCreated to to proper string format', () {
           expect(
             CostEstimationActivityType.costEstimationCreated.toJson(),
-            'costEstimationCreated',
+            'cost_estimation_created',
           );
         });
 
-        test('converts costEstimationRenamed to string', () {
+        test('converts costEstimationRenamed to to proper string format', () {
           expect(
             CostEstimationActivityType.costEstimationRenamed.toJson(),
-            'costEstimationRenamed',
+            'cost_estimation_renamed',
           );
         });
 
-        test('converts costItemAdded to string', () {
+        test('converts costItemAdded to to proper string format', () {
           expect(
             CostEstimationActivityType.costItemAdded.toJson(),
-            'costItemAdded',
+            'cost_item_added',
           );
         });
 
-        test('converts taskAssigned to string', () {
+        test('converts taskAssigned to to proper string format', () {
           expect(
             CostEstimationActivityType.taskAssigned.toJson(),
-            'taskAssigned',
+            'task_assigned',
           );
         });
 
-        test('converts attachmentRemoved to string', () {
+        test('converts attachmentRemoved to to proper string format', () {
           expect(
             CostEstimationActivityType.attachmentRemoved.toJson(),
-            'attachmentRemoved',
+            'attachment_removed',
           );
         });
       });
@@ -76,7 +77,7 @@ void main() {
       group('fromJson', () {
         test('converts string to costEstimationCreated', () {
           final result = CostEstimationActivityTypeExtension.fromJson(
-            'costEstimationCreated',
+            'cost_estimation_created',
           );
 
           expect(result, CostEstimationActivityType.costEstimationCreated);
@@ -84,7 +85,7 @@ void main() {
 
         test('converts string to costEstimationRenamed', () {
           final result = CostEstimationActivityTypeExtension.fromJson(
-            'costEstimationRenamed',
+            'cost_estimation_renamed',
           );
 
           expect(result, CostEstimationActivityType.costEstimationRenamed);
@@ -92,7 +93,7 @@ void main() {
 
         test('converts string to costItemAdded', () {
           final result = CostEstimationActivityTypeExtension.fromJson(
-            'costItemAdded',
+            'cost_item_added',
           );
 
           expect(result, CostEstimationActivityType.costItemAdded);
@@ -100,7 +101,7 @@ void main() {
 
         test('converts string to taskUnassigned', () {
           final result = CostEstimationActivityTypeExtension.fromJson(
-            'taskUnassigned',
+            'task_unassigned',
           );
 
           expect(result, CostEstimationActivityType.taskUnassigned);
@@ -108,23 +109,26 @@ void main() {
 
         test('converts string to attachmentAdded', () {
           final result = CostEstimationActivityTypeExtension.fromJson(
-            'attachmentAdded',
+            'attachment_added',
           );
 
           expect(result, CostEstimationActivityType.attachmentAdded);
         });
 
-        test('throws ArgumentError with descriptive message', () {
-          expect(
-            () => CostEstimationActivityTypeExtension.fromJson('unknown'),
-            throwsA(
-              isA<ArgumentError>().having(
-                (e) => e.message,
-                'message',
-                contains('Invalid activity type: unknown'),
-              ),
-            ),
+        test('also accepts camelCase string (backward compatibility)', () {
+          final result = CostEstimationActivityTypeExtension.fromJson(
+            'costEstimationCreated',
           );
+
+          expect(result, CostEstimationActivityType.costEstimationCreated);
+        });
+
+        test('returns unknown for unrecognized activity type', () {
+          final result = CostEstimationActivityTypeExtension.fromJson(
+            'unrecognized_activity_type',
+          );
+
+          expect(result, CostEstimationActivityType.unknown);
         });
       });
 

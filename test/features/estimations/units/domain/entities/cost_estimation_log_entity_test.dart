@@ -101,7 +101,14 @@ void main() {
 
     group('copyWith', () {
       test('returns new instance with updated id', () {
-        final expected = testLog.copyWith(id: 'log-new');
+        final expected = CostEstimationLog(
+          id: 'log-new',
+          estimateId: testLog.estimateId,
+          activity: testLog.activity,
+          user: testLog.user,
+          activityDetails: testLog.activityDetails,
+          loggedAt: testLog.loggedAt,
+        );
 
         final updated = testLog.copyWith(id: 'log-new');
 
@@ -109,7 +116,14 @@ void main() {
       });
 
       test('returns new instance with updated estimateId', () {
-        final expected = testLog.copyWith(estimateId: 'estimate-new');
+        final expected = CostEstimationLog(
+          id: testLog.id,
+          estimateId: 'estimate-new',
+          activity: testLog.activity,
+          user: testLog.user,
+          activityDetails: testLog.activityDetails,
+          loggedAt: testLog.loggedAt,
+        );
 
         final updated = testLog.copyWith(estimateId: 'estimate-new');
 
@@ -117,8 +131,13 @@ void main() {
       });
 
       test('returns new instance with updated activity', () {
-        final expected = testLog.copyWith(
+        final expected = CostEstimationLog(
+          id: testLog.id,
+          estimateId: testLog.estimateId,
           activity: CostEstimationActivityType.costEstimationDeleted,
+          user: testLog.user,
+          activityDetails: testLog.activityDetails,
+          loggedAt: testLog.loggedAt,
         );
 
         final updated = testLog.copyWith(
@@ -136,7 +155,14 @@ void main() {
           professionalRole: 'Engineer',
         );
 
-        final expected = testLog.copyWith(user: newUser);
+        final expected = CostEstimationLog(
+          id: testLog.id,
+          estimateId: testLog.estimateId,
+          activity: testLog.activity,
+          user: newUser,
+          activityDetails: testLog.activityDetails,
+          loggedAt: testLog.loggedAt,
+        );
 
         final updated = testLog.copyWith(user: newUser);
 
@@ -144,8 +170,13 @@ void main() {
       });
 
       test('returns new instance with updated activity details', () {
-        final expected = testLog.copyWith(
+        final expected = CostEstimationLog(
+          id: testLog.id,
+          estimateId: testLog.estimateId,
+          activity: testLog.activity,
+          user: testLog.user,
           activityDetails: const {'newKey': 'newValue'},
+          loggedAt: testLog.loggedAt,
         );
 
         final updated = testLog.copyWith(
@@ -157,7 +188,15 @@ void main() {
 
       test('returns new instance with updated loggedAt', () {
         final newDate = DateTime(2025, 3, 1);
-        final expected = testLog.copyWith(loggedAt: newDate);
+
+        final expected = CostEstimationLog(
+          id: testLog.id,
+          estimateId: testLog.estimateId,
+          activity: testLog.activity,
+          user: testLog.user,
+          activityDetails: testLog.activityDetails,
+          loggedAt: newDate,
+        );
 
         final updated = testLog.copyWith(loggedAt: newDate);
 
