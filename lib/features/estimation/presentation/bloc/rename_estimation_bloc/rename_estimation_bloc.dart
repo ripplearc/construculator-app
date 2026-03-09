@@ -13,8 +13,16 @@ class RenameEstimationBloc
   RenameEstimationBloc({required CostEstimationRepository repository})
     : _repository = repository,
       super(const RenameEstimationInitial()) {
+    on<RenameEstimationReset>(_onReset);
     on<RenameEstimationTextChanged>(_onTextChanged);
     on<RenameEstimationRequested>(_onRenameEstimationRequested);
+  }
+
+  void _onReset(
+    RenameEstimationReset event,
+    Emitter<RenameEstimationState> emit,
+  ) {
+    emit(const RenameEstimationInitial());
   }
 
   void _onTextChanged(
