@@ -496,6 +496,32 @@ echo "- Ensure unit tests are added to cover the gaps exposed by surviving mutan
 echo "" >> "$OUTPUT_FILE"
 
 # =============================================================================
+# RULE 14: JUDICIOUS SENTRY ERROR REPORTING
+# =============================================================================
+echo "### 🚨 RULE 14: JUDICIOUS SENTRY ERROR REPORTING" >> "$OUTPUT_FILE"
+echo "**Core Principle:** \`AppLogger.error()\` and \`AppLogger.omg()\` send events to Sentry and consume quota. Reserve them for genuinely unexpected failures only." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**When to Use \`error()\` / \`omg()\`:**" >> "$OUTPUT_FILE"
+echo "- ✅ Parsing failures, auth token errors, critical storage failures, invariant violations" >> "$OUTPUT_FILE"
+echo "- ❌ NOT for: Expected Supabase errors (invalid credentials, unique-constraint violations/duplicate entries), validation failures, or informational logging" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**No Duplicate Logging:**" >> "$OUTPUT_FILE"
+echo "- Log errors at ONE layer only (typically Repository or DataSource)" >> "$OUTPUT_FILE"
+echo "- Don't log the same error in DataSource AND Repository — it creates duplicate Sentry events" >> "$OUTPUT_FILE"
+echo "- Upper layers (BLoC, UseCase) should handle \`Either<Failure, T>\` without logging" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Quick Guide:**" >> "$OUTPUT_FILE"
+echo "- \`debug()\` → Not sent to Sentry" >> "$OUTPUT_FILE"
+echo "- \`info()\` / \`warning()\` → Breadcrumb only (free)" >> "$OUTPUT_FILE"
+echo "- \`error()\` / \`omg()\` → Sentry event (costs quota)" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Verify \`error()\` calls are for unexpected failures only" >> "$OUTPUT_FILE"
+echo "- Check for duplicate logging across layers (DataSource → Repository)" >> "$OUTPUT_FILE"
+echo "- Ensure expected API errors use \`warning()\` instead of \`error()\`" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
 # GENERAL CODE REVIEW CRITERIA
 # =============================================================================
 echo "### 🔍 GENERAL CODE REVIEW CRITERIA" >> "$OUTPUT_FILE"
