@@ -53,6 +53,10 @@ class UserProfileDto extends Equatable {
   ///
   /// This method converts the DTO back to the database JSON format,
   /// mapping camelCase Dart properties to snake_case JSON keys.
+  ///
+  /// **Note**: This method serializes null optional fields explicitly
+  /// (e.g., `'credential_id': null`). It is intended for read/display
+  /// serialization only
   Map<String, dynamic> toJson() => {
     'id': id,
     'credential_id': credentialId,
