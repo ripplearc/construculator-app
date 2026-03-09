@@ -21,10 +21,135 @@ class CostEstimationLog extends Equatable {
   /// User who performed the activity
   final UserProfile user;
 
-  /// Additional details specific to the activity type
+  /// Additional details specific to the activity type.
   ///
   /// The structure of this map varies based on the activity type.
-  /// See activity type documentation for specific field definitions.
+  /// For complete specification, see:
+  /// https://docs.google.com/document/d/1MHn-LanxVJ96-HSe47C9Km0evtkPcyQDw9eDzFD60AA/edit?tab=t.m4ek8adycklb#bookmark=id.d9tpu71yhacg
+  ///
+  /// **COST_ESTIMATION_CREATED**:
+  /// ```json
+  /// {
+  ///   "name": "string",
+  ///   "description": "string"
+  /// }
+  /// ```
+  ///
+  /// **COST_ESTIMATION_RENAMED**:
+  /// ```json
+  /// {
+  ///   "oldName": "string",
+  ///   "newName": "string"
+  /// }
+  /// ```
+  ///
+  /// **COST_ESTIMATION_EXPORTED**:
+  /// ```json
+  /// {
+  ///   "format": "string",
+  ///   "destination": "string"
+  /// }
+  /// ```
+  ///
+  /// **COST_ITEM_ADDED**:
+  /// ```json
+  /// {
+  ///   "costItemId": "string",
+  ///   "costItemType": "string",
+  ///   "description": "string"
+  /// }
+  /// ```
+  ///
+  /// **COST_ITEM_EDITED**:
+  /// ```json
+  /// {
+  ///   "costItemId": "string",
+  ///   "costItemType": "string",
+  ///   "editedFields": {
+  ///     "fieldName": {
+  ///       "oldValue": "any",
+  ///       "newValue": "any"
+  ///     }
+  ///   }
+  /// }
+  /// ```
+  ///
+  /// **COST_ITEM_REMOVED**:
+  /// ```json
+  /// {
+  ///   "costItemId": "string",
+  ///   "costItemType": "string"
+  /// }
+  /// ```
+  ///
+  /// **COST_ITEM_DUPLICATED**:
+  /// ```json
+  /// {
+  ///   "originalCostItemId": "string",
+  ///   "costItemType": "string",
+  ///   "newCostItemId": "string"
+  /// }
+  /// ```
+  ///
+  /// **TASK_ASSIGNED**:
+  /// ```json
+  /// {
+  ///   "costItemId": "string",
+  ///   "assigneeEmail": "string"
+  /// }
+  /// ```
+  ///
+  /// **TASK_UNASSIGNED**:
+  /// ```json
+  /// {
+  ///   "costItemId": "string",
+  ///   "oldAssigneeEmail": "string"
+  /// }
+  /// ```
+  ///
+  /// **COST_FILE_UPLOADED**:
+  /// ```json
+  /// {
+  ///   "costFileId": "string",
+  ///   "fileName": "string",
+  ///   "fileSize": "number",
+  ///   "fileType": "string"
+  /// }
+  /// ```
+  ///
+  /// **COST_FILE_DELETED**:
+  /// ```json
+  /// {
+  ///   "costFileId": "string",
+  ///   "fileName": "string",
+  ///   "fileSize": "number",
+  ///   "fileType": "string"
+  /// }
+  /// ```
+  ///
+  /// **ATTACHMENT_ADDED**:
+  /// ```json
+  /// {
+  ///   "attachmentId": "string",
+  ///   "fileName": "string",
+  ///   "fileSize": "string",
+  ///   "fileType": "string",
+  ///   "attachmentType": "string",
+  ///   "documentCategory": "string"
+  /// }
+  /// ```
+  ///
+  /// **ATTACHMENT_REMOVED**:
+  /// ```json
+  /// {
+  ///   "attachmentId": "string",
+  ///   "fileName": "string",
+  ///   "fileSize": "string",
+  ///   "fileType": "string"
+  /// }
+  /// ```
+  ///
+  /// **Other activity types**: May have empty map `{}` if no additional details needed
   final Map<String, dynamic> activityDetails;
 
   /// Timestamp when the activity was logged
