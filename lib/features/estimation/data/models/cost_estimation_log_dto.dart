@@ -48,8 +48,8 @@ class CostEstimationLogDto extends Equatable {
       id: json['id'] as String,
       estimateId: json['estimate_id'] as String,
       activity: json['activity'] as String,
-      user: json['user'] as Map<String, dynamic>,
-      activityDetails: json['activity_details'] as Map<String, dynamic>,
+      user: (json['user'] as Map<String, dynamic>?) ?? {},
+      activityDetails: (json['activity_details'] as Map<String, dynamic>?) ?? {},
       loggedAt: json['logged_at'] as String,
     );
   }
@@ -77,6 +77,10 @@ class CostEstimationLogDto extends Equatable {
   ///
   /// Throws [FormatException] if timestamp string is invalid.
   /// Throws [ArgumentError] if activity type string is unrecognized.
+  ///
+  /// **Important**: The repository layer should wrap calls to this method in a
+  /// try/catch block to handle potential exceptions from malformed database rows.
+  /// A single invalid log entry should not crash the entire log fetch operation.
   CostEstimationLog toDomain() {
     return CostEstimationLog(
       id: id,

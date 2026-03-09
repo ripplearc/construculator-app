@@ -9,7 +9,7 @@ void main() {
     final testDto = CostEstimationLogDto(
       id: 'log-123',
       estimateId: 'estimate-456',
-      activity: 'costEstimationRenamed',
+      activity: 'cost_estimation_renamed',
       user: const {
         'id': 'user-123',
         'credential_id': 'cred-456',
@@ -28,7 +28,7 @@ void main() {
     final testJson = {
       'id': 'log-123',
       'estimate_id': 'estimate-456',
-      'activity': 'costEstimationRenamed',
+      'activity': 'cost_estimation_renamed',
       'user': {
         'id': 'user-123',
         'credential_id': 'cred-456',
@@ -80,7 +80,7 @@ void main() {
         final json = {
           'id': 'log-789',
           'estimate_id': 'estimate-123',
-          'activity': 'costItemAdded',
+          'activity': 'cost_item_added',
           'user': testJson['user'],
           'activity_details': {
             'costItemId': 'item-123',
@@ -93,7 +93,7 @@ void main() {
         final expectedDto = CostEstimationLogDto(
           id: 'log-789',
           estimateId: 'estimate-123',
-          activity: 'costItemAdded',
+          activity: 'cost_item_added',
           user: testJson['user'] as Map<String, dynamic>,
           activityDetails: const {
             'costItemId': 'item-123',
@@ -112,7 +112,7 @@ void main() {
         final json = {
           'id': 'log-999',
           'estimate_id': 'estimate-456',
-          'activity': 'costEstimationLocked',
+          'activity': 'cost_estimation_locked',
           'user': testJson['user'],
           'activity_details': <String, dynamic>{},
           'logged_at': '2025-02-25T16:00:00.000Z',
@@ -121,7 +121,7 @@ void main() {
         final expectedDto = CostEstimationLogDto(
           id: 'log-999',
           estimateId: 'estimate-456',
-          activity: 'costEstimationLocked',
+          activity: 'cost_estimation_locked',
           user: testJson['user'] as Map<String, dynamic>,
           activityDetails: const {},
           loggedAt: '2025-02-25T16:00:00.000Z',
@@ -140,16 +140,19 @@ void main() {
         expect(json, testJson);
       });
 
-      test('handles camelCase to snake_case conversion', () {
-        final json = testDto.toJson();
-
-        expect(json, testJson);
-      });
-
       test('preserves nested user object structure', () {
         final json = testDto.toJson();
 
-        expect(json, testJson);
+        expect(json['user'], isA<Map<String, dynamic>>());
+        final expectedUserJson = {
+          'id': 'user-123',
+          'credential_id': 'cred-456',
+          'first_name': 'John',
+          'last_name': 'Doe',
+          'professional_role': 'Project Manager',
+          'profile_photo_url': 'https://example.com/photo.jpg',
+        };
+        expect(json['user'], expectedUserJson);
       });
     });
 
@@ -164,7 +167,7 @@ void main() {
         final dto = CostEstimationLogDto(
           id: 'log-456',
           estimateId: 'estimate-789',
-          activity: 'costItemAdded',
+          activity: 'cost_item_added',
           user: testDto.user,
           activityDetails: const {},
           loggedAt: '2025-02-25T14:30:00.000Z',
@@ -186,27 +189,29 @@ void main() {
 
       test('converts nested user JSON to UserProfile entity', () {
         final entity = testDto.toDomain();
-
-        expect(entity, testEntity);
+        final expectedUser = UserProfile(
+          id: 'user-123',
+          firstName: 'John',
+          lastName: 'Doe',
+          professionalRole: 'Project Manager',
+          credentialId: 'cred-456',
+          profilePhotoUrl: 'https://example.com/photo.jpg',
+        );
+        expect(entity.user, expectedUser);
       });
 
-      test('parses ISO 8601 timestamp to DateTime', () {
-        final entity = testDto.toDomain();
-
-        expect(entity, testEntity);
-      });
-
-      test('throws ArgumentError for invalid activity type', () {
+      test('returns unknown for invalid activity type', () {
         final dto = CostEstimationLogDto(
           id: 'log-invalid',
           estimateId: 'estimate-123',
-          activity: 'invalidActivityType',
+          activity: 'invalid_activity_type',
           user: testDto.user,
           activityDetails: const {},
           loggedAt: '2025-02-25T14:30:00.000Z',
         );
 
-        expect(() => dto.toDomain(), throwsArgumentError);
+        final entity = dto.toDomain();
+        expect(entity.activity, CostEstimationActivityType.unknown);
       });
     });
 
@@ -230,7 +235,7 @@ void main() {
         final expectedDto = CostEstimationLogDto(
           id: 'log-999',
           estimateId: 'estimate-123',
-          activity: 'taskAssigned',
+          activity: 'task_assigned',
           user: testDto.user,
           activityDetails: const {},
           loggedAt: DateTime(2025, 2, 25).toIso8601String(),
@@ -244,13 +249,16 @@ void main() {
       test('converts UserProfile entity to nested JSON', () {
         final dto = CostEstimationLogDto.fromDomain(testEntity);
 
-        expect(dto, testDto);
-      });
-
-      test('formats DateTime to ISO 8601 string', () {
-        final dto = CostEstimationLogDto.fromDomain(testEntity);
-
-        expect(dto, testDto);
+        expect(dto.user, isA<Map<String, dynamic>>());
+        final expectedUserJson = {
+          'id': 'user-123',
+          'credential_id': 'cred-456',
+          'first_name': 'John',
+          'last_name': 'Doe',
+          'professional_role': 'Project Manager',
+          'profile_photo_url': 'https://example.com/photo.jpg',
+        };
+        expect(dto.user, expectedUserJson);
       });
     });
 
@@ -289,7 +297,7 @@ void main() {
         final dto1 = CostEstimationLogDto(
           id: 'log-123',
           estimateId: 'estimate-456',
-          activity: 'costEstimationCreated',
+          activity: 'cost_estimation_created',
           user: testDto.user,
           activityDetails: const {'key': 'value'},
           loggedAt: '2025-02-25T14:30:00.000Z',
@@ -298,7 +306,7 @@ void main() {
         final dto2 = CostEstimationLogDto(
           id: 'log-123',
           estimateId: 'estimate-456',
-          activity: 'costEstimationCreated',
+          activity: 'cost_estimation_created',
           user: testDto.user,
           activityDetails: const {'key': 'value'},
           loggedAt: '2025-02-25T14:30:00.000Z',
@@ -311,7 +319,7 @@ void main() {
         final dto1 = CostEstimationLogDto(
           id: 'log-123',
           estimateId: 'estimate-456',
-          activity: 'costEstimationCreated',
+          activity: 'cost_estimation_created',
           user: testDto.user,
           activityDetails: const {},
           loggedAt: '2025-02-25T14:30:00.000Z',
@@ -320,7 +328,7 @@ void main() {
         final dto2 = CostEstimationLogDto(
           id: 'log-456',
           estimateId: 'estimate-789',
-          activity: 'costEstimationDeleted',
+          activity: 'cost_estimation_deleted',
           user: testDto.user,
           activityDetails: const {},
           loggedAt: '2025-02-26T10:00:00.000Z',
