@@ -739,6 +739,81 @@ void main() {
         });
       });
 
+      group('selectWhereIn', () {
+        test('returns list of matching records for values in list', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1', 'name': 'Item 1'},
+            {'id': '2', 'project_id': 'p2', 'name': 'Item 2'},
+            {'id': '3', 'project_id': 'p3', 'name': 'Item 3'},
+          ]);
+
+          final result = await fakeWrapper.selectWhereIn(
+            table: 'items',
+            filterColumn: 'project_id',
+            filterValues: ['p1', 'p3'],
+          );
+
+          expect(result, hasLength(2));
+          expect(
+            result.map((row) => row['id']).toSet(),
+            equals({'1', '3'}),
+          );
+        });
+
+        test('returns empty list when no values match', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1', 'name': 'Item 1'},
+          ]);
+
+          final result = await fakeWrapper.selectWhereIn(
+            table: 'items',
+            filterColumn: 'project_id',
+            filterValues: ['p2', 'p3'],
+          );
+
+          expect(result, isEmpty);
+        });
+
+        test('records method call with all parameters', () async {
+          fakeWrapper.addTableData('items', []);
+
+          await fakeWrapper.selectWhereIn(
+            table: 'items',
+            columns: 'id,name',
+            filterColumn: 'project_id',
+            filterValues: ['p1', 'p2'],
+          );
+
+          final calls = fakeWrapper.getMethodCallsFor('selectWhereIn');
+          expect(calls, hasLength(1));
+          final call = calls.first;
+          expect(call['table'], equals('items'));
+          expect(call['columns'], equals('id,name'));
+          expect(call['filterColumn'], equals('project_id'));
+          expect(call['filterValues'], equals(['p1', 'p2']));
+        });
+
+        test('throws exception when configured to fail', () async {
+          fakeWrapper.shouldThrowOnSelectMultiple = true;
+          fakeWrapper.selectMultipleErrorMessage = 'Select where in failed';
+
+          expect(
+            () async => await fakeWrapper.selectWhereIn(
+              table: 'items',
+              filterColumn: 'project_id',
+              filterValues: ['p1'],
+            ),
+            throwsA(
+              isA<ServerException>().having(
+                (e) => e.toString(),
+                'message',
+                contains('Select where in failed'),
+              ),
+            ),
+          );
+        });
+      });
+
       group('selectPaginated', () {
         test('returns filtered and paginated data', () async {
           fakeWrapper.addTableData('items', [
