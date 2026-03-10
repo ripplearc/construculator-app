@@ -24,6 +24,160 @@ void main() {
     Modular.destroy();
   });
   group('FakeSupabaseWrapper', () {
+    group('Table watch streams', () {
+      const table = 'projects';
+      const primaryKey = ['id'];
+
+      test('watchTable emits initial data and updates on insert/update/delete',
+          () async {
+        await fakeWrapper.insert(
+          table: table,
+          data: {'name': 'Initial Project'},
+        );
+
+        final emissions = <List<Map<String, dynamic>>>[];
+        final subscription = fakeWrapper
+            .watchTable(table: table, primaryKey: primaryKey)
+            .listen(emissions.add);
+
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        await fakeWrapper.insert(
+          table: table,
+          data: {'name': 'Second Project'},
+        );
+
+        await fakeWrapper.update(
+          table: table,
+          data: {'name': 'Updated Project'},
+          filterColumn: 'id',
+          filterValue: '1',
+        );
+
+        await fakeWrapper.delete(
+          table: table,
+          filterColumn: 'id',
+          filterValue: '1',
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        await subscription.cancel();
+
+        expect(emissions, isNotEmpty);
+
+        final first = emissions.first;
+        expect(first.length, 1);
+        expect(first.single['name'], 'Initial Project');
+
+        final afterInsert = emissions.firstWhere(
+          (rows) => rows.length == 2,
+          orElse: () => const [],
+        );
+        expect(afterInsert, isNotEmpty);
+
+        final afterUpdate = emissions.firstWhere(
+          (rows) =>
+              rows.length == 2 &&
+              rows.any((row) => row['id'] == '1' && row['name'] == 'Updated Project'),
+          orElse: () => const [],
+        );
+        expect(afterUpdate, isNotEmpty);
+
+        final afterDelete = emissions.lastWhere(
+          (rows) =>
+              rows.length == 1 &&
+              rows.single['name'] == 'Second Project' &&
+              rows.single['id'] == '2',
+          orElse: () => const [],
+        );
+        expect(afterDelete, isNotEmpty);
+      });
+
+      test(
+          'watchTableFiltered applies filter, reacts to mutations, and clearAllData emits empty',
+          () async {
+        await fakeWrapper.insert(
+          table: table,
+          data: {'name': 'A - draft', 'status': 'draft'},
+        );
+        await fakeWrapper.insert(
+          table: table,
+          data: {'name': 'B - published', 'status': 'published'},
+        );
+
+        final emissions = <List<Map<String, dynamic>>>[];
+        final subscription = fakeWrapper
+            .watchTableFiltered(
+              table: table,
+              primaryKey: primaryKey,
+              filterColumn: 'status',
+              filterValue: 'published',
+            )
+            .listen(emissions.add);
+
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        await fakeWrapper.insert(
+          table: table,
+          data: {'name': 'C - published', 'status': 'published'},
+        );
+
+        await fakeWrapper.update(
+          table: table,
+          data: {'status': 'published'},
+          filterColumn: 'id',
+          filterValue: '1',
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        fakeWrapper.clearAllData();
+
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        await subscription.cancel();
+
+        final initial = emissions.first;
+        expect(initial, isNotEmpty);
+        expect(initial.every((row) => row['status'] == 'published'), isTrue);
+
+        final afterMutations = emissions.firstWhere(
+          (rows) =>
+              rows.length >= 3 &&
+              rows.every((row) => row['status'] == 'published'),
+          orElse: () => const [],
+        );
+        expect(afterMutations, isNotEmpty);
+
+        final lastEmission = emissions.last;
+        expect(lastEmission, isEmpty);
+      });
+
+      test('dispose closes table controllers and stops further emissions',
+          () async {
+        final emissions = <List<Map<String, dynamic>>>[];
+        final subscription = fakeWrapper
+            .watchTable(table: table, primaryKey: primaryKey)
+            .listen(emissions.add);
+
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        fakeWrapper.dispose();
+
+        // Mutations after dispose should not produce new emissions
+        await fakeWrapper.insert(
+          table: table,
+          data: {'name': 'Should not be emitted'},
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        final emissionCountAfterDispose = emissions.length;
+
+        await subscription.cancel();
+
+        expect(emissionCountAfterDispose, equals(emissions.length));
+      });
+    });
+
     group('FakeSupabaseWrapper Authentication Methods', () {
       group('signInWithPassword', () {
         test(
