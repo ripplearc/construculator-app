@@ -23,7 +23,7 @@ class CostEstimationLogRepositoryImpl implements CostEstimationLogRepository {
 
   final Map<String, PaginationState> _paginationStates = {};
 
-  static const int _defaultPageSize = 10;
+  static const int defaultPageSize = 20;
 
   CostEstimationLogRepositoryImpl({required this.dataSource});
 
@@ -32,28 +32,23 @@ class CostEstimationLogRepositoryImpl implements CostEstimationLogRepository {
     String estimateId,
   ) async {
     _logger.debug(
-      'Fetching initial logs for estimate: $estimateId, pageSize: $_defaultPageSize',
+      'Fetching initial logs for estimate: $estimateId, pageSize: $defaultPageSize',
     );
 
+    _paginationStates.remove(estimateId);
+
     try {
-      const initialState = PaginationState(
-        currentOffset: 0,
-        pageSize: _defaultPageSize,
-        hasMore: true,
-      );
-
-      _paginationStates[estimateId] = initialState;
-
       final dtos = await dataSource.getEstimationLogs(
         estimateId: estimateId,
         rangeFrom: 0,
-        rangeTo: _defaultPageSize - 1,
+        rangeTo: defaultPageSize - 1,
       );
 
-      final hasMore = dtos.length == _defaultPageSize;
+      final hasMore = dtos.length == defaultPageSize;
 
-      _paginationStates[estimateId] = initialState.copyWith(
-        currentOffset: _defaultPageSize,
+      _paginationStates[estimateId] = PaginationState(
+        currentOffset: defaultPageSize,
+        pageSize: defaultPageSize,
         hasMore: hasMore,
       );
 

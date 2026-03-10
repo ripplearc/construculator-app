@@ -12,7 +12,7 @@ class DatabaseConstants {
 
   // Table names
   static const String costEstimatesTable = 'cost_estimates';
-  static const String costEstimationLogsTable = 'cost_estimation_logs';
+  static const String costEstimationLogsTable = 'cost_estimate_logs';
 
   // Column names
   static const String idColumn = 'id';

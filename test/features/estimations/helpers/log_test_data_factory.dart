@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/auth/data/models/user_profile_dto.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 
 /// Factory for creating test data for cost estimation logs.
@@ -13,18 +14,20 @@ class LogTestDataFactory {
     String? professionalRole,
     String? loggedAt,
   }) {
+    final userDto = UserProfileDto(
+      id: userId ?? 'user-default',
+      credentialId: 'cred-default',
+      firstName: firstName ?? 'John',
+      lastName: lastName ?? 'Doe',
+      professionalRole: professionalRole ?? 'Engineer',
+      profilePhotoUrl: null,
+    );
+
     return {
       DatabaseConstants.idColumn: id,
       DatabaseConstants.estimateIdColumn: estimateId,
       DatabaseConstants.activityColumn: activity,
-      DatabaseConstants.userColumn: {
-        DatabaseConstants.idColumn: userId ?? 'user-default',
-        'credential_id': 'cred-default',
-        'first_name': firstName ?? 'John',
-        'last_name': lastName ?? 'Doe',
-        'professional_role': professionalRole ?? 'Engineer',
-        'profile_photo_url': null,
-      },
+      DatabaseConstants.userColumn: userDto.toJson(),
       DatabaseConstants.activityDetailsColumn: activityDetails ?? const {},
       DatabaseConstants.loggedAtColumn:
           loggedAt ?? '2025-02-25T10:00:00.000Z',

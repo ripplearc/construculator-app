@@ -163,6 +163,36 @@ void main() {
           throwsException,
         );
       });
+
+      test('passes non-zero rangeFrom correctly for second page', () async {
+        seedLogTable(
+          LogTestDataFactory.createLogDataList(
+            count: 20,
+            estimateId: testEstimateId,
+          ),
+        );
+
+        await dataSource.getEstimationLogs(
+          estimateId: testEstimateId,
+          rangeFrom: 10,
+          rangeTo: 19,
+        );
+
+        final calls = fakeSupabaseWrapper.getMethodCallsFor('selectPaginated');
+        expect(calls.length, 1);
+        final call = calls.first;
+        expect(call, {
+          'table': DatabaseConstants.costEstimationLogsTable,
+          'filterColumn': DatabaseConstants.estimateIdColumn,
+          'filterValue': testEstimateId,
+          'orderColumn': DatabaseConstants.loggedAtColumn,
+          'ascending': false,
+          'rangeFrom': 10,
+          'rangeTo': 19,
+          'method': 'selectPaginated',
+          'columns': '*, user:user_profiles(*)',
+        });
+      });
     });
   });
 }

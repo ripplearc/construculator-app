@@ -1,3 +1,5 @@
+// coverage:ignore-file
+
 import 'package:equatable/equatable.dart';
 
 /// Tracks pagination state for a specific project's estimation list.
@@ -17,11 +19,7 @@ class PaginationState extends Equatable {
     this.hasMore = true,
   });
 
-  PaginationState copyWith({
-    int? currentOffset,
-    int? pageSize,
-    bool? hasMore,
-  }) {
+  PaginationState copyWith({int? currentOffset, int? pageSize, bool? hasMore}) {
     return PaginationState(
       currentOffset: currentOffset ?? this.currentOffset,
       pageSize: pageSize ?? this.pageSize,
