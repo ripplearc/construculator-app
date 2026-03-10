@@ -1,8 +1,14 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/estimation/data/repositories/cost_estimation_log_repository_impl.dart';
+import 'package:construculator/features/estimation/domain/entities/cost_estimation_activity_type.dart';
+import 'package:construculator/features/estimation/domain/entities/cost_estimation_log_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_log_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_log_bloc/cost_estimation_log_bloc.dart';
+import 'package:construculator/libraries/auth/domain/entities/user_profile_entity.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/errors/failures.dart';
@@ -25,7 +31,8 @@ void main() {
     late CostEstimationLogRepository repository;
 
     const testEstimateId = 'estimate-123';
-    const defaultPageSize = 10;
+    const secondEstimateId = 'estimate-456';
+    final defaultPageSize = CostEstimationLogRepositoryImpl.defaultPageSize;
 
     setUpAll(() {
       fakeClock = FakeClockImpl();
@@ -60,6 +67,34 @@ void main() {
         DatabaseConstants.costEstimationLogsTable,
         rows,
       );
+    }
+
+    List<CostEstimationLog> expectedLatestLogsForEstimate({
+      required int totalCount,
+      required int takeCount,
+      required String estimateId,
+    }) {
+      const defaultUser = UserProfile(
+        id: 'user-default',
+        credentialId: 'cred-default',
+        firstName: 'John',
+        lastName: 'Doe',
+        professionalRole: 'Engineer',
+      );
+
+      return List.generate(takeCount, (i) {
+        final index = totalCount - i - 1;
+        final day = (index + 1).toString().padLeft(2, '0');
+
+        return CostEstimationLog(
+          id: 'log-$index',
+          estimateId: estimateId,
+          activity: CostEstimationActivityType.costEstimationCreated,
+          user: defaultUser,
+          activityDetails: const {},
+          loggedAt: DateTime.parse('2025-02-${day}T10:00:00.000Z'),
+        );
+      });
     }
 
     group('Initialization', () {
@@ -192,6 +227,8 @@ void main() {
             const CostEstimationLogFetchInitial(estimateId: testEstimateId),
           );
 
+          await bloc.stream.firstWhere((s) => s is CostEstimationLogLoaded);
+
           bloc.add(const CostEstimationLogLoadMore(estimateId: testEstimateId));
         },
         skip: 2,
@@ -208,7 +245,7 @@ void main() {
       );
 
       blocTest<CostEstimationLogBloc, CostEstimationLogState>(
-        'should not emit anything when load more is called but state is not loaded',
+        'should not emit anything when load more is called but state is not CostEstimationLogWithData',
         build: () => bloc,
         act: (bloc) => bloc.add(
           const CostEstimationLogLoadMore(estimateId: testEstimateId),
@@ -233,10 +270,148 @@ void main() {
             const CostEstimationLogFetchInitial(estimateId: testEstimateId),
           );
 
+          await bloc.stream.firstWhere((s) => s is CostEstimationLogLoaded);
+
           bloc.add(const CostEstimationLogLoadMore(estimateId: testEstimateId));
         },
         skip: 2,
         expect: () => [],
+        verify: (bloc) {
+          expect(
+            bloc.state,
+            isA<CostEstimationLogLoaded>()
+                .having((s) => s.logs.length, 'logs length', 1)
+                .having((s) => s.hasMore, 'hasMore', false),
+          );
+        },
+      );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'should ignore a second load more while the first one is still loading',
+        build: () {
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: defaultPageSize * 3,
+              estimateId: testEstimateId,
+            ),
+          );
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(
+            const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+          );
+
+          await bloc.stream.firstWhere((s) => s is CostEstimationLogLoaded);
+
+          fakeSupabaseWrapper.completer = Completer();
+          fakeSupabaseWrapper.shouldDelayOperations = true;
+
+          bloc.add(const CostEstimationLogLoadMore(estimateId: testEstimateId));
+
+          await bloc.stream.firstWhere(
+            (s) => s is CostEstimationLogLoaded && s.isLoadingMore,
+          );
+
+          bloc.add(const CostEstimationLogLoadMore(estimateId: testEstimateId));
+
+          fakeSupabaseWrapper.shouldDelayOperations = false;
+          fakeSupabaseWrapper.completer!.complete();
+        },
+        skip: 2,
+        expect: () => [
+          isA<CostEstimationLogLoaded>()
+              .having((s) => s.logs.length, 'logs length', defaultPageSize)
+              .having((s) => s.isLoadingMore, 'isLoadingMore', true)
+              .having((s) => s.hasMore, 'hasMore', true),
+          isA<CostEstimationLogLoaded>()
+              .having((s) => s.logs.length, 'logs length', defaultPageSize * 2)
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having((s) => s.hasMore, 'hasMore', true),
+        ],
+        verify: (bloc) {
+          expect(
+            bloc.state,
+            isA<CostEstimationLogLoaded>()
+                .having(
+                  (s) => s.logs.length,
+                  'logs length',
+                  defaultPageSize * 2,
+                )
+                .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+                .having((s) => s.hasMore, 'hasMore', true),
+          );
+
+          final loadMoreQueries = fakeSupabaseWrapper
+              .getMethodCalls()
+              .where(
+                (call) =>
+                    call['method'] == 'selectPaginated' &&
+                    call['rangeFrom'] == defaultPageSize &&
+                    call['rangeTo'] == (defaultPageSize * 2) - 1,
+              )
+              .length;
+
+          expect(loadMoreQueries, 1);
+        },
+      );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'should ignore load more for a stale estimate after switching estimates',
+        build: () {
+          seedLogTable([
+            ...LogTestDataFactory.createLogDataList(
+              count: defaultPageSize * 2,
+              estimateId: testEstimateId,
+            ),
+            ...LogTestDataFactory.createLogDataList(
+              count: 2,
+              estimateId: secondEstimateId,
+            ),
+          ]);
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(
+            const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+          );
+
+          await bloc.stream.firstWhere((s) => s is CostEstimationLogLoaded);
+
+          bloc.add(
+            const CostEstimationLogFetchInitial(estimateId: secondEstimateId),
+          );
+
+          await bloc.stream.firstWhere(
+            (s) => s is CostEstimationLogLoaded && s.logs.length == 2,
+          );
+
+          fakeSupabaseWrapper.clearMethodCalls();
+          bloc.add(const CostEstimationLogLoadMore(estimateId: testEstimateId));
+        },
+        skip: 4,
+        expect: () => [],
+        verify: (bloc) {
+          expect(
+            bloc.state,
+            isA<CostEstimationLogLoaded>()
+                .having((s) => s.logs.length, 'logs length', 2)
+                .having((s) => s.hasMore, 'hasMore', false)
+                .having((s) => s.isLoadingMore, 'isLoadingMore', false),
+          );
+
+          final staleLoadMoreQueries = fakeSupabaseWrapper
+              .getMethodCalls()
+              .where(
+                (call) =>
+                    call['method'] == 'selectPaginated' &&
+                    call['filterValue'] == testEstimateId &&
+                    call['rangeFrom'] == defaultPageSize,
+              )
+              .length;
+
+          expect(staleLoadMoreQueries, 0);
+        },
       );
 
       blocTest<CostEstimationLogBloc, CostEstimationLogState>(
@@ -244,7 +419,7 @@ void main() {
         build: () {
           seedLogTable(
             LogTestDataFactory.createLogDataList(
-              count: defaultPageSize,
+              count: defaultPageSize + 5,
               estimateId: testEstimateId,
             ),
           );
@@ -272,12 +447,155 @@ void main() {
             true,
           ),
           isA<CostEstimationLogLoadMoreError>()
-              .having((s) => s.logs.length, 'logs length', 10)
+              .having((s) => s.logs.length, 'logs length', defaultPageSize)
               .having(
                 (s) => (s.failure as EstimationFailure).errorType,
                 'error type',
                 EstimationErrorType.timeoutError,
               ),
+        ],
+      );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'should emit parsing error when load more throws type error and keep existing data',
+        build: () {
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: defaultPageSize + 5,
+              estimateId: testEstimateId,
+            ),
+          );
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(
+            const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+          );
+
+          await bloc.stream.firstWhere(
+            (state) => state is CostEstimationLogLoaded,
+          );
+
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
+              SupabaseExceptionType.type;
+          bloc.add(const CostEstimationLogLoadMore(estimateId: testEstimateId));
+        },
+        skip: 2,
+        expect: () => [
+          isA<CostEstimationLogLoaded>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<CostEstimationLogLoadMoreError>()
+              .having((s) => s.logs.length, 'logs length', defaultPageSize)
+              .having(
+                (s) => (s.failure as EstimationFailure).errorType,
+                'error type',
+                EstimationErrorType.parsingError,
+              ),
+        ],
+      );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'should discard in-flight loadMore result when a new fetchInitial starts',
+        build: () {
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: defaultPageSize * 2,
+              estimateId: testEstimateId,
+            ),
+          );
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(
+            const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+          );
+
+          await bloc.stream.firstWhere((s) => s is CostEstimationLogLoaded);
+
+          fakeSupabaseWrapper.completer = Completer();
+          fakeSupabaseWrapper.shouldDelayOperations = true;
+          bloc.add(const CostEstimationLogLoadMore(estimateId: testEstimateId));
+
+          await bloc.stream.firstWhere(
+            (s) => s is CostEstimationLogLoaded && s.isLoadingMore,
+          );
+
+          bloc.add(
+            const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+          );
+
+          await bloc.stream.firstWhere((s) => s is CostEstimationLogLoading);
+
+          fakeSupabaseWrapper.shouldDelayOperations = false;
+          fakeSupabaseWrapper.completer!.complete();
+        },
+        skip: 2,
+        expect: () => [
+          isA<CostEstimationLogLoaded>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', true)
+              .having((s) => s.logs.length, 'logs length', defaultPageSize),
+          isA<CostEstimationLogLoading>(),
+          isA<CostEstimationLogLoaded>()
+              .having((s) => s.logs.length, 'logs length', defaultPageSize)
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false),
+        ],
+      );
+
+      blocTest<CostEstimationLogBloc, CostEstimationLogState>(
+        'should ignore load more when estimateId differs from the currently fetched estimate',
+        build: () {
+          seedLogTable([
+            ...LogTestDataFactory.createLogDataList(
+              count: defaultPageSize * 2,
+              estimateId: testEstimateId,
+            ),
+            ...LogTestDataFactory.createLogDataList(
+              count: 2,
+              estimateId: secondEstimateId,
+            ),
+          ]);
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(
+            const CostEstimationLogFetchInitial(estimateId: testEstimateId),
+          );
+
+          await bloc.stream.firstWhere((s) => s is CostEstimationLogLoaded);
+
+          bloc.add(
+            const CostEstimationLogFetchInitial(estimateId: secondEstimateId),
+          );
+
+          await bloc.stream.firstWhere((s) => s is CostEstimationLogLoaded);
+
+          fakeSupabaseWrapper.clearMethodCalls();
+
+          bloc.add(const CostEstimationLogLoadMore(estimateId: testEstimateId));
+        },
+        expect: () => [
+          const CostEstimationLogLoading(),
+          CostEstimationLogLoaded(
+            logs: expectedLatestLogsForEstimate(
+              totalCount: defaultPageSize * 2,
+              takeCount: defaultPageSize,
+              estimateId: testEstimateId,
+            ),
+            hasMore: true,
+          ),
+          const CostEstimationLogLoading(),
+          CostEstimationLogLoaded(
+            logs: expectedLatestLogsForEstimate(
+              totalCount: 2,
+              takeCount: 2,
+              estimateId: secondEstimateId,
+            ),
+            hasMore: false,
+          ),
         ],
       );
     });
