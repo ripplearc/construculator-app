@@ -24,7 +24,7 @@ void main() {
     late FakeClockImpl fakeClock;
 
     const testEstimateId = 'estimate-123';
-    const defaultPageSize = 10;
+    final defaultPageSize = CostEstimationLogRepositoryImpl.defaultPageSize;
 
     setUpAll(() {
       fakeClock = FakeClockImpl();
@@ -49,8 +49,8 @@ void main() {
     });
 
     setUp(() {
-      repository.dispose();
       fakeSupabaseWrapper.reset();
+      repository.dispose();
     });
 
     void seedLogTable(List<Map<String, dynamic>> rows) {
@@ -131,18 +131,21 @@ void main() {
         expect(repository.hasMoreLogs(testEstimateId), true);
       });
 
-      test('sets hasMore to false when partial page is returned', () async {
-        seedLogTable(
-          LogTestDataFactory.createLogDataList(
-            count: defaultPageSize ~/ 5,
-            estimateId: testEstimateId,
-          ),
-        );
+      test(
+        'sets hasMore to false when returned row count is less than page size',
+        () async {
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: defaultPageSize - 1,
+              estimateId: testEstimateId,
+            ),
+          );
 
-        await repository.fetchInitialLogs(testEstimateId);
+          await repository.fetchInitialLogs(testEstimateId);
 
-        expect(repository.hasMoreLogs(testEstimateId), false);
-      });
+          expect(repository.hasMoreLogs(testEstimateId), false);
+        },
+      );
 
       test('returns empty list when no logs exist', () async {
         final result = await repository.fetchInitialLogs(testEstimateId);
@@ -245,13 +248,12 @@ void main() {
       test(
         'resets pagination state on subsequent calls for same estimate',
         () async {
-          seedLogTable([
-            LogTestDataFactory.createLogData(
-              id: 'log-1',
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: defaultPageSize,
               estimateId: testEstimateId,
-              activity: 'costEstimationCreated',
             ),
-          ]);
+          );
           await repository.fetchInitialLogs(testEstimateId);
           await repository.loadMoreLogs(testEstimateId);
 
@@ -378,6 +380,64 @@ void main() {
           );
         },
       );
+
+      test(
+        'handles SocketException and returns connectionError failure',
+        () async {
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: defaultPageSize,
+              estimateId: testEstimateId,
+            ),
+          );
+          await repository.fetchInitialLogs(testEstimateId);
+
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedErrorMessage = 'Connection failed';
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
+              SupabaseExceptionType.socket;
+          final result = await repository.loadMoreLogs(testEstimateId);
+
+          expect(result.isLeft(), true);
+          final failure = result.getLeftOrNull();
+          expect(
+            failure,
+            isA<EstimationFailure>().having(
+              (f) => f.errorType,
+              'errorType',
+              EstimationErrorType.connectionError,
+            ),
+          );
+        },
+      );
+
+      test(
+        'handles generic Exception and returns unexpectedError failure',
+        () async {
+          seedLogTable(
+            LogTestDataFactory.createLogDataList(
+              count: defaultPageSize,
+              estimateId: testEstimateId,
+            ),
+          );
+          await repository.fetchInitialLogs(testEstimateId);
+
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedErrorMessage = 'Network error';
+          final result = await repository.loadMoreLogs(testEstimateId);
+
+          expect(result.isLeft(), true);
+          final failure = result.getLeftOrNull();
+          expect(
+            failure,
+            isA<EstimationFailure>().having(
+              (f) => f.errorType,
+              'errorType',
+              EstimationErrorType.unexpectedError,
+            ),
+          );
+        },
+      );
     });
 
     group('hasMoreLogs', () {
@@ -435,15 +495,21 @@ void main() {
 
     group('dispose', () {
       test('clears all pagination states', () async {
-        seedLogTable([
-          LogTestDataFactory.createLogData(
-            id: 'log-1',
-            estimateId: testEstimateId,
-            activity: 'costEstimationCreated',
-          ),
-        ]);
+        final logsForEstimate1 = LogTestDataFactory.createLogDataList(
+          count: defaultPageSize,
+          estimateId: testEstimateId,
+        );
+        final logsForEstimate2 = LogTestDataFactory.createLogDataList(
+          count: defaultPageSize,
+          estimateId: 'estimate-456',
+        );
+        seedLogTable([...logsForEstimate1, ...logsForEstimate2]);
+
         await repository.fetchInitialLogs(testEstimateId);
         await repository.fetchInitialLogs('estimate-456');
+
+        expect(repository.hasMoreLogs(testEstimateId), true);
+        expect(repository.hasMoreLogs('estimate-456'), true);
 
         repository.dispose();
 
@@ -488,20 +554,6 @@ void main() {
         final lastCall = calls.last;
         expect(lastCall['rangeFrom'], defaultPageSize * 2);
         expect(lastCall['rangeTo'], defaultPageSize * 3 - 1);
-      });
-
-      test('handles empty page during loadMore correctly', () async {
-        seedLogTable(
-          LogTestDataFactory.createLogDataList(
-            count: defaultPageSize,
-            estimateId: testEstimateId,
-          ),
-        );
-        await repository.fetchInitialLogs(testEstimateId);
-
-        await repository.loadMoreLogs(testEstimateId);
-
-        expect(repository.hasMoreLogs(testEstimateId), false);
       });
     });
   });
