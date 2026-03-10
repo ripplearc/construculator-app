@@ -404,6 +404,39 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   }
 
   @override
+  Future<List<Map<String, dynamic>>> selectWhereIn({
+    required String table,
+    String columns = '*',
+    required String filterColumn,
+    required List<dynamic> filterValues,
+  }) async {
+    _methodCalls.add({
+      'method': 'selectWhereIn',
+      'table': table,
+      'columns': columns,
+      'filterColumn': filterColumn,
+      'filterValues': List<dynamic>.from(filterValues),
+    });
+
+    if (shouldThrowOnSelectMultiple) {
+      _throwConfiguredException(
+        selectMultipleExceptionType,
+        selectMultipleErrorMessage ?? 'Select failed',
+      );
+    }
+
+    if (shouldReturnNullOnSelectMultiple) {
+      return [];
+    }
+
+    final tableData = _tables[table] ?? [];
+    final filteredData = tableData
+        .where((row) => filterValues.contains(row[filterColumn]))
+        .toList();
+    return filteredData;
+  }
+
+  @override
   Future<List<Map<String, dynamic>>> selectPaginated({
     required String table,
     String columns = '*',
