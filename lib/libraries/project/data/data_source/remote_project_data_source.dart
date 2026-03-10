@@ -54,19 +54,13 @@ class RemoteProjectDataSource implements ProjectDataSource {
         return [];
       }
 
-      final projects = <ProjectDto>[];
-      for (final projectId in projectIds) {
-        final projectJson = await _supabaseWrapper.selectSingle(
-          table: DatabaseConstants.projectsTable,
-          filterColumn: DatabaseConstants.idColumn,
-          filterValue: projectId,
-        );
-        if (projectJson != null) {
-          projects.add(ProjectDto.fromJson(projectJson));
-        }
-      }
+      final projectRows = await _supabaseWrapper.selectWhereIn(
+        table: DatabaseConstants.projectsTable,
+        filterColumn: DatabaseConstants.idColumn,
+        filterValues: projectIds,
+      );
 
-      return projects;
+      return projectRows.map(ProjectDto.fromJson).toList();
     } catch (error, stackTrace) {
       _logger.error(
         'Error while getting shared projects for userId: $userId, error: $error',
@@ -96,17 +90,9 @@ class RemoteProjectDataSource implements ProjectDataSource {
         )
         .map((_) {});
 
-    final allProjectsStream = _supabaseWrapper
-        .watchTable(
-          table: DatabaseConstants.projectsTable,
-          primaryKey: const [DatabaseConstants.idColumn],
-        )
-        .map((_) {});
-
     return MergeStream<void>([
       ownedProjectsStream,
       sharedMembershipsStream,
-      allProjectsStream,
     ]).doOnError((Object error, StackTrace stackTrace) {
       _logger.error(
         'Error while watching project changes for userId: $userId, error: $error',
