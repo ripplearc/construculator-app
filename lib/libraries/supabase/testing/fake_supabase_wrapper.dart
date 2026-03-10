@@ -787,7 +787,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   ) {
     return _tableDataControllers.putIfAbsent(
       table,
-      () => StreamController<List<Map<String, dynamic>>>.broadcast(),
+      () => StreamController<List<Map<String, dynamic>>>.broadcast(
+        onCancel: () => _tableDataControllers.remove(table),
+      ),
     );
   }
 
