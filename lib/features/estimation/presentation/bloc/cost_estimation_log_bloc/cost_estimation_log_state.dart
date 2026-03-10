@@ -42,8 +42,8 @@ abstract class CostEstimationLogWithData extends CostEstimationLogState {
     this.hasMore = false,
     this.isLoadingMore = false,
   }) : logs = UnmodifiableListView<CostEstimationLog>(
-          List<CostEstimationLog>.from(logs),
-        );
+         List<CostEstimationLog>.from(logs),
+       );
 
   @override
   List<Object?> get props => [logs, hasMore, isLoadingMore];
@@ -67,10 +67,11 @@ class CostEstimationLogLoadMoreError extends CostEstimationLogWithData {
     required this.failure,
     required super.logs,
     super.hasMore,
+    super.isLoadingMore = false,
   });
 
   @override
-  List<Object?> get props => [failure, logs, hasMore];
+  List<Object?> get props => [failure, logs, hasMore, isLoadingMore];
 }
 
 /// State when the logs are loaded successfully with data

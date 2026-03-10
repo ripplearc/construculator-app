@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- COST ESTIMATION LOG BLOC MUTATION TESTING -->
+    <!-- Targets: estimate switching safety, loadMore guards, and emission semantics -->
+
+    <files>
+        <file>lib/features/estimation/presentation/bloc/cost_estimation_log_bloc/cost_estimation_log_bloc.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="^import\s" dotAll="false"/>
+        <regex pattern="@override" dotAll="false"/>
+        <regex pattern="super\." dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- RULE 1: Skip active estimate assignment on fetch initial -->
+        <regex pattern="_currentEstimateId = event\.estimateId;" dotAll="true" id="log_bloc.fetch.skip_current_estimate_set">
+            <mutation text="// _currentEstimateId = event.estimateId;"/>
+        </regex>
+
+        <!-- RULE 2: Skip canceling in-flight loadMore on fetch initial -->
+        <regex pattern="await _inFlightLoadMore\?\.cancel\(\);" dotAll="true" id="log_bloc.fetch.skip_cancel_inflight">
+            <mutation text="// await _inFlightLoadMore?.cancel();"/>
+        </regex>
+
+        <!-- RULE 3: Skip initial loading emission -->
+        <regex pattern="emit\(const CostEstimationLogLoading\(\)\);" dotAll="true" id="log_bloc.fetch.skip_loading_emit">
+            <mutation text="// emit(const CostEstimationLogLoading());"/>
+        </regex>
+
+        <!-- RULE 4: Emit loaded even when logs are empty -->
+        <regex pattern="if \(logs\.isEmpty\) \{" dotAll="true" id="log_bloc.fetch.skip_empty_check">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 5: Skip loaded-state type guard in loadMore -->
+        <regex pattern="if \(currentState is! CostEstimationLogLoaded\) \{\s*return;\s*\}" dotAll="true" id="log_bloc.loadmore.skip_type_guard">
+            <mutation text="// skip type guard"/>
+        </regex>
+
+        <!-- RULE 6: Invert current estimate guard -->
+        <regex pattern="if \(_currentEstimateId != event\.estimateId\) \{\s*return;\s*\}" dotAll="true" id="log_bloc.loadmore.invert_estimate_guard">
+            <mutation text="if (_currentEstimateId == event.estimateId) { return; }"/>
+        </regex>
+
+        <!-- RULE 7: Skip isLoadingMore/hasMore guard -->
+        <regex pattern="if \(currentState\.isLoadingMore \|\| !currentState\.hasMore\) \{\s*return;\s*\}" dotAll="true" id="log_bloc.loadmore.skip_progress_guard">
+            <mutation text="// skip loading/hasMore guard"/>
+        </regex>
+
+        <!-- RULE 8: Skip loadingMore=true emission -->
+        <regex pattern="emit\(currentState\.copyWith\(isLoadingMore: true\)\);" dotAll="true" id="log_bloc.loadmore.skip_loadingmore_emit">
+            <mutation text="// emit(currentState.copyWith(isLoadingMore: true));"/>
+        </regex>
+
+        <!-- RULE 9: Skip stale operation identity check -->
+        <regex pattern="if \(result == null\) \{\s*return;\s*\}" dotAll="true" id="log_bloc.loadmore.skip_stale_check">
+            <mutation text="// skip stale check"/>
+        </regex>
+
+        <!-- RULE 10: Keep isLoadingMore=true after success -->
+        <regex pattern="isLoadingMore: false" dotAll="true" id="log_bloc.loadmore.keep_loading_true">
+            <mutation text="isLoadingMore: true"/>
+        </regex>
+
+        <!-- RULE 11: Skip final success emit in loadMore -->
+        <regex pattern="emit\(\s*CostEstimationLogLoaded\(" dotAll="true" id="log_bloc.loadmore.skip_success_emit">
+            <mutation text="// emit(CostEstimationLogLoaded("/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="cost_estimation_log_bloc" expected-return="0">flutter test test/features/estimations/units/blocs/cost_estimation_log_bloc_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

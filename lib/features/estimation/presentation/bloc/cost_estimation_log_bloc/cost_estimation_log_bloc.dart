@@ -1,7 +1,9 @@
 import 'dart:collection';
 
+import 'package:async/async.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_log_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_log_repository.dart';
+import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,9 +17,13 @@ part 'cost_estimation_log_state.dart';
 /// - Fetching initial logs for an estimation
 /// - Loading more logs with pagination
 /// - Error handling and state management
+/// - Event concurrency via transformers (restartable for FetchInitial)
 class CostEstimationLogBloc
     extends Bloc<CostEstimationLogEvent, CostEstimationLogState> {
   final CostEstimationLogRepository _repository;
+  String? _currentEstimateId;
+  CancelableOperation<Either<Failure, List<CostEstimationLog>>>?
+  _inFlightLoadMore;
 
   CostEstimationLogBloc({required CostEstimationLogRepository repository})
     : _repository = repository,
@@ -30,6 +36,10 @@ class CostEstimationLogBloc
     CostEstimationLogFetchInitial event,
     Emitter<CostEstimationLogState> emit,
   ) async {
+    _currentEstimateId = event.estimateId;
+    await _inFlightLoadMore?.cancel();
+    _inFlightLoadMore = null;
+
     emit(const CostEstimationLogLoading());
 
     final result = await _repository.fetchInitialLogs(event.estimateId);
@@ -52,7 +62,11 @@ class CostEstimationLogBloc
   ) async {
     final currentState = state;
 
-    if (currentState is! CostEstimationLogLoaded) {
+    if (currentState is! CostEstimationLogWithData) {
+      return;
+    }
+
+    if (_currentEstimateId != event.estimateId) {
       return;
     }
 
@@ -60,9 +74,27 @@ class CostEstimationLogBloc
       return;
     }
 
-    emit(currentState.copyWith(isLoadingMore: true));
+    emit(
+      CostEstimationLogLoaded(
+        logs: currentState.logs.toList(),
+        hasMore: currentState.hasMore,
+        isLoadingMore: true,
+      ),
+    );
 
-    final result = await _repository.loadMoreLogs(event.estimateId);
+    final operation =
+        CancelableOperation<
+          Either<Failure, List<CostEstimationLog>>
+        >.fromFuture(_repository.loadMoreLogs(event.estimateId));
+
+    _inFlightLoadMore = operation;
+
+    final result = await operation.valueOrCancellation();
+    if (result == null) {
+      return;
+    }
+
+    _inFlightLoadMore = null;
 
     result.fold(
       (failure) => emit(
@@ -84,5 +116,12 @@ class CostEstimationLogBloc
         );
       },
     );
+  }
+
+  @override
+  Future<void> close() async {
+    _currentEstimateId = null;
+    await _inFlightLoadMore?.cancel();
+    return super.close();
   }
 }
