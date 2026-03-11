@@ -3,14 +3,15 @@ import 'package:construculator/features/estimation/domain/entities/cost_estimati
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_log_tile.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/domain/entities/user_profile_entity.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
-  final size = const Size(390, 100);
-  final ratio = 1.0;
+  const Size size = Size(390.0, 100.0);
+  const double ratio = 1.0;
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() async {
@@ -21,7 +22,6 @@ void main() {
     Future<void> pumpLogTile({
       required WidgetTester tester,
       required CostEstimationLog log,
-      VoidCallback? onTap,
     }) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -29,8 +29,13 @@ void main() {
           locale: const Locale('en'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Material(
-            child: CostEstimationLogTile(log: log, onTap: onTap),
+          home: Builder(
+            builder: (context) {
+              return Material(
+                color: context.colorTheme.pageBackground,
+                child: CostEstimationLogTile(log: log),
+              );
+            },
           ),
         ),
       );
@@ -56,14 +61,14 @@ void main() {
       required CostEstimationActivityType activity,
       required UserProfile user,
       required DateTime loggedAt,
-      Map<String, dynamic>? activityDetails,
+      Map<String, dynamic> activityDetails = const {},
     }) {
       return CostEstimationLog(
         id: 'log-123',
         estimateId: 'estimate-123',
         activity: activity,
         user: user,
-        activityDetails: activityDetails ?? {},
+        activityDetails: activityDetails,
         loggedAt: loggedAt,
       );
     }
@@ -82,7 +87,7 @@ void main() {
         loggedAt: DateTime(2025, 4, 22, 12, 3),
       );
 
-      await pumpLogTile(tester: tester, log: log, onTap: () {});
+      await pumpLogTile(tester: tester, log: log);
 
       await expectLater(
         find.byType(CostEstimationLogTile),
@@ -92,10 +97,10 @@ void main() {
       );
     });
 
-    testWidgets('renders cost file copied activity with quantities correctly', (
+    testWidgets('renders cost file uploaded activity correctly', (
       tester,
     ) async {
-      tester.view.physicalSize = const Size(390, 130);
+      tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
 
       final user = createTestUser(firstName: 'Mahesh', lastName: 'Kumar');
@@ -104,19 +109,15 @@ void main() {
         activity: CostEstimationActivityType.costFileUploaded,
         user: user,
         loggedAt: DateTime(2025, 4, 22, 12, 3),
-        activityDetails: {
-          'fileName': 'materials.xlsx',
-          'oldQuantity': 12,
-          'newQuantity': 13,
-        },
+        activityDetails: {'fileName': 'materials.xlsx'},
       );
 
-      await pumpLogTile(tester: tester, log: log, onTap: () {});
+      await pumpLogTile(tester: tester, log: log);
 
       await expectLater(
         find.byType(CostEstimationLogTile),
         matchesGoldenFile(
-          'goldens/cost_estimation_log_tile/390x130/log_tile_file_copied.png',
+          'goldens/cost_estimation_log_tile/${size.width}x${size.height}/log_tile_file_uploaded.png',
         ),
       );
     });
@@ -124,7 +125,7 @@ void main() {
     testWidgets('renders renamed activity with details correctly', (
       tester,
     ) async {
-      tester.view.physicalSize = size;
+      tester.view.physicalSize = const Size(390.0, 120.0);
       tester.view.devicePixelRatio = ratio;
 
       final user = createTestUser(firstName: 'John', lastName: 'Smith');
@@ -139,12 +140,12 @@ void main() {
         },
       );
 
-      await pumpLogTile(tester: tester, log: log, onTap: () {});
+      await pumpLogTile(tester: tester, log: log);
 
       await expectLater(
         find.byType(CostEstimationLogTile),
         matchesGoldenFile(
-          'goldens/cost_estimation_log_tile/${size.width}x${size.height}/log_tile_renamed.png',
+          'goldens/cost_estimation_log_tile/390.0x120.0/log_tile_renamed.png',
         ),
       );
     });
@@ -161,7 +162,7 @@ void main() {
         loggedAt: DateTime(2025, 5, 1, 14, 20),
       );
 
-      await pumpLogTile(tester: tester, log: log, onTap: () {});
+      await pumpLogTile(tester: tester, log: log);
 
       await expectLater(
         find.byType(CostEstimationLogTile),
@@ -174,7 +175,7 @@ void main() {
     testWidgets('renders cost item added activity with details correctly', (
       tester,
     ) async {
-      tester.view.physicalSize = size;
+      tester.view.physicalSize = const Size(390.0, 120.0);
       tester.view.devicePixelRatio = ratio;
 
       final user = createTestUser(firstName: 'Bob', lastName: 'Williams');
@@ -183,15 +184,18 @@ void main() {
         activity: CostEstimationActivityType.costItemAdded,
         user: user,
         loggedAt: DateTime(2025, 2, 10, 9, 15),
-        activityDetails: {'itemName': 'Concrete Foundation'},
+        activityDetails: {
+          'itemName': 'Concrete Foundation',
+          'itemType': 'Material',
+        },
       );
 
-      await pumpLogTile(tester: tester, log: log, onTap: () {});
+      await pumpLogTile(tester: tester, log: log);
 
       await expectLater(
         find.byType(CostEstimationLogTile),
         matchesGoldenFile(
-          'goldens/cost_estimation_log_tile/${size.width}x${size.height}/log_tile_item_added.png',
+          'goldens/cost_estimation_log_tile/390.0x120.0/log_tile_item_added.png',
         ),
       );
     });
@@ -199,7 +203,7 @@ void main() {
     testWidgets('renders task assigned activity with details correctly', (
       tester,
     ) async {
-      tester.view.physicalSize = size;
+      tester.view.physicalSize = const Size(390.0, 120.0);
       tester.view.devicePixelRatio = ratio;
 
       final user = createTestUser(firstName: 'Sarah', lastName: 'Davis');
@@ -214,18 +218,20 @@ void main() {
         },
       );
 
-      await pumpLogTile(tester: tester, log: log, onTap: () {});
+      await pumpLogTile(tester: tester, log: log);
 
       await expectLater(
         find.byType(CostEstimationLogTile),
         matchesGoldenFile(
-          'goldens/cost_estimation_log_tile/${size.width}x${size.height}/log_tile_task_assigned.png',
+          'goldens/cost_estimation_log_tile/390.0x120.0/log_tile_task_assigned.png',
         ),
       );
     });
 
-    testWidgets('renders exported activity correctly', (tester) async {
-      tester.view.physicalSize = size;
+    testWidgets('renders exported activity with format correctly', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390.0, 120.0);
       tester.view.devicePixelRatio = ratio;
 
       final user = createTestUser(firstName: 'Emma', lastName: 'Brown');
@@ -234,14 +240,15 @@ void main() {
         activity: CostEstimationActivityType.costEstimationExported,
         user: user,
         loggedAt: DateTime(2025, 7, 12, 16, 0),
+        activityDetails: {'format': 'PDF'},
       );
 
-      await pumpLogTile(tester: tester, log: log, onTap: () {});
+      await pumpLogTile(tester: tester, log: log);
 
       await expectLater(
         find.byType(CostEstimationLogTile),
         matchesGoldenFile(
-          'goldens/cost_estimation_log_tile/${size.width}x${size.height}/log_tile_exported.png',
+          'goldens/cost_estimation_log_tile/390.0x120.0/log_tile_exported.png',
         ),
       );
     });
@@ -261,7 +268,7 @@ void main() {
         loggedAt: DateTime(2025, 8, 18, 13, 30),
       );
 
-      await pumpLogTile(tester: tester, log: log, onTap: () {});
+      await pumpLogTile(tester: tester, log: log);
 
       await expectLater(
         find.byType(CostEstimationLogTile),
@@ -284,7 +291,7 @@ void main() {
         activityDetails: {'fileName': 'blueprint_v2.pdf'},
       );
 
-      await pumpLogTile(tester: tester, log: log, onTap: () {});
+      await pumpLogTile(tester: tester, log: log);
 
       await expectLater(
         find.byType(CostEstimationLogTile),
@@ -295,7 +302,7 @@ void main() {
     });
 
     testWidgets('renders cost item removed activity correctly', (tester) async {
-      tester.view.physicalSize = size;
+      tester.view.physicalSize = const Size(390.0, 120.0);
       tester.view.devicePixelRatio = ratio;
 
       final user = createTestUser(firstName: 'Lisa', lastName: 'Anderson');
@@ -304,15 +311,47 @@ void main() {
         activity: CostEstimationActivityType.costItemRemoved,
         user: user,
         loggedAt: DateTime(2025, 10, 30, 10, 5),
-        activityDetails: {'itemName': 'Temporary Scaffolding'},
+        activityDetails: {
+          'itemName': 'Temporary Scaffolding',
+          'itemType': 'Equipment',
+        },
       );
 
-      await pumpLogTile(tester: tester, log: log, onTap: () {});
+      await pumpLogTile(tester: tester, log: log);
 
       await expectLater(
         find.byType(CostEstimationLogTile),
         matchesGoldenFile(
-          'goldens/cost_estimation_log_tile/${size.width}x${size.height}/log_tile_item_removed.png',
+          'goldens/cost_estimation_log_tile/390.0x120.0/log_tile_item_removed.png',
+        ),
+      );
+    });
+
+    testWidgets('renders cost item edited activity correctly', (tester) async {
+      tester.view.physicalSize = const Size(390.0, 140.0);
+      tester.view.devicePixelRatio = ratio;
+
+      final user = createTestUser(firstName: 'Mike', lastName: 'Wilson');
+
+      final log = createTestLog(
+        activity: CostEstimationActivityType.costItemEdited,
+        user: user,
+        loggedAt: DateTime(2025, 11, 15, 14, 25),
+        activityDetails: {
+          'itemName': 'Steel Beams',
+          'editedFields': {
+            'quantity': {'oldValue': 10, 'newValue': 15},
+            'unit_price': {'oldValue': 150.0, 'newValue': 175.0},
+          },
+        },
+      );
+
+      await pumpLogTile(tester: tester, log: log);
+
+      await expectLater(
+        find.byType(CostEstimationLogTile),
+        matchesGoldenFile(
+          'goldens/cost_estimation_log_tile/390.0x140.0/log_tile_item_edited.png',
         ),
       );
     });
