@@ -149,6 +149,7 @@ class ProjectRepositoryImpl implements ProjectRepository {
             stackTrace.toString(),
           );
           _projectsController?.addError(error, stackTrace);
+          break;
         }
       } while (_hasPendingRefresh);
     } finally {
@@ -167,6 +168,17 @@ class ProjectRepositoryImpl implements ProjectRepository {
     if (_projectsController?.isClosed == false) {
       _projectsController?.add(projects);
     }
+  }
+
+  @override
+  void dispose() {
+    _projectChangesSubscription?.cancel();
+    _projectChangesSubscription = null;
+    _projectsController?.close();
+    _projectsController = null;
+    _lastEmittedProjects = null;
+    _isRefreshing = false;
+    _hasPendingRefresh = false;
   }
 
   bool _projectsAreEqual(List<Project> first, List<Project> second) {
