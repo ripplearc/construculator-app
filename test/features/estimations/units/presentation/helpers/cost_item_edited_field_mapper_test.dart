@@ -22,22 +22,28 @@ void main() {
 
       expect(changes, hasLength(2));
 
+      final quantityChange = changes.firstWhere(
+        (c) => c.fieldLabel == l10n.activityEditedFieldQuantity,
+      );
       expect(
-        changes[0],
-        CostItemEditedFieldChange(
-          fieldLabel: l10n.activityEditedFieldQuantity,
-          fromValue: l10n.activityEditedFieldValueQuantity('10'),
-          toValue: l10n.activityEditedFieldValueQuantity('15'),
-        ),
+        quantityChange.fromValue,
+        l10n.activityEditedFieldValueQuantity('10'),
+      );
+      expect(
+        quantityChange.toValue,
+        l10n.activityEditedFieldValueQuantity('15'),
       );
 
+      final unitPriceChange = changes.firstWhere(
+        (c) => c.fieldLabel == l10n.activityEditedFieldUnitPrice,
+      );
       expect(
-        changes[1],
-        CostItemEditedFieldChange(
-          fieldLabel: l10n.activityEditedFieldUnitPrice,
-          fromValue: l10n.activityEditedFieldValueCurrency('20.00'),
-          toValue: l10n.activityEditedFieldValueCurrency('25.00'),
-        ),
+        unitPriceChange.fromValue,
+        l10n.activityEditedFieldValueCurrency('20.00'),
+      );
+      expect(
+        unitPriceChange.toValue,
+        l10n.activityEditedFieldValueCurrency('25.00'),
       );
     });
 

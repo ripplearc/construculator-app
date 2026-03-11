@@ -634,7 +634,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String activityEditedFieldValueCurrency(String value) {
-    return '\\\$$value';
+    return '\$$value';
   }
 
   @override

@@ -998,7 +998,7 @@
       }
     }
   },
-  "activityEditedFieldValueCurrency": "\\${value}",
+  "activityEditedFieldValueCurrency": "\u0024{value}",
   "@activityEditedFieldValueCurrency": {
     "description": "Formatted value for currency based edited fields",
     "placeholders": {

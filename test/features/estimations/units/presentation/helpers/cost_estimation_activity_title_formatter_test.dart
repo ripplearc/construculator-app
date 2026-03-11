@@ -262,8 +262,6 @@ void main() {
           activity: CostEstimationActivityType.costFileUploaded,
           activityDetails: {
             'fileName': 'budget.xlsx',
-            'oldQuantity': 1,
-            'newQuantity': 2,
           },
         );
 

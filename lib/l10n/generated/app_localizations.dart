@@ -1048,7 +1048,7 @@ abstract class AppLocalizations {
   /// **'Task Unassigned'**
   String get activityTaskUnassignedSimple;
 
-  /// Activity log message for cost file uploaded with old and new quantities
+  /// Activity log message for cost file uploaded
   ///
   /// In en, this message translates to:
   /// **'Cost File Uploaded: {fileName}'**
@@ -1225,7 +1225,7 @@ abstract class AppLocalizations {
   /// Formatted value for currency based edited fields
   ///
   /// In en, this message translates to:
-  /// **'\\\${value}'**
+  /// **'\${value}'**
   String activityEditedFieldValueCurrency(String value);
 
   /// Formatted value for labor days edited fields
