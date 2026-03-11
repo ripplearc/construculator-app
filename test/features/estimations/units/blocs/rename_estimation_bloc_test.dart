@@ -67,6 +67,41 @@ void main() {
       });
     });
 
+    group('RenameEstimationReset', () {
+      blocTest<RenameEstimationBloc, RenameEstimationState>(
+        'should reset to initial state from editing state',
+        build: () => bloc,
+        act: (bloc) => bloc
+          ..add(const RenameEstimationTextChanged('Some text'))
+          ..add(const RenameEstimationReset()),
+        expect: () => [
+          isA<RenameEstimationEditing>(),
+          isA<RenameEstimationInitial>().having(
+            (s) => s.isSaveEnabled,
+            'isSaveEnabled',
+            isFalse,
+          ),
+        ],
+      );
+
+      blocTest<RenameEstimationBloc, RenameEstimationState>(
+        'should reset to initial state when reset event is dispatched',
+        build: () => bloc,
+        seed: () => const RenameEstimationFailure(
+          EstimationFailure(errorType: EstimationErrorType.connectionError),
+          isSaveEnabled: true,
+        ),
+        act: (bloc) => bloc.add(const RenameEstimationReset()),
+        expect: () => [
+          isA<RenameEstimationInitial>().having(
+            (s) => s.isSaveEnabled,
+            'isSaveEnabled',
+            isFalse,
+          ),
+        ],
+      );
+    });
+
     group('RenameEstimationTextChanged', () {
       blocTest<RenameEstimationBloc, RenameEstimationState>(
         'should emit state with save enabled when text is not empty',

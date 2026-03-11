@@ -13,6 +13,10 @@ abstract class RenameEstimationEvent extends Equatable {
   List<Object> get props => [];
 }
 
+class RenameEstimationReset extends RenameEstimationEvent {
+  const RenameEstimationReset();
+}
+
 class RenameEstimationTextChanged extends RenameEstimationEvent {
   final String text;
 
