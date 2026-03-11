@@ -831,6 +831,15 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     if (controller == null || controller.isClosed) {
       return;
     }
+    if (shouldEmitStreamErrors) {
+      controller.addError(
+        ServerException(
+          Trace.current(),
+          Exception('Stream error for table: $table'),
+        ),
+      );
+      return;
+    }
     controller.add(_cloneRows(_tables[table] ?? const []));
   }
 
