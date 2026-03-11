@@ -40,7 +40,7 @@ void main() {
             .watchTable(table: table, primaryKey: primaryKey)
             .listen(emissions.add);
 
-        await Future<void>.delayed(const Duration(milliseconds: 10));
+        await Future<void>.microtask(() {});
 
         await fakeWrapper.insert(
           table: table,
@@ -60,7 +60,7 @@ void main() {
           filterValue: '1',
         );
 
-        await Future<void>.delayed(const Duration(milliseconds: 10));
+        await Future<void>.microtask(() {});
         await subscription.cancel();
 
         expect(emissions, isNotEmpty);
@@ -114,9 +114,7 @@ void main() {
               filterValue: 'published',
             )
             .listen(emissions.add);
-
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-
+        await Future<void>.microtask(() {});
         await fakeWrapper.insert(
           table: table,
           data: {'name': 'C - published', 'status': 'published'},
@@ -128,12 +126,9 @@ void main() {
           filterColumn: 'id',
           filterValue: '1',
         );
-
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-
         fakeWrapper.clearAllData();
+        await Future<void>.microtask(() {});
 
-        await Future<void>.delayed(const Duration(milliseconds: 10));
         await subscription.cancel();
 
         final initial = emissions.first;
@@ -158,8 +153,7 @@ void main() {
         final subscription = fakeWrapper
             .watchTable(table: table, primaryKey: primaryKey)
             .listen(emissions.add);
-
-        await Future<void>.delayed(const Duration(milliseconds: 10));
+        await Future<void>.microtask(() {});
 
         fakeWrapper.dispose();
 
@@ -168,8 +162,7 @@ void main() {
           table: table,
           data: {'name': 'Should not be emitted'},
         );
-
-        await Future<void>.delayed(const Duration(milliseconds: 10));
+        await Future<void>.microtask(() {});
         final emissionCountAfterDispose = emissions.length;
 
         await subscription.cancel();
