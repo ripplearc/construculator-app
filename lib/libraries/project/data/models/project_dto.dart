@@ -1,7 +1,6 @@
-import 'dart:developer' as developer;
-
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:equatable/equatable.dart';
 
@@ -14,6 +13,7 @@ import 'package:equatable/equatable.dart';
 /// - Converting storage provider strings into [StorageProvider] enums
 /// - Converting to the domain [Project] entity via [toDomain].
 class ProjectDto extends Equatable {
+  static final _log = AppLogger().tag('ProjectDto');
   final String id;
   final String projectName;
   final String? description;
@@ -82,17 +82,15 @@ class ProjectDto extends Equatable {
       try {
         return DateTime.parse(value);
       } catch (error, stackTrace) {
-        developer.log(
+        _log.error(
           'Failed to parse DateTime from value "$value". Falling back to epoch.',
-          name: 'ProjectDto._parseDateTime',
-          error: error,
-          stackTrace: stackTrace,
+          error,
+          stackTrace,
         );
       }
     } else {
-      developer.log(
+      _log.warning(
         'Missing or null DateTime value for ProjectDto. Falling back to epoch.',
-        name: 'ProjectDto._parseDateTime',
       );
     }
 
