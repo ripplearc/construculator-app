@@ -1048,5 +1048,25 @@
         "type": "String"
       }
     }
+  },
+  "noActivityLogs": "No Activity Yet",
+  "@noActivityLogs": {
+    "description": "Title shown when there are no activity logs for an estimation"
+  },
+  "noActivityLogsDescription": "Activity logs will appear here when changes are made to this estimation.",
+  "@noActivityLogsDescription": {
+    "description": "Description shown when there are no activity logs for an estimation"
+  },
+  "errorLoadingLogs": "Unable to Load Activity",
+  "@errorLoadingLogs": {
+    "description": "Title shown when there is an error loading activity logs"
+  },
+  "retryButton": "Retry",
+  "@retryButton": {
+    "description": "Button label to retry loading activity logs"
+  },
+  "loadMoreLogsError": "Failed to load more logs",
+  "@loadMoreLogsError": {
+    "description": "Error message shown when loading more logs fails"
   }
 }
