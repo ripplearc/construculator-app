@@ -3,6 +3,7 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_repository_impl.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
+import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_logs_list.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -607,6 +608,37 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(fakeAppRouter.popCalls, 1);
+    });
+
+    testWidgets('opens logs quick sheet when logs action is tapped', (
+      tester,
+    ) async {
+      const estimationName = 'Kitchen Remodel';
+      const estimationId = 'estimation-1';
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: estimationId,
+          projectId: testProjectId,
+          estimateName: estimationName,
+        ),
+      );
+
+      await tester.tap(find.byKey(const Key('menuIcon')));
+      await tester.pumpAndSettle();
+
+      final logsAction = find.text(l10n().logsAction);
+      await tester.ensureVisible(logsAction);
+      await tester.tap(logsAction);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CostEstimationLogsList), findsOneWidget);
+
+      final logsList = tester.widget<CostEstimationLogsList>(
+        find.byType(CostEstimationLogsList),
+      );
+      expect(logsList.estimateId, estimationId);
+      expect(logsList.estimateName, estimationName);
     });
   });
   group('Delete Estimation', () {

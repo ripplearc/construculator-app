@@ -657,4 +657,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String activityEditedFieldValueCrew(String value) {
     return '$value crew';
   }
+
+  @override
+  String get noActivityLogs => 'No Activity Yet';
+
+  @override
+  String get noActivityLogsDescription =>
+      'Activity logs will appear here when changes are made to this estimation.';
+
+  @override
+  String get errorLoadingLogs => 'Unable to Load Activity';
+
+  @override
+  String get retryButton => 'Retry';
+
+  @override
+  String get loadMoreLogsError => 'Failed to load more logs';
 }
