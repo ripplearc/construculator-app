@@ -568,6 +568,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityAttachmentRemovedSimple => 'Attachment Removed';
 
   @override
+  String get activityUnknown => 'Unknown Activity';
+
+  @override
   String get activityFrom => 'From: ';
 
   @override
@@ -634,7 +637,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String activityEditedFieldValueCurrency(String value) {
-    return '\\\$$value';
+    return '\$$value';
   }
 
   @override

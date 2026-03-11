@@ -907,6 +907,11 @@
     "description": "Activity log message for attachment removed without details",
     "context": "N/A"
   },
+  "activityUnknown": "Unknown Activity",
+  "@activityUnknown": {
+    "description": "Fallback activity log message for unknown activity types",
+    "context": "N/A"
+  },
   "activityFrom": "From: ",
   "@activityFrom": {
     "description": "Subtitle for activity log entry indicating the initial state of the activity",
@@ -998,7 +1003,7 @@
       }
     }
   },
-  "activityEditedFieldValueCurrency": "\\${value}",
+  "activityEditedFieldValueCurrency": "\u0024{value}",
   "@activityEditedFieldValueCurrency": {
     "description": "Formatted value for currency based edited fields",
     "placeholders": {

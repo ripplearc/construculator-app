@@ -27,7 +27,6 @@ CostEstimationLog _createLog({
 
 void main() {
   group('CostEstimationActivityTitleFormatter', () {
-    // ignore: no_direct_instantiation
     final l10n = AppLocalizationsEn();
 
     group('format', () {
@@ -260,11 +259,7 @@ void main() {
         final log = _createLog(
           id: '19',
           activity: CostEstimationActivityType.costFileUploaded,
-          activityDetails: {
-            'fileName': 'budget.xlsx',
-            'oldQuantity': 1,
-            'newQuantity': 2,
-          },
+          activityDetails: {'fileName': 'budget.xlsx'},
         );
 
         final result = CostEstimationActivityTitleFormatter.format(l10n, log);
@@ -366,6 +361,17 @@ void main() {
           expect(result, equals(l10n.activityAttachmentRemovedSimple));
         },
       );
+
+      test('returns localized fallback for unknown activity', () {
+        final log = _createLog(
+          id: '27',
+          activity: CostEstimationActivityType.unknown,
+        );
+
+        final result = CostEstimationActivityTitleFormatter.format(l10n, log);
+
+        expect(result, equals(l10n.activityUnknown));
+      });
     });
   });
 }

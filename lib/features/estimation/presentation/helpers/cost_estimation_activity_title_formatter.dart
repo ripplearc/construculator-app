@@ -2,7 +2,30 @@ import 'package:construculator/features/estimation/domain/entities/cost_estimati
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_log_entity.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 
+/// Formats cost estimation activity logs into human-readable titles.
+///
+/// Converts [CostEstimationLog] objects into localized activity descriptions.
+/// Provides detail-aware formatting where specific entity names (e.g., item names,
+/// assignees) are included when available, falling back to generic descriptions
+/// when details are missing.
+///
+/// Example:
+/// ```dart
+/// final title = CostEstimationActivityTitleFormatter.format(l10n, log);
+/// // Returns: "Item Name quantityadded" or "Item added"
+/// ```
 class CostEstimationActivityTitleFormatter {
+  /// Formats a cost estimation activity log into a localized title string.
+  ///
+  /// Maps the activity type to its corresponding localized message template.
+  /// When available, includes contextual details like item names, file names,
+  /// or assignee information to create more informative activity descriptions.
+  ///
+  /// Parameters:
+  ///   - [l10n]: Localization instance for retrieving translated strings
+  ///   - [log]: The activity log containing activity type and details
+  ///
+  /// Returns: A localized, human-readable activity title or description
   static String format(AppLocalizations l10n, CostEstimationLog log) {
     final details = log.activityDetails;
 
@@ -80,6 +103,11 @@ class CostEstimationActivityTitleFormatter {
           return l10n.activityAttachmentRemoved(fileName);
         }
         return l10n.activityAttachmentRemovedSimple;
+      case CostEstimationActivityType.unknown:
+        // Unknown activity types should not appear in production but are handled
+        // gracefully to prevent crashes when new server-side activity types are
+        // added before the client is updated.
+        return l10n.activityUnknown;
     }
   }
 }

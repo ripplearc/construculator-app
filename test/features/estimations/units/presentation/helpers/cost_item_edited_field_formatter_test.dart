@@ -4,15 +4,35 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('CostItemEditedFieldFormatter', () {
-    // ignore: no_direct_instantiation
     final l10n = AppLocalizationsEn();
 
     group('labelFor', () {
-      test('returns localized label for known field', () {
-        final label = CostItemEditedFieldFormatter.labelFor(l10n, 'quantity');
+      final knownFieldMappings = {
+        'item_type': l10n.activityEditedFieldItemType,
+        'item_name': l10n.activityEditedFieldItemName,
+        'unit_price': l10n.activityEditedFieldUnitPrice,
+        'quantity': l10n.activityEditedFieldQuantity,
+        'unit_measurement': l10n.activityEditedFieldUnitMeasurement,
+        'calculation': l10n.activityEditedFieldCalculation,
+        'item_total_cost': l10n.activityEditedFieldItemTotalCost,
+        'currency': l10n.activityEditedFieldCurrency,
+        'brand': l10n.activityEditedFieldBrand,
+        'product_link': l10n.activityEditedFieldProductLink,
+        'description': l10n.activityEditedFieldDescription,
+        'labor_calc_method': l10n.activityEditedFieldLaborCalcMethod,
+        'labor_days': l10n.activityEditedFieldLaborDays,
+        'labor_hours': l10n.activityEditedFieldLaborHours,
+        'labor_unit_type': l10n.activityEditedFieldLaborUnitType,
+        'labor_unit_value': l10n.activityEditedFieldLaborUnitValue,
+        'crew_size': l10n.activityEditedFieldCrewSize,
+      };
 
-        expect(label, l10n.activityEditedFieldQuantity);
-      });
+      for (final entry in knownFieldMappings.entries) {
+        test('returns localized label for ${entry.key}', () {
+          final label = CostItemEditedFieldFormatter.labelFor(l10n, entry.key);
+          expect(label, entry.value);
+        });
+      }
 
       test('humanizes unknown field name', () {
         final label = CostItemEditedFieldFormatter.labelFor(
@@ -70,6 +90,21 @@ void main() {
           l10n,
           'unit_price',
           null,
+        );
+
+        expect(
+          value,
+          l10n.activityEditedFieldValueCurrency(
+            l10n.activityEditedFieldEmptyValue,
+          ),
+        );
+      });
+
+      test('returns empty placeholder for blank string currency value', () {
+        final value = CostItemEditedFieldFormatter.valueFor(
+          l10n,
+          'unit_price',
+          '   ',
         );
 
         expect(

@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('CostItemEditedFieldMapper', () {
-    // ignore: no_direct_instantiation
     final l10n = AppLocalizationsEn();
 
     test('maps edited fields into localized field changes', () {
@@ -22,22 +21,28 @@ void main() {
 
       expect(changes, hasLength(2));
 
+      final quantityChange = changes.firstWhere(
+        (c) => c.fieldLabel == l10n.activityEditedFieldQuantity,
+      );
       expect(
-        changes[0],
-        CostItemEditedFieldChange(
-          fieldLabel: l10n.activityEditedFieldQuantity,
-          fromValue: l10n.activityEditedFieldValueQuantity('10'),
-          toValue: l10n.activityEditedFieldValueQuantity('15'),
-        ),
+        quantityChange.fromValue,
+        l10n.activityEditedFieldValueQuantity('10'),
+      );
+      expect(
+        quantityChange.toValue,
+        l10n.activityEditedFieldValueQuantity('15'),
       );
 
+      final unitPriceChange = changes.firstWhere(
+        (c) => c.fieldLabel == l10n.activityEditedFieldUnitPrice,
+      );
       expect(
-        changes[1],
-        CostItemEditedFieldChange(
-          fieldLabel: l10n.activityEditedFieldUnitPrice,
-          fromValue: l10n.activityEditedFieldValueCurrency('20.00'),
-          toValue: l10n.activityEditedFieldValueCurrency('25.00'),
-        ),
+        unitPriceChange.fromValue,
+        l10n.activityEditedFieldValueCurrency('20.00'),
+      );
+      expect(
+        unitPriceChange.toValue,
+        l10n.activityEditedFieldValueCurrency('25.00'),
       );
     });
 
@@ -102,6 +107,40 @@ void main() {
       expect(changes.first.fieldLabel, l10n.activityEditedFieldBrand);
       expect(changes.first.fromValue, l10n.activityEditedFieldEmptyValue);
       expect(changes.first.toValue, 'Acme');
+    });
+  });
+
+  group('CostItemEditedFieldChange', () {
+    test('objects with same values are equal', () {
+      const change1 = CostItemEditedFieldChange(
+        fieldLabel: 'Quantity',
+        fromValue: '10',
+        toValue: '15',
+      );
+
+      const change2 = CostItemEditedFieldChange(
+        fieldLabel: 'Quantity',
+        fromValue: '10',
+        toValue: '15',
+      );
+
+      expect(change1, equals(change2));
+    });
+
+    test('objects with different property values are not equal', () {
+      const change1 = CostItemEditedFieldChange(
+        fieldLabel: 'Quantity',
+        fromValue: '10',
+        toValue: '15',
+      );
+
+      const change2 = CostItemEditedFieldChange(
+        fieldLabel: 'Price',
+        fromValue: '10',
+        toValue: '15',
+      );
+
+      expect(change1, isNot(equals(change2)));
     });
   });
 }
