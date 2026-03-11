@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:construculator/libraries/project/data/data_source/remote_project_data_source.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 void main() {
   group('RemoteProjectDataSource', () {
@@ -37,6 +40,34 @@ void main() {
         expect(result.length, 1);
         expect(result.first.id, 'project-1');
         expect(result.first.projectName, 'Owned Project');
+      },
+    );
+
+    test(
+      'getOwnedProjects rethrows exception when supabaseWrapper.select throws',
+      () async {
+        supabaseWrapper.shouldThrowOnSelectMultiple = true;
+        supabaseWrapper.selectMultipleExceptionType =
+            SupabaseExceptionType.postgrest;
+
+        expect(
+          () => dataSource.getOwnedProjects('user-1'),
+          throwsA(isA<supabase.PostgrestException>()),
+        );
+      },
+    );
+
+    test(
+      'getOwnedProjects rethrows exception when supabaseWrapper.select throws',
+      () async {
+        supabaseWrapper.shouldThrowOnSelectMultiple = true;
+        supabaseWrapper.selectMultipleExceptionType =
+            SupabaseExceptionType.postgrest;
+
+        expect(
+          () => dataSource.getOwnedProjects('user-1'),
+          throwsA(isA<supabase.PostgrestException>()),
+        );
       },
     );
 
@@ -94,14 +125,17 @@ void main() {
     test(
       'watchProjectChanges emits when shared project data changes',
       () async {
-        final emissions = <void>[];
-        final subscription = dataSource
-            .watchProjectChanges('user-1')
-            .listen((_) => emissions.add(null));
+        var updatesStarted = false;
+        final completer = Completer<void>();
+        final subscription = dataSource.watchProjectChanges('user-1').listen((
+          _,
+        ) {
+          if (updatesStarted && !completer.isCompleted) {
+            completer.complete();
+          }
+        });
 
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-        final initialEmissionCount = emissions.length;
-
+        updatesStarted = true;
         supabaseWrapper.addTableData(DatabaseConstants.projectMembersTable, [
           {
             DatabaseConstants.idColumn: 'member-1',
@@ -109,7 +143,6 @@ void main() {
             DatabaseConstants.userIdColumn: 'user-1',
           },
         ]);
-        await Future<void>.delayed(const Duration(milliseconds: 10));
 
         supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
           _projectRow(
@@ -118,11 +151,46 @@ void main() {
             creatorUserId: 'owner-1',
           ),
         ]);
-        await Future<void>.delayed(const Duration(milliseconds: 10));
 
+        await expectLater(
+          completer.future,
+          completes,
+          reason:
+              'Expected watchProjectChanges to emit after shared data change',
+        );
         await subscription.cancel();
+      },
+    );
 
-        expect(emissions.length, greaterThan(initialEmissionCount));
+    test(
+      'watchProjectChanges emits when owned projects data changes',
+      () async {
+        var updatesStarted = false;
+        final completer = Completer<void>();
+        final subscription = dataSource.watchProjectChanges('user-1').listen((
+          _,
+        ) {
+          if (updatesStarted && !completer.isCompleted) {
+            completer.complete();
+          }
+        });
+
+        updatesStarted = true;
+        supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+          _projectRow(
+            id: 'owned-1',
+            projectName: 'Owned Project 1',
+            creatorUserId: 'user-1',
+          ),
+        ]);
+
+        await expectLater(
+          completer.future,
+          completes,
+          reason:
+              'Expected watchProjectChanges to emit after owned data change',
+        );
+        await subscription.cancel();
       },
     );
   });
