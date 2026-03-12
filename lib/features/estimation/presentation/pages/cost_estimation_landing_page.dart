@@ -1,10 +1,12 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_log_bloc/cost_estimation_log_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/change_lock_status_bloc/change_lock_status_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
+import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_logs_list.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/features/estimation/presentation/widgets/delete_estimation_confirmation_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/estimation_actions_sheet.dart';
@@ -101,6 +103,18 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
         onRename: () {
           _router.pop();
           _showRenameSheet(estimation, colorTheme);
+        },
+        onLogs: () {
+          CoreQuickSheet.show(
+            context: context,
+            child: BlocProvider.value(
+              value: Modular.get<CostEstimationLogBloc>(),
+              child: CostEstimationLogsList(
+                estimateId: estimation.id,
+                estimateName: estimation.estimateName,
+              ),
+            ),
+          );
         },
         onFavourite: () {
           _router.pop();
