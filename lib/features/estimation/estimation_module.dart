@@ -14,6 +14,7 @@ import 'package:construculator/features/estimation/presentation/bloc/add_cost_es
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/change_lock_status_bloc/change_lock_status_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_log_bloc/cost_estimation_log_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_details_page.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
@@ -126,6 +127,9 @@ class EstimationModule extends Module {
     );
     i.add<RenameEstimationBloc>(
       () => RenameEstimationBloc(repository: i.get()),
+    );
+    i.add<CostEstimationLogBloc>(
+      () => CostEstimationLogBloc(repository: i.get()),
     );
   }
 
