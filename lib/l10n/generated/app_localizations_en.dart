@@ -468,4 +468,187 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get saveCostNameButton => 'Save cost name';
+
+  @override
+  String get activityCostEstimationCreated => 'Cost Estimation Created';
+
+  @override
+  String get activityCostEstimationRenamed => 'Cost Estimation Renamed';
+
+  @override
+  String get activityCostEstimationExported => 'Cost Estimation Exported';
+
+  @override
+  String get activityCostEstimationLocked => 'Cost Estimation Locked';
+
+  @override
+  String get activityCostEstimationUnlocked => 'Cost Estimation Unlocked';
+
+  @override
+  String get activityCostEstimationDeleted => 'Cost Estimation Deleted';
+
+  @override
+  String activityCostItemAdded(String itemName) {
+    return 'Added cost item: $itemName';
+  }
+
+  @override
+  String get activityCostItemAddedSimple => 'Cost Item Added';
+
+  @override
+  String activityCostItemEdited(String itemName) {
+    return 'Edited cost item: $itemName';
+  }
+
+  @override
+  String get activityCostItemEditedSimple => 'Cost Item Edited';
+
+  @override
+  String activityCostItemRemoved(String itemName) {
+    return 'Removed cost item: $itemName';
+  }
+
+  @override
+  String get activityCostItemRemovedSimple => 'Cost Item Removed';
+
+  @override
+  String activityCostItemDuplicated(String itemName) {
+    return 'Duplicated cost item: $itemName';
+  }
+
+  @override
+  String get activityCostItemDuplicatedSimple => 'Cost Item Duplicated';
+
+  @override
+  String activityTaskAssigned(String taskName, String assigneeName) {
+    return 'Assigned $taskName to $assigneeName';
+  }
+
+  @override
+  String get activityTaskAssignedSimple => 'Task Assigned';
+
+  @override
+  String activityTaskUnassigned(String taskName) {
+    return 'Unassigned task: $taskName';
+  }
+
+  @override
+  String get activityTaskUnassignedSimple => 'Task Unassigned';
+
+  @override
+  String activityCostFileUploaded(String fileName) {
+    return 'Cost File Uploaded: $fileName';
+  }
+
+  @override
+  String get activityCostFileUploadedSimple => 'Cost File Uploaded';
+
+  @override
+  String activityCostFileDeleted(String fileName) {
+    return 'Deleted cost file: $fileName';
+  }
+
+  @override
+  String get activityCostFileDeletedSimple => 'Cost File Deleted';
+
+  @override
+  String activityAttachmentAdded(String fileName) {
+    return 'Added attachment: $fileName';
+  }
+
+  @override
+  String get activityAttachmentAddedSimple => 'Attachment Added';
+
+  @override
+  String activityAttachmentRemoved(String fileName) {
+    return 'Removed attachment: $fileName';
+  }
+
+  @override
+  String get activityAttachmentRemovedSimple => 'Attachment Removed';
+
+  @override
+  String get activityFrom => 'From: ';
+
+  @override
+  String get activityTo => 'To: ';
+
+  @override
+  String get activityEditedFieldItemType => 'Item Type';
+
+  @override
+  String get activityEditedFieldItemName => 'Item Name';
+
+  @override
+  String get activityEditedFieldUnitPrice => 'Unit Price';
+
+  @override
+  String get activityEditedFieldQuantity => 'Quantity';
+
+  @override
+  String get activityEditedFieldUnitMeasurement => 'Unit Measurement';
+
+  @override
+  String get activityEditedFieldCalculation => 'Calculation';
+
+  @override
+  String get activityEditedFieldItemTotalCost => 'Total Cost';
+
+  @override
+  String get activityEditedFieldCurrency => 'Currency';
+
+  @override
+  String get activityEditedFieldBrand => 'Brand';
+
+  @override
+  String get activityEditedFieldProductLink => 'Product Link';
+
+  @override
+  String get activityEditedFieldDescription => 'Description';
+
+  @override
+  String get activityEditedFieldLaborCalcMethod => 'Labor Calc Method';
+
+  @override
+  String get activityEditedFieldLaborDays => 'Labor Days';
+
+  @override
+  String get activityEditedFieldLaborHours => 'Labor Hours';
+
+  @override
+  String get activityEditedFieldLaborUnitType => 'Labor Unit Type';
+
+  @override
+  String get activityEditedFieldLaborUnitValue => 'Labor Unit Value';
+
+  @override
+  String get activityEditedFieldCrewSize => 'Crew Size';
+
+  @override
+  String get activityEditedFieldEmptyValue => '—';
+
+  @override
+  String activityEditedFieldValueQuantity(String value) {
+    return 'Qty $value';
+  }
+
+  @override
+  String activityEditedFieldValueCurrency(String value) {
+    return '\$$value';
+  }
+
+  @override
+  String activityEditedFieldValueDays(String value) {
+    return '$value days';
+  }
+
+  @override
+  String activityEditedFieldValueHours(String value) {
+    return '$value hours';
+  }
+
+  @override
+  String activityEditedFieldValueCrew(String value) {
+    return '$value crew';
+  }
 }
