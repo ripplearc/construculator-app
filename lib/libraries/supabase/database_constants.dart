@@ -26,4 +26,9 @@ class DatabaseConstants {
   static const String isLockedColumn = 'is_locked';
   static const String lockedByUserIdColumn = 'locked_by_user_id';
   static const String lockedAtColumn = 'locked_at';
+  static const String projectNameColumn = 'project_name';
+  static const String descriptionColumn = 'description';
+  static const String owningCompanyIdColumn = 'owning_company_id';
+  static const String exportFolderLinkColumn = 'export_folder_link';
+  static const String exportStorageProviderColumn = 'export_storage_provider';
 }

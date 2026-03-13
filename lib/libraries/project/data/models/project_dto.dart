@@ -1,9 +1,19 @@
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:equatable/equatable.dart';
 
+/// Data Transfer Object for the [Project] entity.
+///
+/// This DTO represents the serialized form of a project as it appears
+/// in the database or API responses. It is responsible for:
+/// - Mapping raw JSON/database fields to strongly-typed Dart properties
+/// - Applying fallback logic for timestamps and status values
+/// - Converting storage provider strings into [StorageProvider] enums
+/// - Converting to the domain [Project] entity via [toDomain].
 class ProjectDto extends Equatable {
+  static final _log = AppLogger().tag('ProjectDto');
   final String id;
   final String projectName;
   final String? description;
@@ -31,16 +41,19 @@ class ProjectDto extends Equatable {
   factory ProjectDto.fromJson(Map<String, dynamic> json) {
     return ProjectDto(
       id: json[DatabaseConstants.idColumn] as String,
-      projectName: json['project_name'] as String,
-      description: json['description'] as String?,
+      projectName: json[DatabaseConstants.projectNameColumn] as String,
+      description: json[DatabaseConstants.descriptionColumn] as String?,
       creatorUserId: json[DatabaseConstants.creatorUserIdColumn] as String,
-      owningCompanyId: json['owning_company_id'] as String?,
-      exportFolderLink: json['export_folder_link'] as String?,
-      exportStorageProvider: json['export_storage_provider'] as String?,
+      owningCompanyId:
+          json[DatabaseConstants.owningCompanyIdColumn] as String?,
+      exportFolderLink:
+          json[DatabaseConstants.exportFolderLinkColumn] as String?,
+      exportStorageProvider:
+          json[DatabaseConstants.exportStorageProviderColumn] as String?,
       createdAt: _parseDateTime(json[DatabaseConstants.createdAtColumn]),
       updatedAt: _parseDateTime(json[DatabaseConstants.updatedAtColumn]),
       status: _parseProjectStatus(
-        json[DatabaseConstants.statusColumn] ?? json['project_status'],
+        json[DatabaseConstants.statusColumn],
       ),
     );
   }
@@ -64,9 +77,23 @@ class ProjectDto extends Equatable {
     if (value is DateTime) {
       return value;
     }
+
     if (value is String && value.isNotEmpty) {
-      return DateTime.parse(value);
+      try {
+        return DateTime.parse(value);
+      } catch (error, stackTrace) {
+        _log.error(
+          'Failed to parse DateTime from value "$value". Falling back to epoch.',
+          error,
+          stackTrace,
+        );
+      }
+    } else {
+      _log.warning(
+        'Missing or null DateTime value for ProjectDto. Falling back to epoch.',
+      );
     }
+
     return DateTime.fromMillisecondsSinceEpoch(0);
   }
 
