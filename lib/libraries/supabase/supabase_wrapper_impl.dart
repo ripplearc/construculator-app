@@ -115,6 +115,24 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
   }
 
   @override
+  Future<List<Map<String, dynamic>>> selectWhereIn({
+    required String table,
+    String columns = '*',
+    required String filterColumn,
+    required List<dynamic> filterValues,
+  }) async {
+    final formattedValues = '(${filterValues.map((value) {
+      final stringValue = value.toString().replaceAll("'", "''");
+      return "'$stringValue'";
+    }).join(',')})';
+
+    return await _supabaseClient
+        .from(table)
+        .select(columns)
+        .filter(filterColumn, 'in', formattedValues);
+  }
+
+  @override
   Future<Map<String, dynamic>?> selectSingle({
     required String table,
     String columns = '*',
