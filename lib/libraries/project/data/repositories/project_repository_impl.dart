@@ -86,12 +86,12 @@ class ProjectRepositoryImpl implements ProjectRepository {
 
   @override
   Stream<List<Project>> watchProjects() {
-    _projectsController ??= StreamController<List<Project>>.broadcast(
+    final controller = _projectsController ??= StreamController<List<Project>>.broadcast(
       onListen: _startWatchingProjectChanges,
       onCancel: _stopWatchingIfNoListeners,
     );
 
-    return _projectsController!.stream;
+    return controller.stream;
   }
 
   void _startWatchingProjectChanges() {
@@ -182,14 +182,12 @@ class ProjectRepositoryImpl implements ProjectRepository {
   }
 
   bool _projectsAreEqual(List<Project> first, List<Project> second) {
-    if (identical(first, second)) {
-      return true;
-    }
     if (first.length != second.length) {
       return false;
     }
-    for (var index = 0; index < first.length; index++) {
-      if (first[index] != second[index]) {
+    for (var i = 0; i < first.length; i++) {
+      if (first[i].id != second[i].id ||
+          first[i].updatedAt != second[i].updatedAt) {
         return false;
       }
     }

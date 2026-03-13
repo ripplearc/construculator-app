@@ -20,6 +20,9 @@ class FakeProjectRepository implements ProjectRepository {
   final StreamController<List<Project>> _projectsController =
       StreamController<List<Project>>.broadcast();
 
+  /// Last emitted project list for deduplication (matches real impl behavior).
+  List<Project>? _lastEmitted;
+
   /// Controls whether [getProject] throws an exception
   bool shouldThrowOnGetProject = false;
 
@@ -117,7 +120,9 @@ class FakeProjectRepository implements ProjectRepository {
       );
     }
 
-    yield List<Project>.from(_accessibleProjects);
+    yield* Stream.fromFuture(
+      Future.value(List<Project>.from(_accessibleProjects)),
+    );
     yield* _projectsController.stream;
   }
 
@@ -167,6 +172,7 @@ class FakeProjectRepository implements ProjectRepository {
     _projects.clear();
     _accessibleProjects.clear();
     _methodCalls.clear();
+    _lastEmitted = null;
     _emitProjectsUpdate();
   }
 
@@ -184,7 +190,25 @@ class FakeProjectRepository implements ProjectRepository {
     if (_projectsController.isClosed) {
       return;
     }
-    _projectsController.add(List<Project>.from(_accessibleProjects));
+    final current = List<Project>.from(_accessibleProjects);
+    final lastEmitted = _lastEmitted;
+    if (lastEmitted != null && _listEquals(lastEmitted, current)) {
+      return;
+    }
+    _lastEmitted = current;
+    _projectsController.add(current);
+  }
+
+  bool _listEquals(List<Project> a, List<Project> b) {
+    if (a.length != b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /// Returns a list of all method calls
@@ -218,6 +242,7 @@ class FakeProjectRepository implements ProjectRepository {
     postgrestErrorCode = null;
     shouldDelayOperations = false;
     completer = null;
+    _lastEmitted = null;
 
     clearAllData();
     clearMethodCalls();
