@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/project/data/data_source/remote_project_data_source.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -58,18 +59,25 @@ void main() {
     );
 
     test(
-      'getOwnedProjects rethrows exception when supabaseWrapper.select throws',
+      'getSharedProjects rethrows exception when memberships select throws',
       () async {
         supabaseWrapper.shouldThrowOnSelectMultiple = true;
         supabaseWrapper.selectMultipleExceptionType =
             SupabaseExceptionType.postgrest;
 
         expect(
-          () => dataSource.getOwnedProjects('user-1'),
+          () => dataSource.getSharedProjects('user-1'),
           throwsA(isA<supabase.PostgrestException>()),
         );
       },
     );
+
+    test('getSharedProjects returns empty list when user has no memberships',
+        () async {
+      final result = await dataSource.getSharedProjects('user-1');
+
+      expect(result, isEmpty);
+    });
 
     test('getSharedProjects resolves project IDs from memberships', () async {
       supabaseWrapper.addTableData(DatabaseConstants.projectMembersTable, [
@@ -190,6 +198,34 @@ void main() {
           reason:
               'Expected watchProjectChanges to emit after owned data change',
         );
+        await subscription.cancel();
+      },
+    );
+
+    test(
+      'watchProjectChanges propagates stream error to subscriber onError',
+      () async {
+        final errorCompleter = Completer<Object>();
+        final subscription = dataSource.watchProjectChanges('user-1').listen(
+          (_) {},
+          onError: (Object error, StackTrace stackTrace) {
+            if (!errorCompleter.isCompleted) {
+              errorCompleter.complete(error);
+            }
+          },
+        );
+
+        supabaseWrapper.shouldEmitStreamErrors = true;
+        supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+          _projectRow(
+            id: 'owned-1',
+            projectName: 'Owned Project',
+            creatorUserId: 'user-1',
+          ),
+        ]);
+
+        final receivedError = await errorCompleter.future;
+        expect(receivedError, isA<ServerException>());
         await subscription.cancel();
       },
     );
