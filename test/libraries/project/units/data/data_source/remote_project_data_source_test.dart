@@ -215,11 +215,20 @@ void main() {
           },
         );
 
-        supabaseWrapper.shouldEmitStreamErrors = true;
+        await pumpEventQueue();
+
         supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
           _projectRow(
             id: 'owned-1',
             projectName: 'Owned Project',
+            creatorUserId: 'user-1',
+          ),
+        ]);
+        supabaseWrapper.shouldEmitStreamErrors = true;
+        supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+          _projectRow(
+            id: 'owned-2',
+            projectName: 'Second Project',
             creatorUserId: 'user-1',
           ),
         ]);
