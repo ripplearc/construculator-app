@@ -373,6 +373,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get costEstimation => 'Cost Estimation';
 
   @override
+  String get dashboardQuickAccessMessage =>
+      'Add your favorite calculations and cost estimation for a quick access....';
+
+  @override
   String get costEstimationEmptyMessage =>
       'No estimation added. To add an estimation please click on add button';
 
