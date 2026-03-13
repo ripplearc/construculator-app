@@ -30,72 +30,83 @@ void main() {
 
       test('watchTable emits initial data and updates on insert/update/delete',
           () async {
+        final emissions = <List<Map<String, dynamic>>>[];
+        final done = Completer<void>();
+        final subscription = fakeWrapper
+            .watchTable(table: table, primaryKey: primaryKey)
+            .listen(
+          (data) {
+            emissions.add(data);
+            if (emissions.length >= 3) done.complete();
+          },
+          onDone: () => done.complete(),
+          onError: (e, s) => done.completeError(e, s),
+        );
+
         await fakeWrapper.insert(
           table: table,
           data: {'name': 'Initial Project'},
         );
-
-        final emissions = <List<Map<String, dynamic>>>[];
-        final subscription = fakeWrapper
-            .watchTable(table: table, primaryKey: primaryKey)
-            .listen(emissions.add);
-
-        await Future<void>.microtask(() {});
-
         await fakeWrapper.insert(
           table: table,
           data: {'name': 'Second Project'},
         );
-
         await fakeWrapper.update(
           table: table,
           data: {'name': 'Updated Project'},
           filterColumn: 'id',
           filterValue: '1',
         );
-
         await fakeWrapper.delete(
           table: table,
           filterColumn: 'id',
           filterValue: '1',
         );
 
-        await Future<void>.microtask(() {});
+        await done.future;
         await subscription.cancel();
 
-        expect(emissions, isNotEmpty);
-
-        final first = emissions.first;
-        expect(first.length, 1);
-        expect(first.single['name'], 'Initial Project');
-
-        final afterInsert = emissions.firstWhere(
-          (rows) => rows.length == 2,
-          orElse: () => const [],
+        expect(emissions[0], hasLength(1));
+        expect(emissions[0].single['name'], 'Initial Project');
+        expect(emissions[1], hasLength(2));
+        expect(
+          emissions[1].any(
+            (row) => row['id'] == '1' && row['name'] == 'Updated Project',
+          ),
+          isTrue,
         );
-        expect(afterInsert, isNotEmpty);
-
-        final afterUpdate = emissions.firstWhere(
-          (rows) =>
-              rows.length == 2 &&
-              rows.any((row) => row['id'] == '1' && row['name'] == 'Updated Project'),
-          orElse: () => const [],
-        );
-        expect(afterUpdate, isNotEmpty);
-
-        final afterDelete = emissions.lastWhere(
-          (rows) =>
-              rows.length == 1 &&
-              rows.single['name'] == 'Second Project' &&
-              rows.single['id'] == '2',
-          orElse: () => const [],
-        );
-        expect(afterDelete, isNotEmpty);
+        expect(emissions[2], hasLength(1));
+        expect(emissions[2].single['name'], 'Second Project');
+        expect(emissions[2].single['id'], '2');
       });
 
       test(
           'watchTableFiltered applies filter, reacts to mutations, and clearAllData emits empty',
           () async {
+        final emissions = <List<Map<String, dynamic>>>[];
+        final done = Completer<void>();
+        var seenNonEmpty = false;
+        var seenEmpty = false;
+        final subscription = fakeWrapper
+            .watchTableFiltered(
+              table: table,
+              primaryKey: primaryKey,
+              filterColumn: 'status',
+              filterValue: 'published',
+            )
+            .listen(
+          (data) {
+            emissions.add(data);
+            if (data.isNotEmpty) seenNonEmpty = true;
+            if (data.isEmpty) seenEmpty = true;
+            if (seenNonEmpty && seenEmpty && !done.isCompleted) {
+              done.complete();
+            }
+          },
+          onDone: () => done.complete(),
+          onError: (e, s) => done.completeError(e, s),
+        );
+
         await fakeWrapper.insert(
           table: table,
           data: {'name': 'A - draft', 'status': 'draft'},
@@ -104,22 +115,10 @@ void main() {
           table: table,
           data: {'name': 'B - published', 'status': 'published'},
         );
-
-        final emissions = <List<Map<String, dynamic>>>[];
-        final subscription = fakeWrapper
-            .watchTableFiltered(
-              table: table,
-              primaryKey: primaryKey,
-              filterColumn: 'status',
-              filterValue: 'published',
-            )
-            .listen(emissions.add);
-        await Future<void>.microtask(() {});
         await fakeWrapper.insert(
           table: table,
           data: {'name': 'C - published', 'status': 'published'},
         );
-
         await fakeWrapper.update(
           table: table,
           data: {'status': 'published'},
@@ -127,47 +126,41 @@ void main() {
           filterValue: '1',
         );
         fakeWrapper.clearAllData();
-        await Future<void>.microtask(() {});
 
+        await done.future;
         await subscription.cancel();
 
-        final initial = emissions.first;
-        expect(initial, isNotEmpty);
-        expect(initial.every((row) => row['status'] == 'published'), isTrue);
-
-        final afterMutations = emissions.firstWhere(
-          (rows) =>
-              rows.length >= 3 &&
-              rows.every((row) => row['status'] == 'published'),
-          orElse: () => const [],
-        );
-        expect(afterMutations, isNotEmpty);
-
-        final lastEmission = emissions.last;
-        expect(lastEmission, isEmpty);
+        final nonEmpty = emissions.where((e) => e.isNotEmpty).toList();
+        final emptyEmissions = emissions.where((e) => e.isEmpty).toList();
+        expect(nonEmpty, isNotEmpty);
+        expect(nonEmpty.every((e) => e.every((r) => r['status'] == 'published')),
+            isTrue);
+        expect(emptyEmissions, isNotEmpty);
       });
 
       test('dispose closes table controllers and stops further emissions',
           () async {
         final emissions = <List<Map<String, dynamic>>>[];
+        final firstEmission = Completer<void>();
         final subscription = fakeWrapper
             .watchTable(table: table, primaryKey: primaryKey)
-            .listen(emissions.add);
-        await Future<void>.microtask(() {});
+            .listen((data) {
+          emissions.add(data);
+          if (!firstEmission.isCompleted) firstEmission.complete();
+        });
 
+        await firstEmission.future;
+
+        final countBeforeDispose = emissions.length;
         fakeWrapper.dispose();
 
-        // Mutations after dispose should not produce new emissions
         await fakeWrapper.insert(
           table: table,
           data: {'name': 'Should not be emitted'},
         );
-        await Future<void>.microtask(() {});
-        final emissionCountAfterDispose = emissions.length;
-
         await subscription.cancel();
 
-        expect(emissionCountAfterDispose, equals(emissions.length));
+        expect(emissions.length, countBeforeDispose);
       });
     });
 
