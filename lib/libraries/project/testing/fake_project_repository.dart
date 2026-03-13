@@ -222,4 +222,9 @@ class FakeProjectRepository implements ProjectRepository {
     clearAllData();
     clearMethodCalls();
   }
+
+  @override
+  void dispose() {
+    _projectsController.close();
+  }
 }

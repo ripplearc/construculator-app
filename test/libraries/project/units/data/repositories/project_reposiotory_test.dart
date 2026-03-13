@@ -164,6 +164,25 @@ void main() {
     });
 
     group('watchProjects', () {
+      test('emits empty list when user is not authenticated', () async {
+        final emittedBatches = <List<Project>>[];
+        final emissionReceived = Completer<void>();
+        final subscription = repository.watchProjects().listen(
+          (batch) {
+            emittedBatches.add(batch);
+            if (!emissionReceived.isCompleted) {
+              emissionReceived.complete();
+            }
+          },
+        );
+
+        await emissionReceived.future;
+        await subscription.cancel();
+
+        expect(emittedBatches, hasLength(1));
+        expect(emittedBatches.single, isEmpty);
+      });
+
       test(
         'emits initial projects and realtime updates for shared projects',
         () async {
@@ -193,11 +212,22 @@ void main() {
           ];
 
           final emittedBatches = <List<Project>>[];
+          final firstEmissionReceived = Completer<void>();
+          final secondEmissionReceived = Completer<void>();
+          var emissionCount = 0;
           final subscription = repository.watchProjects().listen(
-            emittedBatches.add,
+            (batch) {
+              emittedBatches.add(batch);
+              emissionCount++;
+              if (emissionCount == 1) {
+                firstEmissionReceived.complete();
+              } else if (emissionCount >= 2 && !secondEmissionReceived.isCompleted) {
+                secondEmissionReceived.complete();
+              }
+            },
           );
 
-          await Future<void>.delayed(const Duration(milliseconds: 10));
+          await firstEmissionReceived.future;
 
           projectDataSource.sharedProjects = [
             _createProjectDto(
@@ -209,7 +239,7 @@ void main() {
           ];
           projectDataSource.emitProjectChange();
 
-          await Future<void>.delayed(const Duration(milliseconds: 10));
+          await secondEmissionReceived.future;
 
           await subscription.cancel();
 
@@ -250,8 +280,16 @@ void main() {
           projectDataSource.nextGetOwnedProjectsCompleter = firstRefreshCompleter;
 
           final emittedBatches = <List<Project>>[];
+          final secondEmissionReceived = Completer<void>();
+          var emissionCount = 0;
           final subscription = repository.watchProjects().listen(
-            emittedBatches.add,
+            (batch) {
+              emittedBatches.add(batch);
+              emissionCount++;
+              if (emissionCount >= 2 && !secondEmissionReceived.isCompleted) {
+                secondEmissionReceived.complete();
+              }
+            },
           );
 
           await projectDataSource.firstGetOwnedProjectsStartedCompleter!.future;
@@ -268,7 +306,7 @@ void main() {
           projectDataSource.emitProjectChange();
 
           firstRefreshCompleter.complete();
-          await Future<void>.delayed(const Duration(milliseconds: 20));
+          await secondEmissionReceived.future;
 
           await subscription.cancel();
 
