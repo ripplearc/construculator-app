@@ -192,6 +192,27 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
   }
 
   @override
+  Stream<List<Map<String, dynamic>>> watchTable({
+    required String table,
+    required List<String> primaryKey,
+  }) {
+    return _supabaseClient.from(table).stream(primaryKey: primaryKey);
+  }
+
+  @override
+  Stream<List<Map<String, dynamic>>> watchTableFiltered({
+    required String table,
+    required List<String> primaryKey,
+    required String filterColumn,
+    required dynamic filterValue,
+  }) {
+    return _supabaseClient
+        .from(table)
+        .stream(primaryKey: primaryKey)
+        .eq(filterColumn, filterValue);
+  }
+
+  @override
   Future<T> rpc<T>(String functionName, {Map<String, dynamic>? params}) async {
     return await _supabaseClient.rpc(functionName, params: params);
   }
