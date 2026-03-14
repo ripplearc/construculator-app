@@ -11,7 +11,6 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter/material.dart';
@@ -228,12 +227,9 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           },
         ),
       ],
-      child: Scaffold(
-        backgroundColor: colorTheme.pageBackground,
-        appBar: Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
-          projectId: widget.projectId,
-        ),
-        body: _buildBody(l10n, colorTheme),
+      child: ColoredBox(
+        color: colorTheme.pageBackground,
+        child: _buildBody(l10n, colorTheme),
       ),
     );
   }
