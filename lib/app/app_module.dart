@@ -5,7 +5,7 @@ import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/config/config_module.dart';
 import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/app/splash_module.dart';
+import 'package:construculator/app/initial_route_module.dart';
 import 'package:construculator/libraries/router/router_module.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -23,7 +23,7 @@ class AppModule extends Module {
   ];
   @override
   void routes(RouteManager r) {
-    r.module('/', module: SplashModule(appBootstrap));
+    r.module('/', module: InitialRouteModule(appBootstrap));
     r.module('/auth', module: AuthModule(appBootstrap));
     r.module('/dashboard', module: DashboardModule(appBootstrap));
     r.module('/estimation', module: EstimationModule(appBootstrap));
