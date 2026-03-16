@@ -21,7 +21,7 @@ class DashboardModule extends Module {
   @override
   void binds(Injector i) {
     i.add<ProjectDropdownBloc>(
-      () => ProjectDropdownBloc(projectRepository: i()),
+      () => ProjectDropdownBloc(projectRepository: i(), authManager: i()),
     );
   }
 

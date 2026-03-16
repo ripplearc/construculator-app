@@ -1,6 +1,7 @@
 import 'dart:collection';
 import 'dart:async';
 
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:equatable/equatable.dart';
@@ -12,11 +13,15 @@ part 'project_dropdown_state.dart';
 class ProjectDropdownBloc
     extends Bloc<ProjectDropdownEvent, ProjectDropdownState> {
   final ProjectRepository _projectRepository;
+  final AuthManager _authManager;
   StreamSubscription<List<Project>>? _projectsSubscription;
 
-  ProjectDropdownBloc({required ProjectRepository projectRepository})
-    : _projectRepository = projectRepository,
-      super(const ProjectDropdownInitial()) {
+  ProjectDropdownBloc({
+    required ProjectRepository projectRepository,
+    required AuthManager authManager,
+  }) : _projectRepository = projectRepository,
+       _authManager = authManager,
+       super(const ProjectDropdownInitial()) {
     on<ProjectDropdownStarted>(_onStarted);
     on<ProjectDropdownSelected>(_onSelected);
     on<_ProjectDropdownProjectsUpdated>(_onProjectsUpdated);
@@ -35,13 +40,23 @@ class ProjectDropdownBloc
   ) async {
     emit(const ProjectDropdownLoadInProgress());
 
+    final userId = _authManager.getCurrentCredentials().data?.id ?? '';
+    if (userId.isEmpty) {
+      emit(
+        ProjectDropdownLoadSuccess(projects: const [], selectedProject: null),
+      );
+      return;
+    }
+
     await _projectsSubscription?.cancel();
-    _projectsSubscription = _projectRepository.watchProjects().listen(
-      (projects) => add(_ProjectDropdownProjectsUpdated(projects)),
-      onError: (Object error, StackTrace stackTrace) {
-        add(_ProjectDropdownProjectsLoadFailed(error.toString()));
-      },
-    );
+    _projectsSubscription = _projectRepository
+        .watchProjects(userId)
+        .listen(
+          (projects) => add(_ProjectDropdownProjectsUpdated(projects)),
+          onError: (Object error, StackTrace stackTrace) {
+            add(_ProjectDropdownProjectsLoadFailed(error.toString()));
+          },
+        );
   }
 
   void _onProjectsUpdated(
