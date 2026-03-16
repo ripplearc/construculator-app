@@ -10,12 +10,10 @@ import 'package:construculator/features/estimation/presentation/bloc/add_cost_es
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/change_lock_status_bloc/change_lock_status_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
-import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_details_page.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class RouteDefinition {
@@ -29,40 +27,7 @@ class RouteDefinition {
 class EstimationModule extends Module {
   final AppBootstrap appBootstrap;
   EstimationModule(this.appBootstrap);
-
   final List<RouteDefinition> _routeDefinitions = [
-    RouteDefinition(estimationLandingRoute, (context) {
-      final projectId = Modular.args.params['projectId'];
-      // TODO: https://ripplearc.youtrack.cloud/issue/CA-119/Dashboard-Enable-Project-Selection-and-Switching (Fall back to the currently selected project id)
-      if (projectId == null || projectId.isEmpty) {
-        return const SizedBox.shrink();
-      }
-
-      return MultiBlocProvider(
-        providers: [
-          BlocProvider<CostEstimationListBloc>(
-            create: (context) {
-              return Modular.get<CostEstimationListBloc>()
-                ..add(CostEstimationListStartWatching(projectId: projectId));
-            },
-          ),
-          BlocProvider(
-            create: (context) => Modular.get<AddCostEstimationBloc>(),
-          ),
-          BlocProvider(
-            create: (context) => Modular.get<DeleteCostEstimationBloc>(),
-          ),
-          BlocProvider(
-            create: (context) => Modular.get<ChangeLockStatusBloc>(),
-          ),
-          BlocProvider(
-            create: (context) => Modular.get<RenameEstimationBloc>(),
-          ),
-        ],
-        child: CostEstimationLandingPage(projectId: projectId),
-      );
-    }, [AuthGuard()]),
-
     RouteDefinition(estimationDetailsRoute, (context) {
       final estimationId = Modular.args.params['estimationId'];
 

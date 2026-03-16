@@ -1,3 +1,10 @@
+import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
+import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/change_lock_status_bloc/change_lock_status_bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/project/project_module.dart';
@@ -37,6 +44,33 @@ class _CostEstimationLandingPageA11yTestModule extends Module {
   @override
   void routes(RouteManager r) {
     r.module(estimationBaseRoute, module: EstimationModule(appBootstrap));
+    r.child(
+      '/test-landing/:projectId',
+      guards: [AuthGuard()],
+      child: (context) {
+        final projectId = Modular.args.params['projectId'];
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider<CostEstimationListBloc>(
+              create: (context) {
+                return Modular.get<CostEstimationListBloc>()
+                  ..add(CostEstimationListStartWatching(projectId: projectId));
+              },
+            ),
+            BlocProvider(
+              create: (context) => Modular.get<AddCostEstimationBloc>(),
+            ),
+            BlocProvider(
+              create: (context) => Modular.get<DeleteCostEstimationBloc>(),
+            ),
+            BlocProvider(
+              create: (context) => Modular.get<ChangeLockStatusBloc>(),
+            ),
+          ],
+          child: CostEstimationLandingPage(projectId: projectId),
+        );
+      },
+    );
   }
 }
 
@@ -45,7 +79,7 @@ void main() {
   late Clock clock;
   late AppBootstrap appBootstrap;
 
-  const testEstimationRoute = '$fullEstimationLandingRoute/$testProjectId';
+  const testEstimationRoute = '/test-landing/$testProjectId';
   BuildContext? buildContext;
 
   setUpAll(() {
@@ -81,7 +115,21 @@ void main() {
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) {
         buildContext = context;
-        return child!;
+        final theChild = child!;
+        final currentPath = Modular.to.path;
+        if (theChild is SizedBox &&
+            theChild.width == null &&
+            theChild.height == null) {
+          return theChild;
+        }
+
+        if (currentPath.startsWith('/test-landing/')) {
+          return Scaffold(body: theChild);
+        }
+
+        return Scaffold(
+          body: theChild,
+        );
       },
     );
   }
@@ -93,6 +141,7 @@ void main() {
     await tester.pumpAndSettle();
     Modular.to.navigate(route);
     await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1)); // Extra pump to ensure DB futures load in headless test
   }
 
   void setUpAuthenticatedUser({
@@ -367,6 +416,7 @@ void main() {
           setupAfterPump: (t) async {
             Modular.to.navigate(testEstimationRoute);
             await t.pumpAndSettle();
+            await t.pump(const Duration(seconds: 1));
           },
         );
       },
