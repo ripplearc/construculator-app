@@ -68,7 +68,10 @@ class ProjectRepositoryImpl implements ProjectRepository {
       final projectsById = <String, Project>{};
       for (final projectDto in [...ownedProjects, ...sharedProjects]) {
         final project = projectDto.toDomain();
-        projectsById[project.id] = project;
+        final existing = projectsById[project.id];
+        if (existing == null || project.updatedAt.isAfter(existing.updatedAt)) {
+          projectsById[project.id] = project;
+        }
       }
 
       final projects = projectsById.values.toList()

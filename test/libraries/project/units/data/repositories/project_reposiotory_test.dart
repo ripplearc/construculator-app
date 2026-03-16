@@ -28,6 +28,7 @@ void main() {
     });
 
     tearDown(() {
+      projectDataSource.dispose();
       Modular.destroy();
     });
 
@@ -101,6 +102,21 @@ void main() {
         expect(result, isEmpty);
         expect(projectDataSource.lastOwnedUserId, isNull);
         expect(projectDataSource.lastSharedUserId, isNull);
+      });
+
+      test('returns empty list when userId is empty string', () async {
+        supabaseWrapper.setCurrentUser(
+          FakeUser(
+            id: '',
+            email: 'test@example.com',
+            createdAt: clock.now().toIso8601String(),
+          ),
+        );
+
+        final result = await repository.getProjects();
+
+        expect(result, isEmpty);
+        expect(projectDataSource.lastOwnedUserId, isNull);
       });
 
       test(
@@ -254,6 +270,34 @@ void main() {
         },
       );
 
+      test('propagates error from watchProjectChanges stream', () async {
+        supabaseWrapper.setCurrentUser(
+          FakeUser(
+            id: 'user-123',
+            email: 'test@example.com',
+            createdAt: clock.now().toIso8601String(),
+          ),
+        );
+
+        final firstEmission = Completer<void>();
+        final errorReceived = Completer<void>();
+        final subscription = repository.watchProjects().listen(
+          (_) {
+            if (!firstEmission.isCompleted) firstEmission.complete();
+          },
+          onError: (error, _) {
+            expect(error, isA<Exception>());
+            if (!errorReceived.isCompleted) errorReceived.complete();
+          },
+        );
+        await firstEmission.future;
+
+        projectDataSource.emitError(Exception('realtime failure'));
+
+        await errorReceived.future;
+        await subscription.cancel();
+      });
+
       test(
         'queues a follow-up refresh when changes arrive mid-refresh',
         () async {
@@ -383,6 +427,14 @@ class _FakeProjectDataSource implements ProjectDataSource {
 
   void emitProjectChange() {
     _changesController.add(null);
+  }
+
+  void emitError(Object error) {
+    _changesController.addError(error);
+  }
+
+  void dispose() {
+    _changesController.close();
   }
 }
 
