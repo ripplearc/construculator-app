@@ -15,13 +15,14 @@ abstract class ProjectRepository {
   /// export settings, and status.
   Future<Project> getProject(String id);
 
-  /// Retrieves all projects accessible by the current user.
+  /// Retrieves all projects accessible by the given [userId].
   ///
   /// Includes projects created by the user and projects shared with them.
-  Future<List<Project>> getProjects();
+  /// Returns an empty list if [userId] is null or empty.
+  Future<List<Project>> getProjects(String userId);
 
-  /// Emits accessible projects whenever project access changes.
-  Stream<List<Project>> watchProjects();
+  /// Emits accessible projects whenever project access changes for [userId].
+  Stream<List<Project>> watchProjects(String userId);
 
   /// Releases any resources held by the repository.
   ///

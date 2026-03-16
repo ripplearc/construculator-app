@@ -5,9 +5,6 @@ import 'package:construculator/libraries/project/data/models/project_dto.dart';
 import 'package:construculator/libraries/project/data/repositories/project_repository_impl.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
-import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
-import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
-import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,14 +12,12 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('ProjectRepositoryImpl', () {
     late FakeClockImpl clock;
-    late FakeSupabaseWrapper supabaseWrapper;
     late _FakeProjectDataSource projectDataSource;
     late ProjectRepositoryImpl repository;
 
     setUp(() {
       clock = FakeClockImpl(DateTime(2025, 10, 1, 10, 30));
       Modular.init(_ProjectRepositoryTestModule(clock: clock));
-      supabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
       projectDataSource = Modular.get<_FakeProjectDataSource>();
       repository = Modular.get<ProjectRepositoryImpl>();
     });
@@ -96,39 +91,18 @@ void main() {
     });
 
     group('getProjects', () {
-      test('returns empty list when current user is not available', () async {
-        final result = await repository.getProjects();
+      test('returns empty list when userId is empty string', () async {
+        final result = await repository.getProjects('');
 
         expect(result, isEmpty);
         expect(projectDataSource.lastOwnedUserId, isNull);
         expect(projectDataSource.lastSharedUserId, isNull);
       });
 
-      test('returns empty list when userId is empty string', () async {
-        supabaseWrapper.setCurrentUser(
-          FakeUser(
-            id: '',
-            email: 'test@example.com',
-            createdAt: clock.now().toIso8601String(),
-          ),
-        );
-
-        final result = await repository.getProjects();
-
-        expect(result, isEmpty);
-        expect(projectDataSource.lastOwnedUserId, isNull);
-      });
-
       test(
         'merges owned/shared projects, deduplicates, and sorts by updatedAt',
         () async {
-          supabaseWrapper.setCurrentUser(
-            FakeUser(
-              id: 'user-123',
-              email: 'test@example.com',
-              createdAt: clock.now().toIso8601String(),
-            ),
-          );
+          const userId = 'user-123';
 
           projectDataSource.ownedProjects = [
             _createProjectDto(
@@ -160,10 +134,10 @@ void main() {
             ),
           ];
 
-          final result = await repository.getProjects();
+          final result = await repository.getProjects(userId);
 
-          expect(projectDataSource.lastOwnedUserId, 'user-123');
-          expect(projectDataSource.lastSharedUserId, 'user-123');
+          expect(projectDataSource.lastOwnedUserId, userId);
+          expect(projectDataSource.lastSharedUserId, userId);
           expect(result.map((project) => project.id).toList(), [
             'shared-new',
             'duplicate-project',
@@ -180,10 +154,10 @@ void main() {
     });
 
     group('watchProjects', () {
-      test('emits empty list when user is not authenticated', () async {
+      test('emits empty list when userId is empty', () async {
         final emittedBatches = <List<Project>>[];
         final emissionReceived = Completer<void>();
-        final subscription = repository.watchProjects().listen(
+        final subscription = repository.watchProjects('').listen(
           (batch) {
             emittedBatches.add(batch);
             if (!emissionReceived.isCompleted) {
@@ -202,13 +176,7 @@ void main() {
       test(
         'emits initial projects and realtime updates for shared projects',
         () async {
-          supabaseWrapper.setCurrentUser(
-            FakeUser(
-              id: 'user-123',
-              email: 'test@example.com',
-              createdAt: clock.now().toIso8601String(),
-            ),
-          );
+          const userId = 'user-123';
 
           projectDataSource.ownedProjects = [
             _createProjectDto(
@@ -231,7 +199,7 @@ void main() {
           final firstEmissionReceived = Completer<void>();
           final secondEmissionReceived = Completer<void>();
           var emissionCount = 0;
-          final subscription = repository.watchProjects().listen(
+          final subscription = repository.watchProjects(userId).listen(
             (batch) {
               emittedBatches.add(batch);
               emissionCount++;
@@ -271,17 +239,11 @@ void main() {
       );
 
       test('propagates error from watchProjectChanges stream', () async {
-        supabaseWrapper.setCurrentUser(
-          FakeUser(
-            id: 'user-123',
-            email: 'test@example.com',
-            createdAt: clock.now().toIso8601String(),
-          ),
-        );
+        const userId = 'user-123';
 
         final firstEmission = Completer<void>();
         final errorReceived = Completer<void>();
-        final subscription = repository.watchProjects().listen(
+        final subscription = repository.watchProjects(userId).listen(
           (_) {
             if (!firstEmission.isCompleted) firstEmission.complete();
           },
@@ -301,13 +263,7 @@ void main() {
       test(
         'queues a follow-up refresh when changes arrive mid-refresh',
         () async {
-          supabaseWrapper.setCurrentUser(
-            FakeUser(
-              id: 'user-123',
-              email: 'test@example.com',
-              createdAt: clock.now().toIso8601String(),
-            ),
-          );
+          const userId = 'user-123';
 
           projectDataSource.ownedProjects = [
             _createProjectDto(
@@ -326,7 +282,7 @@ void main() {
           final emittedBatches = <List<Project>>[];
           final secondEmissionReceived = Completer<void>();
           var emissionCount = 0;
-          final subscription = repository.watchProjects().listen(
+          final subscription = repository.watchProjects(userId).listen(
             (batch) {
               emittedBatches.add(batch);
               emissionCount++;
@@ -445,9 +401,6 @@ class _ProjectRepositoryTestModule extends Module {
 
   @override
   void binds(Injector i) {
-    i.addLazySingleton<SupabaseWrapper>(
-      () => FakeSupabaseWrapper(clock: clock),
-    );
     i.addLazySingleton<_FakeProjectDataSource>(() => _FakeProjectDataSource());
     i.addLazySingleton<ProjectDataSource>(
       () => i.get<_FakeProjectDataSource>(),
@@ -455,7 +408,6 @@ class _ProjectRepositoryTestModule extends Module {
     i.addLazySingleton<ProjectRepositoryImpl>(
       () => ProjectRepositoryImpl(
         projectDataSource: i.get<ProjectDataSource>(),
-        supabaseWrapper: i.get<SupabaseWrapper>(),
         clock: clock,
       ),
     );

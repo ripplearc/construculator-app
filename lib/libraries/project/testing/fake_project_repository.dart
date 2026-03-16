@@ -92,12 +92,12 @@ class FakeProjectRepository implements ProjectRepository {
   }
 
   @override
-  Future<List<Project>> getProjects() async {
+  Future<List<Project>> getProjects(String userId) async {
     if (shouldDelayOperations) {
       await completer?.future;
     }
 
-    _methodCalls.add({'method': 'getProjects'});
+    _methodCalls.add({'method': 'getProjects', 'userId': userId});
 
     if (shouldThrowOnGetProjects) {
       _throwConfiguredException(
@@ -110,8 +110,8 @@ class FakeProjectRepository implements ProjectRepository {
   }
 
   @override
-  Stream<List<Project>> watchProjects() async* {
-    _methodCalls.add({'method': 'watchProjects'});
+  Stream<List<Project>> watchProjects(String userId) async* {
+    _methodCalls.add({'method': 'watchProjects', 'userId': userId});
 
     if (shouldThrowOnWatchProjects) {
       _throwConfiguredException(

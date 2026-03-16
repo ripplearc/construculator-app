@@ -5,28 +5,25 @@ import 'package:construculator/libraries/project/data/data_source/interfaces/pro
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
-import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 /// Remote implementation of the project repository.
 class ProjectRepositoryImpl implements ProjectRepository {
   final ProjectDataSource _projectDataSource;
-  final SupabaseWrapper _supabaseWrapper;
   final Clock _clock;
   static final _logger = AppLogger().tag('ProjectRepositoryImpl');
   StreamController<List<Project>>? _projectsController;
   StreamSubscription<void>? _projectChangesSubscription;
+  String? _watchUserId;
   List<Project>? _lastEmittedProjects;
   bool _isRefreshing = false;
   bool _hasPendingRefresh = false;
 
   ProjectRepositoryImpl({
     required ProjectDataSource projectDataSource,
-    required SupabaseWrapper supabaseWrapper,
     Clock? clock,
   }) : _projectDataSource = projectDataSource,
-       _supabaseWrapper = supabaseWrapper,
        _clock = clock ?? Modular.get<Clock>();
 
   @override
@@ -55,10 +52,9 @@ class ProjectRepositoryImpl implements ProjectRepository {
   }
 
   @override
-  Future<List<Project>> getProjects() async {
+  Future<List<Project>> getProjects(String userId) async {
     try {
-      final userId = _supabaseWrapper.currentUser?.id;
-      if (userId == null || userId.isEmpty) {
+      if (userId.isEmpty) {
         return [];
       }
 
@@ -88,7 +84,8 @@ class ProjectRepositoryImpl implements ProjectRepository {
   }
 
   @override
-  Stream<List<Project>> watchProjects() {
+  Stream<List<Project>> watchProjects(String userId) {
+    _watchUserId = userId;
     final controller = _projectsController ??= StreamController<List<Project>>.broadcast(
       onListen: _startWatchingProjectChanges,
       onCancel: _stopWatchingIfNoListeners,
@@ -102,7 +99,7 @@ class ProjectRepositoryImpl implements ProjectRepository {
       return;
     }
 
-    final userId = _supabaseWrapper.currentUser?.id;
+    final userId = _watchUserId;
     if (userId == null || userId.isEmpty) {
       _emitProjects(const []);
       return;
@@ -130,6 +127,7 @@ class ProjectRepositoryImpl implements ProjectRepository {
     }
     _projectChangesSubscription?.cancel();
     _projectChangesSubscription = null;
+    _watchUserId = null;
     _lastEmittedProjects = null;
   }
 
@@ -144,7 +142,10 @@ class ProjectRepositoryImpl implements ProjectRepository {
       do {
         _hasPendingRefresh = false;
         try {
-          final projects = await getProjects();
+          final userId = _watchUserId;
+          final projects = userId != null && userId.isNotEmpty
+              ? await getProjects(userId)
+              : <Project>[];
           _emitProjects(projects);
         } catch (error, stackTrace) {
           _logger.error(
@@ -179,6 +180,7 @@ class ProjectRepositoryImpl implements ProjectRepository {
     _projectChangesSubscription = null;
     _projectsController?.close();
     _projectsController = null;
+    _watchUserId = null;
     _lastEmittedProjects = null;
     _isRefreshing = false;
     _hasPendingRefresh = false;
