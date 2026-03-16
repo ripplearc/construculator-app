@@ -51,8 +51,8 @@ void main() {
         supabaseWrapper.selectMultipleExceptionType =
             SupabaseExceptionType.postgrest;
 
-        expect(
-          () => dataSource.getOwnedProjects('user-1'),
+        await expectLater(
+          dataSource.getOwnedProjects('user-1'),
           throwsA(isA<supabase.PostgrestException>()),
         );
       },
@@ -65,8 +65,8 @@ void main() {
         supabaseWrapper.selectMultipleExceptionType =
             SupabaseExceptionType.postgrest;
 
-        expect(
-          () => dataSource.getSharedProjects('user-1'),
+        await expectLater(
+          dataSource.getSharedProjects('user-1'),
           throwsA(isA<supabase.PostgrestException>()),
         );
       },
@@ -217,18 +217,11 @@ void main() {
 
         await pumpEventQueue();
 
+        supabaseWrapper.shouldEmitStreamErrors = true;
         supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
           _projectRow(
             id: 'owned-1',
             projectName: 'Owned Project',
-            creatorUserId: 'user-1',
-          ),
-        ]);
-        supabaseWrapper.shouldEmitStreamErrors = true;
-        supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
-          _projectRow(
-            id: 'owned-2',
-            projectName: 'Second Project',
             creatorUserId: 'user-1',
           ),
         ]);
