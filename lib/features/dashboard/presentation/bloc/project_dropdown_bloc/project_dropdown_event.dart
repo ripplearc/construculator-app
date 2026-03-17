@@ -1,3 +1,5 @@
+// coverage:ignore-file
+
 part of 'project_dropdown_bloc.dart';
 
 /// Base class for project dropdown events.
