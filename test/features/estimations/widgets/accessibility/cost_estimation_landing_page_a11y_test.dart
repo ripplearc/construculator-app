@@ -13,6 +13,8 @@ import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -39,6 +41,7 @@ class _CostEstimationLandingPageA11yTestModule extends Module {
     ClockTestModule(),
     ProjectModule(appBootstrap),
     AuthLibraryModule(appBootstrap),
+    EstimationModule(appBootstrap),
   ];
 
   @override
@@ -78,6 +81,7 @@ void main() {
   late FakeSupabaseWrapper fakeSupabase;
   late Clock clock;
   late AppBootstrap appBootstrap;
+  late FakeAppRouter fakeAppRouter;
 
   const testEstimationRoute = '/test-landing/$testProjectId';
   BuildContext? buildContext;
@@ -94,6 +98,7 @@ void main() {
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(_CostEstimationLandingPageA11yTestModule(appBootstrap));
+    fakeAppRouter = Modular.get<AppRouter>() as FakeAppRouter;
     Modular.setInitialRoute(testEstimationRoute);
   });
 
@@ -104,6 +109,7 @@ void main() {
 
   setUp(() {
     fakeSupabase.reset();
+    fakeAppRouter.reset();
   });
 
   Widget makeApp({ThemeData? theme}) {

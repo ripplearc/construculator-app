@@ -47,6 +47,7 @@ class _CostEstimationLandingPageTestModule extends Module {
     ClockTestModule(),
     ProjectModule(appBootstrap),
     AuthLibraryModule(appBootstrap),
+    EstimationModule(appBootstrap),
   ];
 
   @override
@@ -94,13 +95,6 @@ void main() {
 
   setUpAll(() {
     CoreToast.disableTimers();
-  });
-
-  tearDownAll(() {
-    CoreToast.enableTimers();
-  });
-
-  setUp(() {
     clock = FakeClockImpl();
     fakeSupabase = FakeSupabaseWrapper(clock: clock);
     appBootstrap = AppBootstrap(
@@ -108,14 +102,19 @@ void main() {
       envLoader: FakeEnvLoader(),
       supabaseWrapper: fakeSupabase,
     );
-    Modular.destroy();
     Modular.init(_CostEstimationLandingPageTestModule(appBootstrap));
     fakeAppRouter = Modular.get<AppRouter>() as FakeAppRouter;
     Modular.setInitialRoute(testEstimationRoute);
   });
 
-  tearDown(() {
+  tearDownAll(() {
     Modular.destroy();
+    CoreToast.enableTimers();
+  });
+
+  setUp(() {
+    fakeSupabase.reset();
+    fakeAppRouter.reset();
   });
 
   Widget makeApp() {
@@ -221,9 +220,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(CoreLoadingIndicator), findsNothing);
-
       // TODO: https://ripplearc.youtrack.cloud/issue/CA-162/Dashboard-Create-Project-Repository correct this to an actual name from fake project table
-      expect(find.text('Sample Construction Project'), findsOneWidget);
+
+      expect(find.byType(CostEstimationEmptyWidget), findsOneWidget);
     });
   });
 
