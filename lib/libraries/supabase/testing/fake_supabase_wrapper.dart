@@ -378,6 +378,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required String filterColumn,
     required dynamic filterValue,
   }) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
     _methodCalls.add({
       'method': 'select',
       'table': table,
@@ -411,6 +414,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required String filterColumn,
     required List<dynamic> filterValues,
   }) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
     _methodCalls.add({
       'method': 'selectWhereIn',
       'table': table,

@@ -1,50 +1,97 @@
-import 'dart:async';
-
 import 'package:bloc_test/bloc_test.dart';
+import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
-import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
-import 'package:construculator/libraries/auth/testing/fake_auth_manager.dart';
-import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
-import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
-import 'package:construculator/libraries/project/data/data_source/interfaces/project_data_source.dart';
-import 'package:construculator/libraries/project/data/models/project_dto.dart';
-import 'package:construculator/libraries/project/data/repositories/project_repository_impl.dart';
-import 'package:construculator/libraries/project/domain/entities/enums.dart';
-import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/config/testing/fake_app_config.dart';
+import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('ProjectDropdownBloc', () {
+    late FakeSupabaseWrapper fakeSupabaseWrapper;
     late FakeClockImpl clock;
-    late FakeAuthManager authManager;
-    late _FakeProjectDataSource projectDataSource;
+    const String testUserId = 'user-1';
+
+    setUpAll(() {
+      clock = FakeClockImpl(DateTime(2025, 1, 1, 8, 0));
+      final bootstrap = AppBootstrap(
+        supabaseWrapper: FakeSupabaseWrapper(clock: clock),
+        config: FakeAppConfig(),
+        envLoader: FakeEnvLoader(),
+      );
+      Modular.init(_ProjectDropdownBlocTestModule(bootstrap));
+      fakeSupabaseWrapper =
+          Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+    });
+
+    tearDownAll(() {
+      Modular.dispose();
+    });
 
     setUp(() {
-      clock = FakeClockImpl(DateTime(2025, 1, 1, 8, 0));
-      Modular.init(_ProjectDropdownBlocTestModule(clock: clock));
-      authManager = Modular.get<AuthManager>() as FakeAuthManager;
-      authManager.setCurrentCredential(
-        UserCredential(
-          id: 'user-1',
+      fakeSupabaseWrapper.reset();
+      fakeSupabaseWrapper.setCurrentUser(
+        FakeUser(
+          id: testUserId,
           email: 'user-1@example.com',
-          metadata: {},
-          createdAt: clock.now(),
+          createdAt: clock.now().toIso8601String(),
+          appMetadata: const {},
+          userMetadata: const {},
         ),
       );
-      projectDataSource = Modular.get<_FakeProjectDataSource>();
     });
 
-    tearDown(() {
-      projectDataSource.dispose();
-      Modular.destroy();
-    });
+    Map<String, dynamic> buildProjectMap({
+      required String id,
+      required String projectName,
+      required String creatorUserId,
+      required DateTime updatedAt,
+      String? description,
+      String? status,
+    }) {
+      return {
+        DatabaseConstants.idColumn: id,
+        DatabaseConstants.projectNameColumn: projectName,
+        DatabaseConstants.creatorUserIdColumn: creatorUserId,
+        DatabaseConstants.updatedAtColumn: updatedAt.toIso8601String(),
+        DatabaseConstants.createdAtColumn: DateTime(
+          2025,
+          1,
+          1,
+        ).toIso8601String(),
+        DatabaseConstants.descriptionColumn: description,
+        DatabaseConstants.statusColumn: status ?? 'active',
+      };
+    }
+
+    Map<String, dynamic> buildProjectMemberMap({
+      required String id,
+      required String userId,
+      required String projectId,
+    }) => {
+      DatabaseConstants.idColumn: id,
+      DatabaseConstants.userIdColumn: userId,
+      DatabaseConstants.projectIdColumn: projectId,
+    };
+
+    void seedProjectsTable(List<Map<String, dynamic>> rows) {
+      fakeSupabaseWrapper.addTableData(DatabaseConstants.projectsTable, rows);
+    }
+
+    void seedProjectMembersTable(List<Map<String, dynamic>> rows) {
+      fakeSupabaseWrapper.addTableData(
+        DatabaseConstants.projectMembersTable,
+        rows,
+      );
+    }
 
     test('initial state is ProjectDropdownInitial', () {
       final bloc = Modular.get<ProjectDropdownBloc>();
@@ -52,356 +99,412 @@ void main() {
       bloc.close();
     });
 
-    blocTest<ProjectDropdownBloc, ProjectDropdownState>(
-      'emits loading then success with first project selected',
-      build: () {
-        projectDataSource.ownedProjects = [
-          _projectDto(
-            id: 'project-2',
-            projectName: 'Project 2',
-            creatorUserId: 'user-1',
-            updatedAt: DateTime(2025, 1, 2),
-          ),
-          _projectDto(
-            id: 'project-1',
-            projectName: 'Project 1',
-            creatorUserId: 'user-1',
-            updatedAt: DateTime(2025, 1, 1),
-          ),
-        ];
-        return Modular.get<ProjectDropdownBloc>();
-      },
-      act: (bloc) async {
-        bloc.add(const ProjectDropdownStarted());
-        await bloc.stream.firstWhere(
-          (s) =>
-              s is ProjectDropdownLoadSuccess ||
-              s is ProjectDropdownLoadFailure,
+    group('ProjectDropdownStarted', () {
+      group('success paths', () {
+        blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+          'emits loading then success with first project selected',
+          build: () {
+            seedProjectsTable([
+              buildProjectMap(
+                id: 'project-2',
+                projectName: 'Project 2',
+                creatorUserId: testUserId,
+                updatedAt: DateTime(2025, 1, 2),
+              ),
+              buildProjectMap(
+                id: 'project-1',
+                projectName: 'Project 1',
+                creatorUserId: testUserId,
+                updatedAt: DateTime(2025, 1, 1),
+              ),
+            ]);
+            return Modular.get<ProjectDropdownBloc>();
+          },
+          act: (bloc) async {
+            bloc.add(const ProjectDropdownStarted());
+            await bloc.stream.firstWhere(
+              (s) =>
+                  s is ProjectDropdownLoadSuccess ||
+                  s is ProjectDropdownLoadFailure,
+            );
+          },
+          expect: () => [
+            const ProjectDropdownLoadInProgress(),
+            isA<ProjectDropdownLoadSuccess>()
+                .having((state) => state.projects.length, 'projects.length', 2)
+                .having(
+                  (state) => state.selectedProject?.id,
+                  'selectedProject.id',
+                  'project-2',
+                ),
+          ],
         );
-      },
-      expect: () => [
-        const ProjectDropdownLoadInProgress(),
-        isA<ProjectDropdownLoadSuccess>()
-            .having((state) => state.projects.length, 'projects.length', 2)
-            .having(
+
+        blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+          'emits loading then success with owned and shared projects',
+          build: () {
+            seedProjectsTable([
+              buildProjectMap(
+                id: 'owned-project',
+                projectName: 'Owned',
+                creatorUserId: testUserId,
+                updatedAt: DateTime(2025, 1, 1),
+              ),
+              buildProjectMap(
+                id: 'shared-project',
+                projectName: 'Shared',
+                creatorUserId: 'other-user',
+                updatedAt: DateTime(2025, 1, 2),
+              ),
+            ]);
+            seedProjectMembersTable([
+              buildProjectMemberMap(
+                id: 'mem-1',
+                userId: testUserId,
+                projectId: 'shared-project',
+              ),
+            ]);
+            return Modular.get<ProjectDropdownBloc>();
+          },
+          act: (bloc) async {
+            bloc.add(const ProjectDropdownStarted());
+            await bloc.stream.firstWhere(
+              (s) =>
+                  s is ProjectDropdownLoadSuccess ||
+                  s is ProjectDropdownLoadFailure,
+            );
+          },
+          expect: () => [
+            const ProjectDropdownLoadInProgress(),
+            isA<ProjectDropdownLoadSuccess>()
+                .having((state) => state.projects.length, 'projects.length', 2)
+                .having(
+                  (state) => state.selectedProject?.id,
+                  'selectedProject.id',
+                  'shared-project',
+                ),
+          ],
+        );
+
+        blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+          'emits loading then success with empty projects list',
+          build: () => Modular.get<ProjectDropdownBloc>(),
+          act: (bloc) async {
+            bloc.add(const ProjectDropdownStarted());
+            await bloc.stream.firstWhere(
+              (s) =>
+                  s is ProjectDropdownLoadSuccess ||
+                  s is ProjectDropdownLoadFailure,
+            );
+          },
+          expect: () => [
+            const ProjectDropdownLoadInProgress(),
+            isA<ProjectDropdownLoadSuccess>()
+                .having((state) => state.projects, 'projects', isEmpty)
+                .having(
+                  (state) => state.selectedProject,
+                  'selectedProject',
+                  isNull,
+                ),
+          ],
+        );
+
+        blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+          'emits empty projects when user is unauthenticated',
+          build: () {
+            fakeSupabaseWrapper.setCurrentUser(null);
+            return Modular.get<ProjectDropdownBloc>();
+          },
+          act: (bloc) async {
+            bloc.add(const ProjectDropdownStarted());
+            await bloc.stream.firstWhere(
+              (s) =>
+                  s is ProjectDropdownLoadSuccess ||
+                  s is ProjectDropdownLoadFailure,
+            );
+          },
+          expect: () => [
+            const ProjectDropdownLoadInProgress(),
+            isA<ProjectDropdownLoadSuccess>()
+                .having((state) => state.projects, 'projects', isEmpty)
+                .having(
+                  (state) => state.selectedProject,
+                  'selectedProject',
+                  isNull,
+                ),
+          ],
+        );
+      });
+
+      group('error paths', () {
+        blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+          'emits failure when repository watch flow fails during refresh',
+          build: () {
+            fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
+            fakeSupabaseWrapper.selectMultipleExceptionType =
+                SupabaseExceptionType.socket;
+            return Modular.get<ProjectDropdownBloc>();
+          },
+          act: (bloc) async {
+            bloc.add(const ProjectDropdownStarted());
+            await bloc.stream.firstWhere(
+              (s) => s is ProjectDropdownLoadFailure,
+            );
+          },
+          expect: () => [
+            const ProjectDropdownLoadInProgress(),
+            isA<ProjectDropdownLoadFailure>().having(
+              (state) => state.message,
+              'message',
+              isNotEmpty,
+            ),
+          ],
+        );
+      });
+
+      group('realtime updates', () {
+        blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+          'emits updated state when repository stream pushes new list',
+          build: () {
+            seedProjectsTable([
+              buildProjectMap(
+                id: 'project-1',
+                projectName: 'Project 1',
+                creatorUserId: testUserId,
+                updatedAt: DateTime(2025, 1, 1),
+              ),
+            ]);
+            return Modular.get<ProjectDropdownBloc>();
+          },
+          act: (bloc) async {
+            bloc.add(const ProjectDropdownStarted());
+            await bloc.stream.firstWhere(
+              (s) =>
+                  s is ProjectDropdownLoadSuccess &&
+                  s.selectedProject?.projectName == 'Project 1',
+            );
+            seedProjectsTable([
+              buildProjectMap(
+                id: 'project-1',
+                projectName: 'Project 1 Updated',
+                creatorUserId: testUserId,
+                updatedAt: DateTime(2025, 1, 2),
+              ),
+            ]);
+            await bloc.stream.firstWhere(
+              (s) =>
+                  s is ProjectDropdownLoadSuccess &&
+                  s.selectedProject?.projectName == 'Project 1 Updated',
+            );
+          },
+          expect: () => [
+            const ProjectDropdownLoadInProgress(),
+            isA<ProjectDropdownLoadSuccess>().having(
+              (state) => state.selectedProject?.projectName,
+              'selectedProject.projectName',
+              'Project 1',
+            ),
+            isA<ProjectDropdownLoadSuccess>().having(
+              (state) => state.selectedProject?.projectName,
+              'selectedProject.projectName',
+              'Project 1 Updated',
+            ),
+          ],
+        );
+
+        blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+          'resets to LoadInProgress when ProjectDropdownStarted is dispatched again',
+          build: () {
+            seedProjectsTable([
+              buildProjectMap(
+                id: 'project-1',
+                projectName: 'P1',
+                creatorUserId: testUserId,
+                updatedAt: DateTime(2025, 1, 2),
+              ),
+              buildProjectMap(
+                id: 'project-2',
+                projectName: 'P2',
+                creatorUserId: testUserId,
+                updatedAt: DateTime(2025, 1, 1),
+              ),
+            ]);
+            return Modular.get<ProjectDropdownBloc>();
+          },
+          act: (bloc) async {
+            bloc.add(const ProjectDropdownStarted());
+            await bloc.stream.firstWhere(
+              (s) => s is ProjectDropdownLoadSuccess,
+            );
+            bloc.add(const ProjectDropdownSelected('project-2'));
+            await bloc.stream.firstWhere(
+              (s) =>
+                  s is ProjectDropdownLoadSuccess &&
+                  s.selectedProject?.id == 'project-2',
+            );
+            bloc.add(const ProjectDropdownStarted());
+          },
+          expect: () => [
+            const ProjectDropdownLoadInProgress(),
+            isA<ProjectDropdownLoadSuccess>().having(
+              (state) => state.selectedProject?.id,
+              'selectedProject.id',
+              'project-1',
+            ),
+            isA<ProjectDropdownLoadSuccess>().having(
               (state) => state.selectedProject?.id,
               'selectedProject.id',
               'project-2',
             ),
-      ],
-    );
-
-    blocTest<ProjectDropdownBloc, ProjectDropdownState>(
-      'emits loading then success with empty projects list',
-      build: () => Modular.get<ProjectDropdownBloc>(),
-      act: (bloc) async {
-        bloc.add(const ProjectDropdownStarted());
-        await bloc.stream.firstWhere(
-          (s) =>
-              s is ProjectDropdownLoadSuccess ||
-              s is ProjectDropdownLoadFailure,
-        );
-      },
-      expect: () => [
-        const ProjectDropdownLoadInProgress(),
-        isA<ProjectDropdownLoadSuccess>()
-            .having((state) => state.projects, 'projects', isEmpty)
-            .having(
-              (state) => state.selectedProject,
-              'selectedProject',
-              isNull,
+            const ProjectDropdownLoadInProgress(),
+            isA<ProjectDropdownLoadSuccess>().having(
+              (state) => state.selectedProject?.id,
+              'selectedProject.id',
+              'project-1',
             ),
-      ],
-    );
-
-    blocTest<ProjectDropdownBloc, ProjectDropdownState>(
-      'ignores ProjectDropdownSelected with unknown project id',
-      build: () {
-        projectDataSource.ownedProjects = [
-          _projectDto(
-            id: 'project-1',
-            projectName: 'P1',
-            creatorUserId: 'user-1',
-            updatedAt: DateTime(2025, 1, 1),
-          ),
-        ];
-        return Modular.get<ProjectDropdownBloc>();
-      },
-      act: (bloc) async {
-        bloc.add(const ProjectDropdownStarted());
-        await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
-        bloc.add(const ProjectDropdownSelected('non-existent-id'));
-      },
-      expect: () => [
-        const ProjectDropdownLoadInProgress(),
-        isA<ProjectDropdownLoadSuccess>().having(
-          (state) => state.selectedProject?.id,
-          'selectedProject.id',
-          'project-1',
-        ),
-      ],
-    );
-
-    blocTest<ProjectDropdownBloc, ProjectDropdownState>(
-      'updates selected project when ProjectDropdownSelected is dispatched',
-      build: () {
-        projectDataSource.ownedProjects = [
-          _projectDto(
-            id: 'project-1',
-            projectName: 'Project 1',
-            creatorUserId: 'user-1',
-            updatedAt: DateTime(2025, 1, 2),
-          ),
-          _projectDto(
-            id: 'project-2',
-            projectName: 'Project 2',
-            creatorUserId: 'user-1',
-            updatedAt: DateTime(2025, 1, 1),
-          ),
-        ];
-        return Modular.get<ProjectDropdownBloc>();
-      },
-      act: (bloc) async {
-        bloc.add(const ProjectDropdownStarted());
-        await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
-        bloc.add(const ProjectDropdownSelected('project-2'));
-      },
-      expect: () => [
-        const ProjectDropdownLoadInProgress(),
-        isA<ProjectDropdownLoadSuccess>().having(
-          (state) => state.selectedProject?.id,
-          'selectedProject.id',
-          'project-1',
-        ),
-        isA<ProjectDropdownLoadSuccess>().having(
-          (state) => state.selectedProject?.id,
-          'selectedProject.id',
-          'project-2',
-        ),
-      ],
-    );
-
-    blocTest<ProjectDropdownBloc, ProjectDropdownState>(
-      'emits failure when repository watch flow fails during refresh',
-      build: () {
-        projectDataSource.shouldThrowOnGetOwnedProjects = true;
-        projectDataSource.getOwnedProjectsErrorMessage =
-            'Unable to fetch projects';
-        return Modular.get<ProjectDropdownBloc>();
-      },
-      act: (bloc) async {
-        bloc.add(const ProjectDropdownStarted());
-        await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadFailure);
-      },
-      expect: () => [
-        const ProjectDropdownLoadInProgress(),
-        isA<ProjectDropdownLoadFailure>().having(
-          (state) => state.message,
-          'message',
-          contains('Unable to fetch projects'),
-        ),
-      ],
-    );
-
-    blocTest<ProjectDropdownBloc, ProjectDropdownState>(
-      'emits updated state when repository stream pushes new list',
-      build: () {
-        projectDataSource.ownedProjects = [
-          _projectDto(
-            id: 'project-1',
-            projectName: 'Project 1',
-            creatorUserId: 'user-1',
-            updatedAt: DateTime(2025, 1, 1),
-          ),
-        ];
-        return Modular.get<ProjectDropdownBloc>();
-      },
-      act: (bloc) async {
-        bloc.add(const ProjectDropdownStarted());
-        await bloc.stream.firstWhere(
-          (s) =>
-              s is ProjectDropdownLoadSuccess &&
-              s.selectedProject?.projectName == 'Project 1',
+          ],
         );
-        projectDataSource.ownedProjects = [
-          _projectDto(
-            id: 'project-1',
-            projectName: 'Project 1 Updated',
-            creatorUserId: 'user-1',
-            updatedAt: DateTime(2025, 1, 2),
-          ),
-        ];
-        projectDataSource.emitProjectChange();
-        await bloc.stream.firstWhere(
-          (s) =>
-              s is ProjectDropdownLoadSuccess &&
-              s.selectedProject?.projectName == 'Project 1 Updated',
-        );
-      },
-      expect: () => [
-        const ProjectDropdownLoadInProgress(),
-        isA<ProjectDropdownLoadSuccess>().having(
-          (state) => state.selectedProject?.projectName,
-          'selectedProject.projectName',
-          'Project 1',
-        ),
-        isA<ProjectDropdownLoadSuccess>().having(
-          (state) => state.selectedProject?.projectName,
-          'selectedProject.projectName',
-          'Project 1 Updated',
-        ),
-      ],
-    );
 
-    blocTest<ProjectDropdownBloc, ProjectDropdownState>(
-      'falls back to first project when selected project is removed by realtime update',
-      build: () {
-        projectDataSource.ownedProjects = [
-          _projectDto(
-            id: 'project-1',
-            projectName: 'P1',
-            creatorUserId: 'user-1',
-            updatedAt: DateTime(2025, 1, 2),
-          ),
-          _projectDto(
-            id: 'project-2',
-            projectName: 'P2',
-            creatorUserId: 'user-1',
-            updatedAt: DateTime(2025, 1, 1),
-          ),
-        ];
-        return Modular.get<ProjectDropdownBloc>();
-      },
-      act: (bloc) async {
-        bloc.add(const ProjectDropdownStarted());
-        await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
-        bloc.add(const ProjectDropdownSelected('project-2'));
-        projectDataSource.ownedProjects = [
-          _projectDto(
-            id: 'project-1',
-            projectName: 'P1',
-            creatorUserId: 'user-1',
-            updatedAt: DateTime(2025, 1, 3),
-          ),
-        ];
-        projectDataSource.emitProjectChange();
-        await bloc.stream.firstWhere(
-          (s) =>
-              s is ProjectDropdownLoadSuccess &&
-              s.selectedProject?.id == 'project-1' &&
-              s.projects.length == 1,
+        blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+          'falls back to first project when selected project is removed by realtime update',
+          build: () {
+            seedProjectsTable([
+              buildProjectMap(
+                id: 'project-1',
+                projectName: 'P1',
+                creatorUserId: testUserId,
+                updatedAt: DateTime(2025, 1, 2),
+              ),
+              buildProjectMap(
+                id: 'project-2',
+                projectName: 'P2',
+                creatorUserId: testUserId,
+                updatedAt: DateTime(2025, 1, 1),
+              ),
+            ]);
+            return Modular.get<ProjectDropdownBloc>();
+          },
+          act: (bloc) async {
+            bloc.add(const ProjectDropdownStarted());
+            await bloc.stream.firstWhere(
+              (s) => s is ProjectDropdownLoadSuccess,
+            );
+            bloc.add(const ProjectDropdownSelected('project-2'));
+            seedProjectsTable([
+              buildProjectMap(
+                id: 'project-1',
+                projectName: 'P1',
+                creatorUserId: testUserId,
+                updatedAt: DateTime(2025, 1, 3),
+              ),
+            ]);
+            await bloc.stream.firstWhere(
+              (s) =>
+                  s is ProjectDropdownLoadSuccess &&
+                  s.selectedProject?.id == 'project-1' &&
+                  s.projects.length == 1,
+            );
+          },
+          expect: () => [
+            const ProjectDropdownLoadInProgress(),
+            isA<ProjectDropdownLoadSuccess>().having(
+              (state) => state.selectedProject?.id,
+              'selectedProject.id',
+              'project-1',
+            ),
+            isA<ProjectDropdownLoadSuccess>().having(
+              (state) => state.selectedProject?.id,
+              'selectedProject.id',
+              'project-2',
+            ),
+            isA<ProjectDropdownLoadSuccess>()
+                .having(
+                  (state) => state.selectedProject?.id,
+                  'selectedProject.id',
+                  'project-1',
+                )
+                .having((state) => state.projects.length, 'projects.length', 1),
+          ],
         );
-      },
-      expect: () => [
-        const ProjectDropdownLoadInProgress(),
-        isA<ProjectDropdownLoadSuccess>().having(
-          (state) => state.selectedProject?.id,
-          'selectedProject.id',
-          'project-1',
-        ),
-        isA<ProjectDropdownLoadSuccess>().having(
-          (state) => state.selectedProject?.id,
-          'selectedProject.id',
-          'project-2',
-        ),
-        isA<ProjectDropdownLoadSuccess>()
-            .having((state) => state.selectedProject?.id, 'selectedProject.id', 'project-1')
-            .having((state) => state.projects.length, 'projects.length', 1),
-      ],
-    );
+      });
+    });
+
+    group('ProjectDropdownSelected', () {
+      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+        'ignores ProjectDropdownSelected with unknown project id',
+        build: () {
+          seedProjectsTable([
+            buildProjectMap(
+              id: 'project-1',
+              projectName: 'P1',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ]);
+          return Modular.get<ProjectDropdownBloc>();
+        },
+        act: (bloc) async {
+          bloc.add(const ProjectDropdownStarted());
+          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
+          bloc.add(const ProjectDropdownSelected('non-existent-id'));
+        },
+        expect: () => [
+          const ProjectDropdownLoadInProgress(),
+          isA<ProjectDropdownLoadSuccess>().having(
+            (state) => state.selectedProject?.id,
+            'selectedProject.id',
+            'project-1',
+          ),
+        ],
+      );
+
+      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+        'updates selected project when ProjectDropdownSelected is dispatched',
+        build: () {
+          seedProjectsTable([
+            buildProjectMap(
+              id: 'project-1',
+              projectName: 'Project 1',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 2),
+            ),
+            buildProjectMap(
+              id: 'project-2',
+              projectName: 'Project 2',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ]);
+          return Modular.get<ProjectDropdownBloc>();
+        },
+        act: (bloc) async {
+          bloc.add(const ProjectDropdownStarted());
+          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
+          bloc.add(const ProjectDropdownSelected('project-2'));
+        },
+        expect: () => [
+          const ProjectDropdownLoadInProgress(),
+          isA<ProjectDropdownLoadSuccess>().having(
+            (state) => state.selectedProject?.id,
+            'selectedProject.id',
+            'project-1',
+          ),
+          isA<ProjectDropdownLoadSuccess>().having(
+            (state) => state.selectedProject?.id,
+            'selectedProject.id',
+            'project-2',
+          ),
+        ],
+      );
+    });
   });
 }
 
-ProjectDto _projectDto({
-  required String id,
-  required String projectName,
-  required String creatorUserId,
-  required DateTime updatedAt,
-}) {
-  return ProjectDto(
-    id: id,
-    projectName: projectName,
-    creatorUserId: creatorUserId,
-    createdAt: DateTime(2025, 1, 1),
-    updatedAt: updatedAt,
-    status: ProjectStatus.active,
-  );
-}
-
-class _FakeProjectDataSource implements ProjectDataSource {
-  List<ProjectDto> ownedProjects = [];
-  List<ProjectDto> sharedProjects = [];
-  bool shouldThrowOnGetOwnedProjects = false;
-  String getOwnedProjectsErrorMessage = 'Get owned projects failed';
-  Completer<void>? getOwnedProjectsCompleter;
-  final StreamController<void> _changesController =
-      StreamController<void>.broadcast();
-
-  @override
-  Future<List<ProjectDto>> getOwnedProjects(String userId) async {
-    if (shouldThrowOnGetOwnedProjects) {
-      throw Exception(getOwnedProjectsErrorMessage);
-    }
-    final completer = getOwnedProjectsCompleter;
-    if (completer != null) {
-      getOwnedProjectsCompleter = null;
-      await completer.future;
-    }
-    return List<ProjectDto>.from(ownedProjects);
-  }
-
-  @override
-  Future<List<ProjectDto>> getSharedProjects(String userId) async {
-    return List<ProjectDto>.from(sharedProjects);
-  }
-
-  @override
-  Stream<void> watchProjectChanges(String userId) => _changesController.stream;
-
-  void emitProjectChange() {
-    _changesController.add(null);
-  }
-
-  void dispose() {
-    _changesController.close();
-  }
-}
-
 class _ProjectDropdownBlocTestModule extends Module {
-  final FakeClockImpl clock;
+  final AppBootstrap bootstrap;
 
-  _ProjectDropdownBlocTestModule({required this.clock});
+  _ProjectDropdownBlocTestModule(this.bootstrap);
 
   @override
-  void binds(Injector i) {
-    i.addLazySingleton<SupabaseWrapper>(
-      () => FakeSupabaseWrapper(clock: clock),
-    );
-    i.addLazySingleton<AuthNotifierController>(() => FakeAuthNotifier());
-    i.addLazySingleton<AuthRepository>(() => FakeAuthRepository(clock: clock));
-    i.addLazySingleton<AuthManager>(
-      () => FakeAuthManager(
-        authNotifier: i.get<AuthNotifierController>(),
-        authRepository: i.get<AuthRepository>(),
-        wrapper: i.get<SupabaseWrapper>(),
-        clock: clock,
-      ),
-    );
-    i.addLazySingleton<_FakeProjectDataSource>(() => _FakeProjectDataSource());
-    i.addLazySingleton<ProjectDataSource>(
-      () => i.get<_FakeProjectDataSource>(),
-    );
-    i.addLazySingleton<ProjectRepository>(
-      () => ProjectRepositoryImpl(
-        projectDataSource: i.get<ProjectDataSource>(),
-        clock: clock,
-      ),
-    );
-    i.add<ProjectDropdownBloc>(
-      () => ProjectDropdownBloc(
-        projectRepository: i.get<ProjectRepository>(),
-        authManager: i.get<AuthManager>(),
-      ),
-    );
-  }
+  List<Module> get imports => [ClockTestModule(), DashboardModule(bootstrap)];
 }
