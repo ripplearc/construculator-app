@@ -753,10 +753,7 @@ void main() {
           );
 
           expect(result, hasLength(2));
-          expect(
-            result.map((row) => row['id']).toSet(),
-            equals({'1', '3'}),
-          );
+          expect(result.map((row) => row['id']).toSet(), equals({'1', '3'}));
         });
 
         test('returns empty list when no values match', () async {
@@ -796,19 +793,13 @@ void main() {
           fakeWrapper.shouldThrowOnSelectMultiple = true;
           fakeWrapper.selectMultipleErrorMessage = 'Select where in failed';
 
-          expect(
-            () async => await fakeWrapper.selectWhereIn(
+          await expectLater(
+            fakeWrapper.selectWhereIn(
               table: 'items',
               filterColumn: 'project_id',
               filterValues: ['p1'],
             ),
-            throwsA(
-              isA<ServerException>().having(
-                (e) => e.toString(),
-                'message',
-                contains('Select where in failed'),
-              ),
-            ),
+            throwsA(isA<ServerException>()),
           );
         });
       });

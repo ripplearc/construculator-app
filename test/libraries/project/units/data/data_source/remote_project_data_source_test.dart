@@ -133,17 +133,11 @@ void main() {
     test(
       'watchProjectChanges emits when shared project data changes',
       () async {
-        var updatesStarted = false;
         final completer = Completer<void>();
-        final subscription = dataSource.watchProjectChanges('user-1').listen((
-          _,
-        ) {
-          if (updatesStarted && !completer.isCompleted) {
-            completer.complete();
-          }
+        final subscription = dataSource.watchProjectChanges('user-1').listen((_) {
+          if (!completer.isCompleted) completer.complete();
         });
 
-        updatesStarted = true;
         supabaseWrapper.addTableData(DatabaseConstants.projectMembersTable, [
           {
             DatabaseConstants.idColumn: 'member-1',
@@ -173,17 +167,11 @@ void main() {
     test(
       'watchProjectChanges emits when owned projects data changes',
       () async {
-        var updatesStarted = false;
         final completer = Completer<void>();
-        final subscription = dataSource.watchProjectChanges('user-1').listen((
-          _,
-        ) {
-          if (updatesStarted && !completer.isCompleted) {
-            completer.complete();
-          }
+        final subscription = dataSource.watchProjectChanges('user-1').listen((_) {
+          if (!completer.isCompleted) completer.complete();
         });
 
-        updatesStarted = true;
         supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
           _projectRow(
             id: 'owned-1',

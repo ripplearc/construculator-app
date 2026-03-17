@@ -121,15 +121,10 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
     required String filterColumn,
     required List<dynamic> filterValues,
   }) async {
-    final formattedValues = '(${filterValues.map((value) {
-      final stringValue = value.toString().replaceAll("'", "''");
-      return "'$stringValue'";
-    }).join(',')})';
-
     return await _supabaseClient
         .from(table)
         .select(columns)
-        .filter(filterColumn, 'in', formattedValues);
+        .inFilter(filterColumn, filterValues);
   }
 
   @override
