@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_state.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
@@ -8,8 +9,8 @@ import 'package:construculator/libraries/auth/domain/validation/auth_validation.
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
-import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 
 /// A fake implementation of [AuthManager] for testing purposes
 class FakeAuthManager implements AuthManager {

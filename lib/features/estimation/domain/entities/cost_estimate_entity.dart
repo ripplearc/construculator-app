@@ -1,6 +1,6 @@
+import 'package:construculator/features/estimation/domain/entities/enums.dart';
 import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
-import 'package:construculator/features/estimation/domain/entities/enums.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_modular/flutter_modular.dart';

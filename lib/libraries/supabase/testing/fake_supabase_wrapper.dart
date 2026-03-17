@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:construculator/libraries/time/interfaces/clock.dart';
+
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -8,6 +8,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_res
 import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_state.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_session.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:stack_trace/stack_trace.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 

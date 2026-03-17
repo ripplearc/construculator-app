@@ -1,6 +1,6 @@
+import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
-import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:equatable/equatable.dart';
 

@@ -4,9 +4,9 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});

@@ -1,6 +1,6 @@
-import 'package:construculator/libraries/auth/data/models/user_profile_dto.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_activity_type.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_log_entity.dart';
+import 'package:construculator/libraries/auth/data/models/user_profile_dto.dart';
 import 'package:equatable/equatable.dart';
 
 /// Data Transfer Object for CostEstimationLog entity.

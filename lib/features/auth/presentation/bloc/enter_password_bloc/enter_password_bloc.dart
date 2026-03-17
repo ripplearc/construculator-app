@@ -1,7 +1,7 @@
-import 'package:construculator/libraries/errors/failures.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:equatable/equatable.dart';
 import 'package:construculator/features/auth/domain/usecases/login_usecase.dart';
+import 'package:construculator/libraries/errors/failures.dart';
+import 'package:equatable/equatable.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'enter_password_event.dart';
 part 'enter_password_state.dart';
