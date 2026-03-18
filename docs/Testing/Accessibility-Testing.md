@@ -1,6 +1,6 @@
 # Accessibility (a11y) Testing
 
-This page describes how we structure and write accessibility (a11y) tests in Construculator. It is a markdown version of the internal review document `reviews/Accessibility (a11y) Testing Guidelines & Setup.pdf`.
+This page is the canonical reference for a11y testing conventions in Construculator.
 
 Accessibility tests ensure our application is usable for everyone by verifying:
 
@@ -124,7 +124,7 @@ Valid reasons:
   - WCAG 1.4.3 exempts inactive components from contrast requirements.
   - A lower-contrast disabled state is a common, expected cue that an element is not interactive.
 - **Logos and strict brand colors**
-  - Logo text or third-party buttons (e.g., “Sign in with Google”) must follow external brand guidelines that may not meet contrast ratios.
+  - Logo text or third-party buttons (e.g., "Sign in with Google") must follow external brand guidelines that may not meet contrast ratios.
 
 ### B. Tap target size (`checkTapTargetSize: false`)
 
@@ -141,19 +141,21 @@ Valid reasons:
 
 Valid reasons:
 
-- **Preventing “double reads” (semantic merging)**
+- **Preventing "double reads" (semantic merging)**
   - For composite cards (e.g., `EstimationTile` with text, prices, icons) wrapped in `MergeSemantics`, we want the screen reader to announce the whole card as a single button.
   - If an inner `InkWell`/`GestureDetector` is also labeled, the screen reader will announce the action twice. In such cases, we bypass the label requirement on the inner target.
 - **Background gesture catchers**
   - Full-screen invisible `GestureDetector`s used to dismiss keyboards or close dropdowns should not have semantic labels.
   - Announcing "Dismiss keyboard" on a tap in empty space is noisy and confusing for screen reader users.
 
+---
 
 ## Further Reading
 
 If you need to dive deeper into accessibility standards or platform specifics, refer to:
 
-- **WCAG 2.1** – [Web Content Accessibility Guidelines](https://www.w3.org/TR/WCAG21/) (contrast ratios, target size exemptions, etc.) \[[WCAG 2.1\]](https://www.w3.org/TR/WCAG21/)
-- **Flutter docs: Accessibility testing** – Flutter’s guideline APIs and a11y testing helpers for mobile and web. \[[Accessibility testing](https://docs.flutter.dev/ui/accessibility/accessibility-testing)\]
-- **Material Design: Accessible design** – Guidance on accessible color, type, and component behavior. \[[Accessible design](https://m3.material.io/foundations/accessible-design/overview)\]
-- **Apple Human Interface Guidelines: Accessibility** – Platform-specific behavior for VoiceOver and iOS interactions. \[[Apple HIG – Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility)\]
+- **WCAG 2.1** – [Web Content Accessibility Guidelines](https://www.w3.org/TR/WCAG21/)
+- **Flutter docs: Accessibility testing** – [Accessibility testing](https://docs.flutter.dev/ui/accessibility/accessibility-testing)
+- **Material Design: Accessible design** – [Accessible design](https://m3.material.io/foundations/accessible-design/overview)
+- **Apple Human Interface Guidelines: Accessibility** – [Apple HIG – Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility)
+
