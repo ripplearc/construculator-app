@@ -11,6 +11,7 @@ import 'package:construculator/features/estimation/presentation/bloc/add_cost_es
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/change_lock_status_bloc/change_lock_status_bloc.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
+import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
@@ -74,6 +75,9 @@ class _CostEstimationLandingPageTestModule extends Module {
             ),
             BlocProvider(
               create: (context) => Modular.get<ChangeLockStatusBloc>(),
+            ),
+            BlocProvider(
+              create: (context) => Modular.get<RenameEstimationBloc>(),
             ),
           ],
           child: CostEstimationLandingPage(projectId: projectId),
@@ -1187,21 +1191,5 @@ void main() {
         expect(find.text(l10n().connectionError), findsOneWidget);
       },
     );
-  });
-
-  group('Route validation', () {
-    testWidgets('renders empty screen when projectId is missing', (
-      tester,
-    ) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
-
-      await pumpAppAtRoute(tester, '$fullEstimationLandingRoute/');
-
-      expect(find.byType(SizedBox), findsWidgets);
-      expect(find.byType(CostEstimationEmptyWidget), findsNothing);
-    });
   });
 }

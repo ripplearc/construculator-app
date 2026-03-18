@@ -3,6 +3,7 @@ import 'package:construculator/features/estimation/presentation/bloc/cost_estima
 import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/change_lock_status_bloc/change_lock_status_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/app/app_bootstrap.dart';
@@ -68,6 +69,9 @@ class _CostEstimationLandingPageA11yTestModule extends Module {
             ),
             BlocProvider(
               create: (context) => Modular.get<ChangeLockStatusBloc>(),
+            ),
+            BlocProvider(
+              create: (context) => Modular.get<RenameEstimationBloc>(),
             ),
           ],
           child: CostEstimationLandingPage(projectId: projectId),

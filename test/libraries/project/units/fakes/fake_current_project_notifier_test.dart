@@ -76,8 +76,6 @@ void main() {
           fakeNotifier.setCurrentProjectId('second');
           fakeNotifier.setCurrentProjectId(null);
 
-          await pumpEventQueue();
-
           expect(fakeNotifier.projectIdChangedEvents, [
             'first',
             'second',
@@ -88,8 +86,6 @@ void main() {
 
       test('reset should clear tracked events', () async {
         fakeNotifier.setCurrentProjectId('some-id');
-
-        await pumpEventQueue();
 
         fakeNotifier.reset();
 
@@ -117,8 +113,6 @@ void main() {
         );
 
         fakeNotifier.setCurrentProjectId('shared');
-
-        await pumpEventQueue();
 
         expect(listener1Events, ['shared']);
         expect(listener2Events, ['shared']);
