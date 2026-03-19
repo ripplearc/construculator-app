@@ -106,10 +106,10 @@ void main() {
         final listener2Events = <String?>[];
 
         final sub1 = fakeNotifier.onCurrentProjectChanged.listen(
-          listener1Events.add,
+          (event) => listener1Events.add(event),
         );
         final sub2 = fakeNotifier.onCurrentProjectChanged.listen(
-          listener2Events.add,
+          (event) => listener2Events.add(event),
         );
 
         fakeNotifier.setCurrentProjectId('shared');

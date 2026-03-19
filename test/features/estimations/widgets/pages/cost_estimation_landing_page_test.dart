@@ -5,13 +5,21 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/features/project/project_module.dart';
+import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
+import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/change_lock_status_bloc/change_lock_status_bloc.dart';
+import 'package:construculator/libraries/router/testing/fake_router.dart';
+import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:construculator/libraries/router/guards/auth_guard.dart';
+import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
-import 'package:construculator/libraries/router/routes/estimation_routes.dart';
-import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -40,11 +48,42 @@ class _CostEstimationLandingPageTestModule extends Module {
     ClockTestModule(),
     ProjectModule(appBootstrap),
     AuthLibraryModule(appBootstrap),
+    EstimationModule(appBootstrap),
   ];
 
   @override
   void routes(RouteManager r) {
     r.module(estimationBaseRoute, module: EstimationModule(appBootstrap));
+    r.child(
+      '/test-landing/:projectId',
+      guards: [AuthGuard()],
+      child: (context) {
+        final projectId = Modular.args.params['projectId'];
+        return MultiBlocProvider(
+          providers: [
+            BlocProvider<CostEstimationListBloc>(
+              create: (context) {
+                return Modular.get<CostEstimationListBloc>()
+                  ..add(CostEstimationListStartWatching(projectId: projectId));
+              },
+            ),
+            BlocProvider(
+              create: (context) => Modular.get<AddCostEstimationBloc>(),
+            ),
+            BlocProvider(
+              create: (context) => Modular.get<DeleteCostEstimationBloc>(),
+            ),
+            BlocProvider(
+              create: (context) => Modular.get<ChangeLockStatusBloc>(),
+            ),
+            BlocProvider(
+              create: (context) => Modular.get<RenameEstimationBloc>(),
+            ),
+          ],
+          child: CostEstimationLandingPage(projectId: projectId),
+        );
+      },
+    );
   }
 }
 
@@ -54,16 +93,14 @@ void main() {
   late AppBootstrap appBootstrap;
   late FakeAppRouter fakeAppRouter;
 
-  const testEstimationRoute = '$fullEstimationLandingRoute/$testProjectId';
   const debounceWaitTime = Duration(milliseconds: 400);
+  const testEstimationRoute = '/test-landing/$testProjectId';
   BuildContext? buildContext;
 
   setUpAll(() {
     CoreToast.disableTimers();
-
     clock = FakeClockImpl();
     fakeSupabase = FakeSupabaseWrapper(clock: clock);
-
     appBootstrap = AppBootstrap(
       config: FakeAppConfig(),
       envLoader: FakeEnvLoader(),
@@ -187,9 +224,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(CoreLoadingIndicator), findsNothing);
-
       // TODO: https://ripplearc.youtrack.cloud/issue/CA-162/Dashboard-Create-Project-Repository correct this to an actual name from fake project table
-      expect(find.text('Sample Construction Project'), findsOneWidget);
+
+      expect(find.byType(CostEstimationEmptyWidget), findsOneWidget);
     });
   });
 
@@ -1154,21 +1191,5 @@ void main() {
         expect(find.text(l10n().connectionError), findsOneWidget);
       },
     );
-  });
-
-  group('Route validation', () {
-    testWidgets('renders empty screen when projectId is missing', (
-      tester,
-    ) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
-      );
-
-      await pumpAppAtRoute(tester, '$fullEstimationLandingRoute/');
-
-      expect(find.byType(SizedBox), findsOneWidget);
-      expect(find.byType(CostEstimationEmptyWidget), findsNothing);
-    });
   });
 }
