@@ -2,7 +2,6 @@ import 'package:construculator/features/dashboard/presentation/pages/dashboard_p
 import 'package:construculator/features/project/domain/usecases/get_project_header_usecase.dart';
 import 'package:construculator/features/project/presentation/bloc/get_project_bloc/get_project_bloc.dart';
 import 'package:construculator/features/project/presentation/project_ui_provider_impl.dart';
-import 'package:construculator/features/project/presentation/widgets/project_header_app_bar.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
@@ -21,16 +20,17 @@ import 'package:construculator/libraries/project/presentation/project_ui_provide
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
-import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../../../../utils/screenshot/font_loader.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-class _DashboardPageTestModule extends Module {
+import '../../../../utils/a11y/a11y_guidelines.dart';
+
+class _DashboardPageA11yTestModule extends Module {
   final FakeAuthManager authManager;
   final FakeAuthNotifier authNotifier;
   final FakeAppRouter appRouter;
@@ -38,7 +38,7 @@ class _DashboardPageTestModule extends Module {
   final FakeCurrentProjectNotifier currentProjectNotifier;
   final FakeProjectRepository projectRepository;
 
-  _DashboardPageTestModule({
+  _DashboardPageA11yTestModule({
     required this.authManager,
     required this.authNotifier,
     required this.appRouter,
@@ -56,7 +56,10 @@ class _DashboardPageTestModule extends Module {
     i.addLazySingleton<CurrentProjectNotifier>(() => currentProjectNotifier);
     i.addLazySingleton<ProjectRepository>(() => projectRepository);
     i.addLazySingleton<GetProjectHeaderUseCase>(
-      () => GetProjectHeaderUseCase(i.get<ProjectRepository>(), i.get<AuthRepository>()),
+      () => GetProjectHeaderUseCase(
+        i.get<ProjectRepository>(),
+        i.get<AuthRepository>(),
+      ),
     );
     i.add<GetProjectBloc>(() => GetProjectBloc(getProjectHeaderUseCase: i()));
     i.addLazySingleton<ProjectUIProvider>(() => ProjectUIProviderImpl());
@@ -65,10 +68,8 @@ class _DashboardPageTestModule extends Module {
 
 void main() {
   const initialProjectId = 'project-1';
-  const firstName = 'John';
-  const lastName = 'Doe';
-  const dashboardQuickAccessMessage =
-      'Add your favorite calculations and cost estimation for a quick access....';
+  const initialProjectName = 'Dashboard Project';
+  const missingProjectId = 'project-missing';
 
   late FakeClockImpl clock;
   late FakeAuthRepository authRepository;
@@ -77,6 +78,15 @@ void main() {
   late FakeAppRouter router;
   late FakeCurrentProjectNotifier currentProjectNotifier;
   late FakeProjectRepository projectRepository;
+  BuildContext? buildContext;
+
+  setUpAll(() {
+    CoreToast.disableTimers();
+  });
+
+  tearDownAll(() {
+    CoreToast.enableTimers();
+  });
 
   setUp(() {
     clock = FakeClockImpl();
@@ -95,14 +105,11 @@ void main() {
     projectRepository = FakeProjectRepository();
     projectRepository.addProject(
       initialProjectId,
-      createProject(
-        id: initialProjectId,
-        projectName: 'Dashboard Project',
-      ),
+      _createProject(id: initialProjectId, projectName: initialProjectName),
     );
 
     Modular.init(
-      _DashboardPageTestModule(
+      _DashboardPageA11yTestModule(
         authManager: authManager,
         authNotifier: authNotifier,
         appRouter: router,
@@ -117,112 +124,135 @@ void main() {
     Modular.destroy();
   });
 
-  Widget makeApp() {
+  Widget makeApp({ThemeData? theme}) {
     return MaterialApp(
-      theme: createTestTheme(),
+      theme: theme ?? CoreTheme.light(),
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: const DashboardPage(),
+      home: Builder(
+        builder: (context) {
+          buildContext = context;
+          return const DashboardPage();
+        },
+      ),
     );
   }
 
-  UserCredential createCredential({
-    String id = 'test-id',
-    String email = 'test@example.com',
-  }) {
-    return UserCredential(
-      id: id,
-      email: email,
-      metadata: {},
-      createdAt: clock.now(),
+  AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
+
+  Future<void> pumpDashboardPage(WidgetTester tester) async {
+    await tester.pumpWidget(makeApp());
+    await tester.pumpAndSettle();
+  }
+
+  void setUpAuthenticatedUser({String email = 'test@example.com'}) {
+    final credential = _createCredential(email: email, clock: clock);
+    authManager.setCurrentCredential(credential);
+    authRepository.setCurrentCredentials(credential);
+    authRepository.setUserProfile(
+      _createUser(
+        credentialId: credential.id,
+        email: email,
+        clock: clock,
+      ),
     );
   }
 
-  User createUser({
-    String id = 'user-1',
-    String credentialId = 'test-id',
-    String email = 'test@example.com',
-    String firstName = firstName,
-    String lastName = lastName,
-  }) {
-    return User(
-      id: id,
-      credentialId: credentialId,
-      email: email,
-      firstName: firstName,
-      lastName: lastName,
-      professionalRole: 'Engineer',
-      createdAt: clock.now(),
-      updatedAt: clock.now(),
-      userStatus: UserProfileStatus.active,
-      userPreferences: {},
+  group('DashboardPage – accessibility', () {
+    testWidgets(
+      'meets a11y text contrast for dashboard empty-state message in both themes',
+      (tester) async {
+        setUpAuthenticatedUser();
+        await setupA11yTest(tester);
+        await pumpDashboardPage(tester);
+
+        final message = l10n().dashboardQuickAccessMessage;
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeApp(theme: theme),
+          find.text(message),
+          checkTapTargetSize: false,
+          checkLabeledTapTarget: false,
+        );
+      },
     );
-  }
 
-  testWidgets('navigates to login when credentials id is null', (tester) async {
-    await tester.pumpWidget(makeApp());
+    testWidgets(
+      'meets a11y text contrast for project title in both themes',
+      (tester) async {
+        setUpAuthenticatedUser();
+        await setupA11yTest(tester);
+        await pumpDashboardPage(tester);
 
-    expect(router.navigationHistory.length, 1);
-    expect(router.navigationHistory.first.route, fullLoginRoute);
-  });
-
-  testWidgets('renders project header app bar and empty state message', (
-    tester,
-  ) async {
-    final credential = createCredential();
-    final user = createUser();
-    authManager.setCurrentCredential(credential);
-    authRepository.setUserProfile(user);
-
-    await tester.pumpWidget(makeApp());
-    await tester.pumpAndSettle();
-
-    expect(find.byType(ProjectHeaderAppBar), findsOneWidget);
-    expect(find.text('Dashboard Project'), findsOneWidget);
-    expect(find.text(dashboardQuickAccessMessage), findsOneWidget);
-  });
-
-  testWidgets('uses current project notifier id to load header project', (
-    tester,
-  ) async {
-    final credential = createCredential();
-    final user = createUser();
-    authManager.setCurrentCredential(credential);
-    authRepository.setUserProfile(user);
-
-    await tester.pumpWidget(makeApp());
-    await tester.pumpAndSettle();
-
-    final getProjectCalls = projectRepository.getMethodCallsFor('getProject');
-    expect(
-      getProjectCalls.any((call) => call['id'] == currentProjectNotifier.currentProjectId),
-      isTrue,
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeApp(theme: theme),
+          find.text(initialProjectName),
+          checkTapTargetSize: false,
+          checkLabeledTapTarget: false,
+        );
+      },
     );
-  });
 
-  testWidgets('navigates to create account when user profile stream emits null', (
-    tester,
-  ) async {
-    const testEmail = 'stream-test@example.com';
-    final credential = createCredential(email: testEmail);
-    final user = createUser(email: testEmail);
-    authManager.setCurrentCredential(credential);
-    authRepository.setUserProfile(user);
+    testWidgets(
+      'meets a11y text contrast for project load error title in both themes',
+      (tester) async {
+        setUpAuthenticatedUser();
+        currentProjectNotifier.setCurrentProjectId(missingProjectId);
 
-    await tester.pumpWidget(makeApp());
-    await tester.pumpAndSettle();
+        await setupA11yTest(tester);
+        await pumpDashboardPage(tester);
 
-    authNotifier.emitUserProfileChanged(null);
-    await tester.pumpAndSettle();
-
-    expect(router.navigationHistory.length, 1);
-    expect(router.navigationHistory.first.route, fullCreateAccountRoute);
-    expect(router.navigationHistory.first.arguments, testEmail);
+        final errorText = l10n().projectLoadError;
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeApp(theme: theme),
+          find.text(errorText),
+          checkTapTargetSize: false,
+          checkLabeledTapTarget: false,
+        );
+      },
+    );
   });
 }
 
-Project createProject({required String id, required String projectName}) {
+UserCredential _createCredential({
+  required FakeClockImpl clock,
+  String id = 'test-id',
+  String email = 'test@example.com',
+}) {
+  return UserCredential(
+    id: id,
+    email: email,
+    metadata: {},
+    createdAt: clock.now(),
+  );
+}
+
+User _createUser({
+  required FakeClockImpl clock,
+  required String credentialId,
+  String id = 'user-1',
+  String email = 'test@example.com',
+  String firstName = 'John',
+  String lastName = 'Doe',
+}) {
+  return User(
+    id: id,
+    credentialId: credentialId,
+    email: email,
+    firstName: firstName,
+    lastName: lastName,
+    professionalRole: 'Engineer',
+    createdAt: clock.now(),
+    updatedAt: clock.now(),
+    userStatus: UserProfileStatus.active,
+    userPreferences: {},
+  );
+}
+
+Project _createProject({required String id, required String projectName}) {
   return Project(
     id: id,
     projectName: projectName,
