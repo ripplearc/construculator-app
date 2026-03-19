@@ -55,7 +55,7 @@ void main() {
       required String creatorUserId,
       required DateTime updatedAt,
       String? description,
-      String? status,
+      String status = 'active',
     }) {
       return {
         DatabaseConstants.idColumn: id,
@@ -68,7 +68,7 @@ void main() {
           1,
         ).toIso8601String(),
         DatabaseConstants.descriptionColumn: description,
-        DatabaseConstants.statusColumn: status ?? 'active',
+        DatabaseConstants.statusColumn: status,
       };
     }
 
@@ -133,7 +133,7 @@ void main() {
             isA<ProjectDropdownLoadSuccess>()
                 .having((state) => state.projects.length, 'projects.length', 2)
                 .having(
-                  (state) => state.selectedProject?.id,
+                  (state) => state.selectedProject!.id,
                   'selectedProject.id',
                   'project-2',
                 ),
@@ -179,7 +179,7 @@ void main() {
             isA<ProjectDropdownLoadSuccess>()
                 .having((state) => state.projects.length, 'projects.length', 2)
                 .having(
-                  (state) => state.selectedProject?.id,
+                  (state) => state.selectedProject!.id,
                   'selectedProject.id',
                   'shared-project',
                 ),
@@ -281,7 +281,7 @@ void main() {
             await bloc.stream.firstWhere(
               (s) =>
                   s is ProjectDropdownLoadSuccess &&
-                  s.selectedProject?.projectName == 'Project 1',
+                  s.selectedProject!.projectName == 'Project 1',
             );
             seedProjectsTable([
               buildProjectMap(
@@ -294,18 +294,18 @@ void main() {
             await bloc.stream.firstWhere(
               (s) =>
                   s is ProjectDropdownLoadSuccess &&
-                  s.selectedProject?.projectName == 'Project 1 Updated',
+                  s.selectedProject!.projectName == 'Project 1 Updated',
             );
           },
           expect: () => [
             const ProjectDropdownLoadInProgress(),
             isA<ProjectDropdownLoadSuccess>().having(
-              (state) => state.selectedProject?.projectName,
+              (state) => state.selectedProject!.projectName,
               'selectedProject.projectName',
               'Project 1',
             ),
             isA<ProjectDropdownLoadSuccess>().having(
-              (state) => state.selectedProject?.projectName,
+              (state) => state.selectedProject!.projectName,
               'selectedProject.projectName',
               'Project 1 Updated',
             ),
@@ -340,25 +340,25 @@ void main() {
             await bloc.stream.firstWhere(
               (s) =>
                   s is ProjectDropdownLoadSuccess &&
-                  s.selectedProject?.id == 'project-2',
+                  s.selectedProject!.id == 'project-2',
             );
             bloc.add(const ProjectDropdownStarted());
           },
           expect: () => [
             const ProjectDropdownLoadInProgress(),
             isA<ProjectDropdownLoadSuccess>().having(
-              (state) => state.selectedProject?.id,
+              (state) => state.selectedProject!.id,
               'selectedProject.id',
               'project-1',
             ),
             isA<ProjectDropdownLoadSuccess>().having(
-              (state) => state.selectedProject?.id,
+              (state) => state.selectedProject!.id,
               'selectedProject.id',
               'project-2',
             ),
             const ProjectDropdownLoadInProgress(),
             isA<ProjectDropdownLoadSuccess>().having(
-              (state) => state.selectedProject?.id,
+              (state) => state.selectedProject!.id,
               'selectedProject.id',
               'project-1',
             ),
@@ -401,25 +401,25 @@ void main() {
             await bloc.stream.firstWhere(
               (s) =>
                   s is ProjectDropdownLoadSuccess &&
-                  s.selectedProject?.id == 'project-1' &&
+                  s.selectedProject!.id == 'project-1' &&
                   s.projects.length == 1,
             );
           },
           expect: () => [
             const ProjectDropdownLoadInProgress(),
             isA<ProjectDropdownLoadSuccess>().having(
-              (state) => state.selectedProject?.id,
+              (state) => state.selectedProject!.id,
               'selectedProject.id',
               'project-1',
             ),
             isA<ProjectDropdownLoadSuccess>().having(
-              (state) => state.selectedProject?.id,
+              (state) => state.selectedProject!.id,
               'selectedProject.id',
               'project-2',
             ),
             isA<ProjectDropdownLoadSuccess>()
                 .having(
-                  (state) => state.selectedProject?.id,
+                  (state) => state.selectedProject!.id,
                   'selectedProject.id',
                   'project-1',
                 )
@@ -451,7 +451,7 @@ void main() {
         expect: () => [
           const ProjectDropdownLoadInProgress(),
           isA<ProjectDropdownLoadSuccess>().having(
-            (state) => state.selectedProject?.id,
+            (state) => state.selectedProject!.id,
             'selectedProject.id',
             'project-1',
           ),
@@ -485,12 +485,12 @@ void main() {
         expect: () => [
           const ProjectDropdownLoadInProgress(),
           isA<ProjectDropdownLoadSuccess>().having(
-            (state) => state.selectedProject?.id,
+            (state) => state.selectedProject!.id,
             'selectedProject.id',
             'project-1',
           ),
           isA<ProjectDropdownLoadSuccess>().having(
-            (state) => state.selectedProject?.id,
+            (state) => state.selectedProject!.id,
             'selectedProject.id',
             'project-2',
           ),
