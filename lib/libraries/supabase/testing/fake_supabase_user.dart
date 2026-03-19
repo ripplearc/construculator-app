@@ -1,7 +1,7 @@
 // coverage:ignore-file
 
-import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import 'package:construculator/libraries/annotations/data_model.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 /// A fake implementation of [supabase.User] for testing purposes
 @dataModel

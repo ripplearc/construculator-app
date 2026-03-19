@@ -1,9 +1,9 @@
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/config/testing/config_test_module.dart';
+import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 
 void main() {
   late FakeEnvLoader fakeLoader;

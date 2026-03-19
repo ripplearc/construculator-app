@@ -1,13 +1,13 @@
+import 'package:construculator/features/auth/presentation/bloc/set_new_password_bloc/set_new_password_bloc.dart';
 import 'package:construculator/features/auth/presentation/extensions/auth_error_type_extension.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:construculator/features/auth/presentation/bloc/set_new_password_bloc/set_new_password_bloc.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class SetNewPasswordPage extends StatefulWidget {
   final String email;

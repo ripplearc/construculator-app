@@ -1,15 +1,15 @@
 import 'dart:async';
 
-import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_response.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_session.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 void main() {
@@ -735,6 +735,72 @@ void main() {
 
           final calls = fakeWrapper.getMethodCallsFor('select');
           expect(calls.first['columns'], equals('*'));
+        });
+      });
+
+      group('selectWhereIn', () {
+        test('returns list of matching records for values in list', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1', 'name': 'Item 1'},
+            {'id': '2', 'project_id': 'p2', 'name': 'Item 2'},
+            {'id': '3', 'project_id': 'p3', 'name': 'Item 3'},
+          ]);
+
+          final result = await fakeWrapper.selectWhereIn(
+            table: 'items',
+            filterColumn: 'project_id',
+            filterValues: ['p1', 'p3'],
+          );
+
+          expect(result, hasLength(2));
+          expect(result.map((row) => row['id']).toSet(), equals({'1', '3'}));
+        });
+
+        test('returns empty list when no values match', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1', 'name': 'Item 1'},
+          ]);
+
+          final result = await fakeWrapper.selectWhereIn(
+            table: 'items',
+            filterColumn: 'project_id',
+            filterValues: ['p2', 'p3'],
+          );
+
+          expect(result, isEmpty);
+        });
+
+        test('records method call with all parameters', () async {
+          fakeWrapper.addTableData('items', []);
+
+          await fakeWrapper.selectWhereIn(
+            table: 'items',
+            columns: 'id,name',
+            filterColumn: 'project_id',
+            filterValues: ['p1', 'p2'],
+          );
+
+          final calls = fakeWrapper.getMethodCallsFor('selectWhereIn');
+          expect(calls, hasLength(1));
+          final call = calls.first;
+          expect(call['table'], equals('items'));
+          expect(call['columns'], equals('id,name'));
+          expect(call['filterColumn'], equals('project_id'));
+          expect(call['filterValues'], equals(['p1', 'p2']));
+        });
+
+        test('throws exception when configured to fail', () async {
+          fakeWrapper.shouldThrowOnSelectMultiple = true;
+          fakeWrapper.selectMultipleErrorMessage = 'Select where in failed';
+
+          await expectLater(
+            fakeWrapper.selectWhereIn(
+              table: 'items',
+              filterColumn: 'project_id',
+              filterValues: ['p1'],
+            ),
+            throwsA(isA<ServerException>()),
+          );
         });
       });
 
@@ -1614,6 +1680,28 @@ void main() {
     });
 
     group('reset', () {
+      test('clears addTableData state so tables are empty after reset', () async {
+        fakeWrapper.addTableData('projects', [
+          {'id': 'p1', 'name': 'Project 1'},
+          {'id': 'p2', 'name': 'Project 2'},
+        ]);
+        final beforeReset = await fakeWrapper.selectWhereIn(
+          table: 'projects',
+          filterColumn: 'id',
+          filterValues: ['p1', 'p2'],
+        );
+        expect(beforeReset, hasLength(2));
+
+        fakeWrapper.reset();
+
+        final afterReset = await fakeWrapper.selectWhereIn(
+          table: 'projects',
+          filterColumn: 'id',
+          filterValues: ['p1', 'p2'],
+        );
+        expect(afterReset, isEmpty);
+      });
+
       test('clears all configurations and data', () async {
         fakeWrapper.addTableData('users', [
           {'id': '1', 'name': 'Test User'},

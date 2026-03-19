@@ -1,6 +1,6 @@
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
-import 'package:flutter/material.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:flutter/material.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// A widget that displays a header with a title and a description
 /// [title] - The title to display

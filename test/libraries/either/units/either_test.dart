@@ -1,6 +1,6 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/libraries/either/either_impl.dart';
 import 'package:construculator/libraries/either/interfaces/either.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('Either Implementation Tests', () {
