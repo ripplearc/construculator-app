@@ -1680,6 +1680,28 @@ void main() {
     });
 
     group('reset', () {
+      test('clears addTableData state so tables are empty after reset', () async {
+        fakeWrapper.addTableData('projects', [
+          {'id': 'p1', 'name': 'Project 1'},
+          {'id': 'p2', 'name': 'Project 2'},
+        ]);
+        final beforeReset = await fakeWrapper.selectWhereIn(
+          table: 'projects',
+          filterColumn: 'id',
+          filterValues: ['p1', 'p2'],
+        );
+        expect(beforeReset, hasLength(2));
+
+        fakeWrapper.reset();
+
+        final afterReset = await fakeWrapper.selectWhereIn(
+          table: 'projects',
+          filterColumn: 'id',
+          filterValues: ['p1', 'p2'],
+        );
+        expect(afterReset, isEmpty);
+      });
+
       test('clears all configurations and data', () async {
         fakeWrapper.addTableData('users', [
           {'id': '1', 'name': 'Test User'},
