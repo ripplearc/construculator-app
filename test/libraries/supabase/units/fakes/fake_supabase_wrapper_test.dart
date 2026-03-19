@@ -1,15 +1,15 @@
 import 'dart:async';
 
-import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_response.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_session.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 void main() {
@@ -1680,6 +1680,28 @@ void main() {
     });
 
     group('reset', () {
+      test('clears addTableData state so tables are empty after reset', () async {
+        fakeWrapper.addTableData('projects', [
+          {'id': 'p1', 'name': 'Project 1'},
+          {'id': 'p2', 'name': 'Project 2'},
+        ]);
+        final beforeReset = await fakeWrapper.selectWhereIn(
+          table: 'projects',
+          filterColumn: 'id',
+          filterValues: ['p1', 'p2'],
+        );
+        expect(beforeReset, hasLength(2));
+
+        fakeWrapper.reset();
+
+        final afterReset = await fakeWrapper.selectWhereIn(
+          table: 'projects',
+          filterColumn: 'id',
+          filterValues: ['p1', 'p2'],
+        );
+        expect(afterReset, isEmpty);
+      });
+
       test('clears all configurations and data', () async {
         fakeWrapper.addTableData('users', [
           {'id': '1', 'name': 'Test User'},

@@ -1,5 +1,5 @@
-import 'package:construculator/libraries/config/config_module.dart';
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/libraries/config/config_module.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 

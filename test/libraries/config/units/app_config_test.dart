@@ -1,11 +1,11 @@
+import 'package:construculator/libraries/config/app_config_impl.dart';
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/config/testing/config_test_module.dart';
+import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:construculator/libraries/config/app_config_impl.dart';
-import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 
 void main() {
   late FakeEnvLoader fakeDotEnvLoader;
