@@ -1,9 +1,9 @@
 import 'package:construculator/app/app.dart';
+import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/app_module.dart';
 import 'package:construculator/libraries/config/app_config_impl.dart';
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/config/env_loader_impl.dart';
-import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/supabase/supabase_wrapper_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';

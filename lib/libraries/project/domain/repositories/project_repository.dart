@@ -14,4 +14,19 @@ abstract class ProjectRepository {
   /// all project details including name, description, creator, company,
   /// export settings, and status.
   Future<Project> getProject(String id);
+
+  /// Retrieves all projects accessible by the given [userId].
+  ///
+  /// Includes projects created by the user and projects shared with them.
+  /// Returns an empty list if [userId] is null or empty.
+  Future<List<Project>> getProjects(String userId);
+
+  /// Emits accessible projects whenever project access changes for [userId].
+  Stream<List<Project>> watchProjects(String userId);
+
+  /// Releases any resources held by the repository.
+  ///
+  /// Implementations should cancel active subscriptions and close any
+  /// internal controllers to avoid memory leaks.
+  void dispose();
 }

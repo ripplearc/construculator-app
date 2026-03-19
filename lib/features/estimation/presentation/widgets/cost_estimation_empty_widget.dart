@@ -1,6 +1,6 @@
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class CostEstimationEmptyWidget extends StatelessWidget {
   final String message;

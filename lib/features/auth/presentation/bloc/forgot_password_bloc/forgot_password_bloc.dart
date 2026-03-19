@@ -1,9 +1,9 @@
-import 'package:construculator/libraries/errors/failures.dart';
-import 'package:construculator/libraries/auth/domain/validation/auth_validation.dart';
+import 'package:construculator/features/auth/domain/usecases/reset_password_usecase.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
+import 'package:construculator/libraries/auth/domain/validation/auth_validation.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:construculator/features/auth/domain/usecases/reset_password_usecase.dart';
 
 part 'forgot_password_event.dart';
 part 'forgot_password_state.dart';
