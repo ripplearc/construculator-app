@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
-import 'cost_estimation_activity_type.dart';
+
 import '../../../../libraries/auth/domain/entities/user_profile_entity.dart';
+import 'cost_estimation_activity_type.dart';
 
 /// Represents a log entry for a cost estimation activity
 ///

@@ -3,11 +3,11 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/auth/domain/usecases/check_email_availability_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/create_account_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/get_professional_roles_usecase.dart';
+import 'package:construculator/features/auth/domain/usecases/login_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/reset_password_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/send_otp_usecase.dart';
-import 'package:construculator/features/auth/domain/usecases/verify_otp_usecase.dart';
-import 'package:construculator/features/auth/domain/usecases/login_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/set_new_password_usecase.dart';
+import 'package:construculator/features/auth/domain/usecases/verify_otp_usecase.dart';
 import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/enter_password_bloc/enter_password_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/forgot_password_bloc/forgot_password_bloc.dart';
@@ -21,13 +21,13 @@ import 'package:construculator/libraries/auth/interfaces/auth_notifier_controlle
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
-import 'package:construculator/libraries/time/interfaces/clock.dart';
-import 'package:construculator/libraries/time/testing/clock_test_module.dart';
-import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:construculator/libraries/time/testing/clock_test_module.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class AuthTestModule extends Module {

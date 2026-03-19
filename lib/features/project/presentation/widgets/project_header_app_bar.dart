@@ -1,7 +1,7 @@
 import 'package:construculator/features/project/presentation/bloc/get_project_bloc/get_project_bloc.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 

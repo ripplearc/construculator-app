@@ -84,6 +84,19 @@ abstract class SupabaseWrapper {
     required dynamic filterValue,
   });
 
+  /// Select a set of rows from a table where [filterColumn] value is in [filterValues].
+  ///
+  /// [table] The table to select from
+  /// [columns] The columns to select, defaults to '*'
+  /// [filterColumn] The column to filter by
+  /// [filterValues] The list of values to filter by using an `in` condition
+  Future<List<Map<String, dynamic>>> selectWhereIn({
+    required String table,
+    String columns = '*',
+    required String filterColumn,
+    required List<dynamic> filterValues,
+  });
+
   // Database-related methods
   /// Select a single row from a table
   ///

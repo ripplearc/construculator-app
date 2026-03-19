@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:construculator/libraries/time/interfaces/clock.dart';
+
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -8,6 +8,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_res
 import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_state.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_session.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:stack_trace/stack_trace.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
@@ -377,6 +378,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required String filterColumn,
     required dynamic filterValue,
   }) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
     _methodCalls.add({
       'method': 'select',
       'table': table,
@@ -399,6 +403,42 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     final tableData = _tables[table] ?? [];
     final filteredData = tableData
         .where((row) => row[filterColumn] == filterValue)
+        .toList();
+    return filteredData;
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> selectWhereIn({
+    required String table,
+    String columns = '*',
+    required String filterColumn,
+    required List<dynamic> filterValues,
+  }) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+    _methodCalls.add({
+      'method': 'selectWhereIn',
+      'table': table,
+      'columns': columns,
+      'filterColumn': filterColumn,
+      'filterValues': List<dynamic>.from(filterValues),
+    });
+
+    if (shouldThrowOnSelectMultiple) {
+      _throwConfiguredException(
+        selectMultipleExceptionType,
+        selectMultipleErrorMessage ?? 'Select failed',
+      );
+    }
+
+    if (shouldReturnNullOnSelectMultiple) {
+      return [];
+    }
+
+    final tableData = _tables[table] ?? [];
+    final filteredData = tableData
+        .where((row) => filterValues.contains(row[filterColumn]))
         .toList();
     return filteredData;
   }
@@ -796,6 +836,15 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   void _emitTableData(String table) {
     final controller = _tableDataControllers[table];
     if (controller == null || controller.isClosed) {
+      return;
+    }
+    if (shouldEmitStreamErrors) {
+      controller.addError(
+        ServerException(
+          Trace.current(),
+          Exception('Stream error for table: $table'),
+        ),
+      );
       return;
     }
     controller.add(_cloneRows(_tables[table] ?? const []));

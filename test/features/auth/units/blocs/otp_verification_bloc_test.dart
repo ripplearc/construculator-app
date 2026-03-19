@@ -1,10 +1,10 @@
 import 'package:bloc_test/bloc_test.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
-import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:construculator/features/auth/testing/auth_test_module.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('OtpVerificationBloc Tests', () {
