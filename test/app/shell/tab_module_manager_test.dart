@@ -35,11 +35,12 @@ void main() {
           envLoader: FakeEnvLoader(),
           supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
         );
-        final customManager = TabModuleManager(appBootstrap, providers: {
-          ShellTab.home: fakeProvider,
-        });
+        final customManager = TabModuleManager(
+          appBootstrap,
+          providers: {ShellTab.home: fakeProvider},
+        );
         await customManager.ensureTabModuleLoaded(ShellTab.home);
-        await customManager.ensureTabModuleLoaded(ShellTab.home); // second call — no reload
+        await customManager.ensureTabModuleLoaded(ShellTab.home);
         expect(fakeProvider.loadCallCount, 1);
       });
 
