@@ -15,7 +15,7 @@ class ShellModule extends Module {
   @override
   void routes(RouteManager r) {
     r.child(
-      '/dashboard',
+      '/',
       child: (_) => const Scaffold(
         body: Center(child: Text('Shell not implemented yet')),
       ),
