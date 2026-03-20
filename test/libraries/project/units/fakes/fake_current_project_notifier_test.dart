@@ -75,7 +75,7 @@ void main() {
           fakeNotifier.setCurrentProjectId('first');
           fakeNotifier.setCurrentProjectId('second');
           fakeNotifier.setCurrentProjectId(null);
-
+          await pumpEventQueue();
           expect(fakeNotifier.projectIdChangedEvents, [
             'first',
             'second',
@@ -113,7 +113,7 @@ void main() {
         );
 
         fakeNotifier.setCurrentProjectId('shared');
-
+        await pumpEventQueue();
         expect(listener1Events, ['shared']);
         expect(listener2Events, ['shared']);
 
