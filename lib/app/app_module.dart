@@ -1,6 +1,5 @@
 import 'package:construculator/features/auth/auth_module.dart';
-import 'package:construculator/features/dashboard/dashboard_module.dart';
-import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/config/config_module.dart';
@@ -12,6 +11,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 class AppModule extends Module {
   final AppBootstrap appBootstrap;
   AppModule(this.appBootstrap);
+
   @override
   List<Module> get imports => [
     RouterModule(),
@@ -20,10 +20,10 @@ class AppModule extends Module {
     AuthLibraryModule(appBootstrap),
     ProjectModule(appBootstrap),
   ];
+
   @override
   void routes(RouteManager r) {
     r.module('/auth', module: AuthModule(appBootstrap));
-    r.module('/', module: DashboardModule(appBootstrap));
-    r.module('/estimation', module: EstimationModule(appBootstrap));
+    r.module('/', module: ShellModule(appBootstrap));
   }
 }
