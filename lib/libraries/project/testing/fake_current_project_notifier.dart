@@ -14,9 +14,7 @@ class FakeCurrentProjectNotifier implements CurrentProjectNotifier, Disposable {
 
   /// Creates a new [FakeCurrentProjectNotifier] with optional initial project id.
   FakeCurrentProjectNotifier({String? initialProjectId})
-    : _currentProjectId = initialProjectId {
-    _controller.stream.listen((id) => projectIdChangedEvents.add(id));
-  }
+    : _currentProjectId = initialProjectId;
 
   @override
   Stream<String?> get onCurrentProjectChanged => _controller.stream;
@@ -27,6 +25,7 @@ class FakeCurrentProjectNotifier implements CurrentProjectNotifier, Disposable {
   @override
   void setCurrentProjectId(String? projectId) {
     _currentProjectId = projectId;
+    projectIdChangedEvents.add(projectId);
     _controller.add(projectId);
   }
 
