@@ -24,6 +24,6 @@ class AppModule extends Module {
   @override
   void routes(RouteManager r) {
     r.module('/auth', module: AuthModule(appBootstrap));
-    r.module('/', module: ShellModule(appBootstrap));
+    r.module('/dashboard', module: ShellModule(appBootstrap));
   }
 }
