@@ -22,6 +22,8 @@ class ChangeLockStatusBloc
   ) async {
     if (state is ChangeLockStatusInProgress) return;
 
+    final originalValue = !event.isLocked;
+
     emit(const ChangeLockStatusInProgress());
 
     final result = await _repository.changeLockStatus(
@@ -31,7 +33,9 @@ class ChangeLockStatusBloc
     );
 
     result.fold(
-      (failure) => emit(ChangeLockStatusFailure(failure)),
+      (failure) => emit(
+        ChangeLockStatusFailure(failure: failure, originalValue: originalValue),
+      ),
       (costEstimate) =>
           emit(ChangeLockStatusSuccess(costEstimate.lockStatus.isLocked)),
     );

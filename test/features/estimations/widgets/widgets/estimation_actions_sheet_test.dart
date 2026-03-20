@@ -11,6 +11,8 @@ void main() {
 
     BuildContext? buildContext;
 
+    late ValueNotifier<bool> lockStatusNotifier;
+
     Widget createWidget({
       String estimationName = testEstimationName,
       bool isLocked = false,
@@ -20,8 +22,10 @@ void main() {
       VoidCallback? onCopy,
       VoidCallback? onShare,
       VoidCallback? onLogs,
-      void Function(bool)? onLock,
+      ValueChanged<bool>? onLockToggle,
     }) {
+      lockStatusNotifier = ValueNotifier<bool>(isLocked);
+
       return MaterialApp(
         theme: CoreTheme.light(),
         locale: const Locale('en'),
@@ -33,20 +37,24 @@ void main() {
               buildContext = context;
               return EstimationActionsSheet(
                 estimationName: estimationName,
+                lockStatusNotifier: lockStatusNotifier,
                 onRename: onRename,
                 onFavourite: onFavourite,
                 onRemove: onRemove,
                 onCopy: onCopy,
                 onShare: onShare,
                 onLogs: onLogs,
-                isLocked: isLocked,
-                onLock: onLock,
+                onLockToggle: onLockToggle ?? (_) {},
               );
             },
           ),
         ),
       );
     }
+
+    tearDown(() {
+      lockStatusNotifier.dispose();
+    });
 
     AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
 
@@ -115,19 +123,22 @@ void main() {
       expect(onRenameCalled, isTrue);
     });
 
-    testWidgets('should call onLock when lock switch is toggled', (
+    testWidgets('should call onLockToggle when lock switch is toggled', (
       WidgetTester tester,
     ) async {
-      bool? lockedValue;
+      bool? toggledValue;
 
       await tester.pumpWidget(
-        createWidget(isLocked: false, onLock: (value) => lockedValue = value),
+        createWidget(
+          isLocked: false,
+          onLockToggle: (value) => toggledValue = value,
+        ),
       );
 
       await tester.tap(find.byType(CoreSwitch));
       await tester.pump();
 
-      expect(lockedValue, isTrue);
+      expect(toggledValue, isTrue);
     });
 
     testWidgets('should display lock icon when estimation is locked', (
@@ -202,6 +213,51 @@ void main() {
       await tester.pump();
 
       expect(onLogsCalled, isTrue);
+    });
+
+    testWidgets('should update UI when ValueNotifier changes externally', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(createWidget(isLocked: false));
+
+      final unlockIcon = find.byWidgetPredicate(
+        (widget) => widget is CoreIconWidget && widget.icon == CoreIcons.unlock,
+      );
+      expect(unlockIcon, findsOneWidget);
+
+      final switchWidget = tester.widget<CoreSwitch>(find.byType(CoreSwitch));
+      expect(switchWidget.value, isFalse);
+
+      lockStatusNotifier.value = true;
+      await tester.pump();
+
+      final lockIcon = find.byWidgetPredicate(
+        (widget) => widget is CoreIconWidget && widget.icon == CoreIcons.lock,
+      );
+      expect(lockIcon, findsOneWidget);
+
+      final updatedSwitch = tester.widget<CoreSwitch>(find.byType(CoreSwitch));
+      expect(updatedSwitch.value, isTrue);
+    });
+
+    testWidgets('should reflect lock status from ValueNotifier', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(createWidget(isLocked: false));
+
+      expect(lockStatusNotifier.value, isFalse);
+
+      lockStatusNotifier.value = true;
+      await tester.pump();
+
+      final updatedSwitch = tester.widget<CoreSwitch>(find.byType(CoreSwitch));
+      expect(updatedSwitch.value, isTrue);
+
+      lockStatusNotifier.value = false;
+      await tester.pump();
+
+      final revertedSwitch = tester.widget<CoreSwitch>(find.byType(CoreSwitch));
+      expect(revertedSwitch.value, isFalse);
     });
   });
 }

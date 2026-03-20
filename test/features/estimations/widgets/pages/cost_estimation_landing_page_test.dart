@@ -1028,6 +1028,144 @@ void main() {
       final switchAfter = tester.widget<CoreSwitch>(find.byType(CoreSwitch));
       expect(switchAfter.value, isFalse);
     });
+
+    testWidgets(
+      'BLoC prevents race conditions by ignoring requests while one is in progress',
+      (tester) async {
+        const estimationName = 'Kitchen Remodel';
+        await setupAndNavigateToEstimation(
+          tester,
+          estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimation-1',
+            projectId: testProjectId,
+            estimateName: estimationName,
+            isLocked: false,
+          ),
+        );
+
+        fakeSupabase.shouldDelayOperations = true;
+        fakeSupabase.completer = Completer<void>();
+
+        await tester.tap(find.byKey(const Key('menuIcon')));
+        await tester.pumpAndSettle();
+
+        final switchBefore = tester.widget<CoreSwitch>(find.byType(CoreSwitch));
+        expect(switchBefore.value, isFalse);
+
+        fakeSupabase.clearMethodCalls();
+
+        await tester.tap(find.byType(CoreSwitch));
+        await tester.pump();
+
+        expect(fakeSupabase.getMethodCallsFor('update').length, 1);
+
+        await tester.tap(find.byType(CoreSwitch));
+        await tester.pump();
+
+        expect(fakeSupabase.getMethodCallsFor('update').length, 1);
+
+        await tester.tap(find.byType(CoreSwitch));
+        await tester.pump();
+
+        expect(fakeSupabase.getMethodCallsFor('update').length, 1);
+
+        fakeSupabase.completer!.complete();
+        await tester.pumpAndSettle();
+
+        final switchAfter = tester.widget<CoreSwitch>(find.byType(CoreSwitch));
+        expect(switchAfter.value, isTrue);
+      },
+    );
+
+    testWidgets('subsequent toggles work after previous request completes', (
+      tester,
+    ) async {
+      const estimationName = 'Kitchen Remodel';
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: estimationName,
+          isLocked: false,
+        ),
+      );
+
+      await tester.tap(find.byKey(const Key('menuIcon')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(CoreSwitch));
+      await tester.pumpAndSettle();
+
+      final switchAfterFirst = tester.widget<CoreSwitch>(
+        find.byType(CoreSwitch),
+      );
+      expect(switchAfterFirst.value, isTrue);
+
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('menuIcon')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(CoreSwitch));
+      await tester.pumpAndSettle();
+
+      final switchAfterSecond = tester.widget<CoreSwitch>(
+        find.byType(CoreSwitch),
+      );
+      expect(switchAfterSecond.value, isFalse);
+
+      final updateCalls = fakeSupabase.getMethodCallsFor('update');
+      expect(updateCalls.length, 2);
+    });
+
+    testWidgets(
+      'rapid toggles during failure scenario still roll back correctly',
+      (tester) async {
+        const estimationName = 'Kitchen Remodel';
+        await setupAndNavigateToEstimation(
+          tester,
+          estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimation-1',
+            projectId: testProjectId,
+            estimateName: estimationName,
+            isLocked: false,
+          ),
+        );
+
+        fakeSupabase.shouldDelayOperations = true;
+        fakeSupabase.completer = Completer<void>();
+        fakeSupabase.shouldThrowOnUpdate = true;
+        fakeSupabase.updateExceptionType = SupabaseExceptionType.socket;
+
+        await tester.tap(find.byKey(const Key('menuIcon')));
+        await tester.pumpAndSettle();
+
+        final switchBefore = tester.widget<CoreSwitch>(find.byType(CoreSwitch));
+        expect(switchBefore.value, isFalse);
+
+        fakeSupabase.clearMethodCalls();
+
+        await tester.tap(find.byType(CoreSwitch));
+        await tester.pump();
+        await tester.tap(find.byType(CoreSwitch));
+        await tester.pump();
+        await tester.tap(find.byType(CoreSwitch));
+        await tester.pump();
+
+        expect(fakeSupabase.getMethodCallsFor('update').length, 1);
+
+        fakeSupabase.completer!.complete();
+        await tester.pumpAndSettle();
+
+        final switchAfter = tester.widget<CoreSwitch>(find.byType(CoreSwitch));
+        expect(switchAfter.value, isFalse);
+        expect(find.text(l10n().connectionError), findsOneWidget);
+
+        expect(fakeSupabase.getMethodCallsFor('update').length, 1);
+      },
+    );
   });
 
   group('Rename Estimation', () {

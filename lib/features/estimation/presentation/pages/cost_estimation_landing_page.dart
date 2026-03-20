@@ -88,53 +88,75 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
   void _showEstimationActionsSheet(
     CostEstimate estimation,
     AppColorsExtension colorTheme,
-  ) {
-    // TODO: https://ripplearc.youtrack.cloud/issue/CA-472/CoreUI-Standardize-bottom-sheets-with-CoreQuickSheet-component (Standardize bottom sheets with CoreQuickSheet component)
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: colorTheme.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (_) => EstimationActionsSheet(
-        estimationName: estimation.estimateName,
-        onRename: () {
-          _router.pop();
-          _showRenameSheet(estimation, colorTheme);
-        },
-        onLogs: () {
-          CoreQuickSheet.show(
-            context: context,
-            child: BlocProvider.value(
-              value: Modular.get<CostEstimationLogBloc>(),
-              child: CostEstimationLogsList(
-                estimateId: estimation.id,
-                estimateName: estimation.estimateName,
+  ) async {
+    final changeLockStatusBloc = BlocProvider.of<ChangeLockStatusBloc>(context);
+    final lockStatusNotifier = ValueNotifier<bool>(
+      estimation.lockStatus.isLocked,
+    );
+    try {
+      // TODO: https://ripplearc.youtrack.cloud/issue/CA-472/CoreUI-Standardize-bottom-sheets-with-CoreQuickSheet-component (Standardize bottom sheets with CoreQuickSheet component)
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: colorTheme.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        builder: (_) {
+          return BlocProvider.value(
+            value: changeLockStatusBloc,
+            child: BlocListener<ChangeLockStatusBloc, ChangeLockStatusState>(
+              listener: (context, state) {
+                if (state is ChangeLockStatusSuccess) {
+                  lockStatusNotifier.value = state.isLocked;
+                } else if (state is ChangeLockStatusFailure) {
+                  lockStatusNotifier.value = state.originalValue;
+                }
+              },
+              child: _EstimationActionsSheetWrapper(
+                lockStatusNotifier: lockStatusNotifier,
+                estimationName: estimation.estimateName,
+                onRename: () {
+                  _router.pop();
+                  _showRenameSheet(estimation, colorTheme);
+                },
+                onFavourite: () {
+                  _router.pop();
+                  // TODO:https://ripplearc.youtrack.cloud/issue/CA-88
+                },
+                onRemove: () {
+                  _router.pop();
+                  _showDeleteConfirmationSheet(estimation, colorTheme);
+                },
+                onLockToggle: (bool isLocked) {
+                  changeLockStatusBloc.add(
+                    ChangeLockStatusRequested(
+                      estimationId: estimation.id,
+                      isLocked: isLocked,
+                      projectId: widget.projectId,
+                    ),
+                  );
+                },
+                onLogs: () {
+                  CoreQuickSheet.show(
+                    context: context,
+                    child: BlocProvider.value(
+                      value: Modular.get<CostEstimationLogBloc>(),
+                      child: CostEstimationLogsList(
+                        estimateId: estimation.id,
+                        estimateName: estimation.estimateName,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           );
         },
-        onFavourite: () {
-          _router.pop();
-          // TODO:https://ripplearc.youtrack.cloud/issue/CA-88
-        },
-        onRemove: () {
-          _router.pop();
-          _showDeleteConfirmationSheet(estimation, colorTheme);
-        },
-        onLock: (bool isLocked) {
-          BlocProvider.of<ChangeLockStatusBloc>(context).add(
-            ChangeLockStatusRequested(
-              estimationId: estimation.id,
-              isLocked: isLocked,
-              projectId: widget.projectId,
-            ),
-          );
-        },
-        isLocked: estimation.lockStatus.isLocked,
-      ),
-    );
+      );
+    } catch (e) {
+      lockStatusNotifier.dispose();
+    }
   }
 
   void _showRenameSheet(
@@ -459,5 +481,51 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
       default:
         return l10n.unexpectedErrorMessage;
     }
+  }
+}
+
+class _EstimationActionsSheetWrapper extends StatefulWidget {
+  final ValueNotifier<bool> lockStatusNotifier;
+  final String estimationName;
+  final VoidCallback onRename;
+  final VoidCallback onFavourite;
+  final VoidCallback onRemove;
+  final VoidCallback onLogs;
+  final ValueChanged<bool> onLockToggle;
+
+  const _EstimationActionsSheetWrapper({
+    required this.lockStatusNotifier,
+    required this.estimationName,
+    required this.onRename,
+    required this.onFavourite,
+    required this.onRemove,
+    required this.onLogs,
+    required this.onLockToggle,
+  });
+
+  @override
+  State<_EstimationActionsSheetWrapper> createState() =>
+      _EstimationActionsSheetWrapperState();
+}
+
+class _EstimationActionsSheetWrapperState
+    extends State<_EstimationActionsSheetWrapper> {
+  @override
+  void dispose() {
+    widget.lockStatusNotifier.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return EstimationActionsSheet(
+      estimationName: widget.estimationName,
+      lockStatusNotifier: widget.lockStatusNotifier,
+      onRename: widget.onRename,
+      onFavourite: widget.onFavourite,
+      onRemove: widget.onRemove,
+      onLockToggle: widget.onLockToggle,
+      onLogs: widget.onLogs,
+    );
   }
 }

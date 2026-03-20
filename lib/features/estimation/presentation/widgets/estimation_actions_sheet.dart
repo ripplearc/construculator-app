@@ -2,35 +2,30 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-class EstimationActionsSheet extends StatefulWidget {
+class EstimationActionsSheet extends StatelessWidget {
   const EstimationActionsSheet({
     super.key,
     required this.estimationName,
+    required this.lockStatusNotifier,
     required this.onRename,
     required this.onFavourite,
     required this.onRemove,
+    required this.onLockToggle,
     this.onCopy,
     this.onShare,
     this.onLogs,
-    required this.isLocked,
-    this.onLock,
   });
 
   final String estimationName;
+  final ValueNotifier<bool> lockStatusNotifier;
   final VoidCallback? onRename;
   final VoidCallback? onFavourite;
   final VoidCallback? onRemove;
+  final ValueChanged<bool> onLockToggle;
   final VoidCallback? onCopy;
   final VoidCallback? onShare;
   final VoidCallback? onLogs;
-  final bool isLocked;
-  final void Function(bool)? onLock;
 
-  @override
-  State<EstimationActionsSheet> createState() => _EstimationActionsSheetState();
-}
-
-class _EstimationActionsSheetState extends State<EstimationActionsSheet> {
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
@@ -75,7 +70,7 @@ class _EstimationActionsSheetState extends State<EstimationActionsSheet> {
                 const SizedBox(height: CoreSpacing.space3),
 
                 Text(
-                  widget.estimationName,
+                  estimationName,
                   style: typographyTheme.titleMediumSemiBold,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -95,17 +90,17 @@ class _EstimationActionsSheetState extends State<EstimationActionsSheet> {
                     _QuickActionButton(
                       icon: CoreIcons.editDocument,
                       label: l10n.renameAction,
-                      onTap: widget.onRename,
+                      onTap: onRename,
                     ),
                     _QuickActionButton(
                       icon: CoreIcons.favorite,
                       label: l10n.favouriteAction,
-                      onTap: widget.onFavourite,
+                      onTap: onFavourite,
                     ),
                     _QuickActionButton(
                       icon: CoreIcons.delete,
                       label: l10n.removeAction,
-                      onTap: widget.onRemove,
+                      onTap: onRemove,
                     ),
                   ],
                 ),
@@ -115,28 +110,33 @@ class _EstimationActionsSheetState extends State<EstimationActionsSheet> {
                     _ActionListItem(
                       icon: CoreIcons.copy,
                       label: l10n.copyEstimationAction,
-                      onTap: widget.onCopy,
+                      onTap: onCopy,
                     ),
                     _ActionListItem(
                       icon: CoreIcons.share,
                       label: l10n.shareExportAction,
-                      onTap: widget.onShare,
+                      onTap: onShare,
                     ),
                     _ActionListItem(
                       icon: CoreIcons.calendar,
                       label: l10n.logsAction,
-                      onTap: widget.onLogs,
+                      onTap: onLogs,
                     ),
-                    _ActionListItem(
-                      icon: widget.isLocked ? CoreIcons.lock : CoreIcons.unlock,
-                      label: l10n.lockEstimationAction,
-                      actionWidget: CoreSwitch(
-                        value: widget.isLocked,
-                        onChanged: (value) => widget.onLock?.call(value),
-                        activeLabel: l10n.lockLabel,
-                        inactiveLabel: l10n.unlockLabel,
-                        type: CoreSwitchType.lock,
-                      ),
+                    ValueListenableBuilder<bool>(
+                      valueListenable: lockStatusNotifier,
+                      builder: (context, isLocked, _) {
+                        return _ActionListItem(
+                          icon: isLocked ? CoreIcons.lock : CoreIcons.unlock,
+                          label: l10n.lockEstimationAction,
+                          actionWidget: CoreSwitch(
+                            value: isLocked,
+                            onChanged: onLockToggle,
+                            activeLabel: l10n.lockLabel,
+                            inactiveLabel: l10n.unlockLabel,
+                            type: CoreSwitchType.lock,
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),

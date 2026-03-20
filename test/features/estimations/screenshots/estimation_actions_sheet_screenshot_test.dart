@@ -15,11 +15,19 @@ void main() {
   });
 
   group('EstimationActionsSheet Screenshot Tests', () {
+    late ValueNotifier<bool> lockStatusNotifier;
+
+    tearDown(() {
+      lockStatusNotifier.dispose();
+    });
+
     Future<void> pumpActionsSheet({
       required WidgetTester tester,
       required String estimationName,
       bool isLocked = false,
     }) async {
+      lockStatusNotifier = ValueNotifier<bool>(isLocked);
+
       await tester.pumpWidget(
         MaterialApp(
           theme: createTestTheme(),
@@ -29,11 +37,11 @@ void main() {
           home: Scaffold(
             body: EstimationActionsSheet(
               estimationName: estimationName,
+              lockStatusNotifier: lockStatusNotifier,
               onRename: () {},
               onFavourite: () {},
               onRemove: () {},
-              isLocked: isLocked,
-              onLock: (value) {},
+              onLockToggle: (_) {},
             ),
           ),
         ),

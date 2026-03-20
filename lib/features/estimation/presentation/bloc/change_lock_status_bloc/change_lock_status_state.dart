@@ -31,9 +31,13 @@ class ChangeLockStatusSuccess extends ChangeLockStatusState {
 
 class ChangeLockStatusFailure extends ChangeLockStatusState {
   final Failure failure;
+  final bool originalValue;
 
-  const ChangeLockStatusFailure(this.failure);
+  const ChangeLockStatusFailure({
+    required this.failure,
+    required this.originalValue,
+  });
 
   @override
-  List<Object> get props => [failure];
+  List<Object> get props => [failure, originalValue];
 }
