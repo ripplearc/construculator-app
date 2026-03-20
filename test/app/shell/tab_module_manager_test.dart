@@ -1,5 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
+import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -7,27 +8,16 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-class _TabModuleManagerTestModule extends Module {
-  @override
-  void binds(Injector i) {
-    i.addLazySingleton<AppBootstrap>(
-      () => AppBootstrap(
-        config: FakeAppConfig(),
-        envLoader: FakeEnvLoader(),
-        supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
-      ),
-    );
-    i.addLazySingleton<TabModuleManager>(
-      () => TabModuleManager(i.get<AppBootstrap>()),
-    );
-  }
-}
-
 void main() {
   late TabModuleManager manager;
 
   setUp(() {
-    Modular.init(_TabModuleManagerTestModule());
+    final appBootstrap = AppBootstrap(
+      config: FakeAppConfig(),
+      envLoader: FakeEnvLoader(),
+      supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
+    );
+    Modular.init(ShellModule(appBootstrap));
     manager = Modular.get<TabModuleManager>();
   });
 
