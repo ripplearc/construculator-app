@@ -41,6 +41,16 @@ void main() {
         expect(manager.isLoaded(ShellTab.estimation), isFalse);
         expect(manager.isLoaded(ShellTab.members), isFalse);
       });
+      test('returns true after loading each tab', () async {
+        await manager.ensureTabModuleLoaded(ShellTab.calculations);
+        expect(manager.isLoaded(ShellTab.calculations), isTrue);
+
+        await manager.ensureTabModuleLoaded(ShellTab.estimation);
+        expect(manager.isLoaded(ShellTab.estimation), isTrue);
+
+        await manager.ensureTabModuleLoaded(ShellTab.members);
+        expect(manager.isLoaded(ShellTab.members), isTrue);
+      });
     });
   });
 }
