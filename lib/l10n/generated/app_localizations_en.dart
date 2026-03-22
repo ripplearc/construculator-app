@@ -577,6 +577,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityTo => 'To: ';
 
   @override
+  String get activityExportFormat => 'Format: ';
+
+  @override
+  String get activityItemType => 'Item Type: ';
+
+  @override
   String get activityEditedFieldItemType => 'Item Type';
 
   @override

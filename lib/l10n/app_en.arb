@@ -922,6 +922,16 @@
     "description": "Subtitle for activity log entry indicating the updated state of the activity",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57406-12188&t=RvldfhG8ZHl5FVjX-4"
   },
+  "activityExportFormat": "Format: ",
+  "@activityExportFormat": {
+    "description": "Label for export format in activity log tile",
+    "context": "N/A"
+  },
+  "activityItemType": "Item Type: ",
+  "@activityItemType": {
+    "description": "Label for item type in activity log tile",
+    "context": "N/A"
+  },
   "activityEditedFieldItemType": "Item Type",
   "@activityEditedFieldItemType": {
     "description": "Label for edited field item_type in activity logs"
