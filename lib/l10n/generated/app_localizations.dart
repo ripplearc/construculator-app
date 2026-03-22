@@ -939,6 +939,318 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save cost name'**
   String get saveCostNameButton;
+
+  /// Activity log message for cost estimation created
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Estimation Created'**
+  String get activityCostEstimationCreated;
+
+  /// Activity log message for cost estimation renamed without details
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Estimation Renamed'**
+  String get activityCostEstimationRenamed;
+
+  /// Activity log message for cost estimation exported
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Estimation Exported'**
+  String get activityCostEstimationExported;
+
+  /// Activity log message for cost estimation locked
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Estimation Locked'**
+  String get activityCostEstimationLocked;
+
+  /// Activity log message for cost estimation unlocked
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Estimation Unlocked'**
+  String get activityCostEstimationUnlocked;
+
+  /// Activity log message for cost estimation deleted
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Estimation Deleted'**
+  String get activityCostEstimationDeleted;
+
+  /// Activity log message for cost item added with item name
+  ///
+  /// In en, this message translates to:
+  /// **'Added cost item: {itemName}'**
+  String activityCostItemAdded(String itemName);
+
+  /// Activity log message for cost item added without details
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Item Added'**
+  String get activityCostItemAddedSimple;
+
+  /// Activity log message for cost item edited with item name
+  ///
+  /// In en, this message translates to:
+  /// **'Edited cost item: {itemName}'**
+  String activityCostItemEdited(String itemName);
+
+  /// Activity log message for cost item edited without details
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Item Edited'**
+  String get activityCostItemEditedSimple;
+
+  /// Activity log message for cost item removed with item name
+  ///
+  /// In en, this message translates to:
+  /// **'Removed cost item: {itemName}'**
+  String activityCostItemRemoved(String itemName);
+
+  /// Activity log message for cost item removed without details
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Item Removed'**
+  String get activityCostItemRemovedSimple;
+
+  /// Activity log message for cost item duplicated with item name
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicated cost item: {itemName}'**
+  String activityCostItemDuplicated(String itemName);
+
+  /// Activity log message for cost item duplicated without details
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Item Duplicated'**
+  String get activityCostItemDuplicatedSimple;
+
+  /// Activity log message for task assigned with task and assignee names
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned {taskName} to {assigneeName}'**
+  String activityTaskAssigned(String taskName, String assigneeName);
+
+  /// Activity log message for task assigned without details
+  ///
+  /// In en, this message translates to:
+  /// **'Task Assigned'**
+  String get activityTaskAssignedSimple;
+
+  /// Activity log message for task unassigned with task name
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned task: {taskName}'**
+  String activityTaskUnassigned(String taskName);
+
+  /// Activity log message for task unassigned without details
+  ///
+  /// In en, this message translates to:
+  /// **'Task Unassigned'**
+  String get activityTaskUnassignedSimple;
+
+  /// Activity log message for cost file uploaded
+  ///
+  /// In en, this message translates to:
+  /// **'Cost File Uploaded: {fileName}'**
+  String activityCostFileUploaded(String fileName);
+
+  /// Activity log message for cost file uploaded without details
+  ///
+  /// In en, this message translates to:
+  /// **'Cost File Uploaded'**
+  String get activityCostFileUploadedSimple;
+
+  /// Activity log message for cost file deleted with file name
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted cost file: {fileName}'**
+  String activityCostFileDeleted(String fileName);
+
+  /// Activity log message for cost file deleted without details
+  ///
+  /// In en, this message translates to:
+  /// **'Cost File Deleted'**
+  String get activityCostFileDeletedSimple;
+
+  /// Activity log message for attachment added with file name
+  ///
+  /// In en, this message translates to:
+  /// **'Added attachment: {fileName}'**
+  String activityAttachmentAdded(String fileName);
+
+  /// Activity log message for attachment added without details
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment Added'**
+  String get activityAttachmentAddedSimple;
+
+  /// Activity log message for attachment removed with file name
+  ///
+  /// In en, this message translates to:
+  /// **'Removed attachment: {fileName}'**
+  String activityAttachmentRemoved(String fileName);
+
+  /// Activity log message for attachment removed without details
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment Removed'**
+  String get activityAttachmentRemovedSimple;
+
+  /// Fallback activity log message for unknown activity types
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Activity'**
+  String get activityUnknown;
+
+  /// Subtitle for activity log entry indicating the initial state of the activity
+  ///
+  /// In en, this message translates to:
+  /// **'From: '**
+  String get activityFrom;
+
+  /// Subtitle for activity log entry indicating the updated state of the activity
+  ///
+  /// In en, this message translates to:
+  /// **'To: '**
+  String get activityTo;
+
+  /// Label for edited field item_type in activity logs
+  ///
+  /// In en, this message translates to:
+  /// **'Item Type'**
+  String get activityEditedFieldItemType;
+
+  /// Label for edited field item_name in activity logs
+  ///
+  /// In en, this message translates to:
+  /// **'Item Name'**
+  String get activityEditedFieldItemName;
+
+  /// Label for edited field unit_price in activity logs
+  ///
+  /// In en, this message translates to:
+  /// **'Unit Price'**
+  String get activityEditedFieldUnitPrice;
+
+  /// Label for edited field quantity in activity logs
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get activityEditedFieldQuantity;
+
+  /// Label for edited field unit_measurement in activity logs
+  ///
+  /// In en, this message translates to:
+  /// **'Unit Measurement'**
+  String get activityEditedFieldUnitMeasurement;
+
+  /// Label for edited field calculation in activity logs
+  ///
+  /// In en, this message translates to:
+  /// **'Calculation'**
+  String get activityEditedFieldCalculation;
+
+  /// Label for edited field item_total_cost in activity logs
+  ///
+  /// In en, this message translates to:
+  /// **'Total Cost'**
+  String get activityEditedFieldItemTotalCost;
+
+  /// Label for edited field currency in activity logs
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get activityEditedFieldCurrency;
+
+  /// Label for edited field brand in activity logs
+  ///
+  /// In en, this message translates to:
+  /// **'Brand'**
+  String get activityEditedFieldBrand;
+
+  /// Label for edited field product_link in activity logs
+  ///
+  /// In en, this message translates to:
+  /// **'Product Link'**
+  String get activityEditedFieldProductLink;
+
+  /// Label for edited field description in activity logs
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get activityEditedFieldDescription;
+
+  /// Label for edited field labor_calc_method in activity logs
+  ///
+  /// In en, this message translates to:
+  /// **'Labor Calc Method'**
+  String get activityEditedFieldLaborCalcMethod;
+
+  /// Label for edited field labor_days in activity logs
+  ///
+  /// In en, this message translates to:
+  /// **'Labor Days'**
+  String get activityEditedFieldLaborDays;
+
+  /// Label for edited field labor_hours in activity logs
+  ///
+  /// In en, this message translates to:
+  /// **'Labor Hours'**
+  String get activityEditedFieldLaborHours;
+
+  /// Label for edited field labor_unit_type in activity logs
+  ///
+  /// In en, this message translates to:
+  /// **'Labor Unit Type'**
+  String get activityEditedFieldLaborUnitType;
+
+  /// Label for edited field labor_unit_value in activity logs
+  ///
+  /// In en, this message translates to:
+  /// **'Labor Unit Value'**
+  String get activityEditedFieldLaborUnitValue;
+
+  /// Label for edited field crew_size in activity logs
+  ///
+  /// In en, this message translates to:
+  /// **'Crew Size'**
+  String get activityEditedFieldCrewSize;
+
+  /// Fallback display for empty edited field values
+  ///
+  /// In en, this message translates to:
+  /// **'—'**
+  String get activityEditedFieldEmptyValue;
+
+  /// Formatted value for quantity edited fields
+  ///
+  /// In en, this message translates to:
+  /// **'Qty {value}'**
+  String activityEditedFieldValueQuantity(String value);
+
+  /// Formatted value for currency based edited fields
+  ///
+  /// In en, this message translates to:
+  /// **'\${value}'**
+  String activityEditedFieldValueCurrency(String value);
+
+  /// Formatted value for labor days edited fields
+  ///
+  /// In en, this message translates to:
+  /// **'{value} days'**
+  String activityEditedFieldValueDays(String value);
+
+  /// Formatted value for labor hours edited fields
+  ///
+  /// In en, this message translates to:
+  /// **'{value} hours'**
+  String activityEditedFieldValueHours(String value);
+
+  /// Formatted value for crew size edited fields
+  ///
+  /// In en, this message translates to:
+  /// **'{value} crew'**
+  String activityEditedFieldValueCrew(String value);
 }
 
 class _AppLocalizationsDelegate
