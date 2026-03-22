@@ -27,7 +27,10 @@ class CostEstimationLogsList extends StatefulWidget {
 class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
   final ScrollController _scrollController = ScrollController();
 
-  static const double _loadMoreThreshold = 200.0;
+  /// Distance in pixels from the bottom of the scroll extent at which
+  /// the next page of logs should be loaded. A value of 200.0 provides
+  /// a smooth user experience by preloading content before reaching the end.
+  static const double _loadMoreScrollThreshold = 200.0;
 
   @override
   void initState() {
@@ -46,6 +49,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
   }
 
   void _onScroll() {
+    if (!mounted) return;
     if (!_scrollController.hasClients) return;
 
     final bloc = context.read<CostEstimationLogBloc>();
@@ -57,7 +61,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.position.pixels;
 
-    if (maxScroll - currentScroll <= _loadMoreThreshold) {
+    if (maxScroll - currentScroll <= _loadMoreScrollThreshold) {
       bloc.add(CostEstimationLogLoadMore(estimateId: widget.estimateId));
     }
   }
@@ -114,13 +118,15 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
               },
               builder: (context, state) {
                 if (state is CostEstimationLogLoading) {
-                  return _buildLoadingState(context);
+                  return _buildLoadingState();
                 }
 
                 if (state is CostEstimationLogEmpty) {
                   return _buildRefreshable(child: _buildEmptyState(context));
                 }
 
+                // CostEstimationLogLoadMoreError extends CostEstimationLogWithData,
+                // so it will be handled here while still showing the list with data
                 if (state is CostEstimationLogWithData) {
                   return _buildRefreshable(
                     child: _buildLoadedState(context, state),
@@ -137,7 +143,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
     );
   }
 
-  Widget _buildLoadingState(BuildContext context) {
+  Widget _buildLoadingState() {
     return const Center(child: CoreLoadingIndicator());
   }
 
@@ -150,6 +156,9 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
   }
 
   Future<void> _onRefresh() async {
+    // Intentionally fire-and-forget: the RefreshIndicator dismisses immediately.
+    // Loading feedback is provided by BlocBuilder transitioning through
+    // CostEstimationLogLoading → CostEstimationLogWithData/Empty states.
     final bloc = context.read<CostEstimationLogBloc>();
     bloc.add(CostEstimationLogFetchInitial(estimateId: widget.estimateId));
   }
@@ -166,12 +175,12 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
           hasScrollBody: false,
           child: Center(
             child: Padding(
-              padding: EdgeInsets.all(CoreSpacing.space6),
+              padding: const EdgeInsets.all(CoreSpacing.space6),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CoreIconWidget(icon: CoreIcons.emptyEstimation, size: 48),
-                  SizedBox(height: CoreSpacing.space4),
+                  const SizedBox(height: CoreSpacing.space4),
                   Text(
                     context.l10n.noActivityLogs,
                     style: typography.titleMediumSemiBold.copyWith(
@@ -179,7 +188,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  SizedBox(height: CoreSpacing.space2),
+                  const SizedBox(height: CoreSpacing.space2),
                   Text(
                     context.l10n.noActivityLogsDescription,
                     style: typography.bodyMediumRegular.copyWith(
@@ -208,7 +217,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
         SliverList(
           delegate: SliverChildBuilderDelegate((context, index) {
             return Padding(
-              padding: EdgeInsets.only(bottom: CoreSpacing.space4),
+              padding: const EdgeInsets.only(bottom: CoreSpacing.space4),
               child: CostEstimationLogTile(
                 key: ValueKey(state.logs[index].id),
                 log: state.logs[index],
@@ -226,14 +235,14 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
 
   Widget _buildLoadMoreIndicator(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: CoreSpacing.space4),
+      padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space4),
       child: Center(child: CoreLoadingIndicator(size: 24)),
     );
   }
 
   Widget _buildLoadMoreRetry(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(
+      padding: const EdgeInsets.only(
         left: CoreSpacing.space4,
         right: CoreSpacing.space4,
         top: CoreSpacing.space2,
@@ -241,7 +250,7 @@ class _CostEstimationLogsListState extends State<CostEstimationLogsList> {
       ),
       child: Center(
         child: CoreButton(
-          label: context.l10n.retryButton,
+          label: context.l10n.retryLoadLogsButton,
           onPressed: () {
             context.read<CostEstimationLogBloc>().add(
               CostEstimationLogLoadMore(estimateId: widget.estimateId),

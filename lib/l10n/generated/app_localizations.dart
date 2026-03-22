@@ -1282,11 +1282,11 @@ abstract class AppLocalizations {
   /// **'Unable to Load Activity'**
   String get errorLoadingLogs;
 
-  /// Button label to retry loading activity logs
+  /// Button label to retry loading more activity logs
   ///
   /// In en, this message translates to:
   /// **'Retry'**
-  String get retryButton;
+  String get retryLoadLogsButton;
 
   /// Error message shown when loading more logs fails
   ///

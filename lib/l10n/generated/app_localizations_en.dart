@@ -672,7 +672,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorLoadingLogs => 'Unable to Load Activity';
 
   @override
-  String get retryButton => 'Retry';
+  String get retryLoadLogsButton => 'Retry';
 
   @override
   String get loadMoreLogsError => 'Failed to load more logs';

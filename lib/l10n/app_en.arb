@@ -1061,9 +1061,9 @@
   "@errorLoadingLogs": {
     "description": "Title shown when there is an error loading activity logs"
   },
-  "retryButton": "Retry",
-  "@retryButton": {
-    "description": "Button label to retry loading activity logs"
+  "retryLoadLogsButton": "Retry",
+  "@retryLoadLogsButton": {
+    "description": "Button label to retry loading more activity logs"
   },
   "loadMoreLogsError": "Failed to load more logs",
   "@loadMoreLogsError": {

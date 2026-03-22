@@ -1,7 +1,7 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/estimation/data/repositories/cost_estimation_log_repository_impl.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_activity_type.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimation_log_entity.dart';
-import 'package:construculator/features/estimation/data/repositories/cost_estimation_log_repository_impl.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_log_bloc/cost_estimation_log_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_log_tile.dart';
@@ -79,11 +79,12 @@ void main() {
 
   AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
 
-  Future<void> pumpLogsList(WidgetTester tester) async {
+  Future<CostEstimationLogBloc> pumpLogsList(WidgetTester tester) async {
     final bloc = Modular.get<CostEstimationLogBloc>();
     addTearDown(bloc.close);
     await tester.pumpWidget(buildTestApp(bloc));
     await tester.pumpAndSettle();
+    return bloc;
   }
 
   void seedLogs(List<Map<String, dynamic>> rows) {
@@ -271,7 +272,7 @@ void main() {
           .length;
 
       expect(loadMoreQueries, 1);
-      expect(find.text(l10n().retryButton), findsNothing);
+      expect(find.text(l10n().retryLoadLogsButton), findsNothing);
     });
 
     testWidgets(
@@ -298,7 +299,10 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final retryButton = find.widgetWithText(CoreButton, l10n().retryButton);
+        final retryButton = find.widgetWithText(
+          CoreButton,
+          l10n().retryLoadLogsButton,
+        );
         await tester.ensureVisible(retryButton);
         await tester.pumpAndSettle();
 
@@ -311,7 +315,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(CostEstimationLogTile), findsWidgets);
-        expect(find.text(l10n().retryButton), findsNothing);
+        expect(find.text(l10n().retryLoadLogsButton), findsNothing);
 
         final retryLoadMoreQueries = fakeSupabase
             .getMethodCalls()
@@ -338,7 +342,7 @@ void main() {
         ),
       );
 
-      await pumpLogsList(tester);
+      final bloc = await pumpLogsList(tester);
 
       fakeSupabase.clearMethodCalls();
 
@@ -366,9 +370,18 @@ void main() {
 
       await tester.drag(
         find.byType(CustomScrollView).first,
+        const Offset(0, 800),
+      );
+      await tester.pumpAndSettle();
+      await tester.drag(
+        find.byType(CustomScrollView).first,
         const Offset(0, -1800),
       );
       await tester.pumpAndSettle();
+
+      final state = bloc.state;
+      expect(state, isA<CostEstimationLogLoadMoreError>());
+      expect((state as CostEstimationLogLoadMoreError).isLoadingMore, false);
 
       final secondLoadMoreQueries = fakeSupabase
           .getMethodCalls()

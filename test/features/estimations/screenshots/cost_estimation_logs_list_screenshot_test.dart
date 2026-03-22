@@ -16,8 +16,8 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-import '../helpers/log_test_data_factory.dart';
 import '../../../utils/screenshot/font_loader.dart';
+import '../helpers/log_test_data_factory.dart';
 
 void main() {
   const size = Size(390, 844);
