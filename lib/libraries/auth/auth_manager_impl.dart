@@ -9,6 +9,7 @@ import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
@@ -17,15 +18,18 @@ class AuthManagerImpl implements AuthManager {
   final SupabaseWrapper _wrapper;
   final AuthNotifierController _authNotifier;
   final AuthRepository _authRepository;
+  final SentryWrapper? _sentryWrapper;
   final _logger = AppLogger().tag('AuthManagerImpl');
 
   AuthManagerImpl({
     required SupabaseWrapper wrapper,
     required AuthRepository authRepository,
     required AuthNotifierController authNotifier,
+    SentryWrapper? sentryWrapper,
   }) : _wrapper = wrapper,
        _authRepository = authRepository,
-       _authNotifier = authNotifier {
+       _authNotifier = authNotifier,
+       _sentryWrapper = sentryWrapper ?? AppLogger.sentryWrapper {
     _initAuthListener();
   }
 
@@ -135,6 +139,8 @@ class AuthManagerImpl implements AuthManager {
         return AuthResult.failure(AuthErrorType.invalidCredentials);
       }
 
+      await _sentryWrapper?.setUser(user.id);
+
       _logger.info('Login successful for user: $email');
       return AuthResult.success(_mapSupabaseUserToCredential(user));
     } catch (e) {
@@ -170,6 +176,8 @@ class AuthManagerImpl implements AuthManager {
         );
         return AuthResult.failure(AuthErrorType.registrationFailure);
       }
+
+      await _sentryWrapper?.setUser(user.id);
 
       _logger.info('Registration successful for user: $email');
       return AuthResult.success(_mapSupabaseUserToCredential(user));
@@ -242,6 +250,8 @@ class AuthManagerImpl implements AuthManager {
         return AuthResult.failure(AuthErrorType.invalidCredentials);
       }
 
+      await _sentryWrapper?.setUser(user.id);
+
       _logger.info('OTP verification successful for: $address');
       return AuthResult.success(_mapSupabaseUserToCredential(user));
     } catch (e) {
@@ -296,6 +306,9 @@ class AuthManagerImpl implements AuthManager {
     _logger.info('Logging out user');
     try {
       await _wrapper.signOut();
+
+      await _sentryWrapper?.setUser(null);
+
       _logger.info('Logout successful');
       return AuthResult.success(null);
     } catch (e) {

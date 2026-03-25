@@ -15,6 +15,9 @@ class FakeSentryWrapper implements SentryWrapper {
   /// Recorded calls to [captureMessage].
   final List<MessageCall> messages = [];
 
+  /// Current user ID set via [setUser].
+  String? userId;
+
   /// Executes [appRunner] immediately for tests.
   @override
   Future<void> initialize(void Function() appRunner) async {
@@ -67,11 +70,18 @@ class FakeSentryWrapper implements SentryWrapper {
     messages.add(MessageCall(message: message, level: level, tags: tags));
   }
 
+  /// Sets the user context for Sentry events.
+  @override
+  Future<void> setUser(String? userId) async {
+    this.userId = userId;
+  }
+
   /// Clears all recorded calls.
   void reset() {
     breadcrumbs.clear();
     exceptions.clear();
     messages.clear();
+    userId = null;
   }
 }
 
