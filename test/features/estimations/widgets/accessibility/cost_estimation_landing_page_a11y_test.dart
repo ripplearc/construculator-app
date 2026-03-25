@@ -98,19 +98,7 @@ void main() {
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) {
         buildContext = context;
-        final theChild = child!;
-        final currentPath = Modular.to.path;
-        if (theChild is SizedBox &&
-            theChild.width == null &&
-            theChild.height == null) {
-          return theChild;
-        }
-
-        if (currentPath.startsWith('/test-landing/')) {
-          return Scaffold(body: theChild);
-        }
-
-        return Scaffold(body: theChild);
+        return child!;
       },
     );
   }
