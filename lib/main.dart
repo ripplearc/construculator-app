@@ -7,12 +7,30 @@ import 'package:construculator/libraries/config/env_loader_impl.dart';
 import 'package:construculator/libraries/supabase/supabase_wrapper_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final appBootstrap = await _initializeApp();
-  runApp(ModularApp(module: AppModule(appBootstrap), child: const AppWidget()));
+
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = appBootstrap.envLoader.get('SENTRY_DSN') ?? '';
+      options.environment = appBootstrap.config.getEnvironmentName(
+        appBootstrap.config.environment,
+      );
+
+      options.tracesSampleRate = 0.0;
+
+      options.attachScreenshot = false;
+      options.enableAutoSessionTracking = true;
+      options.captureFailedRequests = true;
+    },
+    appRunner: () => runApp(
+      ModularApp(module: AppModule(appBootstrap), child: const AppWidget()),
+    ),
+  );
 }
 
 Future<AppBootstrap> _initializeApp() async {
