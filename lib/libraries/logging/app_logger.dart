@@ -29,6 +29,9 @@ class AppLogger {
     _defaultConfig = config;
   }
 
+  /// Get the default SentryWrapper instance
+  static SentryWrapper? get sentryWrapper => _defaultSentryWrapper;
+
   /// Private constructor for internal instantiation by tag() and emoji()
   AppLogger._private(
     this._tag,

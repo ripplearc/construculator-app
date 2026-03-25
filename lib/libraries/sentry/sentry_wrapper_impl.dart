@@ -101,6 +101,15 @@ class SentryWrapperImpl implements SentryWrapper {
     );
   }
 
+  @override
+  Future<void> setUser(String? userId) async {
+    if (!_isInitialized) return;
+
+    await Sentry.configureScope((scope) {
+      scope.setUser(userId != null ? SentryUser(id: userId) : null);
+    });
+  }
+
   SentryLevel _getSentryLevel(SentryEventLevel level) {
     return switch (level) {
       SentryDebugLevel() => SentryLevel.debug,

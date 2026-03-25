@@ -2,12 +2,15 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 class AppWidget extends StatelessWidget {
   const AppWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
+    Modular.routerDelegate.setObservers([SentryNavigatorObserver()]);
+
     return MaterialApp.router(
       title: 'Construculator',
       locale: const Locale('en'),
