@@ -67,4 +67,9 @@ abstract class SentryWrapper {
     required SentryEventLevel level,
     Map<String, String>? tags,
   });
+
+  /// Configure the Sentry user context
+  ///
+  /// [userId] The user ID to associate with events. If null, clears the user context.
+  Future<void> setUser(String? userId);
 }

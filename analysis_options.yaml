@@ -50,6 +50,7 @@ custom_lint:
         - 'Breadcrumb'
         - 'LogEvent'
         - 'AppLogFilter'
+        - 'SentryUser'
 
 linter:
   # The lint rules applied to this project can be customized in the

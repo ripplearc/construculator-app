@@ -8,6 +8,8 @@ import 'package:construculator/libraries/auth/interfaces/auth_notifier_controlle
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
+import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
+import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -22,6 +24,7 @@ void main() {
   late FakeAuthNotifier authNotifier;
   late FakeAuthRepository authRepository;
   late FakeSupabaseWrapper supabaseWrapper;
+  late FakeSentryWrapper sentryWrapper;
   late AuthManager authManager;
   late Clock clock;
   const testEmail = 'test@example.com';
@@ -47,11 +50,13 @@ void main() {
     authNotifier = Modular.get<AuthNotifierController>() as FakeAuthNotifier;
     authRepository = Modular.get<AuthRepository>() as FakeAuthRepository;
     supabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+    sentryWrapper = Modular.get<SentryWrapper>() as FakeSentryWrapper;
     authManager = Modular.get<AuthManager>();
     clock = Modular.get<Clock>();
   });
 
   tearDown(() {
+    sentryWrapper.reset();
     Modular.destroy();
   });
 
@@ -932,6 +937,117 @@ void main() {
         expect(result.errorType, AuthErrorType.serverError);
       });
     });
+
+    group('Sentry Integration', () {
+      test(
+        'loginWithEmail should call setUser with user ID on success',
+        () async {
+          final result = await authManager.loginWithEmail(
+            testEmail,
+            testPassword,
+          );
+
+          expect(result.isSuccess, true);
+          expect(sentryWrapper.userId, result.data!.id);
+        },
+      );
+
+      test('loginWithEmail should not call setUser on failure', () async {
+        supabaseWrapper.shouldThrowOnSignIn = true;
+        supabaseWrapper.signInErrorMessage = 'Invalid credentials';
+        supabaseWrapper.authErrorCode =
+            SupabaseAuthErrorCode.invalidCredentials;
+
+        final result = await authManager.loginWithEmail(
+          testEmail,
+          testPassword,
+        );
+
+        expect(result.isSuccess, false);
+        expect(sentryWrapper.userId, isNull);
+      });
+
+      test(
+        'registerWithEmail should call setUser with user ID on success',
+        () async {
+          final result = await authManager.registerWithEmail(
+            testEmail,
+            testPassword,
+          );
+
+          expect(result.isSuccess, true);
+          expect(sentryWrapper.userId, isNotNull);
+          expect(sentryWrapper.userId, result.data!.id);
+        },
+      );
+
+      test('registerWithEmail should not call setUser on failure', () async {
+        supabaseWrapper.shouldThrowOnSignUp = true;
+        supabaseWrapper.signUpErrorMessage = 'Registration failed';
+        supabaseWrapper.authErrorCode =
+            SupabaseAuthErrorCode.registrationFailure;
+
+        final result = await authManager.registerWithEmail(
+          testEmail,
+          testPassword,
+        );
+
+        expect(result.isSuccess, false);
+        expect(sentryWrapper.userId, isNull);
+      });
+
+      test('verifyOtp should call setUser with user ID on success', () async {
+        final result = await authManager.verifyOtp(
+          testEmail,
+          '123456',
+          OtpReceiver.email,
+        );
+
+        expect(result.isSuccess, true);
+        expect(sentryWrapper.userId, isNotNull);
+        expect(sentryWrapper.userId, result.data!.id);
+      });
+
+      test('verifyOtp should not call setUser on failure', () async {
+        supabaseWrapper.shouldThrowOnVerifyOtp = true;
+        supabaseWrapper.verifyOtpErrorMessage = 'Invalid OTP';
+        supabaseWrapper.authErrorCode =
+            SupabaseAuthErrorCode.invalidCredentials;
+
+        final result = await authManager.verifyOtp(
+          testEmail,
+          '123456',
+          OtpReceiver.email,
+        );
+
+        expect(result.isSuccess, false);
+        expect(sentryWrapper.userId, isNull);
+      });
+
+      test('logout should call setUser with null', () async {
+        await authManager.loginWithEmail(testEmail, testPassword);
+        expect(sentryWrapper.userId, isNotNull);
+
+        final result = await authManager.logout();
+
+        expect(result.isSuccess, true);
+        expect(sentryWrapper.userId, isNull);
+      });
+
+      test('logout should not call setUser(null) on failure', () async {
+        await authManager.loginWithEmail(testEmail, testPassword);
+        final userId = sentryWrapper.userId;
+        expect(userId, isNotNull);
+
+        supabaseWrapper.shouldThrowOnSignOut = true;
+        supabaseWrapper.signOutErrorMessage = 'Logout failed';
+
+        final result = await authManager.logout();
+
+        expect(result.isSuccess, false);
+        expect(sentryWrapper.userId, userId);
+      });
+    });
   });
 }
 
@@ -943,9 +1059,14 @@ class _TestAppModule extends Module {
     i.addSingleton<AuthNotifierController>(() => FakeAuthNotifier());
     i.addSingleton<AuthRepository>(() => FakeAuthRepository(clock: i()));
     i.addSingleton<SupabaseWrapper>(() => FakeSupabaseWrapper(clock: i()));
+    i.addSingleton<SentryWrapper>(() => FakeSentryWrapper());
     i.add<AuthManager>(
-      () =>
-          AuthManagerImpl(wrapper: i(), authRepository: i(), authNotifier: i()),
+      () => AuthManagerImpl(
+        wrapper: i(),
+        authRepository: i(),
+        authNotifier: i(),
+        sentryWrapper: i<SentryWrapper>(),
+      ),
     );
   }
 }

@@ -30,6 +30,7 @@ void main() {
 
   tearDown(() {
     fakeSupabase.reset();
+    bloc.close();
     Modular.destroy();
   });
 
@@ -85,12 +86,15 @@ void main() {
           fakeSupabase.shouldThrowOnSignIn = false;
           return bloc;
         },
-        act: (bloc) {
+        act: (bloc) async {
           bloc.add(
             EnterPasswordSubmitted(
               email: 'test@example.com',
               password: '@Password123!',
             ),
+          );
+          await bloc.stream.firstWhere(
+            (state) => state is EnterPasswordSubmitSuccess,
           );
           bloc.add(
             EnterPasswordSubmitted(

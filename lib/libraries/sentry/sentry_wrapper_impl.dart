@@ -105,6 +105,24 @@ class SentryWrapperImpl implements SentryWrapper {
     );
   }
 
+  /// Sets the Sentry user context for all subsequent events.
+  ///
+  /// Configures the active Sentry scope with [userId]. Passing `null`
+  /// clears the user context on logout. No-ops if [_isInitialized] is
+  /// false (e.g. DSN not configured in environment).
+  @override
+  Future<void> setUser(String? userId) async {
+    if (!_isInitialized) return;
+
+    await Sentry.configureScope((scope) {
+      if (userId != null) {
+        scope.setUser(SentryUser(id: userId));
+      } else {
+        scope.setUser(null);
+      }
+    });
+  }
+
   SentryLevel _getSentryLevel(SentryEventLevel level) {
     return switch (level) {
       SentryEventLevel.debug => SentryLevel.debug,

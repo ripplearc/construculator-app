@@ -7,6 +7,7 @@ import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/repositories/supabase_repository_impl.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
+import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/supabase_test_module.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -27,8 +28,12 @@ class AuthTestModule extends Module {
     i.add<AuthNotifier>(() => FakeAuthNotifier(), key: 'fakeAuthNotifier');
     i.add<AuthNotifier>(() => AuthNotifierImpl(), key: 'authNotifier');
     i.add<AuthManager>(
-      () =>
-          AuthManagerImpl(wrapper: i(), authRepository: i(), authNotifier: i()),
+      () => AuthManagerImpl(
+        wrapper: i(),
+        authRepository: i(),
+        authNotifier: i(),
+        sentryWrapper: FakeSentryWrapper(),
+      ),
       key: 'authManagerWithFakeDep',
     );
   }

@@ -3,6 +3,7 @@ import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 
@@ -42,6 +43,7 @@ class FakeAppBootstrapFactory {
           supabaseWrapper ?? FakeSupabaseWrapper(clock: FakeClockImpl()),
       config: config ?? FakeAppConfig(),
       envLoader: envLoader ?? FakeEnvLoader(),
+      sentryWrapper: FakeSentryWrapper(),
     );
   }
 }

@@ -15,15 +15,10 @@ Future<void> main() async {
 
   final appBootstrap = await _initializeApp();
 
-  final sentryWrapper = SentryWrapperImpl(
-    envLoader: appBootstrap.envLoader,
-    config: appBootstrap.config,
-  );
-
-  AppLogger.setSentryWrapper(sentryWrapper);
+  AppLogger.setSentryWrapper(appBootstrap.sentryWrapper);
   AppLogger.setConfig(appBootstrap.config);
 
-  await sentryWrapper.initialize(
+  await appBootstrap.sentryWrapper.initialize(
     () => runApp(
       ModularApp(module: AppModule(appBootstrap), child: const AppWidget()),
     ),
@@ -42,10 +37,12 @@ Future<AppBootstrap> _initializeApp() async {
   await config.initialize(env);
   final wrapper = SupabaseWrapperImpl(envLoader: envLoader);
   await wrapper.initialize();
+  final sentryWrapper = SentryWrapperImpl(envLoader: envLoader, config: config);
   return AppBootstrap(
     config: config,
     envLoader: envLoader,
     supabaseWrapper: wrapper,
+    sentryWrapper: sentryWrapper,
   );
 }
 

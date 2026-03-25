@@ -9,6 +9,7 @@ import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
@@ -17,15 +18,18 @@ class AuthManagerImpl implements AuthManager {
   final SupabaseWrapper _wrapper;
   final AuthNotifierController _authNotifier;
   final AuthRepository _authRepository;
+  final SentryWrapper _sentryWrapper;
   final _logger = AppLogger().tag('AuthManagerImpl');
 
   AuthManagerImpl({
     required SupabaseWrapper wrapper,
     required AuthRepository authRepository,
     required AuthNotifierController authNotifier,
+    required SentryWrapper sentryWrapper,
   }) : _wrapper = wrapper,
        _authRepository = authRepository,
-       _authNotifier = authNotifier {
+       _authNotifier = authNotifier,
+       _sentryWrapper = sentryWrapper {
     _initAuthListener();
   }
 
@@ -51,7 +55,7 @@ class AuthManagerImpl implements AuthManager {
         }
       },
       onError: (error) {
-        _logger.error('Error in auth state stream', error);
+        _logger.warning('Error in auth state stream', error);
         if (error is supabase.AuthSessionMissingException) {
           _logger.warning('Auth-specific error, emitting unauthenticated');
           _emitAuthStateChanged(AuthStatus.unauthenticated, null);
@@ -88,21 +92,48 @@ class AuthManagerImpl implements AuthManager {
   }
 
   AuthResult<T> _handleException<T>(dynamic error, String operation) {
-    _logger.error('$operation failed with error', error);
-
     if (error is supabase.AuthException) {
       final code = SupabaseAuthErrorCode.fromCode(error.code ?? 'unknown');
-      return AuthResult.failure(code.toAuthErrorType());
+      final errorType = code.toAuthErrorType();
+
+      if (_isExpectedAuthError(errorType)) {
+        _logger.warning('$operation failed with expected error', error);
+      } else {
+        _logger.error('$operation failed with error', error);
+      }
+
+      return AuthResult.failure(errorType);
     }
 
     if (error is TimeoutException) {
+      _logger.error('$operation failed with timeout', error);
       return AuthResult.failure(AuthErrorType.timeout);
     }
+
     if (error is supabase.PostgrestException) {
       final code = PostgresErrorCode.fromCode(error.code ?? 'unknown');
-      return AuthResult.failure(code.toAuthErrorType());
+      final errorType = code.toAuthErrorType();
+
+      if (errorType == AuthErrorType.uniqueViolation) {
+        _logger.warning('$operation failed with expected error', error);
+      } else {
+        _logger.error('$operation failed with error', error);
+      }
+
+      return AuthResult.failure(errorType);
     }
+
+    _logger.error('$operation failed with error', error);
     return AuthResult.failure(AuthErrorType.serverError);
+  }
+
+  bool _isExpectedAuthError(AuthErrorType type) {
+    return type == AuthErrorType.invalidCredentials ||
+        type == AuthErrorType.registrationFailure ||
+        type == AuthErrorType.uniqueViolation ||
+        type == AuthErrorType.invalidEmail ||
+        type == AuthErrorType.invalidPhone ||
+        type == AuthErrorType.invalidOtp;
   }
 
   @override
@@ -112,13 +143,11 @@ class AuthManagerImpl implements AuthManager {
   ) async {
     _logger.info('Attempting login for user: $email');
 
-    // Validate email
     final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
       return AuthResult.failure(emailError);
     }
 
-    // Validate password
     final passwordError = AuthValidation.validatePassword(password);
     if (passwordError != null) {
       return AuthResult.failure(passwordError);
@@ -135,6 +164,8 @@ class AuthManagerImpl implements AuthManager {
         return AuthResult.failure(AuthErrorType.invalidCredentials);
       }
 
+      await _sentryWrapper.setUser(user.id);
+
       _logger.info('Login successful for user: $email');
       return AuthResult.success(_mapSupabaseUserToCredential(user));
     } catch (e) {
@@ -149,13 +180,11 @@ class AuthManagerImpl implements AuthManager {
   ) async {
     _logger.info('Attempting registration for user: $email');
 
-    // Validate email
     final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
       return AuthResult.failure(emailError);
     }
 
-    // Validate password
     final passwordError = AuthValidation.validatePassword(password);
     if (passwordError != null) {
       return AuthResult.failure(passwordError);
@@ -170,6 +199,8 @@ class AuthManagerImpl implements AuthManager {
         );
         return AuthResult.failure(AuthErrorType.registrationFailure);
       }
+
+      await _sentryWrapper.setUser(user.id);
 
       _logger.info('Registration successful for user: $email');
       return AuthResult.success(_mapSupabaseUserToCredential(user));
@@ -219,7 +250,6 @@ class AuthManagerImpl implements AuthManager {
       return AuthResult.failure(addressError);
     }
 
-    // Validate OTP
     final otpError = AuthValidation.validateOtp(otp);
     if (otpError != null) {
       return AuthResult.failure(otpError);
@@ -242,6 +272,8 @@ class AuthManagerImpl implements AuthManager {
         return AuthResult.failure(AuthErrorType.invalidCredentials);
       }
 
+      await _sentryWrapper.setUser(user.id);
+
       _logger.info('OTP verification successful for: $address');
       return AuthResult.success(_mapSupabaseUserToCredential(user));
     } catch (e) {
@@ -253,7 +285,6 @@ class AuthManagerImpl implements AuthManager {
   Future<AuthResult<bool>> resetPassword(String email) async {
     _logger.info('Initiating password reset for: $email');
 
-    // Validate email
     final emailError = AuthValidation.validateEmail(email);
     if (emailError != null) {
       return AuthResult.failure(emailError);
@@ -296,6 +327,9 @@ class AuthManagerImpl implements AuthManager {
     _logger.info('Logging out user');
     try {
       await _wrapper.signOut();
+
+      await _sentryWrapper.setUser(null);
+
       _logger.info('Logout successful');
       return AuthResult.success(null);
     } catch (e) {
