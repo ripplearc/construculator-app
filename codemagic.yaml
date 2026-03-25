@@ -158,6 +158,7 @@ workflows:
       groups:
         - notification_emails
         - ripple_arc
+        - construculator_dev
       flutter: 3.32.0
     cache:
       cache_paths:
@@ -286,16 +287,25 @@ workflows:
           echo "✅ No changed mutation config files detected (checked test/features/**/mutations, test/libraries/**/mutations). Skipping mutation tests."
           exit 0
           fi
-          
+
           echo "Found changed mutation config files:"
           echo "$CHANGED_FILES"
-          
+
           echo "🧪 Running mutation tests..."
           fvm dart run mutation_test $CHANGED_FILES --no-builtin
 
+      - name: Generate env file
+        script: |
+          export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
+          chmod +x scripts/ci/generate_env_file.sh
+          bash scripts/ci/generate_env_file.sh
+
       - name: Build Android Debug
         script: |
-          fvm flutter build apk --flavor fishfood
+          export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
+          fvm flutter build apk \
+            --flavor fishfood \
+            --dart-define=ENVIRONMENT=dev
 
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
@@ -322,6 +332,7 @@ workflows:
       groups:
         - notification_emails
         - ripple_arc
+        - construculator_dev
       flutter: 3.32.0
       ubuntu: 24.04
     cache:
@@ -443,9 +454,18 @@ workflows:
           echo "🧪 Running mutation tests on: $CONFIG_FILES"
           fvm dart run mutation_test $CONFIG_FILES --no-builtin
 
+      - name: Generate env file
+        script: |
+          export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
+          chmod +x scripts/ci/generate_env_file.sh
+          bash scripts/ci/generate_env_file.sh
+
       - name: Build Android Debug
         script: |
-          fvm flutter build apk --flavor fishfood
+          export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
+          fvm flutter build apk \
+            --flavor fishfood \
+            --dart-define=ENVIRONMENT=dev
 
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
@@ -473,6 +493,7 @@ workflows:
       groups:
         - notification_emails
         - ripple_arc
+        - construculator_dev
       flutter: 3.32.0
     cache:
       cache_paths:
@@ -506,14 +527,80 @@ workflows:
           cd ios
           pod install
           cd ..
+      - name: Generate env file
+        script: |
+          export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
+          chmod +x scripts/ci/generate_env_file.sh
+          bash scripts/ci/generate_env_file.sh
       - name: Build Ios Debug
         script: |
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           echo "📦 Pre-caching iOS artifacts..."
           fvm flutter precache --ios
-          fvm flutter build ios --debug --no-codesign
+          fvm flutter build ios \
+            --debug \
+            --no-codesign \
+            --dart-define=ENVIRONMENT=dev
     artifacts:
       - build/ios/iphoneos/*.app
+    publishing:
+      email:
+        recipients:
+          - $EMAIL_DANIEL
+        notify:
+          success: true
+          failure: true
+      slack:
+        channel: '#build-notifications'
+        notify_on_build_start: true
+        notify:
+          success: true
+          failure: true
+  dogfood-release:
+    name: Dogfood Release Build (QA)
+    instance_type: linux_x2
+    triggering:
+      events: []  # Manual trigger only
+    environment:
+      groups:
+        - construculator_qa
+        - notification_emails
+        - ripple_arc
+      flutter: 3.32.0
+      ubuntu: 24.04
+    cache:
+      cache_paths:
+        - .fvm/
+        - ~/.pub-cache
+        - ~/.gradle/caches
+        - $FLUTTER_ROOT/.pub-cache
+    scripts:
+      - name: Install FVM
+        script: dart pub global activate fvm
+      - name: Install Flutter version via FVM
+        script: fvm install
+      - name: Clone and Checkout
+        script: |
+          git clone "$CM_REPO_URL" .
+          git checkout "$CM_COMMIT"
+      - name: Install Dependencies
+        script: |
+          export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
+          fvm flutter pub get
+      - name: Generate env file
+        script: |
+          export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
+          chmod +x scripts/ci/generate_env_file.sh
+          bash scripts/ci/generate_env_file.sh
+      - name: Build Android Release APK
+        script: |
+          export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
+          fvm flutter build apk \
+            --release \
+            --flavor dogfood \
+            --dart-define=ENVIRONMENT=qa
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk
     publishing:
       email:
         recipients:
