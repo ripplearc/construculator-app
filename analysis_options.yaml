@@ -48,6 +48,8 @@ custom_lint:
         - 'CancelableOperation'
         - 'AppLocalizationsEn'
         - 'Breadcrumb'
+        - 'LogEvent'
+        - 'AppLogFilter'
 
 linter:
   # The lint rules applied to this project can be customized in the

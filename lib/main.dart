@@ -4,6 +4,7 @@ import 'package:construculator/app/app_module.dart';
 import 'package:construculator/libraries/config/app_config_impl.dart';
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/config/env_loader_impl.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/sentry/sentry_wrapper_impl.dart';
 import 'package:construculator/libraries/supabase/supabase_wrapper_impl.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +19,9 @@ Future<void> main() async {
     envLoader: appBootstrap.envLoader,
     config: appBootstrap.config,
   );
+
+  AppLogger.setSentryWrapper(sentryWrapper);
+  AppLogger.setConfig(appBootstrap.config);
 
   await sentryWrapper.initialize(
     () => runApp(

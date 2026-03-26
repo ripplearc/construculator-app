@@ -8,7 +8,6 @@ import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-// TODO: https://ripplearc.youtrack.cloud/issue/CA-543/Integrate-Sentry-into-AppLogger-with-full-test-coverage (add fake for sentry wrapp)
 class SentryWrapperImpl implements SentryWrapper {
   final EnvLoader _envLoader;
   final Config _config;
@@ -66,8 +65,8 @@ class SentryWrapperImpl implements SentryWrapper {
 
   @override
   Future<void> captureException(
-    dynamic exception, {
-    dynamic stackTrace,
+    Object exception, {
+    StackTrace? stackTrace,
     Map<String, String>? tags,
     Map<String, dynamic>? contexts,
   }) async {

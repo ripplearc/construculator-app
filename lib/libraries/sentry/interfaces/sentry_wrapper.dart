@@ -51,8 +51,8 @@ abstract class SentryWrapper {
   /// [tags] Optional tags for categorization
   /// [contexts] Optional additional context data
   Future<void> captureException(
-    dynamic exception, {
-    dynamic stackTrace,
+    Object exception, {
+    StackTrace? stackTrace,
     Map<String, String>? tags,
     Map<String, dynamic>? contexts,
   });
