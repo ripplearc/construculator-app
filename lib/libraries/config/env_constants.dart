@@ -10,6 +10,8 @@ const String devAlias = 'Fishfood';
 const String qaAlias = 'Dogfood';
 const String prodAlias = '';
 
+const String sentryDsnKey = 'SENTRY_DSN';
+
 enum Environment { dev, qa, prod }
 
 const Duration debounceTime = Duration(milliseconds: 300);
