@@ -4,6 +4,7 @@ import 'package:construculator/app/app_module.dart';
 import 'package:construculator/libraries/config/app_config_impl.dart';
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/config/env_loader_impl.dart';
+import 'package:construculator/libraries/sentry/sentry_wrapper_impl.dart';
 import 'package:construculator/libraries/supabase/supabase_wrapper_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -12,7 +13,17 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final appBootstrap = await _initializeApp();
-  runApp(ModularApp(module: AppModule(appBootstrap), child: const AppWidget()));
+
+  final sentryWrapper = SentryWrapperImpl(
+    envLoader: appBootstrap.envLoader,
+    config: appBootstrap.config,
+  );
+
+  await sentryWrapper.initialize(
+    () => runApp(
+      ModularApp(module: AppModule(appBootstrap), child: const AppWidget()),
+    ),
+  );
 }
 
 Future<AppBootstrap> _initializeApp() async {
