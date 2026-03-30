@@ -26,7 +26,6 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
-import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
