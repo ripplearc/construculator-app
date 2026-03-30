@@ -1,15 +1,20 @@
 import 'dart:async';
+
 import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
+import 'package:construculator/features/estimation/data/repositories/cost_estimation_repository_impl.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
+
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
-import 'package:construculator/features/project/presentation/widgets/project_header_app_bar.dart';
+import 'package:construculator/features/estimation/presentation/widgets/delete_estimation_confirmation_sheet.dart';
+import 'package:construculator/features/estimation/presentation/widgets/estimation_actions_sheet.dart';
+import 'package:construculator/features/estimation/presentation/widgets/estimation_rename_sheet.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -21,13 +26,12 @@ import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-import '../../units/helpers/estimation_test_data_map_factory.dart';
-import 'package:construculator/features/estimation/presentation/widgets/estimation_actions_sheet.dart';
-import 'package:construculator/features/estimation/presentation/widgets/delete_estimation_confirmation_sheet.dart';
+import '../../helpers/estimation_test_data_map_factory.dart';
 
 class _CostEstimationLandingPageTestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -40,18 +44,20 @@ class _CostEstimationLandingPageTestModule extends Module {
     ClockTestModule(),
     ProjectModule(appBootstrap),
     AuthLibraryModule(appBootstrap),
+    EstimationModule(appBootstrap),
   ];
-
-  @override
-  void binds(Injector i) {
-    i.add<AuthBloc>(
-      () => AuthBloc(authManager: i(), authNotifier: i(), router: i()),
-    );
-  }
 
   @override
   void routes(RouteManager r) {
     r.module(estimationBaseRoute, module: EstimationModule(appBootstrap));
+    r.child(
+      '/test-landing/:projectId',
+      guards: [AuthGuard()],
+      child: (context) {
+        final projectId = Modular.args.params['projectId'];
+        return EstimationModule.landingPage(projectId: projectId);
+      },
+    );
   }
 }
 
@@ -61,15 +67,14 @@ void main() {
   late AppBootstrap appBootstrap;
   late FakeAppRouter fakeAppRouter;
 
-  const testEstimationRoute = '$fullEstimationLandingRoute/$testProjectId';
+  const debounceWaitTime = Duration(milliseconds: 400);
+  const testEstimationRoute = '/test-landing/$testProjectId';
   BuildContext? buildContext;
 
   setUpAll(() {
     CoreToast.disableTimers();
-
     clock = FakeClockImpl();
     fakeSupabase = FakeSupabaseWrapper(clock: clock);
-
     appBootstrap = AppBootstrap(
       config: FakeAppConfig(),
       envLoader: FakeEnvLoader(),
@@ -193,44 +198,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(CoreLoadingIndicator), findsNothing);
-
       // TODO: https://ripplearc.youtrack.cloud/issue/CA-162/Dashboard-Create-Project-Repository correct this to an actual name from fake project table
-      expect(find.text('Sample Construction Project'), findsOneWidget);
+
+      expect(find.byType(CostEstimationEmptyWidget), findsOneWidget);
     });
-
-    testWidgets(
-      'passes project id and avatar image to ProjectHeaderAppBar when user has photo',
-      (tester) async {
-        const avatarUrl = 'https://example.com/avatar.jpg';
-
-        setUpAuthenticatedUser(
-          credentialId: 'test-credential-id',
-          email: 'test@example.com',
-          profilePhotoUrl: avatarUrl,
-        );
-
-        final originalOnError = FlutterError.onError;
-        FlutterError.onError = (details) {
-          if (details.exception is NetworkImageLoadException) return;
-          originalOnError!.call(details);
-        };
-        addTearDown(() => FlutterError.onError = originalOnError);
-
-        await pumpAppAtRoute(tester, testEstimationRoute);
-
-        final projectHeaderAppBar = tester.widget<ProjectHeaderAppBar>(
-          find.byType(ProjectHeaderAppBar),
-        );
-
-        expect(projectHeaderAppBar.projectId, testProjectId);
-        expect(projectHeaderAppBar.avatarImage, isNotNull);
-        expect(projectHeaderAppBar.avatarImage, isA<NetworkImage>());
-        expect(
-          (projectHeaderAppBar.avatarImage! as NetworkImage).url,
-          avatarUrl,
-        );
-      },
-    );
   });
 
   group('Add Estimation Button', () {
@@ -271,7 +242,7 @@ void main() {
     });
 
     testWidgets(
-      'shows trailing loading indicator and disables add button while creating',
+      'shows leading loading indicator and disables add button while creating',
       (tester) async {
         setUpAuthenticatedUser(
           credentialId: 'test-credential-id',
@@ -330,7 +301,7 @@ void main() {
       expect(find.byType(CostEstimationTile), findsOneWidget);
 
       await tester.tap(find.text(l10n().addEstimation));
-      await tester.pump(Duration(milliseconds: 400));
+      await tester.pump(debounceWaitTime);
 
       expect(find.byType(CostEstimationTile), findsNWidgets(2));
       expect(find.text(l10n().untitledEstimation), findsOneWidget);
@@ -451,8 +422,8 @@ void main() {
         email: 'test@example.com',
       );
 
-      fakeSupabase.shouldThrowOnSelectMultiple = true;
-      fakeSupabase.selectMultipleExceptionType = SupabaseExceptionType.timeout;
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
 
       await pumpAppAtRoute(tester, testEstimationRoute);
 
@@ -470,8 +441,8 @@ void main() {
         email: 'test@example.com',
       );
 
-      fakeSupabase.shouldThrowOnSelectMultiple = true;
-      fakeSupabase.selectMultipleExceptionType = SupabaseExceptionType.socket;
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.socket;
 
       await pumpAppAtRoute(tester, testEstimationRoute);
 
@@ -487,8 +458,8 @@ void main() {
         email: 'test@example.com',
       );
 
-      fakeSupabase.shouldThrowOnSelectMultiple = true;
-      fakeSupabase.selectMultipleExceptionType = SupabaseExceptionType.type;
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.type;
 
       await pumpAppAtRoute(tester, testEstimationRoute);
 
@@ -529,6 +500,7 @@ void main() {
       ]);
 
       await tester.drag(find.byType(RefreshIndicator), const Offset(0, 300));
+
       await tester.pumpAndSettle();
 
       expect(find.text('Initial Estimation'), findsOneWidget);
@@ -721,7 +693,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.text(l10n().yesDeleteButton));
-      await tester.pump(Duration(milliseconds: 400));
+      await tester.pump(debounceWaitTime);
 
       expect(find.byType(CostEstimationTile), findsOneWidget);
       expect(find.text('Bathroom Renovation'), findsOneWidget);
@@ -824,19 +796,374 @@ void main() {
     );
   });
 
-  group('Route validation', () {
-    testWidgets('renders empty screen when projectId is missing', (
+  group('Pagination', () {
+    testWidgets('shows loading indicator at bottom when loading more', (
       tester,
     ) async {
-      setUpAuthenticatedUser(
-        credentialId: 'test-credential-id',
-        email: 'test@example.com',
+      final pageSize = CostEstimationRepositoryImpl.defaultPageSize + 5;
+      final estimations = List.generate(
+        pageSize,
+        (i) => EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-$i',
+          projectId: testProjectId,
+          estimateName: 'Estimation $i',
+        ),
       );
 
-      await pumpAppAtRoute(tester, '$fullEstimationLandingRoute/');
+      await setupAndNavigateToEstimation(
+        tester,
+        multipleEstimations: estimations,
+      );
 
-      expect(find.byType(SizedBox), findsOneWidget);
-      expect(find.byType(CostEstimationEmptyWidget), findsNothing);
+      expect(find.byType(CostEstimationTile), findsWidgets);
+
+      fakeSupabase.shouldDelayOperations = true;
+      fakeSupabase.completer = Completer();
+
+      final listView = tester.widget<CustomScrollView>(
+        find.byType(CustomScrollView),
+      );
+      final controller = listView.controller!;
+
+      controller.jumpTo(controller.position.maxScrollExtent);
+      await tester.pump();
+      controller.jumpTo(controller.position.maxScrollExtent);
+      await tester.pump();
+
+      expect(find.byType(CoreLoadingIndicator), findsOneWidget);
+
+      fakeSupabase.completer!.complete();
+      await tester.pumpAndSettle();
     });
+
+    testWidgets('loads more estimations when scrolled near bottom', (
+      tester,
+    ) async {
+      final pageSize = CostEstimationRepositoryImpl.defaultPageSize;
+      final totalEstimations = pageSize + 3;
+      final estimations = List.generate(
+        totalEstimations,
+        (i) => EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-$i',
+          projectId: testProjectId,
+          estimateName: 'Estimation $i',
+        ),
+      );
+
+      await setupAndNavigateToEstimation(
+        tester,
+        multipleEstimations: estimations,
+      );
+
+      expect(find.byType(CostEstimationTile), findsWidgets);
+      expect(find.text('Estimation $pageSize'), findsNothing);
+
+      final listView = tester.widget<CustomScrollView>(
+        find.byType(CustomScrollView),
+      );
+      final controller = listView.controller!;
+      controller.jumpTo(controller.position.maxScrollExtent);
+      await tester.pumpAndSettle();
+
+      controller.jumpTo(controller.position.maxScrollExtent);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Estimation $pageSize'), findsOneWidget);
+    });
+
+    testWidgets(
+      'does not show loading indicator when all estimations are loaded',
+      (tester) async {
+        final estimations = List.generate(
+          3,
+          (i) => EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimation-$i',
+            projectId: testProjectId,
+            estimateName: 'Estimation $i',
+          ),
+        );
+
+        await setupAndNavigateToEstimation(
+          tester,
+          multipleEstimations: estimations,
+        );
+
+        expect(find.byType(CostEstimationTile), findsNWidgets(3));
+        expect(find.byType(CoreLoadingIndicator), findsNothing);
+      },
+    );
+  });
+
+  group('Lock Status Integration', () {
+    testWidgets('calls shows success toast when locked successfully', (
+      tester,
+    ) async {
+      const estimationName = 'Kitchen Remodel';
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: estimationName,
+          isLocked: false,
+        ),
+      );
+
+      await tester.tap(find.byKey(const Key('menuIcon')).first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(CoreSwitch));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().estimationLockedSuccessTitle), findsOneWidget);
+    });
+
+    testWidgets('shows success toast when unlocked successfully', (
+      tester,
+    ) async {
+      const estimationName = 'Kitchen Remodel';
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: estimationName,
+          isLocked: true,
+        ),
+      );
+
+      await tester.tap(find.byKey(const Key('menuIcon')).first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(CoreSwitch));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().estimationUnlockedSuccessTitle), findsOneWidget);
+    });
+
+    testWidgets('shows error toast when lock action fails', (tester) async {
+      const estimationName = 'Kitchen Remodel';
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: estimationName,
+          isLocked: false,
+        ),
+      );
+
+      fakeSupabase.shouldThrowOnUpdate = true;
+      fakeSupabase.updateExceptionType = SupabaseExceptionType.socket;
+
+      await tester.tap(find.byKey(const Key('menuIcon')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(CoreSwitch));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().connectionError), findsOneWidget);
+    });
+
+    testWidgets('rolls back switch value when lock update fails', (
+      tester,
+    ) async {
+      const estimationName = 'Kitchen Remodel';
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: estimationName,
+          isLocked: false,
+        ),
+      );
+
+      fakeSupabase.shouldThrowOnUpdate = true;
+      fakeSupabase.updateExceptionType = SupabaseExceptionType.socket;
+
+      await tester.tap(find.byKey(const Key('menuIcon')));
+      await tester.pumpAndSettle();
+
+      final switchBefore = tester.widget<CoreSwitch>(find.byType(CoreSwitch));
+      expect(switchBefore.value, isFalse);
+
+      await tester.tap(find.byType(CoreSwitch));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().connectionError), findsOneWidget);
+
+      final switchAfter = tester.widget<CoreSwitch>(find.byType(CoreSwitch));
+      expect(switchAfter.value, isFalse);
+    });
+  });
+
+  group('Rename Estimation', () {
+    Future<void> openRenameSheet(WidgetTester tester) async {
+      await tester.tap(find.byKey(const Key('menuIcon')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n().renameAction));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('shows rename sheet when rename action is tapped', (
+      tester,
+    ) async {
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: 'Kitchen Remodel',
+        ),
+      );
+
+      await openRenameSheet(tester);
+
+      expect(find.byType(EstimationRenameSheet), findsOneWidget);
+    });
+
+    testWidgets('closes rename sheet on successful rename', (tester) async {
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: 'Kitchen Remodel',
+        ),
+      );
+
+      final initialPopCalls = fakeAppRouter.popCalls;
+
+      await openRenameSheet(tester);
+      expect(fakeAppRouter.popCalls, initialPopCalls + 1);
+
+      await tester.enterText(find.byType(CoreTextField), 'Bathroom Renovation');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n().saveCostNameButton));
+      await tester.pumpAndSettle();
+
+      expect(fakeAppRouter.popCalls, initialPopCalls + 2);
+    });
+
+    testWidgets('shows error toast and keeps sheet open when rename fails', (
+      tester,
+    ) async {
+      await setupAndNavigateToEstimation(
+        tester,
+        estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+          id: 'estimation-1',
+          projectId: testProjectId,
+          estimateName: 'Kitchen Remodel',
+        ),
+      );
+
+      final initialPopCalls = fakeAppRouter.popCalls;
+
+      await openRenameSheet(tester);
+
+      fakeSupabase.shouldThrowOnUpdate = true;
+      fakeSupabase.updateExceptionType = SupabaseExceptionType.socket;
+
+      await tester.enterText(find.byType(CoreTextField), 'New Name');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n().saveCostNameButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().connectionError), findsOneWidget);
+      expect(find.byType(EstimationRenameSheet), findsOneWidget);
+      expect(fakeAppRouter.popCalls, initialPopCalls + 1);
+    });
+
+    testWidgets(
+      'updates estimation name in list after successful rename (optimistic update)',
+      (tester) async {
+        const originalName = 'Kitchen Remodel';
+        const newName = 'Bathroom Renovation';
+
+        await setupAndNavigateToEstimation(
+          tester,
+          estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimation-1',
+            projectId: testProjectId,
+            estimateName: originalName,
+          ),
+        );
+
+        final tileFinder = find.byType(CostEstimationTile);
+        final originalTextFinder = find.descendant(
+          of: tileFinder,
+          matching: find.text(originalName),
+        );
+        expect(originalTextFinder, findsOneWidget);
+
+        await openRenameSheet(tester);
+
+        await tester.enterText(find.byType(CoreTextField), newName);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(l10n().saveCostNameButton));
+
+        await tester.pump(debounceWaitTime);
+        await tester.pumpAndSettle();
+
+        final updatedTextFinder = find.descendant(
+          of: tileFinder,
+          matching: find.text(newName),
+        );
+        expect(updatedTextFinder, findsOneWidget);
+
+        expect(originalTextFinder, findsNothing);
+      },
+    );
+
+    testWidgets(
+      'rolls back to original name in list when rename fails (optimistic rollback)',
+      (tester) async {
+        const originalName = 'Kitchen Remodel';
+        const attemptedNewName = 'Bathroom Renovation';
+
+        await setupAndNavigateToEstimation(
+          tester,
+          estimationData: EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimation-1',
+            projectId: testProjectId,
+            estimateName: originalName,
+          ),
+        );
+
+        final tileFinder = find.byType(CostEstimationTile);
+        final originalTextFinder = find.descendant(
+          of: tileFinder,
+          matching: find.text(originalName),
+        );
+        expect(originalTextFinder, findsOneWidget);
+
+        await openRenameSheet(tester);
+
+        fakeSupabase.shouldThrowOnUpdate = true;
+        fakeSupabase.updateExceptionType = SupabaseExceptionType.socket;
+
+        await tester.enterText(find.byType(CoreTextField), attemptedNewName);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(l10n().saveCostNameButton));
+
+        await tester.pump(debounceWaitTime);
+        await tester.pumpAndSettle();
+
+        expect(originalTextFinder, findsOneWidget);
+
+        final attemptedTextFinder = find.descendant(
+          of: tileFinder,
+          matching: find.text(attemptedNewName),
+        );
+        expect(attemptedTextFinder, findsNothing);
+
+        expect(find.text(l10n().connectionError), findsOneWidget);
+      },
+    );
   });
 }

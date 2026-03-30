@@ -1,3 +1,4 @@
+import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/auth/auth_manager_impl.dart';
 import 'package:construculator/libraries/auth/auth_notifier_impl.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
@@ -5,7 +6,6 @@ import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/repositories/supabase_repository_impl.dart';
-import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 

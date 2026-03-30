@@ -32,7 +32,7 @@
 # The AI will provide a comprehensive review that includes:
 # - Changes Overview: Analysis of all modified files with statistics
 # - GitHub-style Diffs: Detailed review of each file's changes
-# - Review Instructions: Feedback based on the 4 review rules
+# - Review Instructions: Feedback based on the 8 review rules
 # - Summary Table: Issues found that need your attention
 #
 # STEP 4: Use Markdown Preview
@@ -270,7 +270,31 @@ echo "- Ensure BLoCs test real UseCases, UseCases test real Services, etc." >> "
 echo "" >> "$OUTPUT_FILE"
 
 # =============================================================================
-# RULE 4: UI & BUSINESS LOGIC SEPARATION
+# RULE 4: COREUI COMPONENTS USAGE
+# =============================================================================
+echo "### 🎨 RULE 4: COREUI COMPONENTS USAGE" >> "$OUTPUT_FILE"
+echo "**Core Principle:** All UI components, styling, and design tokens must use CoreUI package instead of Flutter's default Material components" >> "$OUTPUT_FILE"
+echo "**Core Principle:** For the latest CoreUI theme tokens and design system details, use the CoreUI README:
+https://github.com/ripplearc/coreui#readme" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Key Requirements:**" >> "$OUTPUT_FILE"
+echo "- ✅ **Spacing:** Use \`CoreSpacing\` (e.g., \`CoreSpacing.space16\`) instead of hardcoded values like \`EdgeInsets.all(24.0)\` or \`SizedBox(height: 24)\`" >> "$OUTPUT_FILE"
+echo "- ✅ **Icons:** Use \`CoreIcons\` and \`CoreIconWidget\` instead of \`Icons.*\` from Material" >> "$OUTPUT_FILE"
+echo "- ✅ **Typography:** Use \`CoreTypography\` (e.g., \`CoreTypography.bodyMediumRegular()\`) instead of \`TextStyle\` with hardcoded font properties" >> "$OUTPUT_FILE"
+echo "- ✅ **Colors:** Use \`CoreTextColors\`, \`CoreBackgroundColors\`, and other CoreUI color classes instead of \`Colors.*\` or \`Theme.of(context).*\` for colors" >> "$OUTPUT_FILE"
+echo "- ✅ **Components:** Use CoreUI components (e.g., \`CoreButton\`, \`CoreTextField\`) instead of Material equivalents (\`ElevatedButton\`, \`TextFormField\`)" >> "$OUTPUT_FILE"
+echo "- ✅ **Theme:** Use \`CoreTheme\` for theme configuration" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Verify all spacing values use \`CoreSpacing\` constants" >> "$OUTPUT_FILE"
+echo "- Check that icons use \`CoreIcons\` and \`CoreIconWidget\`" >> "$OUTPUT_FILE"
+echo "- Ensure typography uses \`CoreTypography\` methods" >> "$OUTPUT_FILE"
+echo "- Confirm colors come from CoreUI color classes, not Material \`Colors\` or theme lookups" >> "$OUTPUT_FILE"
+echo "- Validate that UI components use CoreUI equivalents (e.g., \`CoreButton\` not \`ElevatedButton\`)" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
+# RULE 5: UI & BUSINESS LOGIC SEPARATION
 # =============================================================================
 echo "### 🎨 RULE 5: UI & BUSINESS LOGIC SEPARATION" >> "$OUTPUT_FILE"
 echo "**Reference:** For detailed guidelines and code samples, search: https://gist.github.com/ripplearcgit/f190fecc8f7124e511cb01283f9fbc31" >> "$OUTPUT_FILE"
@@ -290,7 +314,7 @@ echo "- Verify that all validation, data fetching, and coordination live in BLoC
 echo "" >> "$OUTPUT_FILE"
 
 # =============================================================================
-# RULE 5: STREAM-BASED PERFORMANCE & LIFECYCLE
+# RULE 6: STREAM-BASED PERFORMANCE & LIFECYCLE
 # =============================================================================
 echo "### ⚡ RULE 6: STREAM-BASED PERFORMANCE & LIFECYCLE" >> "$OUTPUT_FILE"
 echo "**Reference:** For detailed guidelines and code samples, search: https://gist.github.com/ripplearcgit/7818b412bf5fbe06269e0c3830e136f5" >> "$OUTPUT_FILE"
@@ -310,9 +334,9 @@ echo "- Ensure all BLoC stream subscriptions are cancelled during disposal." >> 
 echo "" >> "$OUTPUT_FILE"
 
 # =============================================================================
-# RULE 6: SELF-DOCUMENTING & CLEAN CODE (ANTI-AI ARTIFACTS)
+# RULE 7: SELF-DOCUMENTING & CLEAN CODE (ANTI-AI ARTIFACTS)
 # =============================================================================
-echo "### 🧹 RULE 6: SELF-DOCUMENTING & CLEAN CODE" >> "$OUTPUT_FILE"
+echo "### 🧹 RULE 7: SELF-DOCUMENTING & CLEAN CODE" >> "$OUTPUT_FILE"
 echo "**Core Principle:** Code must be expressive and clean. Use 'Code Documentation' to define contracts, but avoid 'Implementation Comments' to explain logic." >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 echo "**✅ What to Keep (Code Documentation):**" >> "$OUTPUT_FILE"
@@ -331,9 +355,195 @@ echo "- **Maintain Contracts:** Ensure docstrings accurately reflect the *behavi
 echo "" >> "$OUTPUT_FILE"
 
 # =============================================================================
-# RULE 7: GENERAL CODE REVIEW CRITERIA
+# RULE 8: WIDGET TEST BEHAVIOR & ROBUST FIND EXPRESSIONS
 # =============================================================================
-echo "### 🔍 RULE 4: GENERAL CODE REVIEW CRITERIA" >> "$OUTPUT_FILE"
+echo "### 🧪 RULE 8: WIDGET TEST BEHAVIOR & ROBUST FIND EXPRESSIONS" >> "$OUTPUT_FILE"
+echo "**Core Principle:** Widget tests should focus on behavior, not implementation details. Use Keys for reliable widget finding." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Test Behavior, Not Implementation:**" >> "$OUTPUT_FILE"
+echo "- ✅ **Focus on:** What the widget does (user interactions, displayed content, state changes)" >> "$OUTPUT_FILE"
+echo "- ❌ **Avoid:** Testing implementation details (specific widget types, internal structure, exact widget counts)" >> "$OUTPUT_FILE"
+echo "- ✅ **Example Good:** Test that tapping a button triggers a callback or navigates" >> "$OUTPUT_FILE"
+echo "- ❌ **Example Bad:** Test that a widget tree contains exactly 3 \`CoreIconWidget\` instances" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Robust Find Expressions:**" >> "$OUTPUT_FILE"
+echo "- ❌ **Forbidden:** Fragile find expressions that rely on implementation details:" >> "$OUTPUT_FILE"
+echo "  - \`expect(find.byType(CoreIconWidget), findsNWidgets(3))\` - breaks if widget structure changes" >> "$OUTPUT_FILE"
+echo "  - \`find.byType(IconButton).first\` - fragile, order-dependent" >> "$OUTPUT_FILE"
+echo "  - \`find.byType(Row)\` - too generic, may match unintended widgets" >> "$OUTPUT_FILE"
+echo "- ✅ **Preferred:** Use Keys for reliable, semantic widget finding:" >> "$OUTPUT_FILE"
+echo "  - \`find.byKey(const Key('auth_footer_link'))\` - semantic, stable" >> "$OUTPUT_FILE"
+echo "  - \`find.byKey(Key('pin_input'))\` - clear intent, resilient to refactoring" >> "$OUTPUT_FILE"
+echo "- ✅ **Acceptable:** Text-based finds when testing user-visible content:" >> "$OUTPUT_FILE"
+echo "  - \`find.text('Logout')\` - tests visible content" >> "$OUTPUT_FILE"
+echo "  - \`find.widgetWithText(CoreButton, 'Continue')\` - semantic and user-focused" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Verify tests focus on behavior and user interactions, not implementation details" >> "$OUTPUT_FILE"
+echo "- Check that find expressions use Keys for widget identification" >> "$OUTPUT_FILE"
+echo "- Ensure no tests use \`findsNWidgets\` with \`byType\` for implementation-specific widgets" >> "$OUTPUT_FILE"
+echo "- Confirm that widget finding is semantic and resilient to refactoring" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
+# RULE 9: UNIT TESTS — BEHAVIOR OVER IMPLEMENTATION
+# =============================================================================
+echo "### 🧪 RULE 9: UNIT TESTS — BEHAVIOR OVER IMPLEMENTATION" >> "$OUTPUT_FILE"
+echo "**Core Principle:** Unit tests (BLoC, Service, Repository, UseCase) should assert observable behavior and outputs, not internal structure." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Test Behavior, Not Implementation:**" >> "$OUTPUT_FILE"
+echo "- ✅ **Focus on:** Public API outputs, emitted states, returned values, side-effects at boundaries" >> "$OUTPUT_FILE"
+echo "- ❌ **Avoid:** Internal method calls, private state, internal data structures" >> "$OUTPUT_FILE"
+echo "- ✅ **Example Good:** Service returns expected domain model for a given input" >> "$OUTPUT_FILE"
+echo "- ❌ **Example Bad:** Asserting a private internal helper method was called" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Verify unit tests assert observable behavior and outputs and have good coverage" >> "$OUTPUT_FILE"
+echo "- Ensure refactors that keep behavior intact do not break tests" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
+# RULE 10: LOCALIZATION USAGE
+# =============================================================================
+echo "### 🌐 RULE 10: LOCALIZATION USAGE" >> "$OUTPUT_FILE"
+echo "**Core Principle:** All user-facing strings must be localized using \`AppLocalizations\` instead of hardcoded strings" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Key Requirements:**" >> "$OUTPUT_FILE"
+echo "- ✅ **User-Facing Text:** All strings displayed to users must use \`AppLocalizations\`" >> "$OUTPUT_FILE"
+echo "- ✅ **Access Methods:** Use \`AppLocalizations.of(context)\` or \`LocalizationMixin\`'s \`l10n\` property" >> "$OUTPUT_FILE"
+echo "- ❌ **Forbidden:** Hardcoded strings in \`Text\` widgets, button labels, titles, error messages shown to users" >> "$OUTPUT_FILE"
+echo "- ✅ **Acceptable:** Technical/debug strings, log messages, internal identifiers, test strings" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Examples:**" >> "$OUTPUT_FILE"
+echo "- ❌ **Bad:** \`Text('Welcome back')\` - hardcoded string" >> "$OUTPUT_FILE"
+echo "- ✅ **Good:** \`Text(AppLocalizations.of(context)?.welcomeMessage ?? '')\`" >> "$OUTPUT_FILE"
+echo "- ❌ **Bad:** \`label: 'Logout'\` - hardcoded label" >> "$OUTPUT_FILE"
+echo "- ✅ **Good:** \`label: '\${AppLocalizations.of(context)?.logoutButton}'\`" >> "$OUTPUT_FILE"
+echo "- ❌ **Bad:** \`title: const Text('Construculator')\` - hardcoded title" >> "$OUTPUT_FILE"
+echo "- ✅ **Good:** \`title: Text(AppLocalizations.of(context)?.appTitle ?? '')\`" >> "$OUTPUT_FILE"
+echo "- ✅ **Good (with mixin):** \`Text(l10n?.welcomeMessage ?? '')\` - using \`LocalizationMixin\`" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Verify all user-facing strings use \`AppLocalizations\`" >> "$OUTPUT_FILE"
+echo "- Check that \`Text\` widgets, button labels, titles, and error messages are localized" >> "$OUTPUT_FILE"
+echo "- Ensure no hardcoded English strings appear in UI code" >> "$OUTPUT_FILE"
+echo "- Confirm that localization keys exist in \`app_en.arb\` for all new strings" >> "$OUTPUT_FILE"
+echo "- Validate proper null-safety handling (use \`?? ''\` or \`?.property\` with null checks)" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
+# RULE 11: PRECISION VS. ABSTRACTION (LEVEL-BASED NAMING)
+# =============================================================================
+echo "### 🏷️ RULE 11: PRECISION VS. ABSTRACTION (LEVEL-BASED NAMING)" >> "$OUTPUT_FILE"
+echo "**Core Principle:** Naming precision must be inversely proportional to the abstraction level. The lower the level (Data/Repo), the more explicit the name; the higher the level (UI/UseCase), the more abstract the name." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**The Abstraction Scale:**" >> "$OUTPUT_FILE"
+echo "1. **High Level (UI/Domain):** Focus on 'What'. Use abstract terms (e.g., \`getEstimations\`)." >> "$OUTPUT_FILE"
+echo "2. **Low Level (Repository/Data Source):** Focus on 'How' and 'Scope'. Use explicit terms (e.g., \`fetchInitialProjectEstimations\`)." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Key Requirements:**" >> "$OUTPUT_FILE"
+echo "- ✅ **Avoid Ambiguity at the Bottom:** Repository methods must explicitly state if they perform network fetches, handle pagination resets, or have 'get-or-create' side effects." >> "$OUTPUT_FILE"
+echo "- ✅ **Contract Clarity:** Ensure lower-level names include the lookup key (e.g., \`ByProjectId\`) and the operation type (fetch, find, ensure)." >> "$OUTPUT_FILE"
+echo "- ❌ **Hidden Logic:** Never hide initialization or state-reset logic behind a generic 'get' name in the Data Layer." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Examples:**" >> "$OUTPUT_FILE"
+echo "- ❌ **Bad (Data Layer):** \`getEstimations(id)\` — Is it from cache? Does it reset pagination? Does it create a project if missing?" >> "$OUTPUT_FILE"
+echo "- ✅ **Good (Data Layer):** \`fetchInitialEstimationsByProjectId(id)\` — Clearly defines the source (fetch), the intent (initial/reset), and the scope (by ID)." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Audit [cost_estimation_repository.dart](https://github.com/ripplearc/construculator-app/tree/main443) and its [implementation](url?id=9873) for ambiguous names." >> "$OUTPUT_FILE"
+echo "- Rename methods that perform complex logic (like resetting pagination) to reflect their full impact." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+
+# =============================================================================
+# RULE 12: CLEAN PRESENTATION & STATE DERIVATION
+# =============================================================================
+echo "### 🏗️ RULE 12: CLEAN PRESENTATION & STATE DERIVATION" >> "$OUTPUT_FILE"
+echo "**Core Principle:** UI components should be 'Passive Viewers.' They may decide *how* to present data, but must not derive *new meaning* from it. If a value requires business rules, cross-state coordination, or non-trivial computation, it belongs in the BLoC or a Usecase." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Red Flags (Logic Contamination):**" >> "$OUTPUT_FILE"
+echo "- ❌ **Derived Value Calculation:** Performing math or logic that reshapes or reinterprets state data (e.g., \`itemCount: base + (loading ? 1 : 0)\`)." >> "$OUTPUT_FILE"
+echo "- ❌ **Index Manipulation:** Manually adjusting indices to 'fit' data into a layout (e.g., \`data[index - 1]\`)." >> "$OUTPUT_FILE"
+echo "- ❌ **Cross-State Coordination:** Writing logic that compares multiple BLoC states to derive a single UI result." >> "$OUTPUT_FILE"
+echo "- ❌ **Complex Conditionals:** Using nested ternary operators or long if-else chains to decide which widget to render." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**✅ Preferred Patterns:**" >> "$OUTPUT_FILE"
+echo "- **Composed UI Models:** The BLoC should emit a state specifically shaped for the UI, where structural decisions (like loading placeholders or separators) are already resolved." >> "$OUTPUT_FILE"
+echo "- **Structural Separation:** Use layout-native solutions (like \`Slivers\`, \`Column\` children, or \`Stack\`) to handle optional elements instead of forcing them into a single dynamic builder." >> "$OUTPUT_FILE"
+echo "- **View Helpers:** If logic is strictly visual and does not reinterpret or combine state sources, extract it into descriptive getters or private methods to keep the \`build\` method declarative." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Flag any UI code performing arithmetic (\`+\`, \`-\`, \`*\`) or coordinating between multiple state sources to derive meaning." >> "$OUTPUT_FILE"
+echo "- Suggest moving derived or coordinated state into the BLoC's \`mapEventToState\` logic or a dedicated UI Mapper." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
+# RULE 13: MUTATION TESTING FOR LOGIC-HEAVY CHANGES
+# =============================================================================
+echo "### 🧬 RULE 13: MUTATION TESTING FOR LOGIC-HEAVY CHANGES" >> "$OUTPUT_FILE"
+echo "**Core Principle:** PRs that introduce or modify complex business logic, mathematical calculations, or data transformations (e.g., pagination, filtering) must be validated with mutation testing on the affected logic files." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Key Requirements:**" >> "$OUTPUT_FILE"
+echo "- ✅ **Threshold:** Achieve a mutation score of 80% or higher for the specific files modified." >> "$OUTPUT_FILE"
+echo "- ✅ **Targeted execution:** Run mutation tests only on logic-heavy components (Repositories, DataSources, BLoCs, Usecases) to keep feedback cycles fast." >> "$OUTPUT_FILE"
+echo "- ❌ **No Surviving Mutants in Critical Logic:** Any surviving mutant in boundary conditions or core decision paths indicates a missing or insufficient unit test." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Identify files with 'heavy logic' (e.g., \`cost_estimation_repository_impl.dart\`)." >> "$OUTPUT_FILE"
+echo "- Verify mutation tests were run and surviving mutants were analyzed or eliminated in those files." >> "$OUTPUT_FILE"
+echo "- Ensure unit tests are added to cover the gaps exposed by surviving mutants." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
+# RULE 14: ACCESSIBILITY (A11Y) TESTING
+# =============================================================================
+echo "### ♿ RULE 14: ACCESSIBILITY (A11Y) TESTING" >> "$OUTPUT_FILE"
+echo "**Core Principle:** User-facing flows must remain perceivable, operable, and understandable for assistive technology users. Accessibility-focused widget tests must be added or updated when UI structure, semantics, or interaction patterns change." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Key Requirements:**" >> "$OUTPUT_FILE"
+echo "- ✅ **Semantic labels:** Interactive elements (buttons, tappable icons, toggles) must expose meaningful labels via \`Semantics\`, \`Tooltip\`, or appropriate CoreUI APIs—never rely solely on visual icons." >> "$OUTPUT_FILE"
+echo "- ✅ **Accessible test layout:** A11y widget tests live under \`test/features/**/widgets/accessibility/*_a11y_test.dart\` and exercise real user flows (e.g., landing pages, primary actions)." >> "$OUTPUT_FILE"
+echo "- ✅ **Theme & Layout Testing:** Tests must utilize \`setupA11yTest(tester)\` to prevent false overflows and verify compliance in both light and dark themes using \`expectMeetsTapTargetAndLabelGuidelinesForEachTheme\`." >> "$OUTPUT_FILE"
+echo "- ✅ **Regression coverage:** When modifying key screens (e.g., cost estimation flows, authentication, navigation hubs), existing a11y tests must be updated to cover new states and widgets." >> "$OUTPUT_FILE"
+echo "- ❌ **Forbidden:** Removing or bypassing semantics (e.g., \`excludeFromSemantics: true\`) for interactive content without a strong documented reason." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Check that screens touched in this PR have corresponding a11y widget tests (or justify why not in the review)." >> "$OUTPUT_FILE"
+echo "- Verify tests assert meaningful semantics (labels, hints) and focus behavior instead of raw widget counts or types." >> "$OUTPUT_FILE"
+echo "- Ensure \`*_a11y_test.dart\` files are updated to reflect any new interactive elements or flows introduced by this PR." >> "$OUTPUT_FILE"
+
+# =============================================================================
+# RULE 15: JUDICIOUS SENTRY ERROR REPORTING
+# =============================================================================
+echo "### 🚨 RULE 15: JUDICIOUS SENTRY ERROR REPORTING" >> "$OUTPUT_FILE"
+echo "**Core Principle:** \`AppLogger.error()\` and \`AppLogger.omg()\` send events to Sentry and consume quota. Reserve them for genuinely unexpected failures only." >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**When to Use \`error()\` / \`omg()\`:**" >> "$OUTPUT_FILE"
+echo "- ✅ Parsing failures, auth token errors, critical storage failures, invariant violations" >> "$OUTPUT_FILE"
+echo "- ❌ NOT for: Expected Supabase errors (invalid credentials, unique-constraint violations/duplicate entries), validation failures, or informational logging" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**No Duplicate Logging:**" >> "$OUTPUT_FILE"
+echo "- Log errors at ONE layer only (typically Repository or DataSource)" >> "$OUTPUT_FILE"
+echo "- Don't log the same error in DataSource AND Repository — it creates duplicate Sentry events" >> "$OUTPUT_FILE"
+echo "- Upper layers (BLoC, UseCase) should handle \`Either<Failure, T>\` without logging" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Quick Guide:**" >> "$OUTPUT_FILE"
+echo "- \`debug()\` → Not sent to Sentry" >> "$OUTPUT_FILE"
+echo "- \`info()\` / \`warning()\` → Breadcrumb only (free)" >> "$OUTPUT_FILE"
+echo "- \`error()\` / \`omg()\` → Sentry event (costs quota)" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "**Action Required:**" >> "$OUTPUT_FILE"
+echo "- Verify \`error()\` calls are for unexpected failures only" >> "$OUTPUT_FILE"
+echo "- Check for duplicate logging across layers (DataSource → Repository)" >> "$OUTPUT_FILE"
+echo "- Ensure expected API errors use \`warning()\` instead of \`error()\`" >> "$OUTPUT_FILE"
+
+echo "" >> "$OUTPUT_FILE"
+
+# =============================================================================
+# GENERAL CODE REVIEW CRITERIA
+# =============================================================================
+echo "### 🔍 GENERAL CODE REVIEW CRITERIA" >> "$OUTPUT_FILE"
 echo "1. 📝 Code quality and best practices" >> "$OUTPUT_FILE"
 echo "2. 🐛 Potential bugs or edge cases" >> "$OUTPUT_FILE"
 echo "3. ⚡ Performance implications" >> "$OUTPUT_FILE"

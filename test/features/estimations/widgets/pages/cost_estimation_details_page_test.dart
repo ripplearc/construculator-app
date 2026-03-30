@@ -1,5 +1,4 @@
 import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -29,13 +28,6 @@ class _CostEstimationDetailsPageTestModule extends Module {
     ProjectModule(appBootstrap),
     AuthLibraryModule(appBootstrap),
   ];
-
-  @override
-  void binds(Injector i) {
-    i.add<AuthBloc>(
-      () => AuthBloc(authManager: i(), authNotifier: i(), router: i()),
-    );
-  }
 
   @override
   void routes(RouteManager r) {

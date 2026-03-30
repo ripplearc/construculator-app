@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- ADD COST ESTIMATION USECASE MUTATION TESTING -->
+    <!-- Targets: UseCase for creating cost estimations with auth validation -->
+
+    <files>
+        <file>lib/features/estimation/domain/usecases/add_cost_estimation_usecase.dart</file>
+    </files>
+
+    <exclude>
+        <!-- Exclude logging statements -->
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+
+        <!-- Exclude try-catch structure -->
+        <regex pattern="try\s*{" dotAll="false"/>
+        <regex pattern="catch\s*\(" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- RULE 1: Skip credential null check -->
+        <regex pattern="if \(credentials == null\) \{" dotAll="true" id="usecase.auth.skip_credentials_null">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 2: Skip user profile null check -->
+        <regex pattern="if \(userProfile == null\) \{" dotAll="true" id="usecase.auth.skip_profile_null">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 3: Skip user ID null check -->
+        <regex pattern="if \(creatorUserId == null \|\| creatorUserId\.isEmpty\) \{" dotAll="true" id="usecase.auth.skip_userid_validation">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 4: Invert user ID empty check -->
+        <regex pattern="creatorUserId\.isEmpty" dotAll="true" id="usecase.auth.invert_empty_check">
+            <mutation text="creatorUserId.isNotEmpty"/>
+        </regex>
+
+        <!-- RULE 5: Return wrong failure type for credential error -->
+        <regex pattern="EstimationFailure\(errorType: EstimationErrorType\.authenticationError\)" dotAll="true" id="usecase.error.wrong_auth_failure">
+            <mutation text="UnexpectedFailure()"/>
+        </regex>
+
+        <!-- RULE 6: Use wrong markup type -->
+        <regex pattern="overallType: MarkupType\.overall," dotAll="true" id="usecase.defaults.wrong_markup_type">
+            <mutation text="overallType: MarkupType.perAssembly,"/>
+        </regex>
+
+        <!-- RULE 7: Use wrong markup value type -->
+        <regex pattern="type: MarkupValueType\.percentage," dotAll="true" id="usecase.defaults.wrong_value_type">
+            <mutation text="type: MarkupValueType.fixed,"/>
+        </regex>
+
+        <!-- RULE 8: Use non-zero default markup value -->
+        <regex pattern="value: 0\.0," dotAll="true" id="usecase.defaults.wrong_markup_value">
+            <mutation text="value: 10.0,"/>
+        </regex>
+
+        <!-- RULE 9: Use locked status instead of unlocked -->
+        <regex pattern="lockStatus: const LockStatus\.unlocked\(\)," dotAll="true" id="usecase.defaults.wrong_lock_status">
+            <mutation text="lockStatus: const LockStatus.locked(lockedByUserId: '', lockedAt: null),"/>
+        </regex>
+
+        <!-- RULE 10: Don't set createdAt -->
+        <regex pattern="createdAt: now," dotAll="true" id="usecase.timestamps.skip_created">
+            <mutation text="createdAt: DateTime(1970),"/>
+        </regex>
+
+        <!-- RULE 11: Don't set updatedAt -->
+        <regex pattern="updatedAt: now," dotAll="true" id="usecase.timestamps.skip_updated">
+            <mutation text="updatedAt: DateTime(1970),"/>
+        </regex>
+
+        <!-- RULE 12: Use different timestamps for created and updated -->
+        <regex pattern="updatedAt: now," dotAll="true" id="usecase.timestamps.different_values">
+            <mutation text="updatedAt: now.add(Duration(days: 1)),"/>
+        </regex>
+
+        <!-- RULE 13: Use wrong estimationName parameter -->
+        <regex pattern="estimateName: estimationName," dotAll="true" id="usecase.params.wrong_name">
+            <mutation text="estimateName: '',"/>
+        </regex>
+
+        <!-- RULE 14: Use wrong projectId parameter -->
+        <regex pattern="projectId: projectId," dotAll="true" id="usecase.params.wrong_project">
+            <mutation text="projectId: '',"/>
+        </regex>
+
+        <!-- RULE 15: Use wrong creatorUserId -->
+        <regex pattern="creatorUserId: creatorUserId," dotAll="true" id="usecase.params.wrong_creator">
+            <mutation text="creatorUserId: '',"/>
+        </regex>
+
+        <!-- RULE 16: Skip getting current credentials -->
+        <regex pattern="credentials = _authRepository\.getCurrentCredentials\(\);" dotAll="true" id="usecase.auth.skip_get_credentials">
+            <mutation text="credentials = null;"/>
+        </regex>
+
+        <!-- RULE 17: Skip getting user profile -->
+        <regex pattern="userProfile = await _authRepository\.getUserProfile\(credentials\.id\);" dotAll="true" id="usecase.auth.skip_get_profile">
+            <mutation text="userProfile = null;"/>
+        </regex>
+
+        <!-- RULE 18: Use wrong user ID for profile lookup -->
+        <regex pattern="await _authRepository\.getUserProfile\(credentials\.id\)" dotAll="true" id="usecase.auth.wrong_profile_id">
+            <mutation text="await _authRepository.getUserProfile('')"/>
+        </regex>
+
+        <!-- RULE 19: In fold after createEstimation, return Right on failure -->
+        <regex pattern="return Left\(failure\);" dotAll="true" id="usecase.result.invert_failure">
+            <mutation text="return Right(costEstimation);"/>
+        </regex>
+
+        <!-- RULE 20: In fold after createEstimation, return Left on success -->
+        <regex pattern="return Right\(createdEstimation\);" dotAll="true" id="usecase.result.invert_success">
+            <mutation text="return Left(UnexpectedFailure());"/>
+        </regex>
+
+        <!-- RULE 21: Skip calling repository createEstimation -->
+        <regex pattern="final result = await _repository\.createEstimation\(costEstimation\);" dotAll="true" id="usecase.repo.skip_create">
+            <mutation text="final result = Left(UnexpectedFailure());"/>
+        </regex>
+
+        <!-- RULE 22: Pass wrong estimation to repository -->
+        <regex pattern="_repository\.createEstimation\(costEstimation\)" dotAll="true" id="usecase.repo.wrong_estimation">
+            <mutation text="_repository.createEstimation(CostEstimate(id: '', projectId: '', estimateName: '', creatorUserId: '', markupConfiguration: defaultMarkupConfiguration, lockStatus: const LockStatus.unlocked(), createdAt: now, updatedAt: now))"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="add_cost_estimation_usecase" expected-return="0">flutter test test/features/estimations/units/domain/usecases/add_cost_estimation_usecase_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

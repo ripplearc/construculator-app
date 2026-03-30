@@ -3,34 +3,31 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/auth/domain/usecases/check_email_availability_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/create_account_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/get_professional_roles_usecase.dart';
+import 'package:construculator/features/auth/domain/usecases/login_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/reset_password_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/send_otp_usecase.dart';
-import 'package:construculator/features/auth/domain/usecases/verify_otp_usecase.dart';
-import 'package:construculator/features/auth/domain/usecases/login_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/set_new_password_usecase.dart';
+import 'package:construculator/features/auth/domain/usecases/verify_otp_usecase.dart';
 import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/enter_password_bloc/enter_password_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/forgot_password_bloc/forgot_password_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/login_with_email_bloc/login_with_email_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
-import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/set_new_password_bloc/set_new_password_bloc.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
-import 'package:construculator/libraries/router/interfaces/app_router.dart';
-import 'package:construculator/libraries/time/interfaces/clock.dart';
-import 'package:construculator/libraries/time/testing/clock_test_module.dart';
-import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:construculator/libraries/time/testing/clock_test_module.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class AuthTestModule extends Module {
@@ -49,13 +46,12 @@ class AuthTestModule extends Module {
 
   @override
   void binds(Injector i) {
-    // Override with fake implementations for testing
     i.addSingleton<AuthNotifierController>(() => FakeAuthNotifier());
-    i.addSingleton<AuthNotifier>(() => i<AuthNotifierController>() as AuthNotifier);
-    i.addSingleton<AuthRepository>(
-      () => FakeAuthRepository(clock: i<Clock>()),
+    i.addSingleton<AuthNotifier>(
+      () => i<AuthNotifierController>() as AuthNotifier,
     );
-    
+    i.addSingleton<AuthRepository>(() => FakeAuthRepository(clock: i<Clock>()));
+
     i.add<ResetPasswordUseCase>(() => ResetPasswordUseCase(i()));
     i.add<GetProfessionalRolesUseCase>(() => GetProfessionalRolesUseCase(i()));
     i.add<CheckEmailAvailabilityUseCase>(
@@ -91,13 +87,6 @@ class AuthTestModule extends Module {
     );
     i.add<SetNewPasswordBloc>(
       () => SetNewPasswordBloc(setNewPasswordUseCase: i()),
-    );
-    i.add<AuthBloc>(
-      () => AuthBloc(
-        authManager: i<AuthManager>(),
-        authNotifier: i<AuthNotifier>(),
-        router: i<AppRouter>(),
-      ),
     );
   }
 }

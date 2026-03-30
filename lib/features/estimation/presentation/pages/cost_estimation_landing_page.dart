@@ -1,18 +1,18 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
-import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/change_lock_status_bloc/change_lock_status_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
-import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_bloc.dart';
-import 'package:construculator/features/auth/presentation/bloc/auth_bloc/auth_state.dart';
+import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
 import 'package:construculator/features/estimation/presentation/widgets/delete_estimation_confirmation_sheet.dart';
 import 'package:construculator/features/estimation/presentation/widgets/estimation_actions_sheet.dart';
+import 'package:construculator/features/estimation/presentation/widgets/estimation_rename_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter/material.dart';
@@ -34,16 +34,41 @@ class CostEstimationLandingPage extends StatefulWidget {
 }
 
 class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
-  late final AuthBloc _authBloc;
   late final AppRouter _router;
-  String userAvatarUrl = '';
+  late final ScrollController _scrollController;
+
+  static const double _loadMoreThreshold = 200.0;
 
   @override
   void initState() {
     super.initState();
-    _authBloc = Modular.get<AuthBloc>();
+    _scrollController = ScrollController()..addListener(_onScroll);
     _router = Modular.get<AppRouter>();
-    _authBloc.initialize();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.position.pixels;
+
+    if (maxScroll - currentScroll <= _loadMoreThreshold) {
+      final bloc = BlocProvider.of<CostEstimationListBloc>(context);
+      final state = bloc.state;
+
+      if (state is CostEstimationListWithData &&
+          state.hasMore &&
+          !state.isLoadingMore) {
+        bloc.add(CostEstimationListLoadMore(projectId: widget.projectId));
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _createEstimation() {
@@ -74,7 +99,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
         estimationName: estimation.estimateName,
         onRename: () {
           _router.pop();
-          // TODO:https://ripplearc.youtrack.cloud/issue/CA-100
+          _showRenameSheet(estimation, colorTheme);
         },
         onFavourite: () {
           _router.pop();
@@ -85,10 +110,45 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           _showDeleteConfirmationSheet(estimation, colorTheme);
         },
         onLock: (bool isLocked) {
-          // TODO:https://ripplearc.youtrack.cloud/issue/CA-88
+          BlocProvider.of<ChangeLockStatusBloc>(context).add(
+            ChangeLockStatusRequested(
+              estimationId: estimation.id,
+              isLocked: isLocked,
+              projectId: widget.projectId,
+            ),
+          );
         },
         isLocked: estimation.lockStatus.isLocked,
       ),
+    );
+  }
+
+  void _showRenameSheet(
+    CostEstimate estimation,
+    AppColorsExtension colorTheme,
+  ) {
+    final renameEstimationBloc = BlocProvider.of<RenameEstimationBloc>(context);
+
+    renameEstimationBloc.add(const RenameEstimationReset());
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: colorTheme.transparent,
+      isDismissible: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (_) {
+        return BlocProvider.value(
+          value: renameEstimationBloc,
+          child: EstimationRenameSheet(
+            estimationId: estimation.id,
+            projectId: widget.projectId,
+            currentName: estimation.estimateName,
+          ),
+        );
+      },
     );
   }
 
@@ -135,24 +195,12 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
+    final l10n = context.l10n;
 
     return MultiBlocListener(
       listeners: [
-        BlocListener<AuthBloc, AuthState>(
-          bloc: _authBloc,
-          listener: (context, state) {
-            if (state is AuthLoadSuccess) {
-              //TODO: https://ripplearc.youtrack.cloud/issue/CA-466/CostEstimation-State-Synchronization-in-costestimationlandingpage.dart
-              setState(() {
-                userAvatarUrl = state.avatarUrl ?? '';
-              });
-            }
-          },
-        ),
         BlocListener<AddCostEstimationBloc, AddCostEstimationState>(
           listener: (context, state) {
-            final l10n = context.l10n;
-
             if (state is AddCostEstimationFailure) {
               final message = _mapFailureToMessage(l10n, state.failure);
               if (message != null) {
@@ -182,26 +230,47 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
             }
           },
         ),
+        BlocListener<ChangeLockStatusBloc, ChangeLockStatusState>(
+          listener: (context, state) {
+            final l10n = context.l10n;
+            if (state is ChangeLockStatusSuccess) {
+              if (state.isLocked) {
+                CoreToast.showWarning(
+                  context,
+                  l10n.estimationLockedSuccessTitle,
+                  l10n.closeLabel,
+                );
+              } else {
+                CoreToast.showSuccess(
+                  context,
+                  l10n.estimationUnlockedSuccessTitle,
+                  l10n.closeLabel,
+                );
+              }
+            }
+            if (state is ChangeLockStatusFailure) {
+              CoreToast.showError(
+                context,
+                _mapFailureToMessage(l10n, state.failure),
+                l10n.closeLabel,
+              );
+            }
+          },
+        ),
+        BlocListener<RenameEstimationBloc, RenameEstimationState>(
+          listener: (context, state) {
+            if (state is RenameEstimationFailure) {
+              final message = _mapFailureToMessage(context.l10n, state.failure);
+              if (message != null) {
+                CoreToast.showError(context, message, context.l10n.closeLabel);
+              }
+            }
+          },
+        ),
       ],
-      child: BlocBuilder<AuthBloc, AuthState>(
-        bloc: _authBloc,
-        builder: (context, state) {
-          final l10n = context.l10n;
-          if (state is AuthLoadUnauthenticated) {
-            return const Scaffold(body: Center(child: CoreLoadingIndicator()));
-          }
-
-          return Scaffold(
-            backgroundColor: colorTheme.pageBackground,
-            appBar: Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
-              projectId: widget.projectId,
-              avatarImage: userAvatarUrl.isNotEmpty
-                  ? NetworkImage(userAvatarUrl)
-                  : null,
-            ),
-            body: _buildBody(l10n, colorTheme),
-          );
-        },
+      child: ColoredBox(
+        color: colorTheme.pageBackground,
+        child: _buildBody(l10n, colorTheme),
       ),
     );
   }
@@ -220,7 +289,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           onRefresh: () async {
             BlocProvider.of<CostEstimationListBloc>(
               context,
-            ).add(CostEstimationListStartWatching(projectId: widget.projectId));
+            ).add(CostEstimationListRefresh(projectId: widget.projectId));
           },
           color: colorTheme.buttonSurface,
           child: _buildContent(state, l10n),
@@ -256,18 +325,20 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
         return Positioned(
           bottom: size.height * CostEstimationLandingPage._buttonBottomRatio,
           right: size.width * CostEstimationLandingPage._buttonRightRatio,
-          child: CoreButton(
-            label: l10n.addEstimation,
-            onPressed: _createEstimation,
-            isDisabled: isCreating,
-            variant: CoreButtonVariant.secondary,
-            size: CoreButtonSize.medium,
-            icon: CoreIconWidget(
-              icon: CoreIcons.add,
-              size: 20,
-              color: colorTheme.buttonSurface,
+          child: IntrinsicWidth(
+            child: CoreButton(
+              label: l10n.addEstimation,
+              onPressed: _createEstimation,
+              isDisabled: isCreating,
+              variant: CoreButtonVariant.secondary,
+              size: CoreButtonSize.medium,
+              icon: CoreIconWidget(
+                icon: CoreIcons.add,
+                size: 20,
+                color: colorTheme.buttonSurface,
+              ),
+              fullWidth: false,
             ),
-            fullWidth: false,
           ),
         );
       },
@@ -294,25 +365,32 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
   }
 
   Widget _buildEstimationsList(List<CostEstimate> estimations) {
+    final colorTheme = context.colorTheme;
     return Stack(
       children: [
-        BlocBuilder<AddCostEstimationBloc, AddCostEstimationState>(
-          builder: (context, state) {
-            final colorTheme = context.colorTheme;
+        CustomScrollView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            BlocBuilder<AddCostEstimationBloc, AddCostEstimationState>(
+              builder: (context, state) {
+                if (state is AddCostEstimationInProgress) {
+                  return const SliverPadding(
+                    padding: EdgeInsets.only(top: 16),
+                    sliver: SliverToBoxAdapter(
+                      child: CoreLoadingIndicator(size: 50),
+                    ),
+                  );
+                }
+                return const SliverToBoxAdapter(child: SizedBox.shrink());
+              },
+            ),
 
-            final isCreating = state is AddCostEstimationInProgress;
-            final itemCount = estimations.length + (isCreating ? 1 : 0);
-
-            return Padding(
+            SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              child: ListView.builder(
-                itemCount: itemCount,
+              sliver: SliverList.builder(
+                itemCount: estimations.length,
                 itemBuilder: (context, index) {
-                  final isLoadingItem = isCreating && index == itemCount - 1;
-                  if (isLoadingItem) {
-                    return const CoreLoadingIndicator(size: 50);
-                  }
-
                   final estimation = estimations[index];
                   return CostEstimationTile(
                     estimation: estimation,
@@ -322,8 +400,27 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
                   );
                 },
               ),
-            );
-          },
+            ),
+
+            BlocBuilder<CostEstimationListBloc, CostEstimationListState>(
+              buildWhen: (previous, current) {
+                if (previous is CostEstimationListWithData &&
+                    current is CostEstimationListWithData) {
+                  return previous.isLoadingMore != current.isLoadingMore;
+                }
+                return false;
+              },
+              builder: (context, state) {
+                if (state is CostEstimationListWithData &&
+                    state.isLoadingMore) {
+                  return const SliverToBoxAdapter(
+                    child: CoreLoadingIndicator(size: 50),
+                  );
+                }
+                return const SliverToBoxAdapter(child: SizedBox.shrink());
+              },
+            ),
+          ],
         ),
         _buildPositionedAddButton(),
       ],

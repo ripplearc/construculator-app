@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:construculator/libraries/time/interfaces/clock.dart';
+
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -8,6 +8,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_res
 import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_state.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_session.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:stack_trace/stack_trace.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
@@ -22,6 +23,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Tracks table data for assertions during [select], [selectSingle], [insert], and [update]
   final Map<String, List<Map<String, dynamic>>> _tables = {};
+
+  /// Tracks live table stream controllers for real-time table updates.
+  final Map<String, StreamController<List<Map<String, dynamic>>>>
+  _tableDataControllers = {};
 
   /// Tracks method calls for assertions
   final List<Map<String, dynamic>> _methodCalls = [];
@@ -61,6 +66,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Controls whether [delete] throws an exception
   bool shouldThrowOnDelete = false;
+
+  /// Controls whether [selectPaginated] throws an exception
+  bool shouldThrowOnSelectPaginated = false;
 
   /// Controls whether [rpc] throws an exception
   bool shouldThrowOnRpc = false;
@@ -109,6 +117,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Used to specify the error message thrown when [delete] is attempted
   String? deleteErrorMessage;
 
+  /// Error message for selectPaginated.
+  /// Used to specify the error message thrown when [selectPaginated] is attempted
+  String? selectPaginatedErrorMessage;
+
   /// Error message for RPC.
   /// Used to specify the error message thrown when [rpc] is attempted
   String? rpcErrorMessage;
@@ -128,6 +140,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Used to specify the type of exception thrown when [delete] is attempted
   SupabaseExceptionType? deleteExceptionType;
+
+  /// Used to specify the type of exception thrown when [selectPaginated] is attempted
+  SupabaseExceptionType? selectPaginatedExceptionType;
 
   /// Used to specify the type of exception thrown when [rpc] is attempted
   SupabaseExceptionType? rpcExceptionType;
@@ -175,9 +190,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     _currentUser = user;
 
     if (user != null) {
-      _authStateController.add(
-        _createAuthState(signInEvent, user),
-      );
+      _authStateController.add(_createAuthState(signInEvent, user));
     } else {
       _authStateController.add(
         _createAuthState(supabase.AuthChangeEvent.signedOut, null),
@@ -365,6 +378,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required String filterColumn,
     required dynamic filterValue,
   }) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
     _methodCalls.add({
       'method': 'select',
       'table': table,
@@ -389,6 +405,137 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
         .where((row) => row[filterColumn] == filterValue)
         .toList();
     return filteredData;
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> selectWhereIn({
+    required String table,
+    String columns = '*',
+    required String filterColumn,
+    required List<dynamic> filterValues,
+  }) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+    _methodCalls.add({
+      'method': 'selectWhereIn',
+      'table': table,
+      'columns': columns,
+      'filterColumn': filterColumn,
+      'filterValues': List<dynamic>.from(filterValues),
+    });
+
+    if (shouldThrowOnSelectMultiple) {
+      _throwConfiguredException(
+        selectMultipleExceptionType,
+        selectMultipleErrorMessage ?? 'Select failed',
+      );
+    }
+
+    if (shouldReturnNullOnSelectMultiple) {
+      return [];
+    }
+
+    final tableData = _tables[table] ?? [];
+    final filteredData = tableData
+        .where((row) => filterValues.contains(row[filterColumn]))
+        .toList();
+    return filteredData;
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> selectPaginated({
+    required String table,
+    String columns = '*',
+    required String filterColumn,
+    required dynamic filterValue,
+    required String orderColumn,
+    bool ascending = false,
+    required int rangeFrom,
+    required int rangeTo,
+  }) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+    _methodCalls.add({
+      'method': 'selectPaginated',
+      'table': table,
+      'columns': columns,
+      'filterColumn': filterColumn,
+      'filterValue': filterValue,
+      'orderColumn': orderColumn,
+      'ascending': ascending,
+      'rangeFrom': rangeFrom,
+      'rangeTo': rangeTo,
+    });
+
+    if (shouldThrowOnSelectPaginated) {
+      _throwConfiguredException(
+        selectPaginatedExceptionType,
+        selectPaginatedErrorMessage ?? 'Select paginated failed',
+      );
+    }
+
+    final tableData = _tables[table] ?? [];
+    var filteredData = tableData
+        .where((row) => row[filterColumn] == filterValue)
+        .toList();
+
+    filteredData.sort((a, b) {
+      final aVal = a[orderColumn];
+      final bVal = b[orderColumn];
+      if (aVal is Comparable && bVal is Comparable) {
+        return ascending ? aVal.compareTo(bVal) : bVal.compareTo(aVal);
+      }
+      return 0;
+    });
+
+    final from = rangeFrom.clamp(0, filteredData.length);
+    final to = (rangeTo + 1).clamp(0, filteredData.length);
+    return filteredData.sublist(from, to);
+  }
+
+  @override
+  Stream<List<Map<String, dynamic>>> watchTable({
+    required String table,
+    required List<String> primaryKey,
+  }) async* {
+    _methodCalls.add({
+      'method': 'watchTable',
+      'table': table,
+      'primaryKey': List<String>.from(primaryKey),
+    });
+
+    final controller = _getOrCreateTableController(table);
+    yield _cloneRows(_tables[table] ?? const []);
+    yield* controller.stream;
+  }
+
+  @override
+  Stream<List<Map<String, dynamic>>> watchTableFiltered({
+    required String table,
+    required List<String> primaryKey,
+    required String filterColumn,
+    required dynamic filterValue,
+  }) async* {
+    _methodCalls.add({
+      'method': 'watchTableFiltered',
+      'table': table,
+      'primaryKey': List<String>.from(primaryKey),
+      'filterColumn': filterColumn,
+      'filterValue': filterValue,
+    });
+
+    final controller = _getOrCreateTableController(table);
+    List<Map<String, dynamic>> applyFilter(List<Map<String, dynamic>> rows) {
+      return rows
+          .where((row) => row[filterColumn] == filterValue)
+          .map((row) => Map<String, dynamic>.from(row))
+          .toList();
+    }
+
+    yield applyFilter(_tables[table] ?? const []);
+    yield* controller.stream.map(applyFilter);
   }
 
   @override
@@ -462,6 +609,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
     tableData.add(insertData);
     _tables[table] = tableData;
+    _emitTableData(table);
 
     return Map<String, dynamic>.from(insertData);
   }
@@ -498,6 +646,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
         tableData[i] = updatedData;
         _tables[table] = tableData;
+        _emitTableData(table);
 
         return Map<String, dynamic>.from(updatedData);
       }
@@ -536,7 +685,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   }
 
   @override
-  Future<Map<String, dynamic>> delete({
+  Future<void> delete({
     required String table,
     required String filterColumn,
     required dynamic filterValue,
@@ -561,26 +710,11 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
     final tableData = _tables[table] ?? [];
 
-    Map<String, dynamic>? deletedRow;
-    for (final row in tableData) {
-      if (row[filterColumn] == filterValue) {
-        deletedRow = Map<String, dynamic>.from(row);
-        break;
-      }
-    }
-
     final filteredData = tableData
         .where((row) => row[filterColumn] != filterValue)
         .toList();
     _tables[table] = filteredData;
-    if (deletedRow == null) {
-      throw supabase.PostgrestException(
-        code: PostgresErrorCode.noDataFound.toString(),
-        message: 'No data found for delete operation',
-      );
-    }
-
-    return deletedRow;
+    _emitTableData(table);
   }
 
   @override
@@ -688,21 +822,59 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     }
   }
 
+  StreamController<List<Map<String, dynamic>>> _getOrCreateTableController(
+    String table,
+  ) {
+    return _tableDataControllers.putIfAbsent(
+      table,
+      () => StreamController<List<Map<String, dynamic>>>.broadcast(
+        onCancel: () => _tableDataControllers.remove(table),
+      ),
+    );
+  }
+
+  void _emitTableData(String table) {
+    final controller = _tableDataControllers[table];
+    if (controller == null || controller.isClosed) {
+      return;
+    }
+    if (shouldEmitStreamErrors) {
+      controller.addError(
+        ServerException(
+          Trace.current(),
+          Exception('Stream error for table: $table'),
+        ),
+      );
+      return;
+    }
+    controller.add(_cloneRows(_tables[table] ?? const []));
+  }
+
+  List<Map<String, dynamic>> _cloneRows(List<Map<String, dynamic>> rows) {
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  }
+
   /// Adds data to a specific table
   void addTableData(String table, List<Map<String, dynamic>> data) {
     _tables[table] = data;
+    _emitTableData(table);
   }
 
   /// Clears all data for a specific table
   void clearTableData(String table) {
     _tables[table] = [];
+    _emitTableData(table);
   }
 
   /// Clears all table data and the currently authenticated user
   void clearAllData() {
+    final affectedTables = _tables.keys.toList();
     _tables.clear();
     _methodCalls.clear();
     _currentUser = null;
+    for (final table in affectedTables) {
+      _emitTableData(table);
+    }
   }
 
   /// Returns a list of all method calls
@@ -735,6 +907,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Closes the auth state controller
   void dispose() {
     _authStateController.close();
+    for (final controller in _tableDataControllers.values) {
+      controller.close();
+    }
+    _tableDataControllers.clear();
   }
 
   /// Sets an auth stream error
@@ -760,6 +936,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     shouldThrowOnInsert = false;
     shouldThrowOnUpdate = false;
     shouldThrowOnSelectMultiple = false;
+    shouldThrowOnSelectPaginated = false;
     shouldThrowOnDelete = false;
     shouldThrowOnRpc = false;
 
@@ -770,12 +947,14 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     resetPasswordErrorMessage = null;
     signOutErrorMessage = null;
     selectErrorMessage = null;
+    selectPaginatedErrorMessage = null;
     insertErrorMessage = null;
     updateErrorMessage = null;
     deleteErrorMessage = null;
     rpcErrorMessage = null;
 
     selectExceptionType = null;
+    selectPaginatedExceptionType = null;
     selectMultipleExceptionType = null;
     insertExceptionType = null;
     updateExceptionType = null;

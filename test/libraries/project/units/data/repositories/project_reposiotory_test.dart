@@ -1,21 +1,30 @@
+import 'dart:async';
+
+import 'package:construculator/libraries/project/data/data_source/interfaces/project_data_source.dart';
+import 'package:construculator/libraries/project/data/models/project_dto.dart';
 import 'package:construculator/libraries/project/data/repositories/project_repository_impl.dart';
-import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
-import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('ProjectRepositoryImpl', () {
+    late FakeClockImpl clock;
+    late _FakeProjectDataSource projectDataSource;
     late ProjectRepositoryImpl repository;
 
-    setUpAll(() {
-      Modular.init(_TestModule());
+    setUp(() {
+      clock = FakeClockImpl(DateTime(2025, 10, 1, 10, 30));
+      Modular.init(_ProjectRepositoryTestModule(clock: clock));
+      projectDataSource = Modular.get<_FakeProjectDataSource>();
       repository = Modular.get<ProjectRepositoryImpl>();
     });
-    tearDownAll(() {
-      Modular.dispose();
+
+    tearDown(() {
+      projectDataSource.dispose();
+      Modular.destroy();
     });
 
     group('getProject', () {
@@ -80,13 +89,327 @@ void main() {
         },
       );
     });
+
+    group('getProjects', () {
+      test('returns empty list when userId is empty string', () async {
+        final result = await repository.getProjects('');
+
+        expect(result, isEmpty);
+        expect(projectDataSource.lastOwnedUserId, isNull);
+        expect(projectDataSource.lastSharedUserId, isNull);
+      });
+
+      test(
+        'merges owned/shared projects, deduplicates, and sorts by updatedAt',
+        () async {
+          const userId = 'user-123';
+
+          projectDataSource.ownedProjects = [
+            _createProjectDto(
+              id: 'owned-old',
+              projectName: 'Owned Old',
+              creatorUserId: 'user-123',
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+            _createProjectDto(
+              id: 'duplicate-project',
+              projectName: 'Owned Duplicate (older)',
+              creatorUserId: 'user-123',
+              updatedAt: DateTime(2025, 1, 2),
+            ),
+          ];
+
+          projectDataSource.sharedProjects = [
+            _createProjectDto(
+              id: 'shared-new',
+              projectName: 'Shared Newest',
+              creatorUserId: 'another-user',
+              updatedAt: DateTime(2025, 1, 4),
+            ),
+            _createProjectDto(
+              id: 'duplicate-project',
+              projectName: 'Shared Duplicate (newer)',
+              creatorUserId: 'another-user',
+              updatedAt: DateTime(2025, 1, 3),
+            ),
+          ];
+
+          final result = await repository.getProjects(userId);
+
+          expect(projectDataSource.lastOwnedUserId, userId);
+          expect(projectDataSource.lastSharedUserId, userId);
+          expect(result.map((project) => project.id).toList(), [
+            'shared-new',
+            'duplicate-project',
+            'owned-old',
+          ]);
+          expect(
+            result
+                .firstWhere((project) => project.id == 'duplicate-project')
+                .projectName,
+            'Shared Duplicate (newer)',
+          );
+        },
+      );
+    });
+
+    group('watchProjects', () {
+      test('emits empty list when userId is empty', () async {
+        final emittedBatches = <List<Project>>[];
+        final emissionReceived = Completer<void>();
+        final subscription = repository.watchProjects('').listen(
+          (batch) {
+            emittedBatches.add(batch);
+            if (!emissionReceived.isCompleted) {
+              emissionReceived.complete();
+            }
+          },
+        );
+
+        await emissionReceived.future;
+        await subscription.cancel();
+
+        expect(emittedBatches, hasLength(1));
+        expect(emittedBatches.single, isEmpty);
+      });
+
+      test(
+        'emits initial projects and realtime updates for shared projects',
+        () async {
+          const userId = 'user-123';
+
+          projectDataSource.ownedProjects = [
+            _createProjectDto(
+              id: 'owned-project',
+              projectName: 'Owned',
+              creatorUserId: 'user-123',
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ];
+          projectDataSource.sharedProjects = [
+            _createProjectDto(
+              id: 'shared-project',
+              projectName: 'Shared V1',
+              creatorUserId: 'other-user',
+              updatedAt: DateTime(2025, 1, 2),
+            ),
+          ];
+
+          final emittedBatches = <List<Project>>[];
+          final firstEmissionReceived = Completer<void>();
+          final secondEmissionReceived = Completer<void>();
+          var emissionCount = 0;
+          final subscription = repository.watchProjects(userId).listen(
+            (batch) {
+              emittedBatches.add(batch);
+              emissionCount++;
+              if (emissionCount == 1) {
+                firstEmissionReceived.complete();
+              } else if (emissionCount >= 2 && !secondEmissionReceived.isCompleted) {
+                secondEmissionReceived.complete();
+              }
+            },
+          );
+
+          await firstEmissionReceived.future;
+
+          projectDataSource.sharedProjects = [
+            _createProjectDto(
+              id: 'shared-project',
+              projectName: 'Shared V2',
+              creatorUserId: 'other-user',
+              updatedAt: DateTime(2025, 1, 3),
+            ),
+          ];
+          projectDataSource.emitProjectChange();
+
+          await secondEmissionReceived.future;
+
+          await subscription.cancel();
+
+          expect(emittedBatches.length, greaterThanOrEqualTo(2));
+          expect(emittedBatches.first.length, 2);
+          expect(
+            emittedBatches.last
+                .firstWhere((project) => project.id == 'shared-project')
+                .projectName,
+            'Shared V2',
+          );
+        },
+      );
+
+      test('propagates error from watchProjectChanges stream', () async {
+        const userId = 'user-123';
+
+        final firstEmission = Completer<void>();
+        final errorReceived = Completer<void>();
+        final subscription = repository.watchProjects(userId).listen(
+          (_) {
+            if (!firstEmission.isCompleted) firstEmission.complete();
+          },
+          onError: (error, _) {
+            expect(error, isA<Exception>());
+            if (!errorReceived.isCompleted) errorReceived.complete();
+          },
+        );
+        await firstEmission.future;
+
+        projectDataSource.emitError(Exception('realtime failure'));
+
+        await errorReceived.future;
+        await subscription.cancel();
+      });
+
+      test(
+        'queues a follow-up refresh when changes arrive mid-refresh',
+        () async {
+          const userId = 'user-123';
+
+          projectDataSource.ownedProjects = [
+            _createProjectDto(
+              id: 'owned-project',
+              projectName: 'Owned V1',
+              creatorUserId: 'user-123',
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ];
+
+          projectDataSource.firstGetOwnedProjectsStartedCompleter =
+              Completer<void>();
+          final firstRefreshCompleter = Completer<void>();
+          projectDataSource.nextGetOwnedProjectsCompleter = firstRefreshCompleter;
+
+          final emittedBatches = <List<Project>>[];
+          final secondEmissionReceived = Completer<void>();
+          var emissionCount = 0;
+          final subscription = repository.watchProjects(userId).listen(
+            (batch) {
+              emittedBatches.add(batch);
+              emissionCount++;
+              if (emissionCount >= 2 && !secondEmissionReceived.isCompleted) {
+                secondEmissionReceived.complete();
+              }
+            },
+          );
+
+          await projectDataSource.firstGetOwnedProjectsStartedCompleter!.future;
+
+          // While first refresh is in-flight, update data and emit a second tick.
+          projectDataSource.ownedProjects = [
+            _createProjectDto(
+              id: 'owned-project',
+              projectName: 'Owned V2',
+              creatorUserId: 'user-123',
+              updatedAt: DateTime(2025, 1, 2),
+            ),
+          ];
+          projectDataSource.emitProjectChange();
+
+          firstRefreshCompleter.complete();
+          await secondEmissionReceived.future;
+
+          await subscription.cancel();
+
+          expect(projectDataSource.getOwnedProjectsCalls, greaterThanOrEqualTo(2));
+          expect(emittedBatches.length, greaterThanOrEqualTo(2));
+          expect(
+            emittedBatches.first.firstWhere((project) => project.id == 'owned-project').projectName,
+            'Owned V1',
+          );
+          expect(
+            emittedBatches.last.firstWhere((project) => project.id == 'owned-project').projectName,
+            'Owned V2',
+          );
+        },
+      );
+    });
   });
 }
 
-class _TestModule extends Module {
+ProjectDto _createProjectDto({
+  required String id,
+  required String projectName,
+  required String creatorUserId,
+  required DateTime updatedAt,
+}) {
+  return ProjectDto(
+    id: id,
+    projectName: projectName,
+    creatorUserId: creatorUserId,
+    createdAt: DateTime(2025, 1, 1),
+    updatedAt: updatedAt,
+    status: ProjectStatus.active,
+  );
+}
+
+class _FakeProjectDataSource implements ProjectDataSource {
+  List<ProjectDto> ownedProjects = [];
+  List<ProjectDto> sharedProjects = [];
+  String? lastOwnedUserId;
+  String? lastSharedUserId;
+  int getOwnedProjectsCalls = 0;
+  Completer<void>? firstGetOwnedProjectsStartedCompleter;
+  Completer<void>? nextGetOwnedProjectsCompleter;
+  final StreamController<void> _changesController =
+      StreamController<void>.broadcast();
+
+  @override
+  Future<List<ProjectDto>> getOwnedProjects(String userId) async {
+    lastOwnedUserId = userId;
+    getOwnedProjectsCalls++;
+
+    final snapshot = List<ProjectDto>.from(ownedProjects);
+    if (firstGetOwnedProjectsStartedCompleter?.isCompleted == false) {
+      firstGetOwnedProjectsStartedCompleter?.complete();
+    }
+
+    final pendingDelay = nextGetOwnedProjectsCompleter;
+    if (pendingDelay != null) {
+      nextGetOwnedProjectsCompleter = null;
+      await pendingDelay.future;
+    }
+
+    return snapshot;
+  }
+
+  @override
+  Future<List<ProjectDto>> getSharedProjects(String userId) async {
+    lastSharedUserId = userId;
+    return sharedProjects;
+  }
+
+  @override
+  Stream<void> watchProjectChanges(String userId) => _changesController.stream;
+
+  void emitProjectChange() {
+    _changesController.add(null);
+  }
+
+  void emitError(Object error) {
+    _changesController.addError(error);
+  }
+
+  void dispose() {
+    _changesController.close();
+  }
+}
+
+class _ProjectRepositoryTestModule extends Module {
+  final FakeClockImpl clock;
+
+  _ProjectRepositoryTestModule({required this.clock});
+
   @override
   void binds(Injector i) {
-    i.add<Clock>(() => FakeClockImpl(DateTime(2025, 10, 1, 10, 30)));
-    i.add<ProjectRepositoryImpl>(() => ProjectRepositoryImpl());
+    i.addLazySingleton<_FakeProjectDataSource>(() => _FakeProjectDataSource());
+    i.addLazySingleton<ProjectDataSource>(
+      () => i.get<_FakeProjectDataSource>(),
+    );
+    i.addLazySingleton<ProjectRepositoryImpl>(
+      () => ProjectRepositoryImpl(
+        projectDataSource: i.get<ProjectDataSource>(),
+        clock: clock,
+      ),
+    );
   }
 }

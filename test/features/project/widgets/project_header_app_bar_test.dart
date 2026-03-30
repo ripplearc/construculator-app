@@ -4,16 +4,16 @@ import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
-import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
+import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 void main() {
@@ -43,7 +43,6 @@ void main() {
       WidgetTester tester, {
       required String projectId,
       required String projectName,
-      ImageProvider? avatarImage,
       VoidCallback? onProjectTap,
       VoidCallback? onSearchTap,
       VoidCallback? onNotificationTap,
@@ -73,7 +72,6 @@ void main() {
               return Scaffold(
                 appBar: ProjectHeaderAppBar(
                   projectId: projectId,
-                  avatarImage: avatarImage,
                   onProjectTap: onProjectTap,
                   onSearchTap: onSearchTap,
                   onNotificationTap: onNotificationTap,
@@ -291,7 +289,6 @@ void main() {
     ) async {
       const projectId = 'test-project-id';
       const projectName = 'Test Project';
-      const avatarUrl = 'https://example.com/avatar.jpg';
 
       final originalOnError = FlutterError.onError;
       FlutterError.onError = (details) {
@@ -304,16 +301,10 @@ void main() {
         tester,
         projectId: projectId,
         projectName: projectName,
-        avatarImage: const NetworkImage(avatarUrl),
       );
 
-      final coreAvatarFinder = find.byWidgetPredicate(
-        (widget) => widget is CoreAvatar && widget.image is NetworkImage,
-      );
+      final coreAvatarFinder = find.byType(CoreAvatar);
       expect(coreAvatarFinder, findsOneWidget);
-
-      final coreAvatar = tester.widget<CoreAvatar>(coreAvatarFinder);
-      expect((coreAvatar.image! as NetworkImage).url, avatarUrl);
     });
 
     testWidgets('shows error message when project fails to load', (

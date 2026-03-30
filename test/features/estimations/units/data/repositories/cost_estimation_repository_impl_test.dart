@@ -7,8 +7,8 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/either/either.dart';
-import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -17,7 +17,7 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../helpers/estimation_test_data_map_factory.dart';
+import '../../../helpers/estimation_test_data_map_factory.dart';
 
 void main() {
   const String otherProjectId = 'other-project-456';
@@ -34,6 +34,11 @@ void main() {
   const double totalCost3 = 200000.0;
   const String timestamp2 = '2024-01-02T14:30:00.000Z';
   const String timestamp3 = '2024-01-03T09:15:00.000Z';
+
+  const int smallDatasetSize = 3;
+  const int defaultPageDatasetSize =
+      CostEstimationRepositoryImpl.defaultPageSize;
+  const int twoPagesDatasetSize = defaultPageDatasetSize * 2;
 
   group('CostEstimationRepositoryImpl', () {
     late CostEstimationRepositoryImpl repository;
@@ -131,21 +136,51 @@ void main() {
       );
     }
 
-    group('getEstimations', () {
+    void expectResult<L, R>(
+      Either<L, R> result,
+      void Function(R value) assertions,
+    ) {
+      result.fold((_) => fail('Expected success but got failure'), assertions);
+    }
+
+    void expectFailure<L, R>(
+      Either<L, R> result,
+      void Function(L error) assertions,
+    ) {
+      result.fold(assertions, (_) => fail('Expected failure but got success'));
+    }
+
+    List<Map<String, dynamic>> seedEstimations(
+      int count, {
+      String projectId = testProjectId,
+      bool includeUpdatedAt = false,
+    }) {
+      final maps = List.generate(
+        count,
+        (i) => buildEstimationMap(
+          id: 'estimate-$i',
+          projectId: projectId,
+          estimateName: 'Estimate $i',
+          createdAt:
+              '2026-01-${(i + 1).toString().padLeft(2, '0')}T00:00:00.000Z',
+          updatedAt: includeUpdatedAt
+              ? '2026-01-${(i + 1).toString().padLeft(2, '0')}T00:00:00.000Z'
+              : null,
+        ),
+      );
+      seedEstimationTable(maps);
+      return maps;
+    }
+
+    List<CostEstimate> mapsToDomainEntities(List<Map<String, dynamic>> maps) {
+      return maps
+          .map((map) => CostEstimateDto.fromJson(map).toDomain())
+          .toList();
+    }
+
+    group('fetchInitialEstimations', () {
       test('should return cost estimates when data exists', () async {
         final estimationMap1 = buildEstimationMap(
-          id: estimateIdDefault,
-          projectId: testProjectId,
-          estimateName: estimateNameDefault,
-          estimateDescription: estimateDescDefault,
-          creatorUserId: userIdDefault,
-          totalCost: totalCostDefault,
-          isLocked: false,
-          createdAt: timestampDefault,
-          updatedAt: timestampDefault,
-        );
-
-        final estimationMap2 = buildEstimationMap(
           id: estimateId2,
           projectId: testProjectId,
           estimateName: estimateName2,
@@ -159,31 +194,40 @@ void main() {
           updatedAt: timestamp2,
         );
 
+        final estimationMap2 = buildEstimationMap(
+          id: estimateIdDefault,
+          projectId: testProjectId,
+          estimateName: estimateNameDefault,
+          estimateDescription: estimateDescDefault,
+          creatorUserId: userIdDefault,
+          totalCost: totalCostDefault,
+          isLocked: false,
+          createdAt: timestampDefault,
+          updatedAt: timestampDefault,
+        );
+
         final estimation1 = CostEstimateDto.fromJson(estimationMap1);
         final estimation2 = CostEstimateDto.fromJson(estimationMap2);
 
         seedEstimationTable([estimationMap1, estimationMap2]);
 
-        final result = await repository.getEstimations(testProjectId);
+        final result = await repository.fetchInitialEstimations(testProjectId);
 
         expect(result.isRight(), isTrue);
-        result.fold((_) => fail('Expected success but got failure'), (
-          estimates,
-        ) {
+        expectResult(result, (estimates) {
           expect(estimates, hasLength(2));
-          expect(estimates[0], equals(estimation1.toDomain()));
-          expect(estimates[1], equals(estimation2.toDomain()));
+          expect(
+            estimates,
+            equals([estimation1.toDomain(), estimation2.toDomain()]),
+          );
         });
       });
 
       test('should return empty list when no estimations found', () async {
-        final result = await repository.getEstimations(testProjectId);
+        final result = await repository.fetchInitialEstimations(testProjectId);
 
         expect(result.isRight(), isTrue);
-        result.fold(
-          (_) => fail('Expected success but got failure'),
-          (estimates) => expect(estimates, isEmpty),
-        );
+        expectResult(result, (estimates) => expect(estimates, isEmpty));
       });
 
       test(
@@ -197,48 +241,58 @@ void main() {
 
           seedEstimationTable([otherProjectEstimationMap]);
 
-          final result = await repository.getEstimations(testProjectId);
+          final result = await repository.fetchInitialEstimations(
+            testProjectId,
+          );
 
           expect(result.isRight(), isTrue);
-          result.fold(
-            (_) => fail('Expected success but got failure'),
-            (estimates) => expect(estimates, isEmpty),
-          );
+          expectResult(result, (estimates) => expect(estimates, isEmpty));
         },
       );
 
-      test('should call supabaseWrapper with correct project ID', () async {
+      test('should call supabaseWrapper with correct parameters', () async {
         seedEstimationTable([]);
 
-        await repository.getEstimations(testProjectId);
+        await repository.fetchInitialEstimations(testProjectId);
 
-        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('select');
+        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
+          'selectPaginated',
+        );
         expect(methodCalls, hasLength(1));
+
+        final call = methodCalls.first;
         expect(
-          methodCalls.first['table'],
-          equals(DatabaseConstants.costEstimatesTable),
+          call,
+          equals({
+            'method': 'selectPaginated',
+            'table': DatabaseConstants.costEstimatesTable,
+            'columns': '*',
+            'filterColumn': DatabaseConstants.projectIdColumn,
+            'filterValue': testProjectId,
+            'orderColumn': DatabaseConstants.createdAtColumn,
+            'ascending': false,
+            'rangeFrom': 0,
+            'rangeTo': 9,
+          }),
         );
-        expect(
-          methodCalls.first['filterColumn'],
-          equals(DatabaseConstants.projectIdColumn),
-        );
-        expect(methodCalls.first['filterValue'], equals(testProjectId));
       });
 
       test(
         'should return unexpected failure when data source throws server exception',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.unknown;
-          fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgServer;
+          fakeSupabaseWrapper.selectPaginatedErrorMessage = errorMsgServer;
 
-          final result = await repository.getEstimations(testProjectId);
+          final result = await repository.fetchInitialEstimations(
+            testProjectId,
+          );
 
           expect(result.isLeft(), isTrue);
-          result.fold(
+          expectFailure(
+            result,
             (failure) => expect(failure, UnexpectedFailure()),
-            (_) => fail('Expected failure but got success'),
           );
         },
       );
@@ -246,20 +300,22 @@ void main() {
       test(
         'should return timeout error when data source throws timeout',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.timeout;
-          fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgTimeout;
+          fakeSupabaseWrapper.selectPaginatedErrorMessage = errorMsgTimeout;
 
-          final result = await repository.getEstimations(testProjectId);
+          final result = await repository.fetchInitialEstimations(
+            testProjectId,
+          );
 
           expect(result.isLeft(), isTrue);
-          result.fold(
+          expectFailure(
+            result,
             (failure) => expect(
               failure,
               EstimationFailure(errorType: EstimationErrorType.timeoutError),
             ),
-            (_) => fail('Expected failure but got success'),
           );
         },
       );
@@ -267,20 +323,22 @@ void main() {
       test(
         'should return connection error when data source throws SocketException',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.socket;
-          fakeSupabaseWrapper.selectMultipleErrorMessage = 'Connection failed';
+          fakeSupabaseWrapper.selectPaginatedErrorMessage = 'Connection failed';
 
-          final result = await repository.getEstimations(testProjectId);
+          final result = await repository.fetchInitialEstimations(
+            testProjectId,
+          );
 
           expect(result.isLeft(), isTrue);
-          result.fold(
+          expectFailure(
+            result,
             (failure) => expect(
               failure,
               EstimationFailure(errorType: EstimationErrorType.connectionError),
             ),
-            (_) => fail('Expected failure but got success'),
           );
         },
       );
@@ -288,42 +346,46 @@ void main() {
       test(
         'should return parsing error when data source throws FormatException',
         () async {
-          fakeSupabaseWrapper.selectMultipleErrorMessage = 'Format error';
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.selectPaginatedErrorMessage = 'Format error';
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.type;
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
 
-          final result = await repository.getEstimations(testProjectId);
+          final result = await repository.fetchInitialEstimations(
+            testProjectId,
+          );
 
           expect(result.isLeft(), isTrue);
-          result.fold((failure) {
+          expectFailure(result, (failure) {
             expect(
               failure,
               EstimationFailure(errorType: EstimationErrorType.parsingError),
             );
-          }, (_) => fail('Expected failure but got success'));
+          });
         },
       );
 
       test(
         'should return connection error when data source throws PostgrestException with connection failure',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.postgrest;
           fakeSupabaseWrapper.postgrestErrorCode =
               PostgresErrorCode.connectionFailure;
-          fakeSupabaseWrapper.selectMultipleErrorMessage = 'Connection lost';
+          fakeSupabaseWrapper.selectPaginatedErrorMessage = 'Connection lost';
 
-          final result = await repository.getEstimations(testProjectId);
+          final result = await repository.fetchInitialEstimations(
+            testProjectId,
+          );
 
           expect(result.isLeft(), isTrue);
-          result.fold(
+          expectFailure(
+            result,
             (failure) => expect(
               failure,
               EstimationFailure(errorType: EstimationErrorType.connectionError),
             ),
-            (_) => fail('Expected failure but got success'),
           );
         },
       );
@@ -331,24 +393,26 @@ void main() {
       test(
         'should return unexpected database error when data source throws PostgrestException with unique violation',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.postgrest;
           fakeSupabaseWrapper.postgrestErrorCode =
               PostgresErrorCode.uniqueViolation;
-          fakeSupabaseWrapper.selectMultipleErrorMessage = 'Unique violation';
+          fakeSupabaseWrapper.selectPaginatedErrorMessage = 'Unique violation';
 
-          final result = await repository.getEstimations(testProjectId);
+          final result = await repository.fetchInitialEstimations(
+            testProjectId,
+          );
 
           expect(result.isLeft(), isTrue);
-          result.fold(
+          expectFailure(
+            result,
             (failure) => expect(
               failure,
               EstimationFailure(
                 errorType: EstimationErrorType.unexpectedDatabaseError,
               ),
             ),
-            (_) => fail('Expected failure but got success'),
           );
         },
       );
@@ -357,15 +421,15 @@ void main() {
         'should handle multiple estimations with different configurations',
         () async {
           final estimationMap1 = buildEstimationMap(
-            id: estimateIdDefault,
+            id: estimateId3,
             projectId: testProjectId,
-            estimateName: estimateNameDefault,
-            estimateDescription: estimateDescDefault,
+            estimateName: estimateName3,
+            estimateDescription: estimateDesc3,
             creatorUserId: userIdDefault,
-            totalCost: totalCostDefault,
+            totalCost: totalCost3,
             isLocked: false,
-            createdAt: timestampDefault,
-            updatedAt: timestampDefault,
+            createdAt: timestamp3,
+            updatedAt: timestamp3,
           );
 
           final estimationMap2 = buildEstimationMap(
@@ -383,15 +447,15 @@ void main() {
           );
 
           final estimationMap3 = buildEstimationMap(
-            id: estimateId3,
+            id: estimateIdDefault,
             projectId: testProjectId,
-            estimateName: estimateName3,
-            estimateDescription: estimateDesc3,
+            estimateName: estimateNameDefault,
+            estimateDescription: estimateDescDefault,
             creatorUserId: userIdDefault,
-            totalCost: totalCost3,
+            totalCost: totalCostDefault,
             isLocked: false,
-            createdAt: timestamp3,
-            updatedAt: timestamp3,
+            createdAt: timestampDefault,
+            updatedAt: timestampDefault,
           );
 
           final estimation1 = CostEstimateDto.fromJson(estimationMap1);
@@ -400,12 +464,12 @@ void main() {
 
           seedEstimationTable([estimationMap1, estimationMap2, estimationMap3]);
 
-          final result = await repository.getEstimations(testProjectId);
+          final result = await repository.fetchInitialEstimations(
+            testProjectId,
+          );
 
           expect(result.isRight(), isTrue);
-          result.fold((_) => fail('Expected success but got failure'), (
-            estimates,
-          ) {
+          expectResult(result, (estimates) {
             expect(estimates, [
               estimation1.toDomain(),
               estimation2.toDomain(),
@@ -414,6 +478,285 @@ void main() {
           });
         },
       );
+
+      test(
+        'should return first page of estimations when called after pagination',
+        () async {
+          final maps = seedEstimations(twoPagesDatasetSize);
+
+          final initial = await repository.fetchInitialEstimations(
+            testProjectId,
+          );
+          expect(
+            initial.getRightOrNull()!.length,
+            equals(defaultPageDatasetSize),
+          );
+          expect(
+            initial.getRightOrNull()!,
+            maps
+                .sublist(defaultPageDatasetSize)
+                .reversed
+                .map((e) => CostEstimateDto.fromJson(e).toDomain())
+                .toList(),
+          );
+
+          final more = await repository.loadMoreEstimations(testProjectId);
+          expect(more.getRightOrNull()!.length, equals(twoPagesDatasetSize));
+          expect(
+            more.getRightOrNull()!,
+            maps.reversed
+                .map((e) => CostEstimateDto.fromJson(e).toDomain())
+                .toList(),
+          );
+
+          final resetFetch = await repository.fetchInitialEstimations(
+            testProjectId,
+          );
+          expect(
+            resetFetch.getRightOrNull()!.length,
+            equals(defaultPageDatasetSize),
+          );
+          expect(
+            resetFetch.getRightOrNull()!,
+            maps
+                .sublist(defaultPageDatasetSize)
+                .reversed
+                .map((e) => CostEstimateDto.fromJson(e).toDomain())
+                .toList(),
+          );
+        },
+      );
+
+      test(
+        'should emit error to stream when fetchInitialEstimations fails',
+        () async {
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
+              SupabaseExceptionType.timeout;
+
+          final stream = repository.watchEstimations(testProjectId);
+          final streamUpdates = <Either<Failure, List<CostEstimate>>>[];
+          final subscription = stream.listen(streamUpdates.add);
+
+          await pumpEventQueue();
+
+          expect(streamUpdates, hasLength(1));
+          expect(streamUpdates[0].isLeft(), isTrue);
+          expectFailure(
+            streamUpdates[0],
+            (failure) => expect(
+              failure,
+              EstimationFailure(errorType: EstimationErrorType.timeoutError),
+            ),
+          );
+
+          await subscription.cancel();
+        },
+      );
+    });
+
+    group('loadMoreEstimations', () {
+      test(
+        'should accumulate and return correct results on successive load more calls',
+        () async {
+          final totalSize = twoPagesDatasetSize + 5;
+          final allMaps = seedEstimations(totalSize);
+          final allEstimations = mapsToDomainEntities(
+            allMaps.reversed.toList(),
+          );
+
+          await repository.fetchInitialEstimations(testProjectId);
+
+          final firstLoadMore = await repository.loadMoreEstimations(
+            testProjectId,
+          );
+
+          expect(firstLoadMore.isRight(), isTrue);
+          firstLoadMore.fold((_) => fail('Expected success'), (estimates) {
+            expect(estimates, hasLength(defaultPageDatasetSize * 2));
+            expect(
+              estimates,
+              equals(allEstimations.sublist(0, defaultPageDatasetSize * 2)),
+            );
+          });
+
+          final secondLoadMore = await repository.loadMoreEstimations(
+            testProjectId,
+          );
+
+          expect(secondLoadMore.isRight(), isTrue);
+          secondLoadMore.fold((_) => fail('Expected success'), (estimates) {
+            expect(estimates, hasLength(totalSize));
+            expect(estimates, equals(allEstimations));
+          });
+        },
+      );
+
+      test(
+        'should emit correct stream updates on successive load more calls',
+        () async {
+          final totalSize = twoPagesDatasetSize + 5;
+          final allMaps = seedEstimations(totalSize);
+          final allEstimations = mapsToDomainEntities(
+            allMaps.reversed.toList(),
+          );
+
+          final stream = repository.watchEstimations(testProjectId);
+          final streamUpdates = <Either<Failure, List<CostEstimate>>>[];
+          final subscription = stream.listen(streamUpdates.add);
+
+          await pumpEventQueue();
+
+          expect(streamUpdates, hasLength(1));
+          streamUpdates[0].fold((_) => fail('Expected success'), (estimates) {
+            expect(estimates, hasLength(defaultPageDatasetSize));
+            expect(
+              estimates,
+              equals(allEstimations.sublist(0, defaultPageDatasetSize)),
+            );
+          });
+
+          await repository.loadMoreEstimations(testProjectId);
+          await pumpEventQueue();
+
+          expect(streamUpdates, hasLength(2));
+          streamUpdates[1].fold((_) => fail('Expected success'), (estimates) {
+            expect(estimates, hasLength(defaultPageDatasetSize * 2));
+            expect(
+              estimates,
+              equals(allEstimations.sublist(0, defaultPageDatasetSize * 2)),
+            );
+          });
+
+          await repository.loadMoreEstimations(testProjectId);
+          await pumpEventQueue();
+
+          expect(streamUpdates, hasLength(3));
+          streamUpdates[2].fold((_) => fail('Expected success'), (estimates) {
+            expect(estimates, hasLength(totalSize));
+            expect(estimates, equals(allEstimations));
+          });
+
+          await subscription.cancel();
+        },
+      );
+
+      test('should return all data when hasMore is false', () async {
+        final maps = seedEstimations(smallDatasetSize);
+
+        await repository.fetchInitialEstimations(testProjectId);
+        expect(repository.hasMoreEstimations(testProjectId), isFalse);
+
+        final result = await repository.loadMoreEstimations(testProjectId);
+        expect(result.isRight(), isTrue);
+        expectResult(result, (estimates) {
+          expect(estimates, hasLength(smallDatasetSize));
+          expect(estimates, mapsToDomainEntities(maps.reversed.toList()));
+        });
+      });
+
+      test(
+        'should return initial estimations when loadMore is called before initial fetch',
+        () async {
+          final maps = seedEstimations(smallDatasetSize);
+
+          final result = await repository.loadMoreEstimations(testProjectId);
+          expect(result.isRight(), isTrue);
+          expectResult(result, (estimates) {
+            expect(estimates, hasLength(smallDatasetSize));
+            expect(estimates, mapsToDomainEntities(maps.reversed.toList()));
+          });
+        },
+      );
+
+      test(
+        'should return failure and emit to stream when data source throws on loadMore',
+        () async {
+          seedEstimations(CostEstimationRepositoryImpl.defaultPageSize);
+
+          final stream = repository.watchEstimations(testProjectId);
+          final streamUpdates = <Either<Failure, List<CostEstimate>>>[];
+          final subscription = stream.listen(streamUpdates.add);
+
+          await pumpEventQueue();
+
+          expect(streamUpdates, hasLength(1));
+          expect(streamUpdates[0].isRight(), isTrue);
+
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
+              SupabaseExceptionType.timeout;
+          fakeSupabaseWrapper.selectPaginatedErrorMessage = errorMsgTimeout;
+
+          final result = await repository.loadMoreEstimations(testProjectId);
+
+          expect(result.isLeft(), isTrue);
+          expectFailure(
+            result,
+            (failure) => expect(
+              failure,
+              EstimationFailure(errorType: EstimationErrorType.timeoutError),
+            ),
+          );
+
+          await pumpEventQueue();
+
+          expect(streamUpdates, hasLength(2));
+          expect(streamUpdates[1].isLeft(), isTrue);
+          expectFailure(
+            streamUpdates[1],
+            (failure) => expect(
+              failure,
+              EstimationFailure(errorType: EstimationErrorType.timeoutError),
+            ),
+          );
+
+          await subscription.cancel();
+        },
+      );
+
+      test(
+        'should correctly update offset after loading more estimations',
+        () async {
+          seedEstimations(twoPagesDatasetSize + 5);
+
+          await repository.fetchInitialEstimations(testProjectId);
+          await repository.loadMoreEstimations(testProjectId);
+
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
+            'selectPaginated',
+          );
+          expect(methodCalls.length, equals(2));
+
+          expect(methodCalls[0]['rangeFrom'], equals(0));
+          expect(methodCalls[0]['rangeTo'], equals(9));
+
+          expect(methodCalls[1]['rangeFrom'], equals(10));
+          expect(methodCalls[1]['rangeTo'], equals(19));
+        },
+      );
+    });
+
+    group('hasMoreEstimations', () {
+      test('should return true by default for unknown project', () {
+        expect(repository.hasMoreEstimations('unknown-project'), isTrue);
+      });
+
+      test('should return false after fetching less than page size', () async {
+        seedEstimations(smallDatasetSize);
+
+        await repository.fetchInitialEstimations(testProjectId);
+
+        expect(repository.hasMoreEstimations(testProjectId), isFalse);
+      });
+
+      test('should return true after fetching exactly page size', () async {
+        seedEstimations(defaultPageDatasetSize);
+
+        await repository.fetchInitialEstimations(testProjectId);
+
+        expect(repository.hasMoreEstimations(testProjectId), isTrue);
+      });
     });
 
     group('watchEstimations', () {
@@ -532,12 +875,12 @@ void main() {
           final result = await repository.createEstimation(estimation);
 
           expect(result.isLeft(), isTrue);
-          result.fold(
+          expectFailure(
+            result,
             (failure) => expect(
               failure,
               EstimationFailure(errorType: EstimationErrorType.timeoutError),
             ),
-            (_) => fail('Expected failure but got success'),
           );
         },
       );
@@ -559,12 +902,12 @@ void main() {
           final result = await repository.createEstimation(estimation);
 
           expect(result.isLeft(), isTrue);
-          result.fold(
+          expectFailure(
+            result,
             (failure) => expect(
               failure,
               EstimationFailure(errorType: EstimationErrorType.connectionError),
             ),
-            (_) => fail('Expected failure but got success'),
           );
         },
       );
@@ -586,41 +929,33 @@ void main() {
           final result = await repository.createEstimation(estimation);
 
           expect(result.isLeft(), isTrue);
-          result.fold(
+          expectFailure(
+            result,
             (failure) => expect(failure, UnexpectedFailure()),
-            (_) => fail('Expected failure but got success'),
           );
         },
       );
 
       test(
-        'should update stream with newly created estimation using cached data',
+        'should emit new list with the new estimation prepended when create is succesfull',
         () async {
-          final existingEstimationMap = buildEstimationMap(
+          final existingMap = buildEstimationMap(
             id: estimateIdDefault,
             projectId: testProjectId,
             estimateName: estimateNameDefault,
           );
-          final existingEstimation = CostEstimateDto.fromJson(
-            existingEstimationMap,
-          );
-
-          seedEstimationTable([existingEstimationMap]);
+          seedEstimationTable([existingMap]);
 
           final stream = repository.watchEstimations(testProjectId);
-          final streamResults = <Either<Failure, List<CostEstimate>>>[];
-
-          final subscription = stream.listen(streamResults.add);
+          final updates = <Either<Failure, List<CostEstimate>>>[];
+          final subscription = stream.listen(updates.add);
 
           await pumpEventQueue();
 
-          expect(streamResults.length, equals(1));
-          expect(
-            streamResults[0].fold(
-              (_) => 0,
-              (estimations) => estimations.length,
-            ),
-            equals(1),
+          expect(updates, hasLength(1));
+          updates[0].fold(
+            (_) => fail('Expected success'),
+            (estimates) => expect(estimates, hasLength(1)),
           );
 
           final newEstimationDto = buildEstimationDto(
@@ -630,35 +965,82 @@ void main() {
             createdAt: timestampDefault,
             updatedAt: timestampDefault,
           );
-          final newEstimation = newEstimationDto.toDomain();
-
-          await repository.createEstimation(newEstimation);
+          final newEstimateResult = await repository.createEstimation(
+            newEstimationDto.toDomain(),
+          );
 
           await pumpEventQueue();
 
-          expect(streamResults.length, equals(2));
-          expect(
-            streamResults[1].fold(
-              (_) => 0,
-              (estimations) => estimations.length,
-            ),
-            equals(2),
+          expect(updates, hasLength(2));
+          updates[1].fold((_) => fail('Expected success'), (estimates) {
+            expect(estimates, hasLength(2));
+            expect(estimates, [
+              newEstimateResult.getRightOrNull()!,
+              CostEstimateDto.fromJson(existingMap).toDomain(),
+            ]);
+          });
+
+          await subscription.cancel();
+        },
+      );
+
+      test(
+        'should maintain correct pagination after creating a new estimation',
+        () async {
+          final allMaps = seedEstimations(defaultPageDatasetSize * 3);
+          final allEstimations = mapsToDomainEntities(
+            allMaps.reversed.toList(),
           );
 
-          streamResults[1].fold(
-            (_) => fail('Expected success but got failure'),
-            (estimations) {
-              final insertTimestamp = fakeClock.now().toIso8601String();
-              final createdDto = CostEstimateDto.fromJson({
-                ...newEstimationDto.toJson(),
-                'id': '2',
-                'created_at': insertTimestamp,
-                'updated_at': insertTimestamp,
-              });
-              expect(estimations[0], equals(existingEstimation.toDomain()));
-              expect(estimations[1], equals(createdDto.toDomain()));
-            },
+          final stream = repository.watchEstimations(testProjectId);
+          final updates = <Either<Failure, List<CostEstimate>>>[];
+          final subscription = stream.listen(updates.add);
+
+          await pumpEventQueue();
+
+          await repository.loadMoreEstimations(testProjectId);
+          await pumpEventQueue();
+
+          updates.last.fold((_) => fail('Expected success'), (estimates) {
+            expect(estimates.length, equals(defaultPageDatasetSize * 2));
+            expect(
+              estimates,
+              equals(allEstimations.sublist(0, defaultPageDatasetSize * 2)),
+            );
+          });
+
+          final newEstimationDto = buildEstimationDto(
+            id: 'new-estimate',
+            projectId: testProjectId,
+            estimateName: 'New Estimate',
           );
+
+          fakeClock.set(DateTime.parse('2026-02-01T00:00:00.000Z'));
+
+          final createResult = await repository.createEstimation(
+            newEstimationDto.toDomain(),
+          );
+          final createdEstimation = createResult.getRightOrNull()!;
+          await pumpEventQueue();
+
+          updates.last.fold((_) => fail('Expected success'), (estimates) {
+            expect(estimates.length, equals((defaultPageDatasetSize * 2) + 1));
+            expect(
+              estimates,
+              equals([
+                createdEstimation,
+                ...allEstimations.sublist(0, defaultPageDatasetSize * 2),
+              ]),
+            );
+          });
+
+          await repository.loadMoreEstimations(testProjectId);
+          await pumpEventQueue();
+
+          updates.last.fold((_) => fail('Expected success'), (estimates) {
+            expect(estimates.length, equals((defaultPageDatasetSize * 3) + 1));
+            expect(estimates, equals([createdEstimation, ...allEstimations]));
+          });
 
           await subscription.cancel();
         },
@@ -735,12 +1117,12 @@ void main() {
           );
 
           expect(result.isLeft(), isTrue);
-          result.fold(
+          expectFailure(
+            result,
             (failure) => expect(
               failure,
               EstimationFailure(errorType: EstimationErrorType.notFoundError),
             ),
-            (_) => fail('Expected failure but got success'),
           );
         },
       );
@@ -814,12 +1196,12 @@ void main() {
         );
 
         expect(result.isLeft(), isTrue);
-        result.fold(
+        expectFailure(
+          result,
           (failure) => expect(
             failure,
             EstimationFailure(errorType: EstimationErrorType.timeoutError),
           ),
-          (_) => fail('Expected failure but got success'),
         );
       });
 
@@ -837,12 +1219,12 @@ void main() {
           );
 
           expect(result.isLeft(), isTrue);
-          result.fold(
+          expectFailure(
+            result,
             (failure) => expect(
               failure,
               EstimationFailure(errorType: EstimationErrorType.connectionError),
             ),
-            (_) => fail('Expected failure but got success'),
           );
         },
       );
@@ -861,9 +1243,9 @@ void main() {
           );
 
           expect(result.isLeft(), isTrue);
-          result.fold(
+          expectFailure(
+            result,
             (failure) => expect(failure, UnexpectedFailure()),
-            (_) => fail('Expected failure but got success'),
           );
         },
       );
@@ -884,12 +1266,12 @@ void main() {
           );
 
           expect(result.isLeft(), isTrue);
-          result.fold(
+          expectFailure(
+            result,
             (failure) => expect(
               failure,
               EstimationFailure(errorType: EstimationErrorType.connectionError),
             ),
-            (_) => fail('Expected failure but got success'),
           );
         },
       );
@@ -910,17 +1292,654 @@ void main() {
           );
 
           expect(result.isLeft(), isTrue);
-          result.fold(
+          expectFailure(
+            result,
             (failure) => expect(
               failure,
               EstimationFailure(
                 errorType: EstimationErrorType.unexpectedDatabaseError,
               ),
             ),
+          );
+        },
+      );
+
+      test(
+        'should maintain correct pagination after deleting an estimation',
+        () async {
+          final totalEstimations = defaultPageDatasetSize * 3;
+          final allMaps = seedEstimations(totalEstimations);
+          final allEstimations = mapsToDomainEntities(
+            allMaps.reversed.toList(),
+          );
+
+          final stream = repository.watchEstimations(testProjectId);
+          final updates = <Either<Failure, List<CostEstimate>>>[];
+          final subscription = stream.listen(updates.add);
+
+          await pumpEventQueue();
+
+          await repository.loadMoreEstimations(testProjectId);
+          await pumpEventQueue();
+
+          updates.last.fold((_) => fail('Expected success'), (estimates) {
+            expect(estimates.length, equals(defaultPageDatasetSize * 2));
+            expect(
+              estimates,
+              equals(allEstimations.sublist(0, defaultPageDatasetSize * 2)),
+            );
+          });
+
+          await repository.deleteEstimation('estimate-29', testProjectId);
+          await pumpEventQueue();
+
+          updates.last.fold((_) => fail('Expected success'), (estimates) {
+            expect(estimates.length, equals((defaultPageDatasetSize * 2) - 1));
+            expect(
+              estimates,
+              equals(
+                allEstimations
+                    .sublist(0, defaultPageDatasetSize * 2)
+                    .where((e) => e.id != 'estimate-29')
+                    .toList(),
+              ),
+            );
+          });
+
+          await repository.loadMoreEstimations(testProjectId);
+          await pumpEventQueue();
+
+          updates.last.fold((_) => fail('Expected success'), (estimates) {
+            expect(estimates.length, equals(totalEstimations - 1));
+            expect(
+              estimates,
+              equals(
+                allEstimations.where((e) => e.id != 'estimate-29').toList(),
+              ),
+            );
+          });
+
+          await subscription.cancel();
+        },
+      );
+
+      test('should refetch estimations when delete fails', () async {
+        final maps = seedEstimations(smallDatasetSize);
+        final expectedEstimations = mapsToDomainEntities(
+          maps.reversed.toList(),
+        );
+
+        final stream = repository.watchEstimations(testProjectId);
+        final updates = <Either<Failure, List<CostEstimate>>>[];
+        final subscription = stream.listen(updates.add);
+
+        await pumpEventQueue();
+
+        expect(updates, hasLength(1));
+        expectResult(updates[0], (estimates) {
+          expect(estimates, hasLength(smallDatasetSize));
+          expect(estimates, equals(expectedEstimations));
+        });
+
+        fakeSupabaseWrapper.shouldThrowOnDelete = true;
+        fakeSupabaseWrapper.deleteExceptionType = SupabaseExceptionType.timeout;
+
+        final result = await repository.deleteEstimation(
+          'estimate-0',
+          testProjectId,
+        );
+
+        expect(result.isLeft(), isTrue);
+
+        await pumpEventQueue();
+
+        expect(updates, hasLength(3));
+
+        expectResult(updates[1], (estimates) {
+          expect(estimates, hasLength(smallDatasetSize - 1));
+          expect(
+            estimates,
+            equals(
+              expectedEstimations.where((e) => e.id != 'estimate-0').toList(),
+            ),
+          );
+        });
+
+        expectResult(updates[2], (estimates) {
+          expect(estimates, hasLength(smallDatasetSize));
+          expect(estimates, equals(expectedEstimations));
+        });
+
+        await subscription.cancel();
+      });
+    });
+
+    group('changeLockStatus', () {
+      test(
+        'should return updated estimation and update stream when locking succeeds',
+        () async {
+          final initialMap = buildEstimationMap(
+            id: estimateIdDefault,
+            projectId: testProjectId,
+            isLocked: false,
+          );
+          seedEstimationTable([initialMap]);
+
+          final stream = repository.watchEstimations(testProjectId);
+          final updates = <Either<Failure, List<CostEstimate>>>[];
+          stream.listen(updates.add);
+
+          await pumpEventQueue();
+
+          final result = await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+
+          await pumpEventQueue();
+
+          expect(result.isRight(), isTrue);
+          expectResult(result, (updatedEstimation) {
+            expect(updatedEstimation.lockStatus.isLocked, isTrue);
+          });
+
+          expect(updates, hasLength(3));
+          updates.last.fold((_) => fail('Stream update failed'), (estimations) {
+            expect(estimations, hasLength(1));
+            expect(estimations.first.lockStatus.isLocked, isTrue);
+          });
+        },
+      );
+
+      test(
+        'should return updated estimation and update stream when unlocking succeeds',
+        () async {
+          final initialMap = buildEstimationMap(
+            id: estimateIdDefault,
+            projectId: testProjectId,
+            isLocked: true,
+            lockedByUserId: userIdDefault,
+            lockedAt: timestampDefault,
+          );
+          seedEstimationTable([initialMap]);
+
+          final stream = repository.watchEstimations(testProjectId);
+          final updates = <Either<Failure, List<CostEstimate>>>[];
+          stream.listen(updates.add);
+
+          await pumpEventQueue();
+
+          final result = await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: false,
+            projectId: testProjectId,
+          );
+
+          await pumpEventQueue();
+
+          expect(result.isRight(), isTrue);
+          result.fold((_) => fail('Unlocking failed'), (updatedEstimation) {
+            expect(updatedEstimation.lockStatus.isLocked, isFalse);
+          });
+
+          expect(updates, hasLength(3));
+          updates.last.fold((_) => fail('Stream update failed'), (estimations) {
+            expect(estimations, hasLength(1));
+            expect(estimations.first.lockStatus.isLocked, isFalse);
+          });
+        },
+      );
+
+      test(
+        'should return timeout failure when data source throws timeout',
+        () async {
+          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+          fakeSupabaseWrapper.updateExceptionType =
+              SupabaseExceptionType.timeout;
+          fakeSupabaseWrapper.updateErrorMessage = errorMsgTimeout;
+
+          final result = await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+
+          expect(result.isLeft(), isTrue);
+          result.fold(
+            (failure) => expect(
+              failure,
+              EstimationFailure(errorType: EstimationErrorType.timeoutError),
+            ),
             (_) => fail('Expected failure but got success'),
           );
         },
       );
+
+      test(
+        'should return notFoundError when data source throws PGRST116',
+        () async {
+          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+          fakeSupabaseWrapper.updateExceptionType =
+              SupabaseExceptionType.postgrest;
+          fakeSupabaseWrapper.postgrestErrorCode =
+              PostgresErrorCode.noDataFound;
+          fakeSupabaseWrapper.updateErrorMessage = 'No data found';
+
+          final result = await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+
+          expect(result.isLeft(), isTrue);
+          result.fold(
+            (failure) => expect(
+              failure,
+              EstimationFailure(errorType: EstimationErrorType.notFoundError),
+            ),
+            (_) => fail('Expected failure but got success'),
+          );
+        },
+      );
+
+      test(
+        'should emit optimistic update to stream before API call completes',
+        () async {
+          final initialMap = buildEstimationMap(
+            id: estimateIdDefault,
+            projectId: testProjectId,
+            isLocked: false,
+          );
+          seedEstimationTable([initialMap]);
+
+          final stream = repository.watchEstimations(testProjectId);
+          final updates = <Either<Failure, List<CostEstimate>>>[];
+          stream.listen(updates.add);
+
+          await pumpEventQueue();
+
+          expect(updates, hasLength(1));
+          updates[0].fold((_) => fail('Initial load failed'), (estimations) {
+            expect(estimations.first.lockStatus.isLocked, isFalse);
+          });
+
+          final resultFuture = repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+
+          await pumpEventQueue();
+
+          expect(updates.length, greaterThan(1));
+          updates[1].fold((_) => fail('Optimistic update failed'), (
+            estimations,
+          ) {
+            expect(estimations.first.lockStatus.isLocked, isTrue);
+          });
+
+          await resultFuture;
+
+          await pumpEventQueue();
+          final lastUpdate = updates.last;
+          lastUpdate.fold((_) => fail('Final update failed'), (estimations) {
+            expect(estimations.first.lockStatus.isLocked, isTrue);
+          });
+        },
+      );
+
+      test('should revert optimistic update when data source throws', () async {
+        final initialMap = buildEstimationMap(
+          id: estimateIdDefault,
+          projectId: testProjectId,
+          isLocked: false,
+        );
+        seedEstimationTable([initialMap]);
+
+        final stream = repository.watchEstimations(testProjectId);
+        final updates = <Either<Failure, List<CostEstimate>>>[];
+        stream.listen(updates.add);
+
+        await pumpEventQueue();
+
+        fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+        fakeSupabaseWrapper.updateExceptionType = SupabaseExceptionType.timeout;
+        fakeSupabaseWrapper.updateErrorMessage = errorMsgTimeout;
+
+        final result = await repository.changeLockStatus(
+          estimationId: estimateIdDefault,
+          isLocked: true,
+          projectId: testProjectId,
+        );
+
+        expect(result.isLeft(), isTrue);
+
+        await pumpEventQueue();
+
+        expect(updates.length, greaterThanOrEqualTo(3));
+        updates[1].fold((_) => fail('Optimistic update failed'), (estimations) {
+          expect(estimations.first.lockStatus.isLocked, isTrue);
+        });
+
+        updates.last.fold((_) => fail('Rollback update failed'), (estimations) {
+          expect(estimations.first.lockStatus.isLocked, isFalse);
+        });
+      });
+
+      test('should succeed without active stream listeners', () async {
+        final initialMap = buildEstimationMap(
+          id: estimateIdDefault,
+          projectId: testProjectId,
+          isLocked: false,
+        );
+        seedEstimationTable([initialMap]);
+
+        final result = await repository.changeLockStatus(
+          estimationId: estimateIdDefault,
+          isLocked: true,
+          projectId: testProjectId,
+        );
+
+        expect(result.isRight(), isTrue);
+        result.fold((_) => fail('Expected success'), (updated) {
+          expect(updated.lockStatus.isLocked, isTrue);
+        });
+      });
+
+      test(
+        'should call supabaseWrapper with correct parameters when locking',
+        () async {
+          final initialMap = buildEstimationMap(
+            id: estimateIdDefault,
+            projectId: testProjectId,
+            isLocked: false,
+          );
+          seedEstimationTable([initialMap]);
+
+          await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: true,
+            projectId: testProjectId,
+          );
+
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
+          expect(methodCalls, hasLength(1));
+
+          final call = methodCalls.first;
+          expect(
+            call,
+            equals({
+              'method': 'update',
+              'table': DatabaseConstants.costEstimatesTable,
+              'data': {DatabaseConstants.isLockedColumn: true},
+              'filterColumn': DatabaseConstants.idColumn,
+              'filterValue': estimateIdDefault,
+            }),
+          );
+        },
+      );
+
+      test(
+        'should call supabaseWrapper with correct parameters when unlocking',
+        () async {
+          final initialMap = buildEstimationMap(
+            id: estimateIdDefault,
+            projectId: testProjectId,
+            isLocked: true,
+            lockedByUserId: userIdDefault,
+            lockedAt: timestampDefault,
+          );
+          seedEstimationTable([initialMap]);
+
+          await repository.changeLockStatus(
+            estimationId: estimateIdDefault,
+            isLocked: false,
+            projectId: testProjectId,
+          );
+
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
+          expect(methodCalls, hasLength(1));
+
+          final call = methodCalls.first;
+          expect(
+            call,
+            equals({
+              'method': 'update',
+              'table': DatabaseConstants.costEstimatesTable,
+              'data': {DatabaseConstants.isLockedColumn: false},
+              'filterColumn': DatabaseConstants.idColumn,
+              'filterValue': estimateIdDefault,
+            }),
+          );
+        },
+      );
+    });
+
+    group('renameEstimation', () {
+      const String newEstimateName = 'Renamed Estimate';
+
+      test(
+        'should return updated estimation and update stream when rename succeeds',
+        () async {
+          fakeClock.set(DateTime.parse(timestamp2));
+          final initialMap = buildEstimationMap(
+            id: estimateIdDefault,
+            projectId: testProjectId,
+            estimateName: estimateNameDefault,
+            createdAt: timestamp2,
+            updatedAt: timestamp2,
+          );
+          seedEstimationTable([initialMap]);
+
+          final stream = repository.watchEstimations(testProjectId);
+          final updates = <Either<Failure, List<CostEstimate>>>[];
+          stream.listen(updates.add);
+
+          await pumpEventQueue();
+
+          final result = await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+
+          await pumpEventQueue();
+
+          final expectedEstimation = CostEstimateDto.fromJson(
+            initialMap,
+          ).toDomain();
+
+          expect(result.isRight(), isTrue);
+          expectResult(result, (updatedEstimation) {
+            expect(
+              updatedEstimation,
+              equals(
+                expectedEstimation.copyWith(estimateName: newEstimateName),
+              ),
+            );
+          });
+
+          expect(updates, hasLength(3));
+          updates.last.fold((_) => fail('Stream update failed'), (estimations) {
+            expect(estimations, hasLength(1));
+            expect(
+              estimations.first,
+              equals(
+                expectedEstimation.copyWith(estimateName: newEstimateName),
+              ),
+            );
+          });
+        },
+      );
+
+      test(
+        'should emit optimistic update to stream before API call completes',
+        () async {
+          fakeClock.set(DateTime.parse(timestamp2));
+          final initialMap = buildEstimationMap(
+            id: estimateIdDefault,
+            projectId: testProjectId,
+            estimateName: estimateNameDefault,
+            createdAt: timestamp2,
+            updatedAt: timestamp2,
+          );
+          seedEstimationTable([initialMap]);
+
+          final stream = repository.watchEstimations(testProjectId);
+          final updates = <Either<Failure, List<CostEstimate>>>[];
+          stream.listen(updates.add);
+
+          await pumpEventQueue();
+
+          final expectedEstimation = CostEstimateDto.fromJson(
+            initialMap,
+          ).toDomain();
+
+          expect(updates, hasLength(1));
+          updates[0].fold((_) => fail('Initial load failed'), (estimations) {
+            expect(estimations.first, equals(expectedEstimation));
+          });
+
+          final resultFuture = repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+
+          await pumpEventQueue();
+
+          expect(updates.length, greaterThan(1));
+          updates[1].fold((_) => fail('Optimistic update failed'), (
+            estimations,
+          ) {
+            expect(
+              estimations.first,
+              equals(
+                expectedEstimation.copyWith(estimateName: newEstimateName),
+              ),
+            );
+          });
+
+          await resultFuture;
+
+          await pumpEventQueue();
+          final lastUpdate = updates.last;
+          lastUpdate.fold((_) => fail('Final update failed'), (estimations) {
+            expect(
+              estimations.first,
+              equals(
+                expectedEstimation.copyWith(estimateName: newEstimateName),
+              ),
+            );
+          });
+        },
+      );
+
+      test(
+        'should return notFoundError when data source throws PostgrestException with no data found',
+        () async {
+          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+          fakeSupabaseWrapper.updateExceptionType =
+              SupabaseExceptionType.postgrest;
+          fakeSupabaseWrapper.postgrestErrorCode =
+              PostgresErrorCode.noDataFound;
+          fakeSupabaseWrapper.updateErrorMessage = 'No data found';
+
+          final result = await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+
+          expect(result.isLeft(), isTrue);
+          expectFailure(
+            result,
+            (failure) => expect(
+              failure,
+              EstimationFailure(errorType: EstimationErrorType.notFoundError),
+            ),
+          );
+        },
+      );
+
+      test('should revert optimistic update when data source throws', () async {
+        fakeClock.set(DateTime.parse(timestamp2));
+        final initialMap = buildEstimationMap(
+          id: estimateIdDefault,
+          projectId: testProjectId,
+          estimateName: estimateNameDefault,
+          createdAt: timestamp2,
+          updatedAt: timestamp2,
+        );
+        seedEstimationTable([initialMap]);
+
+        final stream = repository.watchEstimations(testProjectId);
+        final updates = <Either<Failure, List<CostEstimate>>>[];
+        stream.listen(updates.add);
+
+        await pumpEventQueue();
+
+        final expectedEstimation = CostEstimateDto.fromJson(
+          initialMap,
+        ).toDomain();
+
+        fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+        fakeSupabaseWrapper.updateExceptionType = SupabaseExceptionType.timeout;
+        fakeSupabaseWrapper.updateErrorMessage = errorMsgTimeout;
+
+        final result = await repository.renameEstimation(
+          estimationId: estimateIdDefault,
+          newName: newEstimateName,
+          projectId: testProjectId,
+        );
+
+        expect(result.isLeft(), isTrue);
+
+        await pumpEventQueue();
+
+        expect(updates.length, greaterThanOrEqualTo(3));
+        updates[1].fold((_) => fail('Optimistic update failed'), (estimations) {
+          expect(
+            estimations.first,
+            equals(expectedEstimation.copyWith(estimateName: newEstimateName)),
+          );
+        });
+
+        updates.last.fold((_) => fail('Rollback update failed'), (estimations) {
+          expect(estimations.first, equals(expectedEstimation));
+        });
+      });
+
+      test('should call supabaseWrapper with correct parameters', () async {
+        final initialMap = buildEstimationMap(
+          id: estimateIdDefault,
+          projectId: testProjectId,
+          estimateName: estimateNameDefault,
+        );
+        seedEstimationTable([initialMap]);
+
+        await repository.renameEstimation(
+          estimationId: estimateIdDefault,
+          newName: newEstimateName,
+          projectId: testProjectId,
+        );
+
+        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
+        expect(methodCalls, hasLength(1));
+
+        final call = methodCalls.first;
+        expect(
+          call,
+          equals({
+            'method': 'update',
+            'table': DatabaseConstants.costEstimatesTable,
+            'data': {DatabaseConstants.estimateNameColumn: newEstimateName},
+            'filterColumn': DatabaseConstants.idColumn,
+            'filterValue': estimateIdDefault,
+          }),
+        );
+      });
     });
   });
 }
