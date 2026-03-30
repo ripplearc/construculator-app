@@ -115,6 +115,24 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
   }
 
   @override
+  Future<List<Map<String, dynamic>>> selectMatch({
+    required String table,
+    String columns = '*',
+    required Map<String, dynamic> filters,
+    String? orderBy,
+    bool ascending = true,
+  }) async {
+    var query = _supabaseClient
+        .from(table)
+        .select(columns)
+        .match(filters.cast<String, Object>());
+    if (orderBy != null) {
+      return await query.order(orderBy, ascending: ascending);
+    }
+    return await query;
+  }
+
+  @override
   Future<List<Map<String, dynamic>>> selectWhereIn({
     required String table,
     String columns = '*',
@@ -155,6 +173,17 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
   }
 
   @override
+  Future<void> upsert({
+    required String table,
+    required Map<String, dynamic> data,
+    required String onConflict,
+  }) async {
+    await _supabaseClient
+        .from(table)
+        .upsert(data, onConflict: onConflict);
+  }
+
+  @override
   Future<Map<String, dynamic>> update({
     required String table,
     required Map<String, dynamic> data,
@@ -183,6 +212,17 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
     required dynamic filterValue,
   }) async {
     await _supabaseClient.from(table).delete().eq(filterColumn, filterValue);
+  }
+
+  @override
+  Future<void> deleteMatch({
+    required String table,
+    required Map<String, dynamic> filters,
+  }) async {
+    await _supabaseClient
+        .from(table)
+        .delete()
+        .match(filters.cast<String, Object>());
   }
 
   @override
