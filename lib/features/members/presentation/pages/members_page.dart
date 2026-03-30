@@ -7,10 +7,8 @@ class MembersPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Text(
-        context.l10n.navMembers,
-        style: context.textTheme.headlineMediumSemiBold,
-      ),
+      //TODO:change the hardcoded members to use through localization
+      child: Text('Members', style: context.textTheme.headlineMediumSemiBold),
     );
   }
 }
