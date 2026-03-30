@@ -64,6 +64,7 @@ void main() {
       });
       test('returns true after loading each tab', () async {
         await manager.ensureTabModuleLoaded(ShellTab.calculations);
+        expect(manager.isLoaded(ShellTab.calculations), isTrue);
 
         await manager.ensureTabModuleLoaded(ShellTab.estimation);
         expect(manager.isLoaded(ShellTab.estimation), isTrue);
