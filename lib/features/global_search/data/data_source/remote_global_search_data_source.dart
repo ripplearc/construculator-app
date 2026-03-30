@@ -100,8 +100,6 @@ class RemoteGlobalSearchDataSource implements GlobalSearchDataSource {
         'projectId: $projectId, hasResults: $hasResults',
       );
 
-      final now = DateTime.now().toIso8601String();
-
       await _supabaseWrapper.upsert(
         table: DatabaseConstants.searchHistoryTable,
         data: {
@@ -110,7 +108,9 @@ class RemoteGlobalSearchDataSource implements GlobalSearchDataSource {
           DatabaseConstants.scopeColumn: scope.name,
           DatabaseConstants.projectIdColumn: projectId,
           DatabaseConstants.hasResultsColumn: hasResults,
-          DatabaseConstants.createdAtColumn: now,
+          // search_count intentionally omitted — incremented atomically by DB trigger on conflict.
+          // created_at intentionally omitted — DB DEFAULT handles insert;
+          // trigger preserves OLD.created_at on conflict update.
         },
         onConflict: DatabaseConstants.searchHistoryUpsertConflictColumns,
       );

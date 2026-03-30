@@ -10,11 +10,18 @@ abstract class GlobalSearchDataSource {
   ///
   /// [params] The search parameters including query, filters, and pagination.
   /// Returns [SearchResultsDto] with matching projects, estimations, and members.
+  ///
+  /// Unlike history methods, this does not guard on authentication client-side.
+  /// Throws when the user is not authenticated — access is enforced by RLS at
+  /// the database level rather than guarded client-side.
   Future<SearchResultsDto> search(SearchParams params);
 
   /// Fetches recent search terms for the given [scope].
   ///
-  /// Returns a list of search terms ordered by most recent first.
+  /// Returns all terms the user has searched in this scope, ordered by most
+  /// recent first — including terms that returned zero results. Callers that
+  /// need suggestion-quality terms (has_results = true only) should use
+  /// [getSearchSuggestions] instead.
   /// Returns an empty list when the user is not authenticated.
   Future<List<String>> getRecentSearches(SearchScope scope);
 
