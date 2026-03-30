@@ -30,16 +30,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-class FakeTabModuleLoader extends TabModuleManager {
-  final List<ShellTab> loadedTabs = [];
-  FakeTabModuleLoader(super.bootstrap);
+class _FakeProjectUiProvider extends ProjectUIProvider {
   @override
-  Future<void> ensureTabModuleLoaded(ShellTab tab) async {
-    loadedTabs.add(tab);
+  PreferredSizeWidget buildProjectHeaderAppbar({
+    required String projectId,
+    VoidCallback? onProjectTap,
+    VoidCallback? onSearchTap,
+    VoidCallback? onNotificationTap,
+    ImageProvider<Object>? avatarImage,
+  }) {
+    return AppBar(title: Text(projectId));
   }
-
-  @override
-  bool isLoaded(ShellTab tab) => loadedTabs.contains(tab);
 }
 
 class _TestEstimationTabModuleProvider implements TabModuleProvider {
@@ -85,7 +86,15 @@ class _AppShellTestModule extends Module {
 }
 
 void main() {
-  late FakeTabModuleLoader loader;
+  late FakeCurrentProjectNotifier fakeProjectNotifier;
+
+  setUpAll(() {
+    CoreToast.disableTimers();
+  });
+
+  tearDownAll(() {
+    CoreToast.enableTimers();
+  });
 
   setUp(() {
     final clock = FakeClockImpl();
@@ -121,6 +130,7 @@ void main() {
 
   tearDown(() {
     Modular.destroy();
+  });
 
   BuildContext? buildContext;
 
@@ -294,16 +304,17 @@ void main() {
   });
 
   group('Cost Estimation Tab', () {
-    testWidgets('shows CostEstimationLandingPage when estimation tab is tapped', (
-      tester,
-    ) async {
-      await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'shows CostEstimationLandingPage when estimation tab is tapped',
+      (tester) async {
+        await tester.pumpWidget(makeApp());
+        await tester.pumpAndSettle();
 
-      await tapTabByLabel(tester, l10n().costEstimation);
+        await tapTabByLabel(tester, l10n().costEstimation);
 
-      expect(find.byType(CostEstimationLandingPage), findsOneWidget);
-    });
+        expect(find.byType(CostEstimationLandingPage), findsOneWidget);
+      },
+    );
   });
 
   group('App Bar', () {

@@ -1,4 +1,3 @@
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/features/calculations/calculations_module.dart';
@@ -15,6 +14,7 @@ export 'package:construculator/app/shell/module_model.dart' show ShellTab;
 /// fake providers; production uses [_ProductionTabModuleProvider] by default.
 class TabModuleManager {
   final AppBootstrap appBootstrap;
+  final Map<ShellTab, TabModuleProvider> _providers;
   final Set<ShellTab> _loadedTabs = {};
 
   TabModuleManager(
@@ -37,19 +37,9 @@ class TabModuleManager {
   /// Subsequent calls for the same tab are no-ops.
   Future<void> ensureTabModuleLoaded(ShellTab tab) async {
     if (_loadedTabs.contains(tab)) return;
-    switch (tab) {
-      case ShellTab.home:
-        Modular.bindModule(DashboardModule(appBootstrap));
-        break;
-      case ShellTab.calculations:
-        Modular.bindModule(CalculationsModule());
-        break;
-      case ShellTab.estimation:
-        Modular.bindModule(EstimationModule(appBootstrap));
-        break;
-      case ShellTab.members:
-        Modular.bindModule(MembersModule());
-        break;
+    final provider = _providers[tab];
+    if (provider != null) {
+      await provider.load(appBootstrap);
     }
     _loadedTabs.add(tab);
   }
