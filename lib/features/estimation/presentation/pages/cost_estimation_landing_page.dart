@@ -26,16 +26,11 @@ class CostEstimationLandingPage extends StatefulWidget {
   // TODO: [CA-467] Remove projectId constructor parameter once retrieved via Bloc.
   // https://ripplearc.youtrack.cloud/issue/CA-467
   final String projectId;
-  final bool showScaffold;
 
   static const double _buttonBottomRatio = 0.135;
   static const double _buttonRightRatio = 0.05;
 
-  const CostEstimationLandingPage({
-    super.key,
-    required this.projectId,
-    this.showScaffold = true,
-  });
+  const CostEstimationLandingPage({super.key, required this.projectId});
 
   @override
   State<CostEstimationLandingPage> createState() =>
