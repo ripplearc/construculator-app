@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 
 class ShellModule extends Module {
   final AppBootstrap appBootstrap;
