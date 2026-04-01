@@ -11,7 +11,7 @@ class CalculationsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Text(
-        context.l10n.calculations,
+        'Calculations',
         style: context.textTheme.headlineMediumSemiBold,
       ),
     );
