@@ -2,6 +2,7 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
+import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -40,7 +41,7 @@ class _InitialRouteHandlerState extends State<InitialRouteHandler> {
     if (!mounted) return;
 
     if (isAuthenticated) {
-      Modular.to.navigate('/dashboard/');
+      Modular.to.navigate(fullDashboardRoute);
     } else {
       Modular.to.navigate(fullLoginRoute);
     }
