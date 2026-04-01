@@ -1049,6 +1049,75 @@ void main() {
         });
       });
 
+      group('deleteMatch', () {
+        test('removes rows matching all filter criteria', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1', 'status': 'active'},
+            {'id': '2', 'project_id': 'p1', 'status': 'archived'},
+            {'id': '3', 'project_id': 'p2', 'status': 'active'},
+          ]);
+
+          await fakeWrapper.deleteMatch(
+            table: 'items',
+            filters: {'project_id': 'p1', 'status': 'active'},
+          );
+
+          final remaining = await fakeWrapper.selectMatch(
+            table: 'items',
+            filters: {'project_id': 'p1'},
+          );
+          expect(remaining, hasLength(1));
+          expect(remaining.single['id'], equals('2'));
+        });
+
+        test(
+          'throws exception independently of shouldThrowOnDelete',
+          () async {
+            fakeWrapper.shouldThrowOnDeleteMatch = true;
+            fakeWrapper.deleteMatchErrorMessage = 'Delete match failed';
+
+            await expectLater(
+              () async => fakeWrapper.deleteMatch(
+                table: 'items',
+                filters: {'id': '1'},
+              ),
+              throwsA(
+                isA<ServerException>().having(
+                  (e) => e.toString(),
+                  'message',
+                  contains('Delete match failed'),
+                ),
+              ),
+            );
+          },
+        );
+
+        test(
+          'shouldThrowOnDelete does not affect deleteMatch',
+          () async {
+            fakeWrapper.addTableData('items', [
+              {'id': '1', 'project_id': 'p1'},
+            ]);
+            fakeWrapper.shouldThrowOnDelete = true;
+
+            await fakeWrapper.deleteMatch(
+              table: 'items',
+              filters: {'project_id': 'p1'},
+            );
+
+            final result = await fakeWrapper.selectMatch(
+              table: 'items',
+              filters: {'project_id': 'p1'},
+            );
+            expect(
+              result,
+              isEmpty,
+              reason: 'deleteMatch must not be affected by shouldThrowOnDelete',
+            );
+          },
+        );
+      });
+
       group('update', () {
         test('modifies existing record and returns updated data', () async {
           final initialTime = '2023-01-01T00:00:00Z';
@@ -1214,8 +1283,8 @@ void main() {
           fakeWrapper.shouldThrowOnSelectMatch = true;
           fakeWrapper.selectMatchErrorMessage = 'Select match failed';
 
-          expect(
-            () async => await fakeWrapper.selectMatch(
+          await expectLater(
+            () async => fakeWrapper.selectMatch(
               table: 'items',
               filters: {'id': '1'},
             ),
@@ -1465,8 +1534,8 @@ void main() {
           fakeWrapper.shouldThrowOnUpsert = true;
           fakeWrapper.upsertErrorMessage = 'Upsert failed';
 
-          expect(
-            () async => await fakeWrapper.upsert(
+          await expectLater(
+            () async => fakeWrapper.upsert(
               table: 'profiles',
               data: {'user_id': 'u1'},
               onConflict: 'user_id',
@@ -2104,6 +2173,7 @@ void main() {
         fakeWrapper.shouldThrowOnSelectMultiple = true;
         fakeWrapper.shouldThrowOnSelectMatch = true;
         fakeWrapper.shouldThrowOnDelete = true;
+        fakeWrapper.shouldThrowOnDeleteMatch = true;
         fakeWrapper.shouldThrowOnUpsert = true;
         fakeWrapper.shouldThrowOnRpc = true;
         fakeWrapper.shouldReturnEmptyOnSelectMatch = true;
@@ -2119,6 +2189,7 @@ void main() {
         fakeWrapper.insertErrorMessage = 'Insert failed';
         fakeWrapper.updateErrorMessage = 'Update failed';
         fakeWrapper.deleteErrorMessage = 'Delete failed';
+        fakeWrapper.deleteMatchErrorMessage = 'Delete match failed';
         fakeWrapper.rpcErrorMessage = 'RPC failed';
         fakeWrapper.selectExceptionType = SupabaseExceptionType.postgrest;
         fakeWrapper.selectMultipleExceptionType = SupabaseExceptionType.socket;
@@ -2127,6 +2198,7 @@ void main() {
         fakeWrapper.insertExceptionType = SupabaseExceptionType.timeout;
         fakeWrapper.updateExceptionType = SupabaseExceptionType.auth;
         fakeWrapper.deleteExceptionType = SupabaseExceptionType.type;
+        fakeWrapper.deleteMatchExceptionType = SupabaseExceptionType.type;
         fakeWrapper.rpcExceptionType = SupabaseExceptionType.postgrest;
         fakeWrapper.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
         fakeWrapper.shouldReturnNullUser = true;
@@ -2162,6 +2234,7 @@ void main() {
         expect(fakeWrapper.shouldThrowOnSelectMultiple, isFalse);
         expect(fakeWrapper.shouldThrowOnSelectMatch, isFalse);
         expect(fakeWrapper.shouldThrowOnDelete, isFalse);
+        expect(fakeWrapper.shouldThrowOnDeleteMatch, isFalse);
         expect(fakeWrapper.shouldThrowOnUpsert, isFalse);
         expect(fakeWrapper.shouldThrowOnRpc, isFalse);
         expect(fakeWrapper.shouldReturnEmptyOnSelectMatch, isFalse);
@@ -2177,6 +2250,7 @@ void main() {
         expect(fakeWrapper.insertErrorMessage, isNull);
         expect(fakeWrapper.updateErrorMessage, isNull);
         expect(fakeWrapper.deleteErrorMessage, isNull);
+        expect(fakeWrapper.deleteMatchErrorMessage, isNull);
         expect(fakeWrapper.rpcErrorMessage, isNull);
         expect(fakeWrapper.selectExceptionType, isNull);
         expect(fakeWrapper.selectMultipleExceptionType, isNull);
@@ -2185,6 +2259,7 @@ void main() {
         expect(fakeWrapper.insertExceptionType, isNull);
         expect(fakeWrapper.updateExceptionType, isNull);
         expect(fakeWrapper.deleteExceptionType, isNull);
+        expect(fakeWrapper.deleteMatchExceptionType, isNull);
         expect(fakeWrapper.rpcExceptionType, isNull);
         expect(fakeWrapper.postgrestErrorCode, isNull);
         expect(fakeWrapper.shouldReturnNullUser, isFalse);

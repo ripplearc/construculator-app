@@ -67,6 +67,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Controls whether [delete] throws an exception
   bool shouldThrowOnDelete = false;
 
+  /// Controls whether [deleteMatch] throws an exception
+  bool shouldThrowOnDeleteMatch = false;
+
   /// Controls whether [selectMatch] throws an exception
   bool shouldThrowOnSelectMatch = false;
 
@@ -123,6 +126,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Used to specify the error message thrown when [delete] is attempted
   String? deleteErrorMessage;
 
+  /// Error message for deleteMatch.
+  /// Used to specify the error message thrown when [deleteMatch] is attempted
+  String? deleteMatchErrorMessage;
+
   /// Error message for selectMatch.
   /// Used to specify the error message thrown when [selectMatch] is attempted
   String? selectMatchErrorMessage;
@@ -154,6 +161,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Used to specify the type of exception thrown when [delete] is attempted
   SupabaseExceptionType? deleteExceptionType;
+
+  /// Used to specify the type of exception thrown when [deleteMatch] is attempted
+  SupabaseExceptionType? deleteMatchExceptionType;
 
   /// Used to specify the type of exception thrown when [selectMatch] is attempted
   SupabaseExceptionType? selectMatchExceptionType;
@@ -202,6 +212,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// The event that occurs when a user signs in
   supabase.AuthChangeEvent signInEvent = supabase.AuthChangeEvent.signedIn;
+
+  /// Auto-incrementing counter for generating unique record IDs
+  int _nextId = 1;
 
   final Clock _clock;
 
@@ -465,9 +478,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     final tableData = _tables[table] ?? [];
     final results = tableData
         .where(
-          (row) => filters.entries.every(
-            (entry) => row[entry.key] == entry.value,
-          ),
+          (row) =>
+              filters.entries.every((entry) => row[entry.key] == entry.value),
         )
         .toList();
 
@@ -478,7 +490,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
         if (aVal == null && bVal == null) return 0;
         if (aVal == null) return ascending ? -1 : 1;
         if (bVal == null) return ascending ? 1 : -1;
-        final cmp = aVal.toString().compareTo(bVal.toString());
+        final cmp = (aVal is Comparable && bVal is Comparable)
+            ? (aVal).compareTo(bVal)
+            : aVal.toString().compareTo(bVal.toString());
         return ascending ? cmp : -cmp;
       });
     }
@@ -682,7 +696,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     final tableData = _tables[table] ?? [];
 
     final insertData = Map<String, dynamic>.from(data);
-    insertData['id'] = (tableData.length + 1).toString();
+    insertData['id'] = (_nextId++).toString();
     insertData['created_at'] = _clock.now().toIso8601String();
     insertData['updated_at'] = _clock.now().toIso8601String();
 
@@ -717,8 +731,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       );
     }
 
-    final conflictColumns =
-        onConflict.split(',').map((c) => c.trim()).where((c) => c.isNotEmpty);
+    final conflictColumns = onConflict
+        .split(',')
+        .map((c) => c.trim())
+        .where((c) => c.isNotEmpty);
 
     final tableData = _tables[table] ?? [];
     final existingIndex = tableData.indexWhere((row) {
@@ -732,7 +748,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       upsertData['created_at'] = tableData[existingIndex]['created_at'];
       tableData[existingIndex] = upsertData;
     } else {
-      upsertData['id'] = (tableData.length + 1).toString();
+      upsertData['id'] = (_nextId++).toString();
       upsertData['created_at'] = _clock.now().toIso8601String();
       tableData.add(upsertData);
     }
@@ -858,19 +874,18 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       'filters': Map<String, dynamic>.from(filters),
     });
 
-    if (shouldThrowOnDelete) {
+    if (shouldThrowOnDeleteMatch) {
       _throwConfiguredException(
-        deleteExceptionType,
-        deleteErrorMessage ?? 'Delete failed',
+        deleteMatchExceptionType,
+        deleteMatchErrorMessage ?? 'Delete match failed',
       );
     }
 
     final tableData = _tables[table] ?? [];
     _tables[table] = tableData
         .where(
-          (row) => !filters.entries.every(
-            (entry) => row[entry.key] == entry.value,
-          ),
+          (row) =>
+              !filters.entries.every((entry) => row[entry.key] == entry.value),
         )
         .toList();
     _emitTableData(table);
@@ -1098,6 +1113,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     shouldThrowOnSelectMatch = false;
     shouldThrowOnSelectPaginated = false;
     shouldThrowOnDelete = false;
+    shouldThrowOnDeleteMatch = false;
     shouldThrowOnUpsert = false;
     shouldThrowOnRpc = false;
 
@@ -1113,6 +1129,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     insertErrorMessage = null;
     updateErrorMessage = null;
     deleteErrorMessage = null;
+    deleteMatchErrorMessage = null;
     upsertErrorMessage = null;
     rpcErrorMessage = null;
 
@@ -1123,6 +1140,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     insertExceptionType = null;
     updateExceptionType = null;
     deleteExceptionType = null;
+    deleteMatchExceptionType = null;
     upsertExceptionType = null;
     rpcExceptionType = null;
     postgrestErrorCode = null;
@@ -1136,6 +1154,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     shouldEmitStreamErrors = false;
     shouldReturnUser = false;
     shouldThrowOnGetUserProfile = false;
+    _nextId = 1;
 
     clearAllData();
     clearMethodCalls();
