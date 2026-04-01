@@ -1,6 +1,6 @@
-import 'package:construculator/features/global_search/data/models/search_params.dart';
-import 'package:construculator/features/global_search/data/models/search_scope.dart';
+import 'package:construculator/features/global_search/domain/entities/search_params_entity.dart';
 import 'package:construculator/features/global_search/domain/entities/search_results.dart';
+import 'package:construculator/features/global_search/domain/entities/search_scope_entity.dart';
 import 'package:construculator/libraries/either/interfaces/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 
@@ -21,14 +21,14 @@ abstract class GlobalSearchRepository {
   /// and members.
   ///
   /// Filtering (tag, date, owner, scope) and pagination are driven by [params].
-  Future<Either<Failure, SearchResults>> search(SearchParams params);
+  Future<Either<Failure, SearchResults>> search(SearchParamsEntity params);
 
   /// Fetches the authenticated user's recent search terms for the given [scope].
   ///
   /// Returns a [Future] that completes with an [Either] containing either
   /// a [Failure] or a [List<String>] ordered by most recent first.
   /// Returns an empty list when the user is not authenticated.
-  Future<Either<Failure, List<String>>> getRecentSearches(SearchScope scope);
+  Future<Either<Failure, List<String>>> getRecentSearches(SearchScopeEntity scope);
 
   /// Saves [searchTerm] to the authenticated user's history for [scope].
   ///
@@ -43,7 +43,7 @@ abstract class GlobalSearchRepository {
   /// Does nothing when the user is not authenticated or the term is empty.
   Future<Either<Failure, void>> saveRecentSearch(
     String searchTerm,
-    SearchScope scope, {
+    SearchScopeEntity scope, {
     String? projectId,
     bool hasResults = false,
   });
@@ -58,7 +58,7 @@ abstract class GlobalSearchRepository {
   /// Does nothing when the user is not authenticated or the term is empty.
   Future<Either<Failure, void>> deleteRecentSearch(
     String searchTerm,
-    SearchScope scope,
+    SearchScopeEntity scope,
   );
 
   /// Fetches personalized search suggestions for the authenticated user.
