@@ -1,12 +1,15 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/global_search/data/data_source/interfaces/global_search_data_source.dart';
 import 'package:construculator/features/global_search/data/data_source/remote_global_search_data_source.dart';
+import 'package:construculator/features/global_search/data/repositories/global_search_repository_impl.dart';
+import 'package:construculator/features/global_search/domain/repositories/global_search_repository.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 /// Module for the global search feature.
 ///
-/// Provides [GlobalSearchDataSource] binding for dependency injection.
+/// Provides [GlobalSearchDataSource] and [GlobalSearchRepository] bindings
+/// for dependency injection.
 class GlobalSearchModule extends Module {
   final AppBootstrap appBootstrap;
 
@@ -21,6 +24,9 @@ class GlobalSearchModule extends Module {
       () => RemoteGlobalSearchDataSource(
         supabaseWrapper: appBootstrap.supabaseWrapper,
       ),
+    );
+    i.addLazySingleton<GlobalSearchRepository>(
+      () => GlobalSearchRepositoryImpl(dataSource: i()),
     );
   }
 }
