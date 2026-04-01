@@ -73,10 +73,7 @@ void main() {
         expect(copy.pagination.offset, 20);
       });
 
-      // Documents the known nullable-field copyWith limitation:
-      // passing null for a nullable field does NOT clear it — it silently
-      // keeps the existing value. See PR review issue "Nullable Field Clearing".
-      test('cannot clear a nullable field by passing null', () {
+      test('clears nullable fields when null is explicitly passed', () {
         final params = SearchParams(
           query: 'bridge',
           filterByTag: 'residential',
@@ -92,10 +89,10 @@ void main() {
           scope: null,
         );
 
-        expect(copy.filterByTag, 'residential');
-        expect(copy.filterByDate, DateTime(2025, 3, 1));
-        expect(copy.filterByOwner, 'user-123');
-        expect(copy.scope, SearchScope.estimation);
+        expect(copy.filterByTag, isNull);
+        expect(copy.filterByDate, isNull);
+        expect(copy.filterByOwner, isNull);
+        expect(copy.scope, isNull);
       });
     });
 

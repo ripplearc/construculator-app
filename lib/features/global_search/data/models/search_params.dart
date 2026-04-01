@@ -29,20 +29,22 @@ class SearchParams extends Equatable {
     this.pagination = const PaginationParams(),
   });
 
+  static const Object _absent = Object();
+
   SearchParams copyWith({
     String? query,
-    String? filterByTag,
-    DateTime? filterByDate,
-    String? filterByOwner,
-    SearchScope? scope,
+    Object? filterByTag = _absent,
+    Object? filterByDate = _absent,
+    Object? filterByOwner = _absent,
+    Object? scope = _absent,
     PaginationParams? pagination,
   }) {
     return SearchParams(
       query: query ?? this.query,
-      filterByTag: filterByTag ?? this.filterByTag,
-      filterByDate: filterByDate ?? this.filterByDate,
-      filterByOwner: filterByOwner ?? this.filterByOwner,
-      scope: scope ?? this.scope,
+      filterByTag: filterByTag == _absent ? this.filterByTag : filterByTag as String?,
+      filterByDate: filterByDate == _absent ? this.filterByDate : filterByDate as DateTime?,
+      filterByOwner: filterByOwner == _absent ? this.filterByOwner : filterByOwner as String?,
+      scope: scope == _absent ? this.scope : scope as SearchScope?,
       pagination: pagination ?? this.pagination,
     );
   }

@@ -19,6 +19,18 @@ class SearchResultsDto extends Equatable {
     this.members = const [],
   });
 
+  SearchResultsDto copyWith({
+    List<ProjectDto>? projects,
+    List<CostEstimateDto>? estimations,
+    List<UserProfileDto>? members,
+  }) {
+    return SearchResultsDto(
+      projects: projects ?? this.projects,
+      estimations: estimations ?? this.estimations,
+      members: members ?? this.members,
+    );
+  }
+
   @override
   List<Object?> get props => [projects, estimations, members];
 }

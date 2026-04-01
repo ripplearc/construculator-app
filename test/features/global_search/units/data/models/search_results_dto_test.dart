@@ -42,6 +42,40 @@ void main() {
       });
     });
 
+    group('copyWith', () {
+      test('returns equivalent object when no arguments are passed', () {
+        final dto = SearchResultsDto(
+          projects: [testProject],
+          members: [testMember],
+        );
+
+        expect(dto.copyWith(), dto);
+      });
+
+      test('replaces projects when provided', () {
+        final dto = SearchResultsDto(projects: [testProject]);
+        final updated = dto.copyWith(projects: []);
+
+        expect(updated.projects, isEmpty);
+      });
+
+      test('appends to existing list when provided', () {
+        final dto = SearchResultsDto(projects: [testProject]);
+        final extra = ProjectDto(
+          id: 'project-2',
+          projectName: 'Road Project',
+          creatorUserId: 'user-1',
+          createdAt: DateTime(2025, 1, 1),
+          updatedAt: DateTime(2025, 1, 2),
+          status: ProjectStatus.active,
+        );
+
+        final updated = dto.copyWith(projects: [...dto.projects, extra]);
+
+        expect(updated.projects, [testProject, extra]);
+      });
+    });
+
     group('Equatable', () {
       test('two empty instances are equal', () {
         const dto1 = SearchResultsDto();
@@ -65,15 +99,6 @@ void main() {
       });
 
       test('two instances with different projects are not equal', () {
-        final projectA = ProjectDto(
-          id: 'project-1',
-          projectName: 'Bridge Project',
-          creatorUserId: 'user-1',
-          createdAt: DateTime(2025, 1, 1),
-          updatedAt: DateTime(2025, 1, 2),
-          status: ProjectStatus.active,
-        );
-
         final projectB = ProjectDto(
           id: 'project-2',
           projectName: 'Road Project',
@@ -83,7 +108,7 @@ void main() {
           status: ProjectStatus.active,
         );
 
-        final dto1 = SearchResultsDto(projects: [projectA]);
+        final dto1 = SearchResultsDto(projects: [testProject]);
         final dto2 = SearchResultsDto(projects: [projectB]);
 
         expect(dto1, isNot(equals(dto2)));
