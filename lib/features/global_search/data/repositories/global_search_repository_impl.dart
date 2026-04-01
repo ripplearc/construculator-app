@@ -4,7 +4,9 @@ import 'dart:io';
 import 'package:construculator/features/global_search/data/data_source/interfaces/global_search_data_source.dart';
 import 'package:construculator/features/global_search/data/models/search_params.dart';
 import 'package:construculator/features/global_search/data/models/search_scope.dart';
+import 'package:construculator/features/global_search/domain/entities/search_params_entity.dart';
 import 'package:construculator/features/global_search/domain/entities/search_results.dart';
+import 'package:construculator/features/global_search/domain/entities/search_scope_entity.dart';
 import 'package:construculator/features/global_search/domain/repositories/global_search_repository.dart';
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
@@ -23,6 +25,21 @@ class GlobalSearchRepositoryImpl implements GlobalSearchRepository {
 
   GlobalSearchRepositoryImpl({required GlobalSearchDataSource dataSource})
     : _dataSource = dataSource;
+
+  SearchScope _toDataScope(SearchScopeEntity entity) =>
+      SearchScope.values.byName(entity.name);
+
+  SearchParams _toDataParams(SearchParamsEntity entity) {
+    final entityScope = entity.scope;
+    return SearchParams(
+      query: entity.query,
+      filterByTag: entity.filterByTag,
+      filterByDate: entity.filterByDate,
+      filterByOwner: entity.filterByOwner,
+      scope: entityScope != null ? _toDataScope(entityScope) : null,
+      pagination: entity.pagination,
+    );
+  }
 
   Failure _handleError(Object error, String operation) {
     if (error is TimeoutException) {
@@ -85,10 +102,10 @@ class GlobalSearchRepositoryImpl implements GlobalSearchRepository {
   }
 
   @override
-  Future<Either<Failure, SearchResults>> search(SearchParams params) async {
+  Future<Either<Failure, SearchResults>> search(SearchParamsEntity params) async {
     try {
       _logger.debug('Performing global search for query: ${params.query}');
-      final dto = await _dataSource.search(params);
+      final dto = await _dataSource.search(_toDataParams(params));
       _logger.debug(
         'Search completed: ${dto.projects.length} projects, '
         '${dto.estimations.length} estimations, '
@@ -102,11 +119,11 @@ class GlobalSearchRepositoryImpl implements GlobalSearchRepository {
 
   @override
   Future<Either<Failure, List<String>>> getRecentSearches(
-    SearchScope scope,
+    SearchScopeEntity scope,
   ) async {
     try {
       _logger.debug('Getting recent searches for scope: ${scope.name}');
-      final terms = await _dataSource.getRecentSearches(scope);
+      final terms = await _dataSource.getRecentSearches(_toDataScope(scope));
       _logger.debug('Retrieved ${terms.length} recent searches');
       return Right(terms);
     } catch (e) {
@@ -117,7 +134,7 @@ class GlobalSearchRepositoryImpl implements GlobalSearchRepository {
   @override
   Future<Either<Failure, void>> saveRecentSearch(
     String searchTerm,
-    SearchScope scope, {
+    SearchScopeEntity scope, {
     String? projectId,
     bool hasResults = false,
   }) async {
@@ -127,7 +144,7 @@ class GlobalSearchRepositoryImpl implements GlobalSearchRepository {
       );
       await _dataSource.saveRecentSearch(
         searchTerm,
-        scope,
+        _toDataScope(scope),
         projectId: projectId,
         hasResults: hasResults,
       );
@@ -140,13 +157,13 @@ class GlobalSearchRepositoryImpl implements GlobalSearchRepository {
   @override
   Future<Either<Failure, void>> deleteRecentSearch(
     String searchTerm,
-    SearchScope scope,
+    SearchScopeEntity scope,
   ) async {
     try {
       _logger.debug(
         'Deleting recent search: $searchTerm for scope: ${scope.name}',
       );
-      await _dataSource.deleteRecentSearch(searchTerm, scope);
+      await _dataSource.deleteRecentSearch(searchTerm, _toDataScope(scope));
       return const Right(null);
     } catch (e) {
       return Left(_handleError(e, 'deleting recent search'));
