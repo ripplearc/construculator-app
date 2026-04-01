@@ -1,12 +1,12 @@
 import 'package:bloc_test/bloc_test.dart';
-import 'package:construculator/libraries/time/interfaces/clock.dart';
-import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/features/auth/presentation/bloc/enter_password_bloc/enter_password_bloc.dart';
-import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:construculator/features/auth/testing/auth_test_module.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;

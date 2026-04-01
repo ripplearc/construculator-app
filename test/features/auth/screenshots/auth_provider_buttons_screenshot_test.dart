@@ -1,7 +1,7 @@
 import 'package:construculator/features/auth/presentation/widgets/auth_provider_buttons.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:construculator/l10n/generated/app_localizations.dart';
 
 import '../../../utils/screenshot/font_loader.dart';
 

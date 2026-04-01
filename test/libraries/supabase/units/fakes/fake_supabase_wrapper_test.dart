@@ -1,15 +1,15 @@
 import 'dart:async';
 
-import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_response.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_session.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 void main() {
@@ -24,6 +24,145 @@ void main() {
     Modular.destroy();
   });
   group('FakeSupabaseWrapper', () {
+    group('Table watch streams', () {
+      const table = 'projects';
+      const primaryKey = ['id'];
+
+      test(
+        'watchTable emits initial data and updates on insert/update/delete',
+        () async {
+          final emissions = <List<Map<String, dynamic>>>[];
+          final done = Completer<void>();
+          final subscription = fakeWrapper
+              .watchTable(table: table, primaryKey: primaryKey)
+              .listen(
+                (data) {
+                  emissions.add(data);
+                  if (emissions.length >= 5) done.complete();
+                },
+                onDone: () => done.complete(),
+                onError: (e, s) => done.completeError(e, s),
+              );
+
+          await pumpEventQueue();
+          await fakeWrapper.insert(
+            table: table,
+            data: {'name': 'Initial Project'},
+          );
+          await fakeWrapper.insert(
+            table: table,
+            data: {'name': 'Second Project'},
+          );
+          await fakeWrapper.update(
+            table: table,
+            data: {'name': 'Updated Project'},
+            filterColumn: 'id',
+            filterValue: '1',
+          );
+          await fakeWrapper.delete(
+            table: table,
+            filterColumn: 'id',
+            filterValue: '1',
+          );
+
+          await done.future;
+          await subscription.cancel();
+
+          expect(emissions[0], isEmpty);
+          expect(emissions[1], hasLength(1));
+          expect(emissions[1].single['name'], 'Initial Project');
+          expect(emissions[2], hasLength(2));
+          expect(
+            emissions[2].every((row) => row['name'] != 'Updated Project'),
+            isTrue,
+          );
+          expect(emissions[3], hasLength(2));
+          expect(
+            emissions[3].any(
+              (row) => row['id'] == '1' && row['name'] == 'Updated Project',
+            ),
+            isTrue,
+          );
+          expect(emissions[4], hasLength(1));
+          expect(emissions[4].single['name'], 'Second Project');
+          expect(emissions[4].single['id'], '2');
+        },
+      );
+
+      test(
+        'watchTableFiltered applies filter, reacts to mutations, and clearAllData emits empty',
+        () async {
+          await fakeWrapper.insert(
+            table: table,
+            data: {'name': 'B - published', 'status': 'published'},
+          );
+          await fakeWrapper.insert(
+            table: table,
+            data: {'name': 'C - published', 'status': 'published'},
+          );
+
+          final emissions = <List<Map<String, dynamic>>>[];
+          final done = Completer<void>();
+          final subscription = fakeWrapper
+              .watchTableFiltered(
+                table: table,
+                primaryKey: primaryKey,
+                filterColumn: 'status',
+                filterValue: 'published',
+              )
+              .listen(
+                (data) {
+                  emissions.add(data);
+                  if (data.isEmpty && !done.isCompleted) done.complete();
+                },
+                onDone: () {
+                  if (!done.isCompleted) done.complete();
+                },
+                onError: (e, s) => done.completeError(e, s),
+              );
+
+          await pumpEventQueue();
+          fakeWrapper.clearAllData();
+          await done.future;
+          await subscription.cancel();
+
+          expect(emissions.first, isNotEmpty);
+          expect(
+            emissions.first.every((r) => r['status'] == 'published'),
+            isTrue,
+          );
+          expect(emissions.last, isEmpty);
+        },
+      );
+
+      test(
+        'dispose closes table controllers and stops further emissions',
+        () async {
+          final emissions = <List<Map<String, dynamic>>>[];
+          final firstEmission = Completer<void>();
+          final subscription = fakeWrapper
+              .watchTable(table: table, primaryKey: primaryKey)
+              .listen((data) {
+                emissions.add(data);
+                if (!firstEmission.isCompleted) firstEmission.complete();
+              });
+
+          await firstEmission.future;
+
+          final countBeforeDispose = emissions.length;
+          fakeWrapper.dispose();
+
+          await fakeWrapper.insert(
+            table: table,
+            data: {'name': 'Should not be emitted'},
+          );
+          await subscription.cancel();
+
+          expect(emissions.length, countBeforeDispose);
+        },
+      );
+    });
+
     group('FakeSupabaseWrapper Authentication Methods', () {
       group('signInWithPassword', () {
         test(
@@ -389,7 +528,7 @@ void main() {
     });
 
     group('FakeSupabaseWrapper Database Operations', () {
-      group('select', () {
+      group('selectSingle', () {
         test('returns data when a matching record exists', () async {
           fakeWrapper.addTableData('users', [
             {'id': '1', 'email': 'test@example.com', 'name': 'Test User'},
@@ -482,6 +621,304 @@ void main() {
         );
       });
 
+      group('select', () {
+        test('returns list of matching records', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1', 'name': 'Item 1'},
+            {'id': '2', 'project_id': 'p2', 'name': 'Item 2'},
+            {'id': '3', 'project_id': 'p1', 'name': 'Item 3'},
+          ]);
+
+          final result = await fakeWrapper.select(
+            table: 'items',
+            filterColumn: 'project_id',
+            filterValue: 'p1',
+          );
+
+          expect(result, isNotEmpty);
+          expect(result, hasLength(2));
+          expect(
+            result,
+            equals([
+              {'id': '1', 'project_id': 'p1', 'name': 'Item 1'},
+              {'id': '3', 'project_id': 'p1', 'name': 'Item 3'},
+            ]),
+          );
+        });
+
+        test('returns empty list when no records exist', () async {
+          final result = await fakeWrapper.select(
+            table: 'nonexistent',
+            filterColumn: 'id',
+            filterValue: '1',
+          );
+
+          expect(result, isEmpty);
+        });
+
+        test('records method call with all parameters', () async {
+          fakeWrapper.addTableData('users', []);
+
+          await fakeWrapper.select(
+            table: 'users',
+            columns: 'id,name,email',
+            filterColumn: 'status',
+            filterValue: 'active',
+          );
+
+          final calls = fakeWrapper.getMethodCallsFor('select');
+          expect(calls, hasLength(1));
+          final call = calls.first;
+          expect(call['table'], equals('users'));
+          expect(call['columns'], equals('id,name,email'));
+          expect(call['filterColumn'], equals('status'));
+          expect(call['filterValue'], equals('active'));
+        });
+
+        test('throws exception when configured to fail', () async {
+          fakeWrapper.shouldThrowOnSelectMultiple = true;
+          fakeWrapper.selectMultipleErrorMessage = 'Select multiple failed';
+
+          expect(
+            () async => await fakeWrapper.select(
+              table: 'items',
+              filterColumn: 'id',
+              filterValue: '1',
+            ),
+            throwsA(
+              isA<ServerException>().having(
+                (e) => e.toString(),
+                'message',
+                contains('Select multiple failed'),
+              ),
+            ),
+          );
+        });
+
+        test('returns empty list when configured to return null', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'name': 'Item 1'},
+          ]);
+          fakeWrapper.shouldReturnNullOnSelectMultiple = true;
+
+          final result = await fakeWrapper.select(
+            table: 'items',
+            filterColumn: 'id',
+            filterValue: '1',
+          );
+
+          expect(result, isEmpty);
+        });
+
+        test('uses columns parameter correctly', () async {
+          fakeWrapper.addTableData('users', []);
+
+          await fakeWrapper.select(
+            table: 'users',
+            columns: 'id,email',
+            filterColumn: 'status',
+            filterValue: 'active',
+          );
+
+          final calls = fakeWrapper.getMethodCallsFor('select');
+          expect(calls.first['columns'], equals('id,email'));
+        });
+
+        test('defaults to all columns when columns not specified', () async {
+          fakeWrapper.addTableData('users', []);
+
+          await fakeWrapper.select(
+            table: 'users',
+            filterColumn: 'status',
+            filterValue: 'active',
+          );
+
+          final calls = fakeWrapper.getMethodCallsFor('select');
+          expect(calls.first['columns'], equals('*'));
+        });
+      });
+
+      group('selectWhereIn', () {
+        test('returns list of matching records for values in list', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1', 'name': 'Item 1'},
+            {'id': '2', 'project_id': 'p2', 'name': 'Item 2'},
+            {'id': '3', 'project_id': 'p3', 'name': 'Item 3'},
+          ]);
+
+          final result = await fakeWrapper.selectWhereIn(
+            table: 'items',
+            filterColumn: 'project_id',
+            filterValues: ['p1', 'p3'],
+          );
+
+          expect(result, hasLength(2));
+          expect(result.map((row) => row['id']).toSet(), equals({'1', '3'}));
+        });
+
+        test('returns empty list when no values match', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1', 'name': 'Item 1'},
+          ]);
+
+          final result = await fakeWrapper.selectWhereIn(
+            table: 'items',
+            filterColumn: 'project_id',
+            filterValues: ['p2', 'p3'],
+          );
+
+          expect(result, isEmpty);
+        });
+
+        test('records method call with all parameters', () async {
+          fakeWrapper.addTableData('items', []);
+
+          await fakeWrapper.selectWhereIn(
+            table: 'items',
+            columns: 'id,name',
+            filterColumn: 'project_id',
+            filterValues: ['p1', 'p2'],
+          );
+
+          final calls = fakeWrapper.getMethodCallsFor('selectWhereIn');
+          expect(calls, hasLength(1));
+          final call = calls.first;
+          expect(call['table'], equals('items'));
+          expect(call['columns'], equals('id,name'));
+          expect(call['filterColumn'], equals('project_id'));
+          expect(call['filterValues'], equals(['p1', 'p2']));
+        });
+
+        test('throws exception when configured to fail', () async {
+          fakeWrapper.shouldThrowOnSelectMultiple = true;
+          fakeWrapper.selectMultipleErrorMessage = 'Select where in failed';
+
+          await expectLater(
+            fakeWrapper.selectWhereIn(
+              table: 'items',
+              filterColumn: 'project_id',
+              filterValues: ['p1'],
+            ),
+            throwsA(isA<ServerException>()),
+          );
+        });
+      });
+
+      group('selectPaginated', () {
+        test('returns filtered and paginated data', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1', 'created_at': '2024-01-03'},
+            {'id': '2', 'project_id': 'p1', 'created_at': '2024-01-01'},
+            {'id': '3', 'project_id': 'p2', 'created_at': '2024-01-02'},
+            {'id': '4', 'project_id': 'p1', 'created_at': '2024-01-02'},
+          ]);
+
+          final result = await fakeWrapper.selectPaginated(
+            table: 'items',
+            filterColumn: 'project_id',
+            filterValue: 'p1',
+            orderColumn: 'created_at',
+            ascending: false,
+            rangeFrom: 0,
+            rangeTo: 1,
+          );
+
+          expect(result, hasLength(2));
+          expect(result[0]['id'], equals('1'));
+          expect(result[1]['id'], equals('4'));
+        });
+
+        test('returns ascending order when ascending is true', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1', 'created_at': '2024-01-03'},
+            {'id': '2', 'project_id': 'p1', 'created_at': '2024-01-01'},
+            {'id': '3', 'project_id': 'p1', 'created_at': '2024-01-02'},
+          ]);
+
+          final result = await fakeWrapper.selectPaginated(
+            table: 'items',
+            filterColumn: 'project_id',
+            filterValue: 'p1',
+            orderColumn: 'created_at',
+            ascending: true,
+            rangeFrom: 0,
+            rangeTo: 2,
+          );
+
+          expect(result, hasLength(3));
+          expect(result[0]['id'], equals('2'));
+          expect(result[1]['id'], equals('3'));
+          expect(result[2]['id'], equals('1'));
+        });
+
+        test('returns empty list when range exceeds data', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1', 'created_at': '2024-01-01'},
+          ]);
+
+          final result = await fakeWrapper.selectPaginated(
+            table: 'items',
+            filterColumn: 'project_id',
+            filterValue: 'p1',
+            orderColumn: 'created_at',
+            rangeFrom: 5,
+            rangeTo: 10,
+          );
+
+          expect(result, isEmpty);
+        });
+
+        test('records method call with all parameters', () async {
+          fakeWrapper.addTableData('items', []);
+
+          await fakeWrapper.selectPaginated(
+            table: 'items',
+            columns: 'id,name',
+            filterColumn: 'project_id',
+            filterValue: 'p1',
+            orderColumn: 'created_at',
+            ascending: false,
+            rangeFrom: 0,
+            rangeTo: 9,
+          );
+
+          final calls = fakeWrapper.getMethodCallsFor('selectPaginated');
+          expect(calls, hasLength(1));
+          final call = calls.first;
+          expect(call['table'], equals('items'));
+          expect(call['columns'], equals('id,name'));
+          expect(call['filterColumn'], equals('project_id'));
+          expect(call['filterValue'], equals('p1'));
+          expect(call['orderColumn'], equals('created_at'));
+          expect(call['ascending'], isFalse);
+          expect(call['rangeFrom'], equals(0));
+          expect(call['rangeTo'], equals(9));
+        });
+
+        test('throws exception when configured to fail', () async {
+          fakeWrapper.shouldThrowOnSelectPaginated = true;
+          fakeWrapper.selectPaginatedErrorMessage = 'Paginated failed';
+
+          expect(
+            () async => await fakeWrapper.selectPaginated(
+              table: 'items',
+              filterColumn: 'project_id',
+              filterValue: 'p1',
+              orderColumn: 'created_at',
+              rangeFrom: 0,
+              rangeTo: 9,
+            ),
+            throwsA(
+              isA<ServerException>().having(
+                (e) => e.toString(),
+                'message',
+                contains('Paginated failed'),
+              ),
+            ),
+          );
+        });
+      });
+
       group('insert', () {
         test(
           'adds data to table and returns it with generated fields',
@@ -539,22 +976,17 @@ void main() {
       });
 
       group('delete', () {
-        test('removes record from table and returns deleted row', () async {
+        test('removes record from table', () async {
           fakeWrapper.addTableData('users', [
             {'id': '1', 'email': 'test@example.com', 'name': 'Test User'},
             {'id': '2', 'email': 'other@example.com', 'name': 'Other User'},
           ]);
 
-          final deletedRow = await fakeWrapper.delete(
+          await fakeWrapper.delete(
             table: 'users',
             filterColumn: 'id',
             filterValue: '1',
           );
-
-          expect(deletedRow, isNotNull);
-          expect(deletedRow['id'], equals('1'));
-          expect(deletedRow['email'], equals('test@example.com'));
-          expect(deletedRow['name'], equals('Test User'));
 
           final deletedUser = await fakeWrapper.selectSingle(
             table: 'users',
@@ -1248,6 +1680,28 @@ void main() {
     });
 
     group('reset', () {
+      test('clears addTableData state so tables are empty after reset', () async {
+        fakeWrapper.addTableData('projects', [
+          {'id': 'p1', 'name': 'Project 1'},
+          {'id': 'p2', 'name': 'Project 2'},
+        ]);
+        final beforeReset = await fakeWrapper.selectWhereIn(
+          table: 'projects',
+          filterColumn: 'id',
+          filterValues: ['p1', 'p2'],
+        );
+        expect(beforeReset, hasLength(2));
+
+        fakeWrapper.reset();
+
+        final afterReset = await fakeWrapper.selectWhereIn(
+          table: 'projects',
+          filterColumn: 'id',
+          filterValues: ['p1', 'p2'],
+        );
+        expect(afterReset, isEmpty);
+      });
+
       test('clears all configurations and data', () async {
         fakeWrapper.addTableData('users', [
           {'id': '1', 'name': 'Test User'},

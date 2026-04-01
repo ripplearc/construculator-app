@@ -1,6 +1,6 @@
+import 'package:construculator/features/estimation/domain/entities/enums.dart';
 import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
 import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
-import 'package:construculator/features/estimation/domain/entities/enums.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -114,6 +114,33 @@ class CostEstimate extends Equatable {
       lockStatus: lockStatus ?? const UnlockedStatus(),
       createdAt: now,
       updatedAt: updatedAt ?? now,
+    );
+  }
+
+  /// Creates a copy of this [CostEstimate] with the given fields replaced by the new values.
+  CostEstimate copyWith({
+    String? id,
+    String? projectId,
+    String? estimateName,
+    String? estimateDescription,
+    String? creatorUserId,
+    MarkupConfiguration? markupConfiguration,
+    double? totalCost,
+    LockStatus? lockStatus,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return CostEstimate(
+      id: id ?? this.id,
+      projectId: projectId ?? this.projectId,
+      estimateName: estimateName ?? this.estimateName,
+      estimateDescription: estimateDescription ?? this.estimateDescription,
+      creatorUserId: creatorUserId ?? this.creatorUserId,
+      markupConfiguration: markupConfiguration ?? this.markupConfiguration,
+      totalCost: totalCost ?? this.totalCost,
+      lockStatus: lockStatus ?? this.lockStatus,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 

@@ -1,8 +1,8 @@
 // coverage:ignore-file
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
 import 'package:pinput/pinput.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class OtpQuickSheetBody extends StatelessWidget {
   const OtpQuickSheetBody({

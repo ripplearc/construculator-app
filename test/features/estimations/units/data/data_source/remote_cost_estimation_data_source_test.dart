@@ -12,9 +12,10 @@ import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import 'package:flutter_test/flutter_test.dart';
-import '../../helpers/estimation_test_data_map_factory.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
+
+import '../../../helpers/estimation_test_data_map_factory.dart';
 
 void main() {
   const String testProjectId = 'test-project-123';
@@ -43,7 +44,7 @@ void main() {
   const String markupValueTypeAmount = 'amount';
   const String tableName = 'cost_estimates';
   const String allColumns = '*';
-  const String selectMethod = 'select';
+  const String selectMethod = 'selectPaginated';
   const String timestamp4 = '2024-01-10T09:15:30.456Z';
   const String timestamp5 = '2024-01-15T14:30:45.123Z';
   const double totalCost1 = 120000.0;
@@ -108,7 +109,11 @@ void main() {
 
         fakeSupabaseWrapper.addTableData(tableName, expectedEstimations);
 
-        final result = await dataSource.getEstimations(testProjectId);
+        final result = await dataSource.getEstimations(
+          projectId: testProjectId,
+          offset: 0,
+          limit: 20,
+        );
 
         final expectedDto1 = CostEstimateDto.fromJson(data1);
         final expectedDto2 = CostEstimateDto.fromJson(data2);
@@ -120,7 +125,11 @@ void main() {
       });
 
       test('should return empty list when no estimations found', () async {
-        final result = await dataSource.getEstimations(testProjectId);
+        final result = await dataSource.getEstimations(
+          projectId: testProjectId,
+          offset: 0,
+          limit: 20,
+        );
 
         expect(result, isEmpty);
       });
@@ -136,18 +145,26 @@ void main() {
 
           fakeSupabaseWrapper.addTableData(tableName, otherProjectEstimations);
 
-          final result = await dataSource.getEstimations(testProjectId);
+          final result = await dataSource.getEstimations(
+            projectId: testProjectId,
+            offset: 0,
+            limit: 20,
+          );
 
           expect(result, isEmpty);
         },
       );
 
       test(
-        'should call supabaseWrapper.select with correct parameters',
+        'should call supabaseWrapper.selectPaginated with correct parameters',
         () async {
           fakeSupabaseWrapper.addTableData(tableName, []);
 
-          await dataSource.getEstimations(testProjectId);
+          await dataSource.getEstimations(
+            projectId: testProjectId,
+            offset: 0,
+            limit: 20,
+          );
 
           final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
             selectMethod,
@@ -156,70 +173,94 @@ void main() {
 
           final call = methodCalls.first;
           expect(call['table'], equals(tableName));
+          expect(call['columns'], equals(allColumns));
           expect(
             call['filterColumn'],
             equals(DatabaseConstants.projectIdColumn),
           );
           expect(call['filterValue'], equals(testProjectId));
-          expect(call['columns'], equals(allColumns));
+          expect(
+            call['orderColumn'],
+            equals(DatabaseConstants.createdAtColumn),
+          );
+          expect(call['ascending'], isFalse);
+          expect(call['rangeFrom'], equals(0));
+          expect(call['rangeTo'], equals(19));
         },
       );
 
       test(
-        'should rethrow exception when supabaseWrapper.select throws',
+        'should rethrow exception when supabaseWrapper.selectPaginated throws',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.postgrest;
-          fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgDbConnection;
+          fakeSupabaseWrapper.selectPaginatedErrorMessage =
+              errorMsgDbConnection;
 
           expect(
-            () => dataSource.getEstimations(testProjectId),
+            () => dataSource.getEstimations(
+              projectId: testProjectId,
+              offset: 0,
+              limit: 20,
+            ),
             throwsA(isA<supabase.PostgrestException>()),
           );
         },
       );
 
       test(
-        'should rethrow auth exception when supabaseWrapper.select throws auth error',
+        'should rethrow auth exception when supabaseWrapper.selectPaginated throws auth error',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.auth;
-          fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgAuth;
+          fakeSupabaseWrapper.selectPaginatedErrorMessage = errorMsgAuth;
 
           expect(
-            () => dataSource.getEstimations(testProjectId),
+            () => dataSource.getEstimations(
+              projectId: testProjectId,
+              offset: 0,
+              limit: 20,
+            ),
             throwsA(isA<supabase.AuthException>()),
           );
         },
       );
 
       test(
-        'should rethrow socket exception when supabaseWrapper.select throws socket error',
+        'should rethrow socket exception when supabaseWrapper.selectPaginated throws socket error',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.socket;
-          fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgNetwork;
+          fakeSupabaseWrapper.selectPaginatedErrorMessage = errorMsgNetwork;
 
           expect(
-            () => dataSource.getEstimations(testProjectId),
+            () => dataSource.getEstimations(
+              projectId: testProjectId,
+              offset: 0,
+              limit: 20,
+            ),
             throwsA(isA<Exception>()),
           );
         },
       );
 
       test(
-        'should rethrow timeout exception when supabaseWrapper.select throws timeout error',
+        'should rethrow timeout exception when supabaseWrapper.selectPaginated throws timeout error',
         () async {
-          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
-          fakeSupabaseWrapper.selectMultipleExceptionType =
+          fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+          fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.timeout;
-          fakeSupabaseWrapper.selectMultipleErrorMessage = errorMsgTimeout;
+          fakeSupabaseWrapper.selectPaginatedErrorMessage = errorMsgTimeout;
 
           expect(
-            () => dataSource.getEstimations(testProjectId),
+            () => dataSource.getEstimations(
+              projectId: testProjectId,
+              offset: 0,
+              limit: 20,
+            ),
             throwsA(isA<Exception>()),
           );
         },
@@ -251,7 +292,11 @@ void main() {
 
           fakeSupabaseWrapper.addTableData(tableName, [estimationData]);
 
-          final result = await dataSource.getEstimations(testProjectId);
+          final result = await dataSource.getEstimations(
+            projectId: testProjectId,
+            offset: 0,
+            limit: 20,
+          );
 
           expect(result, hasLength(1));
           final estimation = result.first;
@@ -282,7 +327,11 @@ void main() {
 
         fakeSupabaseWrapper.addTableData(tableName, mixedEstimations);
 
-        final result = await dataSource.getEstimations(testProjectId);
+        final result = await dataSource.getEstimations(
+          projectId: testProjectId,
+          offset: 0,
+          limit: 20,
+        );
 
         expect(result, hasLength(2));
         expect(
@@ -414,16 +463,6 @@ void main() {
 
     group('deleteEstimation', () {
       test(
-        'should throw exception when attempting to delete non-existent estimation',
-        () async {
-          expect(
-            () => dataSource.deleteEstimation(estimateId1),
-            throwsA(isA<supabase.PostgrestException>()),
-          );
-        },
-      );
-
-      test(
         'should call supabaseWrapper.delete with correct parameters',
         () async {
           final estimationData =
@@ -449,27 +488,6 @@ void main() {
           expect(call['filterValue'], equals(estimateId1));
         },
       );
-
-      test('should return deleted estimation DTO', () async {
-        final estimationData =
-            EstimationTestDataMapFactory.createFakeEstimationData(
-              id: estimateId1,
-              estimateName: estimateName1,
-              estimateDescription: estimateDesc1,
-              creatorUserId: userId1,
-              totalCost: totalCost1,
-              isLocked: false,
-              createdAt: fakeClock.now().toIso8601String(),
-              updatedAt: fakeClock.now().toIso8601String(),
-            );
-        fakeSupabaseWrapper.addTableData(tableName, [estimationData]);
-
-        final result = await dataSource.deleteEstimation(estimateId1);
-
-        final expectedDto = CostEstimateDto.fromJson(estimationData);
-
-        expect(result, equals(expectedDto));
-      });
 
       test(
         'should rethrow exception when supabaseWrapper.delete throws',
@@ -512,6 +530,161 @@ void main() {
           expect(
             () => dataSource.deleteEstimation(estimateId1),
             throwsA(isA<Exception>()),
+          );
+        },
+      );
+    });
+
+    group('changeLockStatus', () {
+      test('should lock estimation and return updated DTO', () async {
+        final estimationData =
+            EstimationTestDataMapFactory.createFakeEstimationData(
+              id: estimateId1,
+              estimateName: estimateName1,
+              creatorUserId: userId1,
+              isLocked: false,
+            );
+        fakeSupabaseWrapper.addTableData(tableName, [estimationData]);
+
+        final result = await dataSource.changeLockStatus(
+          estimationId: estimateId1,
+          isLocked: true,
+        );
+
+        expect(result.isLocked, isTrue);
+      });
+
+      test('should unlock estimation and return updated DTO', () async {
+        final estimationData =
+            EstimationTestDataMapFactory.createFakeEstimationData(
+              id: estimateId1,
+              estimateName: estimateName1,
+              creatorUserId: userId1,
+              isLocked: true,
+              lockedByUserId: userId1,
+              lockedAt: timestamp5,
+            );
+        fakeSupabaseWrapper.addTableData(tableName, [estimationData]);
+
+        final result = await dataSource.changeLockStatus(
+          estimationId: estimateId1,
+          isLocked: false,
+        );
+
+        expect(result.isLocked, isFalse);
+      });
+
+      test(
+        'should call supabaseWrapper.update with correct parameters when locking',
+        () async {
+          final estimationData =
+              EstimationTestDataMapFactory.createFakeEstimationData(
+                id: estimateId1,
+                isLocked: false,
+              );
+          fakeSupabaseWrapper.addTableData(tableName, [estimationData]);
+
+          await dataSource.changeLockStatus(
+            estimationId: estimateId1,
+            isLocked: true,
+          );
+
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
+          expect(methodCalls, hasLength(1));
+
+          final call = methodCalls.first;
+          expect(call['table'], equals(tableName));
+          expect(call['data']['is_locked'], isTrue);
+          expect(call['filterColumn'], equals('id'));
+          expect(call['filterValue'], equals(estimateId1));
+        },
+      );
+
+      test(
+        'should rethrow exception when supabaseWrapper.update throws',
+        () async {
+          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+          fakeSupabaseWrapper.updateExceptionType =
+              SupabaseExceptionType.postgrest;
+          fakeSupabaseWrapper.updateErrorMessage = errorMsgDbConnection;
+
+          await expectLater(
+            () => dataSource.changeLockStatus(
+              estimationId: estimateId1,
+              isLocked: true,
+            ),
+            throwsA(isA<supabase.PostgrestException>()),
+          );
+        },
+      );
+    });
+
+    group('renameEstimation', () {
+      const String newEstimateName = 'Updated Estimate Name';
+
+      test('should rename estimation and return updated DTO', () async {
+        final estimationData =
+            EstimationTestDataMapFactory.createFakeEstimationData(
+              id: estimateId1,
+              estimateName: estimateName1,
+              creatorUserId: userId1,
+            );
+        fakeSupabaseWrapper.addTableData(tableName, [estimationData]);
+
+        final result = await dataSource.renameEstimation(
+          estimationId: estimateId1,
+          newName: newEstimateName,
+        );
+
+        expect(result.estimateName, equals(newEstimateName));
+      });
+
+      test(
+        'should call supabaseWrapper.update with correct parameters',
+        () async {
+          final estimationData =
+              EstimationTestDataMapFactory.createFakeEstimationData(
+                id: estimateId1,
+                estimateName: estimateName1,
+              );
+          fakeSupabaseWrapper.addTableData(tableName, [estimationData]);
+
+          await dataSource.renameEstimation(
+            estimationId: estimateId1,
+            newName: newEstimateName,
+          );
+
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
+          expect(methodCalls, hasLength(1));
+
+          final call = methodCalls.first;
+          expect(
+            call,
+            equals({
+              'method': 'update',
+              'table': tableName,
+              'data': {DatabaseConstants.estimateNameColumn: newEstimateName},
+              'filterColumn': DatabaseConstants.idColumn,
+              'filterValue': estimateId1,
+            }),
+          );
+        },
+      );
+
+      test(
+        'should rethrow exception when supabaseWrapper.update throws',
+        () async {
+          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+          fakeSupabaseWrapper.updateExceptionType =
+              SupabaseExceptionType.postgrest;
+          fakeSupabaseWrapper.updateErrorMessage = errorMsgDbConnection;
+
+          await expectLater(
+            () => dataSource.renameEstimation(
+              estimationId: estimateId1,
+              newName: newEstimateName,
+            ),
+            throwsA(isA<supabase.PostgrestException>()),
           );
         },
       );

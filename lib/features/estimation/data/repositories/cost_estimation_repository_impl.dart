@@ -3,11 +3,13 @@ import 'dart:io';
 
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
 import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
+import 'package:construculator/features/estimation/data/models/pagination_state.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/either/either.dart';
-import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
@@ -19,10 +21,12 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
   final Map<String, StreamController<Either<Failure, List<CostEstimate>>>>
   _streamControllers = {};
   final Map<String, List<CostEstimate>> _cachedEstimations = {};
+  final Map<String, PaginationState> _paginationStates = {};
 
-  CostEstimationRepositoryImpl({
-    required CostEstimationDataSource dataSource,
-  }) : _dataSource = dataSource;
+  static const int defaultPageSize = 10;
+
+  CostEstimationRepositoryImpl({required CostEstimationDataSource dataSource})
+    : _dataSource = dataSource;
 
   Failure _handleError(
     Object error,
@@ -98,35 +102,124 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
   }
 
   @override
-  Future<Either<Failure, List<CostEstimate>>> getEstimations(
+  Future<Either<Failure, List<CostEstimate>>> fetchInitialEstimations(
     String projectId,
   ) async {
     try {
-      _logger.debug('Getting cost estimations for project: $projectId');
+      _logger.debug(
+        'Getting first page of estimations for project: $projectId',
+      );
 
-      final costEstimateDtos = await _dataSource.getEstimations(projectId);
+      _cachedEstimations[projectId] = [];
+
+      final costEstimateDtos = await _dataSource.getEstimations(
+        projectId: projectId,
+        offset: 0,
+        limit: defaultPageSize,
+      );
 
       final costEstimates = costEstimateDtos
           .map((dto) => dto.toDomain())
           .toList();
 
-      _logger.debug(
-        'Successfully retrieved ${costEstimates.length} cost estimations for project: $projectId',
+      final hasMore = costEstimates.length >= defaultPageSize;
+
+      _paginationStates[projectId] = PaginationState(
+        currentOffset: costEstimates.length,
+        pageSize: defaultPageSize,
+        hasMore: hasMore,
       );
 
       _cachedEstimations[projectId] = costEstimates;
       _emitToStream(projectId, Right(costEstimates));
 
+      _logger.debug(
+        'Retrieved ${costEstimates.length} estimations (hasMore: $hasMore) '
+        'for project: $projectId',
+      );
+
       return Right(costEstimates);
     } catch (e) {
       final failure = _handleError(
         e,
-        'getting cost estimations',
+        'getting first page of estimations',
         projectId: projectId,
       );
       _emitToStream(projectId, Left(failure));
       return Left(failure);
     }
+  }
+
+  @override
+  Future<Either<Failure, List<CostEstimate>>> loadMoreEstimations(
+    String projectId,
+  ) async {
+    final paginationState = _paginationStates[projectId];
+
+    if (paginationState == null) {
+      _logger.warning(
+        'loadMore called before initial fetch for project: $projectId',
+      );
+      return fetchInitialEstimations(projectId);
+    }
+
+    if (!paginationState.hasMore) {
+      _logger.debug('Skipping loadMore: hasMore=${paginationState.hasMore}');
+      return Right(_cachedEstimations[projectId] ?? []);
+    }
+
+    try {
+      _logger.debug(
+        'Loading more estimations for project: $projectId, '
+        'offset: ${paginationState.currentOffset}',
+      );
+
+      final costEstimateDtos = await _dataSource.getEstimations(
+        projectId: projectId,
+        offset: paginationState.currentOffset,
+        limit: paginationState.pageSize,
+      );
+
+      final newEstimates = costEstimateDtos
+          .map((dto) => dto.toDomain())
+          .toList();
+
+      final hasMore = newEstimates.length >= paginationState.pageSize;
+
+      final existingEstimates = _cachedEstimations[projectId] ?? [];
+      final allEstimates = [...existingEstimates, ...newEstimates];
+
+      _paginationStates[projectId] = PaginationState(
+        currentOffset: allEstimates.length,
+        pageSize: paginationState.pageSize,
+        hasMore: hasMore,
+      );
+
+      _cachedEstimations[projectId] = allEstimates;
+      _emitToStream(projectId, Right(allEstimates));
+
+      _logger.debug(
+        'Loaded ${newEstimates.length} more estimations '
+        '(total: ${allEstimates.length}, hasMore: $hasMore) '
+        'for project: $projectId',
+      );
+
+      return Right(allEstimates);
+    } catch (e) {
+      final failure = _handleError(
+        e,
+        'loading more estimations',
+        projectId: projectId,
+      );
+
+      _emitToStream(projectId, Left(failure));
+      return Left(failure);
+    }
+  }
+
+  @override
+  bool hasMoreEstimations(String projectId) {
+    return _paginationStates[projectId]?.hasMore ?? true;
   }
 
   @override
@@ -145,9 +238,10 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
               _streamControllers[projectId]?.close();
               _streamControllers.remove(projectId);
               _cachedEstimations.remove(projectId);
+              _paginationStates.remove(projectId);
             },
           );
-      getEstimations(projectId);
+      fetchInitialEstimations(projectId);
       return newController;
     });
 
@@ -167,6 +261,71 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         _streamControllers[projectId]?.isClosed == false) {
       _streamControllers[projectId]?.add(result);
     }
+  }
+
+  CostEstimate? _getOriginalEstimation(String projectId, String estimationId) {
+    if (!_streamControllers.containsKey(projectId)) {
+      return null;
+    }
+
+    final cachedEstimations = _cachedEstimations[projectId] ?? [];
+    return cachedEstimations.firstWhere((e) => e.id == estimationId);
+  }
+
+  void _emitOptimisticUpdate({
+    required String projectId,
+    required String estimationId,
+    required CostEstimate Function(CostEstimate) updateFn,
+  }) {
+    if (!_streamControllers.containsKey(projectId)) {
+      return;
+    }
+
+    final cachedEstimations = _cachedEstimations[projectId] ?? [];
+    final updatedList = cachedEstimations.map((e) {
+      return e.id == estimationId ? updateFn(e) : e;
+    }).toList();
+
+    _emitToStream(projectId, Right(updatedList));
+  }
+
+  void _finalizeOptimisticUpdate(
+    String projectId,
+    String estimationId,
+    CostEstimate updatedEstimation,
+  ) {
+    if (!_streamControllers.containsKey(projectId)) {
+      return;
+    }
+
+    final cachedEstimations = _cachedEstimations[projectId] ?? [];
+    final updatedList = cachedEstimations.map((e) {
+      return e.id == estimationId ? updatedEstimation : e;
+    }).toList();
+
+    _logger.debug(
+      'Updating stream with locked/unlocked estimation for project: $projectId',
+    );
+
+    _emitToStream(projectId, Right(updatedList));
+  }
+
+  void _rollbackOptimisticUpdate(
+    String projectId,
+    String estimationId,
+    CostEstimate? originalEstimation,
+  ) {
+    if (originalEstimation == null ||
+        !_streamControllers.containsKey(projectId)) {
+      return;
+    }
+
+    final cachedEstimations = _cachedEstimations[projectId] ?? [];
+    final updatedList = cachedEstimations.map((e) {
+      return e.id == estimationId ? originalEstimation : e;
+    }).toList();
+
+    _emitToStream(projectId, Right(updatedList));
   }
 
   @override
@@ -206,7 +365,15 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
   ) {
     if (_streamControllers.containsKey(projectId)) {
       final cachedEstimations = _cachedEstimations[projectId] ?? [];
-      final updatedEstimations = [...cachedEstimations, newEstimation];
+
+      final updatedEstimations = [newEstimation, ...cachedEstimations];
+
+      final paginationState = _paginationStates[projectId];
+      if (paginationState != null) {
+        _paginationStates[projectId] = paginationState.copyWith(
+          currentOffset: paginationState.currentOffset + 1,
+        );
+      }
 
       _logger.debug(
         'Updating stream with new estimation for project: $projectId',
@@ -225,6 +392,17 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       final updatedEstimations = cachedEstimations
           .where((estimation) => estimation.id != estimationId)
           .toList();
+
+      final paginationState = _paginationStates[projectId];
+      if (paginationState != null &&
+          updatedEstimations.length < cachedEstimations.length) {
+        _paginationStates[projectId] = paginationState.copyWith(
+          currentOffset: (paginationState.currentOffset - 1).clamp(
+            0,
+            paginationState.currentOffset,
+          ),
+        );
+      }
 
       _logger.debug(
         'Updating stream with deleted estimation for project: $projectId, estimationId: $estimationId',
@@ -246,6 +424,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
 
     _streamControllers.clear();
     _cachedEstimations.clear();
+    _paginationStates.clear();
   }
 
   @override
@@ -274,9 +453,93 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         projectId: projectId,
       );
 
-      await getEstimations(projectId);
+      await fetchInitialEstimations(projectId);
 
       return Left(failure);
+    }
+  }
+
+  @override
+  Future<Either<Failure, CostEstimate>> changeLockStatus({
+    required String estimationId,
+    required bool isLocked,
+    required String projectId,
+  }) async {
+    final originalEstimation = _getOriginalEstimation(projectId, estimationId);
+
+    try {
+      _logger.debug(
+        'Changing lock status for estimation: $estimationId to $isLocked',
+      );
+
+      _emitOptimisticUpdate(
+        projectId: projectId,
+        estimationId: estimationId,
+        updateFn: (e) => e.copyWith(
+          lockStatus: isLocked ? LockStatus.locked() : LockStatus.unlocked(),
+        ),
+      );
+
+      final updatedDto = await _dataSource.changeLockStatus(
+        estimationId: estimationId,
+        isLocked: isLocked,
+      );
+
+      final updatedEstimation = updatedDto.toDomain();
+
+      _finalizeOptimisticUpdate(projectId, estimationId, updatedEstimation);
+
+      return Right(updatedEstimation);
+    } catch (e) {
+      _rollbackOptimisticUpdate(projectId, estimationId, originalEstimation);
+      return Left(
+        _handleError(
+          e,
+          'changing lock status',
+          estimationId: estimationId,
+          projectId: projectId,
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<Either<Failure, CostEstimate>> renameEstimation({
+    required String estimationId,
+    required String newName,
+    required String projectId,
+  }) async {
+    final originalEstimation = _getOriginalEstimation(projectId, estimationId);
+
+    try {
+      _logger.debug('Renaming estimation: $estimationId to $newName');
+
+      _emitOptimisticUpdate(
+        projectId: projectId,
+        estimationId: estimationId,
+        updateFn: (e) => e.copyWith(estimateName: newName),
+      );
+
+      final updatedDto = await _dataSource.renameEstimation(
+        estimationId: estimationId,
+        newName: newName,
+      );
+
+      final updatedEstimation = updatedDto.toDomain();
+
+      _finalizeOptimisticUpdate(projectId, estimationId, updatedEstimation);
+
+      return Right(updatedEstimation);
+    } catch (e) {
+      _rollbackOptimisticUpdate(projectId, estimationId, originalEstimation);
+      return Left(
+        _handleError(
+          e,
+          'renaming estimation',
+          estimationId: estimationId,
+          projectId: projectId,
+        ),
+      );
     }
   }
 }

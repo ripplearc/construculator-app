@@ -1,9 +1,9 @@
+import 'package:construculator/libraries/auth/auth_notifier_impl.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_state.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
-import 'package:construculator/libraries/auth/auth_notifier_impl.dart';
 import 'package:construculator/libraries/auth/testing/auth_test_module.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter_modular/flutter_modular.dart';

@@ -1,18 +1,17 @@
 import 'package:construculator/features/auth/presentation/bloc/login_with_email_bloc/login_with_email_bloc.dart';
 import 'package:construculator/features/auth/presentation/extensions/auth_error_type_extension.dart';
-
 import 'package:construculator/features/auth/presentation/widgets/auth_footer.dart';
 import 'package:construculator/features/auth/presentation/widgets/auth_header.dart';
 import 'package:construculator/features/auth/presentation/widgets/auth_provider_buttons.dart';
 import 'package:construculator/features/auth/presentation/widgets/error_widget_builder.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class LoginWithEmailPage extends StatefulWidget {
   final String email;

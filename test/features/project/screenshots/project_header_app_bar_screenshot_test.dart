@@ -3,23 +3,19 @@ import 'package:construculator/features/project/presentation/widgets/project_hea
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
-import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
+import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_test/flutter_test.dart';
 
-import '../../../utils/screenshot/font_loader.dart';
 import '../../../utils/screenshot/await_images_extension.dart';
-
-ImageProvider _createTestAvatarImage() {
-  return const AssetImage('assets/icons/app_icon.png');
-}
+import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
   final size = const Size(390, 56);
@@ -60,7 +56,6 @@ void main() {
       VoidCallback? onProjectTap,
       VoidCallback? onSearchTap,
       VoidCallback? onNotificationTap,
-      ImageProvider? avatarImage,
     }) async {
       final project = Project(
         id: projectId,
@@ -82,7 +77,6 @@ void main() {
               onProjectTap: onProjectTap,
               onSearchTap: onSearchTap,
               onNotificationTap: onNotificationTap,
-              avatarImage: avatarImage,
             ),
             body: const SizedBox.shrink(),
           ),
@@ -106,7 +100,6 @@ void main() {
         onProjectTap: () {},
         onSearchTap: () {},
         onNotificationTap: () {},
-        avatarImage: _createTestAvatarImage(),
       );
 
       await expectLater(
@@ -130,7 +123,6 @@ void main() {
         onProjectTap: () {},
         onSearchTap: () {},
         onNotificationTap: () {},
-        avatarImage: _createTestAvatarImage(),
       );
 
       await expectLater(

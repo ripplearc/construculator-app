@@ -115,6 +115,19 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
   }
 
   @override
+  Future<List<Map<String, dynamic>>> selectWhereIn({
+    required String table,
+    String columns = '*',
+    required String filterColumn,
+    required List<dynamic> filterValues,
+  }) async {
+    return await _supabaseClient
+        .from(table)
+        .select(columns)
+        .inFilter(filterColumn, filterValues);
+  }
+
+  @override
   Future<Map<String, dynamic>?> selectSingle({
     required String table,
     String columns = '*',
@@ -164,17 +177,52 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
   }
 
   @override
-  Future<Map<String, dynamic>> delete({
+  Future<void> delete({
     required String table,
     required String filterColumn,
     required dynamic filterValue,
   }) async {
+    await _supabaseClient.from(table).delete().eq(filterColumn, filterValue);
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> selectPaginated({
+    required String table,
+    String columns = '*',
+    required String filterColumn,
+    required dynamic filterValue,
+    required String orderColumn,
+    bool ascending = false,
+    required int rangeFrom,
+    required int rangeTo,
+  }) async {
     return await _supabaseClient
         .from(table)
-        .delete()
+        .select(columns)
         .eq(filterColumn, filterValue)
-        .select()
-        .single();
+        .order(orderColumn, ascending: ascending)
+        .range(rangeFrom, rangeTo);
+  }
+
+  @override
+  Stream<List<Map<String, dynamic>>> watchTable({
+    required String table,
+    required List<String> primaryKey,
+  }) {
+    return _supabaseClient.from(table).stream(primaryKey: primaryKey);
+  }
+
+  @override
+  Stream<List<Map<String, dynamic>>> watchTableFiltered({
+    required String table,
+    required List<String> primaryKey,
+    required String filterColumn,
+    required dynamic filterValue,
+  }) {
+    return _supabaseClient
+        .from(table)
+        .stream(primaryKey: primaryKey)
+        .eq(filterColumn, filterValue);
   }
 
   @override

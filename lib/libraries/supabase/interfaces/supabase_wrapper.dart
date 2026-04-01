@@ -84,6 +84,19 @@ abstract class SupabaseWrapper {
     required dynamic filterValue,
   });
 
+  /// Select a set of rows from a table where [filterColumn] value is in [filterValues].
+  ///
+  /// [table] The table to select from
+  /// [columns] The columns to select, defaults to '*'
+  /// [filterColumn] The column to filter by
+  /// [filterValues] The list of values to filter by using an `in` condition
+  Future<List<Map<String, dynamic>>> selectWhereIn({
+    required String table,
+    String columns = '*',
+    required String filterColumn,
+    required List<dynamic> filterValues,
+  });
+
   // Database-related methods
   /// Select a single row from a table
   ///
@@ -135,8 +148,47 @@ abstract class SupabaseWrapper {
   /// [table] The table to delete from
   /// [filterColumn] The column to filter by
   /// [filterValue] The value to filter by
-  Future<Map<String, dynamic>> delete({
+  Future<void> delete({
     required String table,
+    required String filterColumn,
+    required dynamic filterValue,
+  });
+
+  /// Select a paginated set of rows from a table, ordered and ranged.
+  ///
+  /// [table] The table to select from
+  /// [columns] The columns to select, defaults to '*'
+  /// [filterColumn] The column to filter by
+  /// [filterValue] The value to filter by
+  /// [orderColumn] The column to order by
+  /// [ascending] Whether to order ascending (default false = newest first)
+  /// [rangeFrom] The starting index (inclusive, 0-based)
+  /// [rangeTo] The ending index (inclusive, 0-based)
+  Future<List<Map<String, dynamic>>> selectPaginated({
+    required String table,
+    String columns = '*',
+    required String filterColumn,
+    required dynamic filterValue,
+    required String orderColumn,
+    bool ascending = false,
+    required int rangeFrom,
+    required int rangeTo,
+  });
+
+  /// Watch all rows for a table in real-time.
+  ///
+  /// [primaryKey] must contain the table primary key columns.
+  Stream<List<Map<String, dynamic>>> watchTable({
+    required String table,
+    required List<String> primaryKey,
+  });
+
+  /// Watch filtered table rows in real-time.
+  ///
+  /// [primaryKey] must contain the table primary key columns.
+  Stream<List<Map<String, dynamic>>> watchTableFiltered({
+    required String table,
+    required List<String> primaryKey,
     required String filterColumn,
     required dynamic filterValue,
   });

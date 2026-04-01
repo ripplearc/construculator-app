@@ -1,17 +1,16 @@
+import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
 import 'package:construculator/features/auth/presentation/extensions/auth_error_type_extension.dart';
 import 'package:construculator/features/auth/presentation/widgets/auth_header.dart';
 import 'package:construculator/features/auth/presentation/widgets/terms_and_conditions_section.dart';
 import 'package:construculator/libraries/auth/data/models/professional_role.dart';
-
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
 import 'package:flutter/material.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 const usCountryCode = '+1';
 
@@ -423,10 +422,12 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                             color: colors.iconRed,
                           ),
                           const SizedBox(width: CoreSpacing.space1),
-                          Text(
-                            '${_roleErrorList?.first}',
-                            style: typography.bodySmallRegular.copyWith(
-                              color: colors.textError,
+                          Expanded(
+                            child: Text(
+                              '${_roleErrorList?.first}',
+                              style: typography.bodySmallRegular.copyWith(
+                                color: colors.textError,
+                              ),
                             ),
                           ),
                         ],
@@ -489,6 +490,9 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                         color: colors.iconDark,
                       ),
                       onPressed: () => _togglePasswordVisibility(),
+                      tooltip: _isPasswordVisible
+                          ? l10n.hidePasswordLabel
+                          : l10n.showPasswordLabel,
                     ),
                     errorTextList: _passwordErrorList,
                   ),
@@ -507,6 +511,9 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                         color: colors.iconDark,
                       ),
                       onPressed: () => _toggleConfirmPasswordVisibility(),
+                      tooltip: _isConfirmPasswordVisible
+                          ? l10n.hidePasswordLabel
+                          : l10n.showPasswordLabel,
                     ),
                     errorTextList: _confirmPasswordErrorList,
                   ),
