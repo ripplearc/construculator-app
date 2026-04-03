@@ -1,9 +1,9 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/global_search/data/repositories/global_search_repository_impl.dart';
 import 'package:construculator/features/global_search/domain/entities/pagination_params.dart';
 import 'package:construculator/features/global_search/domain/entities/search_params_entity.dart';
-import 'package:construculator/features/global_search/domain/entities/search_scope_entity.dart';
-import 'package:construculator/features/global_search/data/repositories/global_search_repository_impl.dart';
 import 'package:construculator/features/global_search/domain/entities/search_results.dart';
+import 'package:construculator/features/global_search/domain/entities/search_scope_entity.dart';
 import 'package:construculator/features/global_search/domain/repositories/global_search_repository.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
@@ -51,12 +51,12 @@ Map<String, dynamic> _fakeProjectData({
 
 Map<String, dynamic> _fakeMemberData({String? id, String? firstName}) {
   return {
-    'id': id ?? 'member-1',
-    'credential_id': null,
-    'first_name': firstName ?? 'John',
-    'last_name': 'Doe',
-    'professional_role': 'Engineer',
-    'profile_photo_url': null,
+    DatabaseConstants.idColumn: id ?? 'member-1',
+    DatabaseConstants.credentialIdColumn: null,
+    DatabaseConstants.firstNameColumn: firstName ?? 'John',
+    DatabaseConstants.lastNameColumn: 'Doe',
+    DatabaseConstants.professionalRoleColumn: 'Engineer',
+    DatabaseConstants.profilePhotoUrlColumn: null,
   };
 }
 
@@ -352,7 +352,7 @@ void main() {
       );
 
       test(
-        'should return unexpectedDatabaseError failure when data source throws PostgrestException with other code',
+        'should return duplicateEntryError failure when data source throws PostgrestException with unique violation code',
         () async {
           fakeSupabaseWrapper.shouldThrowOnRpc = true;
           fakeSupabaseWrapper.rpcExceptionType =
@@ -370,7 +370,7 @@ void main() {
             result,
             (failure) => expect(
               failure,
-              SearchFailure(errorType: SearchErrorType.unexpectedDatabaseError),
+              SearchFailure(errorType: SearchErrorType.duplicateEntryError),
             ),
           );
         },
@@ -565,7 +565,7 @@ void main() {
       );
 
       test(
-        'should return unexpectedDatabaseError failure when data source throws PostgrestException with other code',
+        'should return duplicateEntryError failure when data source throws PostgrestException with unique violation code',
         () async {
           fakeSupabaseWrapper.setCurrentUser(
             FakeUser(
@@ -590,7 +590,7 @@ void main() {
             result,
             (failure) => expect(
               failure,
-              SearchFailure(errorType: SearchErrorType.unexpectedDatabaseError),
+              SearchFailure(errorType: SearchErrorType.duplicateEntryError),
             ),
           );
         },
@@ -862,7 +862,7 @@ void main() {
       );
 
       test(
-        'should return unexpectedDatabaseError failure when data source throws PostgrestException with other code',
+        'should return duplicateEntryError failure when data source throws PostgrestException with unique violation code',
         () async {
           fakeSupabaseWrapper.setCurrentUser(
             FakeUser(
@@ -888,7 +888,7 @@ void main() {
             result,
             (failure) => expect(
               failure,
-              SearchFailure(errorType: SearchErrorType.unexpectedDatabaseError),
+              SearchFailure(errorType: SearchErrorType.duplicateEntryError),
             ),
           );
         },
@@ -1115,7 +1115,7 @@ void main() {
       );
 
       test(
-        'should return unexpectedDatabaseError failure when data source throws PostgrestException with other code',
+        'should return duplicateEntryError failure when data source throws PostgrestException with unique violation code',
         () async {
           fakeSupabaseWrapper.setCurrentUser(
             FakeUser(
@@ -1141,7 +1141,7 @@ void main() {
             result,
             (failure) => expect(
               failure,
-              SearchFailure(errorType: SearchErrorType.unexpectedDatabaseError),
+              SearchFailure(errorType: SearchErrorType.duplicateEntryError),
             ),
           );
         },
@@ -1328,7 +1328,7 @@ void main() {
       );
 
       test(
-        'should return unexpectedDatabaseError failure when data source throws PostgrestException with other code',
+        'should return duplicateEntryError failure when data source throws PostgrestException with unique violation code',
         () async {
           fakeSupabaseWrapper.setCurrentUser(
             FakeUser(
@@ -1351,7 +1351,7 @@ void main() {
             result,
             (failure) => expect(
               failure,
-              SearchFailure(errorType: SearchErrorType.unexpectedDatabaseError),
+              SearchFailure(errorType: SearchErrorType.duplicateEntryError),
             ),
           );
         },
