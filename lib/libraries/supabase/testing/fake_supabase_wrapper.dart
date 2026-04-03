@@ -864,15 +864,15 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required String table,
     required Map<String, dynamic> filters,
   }) async {
-    if (shouldDelayOperations) {
-      await completer?.future;
-    }
-
     _methodCalls.add({
       'method': 'deleteMatch',
       'table': table,
       'filters': Map<String, dynamic>.from(filters),
     });
+
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
 
     if (shouldThrowOnDeleteMatch) {
       _throwConfiguredException(

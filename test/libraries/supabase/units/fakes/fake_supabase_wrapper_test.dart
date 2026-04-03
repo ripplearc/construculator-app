@@ -1116,6 +1116,25 @@ void main() {
             );
           },
         );
+
+        test('records call before delay completes', () async {
+          fakeWrapper.shouldDelayOperations = true;
+          fakeWrapper.completer = Completer();
+
+          final future = fakeWrapper.deleteMatch(
+            table: 'items',
+            filters: {'id': '1'},
+          );
+
+          expect(
+            fakeWrapper.getMethodCallsFor('deleteMatch'),
+            hasLength(1),
+            reason: 'Call must be recorded before the delay resolves',
+          );
+
+          fakeWrapper.completer!.complete();
+          await future;
+        });
       });
 
       group('update', () {
@@ -1497,25 +1516,10 @@ void main() {
         });
 
         test('emits updated table data to stream after upsert', () async {
-          final emissions = <List<Map<String, dynamic>>>[];
-          final done = Completer<void>();
-
-          final subscription = fakeWrapper
-              .watchTable(table: 'profiles', primaryKey: ['user_id'])
-              .listen(
-                (data) {
-                  emissions.add(data);
-                  if (emissions.length >= 2 && !done.isCompleted) {
-                    done.complete();
-                  }
-                },
-                onDone: () {
-                  if (!done.isCompleted) done.complete();
-                },
-                onError: (e, s) => done.completeError(e, s),
-              );
-
-          await pumpEventQueue();
+          final stream = fakeWrapper.watchTable(
+            table: 'profiles',
+            primaryKey: ['user_id'],
+          );
 
           await fakeWrapper.upsert(
             table: 'profiles',
@@ -1523,11 +1527,12 @@ void main() {
             onConflict: 'user_id',
           );
 
-          await done.future;
-          await subscription.cancel();
-
-          expect(emissions.length, greaterThanOrEqualTo(2));
-          expect(emissions.last.single['bio'], equals('Hello'));
+          await expectLater(
+            stream,
+            emitsThrough(
+              contains(containsPair('bio', 'Hello')),
+            ),
+          );
         });
 
         test('throws exception when configured to fail', () async {
