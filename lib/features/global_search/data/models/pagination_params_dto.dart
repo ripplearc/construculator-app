@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 
 /// Encapsulates offset/limit pagination for API requests.
 ///
-/// Used as a value object within [SearchParams] to control which page of
+/// Used as a value object within [SearchParamsDto] to control which page of
 /// results is returned by the `global_search` RPC.
 ///
 /// - [offset] is the number of records to skip (default: 0).
@@ -10,19 +10,19 @@ import 'package:equatable/equatable.dart';
 ///
 /// Example — fetching the second page of 20 results:
 /// ```dart
-/// const PaginationParams(offset: 20, limit: 20)
+/// const PaginationParamsDto(offset: 20, limit: 20)
 /// ```
-class PaginationParams extends Equatable {
+class PaginationParamsDto extends Equatable {
   final int offset;
   final int limit;
 
-  const PaginationParams({
+  const PaginationParamsDto({
     this.offset = 0,
     this.limit = 20,
   });
 
-  PaginationParams copyWith({int? offset, int? limit}) {
-    return PaginationParams(
+  PaginationParamsDto copyWith({int? offset, int? limit}) {
+    return PaginationParamsDto(
       offset: offset ?? this.offset,
       limit: limit ?? this.limit,
     );

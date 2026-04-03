@@ -1,17 +1,17 @@
-import 'package:construculator/features/global_search/data/models/pagination_params.dart';
+import 'package:construculator/features/global_search/data/models/pagination_params_dto.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('PaginationParams', () {
+  group('PaginationParamsDto', () {
     group('default constructor', () {
       test('offset defaults to 0', () {
-        const params = PaginationParams();
+        const params = PaginationParamsDto();
 
         expect(params.offset, 0);
       });
 
       test('limit defaults to 20', () {
-        const params = PaginationParams();
+        const params = PaginationParamsDto();
 
         expect(params.limit, 20);
       });
@@ -19,7 +19,7 @@ void main() {
 
     group('copyWith', () {
       test('returns equivalent object when no arguments are passed', () {
-        const params = PaginationParams(offset: 40, limit: 20);
+        const params = PaginationParamsDto(offset: 40, limit: 20);
 
         final copy = params.copyWith();
 
@@ -27,7 +27,7 @@ void main() {
       });
 
       test('updates offset when provided', () {
-        const params = PaginationParams(offset: 0, limit: 20);
+        const params = PaginationParamsDto(offset: 0, limit: 20);
 
         final copy = params.copyWith(offset: 20);
 
@@ -36,7 +36,7 @@ void main() {
       });
 
       test('updates limit when provided', () {
-        const params = PaginationParams(offset: 0, limit: 20);
+        const params = PaginationParamsDto(offset: 0, limit: 20);
 
         final copy = params.copyWith(limit: 50);
 
@@ -45,7 +45,7 @@ void main() {
       });
 
       test('updates both fields when provided', () {
-        const params = PaginationParams(offset: 0, limit: 20);
+        const params = PaginationParamsDto(offset: 0, limit: 20);
 
         final copy = params.copyWith(offset: 40, limit: 10);
 
@@ -56,22 +56,22 @@ void main() {
 
     group('Equatable', () {
       test('two instances with same values are equal', () {
-        const params1 = PaginationParams(offset: 0, limit: 20);
-        const params2 = PaginationParams(offset: 0, limit: 20);
+        const params1 = PaginationParamsDto(offset: 0, limit: 20);
+        const params2 = PaginationParamsDto(offset: 0, limit: 20);
 
         expect(params1, equals(params2));
       });
 
       test('two instances with different offset are not equal', () {
-        const params1 = PaginationParams(offset: 0, limit: 20);
-        const params2 = PaginationParams(offset: 20, limit: 20);
+        const params1 = PaginationParamsDto(offset: 0, limit: 20);
+        const params2 = PaginationParamsDto(offset: 20, limit: 20);
 
         expect(params1, isNot(equals(params2)));
       });
 
       test('two instances with different limit are not equal', () {
-        const params1 = PaginationParams(offset: 0, limit: 20);
-        const params2 = PaginationParams(offset: 0, limit: 50);
+        const params1 = PaginationParamsDto(offset: 0, limit: 20);
+        const params2 = PaginationParamsDto(offset: 0, limit: 50);
 
         expect(params1, isNot(equals(params2)));
       });
