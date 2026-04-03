@@ -1,6 +1,6 @@
 import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/features/global_search/data/data_source/interfaces/global_search_data_source.dart';
-import 'package:construculator/features/global_search/data/models/search_params.dart';
+import 'package:construculator/features/global_search/data/models/search_params_dto.dart';
 import 'package:construculator/features/global_search/data/models/search_results_dto.dart';
 import 'package:construculator/features/global_search/data/models/search_scope.dart';
 import 'package:construculator/libraries/auth/data/models/user_profile_dto.dart';
@@ -22,7 +22,7 @@ class RemoteGlobalSearchDataSource implements GlobalSearchDataSource {
     : _supabaseWrapper = supabaseWrapper;
 
   @override
-  Future<SearchResultsDto> search(SearchParams params) async {
+  Future<SearchResultsDto> search(SearchParamsDto params) async {
     try {
       _logger.debug('Performing global search for query: ${params.query}');
 
@@ -43,7 +43,7 @@ class RemoteGlobalSearchDataSource implements GlobalSearchDataSource {
   }
 
   @override
-  Future<List<String>> getRecentSearches(SearchScope scope) async {
+  Future<List<String>> getRecentSearches(SearchScopeDto scope) async {
     try {
       final userId = _supabaseWrapper.currentUser?.id;
       if (userId == null) {
@@ -81,7 +81,7 @@ class RemoteGlobalSearchDataSource implements GlobalSearchDataSource {
   @override
   Future<void> saveRecentSearch(
     String searchTerm,
-    SearchScope scope, {
+    SearchScopeDto scope, {
     String? projectId,
     bool hasResults = false,
   }) async {
@@ -124,7 +124,7 @@ class RemoteGlobalSearchDataSource implements GlobalSearchDataSource {
   }
 
   @override
-  Future<void> deleteRecentSearch(String searchTerm, SearchScope scope) async {
+  Future<void> deleteRecentSearch(String searchTerm, SearchScopeDto scope) async {
     try {
       final normalized = searchTerm.toLowerCase().trim();
       if (normalized.isEmpty) return;
@@ -179,7 +179,7 @@ class RemoteGlobalSearchDataSource implements GlobalSearchDataSource {
     }
   }
 
-  Map<String, dynamic> _toRpcParams(SearchParams params) {
+  Map<String, dynamic> _toRpcParams(SearchParamsDto params) {
     return {
       'query': params.query,
       'filter_by_tag': params.filterByTag,

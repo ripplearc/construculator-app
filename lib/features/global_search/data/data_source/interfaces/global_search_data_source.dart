@@ -1,4 +1,4 @@
-import 'package:construculator/features/global_search/data/models/search_params.dart';
+import 'package:construculator/features/global_search/data/models/search_params_dto.dart';
 import 'package:construculator/features/global_search/data/models/search_results_dto.dart';
 import 'package:construculator/features/global_search/data/models/search_scope.dart';
 
@@ -14,7 +14,7 @@ abstract class GlobalSearchDataSource {
   /// Unlike history methods, this does not guard on authentication client-side.
   /// Throws when the user is not authenticated — access is enforced by RLS at
   /// the database level rather than guarded client-side.
-  Future<SearchResultsDto> search(SearchParams params);
+  Future<SearchResultsDto> search(SearchParamsDto params);
 
   /// Fetches recent search terms for the given [scope].
   ///
@@ -23,7 +23,7 @@ abstract class GlobalSearchDataSource {
   /// need suggestion-quality terms (has_results = true only) should use
   /// [getSearchSuggestions] instead.
   /// Returns an empty list when the user is not authenticated.
-  Future<List<String>> getRecentSearches(SearchScope scope);
+  Future<List<String>> getRecentSearches(SearchScopeDto scope);
 
   /// Saves a [searchTerm] for the given [scope] to recent searches.
   ///
@@ -35,7 +35,7 @@ abstract class GlobalSearchDataSource {
   /// Does nothing when the user is not authenticated or the term is empty.
   Future<void> saveRecentSearch(
     String searchTerm,
-    SearchScope scope, {
+    SearchScopeDto scope, {
     String? projectId,
     bool hasResults = false,
   });
@@ -44,7 +44,7 @@ abstract class GlobalSearchDataSource {
   ///
   /// Does NOT affect search_analytics — global suggestion counts are preserved.
   /// Does nothing when the user is not authenticated or the term is empty.
-  Future<void> deleteRecentSearch(String searchTerm, SearchScope scope);
+  Future<void> deleteRecentSearch(String searchTerm, SearchScopeDto scope);
 
   /// Fetches personalized search suggestions for the authenticated user.
   ///

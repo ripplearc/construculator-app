@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/global_search/data/data_source/interfaces/global_search_data_source.dart';
 import 'package:construculator/features/global_search/data/data_source/remote_global_search_data_source.dart';
-import 'package:construculator/features/global_search/data/models/pagination_params.dart';
-import 'package:construculator/features/global_search/data/models/search_params.dart';
+import 'package:construculator/features/global_search/data/models/pagination_params_dto.dart';
+import 'package:construculator/features/global_search/data/models/search_params_dto.dart';
 import 'package:construculator/features/global_search/data/models/search_scope.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
@@ -123,7 +123,7 @@ void main() {
             },
           );
 
-          final params = const SearchParams(query: 'test');
+          final params = const SearchParamsDto(query: 'test');
           final result = await dataSource.search(params);
 
           expect(result.projects, hasLength(1));
@@ -142,7 +142,7 @@ void main() {
           {'projects': [], 'estimations': [], 'members': []},
         );
 
-        final params = const SearchParams(query: 'empty');
+        final params = const SearchParamsDto(query: 'empty');
         final result = await dataSource.search(params);
 
         expect(result.projects, isEmpty);
@@ -158,7 +158,7 @@ void main() {
             {'projects': [], 'estimations': [], 'members': []},
           );
 
-          const params = SearchParams(query: 'test');
+          const params = SearchParamsDto(query: 'test');
 
           await dataSource.search(params);
 
@@ -182,13 +182,13 @@ void main() {
           );
 
           final filterDate = DateTime(2024, 3, 15);
-          final params = SearchParams(
+          final params = SearchParamsDto(
             query: 'wall',
             filterByTag: 'construction',
             filterByDate: filterDate,
             filterByOwner: 'owner-1',
-            scope: SearchScope.estimation,
-            pagination: const PaginationParams(offset: 10, limit: 25),
+            scope: SearchScopeDto.estimation,
+            pagination: const PaginationParamsDto(offset: 10, limit: 25),
           );
 
           await dataSource.search(params);
@@ -223,7 +223,7 @@ void main() {
         fakeSupabaseWrapper.rpcErrorMessage = errorMsgDbConnection;
 
         expect(
-          () => dataSource.search(const SearchParams(query: 'test')),
+          () => dataSource.search(const SearchParamsDto(query: 'test')),
           throwsA(isA<supabase.PostgrestException>()),
         );
       });
@@ -234,7 +234,7 @@ void main() {
         fakeSupabaseWrapper.rpcErrorMessage = errorMsgAuth;
 
         expect(
-          () => dataSource.search(const SearchParams(query: 'test')),
+          () => dataSource.search(const SearchParamsDto(query: 'test')),
           throwsA(isA<supabase.AuthException>()),
         );
       });
@@ -247,7 +247,7 @@ void main() {
           fakeSupabaseWrapper.rpcErrorMessage = errorMsgNetwork;
 
           expect(
-            () => dataSource.search(const SearchParams(query: 'test')),
+            () => dataSource.search(const SearchParamsDto(query: 'test')),
             throwsA(isA<SocketException>()),
           );
         },
@@ -261,7 +261,7 @@ void main() {
           fakeSupabaseWrapper.rpcErrorMessage = errorMsgTimeout;
 
           expect(
-            () => dataSource.search(const SearchParams(query: 'test')),
+            () => dataSource.search(const SearchParamsDto(query: 'test')),
             throwsA(isA<Exception>()),
           );
         },
@@ -388,18 +388,18 @@ void main() {
             id: '1',
             userId: testUserId,
             searchTerm: 'wall',
-            scope: SearchScope.dashboard.name,
+            scope: SearchScopeDto.dashboard.name,
           ),
           _fakeSearchHistoryData(
             id: '2',
             userId: testUserId,
             searchTerm: 'concrete',
-            scope: SearchScope.dashboard.name,
+            scope: SearchScopeDto.dashboard.name,
           ),
         ]);
 
         final result = await dataSource.getRecentSearches(
-          SearchScope.dashboard,
+          SearchScopeDto.dashboard,
         );
 
         expect(result, hasLength(2));
@@ -410,7 +410,7 @@ void main() {
         fakeSupabaseWrapper.setCurrentUser(null);
 
         final result = await dataSource.getRecentSearches(
-          SearchScope.dashboard,
+          SearchScopeDto.dashboard,
         );
 
         expect(result, isEmpty);
@@ -429,12 +429,12 @@ void main() {
             id: '1',
             userId: testUserId,
             searchTerm: 'wall',
-            scope: SearchScope.estimation.name,
+            scope: SearchScopeDto.estimation.name,
           ),
         ]);
 
         final result = await dataSource.getRecentSearches(
-          SearchScope.dashboard,
+          SearchScopeDto.dashboard,
         );
 
         expect(result, isEmpty);
@@ -456,27 +456,27 @@ void main() {
                   id: '1',
                   userId: testUserId,
                   searchTerm: 'oldest',
-                  scope: SearchScope.dashboard.name,
+                  scope: SearchScopeDto.dashboard.name,
                   createdAt: '2024-01-01T00:00:00.000Z',
                 ),
                 _fakeSearchHistoryData(
                   id: '2',
                   userId: testUserId,
                   searchTerm: 'newest',
-                  scope: SearchScope.dashboard.name,
+                  scope: SearchScopeDto.dashboard.name,
                   createdAt: '2024-03-20T12:00:00.000Z',
                 ),
                 _fakeSearchHistoryData(
                   id: '3',
                   userId: testUserId,
                   searchTerm: 'middle',
-                  scope: SearchScope.dashboard.name,
+                  scope: SearchScopeDto.dashboard.name,
                   createdAt: '2024-02-15T00:00:00.000Z',
                 ),
               ]);
 
           final result = await dataSource.getRecentSearches(
-            SearchScope.dashboard,
+            SearchScopeDto.dashboard,
           );
 
           final selectCall = fakeSupabaseWrapper
@@ -509,7 +509,7 @@ void main() {
         fakeSupabaseWrapper.selectMatchErrorMessage = errorMsgDbConnection;
 
         await expectLater(
-          () => dataSource.getRecentSearches(SearchScope.dashboard),
+          () => dataSource.getRecentSearches(SearchScopeDto.dashboard),
           throwsA(isA<supabase.PostgrestException>()),
         );
       });
@@ -525,7 +525,7 @@ void main() {
           ),
         );
 
-        await dataSource.saveRecentSearch('WALL', SearchScope.dashboard);
+        await dataSource.saveRecentSearch('WALL', SearchScopeDto.dashboard);
 
         final upsertCalls = fakeSupabaseWrapper.getMethodCallsFor('upsert');
         final historyCall = upsertCalls.firstWhere(
@@ -546,7 +546,7 @@ void main() {
             ),
           );
 
-          await dataSource.saveRecentSearch('   ', SearchScope.dashboard);
+          await dataSource.saveRecentSearch('   ', SearchScopeDto.dashboard);
 
           expect(fakeSupabaseWrapper.getMethodCallsFor('upsert'), isEmpty);
         },
@@ -555,7 +555,7 @@ void main() {
       test('should return early when user not logged in', () async {
         fakeSupabaseWrapper.setCurrentUser(null);
 
-        await dataSource.saveRecentSearch('wall', SearchScope.dashboard);
+        await dataSource.saveRecentSearch('wall', SearchScopeDto.dashboard);
 
         expect(fakeSupabaseWrapper.getMethodCallsFor('upsert'), isEmpty);
       });
@@ -569,7 +569,7 @@ void main() {
           ),
         );
 
-        await dataSource.saveRecentSearch('wall', SearchScope.dashboard);
+        await dataSource.saveRecentSearch('wall', SearchScopeDto.dashboard);
 
         final upsertCalls = fakeSupabaseWrapper.getMethodCallsFor('upsert');
         expect(upsertCalls, hasLength(1));
@@ -609,7 +609,7 @@ void main() {
 
           await dataSource.saveRecentSearch(
             'concrete',
-            SearchScope.dashboard,
+            SearchScopeDto.dashboard,
             hasResults: true,
             projectId: 'project-42',
           );
@@ -635,7 +635,7 @@ void main() {
 
           await dataSource.saveRecentSearch(
             'steel',
-            SearchScope.dashboard,
+            SearchScopeDto.dashboard,
             hasResults: true,
           );
 
@@ -662,7 +662,7 @@ void main() {
         fakeSupabaseWrapper.upsertErrorMessage = errorMsgDbConnection;
 
         expect(
-          () => dataSource.saveRecentSearch('wall', SearchScope.dashboard),
+          () => dataSource.saveRecentSearch('wall', SearchScopeDto.dashboard),
           throwsA(isA<supabase.PostgrestException>()),
         );
       });
@@ -682,11 +682,11 @@ void main() {
             id: '1',
             userId: testUserId,
             searchTerm: 'wall',
-            scope: SearchScope.dashboard.name,
+            scope: SearchScopeDto.dashboard.name,
           ),
         ]);
 
-        await dataSource.deleteRecentSearch('wall', SearchScope.dashboard);
+        await dataSource.deleteRecentSearch('wall', SearchScopeDto.dashboard);
 
         final deleteCalls = fakeSupabaseWrapper.getMethodCallsFor(
           'deleteMatch',
@@ -701,7 +701,7 @@ void main() {
         expect(filters[DatabaseConstants.searchTermColumn], equals('wall'));
         expect(
           filters[DatabaseConstants.scopeColumn],
-          equals(SearchScope.dashboard.name),
+          equals(SearchScopeDto.dashboard.name),
         );
       });
 
@@ -718,11 +718,11 @@ void main() {
             id: '1',
             userId: testUserId,
             searchTerm: 'wall',
-            scope: SearchScope.dashboard.name,
+            scope: SearchScopeDto.dashboard.name,
           ),
         ]);
 
-        await dataSource.deleteRecentSearch('WALL', SearchScope.dashboard);
+        await dataSource.deleteRecentSearch('WALL', SearchScopeDto.dashboard);
 
         final deleteCalls = fakeSupabaseWrapper.getMethodCallsFor(
           'deleteMatch',
@@ -735,7 +735,7 @@ void main() {
       test('should return early when no user logged in', () async {
         fakeSupabaseWrapper.setCurrentUser(null);
 
-        await dataSource.deleteRecentSearch('wall', SearchScope.dashboard);
+        await dataSource.deleteRecentSearch('wall', SearchScopeDto.dashboard);
 
         expect(fakeSupabaseWrapper.getMethodCallsFor('deleteMatch'), isEmpty);
       });
@@ -751,7 +751,7 @@ void main() {
             ),
           );
 
-          await dataSource.deleteRecentSearch('   ', SearchScope.dashboard);
+          await dataSource.deleteRecentSearch('   ', SearchScopeDto.dashboard);
 
           expect(fakeSupabaseWrapper.getMethodCallsFor('deleteMatch'), isEmpty);
         },
@@ -773,11 +773,11 @@ void main() {
                   id: '1',
                   userId: testUserId,
                   searchTerm: 'wall',
-                  scope: SearchScope.dashboard.name,
+                  scope: SearchScopeDto.dashboard.name,
                 ),
               ]);
 
-          await dataSource.deleteRecentSearch('wall', SearchScope.dashboard);
+          await dataSource.deleteRecentSearch('wall', SearchScopeDto.dashboard);
 
           final deleteCalls = fakeSupabaseWrapper.getMethodCallsFor(
             'deleteMatch',
@@ -804,7 +804,7 @@ void main() {
         fakeSupabaseWrapper.deleteMatchErrorMessage = errorMsgDbConnection;
 
         await expectLater(
-          () => dataSource.deleteRecentSearch('wall', SearchScope.dashboard),
+          () => dataSource.deleteRecentSearch('wall', SearchScopeDto.dashboard),
           throwsA(isA<supabase.PostgrestException>()),
         );
       });
