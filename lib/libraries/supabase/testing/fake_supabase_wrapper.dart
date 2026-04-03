@@ -67,6 +67,15 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Controls whether [delete] throws an exception
   bool shouldThrowOnDelete = false;
 
+  /// Controls whether [deleteMatch] throws an exception
+  bool shouldThrowOnDeleteMatch = false;
+
+  /// Controls whether [selectMatch] throws an exception
+  bool shouldThrowOnSelectMatch = false;
+
+  /// Controls whether [upsert] throws an exception
+  bool shouldThrowOnUpsert = false;
+
   /// Controls whether [selectPaginated] throws an exception
   bool shouldThrowOnSelectPaginated = false;
 
@@ -117,6 +126,18 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Used to specify the error message thrown when [delete] is attempted
   String? deleteErrorMessage;
 
+  /// Error message for deleteMatch.
+  /// Used to specify the error message thrown when [deleteMatch] is attempted
+  String? deleteMatchErrorMessage;
+
+  /// Error message for selectMatch.
+  /// Used to specify the error message thrown when [selectMatch] is attempted
+  String? selectMatchErrorMessage;
+
+  /// Error message for upsert.
+  /// Used to specify the error message thrown when [upsert] is attempted
+  String? upsertErrorMessage;
+
   /// Error message for selectPaginated.
   /// Used to specify the error message thrown when [selectPaginated] is attempted
   String? selectPaginatedErrorMessage;
@@ -141,6 +162,15 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Used to specify the type of exception thrown when [delete] is attempted
   SupabaseExceptionType? deleteExceptionType;
 
+  /// Used to specify the type of exception thrown when [deleteMatch] is attempted
+  SupabaseExceptionType? deleteMatchExceptionType;
+
+  /// Used to specify the type of exception thrown when [selectMatch] is attempted
+  SupabaseExceptionType? selectMatchExceptionType;
+
+  /// Used to specify the type of exception thrown when [upsert] is attempted
+  SupabaseExceptionType? upsertExceptionType;
+
   /// Used to specify the type of exception thrown when [selectPaginated] is attempted
   SupabaseExceptionType? selectPaginatedExceptionType;
 
@@ -158,6 +188,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Controls whether [select] returns a null user
   bool shouldReturnNullOnSelectMultiple = false;
+
+  /// Controls whether [selectMatch] returns an empty list
+  bool shouldReturnEmptyOnSelectMatch = false;
 
   /// Controls whether [selectSingle] returns a null user
   bool shouldReturnNullOnSelect = false;
@@ -179,6 +212,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// The event that occurs when a user signs in
   supabase.AuthChangeEvent signInEvent = supabase.AuthChangeEvent.signedIn;
+
+  /// Auto-incrementing counter for generating unique record IDs
+  int _nextId = 1;
 
   final Clock _clock;
 
@@ -408,6 +444,63 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   }
 
   @override
+  Future<List<Map<String, dynamic>>> selectMatch({
+    required String table,
+    String columns = '*',
+    required Map<String, dynamic> filters,
+    String? orderBy,
+    bool ascending = true,
+  }) async {
+    _methodCalls.add({
+      'method': 'selectMatch',
+      'table': table,
+      'columns': columns,
+      'filters': Map<String, dynamic>.from(filters),
+      if (orderBy != null) 'orderBy': orderBy,
+      'ascending': ascending,
+    });
+
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    if (shouldThrowOnSelectMatch) {
+      _throwConfiguredException(
+        selectMatchExceptionType,
+        selectMatchErrorMessage ?? 'Select match failed',
+      );
+    }
+
+    if (shouldReturnEmptyOnSelectMatch) {
+      return [];
+    }
+
+    final tableData = _tables[table] ?? [];
+    final results = tableData
+        .where(
+          (row) =>
+              filters.entries.every((entry) => row[entry.key] == entry.value),
+        )
+        .toList();
+
+    if (orderBy != null) {
+      results.sort((a, b) {
+        final aVal = a[orderBy];
+        final bVal = b[orderBy];
+        if (aVal == null && bVal == null) return 0;
+        if (aVal == null) return ascending ? -1 : 1;
+        if (bVal == null) return ascending ? 1 : -1;
+        final cmp = (aVal is Comparable && bVal is Comparable)
+            ? (aVal).compareTo(bVal)
+            : aVal.toString().compareTo(bVal.toString());
+        return ascending ? cmp : -cmp;
+      });
+    }
+
+    return results;
+  }
+
+  @override
   Future<List<Map<String, dynamic>>> selectWhereIn({
     required String table,
     String columns = '*',
@@ -603,7 +696,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     final tableData = _tables[table] ?? [];
 
     final insertData = Map<String, dynamic>.from(data);
-    insertData['id'] = (tableData.length + 1).toString();
+    insertData['id'] = (_nextId++).toString();
     insertData['created_at'] = _clock.now().toIso8601String();
     insertData['updated_at'] = _clock.now().toIso8601String();
 
@@ -612,6 +705,55 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     _emitTableData(table);
 
     return Map<String, dynamic>.from(insertData);
+  }
+
+  @override
+  Future<void> upsert({
+    required String table,
+    required Map<String, dynamic> data,
+    required String onConflict,
+  }) async {
+    _methodCalls.add({
+      'method': 'upsert',
+      'table': table,
+      'data': Map<String, dynamic>.from(data),
+      'onConflict': onConflict,
+    });
+
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    if (shouldThrowOnUpsert) {
+      _throwConfiguredException(
+        upsertExceptionType,
+        upsertErrorMessage ?? 'Upsert failed',
+      );
+    }
+
+    final conflictColumns = onConflict
+        .split(',')
+        .map((c) => c.trim())
+        .where((c) => c.isNotEmpty);
+
+    final tableData = _tables[table] ?? [];
+    final existingIndex = tableData.indexWhere((row) {
+      return conflictColumns.every((col) => row[col] == data[col]);
+    });
+
+    final upsertData = Map<String, dynamic>.from(data);
+    upsertData['updated_at'] = _clock.now().toIso8601String();
+
+    if (existingIndex >= 0) {
+      upsertData['created_at'] = tableData[existingIndex]['created_at'];
+      tableData[existingIndex] = upsertData;
+    } else {
+      upsertData['id'] = (_nextId++).toString();
+      upsertData['created_at'] = _clock.now().toIso8601String();
+      tableData.add(upsertData);
+    }
+    _tables[table] = tableData;
+    _emitTableData(table);
   }
 
   @override
@@ -714,6 +856,38 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
         .where((row) => row[filterColumn] != filterValue)
         .toList();
     _tables[table] = filteredData;
+    _emitTableData(table);
+  }
+
+  @override
+  Future<void> deleteMatch({
+    required String table,
+    required Map<String, dynamic> filters,
+  }) async {
+    _methodCalls.add({
+      'method': 'deleteMatch',
+      'table': table,
+      'filters': Map<String, dynamic>.from(filters),
+    });
+
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    if (shouldThrowOnDeleteMatch) {
+      _throwConfiguredException(
+        deleteMatchExceptionType,
+        deleteMatchErrorMessage ?? 'Delete match failed',
+      );
+    }
+
+    final tableData = _tables[table] ?? [];
+    _tables[table] = tableData
+        .where(
+          (row) =>
+              !filters.entries.every((entry) => row[entry.key] == entry.value),
+        )
+        .toList();
     _emitTableData(table);
   }
 
@@ -936,8 +1110,11 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     shouldThrowOnInsert = false;
     shouldThrowOnUpdate = false;
     shouldThrowOnSelectMultiple = false;
+    shouldThrowOnSelectMatch = false;
     shouldThrowOnSelectPaginated = false;
     shouldThrowOnDelete = false;
+    shouldThrowOnDeleteMatch = false;
+    shouldThrowOnUpsert = false;
     shouldThrowOnRpc = false;
 
     signInErrorMessage = null;
@@ -947,29 +1124,37 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     resetPasswordErrorMessage = null;
     signOutErrorMessage = null;
     selectErrorMessage = null;
+    selectMatchErrorMessage = null;
     selectPaginatedErrorMessage = null;
     insertErrorMessage = null;
     updateErrorMessage = null;
     deleteErrorMessage = null;
+    deleteMatchErrorMessage = null;
+    upsertErrorMessage = null;
     rpcErrorMessage = null;
 
     selectExceptionType = null;
     selectPaginatedExceptionType = null;
     selectMultipleExceptionType = null;
+    selectMatchExceptionType = null;
     insertExceptionType = null;
     updateExceptionType = null;
     deleteExceptionType = null;
+    deleteMatchExceptionType = null;
+    upsertExceptionType = null;
     rpcExceptionType = null;
     postgrestErrorCode = null;
 
     shouldReturnNullUser = false;
     shouldReturnNullOnSelect = false;
+    shouldReturnEmptyOnSelectMatch = false;
 
     shouldDelayOperations = false;
     completer = null;
     shouldEmitStreamErrors = false;
     shouldReturnUser = false;
     shouldThrowOnGetUserProfile = false;
+    _nextId = 1;
 
     clearAllData();
     clearMethodCalls();

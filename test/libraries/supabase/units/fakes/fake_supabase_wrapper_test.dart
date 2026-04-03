@@ -1049,6 +1049,94 @@ void main() {
         });
       });
 
+      group('deleteMatch', () {
+        test('removes rows matching all filter criteria', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1', 'status': 'active'},
+            {'id': '2', 'project_id': 'p1', 'status': 'archived'},
+            {'id': '3', 'project_id': 'p2', 'status': 'active'},
+          ]);
+
+          await fakeWrapper.deleteMatch(
+            table: 'items',
+            filters: {'project_id': 'p1', 'status': 'active'},
+          );
+
+          final remaining = await fakeWrapper.selectMatch(
+            table: 'items',
+            filters: {'project_id': 'p1'},
+          );
+          expect(remaining, hasLength(1));
+          expect(remaining.single['id'], equals('2'));
+        });
+
+        test(
+          'throws exception independently of shouldThrowOnDelete',
+          () async {
+            fakeWrapper.shouldThrowOnDeleteMatch = true;
+            fakeWrapper.deleteMatchErrorMessage = 'Delete match failed';
+
+            await expectLater(
+              () async => fakeWrapper.deleteMatch(
+                table: 'items',
+                filters: {'id': '1'},
+              ),
+              throwsA(
+                isA<ServerException>().having(
+                  (e) => e.toString(),
+                  'message',
+                  contains('Delete match failed'),
+                ),
+              ),
+            );
+          },
+        );
+
+        test(
+          'shouldThrowOnDelete does not affect deleteMatch',
+          () async {
+            fakeWrapper.addTableData('items', [
+              {'id': '1', 'project_id': 'p1'},
+            ]);
+            fakeWrapper.shouldThrowOnDelete = true;
+
+            await fakeWrapper.deleteMatch(
+              table: 'items',
+              filters: {'project_id': 'p1'},
+            );
+
+            final result = await fakeWrapper.selectMatch(
+              table: 'items',
+              filters: {'project_id': 'p1'},
+            );
+            expect(
+              result,
+              isEmpty,
+              reason: 'deleteMatch must not be affected by shouldThrowOnDelete',
+            );
+          },
+        );
+
+        test('records call before delay completes', () async {
+          fakeWrapper.shouldDelayOperations = true;
+          fakeWrapper.completer = Completer();
+
+          final future = fakeWrapper.deleteMatch(
+            table: 'items',
+            filters: {'id': '1'},
+          );
+
+          expect(
+            fakeWrapper.getMethodCallsFor('deleteMatch'),
+            hasLength(1),
+            reason: 'Call must be recorded before the delay resolves',
+          );
+
+          fakeWrapper.completer!.complete();
+          await future;
+        });
+      });
+
       group('update', () {
         test('modifies existing record and returns updated data', () async {
           final initialTime = '2023-01-01T00:00:00Z';
@@ -1129,6 +1217,374 @@ void main() {
             );
           },
         );
+      });
+
+      group('selectMatch', () {
+        test('returns rows matching all filter criteria', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1', 'status': 'active'},
+            {'id': '2', 'project_id': 'p1', 'status': 'archived'},
+            {'id': '3', 'project_id': 'p2', 'status': 'active'},
+          ]);
+
+          final result = await fakeWrapper.selectMatch(
+            table: 'items',
+            filters: {'project_id': 'p1', 'status': 'active'},
+          );
+
+          expect(result, hasLength(1));
+          expect(result.single['id'], equals('1'));
+        });
+
+        test('returns empty list when no rows match all filters', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1', 'status': 'archived'},
+          ]);
+
+          final result = await fakeWrapper.selectMatch(
+            table: 'items',
+            filters: {'project_id': 'p1', 'status': 'active'},
+          );
+
+          expect(result, isEmpty);
+        });
+
+        test('returns empty list when table does not exist', () async {
+          final result = await fakeWrapper.selectMatch(
+            table: 'nonexistent',
+            filters: {'id': '1'},
+          );
+
+          expect(result, isEmpty);
+        });
+
+        test('records method call with all parameters', () async {
+          fakeWrapper.addTableData('items', []);
+
+          await fakeWrapper.selectMatch(
+            table: 'items',
+            columns: 'id,status',
+            filters: {'project_id': 'p1', 'status': 'active'},
+          );
+
+          final calls = fakeWrapper.getMethodCallsFor('selectMatch');
+          expect(calls, hasLength(1));
+          final call = calls.first;
+          expect(call['table'], equals('items'));
+          expect(call['columns'], equals('id,status'));
+          expect(
+            call['filters'],
+            equals({'project_id': 'p1', 'status': 'active'}),
+          );
+        });
+
+        test('records call before delay completes', () async {
+          fakeWrapper.addTableData('items', []);
+          fakeWrapper.shouldDelayOperations = true;
+          fakeWrapper.completer = Completer();
+
+          final future = fakeWrapper.selectMatch(
+            table: 'items',
+            filters: {'id': '1'},
+          );
+
+          expect(
+            fakeWrapper.getMethodCallsFor('selectMatch'),
+            hasLength(1),
+            reason: 'Call must be recorded before the delay resolves',
+          );
+
+          fakeWrapper.completer!.complete();
+          await future;
+        });
+
+        test('throws exception when configured to fail', () async {
+          fakeWrapper.shouldThrowOnSelectMatch = true;
+          fakeWrapper.selectMatchErrorMessage = 'Select match failed';
+
+          await expectLater(
+            () async => fakeWrapper.selectMatch(
+              table: 'items',
+              filters: {'id': '1'},
+            ),
+            throwsA(
+              isA<ServerException>().having(
+                (e) => e.toString(),
+                'message',
+                contains('Select match failed'),
+              ),
+            ),
+          );
+        });
+
+        test('returns empty list when shouldReturnEmptyOnSelectMatch is true',
+            () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1'},
+          ]);
+          fakeWrapper.shouldReturnEmptyOnSelectMatch = true;
+
+          final result = await fakeWrapper.selectMatch(
+            table: 'items',
+            filters: {'project_id': 'p1'},
+          );
+
+          expect(result, isEmpty);
+        });
+
+        test(
+          'shouldThrowOnSelectMultiple does not affect selectMatch',
+          () async {
+            fakeWrapper.addTableData('items', [
+              {'id': '1', 'project_id': 'p1'},
+            ]);
+            fakeWrapper.shouldThrowOnSelectMultiple = true;
+
+            final result = await fakeWrapper.selectMatch(
+              table: 'items',
+              filters: {'project_id': 'p1'},
+            );
+
+            expect(
+              result,
+              hasLength(1),
+              reason:
+                  'selectMatch must not be affected by shouldThrowOnSelectMultiple',
+            );
+          },
+        );
+
+        test('defaults to all columns when columns not specified', () async {
+          fakeWrapper.addTableData('items', []);
+
+          await fakeWrapper.selectMatch(
+            table: 'items',
+            filters: {'id': '1'},
+          );
+
+          final call = fakeWrapper.getMethodCallsFor('selectMatch').first;
+          expect(call['columns'], equals('*'));
+        });
+      });
+
+      group('upsert', () {
+        test('inserts a new record when no conflict exists', () async {
+          await fakeWrapper.upsert(
+            table: 'profiles',
+            data: {'user_id': 'u1', 'bio': 'Hello'},
+            onConflict: 'user_id',
+          );
+
+          final result = await fakeWrapper.selectSingle(
+            table: 'profiles',
+            filterColumn: 'user_id',
+            filterValue: 'u1',
+          );
+
+          expect(result, isNotNull);
+          expect(result!['bio'], equals('Hello'));
+          expect(result['created_at'], isNotNull);
+          expect(result['updated_at'], isNotNull);
+        });
+
+        test('updates an existing record when a conflict is found', () async {
+          fakeWrapper.addTableData('profiles', [
+            {
+              'id': '1',
+              'user_id': 'u1',
+              'bio': 'Old bio',
+              'created_at': '2024-01-01T00:00:00Z',
+              'updated_at': '2024-01-01T00:00:00Z',
+            },
+          ]);
+
+          await fakeWrapper.upsert(
+            table: 'profiles',
+            data: {'user_id': 'u1', 'bio': 'New bio'},
+            onConflict: 'user_id',
+          );
+
+          final result = await fakeWrapper.selectSingle(
+            table: 'profiles',
+            filterColumn: 'user_id',
+            filterValue: 'u1',
+          );
+
+          expect(result!['bio'], equals('New bio'));
+        });
+
+        test('preserves created_at on update and only sets it on insert',
+            () async {
+          const originalCreatedAt = '2024-01-01T00:00:00Z';
+          fakeWrapper.addTableData('profiles', [
+            {
+              'id': '1',
+              'user_id': 'u1',
+              'bio': 'Old bio',
+              'created_at': originalCreatedAt,
+              'updated_at': originalCreatedAt,
+            },
+          ]);
+
+          await fakeWrapper.upsert(
+            table: 'profiles',
+            data: {'user_id': 'u1', 'bio': 'Updated bio'},
+            onConflict: 'user_id',
+          );
+
+          final result = await fakeWrapper.selectSingle(
+            table: 'profiles',
+            filterColumn: 'user_id',
+            filterValue: 'u1',
+          );
+
+          expect(
+            result!['created_at'],
+            equals(originalCreatedAt),
+            reason: 'created_at must not change on upsert update path',
+          );
+          expect(
+            result['updated_at'],
+            isNot(equals(originalCreatedAt)),
+            reason: 'updated_at must be refreshed on upsert update path',
+          );
+        });
+
+        test('does not mutate other rows when upserting on conflict', () async {
+          fakeWrapper.addTableData('profiles', [
+            {
+              'id': '1',
+              'user_id': 'u1',
+              'bio': 'User 1',
+              'created_at': '2024-01-01T00:00:00Z',
+            },
+            {
+              'id': '2',
+              'user_id': 'u2',
+              'bio': 'User 2',
+              'created_at': '2024-01-01T00:00:00Z',
+            },
+          ]);
+
+          await fakeWrapper.upsert(
+            table: 'profiles',
+            data: {'user_id': 'u1', 'bio': 'Updated User 1'},
+            onConflict: 'user_id',
+          );
+
+          final untouched = await fakeWrapper.selectSingle(
+            table: 'profiles',
+            filterColumn: 'user_id',
+            filterValue: 'u2',
+          );
+          expect(untouched!['bio'], equals('User 2'));
+        });
+
+        test('records method call with all parameters', () async {
+          await fakeWrapper.upsert(
+            table: 'profiles',
+            data: {'user_id': 'u1', 'bio': 'Hello'},
+            onConflict: 'user_id',
+          );
+
+          final calls = fakeWrapper.getMethodCallsFor('upsert');
+          expect(calls, hasLength(1));
+          final call = calls.first;
+          expect(call['table'], equals('profiles'));
+          expect(call['data'], equals({'user_id': 'u1', 'bio': 'Hello'}));
+          expect(call['onConflict'], equals('user_id'));
+        });
+
+        test('records call before delay completes', () async {
+          fakeWrapper.shouldDelayOperations = true;
+          fakeWrapper.completer = Completer();
+
+          final future = fakeWrapper.upsert(
+            table: 'profiles',
+            data: {'user_id': 'u1'},
+            onConflict: 'user_id',
+          );
+
+          expect(
+            fakeWrapper.getMethodCallsFor('upsert'),
+            hasLength(1),
+            reason: 'Call must be recorded before the delay resolves',
+          );
+
+          fakeWrapper.completer!.complete();
+          await future;
+        });
+
+        test('emits updated table data to stream after upsert', () async {
+          final stream = fakeWrapper.watchTable(
+            table: 'profiles',
+            primaryKey: ['user_id'],
+          );
+
+          await fakeWrapper.upsert(
+            table: 'profiles',
+            data: {'user_id': 'u1', 'bio': 'Hello'},
+            onConflict: 'user_id',
+          );
+
+          await expectLater(
+            stream,
+            emitsThrough(
+              contains(containsPair('bio', 'Hello')),
+            ),
+          );
+        });
+
+        test('throws exception when configured to fail', () async {
+          fakeWrapper.shouldThrowOnUpsert = true;
+          fakeWrapper.upsertErrorMessage = 'Upsert failed';
+
+          await expectLater(
+            () async => fakeWrapper.upsert(
+              table: 'profiles',
+              data: {'user_id': 'u1'},
+              onConflict: 'user_id',
+            ),
+            throwsA(
+              isA<ServerException>().having(
+                (e) => e.toString(),
+                'message',
+                contains('Upsert failed'),
+              ),
+            ),
+          );
+        });
+
+        test('supports compound conflict columns', () async {
+          fakeWrapper.addTableData('memberships', [
+            {
+              'id': '1',
+              'project_id': 'p1',
+              'user_id': 'u1',
+              'role': 'viewer',
+              'created_at': '2024-01-01T00:00:00Z',
+            },
+          ]);
+
+          await fakeWrapper.upsert(
+            table: 'memberships',
+            data: {'project_id': 'p1', 'user_id': 'u1', 'role': 'editor'},
+            onConflict: 'project_id, user_id',
+          );
+
+          final rows = await fakeWrapper.select(
+            table: 'memberships',
+            filterColumn: 'project_id',
+            filterValue: 'p1',
+          );
+
+          expect(
+            rows,
+            hasLength(1),
+            reason: 'Compound conflict should update, not insert a duplicate',
+          );
+          expect(rows.single['role'], equals('editor'));
+        });
       });
 
       group('rpc', () {
@@ -1720,8 +2176,12 @@ void main() {
         fakeWrapper.shouldThrowOnInsert = true;
         fakeWrapper.shouldThrowOnUpdate = true;
         fakeWrapper.shouldThrowOnSelectMultiple = true;
+        fakeWrapper.shouldThrowOnSelectMatch = true;
         fakeWrapper.shouldThrowOnDelete = true;
+        fakeWrapper.shouldThrowOnDeleteMatch = true;
+        fakeWrapper.shouldThrowOnUpsert = true;
         fakeWrapper.shouldThrowOnRpc = true;
+        fakeWrapper.shouldReturnEmptyOnSelectMatch = true;
         fakeWrapper.signInErrorMessage = 'Sign in failed';
         fakeWrapper.signUpErrorMessage = 'Sign up failed';
         fakeWrapper.otpErrorMessage = 'OTP failed';
@@ -1729,15 +2189,21 @@ void main() {
         fakeWrapper.resetPasswordErrorMessage = 'Reset password failed';
         fakeWrapper.signOutErrorMessage = 'Sign out failed';
         fakeWrapper.selectErrorMessage = 'Select failed';
+        fakeWrapper.selectMatchErrorMessage = 'Select match failed';
+        fakeWrapper.upsertErrorMessage = 'Upsert failed';
         fakeWrapper.insertErrorMessage = 'Insert failed';
         fakeWrapper.updateErrorMessage = 'Update failed';
         fakeWrapper.deleteErrorMessage = 'Delete failed';
+        fakeWrapper.deleteMatchErrorMessage = 'Delete match failed';
         fakeWrapper.rpcErrorMessage = 'RPC failed';
         fakeWrapper.selectExceptionType = SupabaseExceptionType.postgrest;
         fakeWrapper.selectMultipleExceptionType = SupabaseExceptionType.socket;
+        fakeWrapper.selectMatchExceptionType = SupabaseExceptionType.socket;
+        fakeWrapper.upsertExceptionType = SupabaseExceptionType.timeout;
         fakeWrapper.insertExceptionType = SupabaseExceptionType.timeout;
         fakeWrapper.updateExceptionType = SupabaseExceptionType.auth;
         fakeWrapper.deleteExceptionType = SupabaseExceptionType.type;
+        fakeWrapper.deleteMatchExceptionType = SupabaseExceptionType.type;
         fakeWrapper.rpcExceptionType = SupabaseExceptionType.postgrest;
         fakeWrapper.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
         fakeWrapper.shouldReturnNullUser = true;
@@ -1771,8 +2237,12 @@ void main() {
         expect(fakeWrapper.shouldThrowOnInsert, isFalse);
         expect(fakeWrapper.shouldThrowOnUpdate, isFalse);
         expect(fakeWrapper.shouldThrowOnSelectMultiple, isFalse);
+        expect(fakeWrapper.shouldThrowOnSelectMatch, isFalse);
         expect(fakeWrapper.shouldThrowOnDelete, isFalse);
+        expect(fakeWrapper.shouldThrowOnDeleteMatch, isFalse);
+        expect(fakeWrapper.shouldThrowOnUpsert, isFalse);
         expect(fakeWrapper.shouldThrowOnRpc, isFalse);
+        expect(fakeWrapper.shouldReturnEmptyOnSelectMatch, isFalse);
         expect(fakeWrapper.signInErrorMessage, isNull);
         expect(fakeWrapper.signUpErrorMessage, isNull);
         expect(fakeWrapper.otpErrorMessage, isNull);
@@ -1780,15 +2250,21 @@ void main() {
         expect(fakeWrapper.resetPasswordErrorMessage, isNull);
         expect(fakeWrapper.signOutErrorMessage, isNull);
         expect(fakeWrapper.selectErrorMessage, isNull);
+        expect(fakeWrapper.selectMatchErrorMessage, isNull);
+        expect(fakeWrapper.upsertErrorMessage, isNull);
         expect(fakeWrapper.insertErrorMessage, isNull);
         expect(fakeWrapper.updateErrorMessage, isNull);
         expect(fakeWrapper.deleteErrorMessage, isNull);
+        expect(fakeWrapper.deleteMatchErrorMessage, isNull);
         expect(fakeWrapper.rpcErrorMessage, isNull);
         expect(fakeWrapper.selectExceptionType, isNull);
         expect(fakeWrapper.selectMultipleExceptionType, isNull);
+        expect(fakeWrapper.selectMatchExceptionType, isNull);
+        expect(fakeWrapper.upsertExceptionType, isNull);
         expect(fakeWrapper.insertExceptionType, isNull);
         expect(fakeWrapper.updateExceptionType, isNull);
         expect(fakeWrapper.deleteExceptionType, isNull);
+        expect(fakeWrapper.deleteMatchExceptionType, isNull);
         expect(fakeWrapper.rpcExceptionType, isNull);
         expect(fakeWrapper.postgrestErrorCode, isNull);
         expect(fakeWrapper.shouldReturnNullUser, isFalse);
