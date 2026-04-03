@@ -27,8 +27,18 @@ class GlobalSearchRepositoryImpl implements GlobalSearchRepository {
   GlobalSearchRepositoryImpl({required GlobalSearchDataSource dataSource})
     : _dataSource = dataSource;
 
-  SearchScopeDto _toDataScope(SearchScope entity) =>
-      SearchScopeDto.values.byName(entity.name);
+  SearchScopeDto _toDataScope(SearchScope entity) {
+    switch (entity) {
+      case SearchScope.dashboard:
+        return SearchScopeDto.dashboard;
+      case SearchScope.calculation:
+        return SearchScopeDto.calculation;
+      case SearchScope.estimation:
+        return SearchScopeDto.estimation;
+      case SearchScope.member:
+        return SearchScopeDto.member;
+    }
+  }
 
   SearchParamsDto _toDataParams(SearchParams entity) {
     final entityScope = entity.scope;
@@ -80,6 +90,14 @@ class GlobalSearchRepositoryImpl implements GlobalSearchRepository {
           'code=${error.code}, message=${error.message}',
         );
         return SearchFailure(errorType: SearchErrorType.notFoundError);
+      }
+
+      if (postgresErrorCode == PostgresErrorCode.uniqueViolation) {
+        _logger.warning(
+          'Unique constraint violation $operation: '
+          'code=${error.code}, message=${error.message}',
+        );
+        return SearchFailure(errorType: SearchErrorType.duplicateEntryError);
       }
 
       if (postgresErrorCode == PostgresErrorCode.connectionFailure ||
