@@ -1,5 +1,5 @@
 import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/features/estimation/estimation_routes_module.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
@@ -34,7 +34,7 @@ class _CostEstimationDetailsPageA11yTestModule extends Module {
 
   @override
   void routes(RouteManager r) {
-    r.module(estimationBaseRoute, module: EstimationModule(appBootstrap));
+    r.module(estimationBaseRoute, module: EstimationRoutesModule(appBootstrap));
   }
 }
 
@@ -146,29 +146,28 @@ void main() {
       },
     );
 
-    testWidgets(
-      'meets a11y text contrast for app bar title in both themes',
-      (tester) async {
-        setUpAuthenticatedUser(
-          credentialId: 'test-credential-id',
-          email: 'test@example.com',
-        );
+    testWidgets('meets a11y text contrast for app bar title in both themes', (
+      tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
 
-        await setupA11yTest(tester);
-        await pumpAppAtRoute(tester, testEstimationRoute);
+      await setupA11yTest(tester);
+      await pumpAppAtRoute(tester, testEstimationRoute);
 
-        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-          tester,
-          (theme) => makeApp(theme: theme),
-          find.text('Estimation Details'),
-          checkTextContrast: false,
-          setupAfterPump: (t) async {
-            Modular.to.navigate(testEstimationRoute);
-            await t.pumpAndSettle();
-          },
-        );
-      },
-    );
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        (theme) => makeApp(theme: theme),
+        find.text('Estimation Details'),
+        checkTextContrast: false,
+        setupAfterPump: (t) async {
+          Modular.to.navigate(testEstimationRoute);
+          await t.pumpAndSettle();
+        },
+      );
+    });
 
     testWidgets(
       'meets a11y text contrast for estimation ID text in both themes',
