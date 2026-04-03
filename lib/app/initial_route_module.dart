@@ -24,6 +24,8 @@ class InitialRouteHandler extends StatefulWidget {
 }
 
 class _InitialRouteHandlerState extends State<InitialRouteHandler> {
+  late final AuthManager _authManager = Modular.get<AuthManager>();
+
   @override
   void initState() {
     super.initState();
@@ -31,20 +33,17 @@ class _InitialRouteHandlerState extends State<InitialRouteHandler> {
   }
 
   Future<void> _navigateToInitialRoute() async {
+    // Allow one frame before navigation dispatch to avoid route handoff races
+    // between module initialization and the first rendered frame.
     await Future.delayed(const Duration(milliseconds: 100));
 
     if (!mounted) return;
 
-    final authManager = Modular.get<AuthManager>();
-    final isAuthenticated = await authManager.isAuthenticated();
+    final isAuthenticated = _authManager.isAuthenticated();
 
     if (!mounted) return;
 
-    if (isAuthenticated) {
-      Modular.to.navigate(fullDashboardRoute);
-    } else {
-      Modular.to.navigate(fullLoginRoute);
-    }
+    Modular.to.navigate(resolveInitialRoute(isAuthenticated));
   }
 
   @override
@@ -52,7 +51,11 @@ class _InitialRouteHandlerState extends State<InitialRouteHandler> {
     final colors = context.colorTheme;
     return Scaffold(
       backgroundColor: colors.backgroundDarkOrient,
-      body: SizedBox.shrink(),
+      body: const SizedBox.shrink(),
     );
   }
+}
+
+String resolveInitialRoute(bool isAuthenticated) {
+  return isAuthenticated ? fullDashboardRoute : fullLoginRoute;
 }
