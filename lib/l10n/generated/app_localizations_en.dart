@@ -660,4 +660,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String activityEditedFieldValueCrew(String value) {
     return '$value crew';
   }
+
+  @override
+  String get appTitle => 'Construculator';
+
+  @override
+  String get homeTab => 'Home';
+
+  @override
+  String get calculationsTab => 'Calculations';
+
+  @override
+  String get membersTab => 'Members';
 }

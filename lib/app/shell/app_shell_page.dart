@@ -5,10 +5,7 @@ import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/app/shell/widgets/tab_navigator.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
-import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
-import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
-import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
-import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
+import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
@@ -88,9 +85,6 @@ class _AppShellPageState extends State<AppShellPage> {
   }
 
   Widget _buildTabRoot(ShellTab tab) {
-    if (!_moduleLoader.isLoaded(tab)) {
-      return const Center(child: CircularProgressIndicator());
-    }
     switch (tab) {
       case ShellTab.home:
         return const DashboardPage();
@@ -101,23 +95,7 @@ class _AppShellPageState extends State<AppShellPage> {
         if (projectId == null || projectId.isEmpty) {
           return const SizedBox.shrink();
         }
-        return MultiBlocProvider(
-          providers: [
-            BlocProvider<CostEstimationListBloc>(
-              create: (context) {
-                return Modular.get<CostEstimationListBloc>()
-                  ..add(CostEstimationListStartWatching(projectId: projectId));
-              },
-            ),
-            BlocProvider(
-              create: (context) => Modular.get<AddCostEstimationBloc>(),
-            ),
-            BlocProvider(
-              create: (context) => Modular.get<DeleteCostEstimationBloc>(),
-            ),
-          ],
-          child: CostEstimationLandingPage(projectId: projectId),
-        );
+        return EstimationModule.landingPage(projectId: projectId);
       case ShellTab.members:
         return const MembersPage();
     }
@@ -168,14 +146,18 @@ class _AppShellPageState extends State<AppShellPage> {
               children: List.generate(ShellTab.values.length, (index) {
                 final tab = ShellTab.values[index];
                 final isLoaded = state.loadedTabIndexes.contains(index);
+                final isActive = state.selectedTabIndex == index;
                 return Offstage(
-                  offstage: state.selectedTabIndex != index,
-                  child: isLoaded
-                      ? TabNavigator(
-                          navigatorKey: _tabNavigatorKeys[index],
-                          rootBuilder: (_) => _buildTabRoot(tab),
-                        )
-                      : const SizedBox.shrink(),
+                  offstage: !isActive,
+                  child: TickerMode(
+                    enabled: isActive,
+                    child: isLoaded
+                        ? TabNavigator(
+                            navigatorKey: _tabNavigatorKeys[index],
+                            rootBuilder: (_) => _buildTabRoot(tab),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
                 );
               }),
             ),
