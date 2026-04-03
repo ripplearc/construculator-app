@@ -1,5 +1,5 @@
 import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/features/global_search/data/models/pagination_params.dart';
+import 'package:construculator/features/global_search/domain/entities/pagination_params.dart';
 import 'package:construculator/features/global_search/domain/entities/search_params_entity.dart';
 import 'package:construculator/features/global_search/domain/entities/search_scope_entity.dart';
 import 'package:construculator/features/global_search/data/repositories/global_search_repository_impl.dart';
@@ -162,7 +162,7 @@ void main() {
           );
 
           final result = await repository.search(
-            const SearchParamsEntity(query: 'foundation'),
+            const SearchParams(query: 'foundation'),
           );
 
           expect(result.isRight(), isTrue);
@@ -187,7 +187,7 @@ void main() {
           );
 
           final result = await repository.search(
-            const SearchParamsEntity(query: 'nonexistent'),
+            const SearchParams(query: 'nonexistent'),
           );
 
           expect(result.isRight(), isTrue);
@@ -208,12 +208,12 @@ void main() {
           );
 
           final filterDate = DateTime(2024, 6, 1);
-          final params = SearchParamsEntity(
+          final params = SearchParams(
             query: 'concrete',
             filterByTag: 'structural',
             filterByDate: filterDate,
             filterByOwner: 'owner-42',
-            scope: SearchScopeEntity.estimation,
+            scope: SearchScope.estimation,
             pagination: const PaginationParams(offset: 5, limit: 10),
           );
 
@@ -244,7 +244,7 @@ void main() {
           fakeSupabaseWrapper.rpcErrorMessage = errorMsgTimeout;
 
           final result = await repository.search(
-            const SearchParamsEntity(query: 'test'),
+            const SearchParams(query: 'test'),
           );
 
           expect(result.isLeft(), isTrue);
@@ -266,7 +266,7 @@ void main() {
           fakeSupabaseWrapper.rpcErrorMessage = errorMsgNetwork;
 
           final result = await repository.search(
-            const SearchParamsEntity(query: 'test'),
+            const SearchParams(query: 'test'),
           );
 
           expect(result.isLeft(), isTrue);
@@ -287,7 +287,7 @@ void main() {
           fakeSupabaseWrapper.rpcExceptionType = SupabaseExceptionType.type;
 
           final result = await repository.search(
-            const SearchParamsEntity(query: 'test'),
+            const SearchParams(query: 'test'),
           );
 
           expect(result.isLeft(), isTrue);
@@ -312,7 +312,7 @@ void main() {
           fakeSupabaseWrapper.rpcErrorMessage = 'Connection lost';
 
           final result = await repository.search(
-            const SearchParamsEntity(query: 'test'),
+            const SearchParams(query: 'test'),
           );
 
           expect(result.isLeft(), isTrue);
@@ -337,7 +337,7 @@ void main() {
           fakeSupabaseWrapper.rpcErrorMessage = 'No data found';
 
           final result = await repository.search(
-            const SearchParamsEntity(query: 'test'),
+            const SearchParams(query: 'test'),
           );
 
           expect(result.isLeft(), isTrue);
@@ -362,7 +362,7 @@ void main() {
           fakeSupabaseWrapper.rpcErrorMessage = 'Unique violation';
 
           final result = await repository.search(
-            const SearchParamsEntity(query: 'test'),
+            const SearchParams(query: 'test'),
           );
 
           expect(result.isLeft(), isTrue);
@@ -384,7 +384,7 @@ void main() {
           fakeSupabaseWrapper.rpcErrorMessage = errorMsgServer;
 
           final result = await repository.search(
-            const SearchParamsEntity(query: 'test'),
+            const SearchParams(query: 'test'),
           );
 
           expect(result.isLeft(), isTrue);
@@ -413,17 +413,17 @@ void main() {
           _fakeSearchHistoryData(
             userId: testUserId,
             searchTerm: 'wall',
-            scope: SearchScopeEntity.dashboard.name,
+            scope: SearchScope.dashboard.name,
           ),
           _fakeSearchHistoryData(
             userId: testUserId,
             searchTerm: 'concrete',
-            scope: SearchScopeEntity.dashboard.name,
+            scope: SearchScope.dashboard.name,
           ),
         ]);
 
         final result = await repository.getRecentSearches(
-          SearchScopeEntity.dashboard,
+          SearchScope.dashboard,
         );
 
         expect(result.isRight(), isTrue);
@@ -437,7 +437,7 @@ void main() {
         fakeSupabaseWrapper.setCurrentUser(null);
 
         final result = await repository.getRecentSearches(
-          SearchScopeEntity.dashboard,
+          SearchScope.dashboard,
         );
 
         expect(result.isRight(), isTrue);
@@ -459,12 +459,12 @@ void main() {
                 _fakeSearchHistoryData(
                   userId: testUserId,
                   searchTerm: 'steel',
-                  scope: SearchScopeEntity.estimation.name,
+                  scope: SearchScope.estimation.name,
                 ),
               ]);
 
           final result = await repository.getRecentSearches(
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isRight(), isTrue);
@@ -488,7 +488,7 @@ void main() {
           fakeSupabaseWrapper.selectMatchErrorMessage = errorMsgTimeout;
 
           final result = await repository.getRecentSearches(
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isLeft(), isTrue);
@@ -518,7 +518,7 @@ void main() {
           fakeSupabaseWrapper.selectMatchErrorMessage = errorMsgNetwork;
 
           final result = await repository.getRecentSearches(
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isLeft(), isTrue);
@@ -550,7 +550,7 @@ void main() {
           fakeSupabaseWrapper.selectMatchErrorMessage = 'Connection lost';
 
           final result = await repository.getRecentSearches(
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isLeft(), isTrue);
@@ -582,7 +582,7 @@ void main() {
           fakeSupabaseWrapper.selectMatchErrorMessage = 'Unique violation';
 
           final result = await repository.getRecentSearches(
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isLeft(), isTrue);
@@ -614,7 +614,7 @@ void main() {
           fakeSupabaseWrapper.selectMatchErrorMessage = 'No data found';
 
           final result = await repository.getRecentSearches(
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isLeft(), isTrue);
@@ -643,7 +643,7 @@ void main() {
               SupabaseExceptionType.type;
 
           final result = await repository.getRecentSearches(
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isLeft(), isTrue);
@@ -673,7 +673,7 @@ void main() {
           fakeSupabaseWrapper.selectMatchErrorMessage = errorMsgServer;
 
           final result = await repository.getRecentSearches(
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isLeft(), isTrue);
@@ -701,7 +701,7 @@ void main() {
 
         final result = await repository.saveRecentSearch(
           'wall',
-          SearchScopeEntity.dashboard,
+          SearchScope.dashboard,
         );
 
         expect(result.isRight(), isTrue);
@@ -714,7 +714,7 @@ void main() {
 
           final result = await repository.saveRecentSearch(
             'wall',
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isRight(), isTrue);
@@ -735,7 +735,7 @@ void main() {
 
           final result = await repository.saveRecentSearch(
             '   ',
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isRight(), isTrue);
@@ -754,7 +754,7 @@ void main() {
 
         await repository.saveRecentSearch(
           'concrete',
-          SearchScopeEntity.dashboard,
+          SearchScope.dashboard,
           hasResults: true,
           projectId: 'project-42',
         );
@@ -783,7 +783,7 @@ void main() {
 
           final result = await repository.saveRecentSearch(
             'wall',
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isLeft(), isTrue);
@@ -814,7 +814,7 @@ void main() {
 
           final result = await repository.saveRecentSearch(
             'wall',
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isLeft(), isTrue);
@@ -847,7 +847,7 @@ void main() {
 
           final result = await repository.saveRecentSearch(
             'wall',
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isLeft(), isTrue);
@@ -880,7 +880,7 @@ void main() {
 
           final result = await repository.saveRecentSearch(
             'wall',
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isLeft(), isTrue);
@@ -911,7 +911,7 @@ void main() {
 
           final result = await repository.saveRecentSearch(
             'wall',
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isLeft(), isTrue);
@@ -940,13 +940,13 @@ void main() {
           _fakeSearchHistoryData(
             userId: testUserId,
             searchTerm: 'wall',
-            scope: SearchScopeEntity.dashboard.name,
+            scope: SearchScope.dashboard.name,
           ),
         ]);
 
         final result = await repository.deleteRecentSearch(
           'wall',
-          SearchScopeEntity.dashboard,
+          SearchScope.dashboard,
         );
 
         expect(result.isRight(), isTrue);
@@ -959,7 +959,7 @@ void main() {
 
           final result = await repository.deleteRecentSearch(
             'wall',
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isRight(), isTrue);
@@ -980,7 +980,7 @@ void main() {
 
           final result = await repository.deleteRecentSearch(
             '   ',
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isRight(), isTrue);
@@ -999,7 +999,7 @@ void main() {
             ),
           );
 
-          await repository.deleteRecentSearch('wall', SearchScopeEntity.dashboard);
+          await repository.deleteRecentSearch('wall', SearchScope.dashboard);
 
           final deleteCalls = fakeSupabaseWrapper.getMethodCallsFor(
             'deleteMatch',
@@ -1014,7 +1014,7 @@ void main() {
           expect(filters[DatabaseConstants.searchTermColumn], equals('wall'));
           expect(
             filters[DatabaseConstants.scopeColumn],
-            equals(SearchScopeEntity.dashboard.name),
+            equals(SearchScope.dashboard.name),
           );
         },
       );
@@ -1036,7 +1036,7 @@ void main() {
 
           final result = await repository.deleteRecentSearch(
             'wall',
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isLeft(), isTrue);
@@ -1067,7 +1067,7 @@ void main() {
 
           final result = await repository.deleteRecentSearch(
             'wall',
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isLeft(), isTrue);
@@ -1100,7 +1100,7 @@ void main() {
 
           final result = await repository.deleteRecentSearch(
             'wall',
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isLeft(), isTrue);
@@ -1133,7 +1133,7 @@ void main() {
 
           final result = await repository.deleteRecentSearch(
             'wall',
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isLeft(), isTrue);
@@ -1164,7 +1164,7 @@ void main() {
 
           final result = await repository.deleteRecentSearch(
             'wall',
-            SearchScopeEntity.dashboard,
+            SearchScope.dashboard,
           );
 
           expect(result.isLeft(), isTrue);
