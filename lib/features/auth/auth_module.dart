@@ -170,4 +170,5 @@ void _registerDependencies(Injector i) {
   i.add<SetNewPasswordBloc>(
     () => SetNewPasswordBloc(setNewPasswordUseCase: i()),
   );
+
 }

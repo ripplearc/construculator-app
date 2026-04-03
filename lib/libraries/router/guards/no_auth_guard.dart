@@ -5,7 +5,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 /// Guard that ensures the user is not authenticated before allowing access to a route.
 /// Use this guard on routes that requires that the user is not authenticated.
 class NoAuthGuard extends RouteGuard {
-  NoAuthGuard() : super(redirectTo: dashboardRoute);
+  NoAuthGuard() : super(redirectTo: fullDashboardRoute);
 
   @override
   Future<bool> canActivate(String path, ModularRoute router) async {
