@@ -21,14 +21,14 @@ abstract class GlobalSearchRepository {
   /// and members.
   ///
   /// Filtering (tag, date, owner, scope) and pagination are driven by [params].
-  Future<Either<Failure, SearchResults>> search(SearchParamsEntity params);
+  Future<Either<Failure, SearchResults>> search(SearchParams params);
 
   /// Fetches the authenticated user's recent search terms for the given [scope].
   ///
   /// Returns a [Future] that completes with an [Either] containing either
   /// a [Failure] or a [List<String>] ordered by most recent first.
   /// Returns an empty list when the user is not authenticated.
-  Future<Either<Failure, List<String>>> getRecentSearches(SearchScopeEntity scope);
+  Future<Either<Failure, List<String>>> getRecentSearches(SearchScope scope);
 
   /// Saves [searchTerm] to the authenticated user's history for [scope].
   ///
@@ -43,7 +43,7 @@ abstract class GlobalSearchRepository {
   /// Does nothing when the user is not authenticated or the term is empty.
   Future<Either<Failure, void>> saveRecentSearch(
     String searchTerm,
-    SearchScopeEntity scope, {
+    SearchScope scope, {
     String? projectId,
     bool hasResults = false,
   });
@@ -58,7 +58,7 @@ abstract class GlobalSearchRepository {
   /// Does nothing when the user is not authenticated or the term is empty.
   Future<Either<Failure, void>> deleteRecentSearch(
     String searchTerm,
-    SearchScopeEntity scope,
+    SearchScope scope,
   );
 
   /// Fetches personalized search suggestions for the authenticated user.
