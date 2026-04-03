@@ -1,8 +1,21 @@
 import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/app/shell/default_tab_providers.dart';
+import 'package:construculator/app/shell/module_model.dart';
 
-enum ShellTab { home, calculations, estimation, members }
+/// Represents the tabs available in the app shell's bottom navigation bar.
+enum ShellTab {
+  /// The home/dashboard tab.
+  home,
+
+  /// The calculations feature tab.
+  calculations,
+
+  /// The cost estimation feature tab.
+  estimation,
+
+  /// The team members feature tab.
+  members,
+}
 
 /// Manages lazy loading of modules for shell tabs.
 ///
@@ -27,6 +40,8 @@ class TabModuleManager {
     ShellTab.members: const NoOpTabModuleProvider(),
   };
 
+  /// Ensures the module for [tab] is loaded, calling its provider exactly once.
+  /// Subsequent calls for the same tab are no-ops.
   Future<void> ensureTabModuleLoaded(ShellTab tab) async {
     if (_loadedTabs.contains(tab)) return;
     final provider = _providers[tab];
@@ -36,5 +51,6 @@ class TabModuleManager {
     _loadedTabs.add(tab);
   }
 
+  /// Returns `true` if the module for [tab] has already been loaded.
   bool isLoaded(ShellTab tab) => _loadedTabs.contains(tab);
 }
