@@ -31,9 +31,8 @@ class ProjectModule extends Module {
 void _registerDependencies(Injector i) {
   i.addLazySingleton<CurrentProjectNotifier>(
     () => CurrentProjectNotifierImpl(
-      // TODO(integration-pr): Replace with ProjectDropdownBloc listener.
-      // See sequencing plan: AppShellPage adds BlocListener<ProjectDropdownBloc>
-      // that calls setCurrentProjectId on ProjectDropdownLoadSuccess.
+      // TODO: CA-615 Wire CurrentProjectNotifier via ProjectDropdownBloc in AppShellPage
+      // https://ripplearc.youtrack.cloud/issue/CA-615
       initialProjectId: '950e8400-e29b-41d4-a716-446655440001',
     ),
   );
