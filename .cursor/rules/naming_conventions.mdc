@@ -108,3 +108,10 @@ Ensure consistent naming across the architecture and guide engineers on **when t
 - Raw persistence/fetch? → **DataSource**
 - Creating configured instances? → **Factory**
 - Stateless shared logic? → **Helper/Util**
+
+## Testing & Quality Standards
+- **FVM Requirement:** ALWAYS use `fvm` for Flutter commands. When running or generating test commands, you must use `fvm flutter test` instead of just `flutter test`.
+- **Zero Missing Tests:** All new features, UseCases, BLoCs, and Repositories MUST have comprehensive tests. Do not submit code without its corresponding tests.
+- **No Flakiness:** Tests must be 100% deterministic. NEVER use artificial delays (like `Future.delayed`) to wait for state changes. Always properly await BLoC streams and async operations.
+- **Strict Linting (`ripplearc_linter`):** Code MUST NOT violate any linter rules, specifically those defined in the `ripplearc_linter` package (including `avoid_test_timeouts`, `no_direct_instantiation`). The code must have 0 warnings and 0 errors.
+- **Mocking Boundaries:** When testing, NEVER mock the `RemoteDataSource` or the `Repository`. You MUST use the REAL implementations of the Repository and DataSource. ONLY fake the external `SupabaseClient` and inject it down into the real classes.
