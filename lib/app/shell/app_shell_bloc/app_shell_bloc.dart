@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 part 'app_shell_event.dart';
 part 'app_shell_state.dart';
 
+/// BLoC responsible for managing tab selection and lazy-load state in the app shell.
 class AppShellBloc extends Bloc<AppShellEvent, AppShellState> {
   AppShellBloc()
     : super(const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {0})) {
