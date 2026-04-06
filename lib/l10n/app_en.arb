@@ -569,6 +569,10 @@
   "@calculations": {
     "description": "Label for calculations tab or header"
   },
+  "members": "Members",
+  "@members": {
+    "description": "Label for members tab or header"
+  },
   "costEstimationEmptyMessage": "No estimation added. To add an estimation please click on add button",
   "@costEstimationEmptyMessage": {
     "description": "Empty state message shown when no cost estimations exist",
