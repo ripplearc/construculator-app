@@ -73,8 +73,7 @@ After pushing, run `--pre` first to quickly check changed files, then run `--all
 
 ### What the script does
 
-1. Verifies required to
-ols (`git`, `flutter`, `dart`, and `lcov` when needed).
+1. Verifies required tools (`git`, `flutter`, `dart`, and `lcov` when needed).
 2. Validates branch and dependency state before quality gates.
 3. Runs `fvm flutter pub get`.
 4. Rebases against `origin/<target>` to detect conflicts early.
@@ -123,7 +122,8 @@ This keeps pre-checks faster while preserving quality on authored code.
 
 ### Mutation testing behavior
 
-- Mutation mode looks for changed XML configs under:
+- Mutation mode is triggered by running the script with the `--mutations` flag.
+- The script looks for changed XML config files under:
    - `test/features/**/mutations/*.xml`
    - `test/libraries/**/mutations/*.xml`
 - If no mutation config changed, mutation run is skipped with a success exit.
@@ -137,8 +137,11 @@ dart run mutation_test <changed-configs> --no-builtin
 
 - Android:
    - Detects product flavors from `android/app/build.gradle`.
-   - Uses `fishfood` flavor when flavors are present.
-   - Verifies expected APK output path.
+   - **TODO (CA-620)**: The script currently uses `--flavor fishfood` even when flavors are absent, which is incorrect. This should be fixed to omit the `--flavor` flag when no product flavors are configured.
+   - Current behavior (needs fix):
+     - When flavors are present: builds with `--debug --flavor fishfood`, expects `app-fishfood-debug.apk`.
+     - When flavors are absent: builds with `--flavor fishfood` (incorrect), expects `app-debug.apk`.
+   - Verifies expected APK output path based on flavor configuration.
 - iOS (Darwin only):
    - Pre-caches iOS artifacts.
    - Runs CocoaPods install (`ios/pod install`).
@@ -159,6 +162,8 @@ When triggered, the workflow starts these Codemagic pipelines for the PR source 
 - `pre-check`
 - `comprehensive-check`
 - `ios-debug-build`
+
+**Important**: The script uses `set -euo pipefail`, which means it exits immediately on the first command failure. If `pre-check` fails, `comprehensive-check` will not run. Each step must pass before proceeding to the next.
 
 ### How local and CI responsibilities split
 
@@ -186,15 +191,27 @@ If this passes, proceed to full validation with `--all` or `--comp`.
 
 **Run locally via `./scripts/run_check.sh --all --target main`** after `--pre` passes, before creating a PR.
 
-**Important**: When running locally, use the Docker container to ensure golden tests generate correctly and match CI environment:
+---
+
+## ⚠️ CRITICAL: Always Use Docker for Comprehensive Checks ⚠️
+
+**You MUST run comprehensive checks inside the Docker container.** Do not run `--all` or `--comp` modes directly on your host machine.
+
+**Why?** Golden/screenshot tests depend on exact font rendering and UI consistency. Running outside Docker will generate mismatched golden files that fail in CI (if commited to your pr), wasting time and CI resources.
+
+**How to run:**
 
 ```bash
 # Start a shell session in the running Docker container
 docker exec -it construculator-app-flutter-1 bash
 
 # Then run the comprehensive check
-./scripts/run_check.sh --all --target main
+./scripts/run_check.sh --comp
 ```
+
+**Never skip this step.** If you run comprehensive checks outside Docker, CI will fail with golden test mismatches.
+
+---
 
 CI mirrors this full validation:
 
@@ -270,9 +287,18 @@ Codemagic caches key paths to speed builds:
 
 Caching improves run time but can hide stale-state problems. If behavior looks inconsistent:
 
-- clear/rebuild local caches when debugging,
-- re-run dependency install steps,
-- and verify Flutter version alignment through FVM.
+**Local cache management:**
+- Clear Flutter pub cache: `fvm flutter pub cache repair`
+- Clean project build artifacts: `fvm flutter clean`
+- Clear Gradle cache (Android): `rm -rf ~/.gradle/caches`
+- Clean pods (iOS): `cd ios && rm -rf Pods Podfile.lock && pod install && cd ..`
+
+**CI cache management:**
+- Codemagic caches are managed automatically per workflow run
+- Caches persist between builds to speed up dependency installation
+- If CI shows stale behavior, you can trigger a clean build by clearing the cache through Codemagic UI or asking a team admin
+
+Always verify Flutter version alignment through FVM (`fvm flutter --version`) to ensure local and CI environments match.
 
 ## Platform Considerations
 
