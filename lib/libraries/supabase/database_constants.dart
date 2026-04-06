@@ -50,7 +50,7 @@ class DatabaseConstants {
   static const String searchHistoryUpsertConflictColumns =
       '$userIdColumn,$searchTermColumn,$scopeColumn';
 
-  // User profile columns
+  // User profile columns (id field uses the shared idColumn above)
   static const String credentialIdColumn = 'credential_id';
   static const String firstNameColumn = 'first_name';
   static const String lastNameColumn = 'last_name';

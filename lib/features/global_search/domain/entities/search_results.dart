@@ -25,6 +25,7 @@ class SearchResults extends Equatable {
     this.members = const [],
   });
 
+  /// Returns a copy of this [SearchResults] with the given fields replaced.
   SearchResults copyWith({
     List<Project>? projects,
     List<CostEstimate>? estimations,

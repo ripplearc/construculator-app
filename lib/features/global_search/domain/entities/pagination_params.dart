@@ -18,6 +18,7 @@ class PaginationParams extends Equatable {
     this.limit = 20,
   });
 
+  /// Returns a copy of this [PaginationParams] with the given fields replaced.
   PaginationParams copyWith({int? offset, int? limit}) {
     return PaginationParams(
       offset: offset ?? this.offset,
