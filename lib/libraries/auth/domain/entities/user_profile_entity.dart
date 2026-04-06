@@ -15,7 +15,10 @@ class UserProfile extends Equatable {
   /// Unique identifier for the user
   final String id;
 
-  /// The credential ID associated with the user
+  // TODO: [CA-614] credentialId is an internal Supabase Auth identifier (used in
+  // RLS/JWT) with no domain meaning. Strip from UserProfile and UserProfileDto.toDomain()
+  // once all 31 consumers are audited. Do not read or surface this field outside the
+  // auth library. https://ripplearc.youtrack.cloud/issue/CA-614
   final String? credentialId;
 
   /// User's first name

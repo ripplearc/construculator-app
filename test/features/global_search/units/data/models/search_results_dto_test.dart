@@ -213,7 +213,7 @@ void main() {
         );
       });
 
-      test('maps all three lists simultaneously', () {
+      test('lists are independent — items do not bleed across lists', () {
         final estimationDto = CostEstimateDto.fromJson(
           estimation_factory.EstimationTestDataMapFactory
               .createFakeEstimationData(),
@@ -227,8 +227,11 @@ void main() {
         final result = dto.toDomain();
 
         expect(result.projects, hasLength(1));
+        expect(result.projects.first.id, equals(testProject.id));
         expect(result.estimations, hasLength(1));
+        expect(result.estimations.first.id, equals(estimationDto.id));
         expect(result.members, hasLength(1));
+        expect(result.members.first.id, equals(testMember.id));
       });
 
       test('preserves order of items within each list', () {
