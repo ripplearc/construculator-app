@@ -772,6 +772,12 @@ abstract class AppLocalizations {
   /// **'Cost Estimation'**
   String get costEstimation;
 
+  /// Label for calculations tab or header
+  ///
+  /// In en, this message translates to:
+  /// **'Calculations'**
+  String get calculations;
+
   /// Empty state message shown when no cost estimations exist
   ///
   /// In en, this message translates to:

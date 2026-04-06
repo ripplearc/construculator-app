@@ -373,6 +373,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get costEstimation => 'Cost Estimation';
 
   @override
+  String get calculations => 'Calculations';
+
+  @override
   String get costEstimationEmptyMessage =>
       'No estimation added. To add an estimation please click on add button';
 
