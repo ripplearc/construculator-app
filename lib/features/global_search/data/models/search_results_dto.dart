@@ -1,4 +1,5 @@
 import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
+import 'package:construculator/features/global_search/domain/entities/search_results.dart';
 import 'package:construculator/libraries/auth/data/models/user_profile_dto.dart';
 import 'package:construculator/libraries/project/data/models/project_dto.dart';
 import 'package:equatable/equatable.dart';
@@ -28,6 +29,15 @@ class SearchResultsDto extends Equatable {
       projects: projects ?? this.projects,
       estimations: estimations ?? this.estimations,
       members: members ?? this.members,
+    );
+  }
+
+  /// Converts this DTO to the [SearchResults] domain entity.
+  SearchResults toDomain() {
+    return SearchResults(
+      projects: projects.map((p) => p.toDomain()).toList(),
+      estimations: estimations.map((e) => e.toDomain()).toList(),
+      members: members.map((m) => m.toDomain()).toList(),
     );
   }
 
