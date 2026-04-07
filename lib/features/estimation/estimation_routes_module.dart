@@ -1,7 +1,7 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/auth/auth_module.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_details_page.dart';
-import 'package:construculator/libraries/estimation/estimation_core_module.dart';
+import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -13,7 +13,7 @@ class EstimationRoutesModule extends Module {
   @override
   List<Module> get imports => [
     AuthModule(appBootstrap),
-    EstimationCoreModule(appBootstrap),
+    EstimationModule(appBootstrap),
   ];
 
   @override

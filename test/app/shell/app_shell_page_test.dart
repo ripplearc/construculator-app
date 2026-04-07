@@ -1,10 +1,15 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
-import 'package:construculator/app/shell/shell_module.dart';
+import 'package:construculator/app/shell/default_tab_providers.dart';
+import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
+import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
+import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
@@ -39,6 +44,15 @@ class _FakeProjectUiProvider extends ProjectUIProvider {
   }
 }
 
+class _TestEstimationTabModuleProvider implements TabModuleProvider {
+  const _TestEstimationTabModuleProvider();
+
+  @override
+  Future<void> load(AppBootstrap appBootstrap) async {
+    Modular.bindModule(EstimationModule(appBootstrap));
+  }
+}
+
 class _AppShellTestModule extends Module {
   final FakeAuthManager authManager;
   final FakeAuthNotifier authNotifier;
@@ -56,13 +70,23 @@ class _AppShellTestModule extends Module {
   void binds(Injector i) {
     i.addLazySingleton<AuthManager>(() => authManager);
     i.addLazySingleton<AuthNotifier>(() => authNotifier);
+    i.add<AppShellBloc>(AppShellBloc.new);
+    i.add<ProjectDropdownBloc>(
+      () => ProjectDropdownBloc(
+        projectRepository: FakeProjectRepository(),
+        authManager: authManager,
+      ),
+    );
     i.addLazySingleton<AppRouter>(FakeAppRouter.new);
     i.addLazySingleton<CurrentProjectNotifier>(() => currentProjectNotifier);
     i.addLazySingleton<ProjectUIProvider>(() => _FakeProjectUiProvider());
     i.addLazySingleton<TabModuleManager>(
       () => TabModuleManager(
         appBootstrap,
-        providers: {ShellTab.estimation: const EstimationTabModuleProvider()},
+        providers: {
+          for (final tab in ShellTab.values) tab: const NoOpTabModuleProvider(),
+          ShellTab.estimation: const _TestEstimationTabModuleProvider(),
+        },
       ),
     );
   }
