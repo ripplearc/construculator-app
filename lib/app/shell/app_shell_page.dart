@@ -4,6 +4,7 @@ import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/app/shell/widgets/tab_navigator.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
@@ -24,7 +25,7 @@ class AppShellPage extends StatefulWidget {
 }
 
 class _AppShellPageState extends State<AppShellPage> {
-  final AppShellBloc _bloc = AppShellBloc();
+  final AppShellBloc _bloc = Modular.get<AppShellBloc>();
   final CurrentProjectNotifier _currentProjectNotifier =
       Modular.get<CurrentProjectNotifier>();
   final TabModuleManager _moduleLoader = Modular.get<TabModuleManager>();
@@ -35,25 +36,44 @@ class _AppShellPageState extends State<AppShellPage> {
   );
 
   StreamSubscription<String?>? _projectSubscription;
+  StreamSubscription<ProjectDropdownState>? _dropdownSubscription;
   String? _projectId;
 
   @override
   void initState() {
     super.initState();
     _projectId = _currentProjectNotifier.currentProjectId;
-    _projectSubscription = _currentProjectNotifier.onCurrentProjectChanged
-        .listen((projectId) {
-          if (!mounted) return;
-          setState(() {
-            _projectId = projectId;
-          });
-        });
-    _moduleLoader.ensureTabModuleLoaded(ShellTab.home);
+    _projectSubscription = _currentProjectNotifier.onCurrentProjectChanged.listen((
+      projectId,
+    ) {
+      if (!mounted) return;
+      // TODO: Clean up this project switching logic. Consider making CostEstimationLandingPage reactive to CurrentProjectNotifier directly instead of rebuilding the Shell to avoid destroying the tab's navigator stack.
+      setState(() {
+        _projectId = projectId;
+      });
+    });
+
+    _moduleLoader.ensureTabModuleLoaded(ShellTab.home).then((_) {
+      if (!mounted) return;
+
+      final dropdownBloc = Modular.get<ProjectDropdownBloc>();
+      dropdownBloc.add(const ProjectDropdownStarted());
+
+      _dropdownSubscription = dropdownBloc.stream.listen((state) {
+        if (state is ProjectDropdownLoadSuccess) {
+          final id = state.selectedProject?.id;
+          if (id != null && id != _currentProjectNotifier.currentProjectId) {
+            _currentProjectNotifier.setCurrentProjectId(id);
+          }
+        }
+      });
+    });
   }
 
   @override
   void dispose() {
     _projectSubscription?.cancel();
+    _dropdownSubscription?.cancel();
     _bloc.close();
     super.dispose();
   }
@@ -153,6 +173,9 @@ class _AppShellPageState extends State<AppShellPage> {
                     enabled: isActive,
                     child: isLoaded
                         ? TabNavigator(
+                            key: tab == ShellTab.estimation
+                                ? ValueKey('estimation_$_projectId')
+                                : ValueKey(tab.name),
                             navigatorKey: _tabNavigatorKeys[index],
                             rootBuilder: (_) => _buildTabRoot(tab),
                           )
