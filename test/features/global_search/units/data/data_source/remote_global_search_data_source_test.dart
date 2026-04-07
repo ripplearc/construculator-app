@@ -222,7 +222,7 @@ void main() {
         fakeSupabaseWrapper.rpcExceptionType = SupabaseExceptionType.postgrest;
         fakeSupabaseWrapper.rpcErrorMessage = errorMsgDbConnection;
 
-        expect(
+        await expectLater(
           () => dataSource.search(const SearchParamsDto(query: 'test')),
           throwsA(isA<supabase.PostgrestException>()),
         );
@@ -233,7 +233,7 @@ void main() {
         fakeSupabaseWrapper.rpcExceptionType = SupabaseExceptionType.auth;
         fakeSupabaseWrapper.rpcErrorMessage = errorMsgAuth;
 
-        expect(
+        await expectLater(
           () => dataSource.search(const SearchParamsDto(query: 'test')),
           throwsA(isA<supabase.AuthException>()),
         );
@@ -246,7 +246,7 @@ void main() {
           fakeSupabaseWrapper.rpcExceptionType = SupabaseExceptionType.socket;
           fakeSupabaseWrapper.rpcErrorMessage = errorMsgNetwork;
 
-          expect(
+          await expectLater(
             () => dataSource.search(const SearchParamsDto(query: 'test')),
             throwsA(isA<SocketException>()),
           );
@@ -260,7 +260,7 @@ void main() {
           fakeSupabaseWrapper.rpcExceptionType = SupabaseExceptionType.timeout;
           fakeSupabaseWrapper.rpcErrorMessage = errorMsgTimeout;
 
-          expect(
+          await expectLater(
             () => dataSource.search(const SearchParamsDto(query: 'test')),
             throwsA(isA<Exception>()),
           );
@@ -367,7 +367,7 @@ void main() {
         fakeSupabaseWrapper.rpcExceptionType = SupabaseExceptionType.postgrest;
         fakeSupabaseWrapper.rpcErrorMessage = errorMsgDbConnection;
 
-        expect(
+        await expectLater(
           () => dataSource.getSearchSuggestions(),
           throwsA(isA<supabase.PostgrestException>()),
         );
@@ -661,7 +661,7 @@ void main() {
             SupabaseExceptionType.postgrest;
         fakeSupabaseWrapper.upsertErrorMessage = errorMsgDbConnection;
 
-        expect(
+        await expectLater(
           () => dataSource.saveRecentSearch('wall', SearchScopeDto.dashboard),
           throwsA(isA<supabase.PostgrestException>()),
         );
