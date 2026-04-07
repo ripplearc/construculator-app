@@ -3,6 +3,7 @@ import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
+/// Modular module that owns the app shell's dependency bindings and root route.
 class ShellModule extends Module {
   final AppBootstrap appBootstrap;
   ShellModule(this.appBootstrap);
