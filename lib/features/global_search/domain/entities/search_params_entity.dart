@@ -12,14 +12,23 @@ import 'package:equatable/equatable.dart';
 /// lets users pick a calendar date (e.g. March 20th), truncate to start of day
 /// (00:00:00) before passing, or ensure the backend RPC treats it as a date range.
 class SearchParams extends Equatable {
+  /// The search query text.
   final String query;
+
+  /// Optional tag to restrict results to items with this tag.
   final String? filterByTag;
 
   /// Date filter. Truncate to start of day (00:00:00) if picking a calendar date
   /// to avoid exact-timestamp mismatch with backend.
   final DateTime? filterByDate;
+
+  /// Optional owner identifier to restrict results to items owned by this user.
   final String? filterByOwner;
+
+  /// Optional scope limiting which areas or entity types are searched.
   final SearchScope? scope;
+
+  /// Pagination settings for the search request and result pages.
   final PaginationParams pagination;
 
   const SearchParams({
@@ -33,6 +42,7 @@ class SearchParams extends Equatable {
 
   static const Object _absent = Object();
 
+  /// Returns a copy of this [SearchParams] with the given fields replaced.
   SearchParams copyWith({
     String? query,
     Object? filterByTag = _absent,

@@ -68,6 +68,8 @@ class EstimationFailure extends Failure {
 class SearchFailure extends Failure {
   /// The type of search error that occurred.
   final SearchErrorType errorType;
+
+  /// Creates a [SearchFailure] with the given [errorType].
   const SearchFailure({required this.errorType});
 
   @override
