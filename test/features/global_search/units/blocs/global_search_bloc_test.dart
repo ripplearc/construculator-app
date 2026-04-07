@@ -98,30 +98,16 @@ void main() {
       fakeSupabase.reset();
     });
 
-    test(
-      'initial state is GlobalSearchInitial with empty recentSearches and empty query',
-      () {
-        final bloc = Modular.get<GlobalSearchBloc>();
-        expect(bloc.state, const GlobalSearchInitial());
-        expect(
-          bloc.state,
-          isA<GlobalSearchInitial>().having(
-            (s) => s.recentSearches,
-            'recentSearches',
-            isEmpty,
-          ),
-        );
-        expect(
-          bloc.state,
-          isA<GlobalSearchInitial>().having((s) => s.query, 'query', ''),
-        );
-        bloc.close();
-      },
-    );
+    test('initial state is GlobalSearchInitial (cold start, no history yet)', () {
+      final bloc = Modular.get<GlobalSearchBloc>();
+      expect(bloc.state, const GlobalSearchInitial());
+      expect(bloc.state is GlobalSearchInitial, isTrue);
+      bloc.close();
+    });
 
     group('GlobalSearchStarted', () {
       blocTest<GlobalSearchBloc, GlobalSearchState>(
-        'emits GlobalSearchInitial with recentSearches when history exists',
+        'emits GlobalSearchReady with recentSearches when history exists',
         setUp: () {
           fakeSupabase.setCurrentUser(
             FakeUser(
@@ -138,7 +124,7 @@ void main() {
         build: () => Modular.get<GlobalSearchBloc>(),
         act: (bloc) => bloc.add(const GlobalSearchStarted()),
         expect: () => [
-          isA<GlobalSearchInitial>().having(
+          isA<GlobalSearchReady>().having(
             (s) => s.recentSearches,
             'recentSearches',
             containsAll(['wall', 'concrete']),
@@ -147,14 +133,14 @@ void main() {
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
-        'emits GlobalSearchInitial with empty recentSearches when user is not authenticated',
+        'emits GlobalSearchReady with empty recentSearches when user is not authenticated',
         setUp: () {
           fakeSupabase.setCurrentUser(null);
         },
         build: () => Modular.get<GlobalSearchBloc>(),
         act: (bloc) => bloc.add(const GlobalSearchStarted()),
         expect: () => [
-          const GlobalSearchInitial(recentSearches: [], query: ''),
+          const GlobalSearchReady(),
         ],
       );
 
@@ -208,7 +194,7 @@ void main() {
         act: (bloc) =>
             bloc.add(const GlobalSearchStarted(scope: SearchScope.estimation)),
         expect: () => [
-          isA<GlobalSearchInitial>()
+          isA<GlobalSearchReady>()
               .having(
                 (s) => s.recentSearches,
                 'estimation-scoped recents',
@@ -230,12 +216,15 @@ void main() {
         build: () => Modular.get<GlobalSearchBloc>(),
         act: (bloc) async {
           bloc.add(const GlobalSearchQueryUpdated(query: 'stale-query'));
+          // Await the debounced GlobalSearchReady emission before re-opening
+          // the screen, so the state sequence is deterministic.
           await bloc.stream.first;
           bloc.add(const GlobalSearchStarted());
         },
+        wait: const Duration(milliseconds: 310),
         expect: () => [
-          const GlobalSearchInitial(recentSearches: [], query: 'stale-query'),
-          isA<GlobalSearchInitial>().having(
+          const GlobalSearchReady(recentSearches: [], query: 'stale-query'),
+          isA<GlobalSearchReady>().having(
             (s) => s.query,
             'query is reset to empty on fresh start',
             isEmpty,
@@ -440,10 +429,11 @@ void main() {
           await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
           bloc.add(const GlobalSearchQueryUpdated(query: ''));
         },
+        wait: const Duration(milliseconds: 310),
         expect: () => [
           const GlobalSearchLoadInProgress(query: 'steel'),
           isA<GlobalSearchLoadSuccess>(),
-          isA<GlobalSearchInitial>().having(
+          isA<GlobalSearchReady>().having(
             (s) => s.recentSearches,
             'searched term is present without reopening the screen',
             contains('steel'),
@@ -477,13 +467,14 @@ void main() {
         build: () => Modular.get<GlobalSearchBloc>(),
         act: (bloc) async {
           bloc.add(const GlobalSearchStarted());
-          await bloc.stream.firstWhere((s) => s is GlobalSearchInitial);
+          await bloc.stream.firstWhere((s) => s is GlobalSearchReady);
           bloc.add(const GlobalSearchPerformed(query: 'steel'));
           await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
           bloc.add(const GlobalSearchQueryUpdated(query: ''));
         },
+        wait: const Duration(milliseconds: 310),
         verify: (bloc) {
-          final state = bloc.state as GlobalSearchInitial;
+          final state = bloc.state as GlobalSearchReady;
           expect(
             state.recentSearches.where((t) => t == 'steel'),
             hasLength(1),
@@ -495,21 +486,23 @@ void main() {
 
     group('GlobalSearchQueryUpdated', () {
       blocTest<GlobalSearchBloc, GlobalSearchState>(
-        'emits GlobalSearchInitial with updated query and empty recentSearches',
+        'emits GlobalSearchReady with updated query and empty recentSearches',
         build: () => Modular.get<GlobalSearchBloc>(),
         act: (bloc) =>
             bloc.add(const GlobalSearchQueryUpdated(query: 'foundation')),
+        wait: const Duration(milliseconds: 310),
         expect: () => [
-          const GlobalSearchInitial(recentSearches: [], query: 'foundation'),
+          const GlobalSearchReady(recentSearches: [], query: 'foundation'),
         ],
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
-        'emits GlobalSearchInitial with empty query when query is cleared',
+        'emits GlobalSearchReady with empty query when query is cleared',
         build: () => Modular.get<GlobalSearchBloc>(),
         act: (bloc) => bloc.add(const GlobalSearchQueryUpdated(query: '')),
+        wait: const Duration(milliseconds: 310),
         expect: () => [
-          const GlobalSearchInitial(recentSearches: [], query: ''),
+          const GlobalSearchReady(),
         ],
       );
 
@@ -518,6 +511,7 @@ void main() {
         build: () => Modular.get<GlobalSearchBloc>(),
         act: (bloc) =>
             bloc.add(const GlobalSearchQueryUpdated(query: 'concrete')),
+        wait: const Duration(milliseconds: 310),
         verify: (_) {
           expect(fakeSupabase.getMethodCallsFor('rpc'), isEmpty);
           expect(fakeSupabase.getMethodCallsFor('selectMatch'), isEmpty);
@@ -542,20 +536,21 @@ void main() {
         act: (bloc) async {
           bloc.add(const GlobalSearchStarted());
           await bloc.stream.firstWhere((s) {
-            if (s is! GlobalSearchInitial) {
+            if (s is! GlobalSearchReady) {
               return false;
             }
             return s.recentSearches.contains('steel');
           });
           bloc.add(const GlobalSearchQueryUpdated(query: 'concrete'));
         },
+        wait: const Duration(milliseconds: 310),
         expect: () => [
-          isA<GlobalSearchInitial>().having(
+          isA<GlobalSearchReady>().having(
             (s) => s.recentSearches,
             'recentSearches after Started',
             contains('steel'),
           ),
-          isA<GlobalSearchInitial>()
+          isA<GlobalSearchReady>()
               .having((s) => s.query, 'query after QueryUpdated', 'concrete')
               .having(
                 (s) => s.recentSearches,
@@ -568,7 +563,7 @@ void main() {
 
     group('GlobalSearchSuggestionsRequested', () {
       blocTest<GlobalSearchBloc, GlobalSearchState>(
-        'emits [GlobalSearchInitial suggestionsLoading, GlobalSearchInitial with suggestions] when RPC succeeds',
+        'emits [GlobalSearchReady loading, GlobalSearchReady with suggestions] when RPC succeeds',
         setUp: () {
           fakeSupabase.setCurrentUser(
             FakeUser(
@@ -585,12 +580,12 @@ void main() {
         build: () => Modular.get<GlobalSearchBloc>(),
         act: (bloc) => bloc.add(const GlobalSearchSuggestionsRequested()),
         expect: () => [
-          isA<GlobalSearchInitial>().having(
+          isA<GlobalSearchReady>().having(
             (s) => s.suggestionsLoading,
             'suggestionsLoading',
             isTrue,
           ),
-          isA<GlobalSearchInitial>()
+          isA<GlobalSearchReady>()
               .having(
                 (s) => s.suggestions,
                 'suggestions',
@@ -620,7 +615,7 @@ void main() {
         build: () => Modular.get<GlobalSearchBloc>(),
         act: (bloc) => bloc.add(const GlobalSearchSuggestionsRequested()),
         expect: () => [
-          isA<GlobalSearchInitial>().having(
+          isA<GlobalSearchReady>().having(
             (s) => s.suggestionsLoading,
             'suggestionsLoading',
             isTrue,
@@ -636,7 +631,7 @@ void main() {
 
     group('GlobalSearchRecentRemoved', () {
       blocTest<GlobalSearchBloc, GlobalSearchState>(
-        'emits GlobalSearchInitial without removed term when delete succeeds',
+        'emits GlobalSearchReady without removed term when delete succeeds',
         setUp: () {
           fakeSupabase.setCurrentUser(
             FakeUser(
@@ -654,7 +649,7 @@ void main() {
         act: (bloc) async {
           bloc.add(const GlobalSearchStarted());
           await bloc.stream.firstWhere((s) {
-            if (s is! GlobalSearchInitial) {
+            if (s is! GlobalSearchReady) {
               return false;
             }
             return s.recentSearches.length == 2;
@@ -667,12 +662,12 @@ void main() {
           );
         },
         expect: () => [
-          isA<GlobalSearchInitial>().having(
+          isA<GlobalSearchReady>().having(
             (s) => s.recentSearches,
             'recentSearches after Started',
             containsAll(['wall', 'concrete']),
           ),
-          isA<GlobalSearchInitial>().having(
+          isA<GlobalSearchReady>().having(
             (s) => s.recentSearches,
             'recentSearches after Removed',
             allOf(isNot(contains('wall')), contains('concrete')),

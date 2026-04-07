@@ -20,9 +20,10 @@ class GlobalSearchStarted extends GlobalSearchEvent {
   List<Object?> get props => [scope];
 }
 
-/// Event for updating the search query text field
+/// Event for updating the search query text field.
 ///
-/// The UI must debounce before dispatching this event to avoid emitting on every keystroke
+/// Can be dispatched on every keystroke — the BLoC applies a debounce
+/// transformer so redundant rapid emissions are coalesced automatically.
 class GlobalSearchQueryUpdated extends GlobalSearchEvent {
   /// The current value of the search input field
   final String query;

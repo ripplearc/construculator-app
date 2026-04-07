@@ -1,3 +1,4 @@
+import 'dart:async' show unawaited;
 import 'package:construculator/features/global_search/domain/entities/search_params_entity.dart';
 import 'package:construculator/features/global_search/domain/entities/search_results.dart';
 import 'package:construculator/features/global_search/domain/entities/search_scope_entity.dart';
@@ -6,9 +7,14 @@ import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rxdart/rxdart.dart';
 
 part 'global_search_event.dart';
 part 'global_search_state.dart';
+
+/// Debounce duration applied to [GlobalSearchQueryUpdated] events.
+/// Kept here so the BLoC owns the contract — no UI-side debouncing required.
+const Duration _kQueryDebounceDuration = Duration(milliseconds: 300);
 
 /// Bloc for managing global search state across projects, estimations, and members
 class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
@@ -25,7 +31,13 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     : _repository = repository,
       super(const GlobalSearchInitial()) {
     on<GlobalSearchStarted>(_onStarted);
-    on<GlobalSearchQueryUpdated>(_onQueryUpdated);
+    on<GlobalSearchQueryUpdated>(
+      _onQueryUpdated,
+      // Debounce at the BLoC level so the UI can dispatch on every keystroke
+      // without triggering redundant state emissions.
+      transformer: (events, mapper) =>
+          events.debounceTime(_kQueryDebounceDuration).switchMap(mapper),
+    );
     on<GlobalSearchPerformed>(_onPerformed);
     on<GlobalSearchRecentRemoved>(_onRecentRemoved);
     on<GlobalSearchSuggestionsRequested>(_onSuggestionsRequested);
@@ -43,7 +55,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       _suggestions = const [];
       _currentQuery = '';
       emit(
-        GlobalSearchInitial(
+        GlobalSearchReady(
           recentSearches: recentSearches,
           query: '',
           suggestions: const [],
@@ -59,7 +71,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   ) {
     _currentQuery = event.query;
     emit(
-      GlobalSearchInitial(
+      GlobalSearchReady(
         recentSearches: _recentSearches,
         query: event.query,
         suggestions: _suggestions,
@@ -97,20 +109,21 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
         _recentSearches = [event.query, ..._recentSearches];
       }
 
-      _repository
-          .saveRecentSearch(
-            event.query,
-            event.scope,
-            hasResults: hasResults,
-          )
-          .then(
-            (saveResult) => saveResult.fold(
-              (_) => _logger.warning(
-                'Recent search save failed silently (non-blocking; search results already shown)',
+      // Non-blocking: persistence runs after results are shown.
+      // Do NOT call emit() inside this callback — the Emitter is already
+      // closed when _onPerformed returns.
+      unawaited(
+        _repository
+            .saveRecentSearch(event.query, event.scope, hasResults: hasResults)
+            .then(
+              (saveResult) => saveResult.fold(
+                (_) => _logger.warning(
+                  'Recent search save failed silently (non-blocking; search results already shown)',
+                ),
+                (_) {},
               ),
-              (_) {},
             ),
-          );
+      );
     });
   }
 
@@ -129,7 +142,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
         _recentSearches = List<String>.from(_recentSearches)
           ..removeWhere((term) => term == event.searchTerm);
         emit(
-          GlobalSearchInitial(
+          GlobalSearchReady(
             recentSearches: _recentSearches,
             query: _currentQuery,
             suggestions: _suggestions,
@@ -145,7 +158,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     Emitter<GlobalSearchState> emit,
   ) async {
     emit(
-      GlobalSearchInitial(
+      GlobalSearchReady(
         recentSearches: _recentSearches,
         query: _currentQuery,
         suggestions: _suggestions,
@@ -160,7 +173,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       (suggestions) {
         _suggestions = suggestions;
         emit(
-          GlobalSearchInitial(
+          GlobalSearchReady(
             recentSearches: _recentSearches,
             query: _currentQuery,
             suggestions: suggestions,
