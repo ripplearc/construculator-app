@@ -8,6 +8,7 @@ import 'package:construculator/features/calculations/presentation/pages/calculat
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
+import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
@@ -69,6 +70,13 @@ class _AppShellTestModule extends Module {
   void binds(Injector i) {
     i.addLazySingleton<AuthManager>(() => authManager);
     i.addLazySingleton<AuthNotifier>(() => authNotifier);
+    i.add<AppShellBloc>(AppShellBloc.new);
+    i.add<ProjectDropdownBloc>(
+      () => ProjectDropdownBloc(
+        projectRepository: FakeProjectRepository(),
+        authManager: authManager,
+      ),
+    );
     i.addLazySingleton<AppRouter>(FakeAppRouter.new);
     i.addLazySingleton<CurrentProjectNotifier>(() => currentProjectNotifier);
     i.addLazySingleton<ProjectUIProvider>(() => _FakeProjectUiProvider());
