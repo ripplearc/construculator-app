@@ -32,7 +32,7 @@ PostHog is an all-in-one product analytics platform that provides:
 
 ### Why PostHog for Construculator?
 
-1. **All-in-one**: Replaces multiple tools (analytics, feature flags, experiments)
+1. **All-in-one**: Consolidates analytics, feature flags, and experiments
 2. **Developer-friendly**: Excellent Flutter SDK with clean API
 3. **B2B Focus**: Group analytics for tracking organizations/projects
 4. **Privacy-first**: GDPR compliant, supports anonymization
@@ -72,7 +72,7 @@ lib/app/
 
 ### Why This Approach?
 
-1. **Testability**: Isolate analytics in tests using `NoOpAnalyticsRepository`
+1. **Testability**: Isolate analytics in tests using `FakeAnalyticsRepository`
 2. **Flexibility**: Swap PostHog for another provider without changing business logic
 3. **Consistency**: Matches existing patterns (logging, Supabase wrapper, router)
 4. **Separation of Concerns**: Domain layer never depends on PostHog directly
@@ -170,11 +170,6 @@ Use this sequence to stay GDPR-compliant and avoid capturing data before consent
 **File:** `lib/libraries/analytics/domain/repositories/analytics_repository.dart`
 
 ```dart
-import 'package:construculator/libraries/analytics/domain/entities/analytics_event.dart';
-import 'package:construculator/libraries/analytics/domain/entities/analytics_user_properties.dart';
-import 'package:construculator/libraries/either/either.dart';
-import 'package:construculator/libraries/errors/failures.dart';
-
 /// Abstract repository for analytics operations.
 ///
 /// Implementations should handle all analytics provider-specific logic.
@@ -208,26 +203,6 @@ abstract class AnalyticsRepository {
     AnalyticsUserProperties properties,
   );
 
-  /// Get feature flag value by key.
-  ///
-  /// Returns null if flag doesn't exist or SDK not initialized.
-  Future<Either<Failure, bool?>> isFeatureEnabled(String featureFlagKey);
-
-  /// Get feature flag variant (for multivariate flags).
-  ///
-  /// Returns variant key (e.g., 'control', 'test', 'variant-a').
-  Future<Either<Failure, String?>> getFeatureFlagVariant(String featureFlagKey);
-
-  /// Get feature flag payload (JSON data attached to flag).
-  Future<Either<Failure, Map<String, dynamic>?>> getFeatureFlagPayload(
-    String featureFlagKey,
-  );
-
-  /// Reload feature flags from server.
-  ///
-  /// Useful after user properties change or login.
-  Future<Either<Failure, void>> reloadFeatureFlags();
-
   /// Set group properties (for B2B analytics).
   ///
   /// Groups typically represent companies, organizations, or projects.
@@ -244,79 +219,59 @@ abstract class AnalyticsRepository {
 }
 ```
 
-### Domain Layer: Analytics Event Entity
+### Domain Layer: Feature Flag Repository Interface
+
+**File:** `lib/libraries/analytics/domain/repositories/feature_flag_repository.dart`
+
+```dart
+/// Abstract repository for feature flag operations.
+///
+/// Separated from AnalyticsRepository to follow Single Responsibility Principle.
+abstract class FeatureFlagRepository {
+  /// Get feature flag value by key.
+  Future<Either<Failure, bool?>> isFeatureEnabled(String featureFlagKey);
+
+  /// Get feature flag variant (for multivariate flags).
+  Future<Either<Failure, String?>> getFeatureFlagVariant(String featureFlagKey);
+
+  /// Get feature flag payload (JSON data attached to flag).
+  Future<Either<Failure, Map<String, dynamic>?>> getFeatureFlagPayload(
+    String featureFlagKey,
+  );
+
+  /// Reload feature flags from server.
+  Future<Either<Failure, void>> reloadFeatureFlags();
+}
+```
+
+### Domain Layer: Entities
 
 **File:** `lib/libraries/analytics/domain/entities/analytics_event.dart`
 
 ```dart
-import 'package:equatable/equatable.dart';
-
-/// Represents an analytics event to be tracked.
-///
-/// Immutable entity that encapsulates event name and properties.
-class AnalyticsEvent extends Equatable {
-  const AnalyticsEvent({
-    required this.name,
-    this.properties = const {},
-  });
-
-  /// Event name (e.g., 'estimation_created', 'project_switched').
+class AnalyticsEvent {
+  const AnalyticsEvent({required this.name, this.properties = const {}});
   final String name;
-
-  /// Event properties (custom metadata).
   final Map<String, dynamic> properties;
-
-  @override
-  List<Object?> get props => [name, properties];
-
-  @override
-  String toString() => 'AnalyticsEvent(name: $name, properties: $properties)';
 }
 ```
-
-### Domain Layer: User Properties Entity
 
 **File:** `lib/libraries/analytics/domain/entities/analytics_user_properties.dart`
 
 ```dart
-import 'package:equatable/equatable.dart';
-
-/// User properties for analytics identification.
-class AnalyticsUserProperties extends Equatable {
-  const AnalyticsUserProperties({
-    this.email,
-    this.name,
-    this.createdAt,
-    this.companyName,
-    this.role,
-    this.planType,
-    this.custom = const {},
-  });
-
+class AnalyticsUserProperties {
+  const AnalyticsUserProperties({this.email, this.name, this.role, this.custom = const {}});
   final String? email;
   final String? name;
-  final DateTime? createdAt;
-  final String? companyName;
   final String? role;
-  final String? planType;
-
-  /// Additional custom properties.
   final Map<String, dynamic> custom;
 
-  Map<String, dynamic> toMap() {
-    return {
-      if (email != null) 'email': email,
-      if (name != null) 'name': name,
-      if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
-      if (companyName != null) 'company_name': companyName,
-      if (role != null) 'role': role,
-      if (planType != null) 'plan_type': planType,
-      ...custom,
-    };
-  }
-
-  @override
-  List<Object?> get props => [email, name, createdAt, companyName, role, planType, custom];
+  Map<String, dynamic> toMap() => {
+    if (email != null) 'email': email,
+    if (name != null) 'name': name,
+    if (role != null) 'role': role,
+    ...custom,
+  };
 }
 ```
 
@@ -325,420 +280,70 @@ class AnalyticsUserProperties extends Equatable {
 **File:** `lib/libraries/analytics/data/repositories/analytics_repository_impl.dart`
 
 ```dart
-import 'package:construculator/libraries/analytics/domain/entities/analytics_event.dart';
-import 'package:construculator/libraries/analytics/domain/entities/analytics_user_properties.dart';
-import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
-import 'package:construculator/libraries/either/either.dart';
-import 'package:construculator/libraries/errors/failures.dart';
-import 'package:construculator/libraries/logging/app_logger.dart';
-import 'package:posthog_flutter/posthog_flutter.dart';
-
 class AnalyticsRepositoryImpl implements AnalyticsRepository {
-  AnalyticsRepositoryImpl({
-    required String apiKey,
-    required String host,
-    required bool debug,
-  })  : _apiKey = apiKey,
-        _host = host,
-        _debug = debug;
-
-  final String _apiKey;
-  final String _host;
-  final bool _debug;
-
-  static final _logger = AppLogger().tag('AnalyticsRepositoryImpl');
-
-  bool _initialized = false;
-
-  @override
+  // Initialize PostHog SDK
   Future<Either<Failure, void>> initialize() async {
-    try {
-      if (_initialized) {
-        _logger.warning('PostHog already initialized, skipping');
-        return const Right(null);
-      }
-
-      final config = PostHogConfig(_apiKey);
-      config.host = _host;
-      config.debug = _debug;
-      config.captureApplicationLifecycleEvents = true;
-
-      // Person profiles: only create for identified users
-      config.personProfiles = PostHogPersonProfiles.identifiedOnly;
-
-      // Enable session replay (optional - adds app size)
-      // config.sessionReplay = true;
-      // config.sessionReplayConfig = PostHogSessionReplayConfig(
-      //   maskAllTexts: false,
-      //   maskAllImages: false,
-      //   captureNetworkTelemetry: true,
-      // );
-
-      await Posthog().setup(config);
-
-      _initialized = true;
-      _logger.info('PostHog initialized successfully');
-
-      return const Right(null);
-    } catch (e, stackTrace) {
-      _logger.error('Failed to initialize PostHog', error: e, stackTrace: stackTrace);
-      return Left(UnexpectedFailure('Analytics initialization failed: $e'));
-    }
+    final config = PostHogConfig(_apiKey)
+      ..host = _host
+      ..personProfiles = PostHogPersonProfiles.identifiedOnly;
+    await Posthog().setup(config);
+    return const Right(null);
   }
 
-  @override
+  // Track events via Posthog().capture()
   Future<Either<Failure, void>> track(AnalyticsEvent event) async {
-    try {
-      if (!_initialized) {
-        _logger.warning('PostHog not initialized, skipping event: ${event.name}');
-        return const Right(null);
-      }
-
-      await Posthog().capture(
-        eventName: event.name,
-        properties: event.properties,
-      );
-
-      _logger.debug('Tracked event: ${event.name}');
-      return const Right(null);
-    } catch (e, stackTrace) {
-      _logger.error('Failed to track event: ${event.name}', error: e, stackTrace: stackTrace);
-      return Left(UnexpectedFailure('Event tracking failed: $e'));
-    }
+    await Posthog().capture(eventName: event.name, properties: event.properties);
+    return const Right(null);
   }
 
-  @override
-  Future<Either<Failure, void>> identify({
-    required String userId,
-    required AnalyticsUserProperties properties,
-  }) async {
-    try {
-      if (!_initialized) {
-        _logger.warning('PostHog not initialized, skipping identify');
-        return const Right(null);
-      }
-
-      await Posthog().identify(
-        userId: userId,
-        userProperties: properties.toMap(),
-      );
-
-      _logger.info('Identified user: $userId');
-      return const Right(null);
-    } catch (e, stackTrace) {
-      _logger.error('Failed to identify user', error: e, stackTrace: stackTrace);
-      return Left(UnexpectedFailure('User identification failed: $e'));
-    }
+  // Identify users via Posthog().identify()
+  Future<Either<Failure, void>> identify({required String userId, required AnalyticsUserProperties properties}) async {
+    await Posthog().identify(userId: userId, userProperties: properties.toMap());
+    return const Right(null);
   }
 
-  @override
-  Future<Either<Failure, void>> reset() async {
-    try {
-      if (!_initialized) {
-        return const Right(null);
-      }
-
-      await Posthog().reset();
-      _logger.info('Analytics reset (user logged out)');
-
-      return const Right(null);
-    } catch (e, stackTrace) {
-      _logger.error('Failed to reset analytics', error: e, stackTrace: stackTrace);
-      return Left(UnexpectedFailure('Analytics reset failed: $e'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, void>> setUserProperties(
-    AnalyticsUserProperties properties,
-  ) async {
-    try {
-      if (!_initialized) {
-        return const Right(null);
-      }
-
-      await Posthog().setPersonPropertiesForFlags(properties.toMap());
-      _logger.debug('Updated user properties');
-
-      return const Right(null);
-    } catch (e, stackTrace) {
-      _logger.error('Failed to set user properties', error: e, stackTrace: stackTrace);
-      return Left(UnexpectedFailure('Set properties failed: $e'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, bool?>> isFeatureEnabled(String featureFlagKey) async {
-    try {
-      if (!_initialized) {
-        return const Right(null);
-      }
-
-      final isEnabled = await Posthog().isFeatureEnabled(featureFlagKey);
-      _logger.debug('Feature flag "$featureFlagKey": $isEnabled');
-
-      return Right(isEnabled);
-    } catch (e, stackTrace) {
-      _logger.error('Failed to check feature flag: $featureFlagKey', error: e, stackTrace: stackTrace);
-      return Left(UnexpectedFailure('Feature flag check failed: $e'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, String?>> getFeatureFlagVariant(String featureFlagKey) async {
-    try {
-      if (!_initialized) {
-        return const Right(null);
-      }
-
-      final variant = await Posthog().getFeatureFlagVariant(featureFlagKey);
-      _logger.debug('Feature flag variant "$featureFlagKey": $variant');
-
-      return Right(variant);
-    } catch (e, stackTrace) {
-      _logger.error('Failed to get feature flag variant: $featureFlagKey', error: e, stackTrace: stackTrace);
-      return Left(UnexpectedFailure('Feature flag variant failed: $e'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, Map<String, dynamic>?>> getFeatureFlagPayload(
-    String featureFlagKey,
-  ) async {
-    try {
-      if (!_initialized) {
-        return const Right(null);
-      }
-
-      final payload = await Posthog().getFeatureFlagPayload(featureFlagKey);
-      _logger.debug('Feature flag payload "$featureFlagKey": $payload');
-
-      return Right(payload);
-    } catch (e, stackTrace) {
-      _logger.error('Failed to get feature flag payload: $featureFlagKey', error: e, stackTrace: stackTrace);
-      return Left(UnexpectedFailure('Feature flag payload failed: $e'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, void>> reloadFeatureFlags() async {
-    try {
-      if (!_initialized) {
-        return const Right(null);
-      }
-
-      await Posthog().reloadFeatureFlags();
-      _logger.debug('Reloaded feature flags');
-
-      return const Right(null);
-    } catch (e, stackTrace) {
-      _logger.error('Failed to reload feature flags', error: e, stackTrace: stackTrace);
-      return Left(UnexpectedFailure('Reload feature flags failed: $e'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, void>> group({
-    required String groupType,
-    required String groupKey,
-    Map<String, dynamic>? properties,
-  }) async {
-    try {
-      if (!_initialized) {
-        return const Right(null);
-      }
-
-      await Posthog().group(
-        groupType: groupType,
-        groupKey: groupKey,
-        groupProperties: properties,
-      );
-
-      _logger.debug('Set group: $groupType = $groupKey');
-      return const Right(null);
-    } catch (e, stackTrace) {
-      _logger.error('Failed to set group', error: e, stackTrace: stackTrace);
-      return Left(UnexpectedFailure('Group analytics failed: $e'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, void>> flush() async {
-    try {
-      if (!_initialized) {
-        return const Right(null);
-      }
-
-      await Posthog().flush();
-      _logger.debug('Flushed analytics events');
-
-      return const Right(null);
-    } catch (e, stackTrace) {
-      _logger.error('Failed to flush events', error: e, stackTrace: stackTrace);
-      return Left(UnexpectedFailure('Flush failed: $e'));
-    }
-  }
+  // Other methods: reset(), setUserProperties(), group(), flush()
 }
 ```
 
-### Data Layer: No-Op Repository (for Testing)
+### Data Layer: Fake Repository (for Testing)
 
 **File:** `lib/libraries/analytics/data/repositories/no_op_analytics_repository.dart`
 
 ```dart
-import 'package:construculator/libraries/analytics/domain/entities/analytics_event.dart';
-import 'package:construculator/libraries/analytics/domain/entities/analytics_user_properties.dart';
-import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
-import 'package:construculator/libraries/either/either.dart';
-import 'package:construculator/libraries/errors/failures.dart';
-
-/// No-op implementation for testing or when analytics is disabled.
-class NoOpAnalyticsRepository implements AnalyticsRepository {
-  @override
+/// Fake implementation for testing or when analytics is disabled.
+class FakeAnalyticsRepository implements AnalyticsRepository {
+  // All methods return Right(null) - no actual tracking occurs
   Future<Either<Failure, void>> initialize() async => const Right(null);
-
-  @override
   Future<Either<Failure, void>> track(AnalyticsEvent event) async => const Right(null);
-
-  @override
-  Future<Either<Failure, void>> identify({
-    required String userId,
-    required AnalyticsUserProperties properties,
-  }) async =>
-      const Right(null);
-
-  @override
-  Future<Either<Failure, void>> reset() async => const Right(null);
-
-  @override
-  Future<Either<Failure, void>> setUserProperties(
-    AnalyticsUserProperties properties,
-  ) async =>
-      const Right(null);
-
-  @override
-  Future<Either<Failure, bool?>> isFeatureEnabled(String featureFlagKey) async =>
-      const Right(null);
-
-  @override
-  Future<Either<Failure, String?>> getFeatureFlagVariant(String featureFlagKey) async =>
-      const Right(null);
-
-  @override
-  Future<Either<Failure, Map<String, dynamic>?>> getFeatureFlagPayload(
-    String featureFlagKey,
-  ) async =>
-      const Right(null);
-
-  @override
-  Future<Either<Failure, void>> reloadFeatureFlags() async => const Right(null);
-
-  @override
-  Future<Either<Failure, void>> group({
-    required String groupType,
-    required String groupKey,
-    Map<String, dynamic>? properties,
-  }) async =>
-      const Right(null);
-
-  @override
-  Future<Either<Failure, void>> flush() async => const Right(null);
+  // ... other methods
 }
 ```
 
-### Module Configuration
+### Module Configuration & App Bootstrap
 
-**File:** `lib/libraries/analytics/analytics_module.dart`
+Configure module bindings based on environment:
 
 ```dart
-import 'package:construculator/libraries/analytics/data/repositories/analytics_repository_impl.dart';
-import 'package:construculator/libraries/analytics/data/repositories/no_op_analytics_repository.dart';
-import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_modular/flutter_modular.dart';
-
 class AnalyticsModule extends Module {
-  @override
-  List<Module> get imports => [];
-
-  @override
   void binds(i) {
-    // Check if analytics is enabled in environment
-    final enabled = dotenv.env['POSTHOG_ENABLED']?.toLowerCase() == 'true';
-
-    if (enabled) {
-      final apiKey = dotenv.env['POSTHOG_API_KEY'] ?? '';
-      final host = dotenv.env['POSTHOG_HOST'] ?? 'https://us.i.posthog.com';
-      final debug = dotenv.env['POSTHOG_DEBUG']?.toLowerCase() == 'true';
-
-      // Fail closed: if key is missing, disable analytics safely.
-      if (apiKey.isEmpty) {
-        i.addLazySingleton<AnalyticsRepository>(NoOpAnalyticsRepository.new);
-        return;
-      }
-
-      i.addLazySingleton<AnalyticsRepository>(
-        () => AnalyticsRepositoryImpl(
-          apiKey: apiKey,
-          host: host,
-          debug: debug,
-        ),
-      );
-    } else {
-      i.addLazySingleton<AnalyticsRepository>(NoOpAnalyticsRepository.new);
-    }
-  }
-
-  @override
-  void routes(r) {}
-}
-```
-
-### App Bootstrap Integration
-
-**File:** `lib/app/app_bootstrap.dart` (update)
-
-```dart
-import 'package:construculator/libraries/analytics/analytics_module.dart';
-import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
-import 'package:flutter_modular/flutter_modular.dart';
-// ... existing imports
-
-class AppBootstrap {
-  static Future<void> initialize() async {
-    // ... existing initialization code
-
-    // Gate analytics initialization with persisted consent/opt-out state.
-    // Example:
-    // final hasConsent = await _consentService.hasAnalyticsConsent();
-    // if (!hasConsent) return;
-
-    // Initialize analytics
-    final analyticsRepository = Modular.get<AnalyticsRepository>();
-    final result = await analyticsRepository.initialize();
-
-    result.fold(
-      (failure) => _logger.warning('Analytics initialization failed: $failure'),
-      (_) => _logger.info('Analytics initialized successfully'),
+    final enabled = dotenv.env['POSTHOG_ENABLED'] == 'true';
+    i.addLazySingleton<AnalyticsRepository>(
+      enabled ? () => AnalyticsRepositoryImpl(...) : FakeAnalyticsRepository.new
     );
   }
 }
 ```
 
-**File:** `lib/app/app_module.dart` (update)
+Initialize in app bootstrap:
 
 ```dart
-import 'package:construculator/libraries/analytics/analytics_module.dart';
-// ... existing imports
-
-class AppModule extends Module {
-  @override
-  List<Module> get imports => [
-    // ... existing modules
-    AnalyticsModule(),
-  ];
-
-  // ... rest of module
+class AppBootstrap {
+  static Future<void> initialize() async {
+    // Check consent before initializing analytics
+    final analyticsRepository = Modular.get<AnalyticsRepository>();
+    await analyticsRepository.initialize();
+  }
 }
 ```
 
@@ -862,215 +467,57 @@ Always keep event cardinality bounded (avoid unbounded strings in keys used for 
 
 ### Tracking Implementation Examples
 
-#### Example 1: Tracking in BLoC (Estimation Creation)
-
-**File:** `lib/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart`
+#### Track Events in BLoC
 
 ```dart
-import 'package:construculator/libraries/analytics/domain/entities/analytics_event.dart';
-import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
-// ... other imports
-
-class AddCostEstimationBloc extends Bloc<AddCostEstimationEvent, AddCostEstimationState> {
-  AddCostEstimationBloc({
-    required AddCostEstimationUseCase useCase,
-    required AnalyticsRepository analyticsRepository,  // Inject dependency
-  })  : _useCase = useCase,
-        _analyticsRepository = analyticsRepository,
-        super(const AddCostEstimationState.initial()) {
-    on<CreateEstimation>(_onCreateEstimation);
-  }
-
-  final AddCostEstimationUseCase _useCase;
+class AddCostEstimationBloc {
   final AnalyticsRepository _analyticsRepository;
 
-  Future<void> _onCreateEstimation(
-    CreateEstimation event,
-    Emitter<AddCostEstimationState> emit,
-  ) async {
-    emit(const AddCostEstimationState.loading());
-
-    final result = await _useCase(
-      estimationName: event.estimationName,
-      projectId: event.projectId,
-    );
-
+  Future<void> _onCreateEstimation() async {
+    final result = await _useCase(...);
     result.fold(
-      (failure) => emit(AddCostEstimationState.error(failure)),
+      (failure) => emit(error),
       (estimation) {
-        // Track successful creation
-        _analyticsRepository.track(
-          AnalyticsEvent(
-            name: 'estimation_created',
-            properties: {
-              'estimation_id': estimation.id,
-              'estimation_name': estimation.name,
-              'project_id': estimation.projectId,
-              'creation_method': 'manual',  // vs 'template', 'duplicate'
-            },
-          ),
-        );
-
-        emit(AddCostEstimationState.success(estimation));
+        _analyticsRepository.track(AnalyticsEvent(
+          name: 'estimation_created',
+          properties: {'estimation_id': estimation.id, 'project_id': estimation.projectId},
+        ));
+        emit(success);
       },
     );
   }
 }
 ```
 
-Update module binding:
+#### Identify Users on Login
 
 ```dart
-// In EstimationModule
-i.add<AddCostEstimationBloc>(
-  () => AddCostEstimationBloc(
-    useCase: i.get(),
-    analyticsRepository: i.get(),  // Inject from AnalyticsModule
-  ),
+await _analyticsRepository.identify(
+  userId: userProfile.id,
+  properties: AnalyticsUserProperties(email: userProfile.email, role: userProfile.role),
 );
+await _analyticsRepository.track(AnalyticsEvent(name: 'user_logged_in'));
 ```
 
-#### Example 2: Tracking User Identification (Login)
-
-**File:** `lib/features/auth/presentation/bloc/login_with_email_bloc/login_with_email_bloc.dart`
+#### Track Screen Views in Router
 
 ```dart
-import 'package:construculator/libraries/analytics/domain/entities/analytics_user_properties.dart';
-import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
-// ... other imports
-
-class LoginWithEmailBloc extends Bloc<LoginWithEmailEvent, LoginWithEmailState> {
-  LoginWithEmailBloc({
-    required LoginWithEmailUseCase useCase,
-    required AnalyticsRepository analyticsRepository,
-  })  : _useCase = useCase,
-        _analyticsRepository = analyticsRepository,
-        super(const LoginWithEmailState.initial()) {
-    on<Login>(_onLogin);
-  }
-
-  final LoginWithEmailUseCase _useCase;
-  final AnalyticsRepository _analyticsRepository;
-
-  Future<void> _onLogin(
-    Login event,
-    Emitter<LoginWithEmailState> emit,
-  ) async {
-    emit(const LoginWithEmailState.loading());
-
-    final result = await _useCase(
-      email: event.email,
-      password: event.password,
-    );
-
-    result.fold(
-      (failure) => emit(LoginWithEmailState.error(failure)),
-      (userProfile) async {
-        // Identify user in analytics
-        await _analyticsRepository.identify(
-          userId: userProfile.id,
-          properties: AnalyticsUserProperties(
-            email: userProfile.email,
-            name: userProfile.name,
-            createdAt: userProfile.createdAt,
-            role: userProfile.role,
-          ),
-        );
-
-        // Track login event
-        await _analyticsRepository.track(
-          const AnalyticsEvent(
-            name: 'user_logged_in',
-            properties: {
-              'login_method': 'email',
-            },
-          ),
-        );
-
-        emit(LoginWithEmailState.success(userProfile));
-      },
-    );
+class AppRouterImpl {
+  void navigate(String route) {
+    _analyticsRepository.track(AnalyticsEvent(name: 'screen_viewed', properties: {'screen_name': route}));
+    Modular.to.pushNamed(route);
   }
 }
 ```
 
-#### Example 3: Screen View Tracking (Automatic)
-
-**File:** `lib/libraries/router/app_router_impl.dart` (update)
+#### Set Group Context (B2B)
 
 ```dart
-import 'package:construculator/libraries/analytics/domain/entities/analytics_event.dart';
-import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
-import 'package:flutter/material.dart';
-// ... other imports
-
-class AppRouterImpl implements AppRouter {
-  AppRouterImpl({required AnalyticsRepository analyticsRepository})
-      : _analyticsRepository = analyticsRepository;
-
-  final AnalyticsRepository _analyticsRepository;
-
-  Map<String, dynamic> _safeNavigationProperties(
-    String route,
-    Map<String, dynamic>? arguments,
-  ) {
-    // Keep payload bounded and avoid leaking sensitive navigation arguments.
-    return {
-      'screen_name': route,
-      if (arguments?['source'] is String) 'source': arguments?['source'],
-      if (arguments?['entry_point'] is String) 'entry_point': arguments?['entry_point'],
-      'has_arguments': arguments?.isNotEmpty ?? false,
-    };
-  }
-
-  @override
-  void navigate(String route, {Map<String, dynamic>? arguments}) {
-    // Track screen view
-    _analyticsRepository.track(
-      AnalyticsEvent(
-        name: 'screen_viewed',
-        properties: _safeNavigationProperties(route, arguments),
-      ),
-    );
-
-    Modular.to.pushNamed(route, arguments: arguments);
-  }
-}
-```
-
-#### Example 4: Group Analytics (Project Selection)
-
-**File:** `lib/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart`
-
-```dart
-Future<void> _onSelectProject(
-  SelectProject event,
-  Emitter<ProjectDropdownState> emit,
-) async {
-  // ... existing logic
-
-  // Set group for B2B analytics
-  await _analyticsRepository.group(
-    groupType: 'project',
-    groupKey: event.projectId,
-    properties: {
-      'project_name': project.name,
-      'project_status': project.status,
-      'created_at': project.createdAt.toIso8601String(),
-    },
-  );
-
-  // Track project switch event
-  await _analyticsRepository.track(
-    AnalyticsEvent(
-      name: 'project_switched',
-      properties: {
-        'project_id': event.projectId,
-        'project_name': project.name,
-      },
-    ),
-  );
-}
+await _analyticsRepository.group(
+  groupType: 'project',
+  groupKey: project.id,
+  properties: {'project_name': project.name, 'project_status': project.status},
+);
 ```
 
 ---
@@ -1173,8 +620,39 @@ When users tap Upload Documents from estimation cost details, show a bottom shee
 | **Acquisition** | `user_registered` | Signups per day/week, Acquisition channel |
 | **Activation** | `estimation_created` (within 7 days) | % who create first estimation |
 | **Retention** | `user_logged_in` (weekly) | Weekly Active Users, Retention cohorts |
-| **Revenue** | `subscription_started`, `plan_upgraded` | MRR, ARPU, Conversion rate |
 | **Referral** | `user_invited`, `invite_accepted` | Referral rate, Viral coefficient |
+
+### Setting Up Retention Cohorts in PostHog
+
+**Purpose:** Track how many users return to the app over time, grouped by signup week.
+
+**PostHog Dashboard Setup:**
+
+1. Go to **Product Analytics** → **Insights** → **New Insight** → **Retention**
+2. Configure cohort:
+   - **Cohort defining event**: `user_registered` (when user first appears)
+   - **Return event**: `user_logged_in` (what counts as "active")
+   - **Cohort by**: Week (group users by signup week)
+   - **Show**: Percentage
+3. Time range: Last 12 weeks
+4. Click **Calculate**
+5. Save as: "User Retention by Signup Week"
+6. Add to Executive Dashboard
+
+**Reading the Retention Table:**
+- **Rows**: Each row = users who signed up in that week
+- **Columns**: Week 0 (signup week), Week 1, Week 2, etc.
+- **Values**: % of users from that cohort who were active in that week
+
+**Example:**
+- Row "Week of Jan 1": 100 users signed up
+- Week 0: 100% (all just signed up)
+- Week 1: 45% (45 users returned)
+- Week 2: 30% (30 users still active)
+
+**Good vs. Bad Retention:**
+- **Good**: Week 4 retention > 20% (1 in 5 users still active after a month)
+- **Concerning**: Week 1 retention < 20% (users not coming back after first week)
 
 ---
 
@@ -1242,186 +720,54 @@ class GlobalSearchWidget extends StatelessWidget {
 - If critical bug detected, set rollout to 0% in PostHog (takes effect immediately)
 - No app update required!
 
-#### 2. User Segmentation: Premium Features
+#### 2. Other Feature Flag Use Cases
 
-**Scenario:** Show file attachment feature only to premium users.
-
-**Flag Configuration:**
-
-**In PostHog Dashboard:**
-1. Key: `file_attachments_enabled`
-2. Release conditions:
-   - **User property**: `plan_type` = `premium` OR `enterprise` → `true`
-   - **Default**: `false`
-
-**In Code:**
-
+**User Segmentation:** Gate features by plan type
 ```dart
-// In EstimationDetailsPage
-Future<void> _checkFileAttachmentAccess() async {
-  final result = await _analyticsRepository.isFeatureEnabled('file_attachments_enabled');
-
-  result.fold(
-    (_) => setState(() => _canAttachFiles = false),
-    (enabled) => setState(() => _canAttachFiles = enabled ?? false),
-  );
-}
-
-// In UI
-if (_canAttachFiles)
-  IconButton(
-    icon: const Icon(Icons.attach_file),
-    onPressed: _showAttachmentDialog,
-  )
-else
-  Tooltip(
-    message: 'Upgrade to Premium for file attachments',
-    child: IconButton(
-      icon: const Icon(Icons.lock),
-      onPressed: _showUpgradeDialog,
-    ),
-  ),
+// Flag: file_attachments_enabled, condition: plan_type = premium
+final canAttach = await _featureFlagRepo.isFeatureEnabled('file_attachments_enabled');
 ```
 
-#### 3. Remote Configuration: Pagination Size
-
-**Scenario:** Adjust pagination size without app update to optimize performance.
-
-**Flag Configuration:**
-
-**In PostHog Dashboard:**
-1. Key: `estimation_page_size`
-2. Type: **Boolean** (use variants for multiple values)
-3. Variants:
-   - `control`: 20 items
-   - `variant_30`: 30 items
-   - `variant_50`: 50 items
-4. Release:
-   - 33% each variant
-
-**In Code:**
-
+**Multivariate Flags:** Test different configurations
 ```dart
-// In CostEstimationRepositoryImpl
-Future<int> _getPageSize() async {
-  final result = await _analyticsRepository.getFeatureFlagVariant('estimation_page_size');
-
-  return result.fold(
-    (_) => 20,  // Default fallback
-    (variant) {
-      switch (variant) {
-        case 'variant_30':
-          return 30;
-        case 'variant_50':
-          return 50;
-        default:
-          return 20;
-      }
-    },
-  );
-}
+// Flag: estimation_page_size with variants (20, 30, 50)
+final variant = await _featureFlagRepo.getFeatureFlagVariant('estimation_page_size');
+final pageSize = variant == 'variant_30' ? 30 : (variant == 'variant_50' ? 50 : 20);
 ```
 
-#### 4. JSON Payload: Complex Configuration
-
-**Scenario:** Configure new estimation template feature with complex JSON data.
-
-**Flag Configuration:**
-
-**In PostHog Dashboard:**
-1. Key: `estimation_templates_config`
-2. Payload (JSON):
-```json
-{
-  "enabled": true,
-  "templates": [
-    {
-      "id": "residential_kitchen",
-      "name": "Residential Kitchen Remodel",
-      "default_items": [
-        {"name": "Cabinets", "category": "material"},
-        {"name": "Countertops", "category": "material"},
-        {"name": "Installation", "category": "labor"}
-      ]
-    },
-    {
-      "id": "bathroom_basic",
-      "name": "Basic Bathroom Renovation",
-      "default_items": [
-        {"name": "Fixtures", "category": "material"},
-        {"name": "Tiling", "category": "material"}
-      ]
-    }
-  ]
-}
-```
-
-**In Code:**
-
+**JSON Payload:** Complex remote config
 ```dart
-// In EstimationTemplatesWidget
-Future<List<EstimationTemplate>> _loadTemplates() async {
-  final result = await _analyticsRepository.getFeatureFlagPayload('estimation_templates_config');
-
-  return result.fold(
-    (_) => [],  // No templates
-    (payload) {
-      if (payload == null || payload['enabled'] != true) {
-        return [];
-      }
-
-      final templatesJson = payload['templates'] as List<dynamic>;
-      return templatesJson
-          .map((json) => EstimationTemplate.fromJson(json))
-          .toList();
-    },
-  );
-}
+// Flag: estimation_templates_config with JSON payload
+final payload = await _featureFlagRepo.getFeatureFlagPayload('estimation_templates_config');
+final templates = (payload?['templates'] as List).map((t) => Template.fromJson(t)).toList();
 ```
 
-#### 5. Environment-Specific Flags
+### Monitoring Feature Flags in PostHog Dashboard
 
-**Scenario:** Enable debug logging or features only in dev/QA environments.
+**View Flag Usage:**
+1. Go to **Feature Flags** → Select a flag (e.g., `global_search_enabled`)
+2. Click **Insights** tab
+3. View:
+   - **Unique users** exposed to flag
+   - **Rollout percentage** over time
+   - **Events triggered** by users with flag enabled vs disabled
 
-**Flag Configuration:**
-
-**In PostHog Dashboard:**
-1. Key: `verbose_logging_enabled`
-2. Release conditions:
-   - **User property**: `environment` = `dev` OR `qa` → `true`
-   - **Default**: `false`
-
-**In Code:**
-
-```dart
-// Set environment as user property on app start
-await _analyticsRepository.setUserProperties(
-  AnalyticsUserProperties(
-    custom: {
-      'environment': dotenv.env['ENVIRONMENT'], // 'dev', 'qa', 'prod'
-    },
-  ),
-);
-
-// Check flag in logging
-Future<void> _logDebugInfo(String message) async {
-  final result = await _analyticsRepository.isFeatureEnabled('verbose_logging_enabled');
-  final shouldLog = result.fold((_) => false, (enabled) => enabled ?? false);
-
-  if (shouldLog) {
-    _logger.debug(message);
-  }
-}
-```
+**Compare Feature Flag Impact:**
+1. Go to **Product Analytics** → **Insights** → **New Insight** → **Trends**
+2. Event: `estimation_created` (or your goal metric)
+3. Click **Add Breakdown** → **Feature Flag: global_search_enabled**
+4. This shows conversion rates for users with flag ON vs OFF
+5. Save as: "Global Search Impact on Estimations"
 
 ### Feature Flag Best Practices
 
 1. **Always provide fallback values**: Handle `null` or error states gracefully
 2. **Cache flag values**: Don't check flags on every render (use BLoC or provider)
 3. **Track flag exposures**: Log when users see feature variants
-4. **Clean up old flags**: Archive flags once features are fully rolled out
-5. **Use consistent naming**: `feature_name_enabled` or `feature_name_config`
-6. **Document flags**: Keep a registry of active flags and their purpose
+4. **Monitor impact**: Create insights comparing metrics between flag ON/OFF users
+5. **Clean up old flags**: Archive flags once features are fully rolled out to 100%
+6. **Use consistent naming**: `feature_name_enabled` or `feature_name_config`
+7. **Document flags**: Keep a registry of active flags and their purpose
 
 ---
 
@@ -1438,119 +784,47 @@ Future<void> _logDebugInfo(String message) async {
 
 ### A/B Test Example: Estimation Creation Flow
 
-**Hypothesis:** A guided wizard for estimation creation will increase completion rate vs. single-step dialog.
+**Hypothesis:** A guided wizard will increase estimation completion rate vs. single-step dialog.
 
-**Variants:**
-- **Control**: Current single-step dialog (name + create)
-- **Test**: Multi-step wizard (name → select template → configure → create)
-
-**Setup in PostHog:**
+**PostHog Dashboard Setup:**
 
 1. Navigate to **Experiments** → **New Experiment**
 2. Name: "Estimation Creation Wizard Test"
 3. Feature flag key: `estimation_creation_flow`
-4. Type: **Product experiment**
-5. Participants: **All users** (or filter by property)
-6. Variants:
-   - `control` (50%)
-   - `wizard` (50%)
-7. Goal metric: `estimation_created` event
-8. Secondary metrics:
-   - `estimation_viewed` (engagement)
-   - `estimation_renamed` (quality indicator)
-9. Minimum acceptable improvement: **5%**
-10. Recommended running time: **2 weeks** (PostHog calculates based on traffic)
+4. Variants:
+   - `control` (50% of users) - Single-step dialog
+   - `wizard` (50% of users) - Multi-step wizard
+5. Goal metric:
+   - Event: `estimation_created`
+   - Success criteria: Increase by at least 5%
+6. Click **Save & Launch**
 
-**Implementation:**
+**In Code:**
 
 ```dart
-// In AddCostEstimationBloc or page
-Future<void> _determineCreationFlow() async {
-  final result = await _analyticsRepository.getFeatureFlagVariant('estimation_creation_flow');
-
-  final variant = result.fold((_) => 'control', (v) => v ?? 'control');
-
-  // Track exposure (PostHog tracks automatically, but explicit tracking is clearer)
-  await _analyticsRepository.track(
-    AnalyticsEvent(
-      name: '\$feature_flag_called',
-      properties: {
-        'feature_flag': 'estimation_creation_flow',
-        'variant': variant,
-      },
-    ),
-  );
-
-  if (variant == 'wizard') {
-    _showWizardDialog();
-  } else {
-    _showSingleStepDialog();
-  }
+// Check variant
+final variant = await _featureFlagRepo.getFeatureFlagVariant('estimation_creation_flow');
+if (variant == 'wizard') {
+  _showWizardDialog();
+} else {
+  _showSingleStepDialog();
 }
 
-// Track completion for both variants
-Future<void> _onEstimationCreated(CostEstimate estimation) async {
-  await _analyticsRepository.track(
-    AnalyticsEvent(
-      name: 'estimation_created',
-      properties: {
-        'creation_flow': _currentVariant,  // 'control' or 'wizard'
-        'estimation_id': estimation.id,
-      },
-    ),
-  );
-}
+// Track goal metric
+await _analyticsRepo.track(AnalyticsEvent(name: 'estimation_created', properties: {...}));
 ```
 
-**Analyzing Results in PostHog:**
-
-After 2 weeks, navigate to **Experiments** → **Estimation Creation Wizard Test**:
-
-- **Conversion Rate**: Control: 65%, Wizard: 72% → **+10.8% improvement**
-- **Statistical Significance**: 95% confidence (p < 0.05)
-- **Recommendation**: Ship wizard variant (click "Ship variant")
-
-**Shipping the Winner:**
-
-1. In PostHog, click **Ship variant** → Select `wizard`
-2. Feature flag `estimation_creation_flow` now returns `wizard` for 100% users
-3. (Optional) Remove control code path in next app release
-
-### Additional A/B Test Ideas
-
-#### 1. Onboarding Tutorial Test
-
-**Variants:**
-- `control`: No tutorial
-- `tooltip`: Inline tooltips on first visit
-- `modal`: Full-screen tutorial modal
-
-**Goal:** Measure `estimation_created` within 7 days of signup
-
-#### 2. Estimation List Layout Test
-
-**Variants:**
-- `control`: List view
-- `grid`: Grid card view
-
-**Goal:** Measure `estimation_viewed` clicks
-
-#### 3. Pricing Page CTA Test
-
-**Variants:**
-- `control`: "Start Free Trial"
-- `test_a`: "Get Started Free"
-- `test_b`: "Try 14 Days Free"
-
-**Goal:** Measure `subscription_started`
+**Monitor Results:**
+1. In PostHog, go to **Experiments** → Select your experiment
+2. View real-time conversion rates for each variant
+3. Wait for statistical significance (PostHog shows this automatically)
+4. Once significant, click **Ship winning variant** to roll out to 100%
 
 ### Experiment Best Practices
 
-1. **Run one experiment at a time** (per feature area) to avoid interaction effects
-2. **Calculate required sample size** before starting (PostHog does this automatically)
-3. **Don't stop early**: Wait for statistical significance + recommended runtime
-4. **Track secondary metrics**: Ensure you're not sacrificing other KPIs
-5. **Document learnings**: Record results in wiki/notion for future reference
+1. Run one experiment per feature area to avoid interaction effects
+2. Wait for statistical significance before concluding
+3. Track secondary metrics to ensure no negative side effects
 
 ---
 
@@ -1567,324 +841,223 @@ Group analytics is critical for B2B SaaS to understand **account-level** behavio
 
 ### Implementation
 
-#### Setting Group Type on Project Selection
-
-**File:** `lib/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart`
+Set group context when user selects a project:
 
 ```dart
-Future<void> _onSelectProject(
-  SelectProject event,
-  Emitter<ProjectDropdownState> emit,
-) async {
-  // ... fetch project logic
-
-  // Set project as group
-  await _analyticsRepository.group(
-    groupType: 'project',
-    groupKey: project.id,
-    properties: {
-      'project_name': project.name,
-      'project_status': project.status.name,
-      'created_at': project.createdAt.toIso8601String(),
-      'estimation_count': project.estimationCount ?? 0,
-      'total_cost_value': project.totalValue ?? 0,
-    },
-  );
-
-  emit(ProjectDropdownState.selected(project));
-}
-```
-
-#### Tracking Events with Group Context
-
-All subsequent events automatically associated with the active project group:
-
-```dart
-// User creates estimation while project group is set
-await _analyticsRepository.track(
-  AnalyticsEvent(
-    name: 'estimation_created',
-    properties: {
-      'estimation_id': estimation.id,
-      // PostHog automatically includes: '$group_project': projectId
-    },
-  ),
-);
-```
-
-### Dashboard Setup for Group Analytics
-
-**In PostHog Dashboard:**
-
-1. Navigate to **Settings** → **Project** → **Group Analytics**
-2. Add group type: `project`
-3. Display name: "Project"
-
-**Create Project Insights:**
-
-1. **Most Active Projects**:
-   - Go to **Product Analytics** → **Insights** → **Trends**
-   - Event: `estimation_created`
-   - Breakdown by: `$group_project`
-   - Time range: Last 30 days
-
-2. **Project Health Dashboard**:
-   - Event: `estimation_viewed` OR `estimation_created`
-   - Filter: `$group_project` is set
-   - Breakdown: By project
-   - Visualization: Table with columns:
-     - Project name
-     - Total events (activity level)
-     - Unique users (collaboration)
-     - Last active date
-
-3. **Dormant Projects**:
-   - Event: Any event
-   - Filter: `$group_project` is set
-   - Filter: Last event > 30 days ago
-   - Alert: Notify when project goes dormant
-
-### Company-Level Groups (Future)
-
-When multi-company support is added:
-
-```dart
-// On user login, set company group
 await _analyticsRepository.group(
-  groupType: 'company',
-  groupKey: user.companyId,
-  properties: {
-    'company_name': user.companyName,
-    'plan_type': user.planType,
-    'user_count': companyUserCount,
-    'mrr': monthlyRevenue,
-  },
+  groupType: 'project',
+  groupKey: project.id,
+  properties: {'project_name': project.name, 'project_status': project.status},
 );
-
-// Events now automatically tagged with both:
-// - $group_project: current project
-// - $group_company: user's company
 ```
 
-**Company Dashboard Insights:**
-- ARR by company
-- Feature adoption by company
-- Expansion opportunities (companies using > 80% of features)
+All subsequent events are automatically tagged with the group ID.
+
+### PostHog Dashboard Setup
+
+**Step 1: Enable Group Analytics**
+
+1. Navigate to **Settings** → **Project Settings** → **Group Analytics**
+2. Click **Add Group Type**
+3. Enter group type: `project`
+4. Display name: "Project"
+5. Click **Save**
+
+**Step 2: Create Project-Level Insights**
+
+**Most Active Projects:**
+1. Go to **Product Analytics** → **Insights** → **New Insight** → **Trends**
+2. Event: `estimation_created`
+3. Click **Add Breakdown** → Select **Group: project**
+4. Time range: Last 30 days
+5. Chart type: Bar chart
+6. Save as: "Most Active Projects"
+
+**Project Health Score:**
+1. New Insight → **Trends**
+2. Event: Any event
+3. Aggregation: Unique users
+4. Breakdown: Group: project
+5. Filter: Add formula `events_count > 0` in last 7 days
+6. Save as: "Active Projects (Last 7 Days)"
+
+**Dormant Projects Alert:**
+1. New Insight → **Trends**
+2. Event: Any event
+3. Breakdown: Group: project
+4. Time range: Last 30 days
+5. Click **⋯** → **Set up alert**
+6. Alert when: No events for a project in 7 days
+7. Save alert
 
 ---
 
 ## Dashboard Configuration
 
-### PostHog Dashboard Organization
-
-Create the following dashboards in PostHog for comprehensive analytics:
+### Setting Up Key Dashboards
 
 #### 1. Executive Dashboard
 
-**Widgets:**
-- **Total Users** (Insight: Unique users, last 30 days)
-- **Active Users** (Insight: WAU, MAU trends)
-- **New Signups** (Insight: `user_registered`, last 30 days, trended)
-- **Estimations Created** (Insight: `estimation_created`, last 30 days, trended)
-- **User Retention** (Insight: Retention cohorts by signup week)
-- **Top Projects** (Insight: `estimation_created` grouped by `$group_project`, top 10)
+**Purpose:** High-level metrics for leadership
+
+**PostHog Setup:**
+1. Go to **Dashboards** → **New Dashboard**
+2. Name: "Executive Overview"
+3. Add these insights:
+
+**Widget 1: Active Users**
+- Insight type: **Trends**
+- Event: Any event
+- Aggregation: Unique users
+- Time range: Last 30 days
+- Save & add to dashboard
+
+**Widget 2: New Signups**
+- Insight type: **Trends**
+- Event: `user_registered`
+- Aggregation: Total count
+- Time range: Last 30 days, grouped by week
+- Save & add to dashboard
+
+**Widget 3: Estimations Created**
+- Insight type: **Trends**
+- Event: `estimation_created`
+- Time range: Last 30 days, grouped by week
+- Save & add to dashboard
+
+**Widget 4: User Onboarding Funnel**
+- Insight type: **Funnel**
+- Add funnel created earlier: "User Onboarding Funnel"
+- Save & add to dashboard
 
 #### 2. Product Analytics Dashboard
 
-**Widgets:**
-- **Feature Adoption Funnel** (Funnel: User onboarding)
-- **Upload Documents Funnel** (Funnel: EST-023 upload documents flow)
-- **Top Events** (Insight: All events, last 7 days, bar chart)
-- **Average Estimations per User** (Formula: `estimation_created` / unique users)
-- **Search Usage** (Insight: `search_performed`, trended)
-- **Document Upload Success Rate** (Insight: `document_uploaded` / `document_upload_started`)
+**Purpose:** Track feature usage and product health
 
-#### 3. Growth Dashboard
+**PostHog Setup:**
+1. New Dashboard: "Product Health"
+2. Add insights:
 
-**Widgets:**
-- **Acquisition Channels** (Insight: `user_registered` breakdown by `utm_source`)
-- **Activation Rate** (Formula: Users with `estimation_created` / `user_registered` in last 7 days)
-- **AARRR Metrics** (Multiple insights for Acquisition, Activation, Retention, Revenue, Referral)
-- **Viral Coefficient** (Formula: `invite_accepted` / `user_invited`)
+**Upload Success Rate:**
+- Insight type: **Trends**
+- Series 1: Event `document_uploaded`, count
+- Series 2: Event `document_upload_started`, count
+- Formula: `A / B * 100` (percentage)
+- Time range: Last 7 days
+- Save as: "Upload Success Rate (%)"
 
-#### 4. Feature Flags Dashboard
+**Error Rate by Type:**
+- Insight type: **Trends**
+- Event: `error_occurred`
+- Breakdown by: `error_type` property
+- Time range: Last 7 days
+- Chart: Stacked bar chart
+- Save & add to dashboard
 
-**Widgets:**
-- **Active Feature Flags** (List all flags with status)
-- **Flag Exposure** (Insight: `$feature_flag_called`, breakdown by flag name)
-- **Experiment Results** (Link to active experiments)
-- **Flag Usage by User Segment** (Breakdown: `$feature_flag_called` by user properties)
+**Top Events:**
+- Insight type: **Trends**
+- Event: All events
+- Aggregation: Total count
+- Breakdown by: Event name
+- Time range: Last 7 days
+- Chart: Bar chart (top 10)
+- Save & add to dashboard
 
-#### 5. Performance Dashboard
+#### 3. Feature Flags Dashboard
 
-**Widgets:**
-- **Average Load Time** (Insight: `screen_loaded`, property: `load_time_ms`, aggregation: average)
-- **Error Rates** (Insight: `error_occurred`, breakdown by `error_type`)
-- **API Response Times** (Insight: custom event `api_call_completed`, property: `duration_ms`)
-- **Session Duration** (Insight: Session recordings, average duration)
+**Purpose:** Monitor feature flag usage and experiments
 
-### Dashboard-to-Event Instrumentation Matrix (Required)
+**PostHog Setup:**
+1. New Dashboard: "Feature Flags & Experiments"
+2. Add insights:
 
-Before publishing dashboards, confirm each widget has a concrete event source in code:
+**Active Experiments:**
+- Navigate to **Experiments** tab
+- Pin active experiments to dashboard
 
-| Dashboard Widget | Event | Required Properties | Owner |
-|------------------|-------|---------------------|-------|
-| Average Load Time | `screen_loaded` | `screen_name`, `load_time_ms` | Mobile |
-| Error Rates | `error_occurred` | `error_type`, `screen_name` | Mobile |
-| API Response Times | `api_call_completed` | `endpoint_group`, `duration_ms`, `status_code_bucket` | Mobile |
-| Upload Completion | `document_uploaded` | `document_category`, `file_type` | Mobile |
+**Flag Exposure Rate:**
+- Insight type: **Trends**
+- Event: `$feature_flag_called`
+- Breakdown by: `feature_flag` property
+- Time range: Last 7 days
+- Save & add to dashboard
 
-If a widget has no mapped event/properties, do not add it to dashboards yet.
+### Dashboard-to-Event Instrumentation Matrix
 
-### Creating a Dashboard
+Before creating dashboards, ensure events are instrumented:
 
-**In PostHog:**
-1. Navigate to **Dashboards** → **New Dashboard**
-2. Name: "Executive Dashboard"
-3. Click **Add Insight**
-4. Configure insight (event, filters, visualization)
-5. Click **Save & Add to Dashboard**
-6. Repeat for all widgets
-7. Arrange widgets with drag-and-drop
-8. Click **Share** to share with team
+| Widget | Event | Required Properties |
+|--------|-------|---------------------|
+| Active Users | Any event | - |
+| New Signups | `user_registered` | - |
+| Estimations Created | `estimation_created` | `project_id` |
+| Upload Success Rate | `document_uploaded`, `document_upload_started` | `document_category`, `file_type` |
+| Error Rates | `error_occurred` | `error_type`, `screen_name` |
+| Flag Exposure | `$feature_flag_called` | `feature_flag` (auto-added) |
 
-### Alerts & Monitoring
+### Setting Up Alerts
 
-Set up alerts for critical metrics:
+**Critical Metric Alerts:**
 
-**In PostHog:**
-1. Navigate to **Insights** → Create insight (e.g., "Error Rate")
+**Error Rate Spike:**
+1. Open "Error Rate by Type" insight
 2. Click **⋯** → **Set up alert**
-3. Configure:
-   - Threshold: Error count > 100 in 1 hour
-   - Notification: Email, Slack webhook
-4. Save
+3. Alert when: Event count > 100 in 1 hour
+4. Notification: Email + Slack (configure webhook)
+5. Save
 
-**Recommended Alerts:**
-- Error rate spike (> 5% of sessions)
-- Drop in daily active users (> 20% decrease)
-- Experiment reaches significance
-- Feature flag exposure anomaly
+**DAU Drop:**
+1. Open "Active Users" insight
+2. Click **⋯** → **Set up alert**
+3. Alert when: Unique users drops > 20% compared to previous day
+4. Notification: Email to leadership team
+5. Save
+
+**Experiment Completion:**
+1. Go to active experiment
+2. Enable "Notify when statistically significant"
+3. PostHog will email when results are ready
 
 ---
 
 ## Testing Strategy
 
-### Unit Testing Analytics
+### Unit Testing
 
-**File:** `test/libraries/analytics/data/repositories/no_op_analytics_repository_test.dart`
-
-```dart
-import 'package:construculator/libraries/analytics/data/repositories/no_op_analytics_repository.dart';
-import 'package:construculator/libraries/analytics/domain/entities/analytics_event.dart';
-import 'package:flutter_test/flutter_test.dart';
-
-void main() {
-  group('NoOpAnalyticsRepository', () {
-    late NoOpAnalyticsRepository repository;
-
-    setUp(() {
-      repository = NoOpAnalyticsRepository();
-    });
-
-    test('initialize returns Right', () async {
-      final result = await repository.initialize();
-      expect(result.isRight, true);
-    });
-
-    test('track event returns Right', () async {
-      const event = AnalyticsEvent(name: 'test_event');
-      final result = await repository.track(event);
-      expect(result.isRight, true);
-    });
-  });
-}
-```
-
-### BLoC Testing with Analytics
-
-**File:** `test/features/estimation/presentation/bloc/add_cost_estimation_bloc_test.dart`
+Use `FakeAnalyticsRepository` in tests to avoid real tracking:
 
 ```dart
-import 'package:bloc_test/bloc_test.dart';
-import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
-import 'package:construculator/libraries/analytics/data/repositories/no_op_analytics_repository.dart';
-import 'package:flutter_test/flutter_test.dart';
-
-void main() {
-  group('AddCostEstimationBloc', () {
-    late AddCostEstimationUseCase fakeUseCase;
-    late AnalyticsRepository analyticsRepository;
-
-    setUp(() {
-      fakeUseCase = FakeAddCostEstimationUseCase();
-      analyticsRepository = NoOpAnalyticsRepository();
-    });
-
-    blocTest<AddCostEstimationBloc, AddCostEstimationState>(
-      'emits success and tracks event when creation succeeds',
-      build: () => AddCostEstimationBloc(
-        useCase: fakeUseCase,
-        analyticsRepository: analyticsRepository,
-      ),
-      act: (bloc) => bloc.add(const CreateEstimation(
-        estimationName: 'Test Estimation',
-        projectId: 'project-123',
-      )),
-      expect: () => [
-        const AddCostEstimationState.loading(),
-        isA<AddCostEstimationState>().having(
-          (s) => s.maybeMap(success: (_) => true, orElse: () => false),
-          'is success',
-          true,
-        ),
-      ],
-      verify: (_) {},
-    );
-  });
-}
+test('FakeAnalyticsRepository returns success', () async {
+  final repo = FakeAnalyticsRepository();
+  final result = await repo.track(AnalyticsEvent(name: 'test'));
+  expect(result.isRight, true);
+});
 ```
 
-**Testing note**:
-- Keep analytics tests deterministic: use no-op/fake implementations for unit and widget tests.
-- Reserve SDK-level verification for manual QA in dev/qa environments.
+### BLoC Testing
 
-### Integration Testing
-
-Test analytics in integration tests with no-op repository:
-
-**File:** `integration_test/app_test.dart`
+Inject `FakeAnalyticsRepository` when testing BLoCs:
 
 ```dart
-// Override AnalyticsModule to use NoOpAnalyticsRepository
-await app.main();  // App uses NoOp in test environment
-
-// Perform test actions
-await tester.tap(find.text('Create Estimation'));
-await tester.pumpAndSettle();
-
-// Assert UI changes (analytics happens in background, don't assert on it)
-expect(find.text('Estimation Created'), findsOneWidget);
+blocTest<AddCostEstimationBloc, AddCostEstimationState>(
+  'tracks event on success',
+  build: () => AddCostEstimationBloc(
+    ...,
+    analyticsRepository: FakeAnalyticsRepository(),
+  ),
+  act: (bloc) => bloc.add(CreateEstimation(...)),
+  expect: () => [loading, success],
+);
 ```
 
-### Manual Testing in Dashboard
+**Note:** Use Fake implementations following project conventions (e.g., `FakeAddCostEstimationUseCase` for test doubles).
 
-1. **Enable debug mode** in dev environment (`.env.dev`):
-   ```env
-   POSTHOG_DEBUG=true
-   ```
+### Manual Testing
 
-2. **Trigger events** in app (create estimation, login, etc.)
-
-3. **Verify in PostHog**:
-   - Navigate to **Activity** → **Events**
-   - Filter by `distinct_id` (your user ID)
-   - Verify events appear with correct properties
-
-4. **Test feature flags**:
-   - Create test flag in PostHog
-   - Set override for your email
-   - Reload app and verify flag value in app
+1. Enable `POSTHOG_DEBUG=true` in `.env.dev`
+2. Trigger events in the app
+3. Verify in PostHog dashboard under **Activity** → **Events**
+4. Test feature flags with email overrides
 
 ---
 
@@ -1978,7 +1151,7 @@ expect(find.text('Estimation Created'), findsOneWidget);
 If critical issues detected:
 1. Set remote kill switch feature flag `analytics_capture_enabled=false` (immediate stop)
 2. Call `reset()` for active sessions where required by policy
-3. Keep app functional with `NoOpAnalyticsRepository` behavior in code paths
+3. Keep app functional with `FakeAnalyticsRepository` behavior in code paths
 4. For hard-disable, set `POSTHOG_ENABLED=false` in environment and ship next release
 
 ---
