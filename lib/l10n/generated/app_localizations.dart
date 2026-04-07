@@ -1263,6 +1263,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{value} crew'**
   String activityEditedFieldValueCrew(String value);
+
+  /// Title shown when there are no activity logs for an estimation
+  ///
+  /// In en, this message translates to:
+  /// **'No Activity Yet'**
+  String get noActivityLogs;
+
+  /// Description shown when there are no activity logs for an estimation
+  ///
+  /// In en, this message translates to:
+  /// **'Activity logs will appear here when changes are made to this estimation.'**
+  String get noActivityLogsDescription;
+
+  /// Title shown when there is an error loading activity logs
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to Load Activity'**
+  String get errorLoadingLogs;
+
+  /// Button label to retry loading more activity logs
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retryLoadLogsButton;
+
+  /// Error message shown when loading more logs fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load more logs'**
+  String get loadMoreLogsError;
 }
 
 class _AppLocalizationsDelegate
