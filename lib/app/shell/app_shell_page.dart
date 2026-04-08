@@ -17,6 +17,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+/// The primary shell page for the application's authenticated interface.
+///
+/// This widget provides the bottom navigation bar and manages the state of the 
+/// tab navigation using [AppShellBloc] and [TabModuleManager]. It implements 
+/// lazy loading of features, ensuring each tab's dependencies are only initialized
+/// when the user navigates there for the first time.
 class AppShellPage extends StatefulWidget {
   const AppShellPage({super.key});
 
@@ -35,23 +41,11 @@ class _AppShellPageState extends State<AppShellPage> {
     (_) => GlobalKey<NavigatorState>(),
   );
 
-  StreamSubscription<String?>? _projectSubscription;
   StreamSubscription<ProjectDropdownState>? _dropdownSubscription;
-  String? _projectId;
 
   @override
   void initState() {
     super.initState();
-    _projectId = _currentProjectNotifier.currentProjectId;
-    _projectSubscription = _currentProjectNotifier.onCurrentProjectChanged.listen((
-      projectId,
-    ) {
-      if (!mounted) return;
-      // TODO: Clean up this project switching logic. Consider making CostEstimationLandingPage reactive to CurrentProjectNotifier directly instead of rebuilding the Shell to avoid destroying the tab's navigator stack.
-      setState(() {
-        _projectId = projectId;
-      });
-    });
 
     _moduleLoader.ensureTabModuleLoaded(ShellTab.home).then((_) {
       if (!mounted) return;
@@ -72,7 +66,6 @@ class _AppShellPageState extends State<AppShellPage> {
 
   @override
   void dispose() {
-    _projectSubscription?.cancel();
     _dropdownSubscription?.cancel();
     _bloc.close();
     super.dispose();
@@ -111,44 +104,45 @@ class _AppShellPageState extends State<AppShellPage> {
       case ShellTab.calculations:
         return const CalculationsPage();
       case ShellTab.estimation:
-        final projectId = _projectId;
-        if (projectId == null || projectId.isEmpty) {
-          return const SizedBox.shrink();
-        }
-        return EstimationModule.landingPage(projectId: projectId);
+        return EstimationModule.landingPage();
       case ShellTab.members:
         return const MembersPage();
     }
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
-    final projectId = _projectId;
-    if (projectId == null || projectId.isEmpty) {
-      final coreColors = Theme.of(context).coreColors;
-      return PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: Container(
-          decoration: BoxDecoration(
-            color: coreColors.pageBackground,
-            boxShadow: CoreShadows.medium,
-          ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: CoreSpacing.space4,
-            vertical: CoreSpacing.space2,
-          ),
-          child: AppBar(
-            backgroundColor: coreColors.pageBackground,
-            elevation: 0,
-            centerTitle: true,
-            titleSpacing: 0,
-            title: Text(context.l10n.appTitle),
-          ),
-        ),
-      );
-    }
-
-    return Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
-      projectId: projectId,
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(kToolbarHeight),
+      child: StreamBuilder<String?>(
+        stream: _currentProjectNotifier.onCurrentProjectChanged,
+        initialData: _currentProjectNotifier.currentProjectId,
+        builder: (context, snapshot) {
+          final projectId = snapshot.data;
+          if (projectId == null || projectId.isEmpty) {
+            final coreColors = Theme.of(context).coreColors;
+            return Container(
+              decoration: BoxDecoration(
+                color: coreColors.pageBackground,
+                boxShadow: CoreShadows.medium,
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: CoreSpacing.space4,
+                vertical: CoreSpacing.space2,
+              ),
+              child: AppBar(
+                backgroundColor: coreColors.pageBackground,
+                elevation: 0,
+                centerTitle: true,
+                titleSpacing: 0,
+                title: Text(context.l10n.appTitle),
+              ),
+            );
+          }
+          return Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
+            projectId: projectId,
+          );
+        },
+      ),
     );
   }
 
@@ -173,9 +167,7 @@ class _AppShellPageState extends State<AppShellPage> {
                     enabled: isActive,
                     child: isLoaded
                         ? TabNavigator(
-                            key: tab == ShellTab.estimation
-                                ? ValueKey('estimation_$_projectId')
-                                : ValueKey(tab.name),
+                            key: ValueKey(tab.name),
                             navigatorKey: _tabNavigatorKeys[index],
                             rootBuilder: (_) => _buildTabRoot(tab),
                           )

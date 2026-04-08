@@ -54,8 +54,7 @@ class _CostEstimationLandingPageTestModule extends Module {
       '/test-landing/:projectId',
       guards: [AuthGuard()],
       child: (context) {
-        final projectId = Modular.args.params['projectId'];
-        return EstimationModule.landingPage(projectId: projectId);
+        return EstimationModule.landingPage();
       },
     );
   }
@@ -91,6 +90,7 @@ void main() {
   setUp(() {
     fakeSupabase.reset();
     fakeAppRouter.reset();
+    Modular.get<CurrentProjectNotifier>().setCurrentProjectId(testProjectId);
   });
 
   Widget makeApp() {
