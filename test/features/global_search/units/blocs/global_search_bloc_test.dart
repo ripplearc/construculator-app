@@ -395,9 +395,9 @@ void main() {
             isNotEmpty,
             reason: 'RPC must be called for a search',
           );
-          final rpcParams = rpcCalls.first['params'] as Map<String, dynamic>?;
+          final rpcParams = rpcCalls.first['params'] as Map<String, dynamic>;
           expect(
-            rpcParams?['scope'],
+            rpcParams['scope'],
             equals(SearchScope.estimation.name),
             reason: 'scope must be forwarded to the RPC',
           );
