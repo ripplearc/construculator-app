@@ -1076,5 +1076,55 @@
   "loadMoreLogsError": "Failed to load more logs",
   "@loadMoreLogsError": {
     "description": "Error message shown when loading more logs fails"
+  },
+  "globalSearchHint": "Search for Calculation and cost",
+  "@globalSearchHint": {
+    "description": "Hint text displayed in the global search input field",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "globalSearchRecentSearchesTitle": "Recent searches",
+  "@globalSearchRecentSearchesTitle": {
+    "description": "Section title for the recent searches list on the global search screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "globalSearchFilterTags": "Tags",
+  "@globalSearchFilterTags": {
+    "description": "Label for the Tags filter chip on the global search screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "globalSearchFilterModified": "Modified",
+  "@globalSearchFilterModified": {
+    "description": "Label for the Modified filter chip on the global search screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "globalSearchFilterType": "Type",
+  "@globalSearchFilterType": {
+    "description": "Label for the Type filter chip on the global search screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "globalSearchEmptyRecentMessage": "No recent searches available",
+  "@globalSearchEmptyRecentMessage": {
+    "description": "Message shown when there are no recent searches on the global search screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "dashboardTitle": "Construculator",
+  "@dashboardTitle": {
+    "description": "Title text displayed in the dashboard app bar",
+    "context": "N/A"
+  },
+  "dashboardSearchSemanticLabel": "Search",
+  "@dashboardSearchSemanticLabel": {
+    "description": "Accessibility label for the search icon button on the dashboard app bar",
+    "context": "N/A"
+  },
+  "globalSearchBackSemanticLabel": "Back",
+  "@globalSearchBackSemanticLabel": {
+    "description": "Accessibility label for the back button on the global search screen",
+    "context": "N/A"
+  },
+  "globalSearchClearSearchSemanticLabel": "Clear search",
+  "@globalSearchClearSearchSemanticLabel": {
+    "description": "Accessibility label for the clear search button on the global search screen",
+    "context": "N/A"
   }
 }

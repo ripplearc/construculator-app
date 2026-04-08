@@ -3,6 +3,7 @@ import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
+import 'package:construculator/libraries/router/routes/global_search_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -58,14 +59,23 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     final typography = context.textTheme;
     final colors = context.colorTheme;
+    final l10n = context.l10n;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Construculator'),
+        title: Text(l10n.dashboardTitle),
         centerTitle: true,
         backgroundColor: colors.pageBackground,
+        actions: [
+          CoreIconWidget(
+            icon: CoreIcons.search,
+            semanticLabel: l10n.dashboardSearchSemanticLabel,
+            onTap: () => _router.pushNamed(fullGlobalSearchRoute),
+          ),
+          const SizedBox(width: CoreSpacing.space4),
+        ],
       ),
       body: Container(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(CoreSpacing.space6),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
