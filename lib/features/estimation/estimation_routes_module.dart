@@ -6,6 +6,10 @@ import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
+/// Modular module owning Tier-1 (full-screen) routes for the Estimation feature.
+///
+/// Imports [EstimationModule] for shared data-layer bindings, and registers
+/// the [CostEstimationDetailsPage] route behind an [AuthGuard].
 class EstimationRoutesModule extends Module {
   final AppBootstrap appBootstrap;
   EstimationRoutesModule(this.appBootstrap);

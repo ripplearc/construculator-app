@@ -58,6 +58,12 @@ class TabModuleManager {
   bool isLoaded(ShellTab tab) => _loadedTabs.contains(tab);
 }
 
+/// A private provider implementation that lazily instantiates feature modules.
+///
+/// While real instances are generally encouraged, this provider defers the 
+/// construction of heavy feature modules (like [DashboardModule], 
+/// [CalculationsModule], etc.) until their tab is explicitly loaded. This avoids
+/// the overhead of constructing all module instances sequentially on fresh launch.
 class _ProductionTabModuleProvider implements TabModuleProvider {
   final ShellTab tab;
 

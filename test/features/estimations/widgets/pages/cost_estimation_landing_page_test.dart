@@ -14,6 +14,7 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -54,8 +55,7 @@ class _CostEstimationLandingPageTestModule extends Module {
       '/test-landing/:projectId',
       guards: [AuthGuard()],
       child: (context) {
-        final projectId = Modular.args.params['projectId'];
-        return EstimationModule.landingPage(projectId: projectId);
+        return EstimationModule.landingPage();
       },
     );
   }
@@ -93,6 +93,7 @@ void main() {
   setUp(() {
     fakeSupabase.reset();
     fakeAppRouter.reset();
+    Modular.get<CurrentProjectNotifier>().setCurrentProjectId(testProjectId);
   });
 
   Widget makeApp() {
