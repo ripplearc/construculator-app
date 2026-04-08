@@ -84,6 +84,25 @@ abstract class SupabaseWrapper {
     required dynamic filterValue,
   });
 
+  /// Select rows matching ALL entries in [filters] (multi-column equality).
+  ///
+  /// Equivalent to chaining multiple `.eq()` calls at the database level.
+  /// Prefer this over [select] when filtering by more than one column to
+  /// avoid fetching and filtering rows in memory.
+  ///
+  /// [table] The table to select from
+  /// [columns] The columns to select, defaults to '*'
+  /// [filters] Map of column → value pairs that must all match
+  /// [orderBy] Optional column name to order results by
+  /// [ascending] Sort direction when [orderBy] is provided, defaults to true
+  Future<List<Map<String, dynamic>>> selectMatch({
+    required String table,
+    String columns = '*',
+    required Map<String, dynamic> filters,
+    String? orderBy,
+    bool ascending = true,
+  });
+
   /// Select a set of rows from a table where [filterColumn] value is in [filterValues].
   ///
   /// [table] The table to select from
@@ -123,6 +142,20 @@ abstract class SupabaseWrapper {
     required Map<String, dynamic> data,
   });
 
+  /// Upsert a row into a table.
+  ///
+  /// Inserts the row, or updates it if a conflict occurs on [onConflict] columns.
+  /// Requires a unique constraint on the [onConflict] columns in the database.
+  ///
+  /// [table] The table to upsert into
+  /// [data] The data to insert or update
+  /// [onConflict] Comma-separated column names for conflict detection (e.g. 'user_id,search_term,scope')
+  Future<void> upsert({
+    required String table,
+    required Map<String, dynamic> data,
+    required String onConflict,
+  });
+
   /// Update a row in a table
   ///
   /// [table] The table to update
@@ -152,6 +185,18 @@ abstract class SupabaseWrapper {
     required String table,
     required String filterColumn,
     required dynamic filterValue,
+  });
+
+  /// Delete all rows from a table matching every entry in [filters].
+  ///
+  /// Prefer this over [delete] when deleting by a composite key, as it issues
+  /// a single DELETE … WHERE rather than a select-then-loop approach.
+  ///
+  /// [table] The table to delete from
+  /// [filters] Map of column → value pairs that must all match
+  Future<void> deleteMatch({
+    required String table,
+    required Map<String, dynamic> filters,
   });
 
   /// Select a paginated set of rows from a table, ordered and ranged.

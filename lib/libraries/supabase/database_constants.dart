@@ -15,6 +15,11 @@ class DatabaseConstants {
   static const String costEstimationLogsTable = 'cost_estimate_logs';
   static const String projectsTable = 'projects';
   static const String projectMembersTable = 'project_members';
+  static const String searchHistoryTable = 'search_history';
+
+  // RPC function names
+  static const String globalSearchRpcFunction = 'global_search';
+  static const String searchSuggestionsRpcFunction = 'get_search_suggestions';
 
   // Column names
   static const String idColumn = 'id';
@@ -33,6 +38,24 @@ class DatabaseConstants {
   static const String owningCompanyIdColumn = 'owning_company_id';
   static const String exportFolderLinkColumn = 'export_folder_link';
   static const String exportStorageProviderColumn = 'export_storage_provider';
+
+  // Search history columns
+  static const String searchTermColumn = 'search_term';
+  static const String scopeColumn = 'scope';
+  static const String searchCountColumn = 'search_count';
+  static const String hasResultsColumn = 'has_results';
+
+  /// Unique constraint columns for search_history upsert.
+  /// Used with [SupabaseWrapper.upsert] onConflict parameter.
+  static const String searchHistoryUpsertConflictColumns =
+      '$userIdColumn,$searchTermColumn,$scopeColumn';
+
+  // User profile columns (id field uses the shared idColumn above)
+  static const String credentialIdColumn = 'credential_id';
+  static const String firstNameColumn = 'first_name';
+  static const String lastNameColumn = 'last_name';
+  static const String professionalRoleColumn = 'professional_role';
+  static const String profilePhotoUrlColumn = 'profile_photo_url';
 
   // Cost Estimation Logs columns
   static const String estimateIdColumn = 'estimate_id';
