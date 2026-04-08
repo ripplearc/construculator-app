@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/auth/domain/entities/user_profile_entity.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:equatable/equatable.dart';
 
 /// Data Transfer Object for UserProfile entity.
@@ -40,12 +41,12 @@ class UserProfileDto extends Equatable {
   /// to the DTO structure, mapping snake_case JSON keys to camelCase Dart properties.
   factory UserProfileDto.fromJson(Map<String, dynamic> json) {
     return UserProfileDto(
-      id: json['id'] as String,
-      credentialId: json['credential_id'] as String?,
-      firstName: json['first_name'] as String,
-      lastName: json['last_name'] as String,
-      professionalRole: json['professional_role'] as String,
-      profilePhotoUrl: json['profile_photo_url'] as String?,
+      id: json[DatabaseConstants.idColumn] as String,
+      credentialId: json[DatabaseConstants.credentialIdColumn] as String?,
+      firstName: json[DatabaseConstants.firstNameColumn] as String,
+      lastName: json[DatabaseConstants.lastNameColumn] as String,
+      professionalRole: json[DatabaseConstants.professionalRoleColumn] as String,
+      profilePhotoUrl: json[DatabaseConstants.profilePhotoUrlColumn] as String?,
     );
   }
 
@@ -58,12 +59,12 @@ class UserProfileDto extends Equatable {
   /// (e.g., `'credential_id': null`). It is intended for read/display
   /// serialization only
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'credential_id': credentialId,
-    'first_name': firstName,
-    'last_name': lastName,
-    'professional_role': professionalRole,
-    'profile_photo_url': profilePhotoUrl,
+    DatabaseConstants.idColumn: id,
+    DatabaseConstants.credentialIdColumn: credentialId,
+    DatabaseConstants.firstNameColumn: firstName,
+    DatabaseConstants.lastNameColumn: lastName,
+    DatabaseConstants.professionalRoleColumn: professionalRole,
+    DatabaseConstants.profilePhotoUrlColumn: profilePhotoUrl,
   };
 
   /// Converts this DTO to a domain [UserProfile] entity.
