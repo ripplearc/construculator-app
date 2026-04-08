@@ -138,20 +138,24 @@ void main() {
     Modular.destroy();
   });
 
+  BuildContext? buildContext;
+
   Widget makeApp() {
     return MaterialApp(
       theme: CoreTheme.light(),
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
+      builder: (context, child) {
+        buildContext = context;
+        return child!;
+      },
       home: const AppShellPage(),
     );
   }
 
-  // DashboardPage holds an open stream subscription (onUserProfileChanged)
-  // that is never cancelled on dispose, keeping the event loop alive and
-  // causing pumpAndSettle to time out. pump() with a bounded duration is
-  // the correct test-side mitigation until that leak is fixed in its own PR.
+  AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
+
   Future<void> tapTabByLabel(WidgetTester tester, String label) async {
     await tester.tap(find.bySemanticsLabel(label));
     await tester.pump();
@@ -164,13 +168,13 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
-      expect(find.text('Home'), findsAtLeastNWidgets(1));
+      expect(find.text(l10n().homeTab), findsAtLeastNWidgets(1));
 
-      await tapTabByLabel(tester, 'Calculations');
-      expect(find.text('Calculations'), findsAtLeastNWidgets(1));
+      await tapTabByLabel(tester, l10n().calculationsTab);
+      expect(find.text(l10n().calculationsTab), findsAtLeastNWidgets(1));
 
-      await tapTabByLabel(tester, 'Members');
-      expect(find.text('Members'), findsAtLeastNWidgets(1));
+      await tapTabByLabel(tester, l10n().membersTab);
+      expect(find.text(l10n().membersTab), findsAtLeastNWidgets(1));
     });
 
     testWidgets('bottom navigation bar is always visible', (tester) async {
@@ -180,7 +184,7 @@ void main() {
 
       expect(find.byType(CoreBottomNavBar), findsOneWidget);
 
-      for (final tabLabel in ['Calculations', 'Members']) {
+      for (final tabLabel in [l10n().calculationsTab, l10n().membersTab]) {
         await tapTabByLabel(tester, tabLabel);
         expect(find.byType(CoreBottomNavBar), findsOneWidget);
       }
@@ -195,7 +199,7 @@ void main() {
       expect(find.byType(CalculationsPage), findsNothing);
       expect(find.byType(MembersPage), findsNothing);
 
-      await tapTabByLabel(tester, 'Calculations');
+      await tapTabByLabel(tester, l10n().calculationsTab);
       expect(find.byType(CalculationsPage), findsOneWidget);
 
       expect(find.byType(DashboardPage, skipOffstage: false), findsOneWidget);
@@ -214,7 +218,7 @@ void main() {
       expect(find.byType(CalculationsPage, skipOffstage: false), findsNothing);
       expect(find.byType(MembersPage, skipOffstage: false), findsNothing);
 
-      await tapTabByLabel(tester, 'Calculations');
+      await tapTabByLabel(tester, l10n().calculationsTab);
 
       expect(find.byType(DashboardPage, skipOffstage: false), findsOneWidget);
       expect(
@@ -223,7 +227,7 @@ void main() {
       );
       expect(find.byType(MembersPage, skipOffstage: false), findsNothing);
 
-      await tapTabByLabel(tester, 'Members');
+      await tapTabByLabel(tester, l10n().membersTab);
 
       expect(find.byType(DashboardPage, skipOffstage: false), findsOneWidget);
       expect(
@@ -242,12 +246,12 @@ void main() {
 
       final dashboardElementBefore = tester.element(find.byType(DashboardPage));
 
-      await tapTabByLabel(tester, 'Calculations');
+      await tapTabByLabel(tester, l10n().calculationsTab);
 
       expect(find.byType(DashboardPage), findsNothing);
       expect(find.byType(DashboardPage, skipOffstage: false), findsOneWidget);
 
-      await tapTabByLabel(tester, 'Home');
+      await tapTabByLabel(tester, l10n().homeTab);
 
       final dashboardElementAfter = tester.element(find.byType(DashboardPage));
 
@@ -261,9 +265,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
-      await tapTabByLabel(tester, 'Calculations');
+      await tapTabByLabel(tester, l10n().calculationsTab);
 
-      await tapTabByLabel(tester, 'Members');
+      await tapTabByLabel(tester, l10n().membersTab);
 
       final dashboardElement = tester.element(
         find.byType(DashboardPage, skipOffstage: false),
@@ -275,11 +279,11 @@ void main() {
         find.byType(MembersPage, skipOffstage: false),
       );
 
-      await tapTabByLabel(tester, 'Home');
+      await tapTabByLabel(tester, l10n().homeTab);
 
-      await tapTabByLabel(tester, 'Calculations');
+      await tapTabByLabel(tester, l10n().calculationsTab);
 
-      await tapTabByLabel(tester, 'Members');
+      await tapTabByLabel(tester, l10n().membersTab);
 
       expect(
         tester.element(find.byType(DashboardPage, skipOffstage: false)),
@@ -302,13 +306,13 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
-      await tapTabByLabel(tester, 'Calculations');
+      await tapTabByLabel(tester, l10n().calculationsTab);
 
-      await tapTabByLabel(tester, 'Home');
+      await tapTabByLabel(tester, l10n().homeTab);
 
-      await tapTabByLabel(tester, 'Calculations');
+      await tapTabByLabel(tester, l10n().calculationsTab);
 
-      await tapTabByLabel(tester, 'Home');
+      await tapTabByLabel(tester, l10n().homeTab);
 
       expect(find.byType(MembersPage, skipOffstage: false), findsNothing);
 
@@ -329,7 +333,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       // 950e8400-e29b-41d4-a716-446655440001 is set by fakeProjectNotifier in setUp
-      await tapTabByLabel(tester, 'Cost Estimation');
+      await tapTabByLabel(tester, l10n().costEstimation);
 
       expect(find.byType(CostEstimationLandingPage), findsOneWidget);
     });
@@ -341,7 +345,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
-      await tapTabByLabel(tester, 'Cost Estimation');
+      await tapTabByLabel(tester, l10n().costEstimation);
 
       expect(find.byType(CoreBottomNavBar), findsOneWidget);
     });
@@ -355,7 +359,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
-      await tapTabByLabel(tester, 'Cost Estimation');
+      await tapTabByLabel(tester, l10n().costEstimation);
 
       expect(find.byType(CoreBottomNavBar), findsOneWidget);
     });
@@ -369,7 +373,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
-      expect(find.text('Construculator'), findsAtLeastNWidgets(1));
+      expect(find.text(l10n().appTitle), findsAtLeastNWidgets(1));
     });
 
     testWidgets('shows project header app bar when projectId is set', (
@@ -411,7 +415,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
-      expect(find.text('Construculator'), findsAtLeastNWidgets(1));
+      expect(find.text(l10n().appTitle), findsAtLeastNWidgets(1));
     });
   });
 }
