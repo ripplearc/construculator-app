@@ -16,6 +16,14 @@ part 'global_search_state.dart';
 /// Kept here so the BLoC owns the contract — no UI-side debouncing required.
 const Duration _kQueryDebounceDuration = Duration(milliseconds: 300);
 
+/// Returns an [EventTransformer] that debounces events by [duration] and
+/// switches to the latest mapper stream, cancelling any in-flight processing.
+///
+/// Extracted so any future event that needs the same treatment can reuse it
+/// without duplicating the rxdart pipeline inline.
+EventTransformer<E> _debounce<E>(Duration duration) =>
+    (events, mapper) => events.debounceTime(duration).switchMap(mapper);
+
 /// Bloc for managing global search state across projects, estimations, and members
 class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   static final _logger = AppLogger().tag('GlobalSearchBloc');
@@ -35,8 +43,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       _onQueryUpdated,
       // Debounce at the BLoC level so the UI can dispatch on every keystroke
       // without triggering redundant state emissions.
-      transformer: (events, mapper) =>
-          events.debounceTime(_kQueryDebounceDuration).switchMap(mapper),
+      transformer: _debounce(_kQueryDebounceDuration),
     );
     on<GlobalSearchPerformed>(_onPerformed);
     on<GlobalSearchRecentRemoved>(_onRecentRemoved);
