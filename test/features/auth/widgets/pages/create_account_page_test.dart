@@ -5,7 +5,7 @@ import 'package:construculator/features/auth/presentation/pages/create_account_p
 import 'package:construculator/l10n/generated/app_localizations.dart';
 
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
-import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
+import 'package:construculator/libraries/router/routes/shell_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -446,7 +446,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(router.navigationHistory.length, 1);
-        expect(router.navigationHistory.first.route, dashboardRoute);
+        expect(router.navigationHistory.first.route, shellRoute);
       },
     );
 
