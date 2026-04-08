@@ -46,7 +46,7 @@ class EstimationModule extends Module {
           create: (context) => Modular.get<RenameEstimationBloc>(),
         ),
       ],
-      child: CostEstimationLandingPage(projectId: projectId),
+      child: const CostEstimationLandingPage(),
     );
   }
 
