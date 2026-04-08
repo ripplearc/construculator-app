@@ -5,7 +5,7 @@ import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
-import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
+import 'package:construculator/libraries/router/routes/shell_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -94,7 +94,7 @@ class _EnterPasswordPageState extends State<EnterPasswordPage> {
               context,
               message: l10n.loginSuccessMessage,
               onPressed: () {
-                _router.navigate(dashboardRoute);
+                _router.navigate(shellRoute);
               },
               buttonLabel: l10n.continueButton,
             );
