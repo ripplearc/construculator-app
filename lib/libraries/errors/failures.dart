@@ -1,5 +1,6 @@
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/global_search/domain/search_error_type.dart';
 import 'package:equatable/equatable.dart';
 
 /// Failure represents specific, anticipated error conditions or alternative outcomes of an operation (e.g., a use case or repository method).
@@ -58,6 +59,18 @@ class EstimationFailure extends Failure {
   /// The type of estimation error that occurred.
   final EstimationErrorType errorType;
   const EstimationFailure({required this.errorType});
+
+  @override
+  List<Object?> get props => [errorType];
+}
+
+/// Failure thrown when a global search error occurs.
+class SearchFailure extends Failure {
+  /// The type of search error that occurred.
+  final SearchErrorType errorType;
+
+  /// Creates a [SearchFailure] with the given [errorType].
+  const SearchFailure({required this.errorType});
 
   @override
   List<Object?> get props => [errorType];

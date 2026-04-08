@@ -50,6 +50,13 @@ class DatabaseConstants {
   static const String searchHistoryUpsertConflictColumns =
       '$userIdColumn,$searchTermColumn,$scopeColumn';
 
+  // User profile columns (id field uses the shared idColumn above)
+  static const String credentialIdColumn = 'credential_id';
+  static const String firstNameColumn = 'first_name';
+  static const String lastNameColumn = 'last_name';
+  static const String professionalRoleColumn = 'professional_role';
+  static const String profilePhotoUrlColumn = 'profile_photo_url';
+
   // Cost Estimation Logs columns
   static const String estimateIdColumn = 'estimate_id';
   static const String activityColumn = 'activity';
