@@ -3,7 +3,7 @@ import 'package:construculator/features/auth/presentation/extensions/auth_error_
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
-import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
+import 'package:construculator/libraries/router/routes/shell_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -137,7 +137,7 @@ class _SetNewPasswordPageState extends State<SetNewPasswordPage> {
             SuccessModal.show(
               context,
               message: l10n.passwordResetSuccessMessage,
-              onPressed: () => _router.navigate(dashboardRoute),
+              onPressed: () => _router.navigate(shellRoute),
               buttonLabel: l10n.continueButton,
             );
           }
