@@ -17,8 +17,7 @@
 #   It should be added to the "Pre-build script" section of your workflow.
 #
 
-set -e  # Exit on error
-set -u  # Exit on undefined variable
+set -euo pipefail
 
 # Validate required environment variables
 if [ -z "${ENVIRONMENT:-}" ]; then
@@ -41,17 +40,17 @@ SENTRY_DSN="${SENTRY_DSN:-}"
 
 # Determine environment-specific values
 case "${ENVIRONMENT}" in
-  dev|fishfood)
+  dev)
     ENV_FILE="assets/env/.env.dev"
     DEBUG_MODE="true"
     ANALYTICS_ENABLED="false"
     ;;
-  qa|dogfood)
+  qa)
     ENV_FILE="assets/env/.env.qa"
     DEBUG_MODE="false"
     ANALYTICS_ENABLED="true"
     ;;
-  prod|production)
+  prod)
     ENV_FILE="assets/env/.env.prod"
     DEBUG_MODE="false"
     ANALYTICS_ENABLED="true"

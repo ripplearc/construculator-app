@@ -92,7 +92,7 @@ workflows:
           else
               LH_SUM=$(echo "$LH_RAW" | awk '{sum+=$1} END {print sum}')
           fi
-          
+
           if ! [[ "$LF_SUM" =~ ^[0-9]+$ ]]; then
               echo "❌ LF_SUM ($LF_SUM) is not a valid number. Cannot calculate coverage."
               exit 1
@@ -123,7 +123,7 @@ workflows:
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           # Find the common ancestor commit between source and target branches
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
-          
+
           # Find changed test files
           CHANGED_UNIT_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/features/**/units/*.dart" "test/libraries/**/units/*.dart")
           CHANGED_WIDGET_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/features/**/widgets/*.dart")
@@ -146,7 +146,7 @@ workflows:
           success: true
           failure: true
       slack:
-        channel: '#build-notifications'
+        channel: "#build-notifications"
         notify_on_build_start: true
         notify:
           success: true
@@ -241,9 +241,9 @@ workflows:
           else
             COVERAGE_PERCENT=$(echo "scale=2; $LH_SUM*100/$LF_SUM" | bc)
           fi
-          
+
           echo "Code Coverage: ${COVERAGE_PERCENT}%"
-          
+
           if (( $(echo "$COVERAGE_PERCENT < $TARGET" | bc -l) )); then
             echo "❌ Coverage is $COVERAGE_PERCENT%, below $TARGET%"
             exit 1
@@ -320,7 +320,7 @@ workflows:
           success: true
           failure: true
       slack:
-        channel: '#build-notifications'
+        channel: "#build-notifications"
         notify_on_build_start: true
         notify:
           success: true
@@ -481,7 +481,7 @@ workflows:
           success: true
           failure: true
       slack:
-        channel: '#build-notifications'
+        channel: "#build-notifications"
         notify_on_build_start: true
         notify:
           success: true
@@ -551,7 +551,7 @@ workflows:
           success: true
           failure: true
       slack:
-        channel: '#build-notifications'
+        channel: "#build-notifications"
         notify_on_build_start: true
         notify:
           success: true
@@ -560,7 +560,7 @@ workflows:
     name: Dogfood Release Build (QA)
     instance_type: linux_x2
     triggering:
-      events: []  # Manual trigger only
+      events: [] # Manual trigger only
     environment:
       groups:
         - construculator_qa
@@ -579,10 +579,6 @@ workflows:
         script: dart pub global activate fvm
       - name: Install Flutter version via FVM
         script: fvm install
-      - name: Clone and Checkout
-        script: |
-          git clone "$CM_REPO_URL" .
-          git checkout "$CM_COMMIT"
       - name: Install Dependencies
         script: |
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
@@ -590,9 +586,14 @@ workflows:
       - name: Generate env file
         script: |
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
+
+          echo "=== Script exists? ==="
+          ls -la scripts/ci/generate_env_file.sh || echo "FILE NOT FOUND"
+
+          sed -i 's/\r//' scripts/ci/generate_env_file.sh
           chmod +x scripts/ci/generate_env_file.sh
-          bash scripts/ci/generate_env_file.sh
-      - name: Build Android Release APK
+          bash -x scripts/ci/generate_env_file.sh
+      - name: Build Android APK
         script: |
           export PATH="$PATH":"$HOME/.pub-cache/bin":"$FCI_BUILD_DIR/.fvm/flutter_sdk/bin"
           fvm flutter build apk \
@@ -609,7 +610,7 @@ workflows:
           success: true
           failure: true
       slack:
-        channel: '#build-notifications'
+        channel: "#build-notifications"
         notify_on_build_start: true
         notify:
           success: true
