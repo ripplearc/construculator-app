@@ -3,6 +3,7 @@ import 'package:construculator/features/global_search/data/data_source/interface
 import 'package:construculator/features/global_search/data/data_source/remote_global_search_data_source.dart';
 import 'package:construculator/features/global_search/data/repositories/global_search_repository_impl.dart';
 import 'package:construculator/features/global_search/domain/repositories/global_search_repository.dart';
+import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -27,6 +28,9 @@ class GlobalSearchModule extends Module {
     );
     i.addLazySingleton<GlobalSearchRepository>(
       () => GlobalSearchRepositoryImpl(dataSource: i()),
+    );
+    i.add<GlobalSearchBloc>(
+      () => GlobalSearchBloc(repository: i()),
     );
   }
 }
