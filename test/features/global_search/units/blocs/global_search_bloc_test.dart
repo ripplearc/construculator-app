@@ -98,12 +98,15 @@ void main() {
       fakeSupabase.reset();
     });
 
-    test('initial state is GlobalSearchInitial (cold start, no history yet)', () {
-      final bloc = Modular.get<GlobalSearchBloc>();
-      expect(bloc.state, const GlobalSearchInitial());
-      expect(bloc.state is GlobalSearchInitial, isTrue);
-      bloc.close();
-    });
+    test(
+      'initial state is GlobalSearchInitial (cold start, no history yet)',
+      () {
+        final bloc = Modular.get<GlobalSearchBloc>();
+        expect(bloc.state, const GlobalSearchInitial());
+        expect(bloc.state is GlobalSearchInitial, isTrue);
+        bloc.close();
+      },
+    );
 
     group('GlobalSearchStarted', () {
       blocTest<GlobalSearchBloc, GlobalSearchState>(
@@ -139,9 +142,7 @@ void main() {
         },
         build: () => Modular.get<GlobalSearchBloc>(),
         act: (bloc) => bloc.add(const GlobalSearchStarted()),
-        expect: () => [
-          const GlobalSearchReady(),
-        ],
+        expect: () => [const GlobalSearchReady()],
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
@@ -395,9 +396,9 @@ void main() {
             isNotEmpty,
             reason: 'RPC must be called for a search',
           );
-          final rpcParams = rpcCalls.first['params'] as Map<String, dynamic>?;
+          final rpcParams = rpcCalls.first['params'] as Map<String, dynamic>;
           expect(
-            rpcParams?['scope'],
+            rpcParams['scope'],
             equals(SearchScope.estimation.name),
             reason: 'scope must be forwarded to the RPC',
           );
@@ -451,10 +452,9 @@ void main() {
               createdAt: fakeClock.now().toIso8601String(),
             ),
           );
-          fakeSupabase.addTableData(
-            DatabaseConstants.searchHistoryTable,
-            [_fakeSearchHistoryData(userId: _testUserId, searchTerm: 'steel')],
-          );
+          fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
+            _fakeSearchHistoryData(userId: _testUserId, searchTerm: 'steel'),
+          ]);
           fakeSupabase.setRpcResponse(
             DatabaseConstants.globalSearchRpcFunction,
             {
@@ -501,9 +501,7 @@ void main() {
         build: () => Modular.get<GlobalSearchBloc>(),
         act: (bloc) => bloc.add(const GlobalSearchQueryUpdated(query: '')),
         wait: const Duration(milliseconds: 310),
-        expect: () => [
-          const GlobalSearchReady(),
-        ],
+        expect: () => [const GlobalSearchReady()],
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
