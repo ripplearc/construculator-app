@@ -9,7 +9,6 @@ import 'package:construculator/features/dashboard/presentation/pages/dashboard_p
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -32,8 +31,6 @@ class AppShellPage extends StatefulWidget {
 
 class _AppShellPageState extends State<AppShellPage> {
   final AppShellBloc _bloc = Modular.get<AppShellBloc>();
-  final CurrentProjectNotifier _currentProjectNotifier =
-      Modular.get<CurrentProjectNotifier>();
   final TabModuleManager _moduleLoader = Modular.get<TabModuleManager>();
 
   final List<GlobalKey<NavigatorState>> _tabNavigatorKeys = List.generate(
@@ -53,14 +50,8 @@ class _AppShellPageState extends State<AppShellPage> {
       final dropdownBloc = Modular.get<ProjectDropdownBloc>();
       dropdownBloc.add(const ProjectDropdownStarted());
 
-      _dropdownSubscription = dropdownBloc.stream.listen((state) {
-        if (state is ProjectDropdownLoadSuccess) {
-          final id = state.selectedProject?.id;
-          if (id != null && id != _currentProjectNotifier.currentProjectId) {
-            _currentProjectNotifier.setCurrentProjectId(id);
-          }
-        }
-      });
+      // TODO: https://ripplearc.youtrack.cloud/issue/CA-621
+      _dropdownSubscription = dropdownBloc.stream.listen((_) {});
     });
   }
 
@@ -111,37 +102,35 @@ class _AppShellPageState extends State<AppShellPage> {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
+    // TODO: https://ripplearc.youtrack.cloud/issue/CA-621
+    const projectId = '';
+    final coreColors = Theme.of(context).coreColors;
+    if (projectId.isEmpty) {
+      return PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: Container(
+          decoration: BoxDecoration(
+            color: coreColors.pageBackground,
+            boxShadow: CoreShadows.medium,
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: CoreSpacing.space4,
+            vertical: CoreSpacing.space2,
+          ),
+          child: AppBar(
+            backgroundColor: coreColors.pageBackground,
+            elevation: 0,
+            centerTitle: true,
+            titleSpacing: 0,
+            title: Text(context.l10n.appTitle),
+          ),
+        ),
+      );
+    }
     return PreferredSize(
       preferredSize: const Size.fromHeight(kToolbarHeight),
-      child: StreamBuilder<String?>(
-        stream: _currentProjectNotifier.onCurrentProjectChanged,
-        initialData: _currentProjectNotifier.currentProjectId,
-        builder: (context, snapshot) {
-          final projectId = snapshot.data;
-          if (projectId == null || projectId.isEmpty) {
-            final coreColors = Theme.of(context).coreColors;
-            return Container(
-              decoration: BoxDecoration(
-                color: coreColors.pageBackground,
-                boxShadow: CoreShadows.medium,
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: CoreSpacing.space4,
-                vertical: CoreSpacing.space2,
-              ),
-              child: AppBar(
-                backgroundColor: coreColors.pageBackground,
-                elevation: 0,
-                centerTitle: true,
-                titleSpacing: 0,
-                title: Text(context.l10n.appTitle),
-              ),
-            );
-          }
-          return Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
-            projectId: projectId,
-          );
-        },
+      child: Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
+        projectId: projectId,
       ),
     );
   }

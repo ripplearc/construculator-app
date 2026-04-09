@@ -24,10 +24,13 @@ class EstimationModule extends Module {
 
   /// Exposes the Estimation Feature's UI entry point, hiding its Bloc dependencies.
   static Widget landingPage() {
+    // TODO: https://ripplearc.youtrack.cloud/issue/CA-467/Refactor-Cost-Estimation-Landing-Page-to-retrieve-Project-ID-via-Bloc
+    const projectId = '';
     return MultiBlocProvider(
       providers: [
         BlocProvider<CostEstimationListBloc>(
-          create: (context) => Modular.get<CostEstimationListBloc>(),
+          create: (context) => Modular.get<CostEstimationListBloc>()
+            ..add(const CostEstimationListStartWatching(projectId: projectId)),
         ),
         BlocProvider<AddCostEstimationBloc>(
           create: (context) => Modular.get<AddCostEstimationBloc>(),
@@ -42,7 +45,7 @@ class EstimationModule extends Module {
           create: (context) => Modular.get<RenameEstimationBloc>(),
         ),
       ],
-      child: const CostEstimationLandingPage(),
+      child: const CostEstimationLandingPage(projectId: projectId),
     );
   }
 

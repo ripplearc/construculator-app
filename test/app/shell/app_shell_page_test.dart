@@ -5,11 +5,10 @@ import 'package:construculator/app/shell/default_tab_providers.dart';
 import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
-import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
+import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
-import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
@@ -22,6 +21,7 @@ import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -158,15 +158,13 @@ void main() {
 
   Future<void> tapTabByLabel(WidgetTester tester, String label) async {
     await tester.tap(find.bySemanticsLabel(label));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
   }
 
   group('Tab Navigation', () {
     testWidgets('switches tabs and renders tab pages', (tester) async {
       await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
 
       expect(find.text(l10n().homeTab), findsAtLeastNWidgets(1));
 
@@ -179,8 +177,7 @@ void main() {
 
     testWidgets('bottom navigation bar is always visible', (tester) async {
       await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
 
       expect(find.byType(CoreBottomNavBar), findsOneWidget);
 
@@ -192,8 +189,7 @@ void main() {
 
     testWidgets('lazy loads tabs on first access', (tester) async {
       await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
 
       expect(find.byType(DashboardPage), findsOneWidget);
       expect(find.byType(CalculationsPage), findsNothing);
@@ -211,8 +207,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
 
       expect(find.byType(DashboardPage, skipOffstage: false), findsOneWidget);
       expect(find.byType(CalculationsPage, skipOffstage: false), findsNothing);
@@ -241,8 +236,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
 
       final dashboardElementBefore = tester.element(find.byType(DashboardPage));
 
@@ -262,11 +256,9 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
 
       await tapTabByLabel(tester, l10n().calculationsTab);
-
       await tapTabByLabel(tester, l10n().membersTab);
 
       final dashboardElement = tester.element(
@@ -280,9 +272,7 @@ void main() {
       );
 
       await tapTabByLabel(tester, l10n().homeTab);
-
       await tapTabByLabel(tester, l10n().calculationsTab);
-
       await tapTabByLabel(tester, l10n().membersTab);
 
       expect(
@@ -303,19 +293,14 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
 
       await tapTabByLabel(tester, l10n().calculationsTab);
-
       await tapTabByLabel(tester, l10n().homeTab);
-
       await tapTabByLabel(tester, l10n().calculationsTab);
-
       await tapTabByLabel(tester, l10n().homeTab);
 
       expect(find.byType(MembersPage, skipOffstage: false), findsNothing);
-
       expect(find.byType(DashboardPage, skipOffstage: false), findsOneWidget);
       expect(
         find.byType(CalculationsPage, skipOffstage: false),
@@ -324,96 +309,23 @@ void main() {
     });
   });
 
-  group('Cost Estimation Tab - projectId handling', () {
-    testWidgets('shows CostEstimationLandingPage when projectId is valid', (
+  group('Cost Estimation Tab', () {
+    testWidgets('shows CostEstimationLandingPage when estimation tab is tapped', (
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
 
-      // 950e8400-e29b-41d4-a716-446655440001 is set by fakeProjectNotifier in setUp
       await tapTabByLabel(tester, l10n().costEstimation);
 
       expect(find.byType(CostEstimationLandingPage), findsOneWidget);
     });
-
-    testWidgets('shows empty widget when projectId is null', (tester) async {
-      fakeProjectNotifier.setCurrentProjectId(null);
-
-      await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-
-      await tapTabByLabel(tester, l10n().costEstimation);
-
-      expect(find.byType(CoreBottomNavBar), findsOneWidget);
-    });
-
-    testWidgets('shows empty widget when projectId is empty string', (
-      tester,
-    ) async {
-      fakeProjectNotifier.setCurrentProjectId('');
-
-      await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-
-      await tapTabByLabel(tester, l10n().costEstimation);
-
-      expect(find.byType(CoreBottomNavBar), findsOneWidget);
-    });
   });
 
   group('App Bar', () {
-    testWidgets('shows default app bar when projectId is null', (tester) async {
-      fakeProjectNotifier.setCurrentProjectId(null);
-
+    testWidgets('shows default app bar title', (tester) async {
       await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.text(l10n().appTitle), findsAtLeastNWidgets(1));
-    });
-
-    testWidgets('shows project header app bar when projectId is set', (
-      tester,
-    ) async {
-      await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.text('950e8400-e29b-41d4-a716-446655440001'), findsOneWidget);
-    });
-  });
-
-  group('Project subscription', () {
-    testWidgets('updates UI when projectId changes', (tester) async {
-      await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.text('950e8400-e29b-41d4-a716-446655440001'), findsOneWidget);
-
-      fakeProjectNotifier.setCurrentProjectId('new-project-id');
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.text('new-project-id'), findsOneWidget);
-    });
-
-    testWidgets('switches to default app bar when projectId becomes null', (
-      tester,
-    ) async {
-      await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.text('950e8400-e29b-41d4-a716-446655440001'), findsOneWidget);
-
-      fakeProjectNotifier.setCurrentProjectId(null);
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
 
       expect(find.text(l10n().appTitle), findsAtLeastNWidgets(1));
     });
