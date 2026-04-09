@@ -1,5 +1,3 @@
-import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
@@ -32,16 +30,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-class FakeTabModuleLoader extends TabModuleManager {
-  final List<ShellTab> loadedTabs = [];
-  FakeTabModuleLoader(super.bootstrap);
+class _FakeProjectUiProvider extends ProjectUIProvider {
   @override
-  Future<void> ensureTabModuleLoaded(ShellTab tab) async {
-    loadedTabs.add(tab);
+  PreferredSizeWidget buildProjectHeaderAppbar({
+    required String projectId,
+    VoidCallback? onProjectTap,
+    VoidCallback? onSearchTap,
+    VoidCallback? onNotificationTap,
+    ImageProvider<Object>? avatarImage,
+  }) {
+    return AppBar(title: Text(projectId));
   }
-
-  @override
-  bool isLoaded(ShellTab tab) => loadedTabs.contains(tab);
 }
 
 class _TestEstimationTabModuleProvider implements TabModuleProvider {
@@ -87,7 +86,15 @@ class _AppShellTestModule extends Module {
 }
 
 void main() {
-  late FakeTabModuleLoader loader;
+  late FakeCurrentProjectNotifier fakeProjectNotifier;
+
+  setUpAll(() {
+    CoreToast.disableTimers();
+  });
+
+  tearDownAll(() {
+    CoreToast.enableTimers();
+  });
 
   setUp(() {
     final clock = FakeClockImpl();
@@ -123,8 +130,6 @@ void main() {
 
   tearDown(() {
     Modular.destroy();
-    Modular.init(_TestModule());
-    loader = Modular.get<TabModuleManager>() as FakeTabModuleLoader;
   });
 
   BuildContext? buildContext;
