@@ -1,11 +1,5 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/auth/auth_module.dart';
-import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
-import 'package:construculator/features/estimation/presentation/bloc/change_lock_status_bloc/change_lock_status_bloc.dart';
-import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
-import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_log_bloc/cost_estimation_log_bloc.dart';
-import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
-import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_log_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/remote_cost_estimation_data_source.dart';
@@ -15,6 +9,12 @@ import 'package:construculator/features/estimation/data/repositories/cost_estima
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_log_repository.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/features/estimation/domain/usecases/add_cost_estimation_usecase.dart';
+import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/change_lock_status_bloc/change_lock_status_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_log_bloc/cost_estimation_log_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/time/clock_module.dart';
@@ -28,10 +28,14 @@ class EstimationModule extends Module {
 
   /// Exposes the Estimation Feature's UI entry point, hiding its Bloc dependencies.
   static Widget landingPage() {
+    // TODO: https://ripplearc.youtrack.cloud/issue/CA-467/Refactor-Cost-Estimation-Landing-Page-to-retrieve-Project-ID-via-Bloc
+    const projectId = '';
     return MultiBlocProvider(
       providers: [
         BlocProvider<CostEstimationListBloc>(
-          create: (context) => Modular.get<CostEstimationListBloc>(),
+          create: (context) =>
+              Modular.get<CostEstimationListBloc>()
+                ..add(const CostEstimationListStartWatching(projectId: projectId)),
         ),
         BlocProvider<AddCostEstimationBloc>(
           create: (context) => Modular.get<AddCostEstimationBloc>(),
@@ -46,7 +50,7 @@ class EstimationModule extends Module {
           create: (context) => Modular.get<RenameEstimationBloc>(),
         ),
       ],
-      child: const CostEstimationLandingPage(),
+      child: const CostEstimationLandingPage(projectId: projectId),
     );
   }
 

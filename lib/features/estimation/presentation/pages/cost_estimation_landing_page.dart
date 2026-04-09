@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/change_lock_status_bloc/change_lock_status_bloc.dart';
@@ -19,17 +17,19 @@ import 'package:construculator/libraries/estimation/domain/estimation_error_type
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
-import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class CostEstimationLandingPage extends StatefulWidget {
+  // TODO: https://ripplearc.youtrack.cloud/issue/CA-467/Refactor-Cost-Estimation-Landing-Page-to-retrieve-Project-ID-via-Bloc
+  final String projectId;
+
   static const double _buttonBottomRatio = 0.135;
   static const double _buttonRightRatio = 0.05;
 
-  const CostEstimationLandingPage({super.key});
+  const CostEstimationLandingPage({super.key, required this.projectId});
 
   @override
   State<CostEstimationLandingPage> createState() =>
@@ -39,9 +39,6 @@ class CostEstimationLandingPage extends StatefulWidget {
 class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
   late final AppRouter _router;
   late final ScrollController _scrollController;
-  late final CurrentProjectNotifier _projectNotifier;
-  StreamSubscription<String?>? _projectSubscription;
-  String? _projectId;
 
   static const double _loadMoreThreshold = 200.0;
 
@@ -50,25 +47,6 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
     super.initState();
     _scrollController = ScrollController()..addListener(_onScroll);
     _router = Modular.get<AppRouter>();
-    _projectNotifier = Modular.get<CurrentProjectNotifier>();
-    _projectId = _projectNotifier.currentProjectId;
-
-    if (_projectId case final id? when id.isNotEmpty) {
-      BlocProvider.of<CostEstimationListBloc>(
-        context,
-      ).add(CostEstimationListStartWatching(projectId: id));
-    }
-
-    _projectSubscription = _projectNotifier.onCurrentProjectChanged.listen((
-      newId,
-    ) {
-      if (!mounted) return;
-      setState(() => _projectId = newId);
-      if (newId == null || newId.isEmpty) return;
-      BlocProvider.of<CostEstimationListBloc>(
-        context,
-      ).add(CostEstimationListStartWatching(projectId: newId));
-    });
   }
 
   void _onScroll() {
@@ -80,21 +58,17 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
     if (maxScroll - currentScroll <= _loadMoreThreshold) {
       final bloc = BlocProvider.of<CostEstimationListBloc>(context);
       final state = bloc.state;
-      final projectId = _projectId;
 
       if (state is CostEstimationListWithData &&
           state.hasMore &&
-          !state.isLoadingMore &&
-          projectId != null &&
-          projectId.isNotEmpty) {
-        bloc.add(CostEstimationListLoadMore(projectId: projectId));
+          !state.isLoadingMore) {
+        bloc.add(CostEstimationListLoadMore(projectId: widget.projectId));
       }
     }
   }
 
   @override
   void dispose() {
-    _projectSubscription?.cancel();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
@@ -103,13 +77,11 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
   void _createEstimation() {
     final bloc = BlocProvider.of<AddCostEstimationBloc>(context);
     final l10n = context.l10n;
-    final projectId = _projectId;
-    if (projectId == null || projectId.isEmpty) return;
 
     bloc.add(
       AddCostEstimationSubmitted(
         estimationName: l10n.untitledEstimation,
-        projectId: projectId,
+        projectId: widget.projectId,
       ),
     );
   }
@@ -208,7 +180,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           value: renameEstimationBloc,
           child: EstimationRenameSheet(
             estimationId: estimation.id,
-            projectId: _projectId ?? '',
+            projectId: widget.projectId,
             currentName: estimation.estimateName,
           ),
         );
@@ -240,11 +212,10 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           documentsAttachedCount: 10,
           onConfirm: () {
             _router.pop();
-            // TODO: https://ripplearc.youtrack.cloud/issue/CA-467/Refactor-Cost-Estimation-Landing-Page-to-retrieve-Project-ID-via-Bloc
             deleteCostEstimationBloc.add(
               DeleteCostEstimationRequested(
                 estimationId: estimation.id,
-                projectId: _projectId ?? '',
+                projectId: widget.projectId,
               ),
             );
           },
@@ -258,10 +229,6 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
 
   @override
   Widget build(BuildContext context) {
-    final projectId = _projectId;
-    if (projectId == null || projectId.isEmpty) {
-      return const SizedBox.shrink();
-    }
     final colorTheme = context.colorTheme;
     final l10n = context.l10n;
 
@@ -353,7 +320,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           onRefresh: () async {
             BlocProvider.of<CostEstimationListBloc>(
               context,
-            ).add(CostEstimationListRefresh(projectId: _projectId ?? ''));
+            ).add(CostEstimationListRefresh(projectId: widget.projectId));
           },
           color: colorTheme.buttonSurface,
           child: _buildContent(state, l10n),
