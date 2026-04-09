@@ -8,7 +8,6 @@ import 'package:construculator/features/calculations/presentation/pages/calculat
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
-import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
@@ -21,6 +20,7 @@ import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
@@ -160,15 +160,13 @@ void main() {
 
   Future<void> tapTabByLabel(WidgetTester tester, String label) async {
     await tester.tap(find.bySemanticsLabel(label));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
   }
 
   group('Tab Navigation', () {
     testWidgets('switches tabs and renders tab pages', (tester) async {
       await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
 
       expect(find.text(l10n().homeTab), findsAtLeastNWidgets(1));
 
@@ -181,8 +179,7 @@ void main() {
 
     testWidgets('bottom navigation bar is always visible', (tester) async {
       await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
 
       expect(find.byType(CoreBottomNavBar), findsOneWidget);
 
@@ -194,8 +191,7 @@ void main() {
 
     testWidgets('lazy loads tabs on first access', (tester) async {
       await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
 
       expect(find.byType(DashboardPage), findsOneWidget);
       expect(find.byType(CalculationsPage), findsNothing);
@@ -213,8 +209,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
 
       expect(find.byType(DashboardPage, skipOffstage: false), findsOneWidget);
       expect(find.byType(CalculationsPage, skipOffstage: false), findsNothing);
@@ -243,8 +238,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
 
       final dashboardElementBefore = tester.element(find.byType(DashboardPage));
 
@@ -264,8 +258,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
 
       await tapTabByLabel(tester, l10n().calculationsTab);
       await tapTabByLabel(tester, l10n().membersTab);
@@ -302,8 +295,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
 
       await tapTabByLabel(tester, l10n().calculationsTab);
       await tapTabByLabel(tester, l10n().homeTab);
@@ -324,8 +316,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
 
       await tapTabByLabel(tester, l10n().costEstimation);
 
