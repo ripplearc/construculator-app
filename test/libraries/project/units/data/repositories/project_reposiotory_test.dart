@@ -157,14 +157,12 @@ void main() {
       test('emits empty list when userId is empty', () async {
         final emittedBatches = <List<Project>>[];
         final emissionReceived = Completer<void>();
-        final subscription = repository.watchProjects('').listen(
-          (batch) {
-            emittedBatches.add(batch);
-            if (!emissionReceived.isCompleted) {
-              emissionReceived.complete();
-            }
-          },
-        );
+        final subscription = repository.watchProjects('').listen((batch) {
+          emittedBatches.add(batch);
+          if (!emissionReceived.isCompleted) {
+            emissionReceived.complete();
+          }
+        });
 
         await emissionReceived.future;
         await subscription.cancel();
@@ -199,17 +197,16 @@ void main() {
           final firstEmissionReceived = Completer<void>();
           final secondEmissionReceived = Completer<void>();
           var emissionCount = 0;
-          final subscription = repository.watchProjects(userId).listen(
-            (batch) {
-              emittedBatches.add(batch);
-              emissionCount++;
-              if (emissionCount == 1) {
-                firstEmissionReceived.complete();
-              } else if (emissionCount >= 2 && !secondEmissionReceived.isCompleted) {
-                secondEmissionReceived.complete();
-              }
-            },
-          );
+          final subscription = repository.watchProjects(userId).listen((batch) {
+            emittedBatches.add(batch);
+            emissionCount++;
+            if (emissionCount == 1) {
+              firstEmissionReceived.complete();
+            } else if (emissionCount >= 2 &&
+                !secondEmissionReceived.isCompleted) {
+              secondEmissionReceived.complete();
+            }
+          });
 
           await firstEmissionReceived.future;
 
@@ -243,15 +240,17 @@ void main() {
 
         final firstEmission = Completer<void>();
         final errorReceived = Completer<void>();
-        final subscription = repository.watchProjects(userId).listen(
-          (_) {
-            if (!firstEmission.isCompleted) firstEmission.complete();
-          },
-          onError: (error, _) {
-            expect(error, isA<Exception>());
-            if (!errorReceived.isCompleted) errorReceived.complete();
-          },
-        );
+        final subscription = repository
+            .watchProjects(userId)
+            .listen(
+              (_) {
+                if (!firstEmission.isCompleted) firstEmission.complete();
+              },
+              onError: (error, _) {
+                expect(error, isA<Exception>());
+                if (!errorReceived.isCompleted) errorReceived.complete();
+              },
+            );
         await firstEmission.future;
 
         projectDataSource.emitError(Exception('realtime failure'));
@@ -277,20 +276,19 @@ void main() {
           projectDataSource.firstGetOwnedProjectsStartedCompleter =
               Completer<void>();
           final firstRefreshCompleter = Completer<void>();
-          projectDataSource.nextGetOwnedProjectsCompleter = firstRefreshCompleter;
+          projectDataSource.nextGetOwnedProjectsCompleter =
+              firstRefreshCompleter;
 
           final emittedBatches = <List<Project>>[];
           final secondEmissionReceived = Completer<void>();
           var emissionCount = 0;
-          final subscription = repository.watchProjects(userId).listen(
-            (batch) {
-              emittedBatches.add(batch);
-              emissionCount++;
-              if (emissionCount >= 2 && !secondEmissionReceived.isCompleted) {
-                secondEmissionReceived.complete();
-              }
-            },
-          );
+          final subscription = repository.watchProjects(userId).listen((batch) {
+            emittedBatches.add(batch);
+            emissionCount++;
+            if (emissionCount >= 2 && !secondEmissionReceived.isCompleted) {
+              secondEmissionReceived.complete();
+            }
+          });
 
           await projectDataSource.firstGetOwnedProjectsStartedCompleter!.future;
 
@@ -310,14 +308,21 @@ void main() {
 
           await subscription.cancel();
 
-          expect(projectDataSource.getOwnedProjectsCalls, greaterThanOrEqualTo(2));
+          expect(
+            projectDataSource.getOwnedProjectsCalls,
+            greaterThanOrEqualTo(2),
+          );
           expect(emittedBatches.length, greaterThanOrEqualTo(2));
           expect(
-            emittedBatches.first.firstWhere((project) => project.id == 'owned-project').projectName,
+            emittedBatches.first
+                .firstWhere((project) => project.id == 'owned-project')
+                .projectName,
             'Owned V1',
           );
           expect(
-            emittedBatches.last.firstWhere((project) => project.id == 'owned-project').projectName,
+            emittedBatches.last
+                .firstWhere((project) => project.id == 'owned-project')
+                .projectName,
             'Owned V2',
           );
         },

@@ -1,4 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/libraries/config/interfaces/config.dart';
+import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -15,8 +17,9 @@ class FakeAppBootstrapFactory {
   /// All parameters are optional:
   /// - [supabaseWrapper]: Provide a specific FakeSupabaseWrapper to control
   ///   database state and assertions
-  /// - [clock]: Provide a Clock to control time in tests. Will be used for
-  ///   supabaseWrapper if not provided separately
+  /// - [clock]: Provide a Clock to control time in tests. Note: [clock] is only
+  ///   used when [supabaseWrapper] is omitted. If you supply your own
+  ///   [supabaseWrapper], wire the clock into it directly.
   /// - [config]: Provide custom app configuration for the test
   /// - [envLoader]: Provide custom environment loading behavior
   ///
@@ -34,8 +37,8 @@ class FakeAppBootstrapFactory {
   static AppBootstrap create({
     FakeSupabaseWrapper? supabaseWrapper,
     Clock? clock,
-    FakeAppConfig? config,
-    FakeEnvLoader? envLoader,
+    Config? config,
+    EnvLoader? envLoader,
   }) {
     final fakeClock = clock ?? FakeClockImpl();
     return AppBootstrap(

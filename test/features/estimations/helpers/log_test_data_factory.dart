@@ -29,8 +29,7 @@ class LogTestDataFactory {
       DatabaseConstants.activityColumn: activity,
       DatabaseConstants.userColumn: userDto.toJson(),
       DatabaseConstants.activityDetailsColumn: activityDetails ?? const {},
-      DatabaseConstants.loggedAtColumn:
-          loggedAt ?? '2025-02-25T10:00:00.000Z',
+      DatabaseConstants.loggedAtColumn: loggedAt ?? '2025-02-25T10:00:00.000Z',
     };
   }
 

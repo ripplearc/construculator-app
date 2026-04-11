@@ -72,12 +72,14 @@ void main() {
       },
     );
 
-    test('getSharedProjects returns empty list when user has no memberships',
-        () async {
-      final result = await dataSource.getSharedProjects('user-1');
+    test(
+      'getSharedProjects returns empty list when user has no memberships',
+      () async {
+        final result = await dataSource.getSharedProjects('user-1');
 
-      expect(result, isEmpty);
-    });
+        expect(result, isEmpty);
+      },
+    );
 
     test('getSharedProjects resolves project IDs from memberships', () async {
       supabaseWrapper.addTableData(DatabaseConstants.projectMembersTable, [
@@ -134,7 +136,9 @@ void main() {
       'watchProjectChanges emits when shared project data changes',
       () async {
         final completer = Completer<void>();
-        final subscription = dataSource.watchProjectChanges('user-1').listen((_) {
+        final subscription = dataSource.watchProjectChanges('user-1').listen((
+          _,
+        ) {
           if (!completer.isCompleted) completer.complete();
         });
 
@@ -168,7 +172,9 @@ void main() {
       'watchProjectChanges emits when owned projects data changes',
       () async {
         final completer = Completer<void>();
-        final subscription = dataSource.watchProjectChanges('user-1').listen((_) {
+        final subscription = dataSource.watchProjectChanges('user-1').listen((
+          _,
+        ) {
           if (!completer.isCompleted) completer.complete();
         });
 
@@ -194,14 +200,16 @@ void main() {
       'watchProjectChanges propagates stream error to subscriber onError',
       () async {
         final errorCompleter = Completer<Object>();
-        final subscription = dataSource.watchProjectChanges('user-1').listen(
-          (_) {},
-          onError: (Object error, StackTrace stackTrace) {
-            if (!errorCompleter.isCompleted) {
-              errorCompleter.complete(error);
-            }
-          },
-        );
+        final subscription = dataSource
+            .watchProjectChanges('user-1')
+            .listen(
+              (_) {},
+              onError: (Object error, StackTrace stackTrace) {
+                if (!errorCompleter.isCompleted) {
+                  errorCompleter.complete(error);
+                }
+              },
+            );
 
         await pumpEventQueue();
 

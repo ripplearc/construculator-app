@@ -194,8 +194,8 @@ void main() {
 
       test('maps estimations to CostEstimate domain entities', () {
         final estimationDto = CostEstimateDto.fromJson(
-          estimation_factory.EstimationTestDataMapFactory
-              .createFakeEstimationData(),
+          estimation_factory
+              .EstimationTestDataMapFactory.createFakeEstimationData(),
         );
         final dto = SearchResultsDto(estimations: [estimationDto]);
 
@@ -215,8 +215,8 @@ void main() {
 
       test('lists are independent — items do not bleed across lists', () {
         final estimationDto = CostEstimateDto.fromJson(
-          estimation_factory.EstimationTestDataMapFactory
-              .createFakeEstimationData(),
+          estimation_factory
+              .EstimationTestDataMapFactory.createFakeEstimationData(),
         );
         final dto = SearchResultsDto(
           projects: [testProject],

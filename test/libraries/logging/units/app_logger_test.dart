@@ -185,23 +185,33 @@ void main() {
       final filter = AppLogFilter(config: prodConfig, debugMode: false);
 
       expect(
-        filter.shouldLog(LogEvent(Level.debug, 'test', error: null, stackTrace: null)),
+        filter.shouldLog(
+          LogEvent(Level.debug, 'test', error: null, stackTrace: null),
+        ),
         isFalse,
       );
       expect(
-        filter.shouldLog(LogEvent(Level.info, 'test', error: null, stackTrace: null)),
+        filter.shouldLog(
+          LogEvent(Level.info, 'test', error: null, stackTrace: null),
+        ),
         isFalse,
       );
       expect(
-        filter.shouldLog(LogEvent(Level.warning, 'test', error: null, stackTrace: null)),
+        filter.shouldLog(
+          LogEvent(Level.warning, 'test', error: null, stackTrace: null),
+        ),
         isTrue,
       );
       expect(
-        filter.shouldLog(LogEvent(Level.error, 'test', error: null, stackTrace: null)),
+        filter.shouldLog(
+          LogEvent(Level.error, 'test', error: null, stackTrace: null),
+        ),
         isTrue,
       );
       expect(
-        filter.shouldLog(LogEvent(Level.fatal, 'test', error: null, stackTrace: null)),
+        filter.shouldLog(
+          LogEvent(Level.fatal, 'test', error: null, stackTrace: null),
+        ),
         isTrue,
       );
     });
@@ -212,19 +222,27 @@ void main() {
       final filter = AppLogFilter(config: qaConfig, debugMode: false);
 
       expect(
-        filter.shouldLog(LogEvent(Level.debug, 'test', error: null, stackTrace: null)),
+        filter.shouldLog(
+          LogEvent(Level.debug, 'test', error: null, stackTrace: null),
+        ),
         isFalse,
       );
       expect(
-        filter.shouldLog(LogEvent(Level.info, 'test', error: null, stackTrace: null)),
+        filter.shouldLog(
+          LogEvent(Level.info, 'test', error: null, stackTrace: null),
+        ),
         isTrue,
       );
       expect(
-        filter.shouldLog(LogEvent(Level.warning, 'test', error: null, stackTrace: null)),
+        filter.shouldLog(
+          LogEvent(Level.warning, 'test', error: null, stackTrace: null),
+        ),
         isTrue,
       );
       expect(
-        filter.shouldLog(LogEvent(Level.error, 'test', error: null, stackTrace: null)),
+        filter.shouldLog(
+          LogEvent(Level.error, 'test', error: null, stackTrace: null),
+        ),
         isTrue,
       );
     });
@@ -235,15 +253,21 @@ void main() {
       final filter = AppLogFilter(config: devConfig, debugMode: false);
 
       expect(
-        filter.shouldLog(LogEvent(Level.debug, 'test', error: null, stackTrace: null)),
+        filter.shouldLog(
+          LogEvent(Level.debug, 'test', error: null, stackTrace: null),
+        ),
         isTrue,
       );
       expect(
-        filter.shouldLog(LogEvent(Level.info, 'test', error: null, stackTrace: null)),
+        filter.shouldLog(
+          LogEvent(Level.info, 'test', error: null, stackTrace: null),
+        ),
         isTrue,
       );
       expect(
-        filter.shouldLog(LogEvent(Level.warning, 'test', error: null, stackTrace: null)),
+        filter.shouldLog(
+          LogEvent(Level.warning, 'test', error: null, stackTrace: null),
+        ),
         isTrue,
       );
     });
@@ -254,11 +278,15 @@ void main() {
       final filter = AppLogFilter(config: prodConfig, debugMode: true);
 
       expect(
-        filter.shouldLog(LogEvent(Level.debug, 'test', error: null, stackTrace: null)),
+        filter.shouldLog(
+          LogEvent(Level.debug, 'test', error: null, stackTrace: null),
+        ),
         isTrue,
       );
       expect(
-        filter.shouldLog(LogEvent(Level.info, 'test', error: null, stackTrace: null)),
+        filter.shouldLog(
+          LogEvent(Level.info, 'test', error: null, stackTrace: null),
+        ),
         isTrue,
       );
     });
@@ -267,11 +295,15 @@ void main() {
       final filter = AppLogFilter(config: null);
 
       expect(
-        filter.shouldLog(LogEvent(Level.debug, 'test', error: null, stackTrace: null)),
+        filter.shouldLog(
+          LogEvent(Level.debug, 'test', error: null, stackTrace: null),
+        ),
         isTrue,
       );
       expect(
-        filter.shouldLog(LogEvent(Level.info, 'test', error: null, stackTrace: null)),
+        filter.shouldLog(
+          LogEvent(Level.info, 'test', error: null, stackTrace: null),
+        ),
         isTrue,
       );
     });

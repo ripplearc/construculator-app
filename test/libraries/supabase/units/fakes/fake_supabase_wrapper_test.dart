@@ -1070,52 +1070,44 @@ void main() {
           expect(remaining.single['id'], equals('2'));
         });
 
-        test(
-          'throws exception independently of shouldThrowOnDelete',
-          () async {
-            fakeWrapper.shouldThrowOnDeleteMatch = true;
-            fakeWrapper.deleteMatchErrorMessage = 'Delete match failed';
+        test('throws exception independently of shouldThrowOnDelete', () async {
+          fakeWrapper.shouldThrowOnDeleteMatch = true;
+          fakeWrapper.deleteMatchErrorMessage = 'Delete match failed';
 
-            await expectLater(
-              () async => fakeWrapper.deleteMatch(
-                table: 'items',
-                filters: {'id': '1'},
+          await expectLater(
+            () async =>
+                fakeWrapper.deleteMatch(table: 'items', filters: {'id': '1'}),
+            throwsA(
+              isA<ServerException>().having(
+                (e) => e.toString(),
+                'message',
+                contains('Delete match failed'),
               ),
-              throwsA(
-                isA<ServerException>().having(
-                  (e) => e.toString(),
-                  'message',
-                  contains('Delete match failed'),
-                ),
-              ),
-            );
-          },
-        );
+            ),
+          );
+        });
 
-        test(
-          'shouldThrowOnDelete does not affect deleteMatch',
-          () async {
-            fakeWrapper.addTableData('items', [
-              {'id': '1', 'project_id': 'p1'},
-            ]);
-            fakeWrapper.shouldThrowOnDelete = true;
+        test('shouldThrowOnDelete does not affect deleteMatch', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1'},
+          ]);
+          fakeWrapper.shouldThrowOnDelete = true;
 
-            await fakeWrapper.deleteMatch(
-              table: 'items',
-              filters: {'project_id': 'p1'},
-            );
+          await fakeWrapper.deleteMatch(
+            table: 'items',
+            filters: {'project_id': 'p1'},
+          );
 
-            final result = await fakeWrapper.selectMatch(
-              table: 'items',
-              filters: {'project_id': 'p1'},
-            );
-            expect(
-              result,
-              isEmpty,
-              reason: 'deleteMatch must not be affected by shouldThrowOnDelete',
-            );
-          },
-        );
+          final result = await fakeWrapper.selectMatch(
+            table: 'items',
+            filters: {'project_id': 'p1'},
+          );
+          expect(
+            result,
+            isEmpty,
+            reason: 'deleteMatch must not be affected by shouldThrowOnDelete',
+          );
+        });
 
         test('records call before delay completes', () async {
           fakeWrapper.shouldDelayOperations = true;
@@ -1303,10 +1295,8 @@ void main() {
           fakeWrapper.selectMatchErrorMessage = 'Select match failed';
 
           await expectLater(
-            () async => fakeWrapper.selectMatch(
-              table: 'items',
-              filters: {'id': '1'},
-            ),
+            () async =>
+                fakeWrapper.selectMatch(table: 'items', filters: {'id': '1'}),
             throwsA(
               isA<ServerException>().having(
                 (e) => e.toString(),
@@ -1317,50 +1307,46 @@ void main() {
           );
         });
 
-        test('returns empty list when shouldReturnEmptyOnSelectMatch is true',
-            () async {
-          fakeWrapper.addTableData('items', [
-            {'id': '1', 'project_id': 'p1'},
-          ]);
-          fakeWrapper.shouldReturnEmptyOnSelectMatch = true;
-
-          final result = await fakeWrapper.selectMatch(
-            table: 'items',
-            filters: {'project_id': 'p1'},
-          );
-
-          expect(result, isEmpty);
-        });
-
         test(
-          'shouldThrowOnSelectMultiple does not affect selectMatch',
+          'returns empty list when shouldReturnEmptyOnSelectMatch is true',
           () async {
             fakeWrapper.addTableData('items', [
               {'id': '1', 'project_id': 'p1'},
             ]);
-            fakeWrapper.shouldThrowOnSelectMultiple = true;
+            fakeWrapper.shouldReturnEmptyOnSelectMatch = true;
 
             final result = await fakeWrapper.selectMatch(
               table: 'items',
               filters: {'project_id': 'p1'},
             );
 
-            expect(
-              result,
-              hasLength(1),
-              reason:
-                  'selectMatch must not be affected by shouldThrowOnSelectMultiple',
-            );
+            expect(result, isEmpty);
           },
         );
+
+        test('shouldThrowOnSelectMultiple does not affect selectMatch', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1'},
+          ]);
+          fakeWrapper.shouldThrowOnSelectMultiple = true;
+
+          final result = await fakeWrapper.selectMatch(
+            table: 'items',
+            filters: {'project_id': 'p1'},
+          );
+
+          expect(
+            result,
+            hasLength(1),
+            reason:
+                'selectMatch must not be affected by shouldThrowOnSelectMultiple',
+          );
+        });
 
         test('defaults to all columns when columns not specified', () async {
           fakeWrapper.addTableData('items', []);
 
-          await fakeWrapper.selectMatch(
-            table: 'items',
-            filters: {'id': '1'},
-          );
+          await fakeWrapper.selectMatch(table: 'items', filters: {'id': '1'});
 
           final call = fakeWrapper.getMethodCallsFor('selectMatch').first;
           expect(call['columns'], equals('*'));
@@ -1413,42 +1399,44 @@ void main() {
           expect(result!['bio'], equals('New bio'));
         });
 
-        test('preserves created_at on update and only sets it on insert',
-            () async {
-          const originalCreatedAt = '2024-01-01T00:00:00Z';
-          fakeWrapper.addTableData('profiles', [
-            {
-              'id': '1',
-              'user_id': 'u1',
-              'bio': 'Old bio',
-              'created_at': originalCreatedAt,
-              'updated_at': originalCreatedAt,
-            },
-          ]);
+        test(
+          'preserves created_at on update and only sets it on insert',
+          () async {
+            const originalCreatedAt = '2024-01-01T00:00:00Z';
+            fakeWrapper.addTableData('profiles', [
+              {
+                'id': '1',
+                'user_id': 'u1',
+                'bio': 'Old bio',
+                'created_at': originalCreatedAt,
+                'updated_at': originalCreatedAt,
+              },
+            ]);
 
-          await fakeWrapper.upsert(
-            table: 'profiles',
-            data: {'user_id': 'u1', 'bio': 'Updated bio'},
-            onConflict: 'user_id',
-          );
+            await fakeWrapper.upsert(
+              table: 'profiles',
+              data: {'user_id': 'u1', 'bio': 'Updated bio'},
+              onConflict: 'user_id',
+            );
 
-          final result = await fakeWrapper.selectSingle(
-            table: 'profiles',
-            filterColumn: 'user_id',
-            filterValue: 'u1',
-          );
+            final result = await fakeWrapper.selectSingle(
+              table: 'profiles',
+              filterColumn: 'user_id',
+              filterValue: 'u1',
+            );
 
-          expect(
-            result!['created_at'],
-            equals(originalCreatedAt),
-            reason: 'created_at must not change on upsert update path',
-          );
-          expect(
-            result['updated_at'],
-            isNot(equals(originalCreatedAt)),
-            reason: 'updated_at must be refreshed on upsert update path',
-          );
-        });
+            expect(
+              result!['created_at'],
+              equals(originalCreatedAt),
+              reason: 'created_at must not change on upsert update path',
+            );
+            expect(
+              result['updated_at'],
+              isNot(equals(originalCreatedAt)),
+              reason: 'updated_at must be refreshed on upsert update path',
+            );
+          },
+        );
 
         test('does not mutate other rows when upserting on conflict', () async {
           fakeWrapper.addTableData('profiles', [
@@ -1529,9 +1517,7 @@ void main() {
 
           await expectLater(
             stream,
-            emitsThrough(
-              contains(containsPair('bio', 'Hello')),
-            ),
+            emitsThrough(contains(containsPair('bio', 'Hello'))),
           );
         });
 
@@ -2136,27 +2122,30 @@ void main() {
     });
 
     group('reset', () {
-      test('clears addTableData state so tables are empty after reset', () async {
-        fakeWrapper.addTableData('projects', [
-          {'id': 'p1', 'name': 'Project 1'},
-          {'id': 'p2', 'name': 'Project 2'},
-        ]);
-        final beforeReset = await fakeWrapper.selectWhereIn(
-          table: 'projects',
-          filterColumn: 'id',
-          filterValues: ['p1', 'p2'],
-        );
-        expect(beforeReset, hasLength(2));
+      test(
+        'clears addTableData state so tables are empty after reset',
+        () async {
+          fakeWrapper.addTableData('projects', [
+            {'id': 'p1', 'name': 'Project 1'},
+            {'id': 'p2', 'name': 'Project 2'},
+          ]);
+          final beforeReset = await fakeWrapper.selectWhereIn(
+            table: 'projects',
+            filterColumn: 'id',
+            filterValues: ['p1', 'p2'],
+          );
+          expect(beforeReset, hasLength(2));
 
-        fakeWrapper.reset();
+          fakeWrapper.reset();
 
-        final afterReset = await fakeWrapper.selectWhereIn(
-          table: 'projects',
-          filterColumn: 'id',
-          filterValues: ['p1', 'p2'],
-        );
-        expect(afterReset, isEmpty);
-      });
+          final afterReset = await fakeWrapper.selectWhereIn(
+            table: 'projects',
+            filterColumn: 'id',
+            filterValues: ['p1', 'p2'],
+          );
+          expect(afterReset, isEmpty);
+        },
+      );
 
       test('clears all configurations and data', () async {
         fakeWrapper.addTableData('users', [

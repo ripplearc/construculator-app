@@ -87,7 +87,6 @@ void main() {
 
     group('Environment Name Tests', () {
       test('should return correct environment names', () {
-
         expect(
           appConfig.getEnvironmentName(Environment.dev),
           equals('Development'),
@@ -99,7 +98,6 @@ void main() {
         );
       });
       test('should return correct environment aliases', () {
-
         expect(
           appConfig.getEnvironmentName(Environment.dev, isAlias: true),
           equals('Fishfood'),
@@ -120,8 +118,8 @@ void main() {
         test('should successfully load environment files', () async {
           final createConfigWithEnvLoader =
               Modular.get<Config Function(EnvLoader)>(
-            key: 'createConfigWithEnvLoader',
-          );
+                key: 'createConfigWithEnvLoader',
+              );
 
           final environments = [
             Environment.dev,
@@ -131,7 +129,9 @@ void main() {
 
           for (final environment in environments) {
             final freshFakeDotEnvLoader = FakeEnvLoader();
-            final freshConfig = createConfigWithEnvLoader(freshFakeDotEnvLoader);
+            final freshConfig = createConfigWithEnvLoader(
+              freshFakeDotEnvLoader,
+            );
             freshFakeDotEnvLoader.setEnvVar(
               'SUPABASE_URL',
               'https://test.supabase.co',
@@ -181,8 +181,8 @@ void main() {
         test('should format app name correctly for each environment', () async {
           final createConfigWithEnvLoader =
               Modular.get<Config Function(EnvLoader)>(
-            key: 'createConfigWithEnvLoader',
-          );
+                key: 'createConfigWithEnvLoader',
+              );
 
           final testCases = [
             (Environment.dev, 'DevApp', 'DevApp (Fishfood)'),
@@ -192,7 +192,9 @@ void main() {
 
           for (final testCase in testCases) {
             final freshFakeDotEnvLoader = FakeEnvLoader();
-            final freshConfig = createConfigWithEnvLoader(freshFakeDotEnvLoader);
+            final freshConfig = createConfigWithEnvLoader(
+              freshFakeDotEnvLoader,
+            );
 
             freshFakeDotEnvLoader.setEnvVar('APP_NAME', testCase.$2);
             freshFakeDotEnvLoader.setEnvVar('API_URL', 'https://api.com');
@@ -216,8 +218,8 @@ void main() {
           () async {
             final createConfigWithEnvLoader =
                 Modular.get<Config Function(EnvLoader)>(
-              key: 'createConfigWithEnvLoader',
-            );
+                  key: 'createConfigWithEnvLoader',
+                );
 
             final testCases = [
               (Environment.dev, true),
@@ -227,7 +229,9 @@ void main() {
 
             for (final testCase in testCases) {
               final freshFakeDotEnvLoader = FakeEnvLoader();
-              final freshConfig = createConfigWithEnvLoader(freshFakeDotEnvLoader);
+              final freshConfig = createConfigWithEnvLoader(
+                freshFakeDotEnvLoader,
+              );
 
               freshFakeDotEnvLoader.setEnvVar('APP_NAME', 'TestApp');
               freshFakeDotEnvLoader.setEnvVar('API_URL', 'https://api.com');
