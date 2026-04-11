@@ -16,14 +16,32 @@ class EstimationActionsSheet extends StatelessWidget {
     this.onLogs,
   });
 
+  /// The display name of the estimation shown in the sheet header.
   final String estimationName;
-  final ValueNotifier<bool> lockStatusNotifier;
+
+  /// Called when the user taps the rename quick action.
   final VoidCallback? onRename;
+
+  /// Called when the user taps the favourite quick action.
   final VoidCallback? onFavourite;
+
+  /// Called when the user taps the remove quick action.
   final VoidCallback? onRemove;
+
+  /// The notifier that drives the lock toggle state. Updated externally
+  /// by [BlocListener] when [ChangeLockStatusBloc] emits a new state.
+  final ValueNotifier<bool> lockStatusNotifier;
+
+  /// Called when the user toggles the lock switch.
   final ValueChanged<bool> onLockToggle;
+
+  /// Called when the user taps the copy estimation action.
   final VoidCallback? onCopy;
+
+  /// Called when the user taps the share/export action.
   final VoidCallback? onShare;
+
+  /// Called when the user taps the logs action.
   final VoidCallback? onLogs;
 
   @override
