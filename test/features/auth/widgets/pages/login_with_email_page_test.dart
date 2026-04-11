@@ -5,8 +5,6 @@ import 'package:construculator/features/auth/auth_module.dart';
 import 'package:construculator/features/auth/presentation/bloc/login_with_email_bloc/login_with_email_bloc.dart';
 import 'package:construculator/features/auth/presentation/pages/login_with_email_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
-import 'package:construculator/libraries/config/testing/fake_app_config.dart';
-import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -24,6 +22,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
+import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 
 class _LoginWithEmailPageTestModule extends Module {
@@ -66,9 +65,7 @@ void main() {
     fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     CoreToast.disableTimers();
 
-    final appBootstrap = AppBootstrap(
-      config: FakeAppConfig(),
-      envLoader: FakeEnvLoader(),
+    final appBootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
 
@@ -245,10 +242,10 @@ void main() {
     });
   });
 
-
   group('LoginWithEmailPage – accessibility', () {
-    testWidgets('meets a11y guidelines for continue button in both themes',
-        (tester) async {
+    testWidgets('meets a11y guidelines for continue button in both themes', (
+      tester,
+    ) async {
       fakeSupabase.setRpcResponse('check_email_exists', true);
       await setupA11yTest(tester);
 
@@ -264,8 +261,9 @@ void main() {
       );
     });
 
-    testWidgets('meets a11y guidelines for register link in both themes',
-        (tester) async {
+    testWidgets('meets a11y guidelines for register link in both themes', (
+      tester,
+    ) async {
       await setupA11yTest(tester);
 
       await renderPage(tester);
@@ -289,17 +287,15 @@ void main() {
         await enterEmail(tester, 'notregistered@example.com');
         await tester.pumpAndSettle();
 
-        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-          tester,
-          (theme) {
-            fakeSupabase.setRpcResponse('check_email_exists', false);
-            return makeTestableWidget(
-              theme: theme,
-              child: const LoginWithEmailPage(email: 'notregistered@example.com'),
-            );
-          },
-          find.byKey(const Key('Register')),
-        );
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(tester, (
+          theme,
+        ) {
+          fakeSupabase.setRpcResponse('check_email_exists', false);
+          return makeTestableWidget(
+            theme: theme,
+            child: const LoginWithEmailPage(email: 'notregistered@example.com'),
+          );
+        }, find.byKey(const Key('Register')));
       },
     );
 
@@ -350,17 +346,15 @@ void main() {
         await enterEmail(tester, 'error@example.com');
         await tester.pumpAndSettle();
 
-        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-          tester,
-          (theme) {
-            fakeSupabase.shouldThrowOnRpc = true;
-            return makeTestableWidget(
-              theme: theme,
-              child: const LoginWithEmailPage(email: 'error@example.com'),
-            );
-          },
-          find.text('Close'),
-        );
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(tester, (
+          theme,
+        ) {
+          fakeSupabase.shouldThrowOnRpc = true;
+          return makeTestableWidget(
+            theme: theme,
+            child: const LoginWithEmailPage(email: 'error@example.com'),
+          );
+        }, find.text('Close'));
       },
     );
   });

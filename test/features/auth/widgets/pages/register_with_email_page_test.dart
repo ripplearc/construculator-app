@@ -7,8 +7,6 @@ import 'package:construculator/features/auth/presentation/bloc/register_with_ema
 import 'package:construculator/features/auth/presentation/pages/register_with_email_page.dart';
 import 'package:construculator/features/auth/presentation/widgets/otp_quick_sheet/otp_verification_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
-import 'package:construculator/libraries/config/testing/fake_app_config.dart';
-import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -23,6 +21,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 
 class _RegisterWithEmailPageTestModule extends Module {
@@ -71,9 +70,7 @@ void main() {
     fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     CoreToast.disableTimers();
 
-    final appBootstrap = AppBootstrap(
-      config: FakeAppConfig(),
-      envLoader: FakeEnvLoader(),
+    final appBootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
 

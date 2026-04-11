@@ -2,16 +2,15 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/project/presentation/project_ui_provider_impl.dart';
 import 'package:construculator/features/project/presentation/widgets/project_header_app_bar.dart';
 import 'package:construculator/features/project/project_module.dart';
-import 'package:construculator/libraries/config/testing/fake_app_config.dart';
-import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
-import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
-import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+
+import '../../../../utils/fake_app_bootstrap_factory.dart';
 
 class _TestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -26,11 +25,7 @@ void main() {
     late ProjectUIProviderImpl provider;
 
     setUpAll(() {
-      final appBootstrap = AppBootstrap(
-        envLoader: FakeEnvLoader(),
-        config: FakeAppConfig(),
-        supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
-      );
+      final appBootstrap = FakeAppBootstrapFactory.create();
       Modular.init(_TestModule(appBootstrap));
     });
 

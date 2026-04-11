@@ -1,11 +1,8 @@
 import 'package:bloc_test/bloc_test.dart';
-import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/domain/entities/enums.dart';
 import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
-import 'package:construculator/libraries/config/testing/fake_app_config.dart';
-import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -15,6 +12,8 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../../../utils/fake_app_bootstrap_factory.dart';
 
 void main() {
   group('AddCostEstimationBloc', () {
@@ -66,11 +65,7 @@ void main() {
 
     setUpAll(() {
       fakeClock = FakeClockImpl();
-      final bootstrap = AppBootstrap(
-        supabaseWrapper: FakeSupabaseWrapper(clock: fakeClock),
-        config: FakeAppConfig(),
-        envLoader: FakeEnvLoader(),
-      );
+      final bootstrap = FakeAppBootstrapFactory.create(clock: fakeClock);
       Modular.init(EstimationModule(bootstrap));
 
       fakeSupabaseWrapper =

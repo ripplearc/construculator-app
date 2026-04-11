@@ -4,8 +4,6 @@ import 'package:construculator/features/auth/presentation/bloc/forgot_password_b
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
 import 'package:construculator/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
-import 'package:construculator/libraries/config/testing/fake_app_config.dart';
-import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -19,6 +17,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
+import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 
 class _ForgotPasswordPageA11yTestModule extends Module {
@@ -27,10 +26,10 @@ class _ForgotPasswordPageA11yTestModule extends Module {
 
   @override
   List<Module> get imports => [
-        RouterTestModule(),
-        ClockTestModule(),
-        AuthModule(appBootstrap),
-      ];
+    RouterTestModule(),
+    ClockTestModule(),
+    AuthModule(appBootstrap),
+  ];
 }
 
 void main() {
@@ -41,9 +40,7 @@ void main() {
     fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     CoreToast.disableTimers();
 
-    final appBootstrap = AppBootstrap(
-      config: FakeAppConfig(),
-      envLoader: FakeEnvLoader(),
+    final appBootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
 
@@ -125,17 +122,16 @@ void main() {
   }
 
   group('ForgotPasswordPage – accessibility', () {
-    testWidgets('meets a11y guidelines for continue button in both themes',
-        (tester) async {
+    testWidgets('meets a11y guidelines for continue button in both themes', (
+      tester,
+    ) async {
       await setupA11yTest(tester);
       await renderPage(tester);
 
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
-        (theme) => makeTestableWidget(
-          theme: theme,
-          child: const ForgotPasswordPage(),
-        ),
+        (theme) =>
+            makeTestableWidget(theme: theme, child: const ForgotPasswordPage()),
         find.text(l10n().continueButton),
         setupAfterPump: (t) async {
           await enterEmail(t, 'reset@example.com');
@@ -182,28 +178,25 @@ void main() {
       },
     );
 
-    testWidgets(
-      'meets a11y guidelines for verify OTP button in both themes',
-      (tester) async {
-        await setupA11yTest(tester);
-        await renderPage(tester);
+    testWidgets('meets a11y guidelines for verify OTP button in both themes', (
+      tester,
+    ) async {
+      await setupA11yTest(tester);
+      await renderPage(tester);
 
-        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-          tester,
-          (theme) => makeTestableWidget(
-            theme: theme,
-            child: const ForgotPasswordPage(),
-          ),
-          find.text(l10n().verifyOtpButton),
-          setupAfterPump: (t) async {
-            await enterEmail(t, 'reset@example.com');
-            await tapContinueButton(t);
-            await enterOtp(t, '123456');
-            await t.pumpAndSettle();
-          },
-        );
-      },
-    );
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        (theme) =>
+            makeTestableWidget(theme: theme, child: const ForgotPasswordPage()),
+        find.text(l10n().verifyOtpButton),
+        setupAfterPump: (t) async {
+          await enterEmail(t, 'reset@example.com');
+          await tapContinueButton(t);
+          await enterOtp(t, '123456');
+          await t.pumpAndSettle();
+        },
+      );
+    });
 
     testWidgets(
       'meets a11y guidelines for edit contact button in OTP modal in both themes',
@@ -231,8 +224,7 @@ void main() {
       'meets a11y guidelines when OTP error toast shown in both themes',
       (tester) async {
         fakeSupabase.shouldThrowOnVerifyOtp = true;
-        fakeSupabase.authErrorCode =
-            SupabaseAuthErrorCode.invalidCredentials;
+        fakeSupabase.authErrorCode = SupabaseAuthErrorCode.invalidCredentials;
         await setupA11yTest(tester);
         await renderPage(tester);
 
@@ -250,10 +242,12 @@ void main() {
           find.byKey(const Key('toast_close_button')),
           setupAfterPump: (t) async {
             await enterEmail(t, 'reset@example.com');
-            await t.tap(find.descendant(
-              of: find.byType(SingleChildScrollView),
-              matching: find.text(l10n().continueButton),
-            ));
+            await t.tap(
+              find.descendant(
+                of: find.byType(SingleChildScrollView),
+                matching: find.text(l10n().continueButton),
+              ),
+            );
             await t.pumpAndSettle();
             await enterOtp(t, '123456');
             await tapVerifyButton(t);
@@ -283,10 +277,12 @@ void main() {
           find.byKey(const Key('toast_close_button')),
           setupAfterPump: (t) async {
             await enterEmail(t, 'error@example.com');
-            await t.tap(find.descendant(
-              of: find.byType(SingleChildScrollView),
-              matching: find.text(l10n().continueButton),
-            ));
+            await t.tap(
+              find.descendant(
+                of: find.byType(SingleChildScrollView),
+                matching: find.text(l10n().continueButton),
+              ),
+            );
             await t.pumpAndSettle();
           },
         );

@@ -1,14 +1,12 @@
 import 'dart:io';
 
-import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/global_search/data/data_source/interfaces/global_search_data_source.dart';
 import 'package:construculator/features/global_search/data/data_source/remote_global_search_data_source.dart';
 import 'package:construculator/features/global_search/data/models/pagination_params_dto.dart';
 import 'package:construculator/features/global_search/data/models/search_params_dto.dart';
 import 'package:construculator/features/global_search/data/models/search_scope.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
-import 'package:construculator/libraries/config/testing/fake_app_config.dart';
-import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -19,6 +17,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
+import '../../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../estimations/helpers/estimation_test_data_map_factory.dart'
     as estimation_factory;
 
@@ -77,13 +76,7 @@ void main() {
     setUpAll(() {
       fakeClock = FakeClockImpl();
       Modular.init(
-        GlobalSearchModule(
-          AppBootstrap(
-            config: FakeAppConfig(),
-            envLoader: FakeEnvLoader(),
-            supabaseWrapper: FakeSupabaseWrapper(clock: fakeClock),
-          ),
-        ),
+        GlobalSearchModule(FakeAppBootstrapFactory.create(clock: fakeClock)),
       );
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;

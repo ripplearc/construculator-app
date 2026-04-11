@@ -4,8 +4,7 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_log_bloc/cost_estimation_log_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_logs_list.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
-import 'package:construculator/libraries/config/testing/fake_app_config.dart';
-import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -17,6 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
+import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 import '../../helpers/log_test_data_factory.dart';
 
@@ -34,11 +34,7 @@ void main() {
 
     fakeClock = FakeClockImpl();
     fakeSupabase = FakeSupabaseWrapper(clock: fakeClock);
-    bootstrap = AppBootstrap(
-      supabaseWrapper: fakeSupabase,
-      config: FakeAppConfig(),
-      envLoader: FakeEnvLoader(),
-    );
+    bootstrap = FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase);
 
     Modular.init(EstimationModule(bootstrap));
   });

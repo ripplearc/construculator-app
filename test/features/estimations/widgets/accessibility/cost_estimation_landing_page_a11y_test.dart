@@ -4,8 +4,7 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
-import 'package:construculator/libraries/config/testing/fake_app_config.dart';
-import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
@@ -24,6 +23,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
+import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../helpers/estimation_test_data_map_factory.dart';
 
 class _CostEstimationLandingPageA11yTestModule extends Module {
@@ -69,9 +69,7 @@ void main() {
     clock = FakeClockImpl();
     fakeSupabase = FakeSupabaseWrapper(clock: clock);
 
-    appBootstrap = AppBootstrap(
-      config: FakeAppConfig(),
-      envLoader: FakeEnvLoader(),
+    appBootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(_CostEstimationLandingPageA11yTestModule(appBootstrap));

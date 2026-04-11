@@ -2,8 +2,6 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
-import 'package:construculator/libraries/config/testing/fake_app_config.dart';
-import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -14,6 +12,8 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../../utils/fake_app_bootstrap_factory.dart';
+
 void main() {
   group('ProjectDropdownBloc', () {
     late FakeSupabaseWrapper fakeSupabaseWrapper;
@@ -22,10 +22,8 @@ void main() {
 
     setUpAll(() {
       clock = FakeClockImpl(DateTime(2025, 1, 1, 8, 0));
-      final bootstrap = AppBootstrap(
-        supabaseWrapper: FakeSupabaseWrapper(clock: clock),
-        config: FakeAppConfig(),
-        envLoader: FakeEnvLoader(),
+      final bootstrap = FakeAppBootstrapFactory.create(
+        clock: clock,
       );
       Modular.init(_ProjectDropdownBlocTestModule(bootstrap));
       fakeSupabaseWrapper =
