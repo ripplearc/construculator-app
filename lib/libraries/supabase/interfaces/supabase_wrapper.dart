@@ -243,4 +243,52 @@ abstract class SupabaseWrapper {
   /// [functionName] The name of the RPC function to call
   /// [params] The parameters to pass to the function
   Future<T> rpc<T>(String functionName, {Map<String, dynamic>? params});
+
+  /// Get all permissions for a specific project from JWT claims
+  ///
+  /// Returns a list of permission keys (e.g., ['edit_cost_estimation', 'get_cost_estimations'])
+  /// that the current user has for the specified project.
+  ///
+  /// Returns an empty list if:
+  /// - User is not authenticated
+  /// - User has no permissions for the project
+  /// - Project ID not found in JWT claims
+  ///
+  /// [projectId] The UUID of the project
+  List<String> getProjectPermissions(String projectId);
+
+  /// Check if user has a specific permission for a project
+  ///
+  /// Convenience method that checks if [permissionKey] exists in the
+  /// permissions list for [projectId] in the current user's JWT claims.
+  ///
+  /// [projectId] The UUID of the project
+  /// [permissionKey] The permission key to check (e.g., 'edit_cost_estimation')
+  bool hasProjectPermission(String projectId, String permissionKey);
+
+  /// Refresh the current session to get updated JWT claims from the server
+  ///
+  /// **Important:** While Supabase automatically refreshes tokens before expiry,
+  /// automatic refresh only extends token validity - it does NOT fetch updated
+  /// claims from the server. This method forces a server-side refresh to get
+  /// the latest JWT claims including updated permissions.
+  ///
+  /// Call this after operations that change user permissions:
+  /// - Accepting project invitations
+  /// - Role changes
+  /// - Permission updates by admins
+  ///
+  /// Without manual refresh, permission changes remain invisible until the
+  /// next natural token expiry (up to 1 hour).
+  ///
+  /// Throws [AuthException] if the refresh token has expired
+  Future<void> refreshSession();
+
+  /// Get the internal user ID from JWT claims
+  ///
+  /// Returns the internal application user ID (users.id) from app_metadata,
+  /// which is different from the credential_id (auth.users.id).
+  ///
+  /// Returns null if user is not authenticated or internal_user_id is not set
+  String? getInternalUserId();
 }
