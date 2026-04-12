@@ -91,7 +91,10 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
   ) async {
     final changeLockStatusBloc = BlocProvider.of<ChangeLockStatusBloc>(context);
 
-    // TODO [CA-472] Use `CoreQuickSheet.show` to standardize bottom sheets  https://ripplearc.youtrack.cloud/issue/CA-472/CoreUI-Standardize-bottom-sheets-with-CoreQuickSheet-component (Standardize bottom sheets with CoreQuickSheet component)
+    final lockStatusNotifier = ValueNotifier<bool>(
+      estimation.lockStatus.isLocked,
+    );
+    // TODO: [CA-472] Use `CoreQuickSheet.show` to standardize bottom sheets  https://ripplearc.youtrack.cloud/issue/CA-472/CoreUI-Standardize-bottom-sheets-with-CoreQuickSheet-component (Standardize bottom sheets with CoreQuickSheet component)
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -100,9 +103,6 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (_) {
-        final lockStatusNotifier = ValueNotifier<bool>(
-          estimation.lockStatus.isLocked,
-        );
         return BlocProvider.value(
           value: changeLockStatusBloc,
           child: BlocListener<ChangeLockStatusBloc, ChangeLockStatusState>(
@@ -113,7 +113,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
                 lockStatusNotifier.value = state.originalValue;
               }
             },
-            child: _EstimationActionsSheetWrapper(
+            child: EstimationActionsSheet(
               lockStatusNotifier: lockStatusNotifier,
               estimationName: estimation.estimateName,
               onRename: () {
@@ -154,6 +154,8 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
         );
       },
     );
+
+    lockStatusNotifier.dispose();
   }
 
   void _showRenameSheet(
@@ -478,51 +480,5 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
       default:
         return l10n.unexpectedErrorMessage;
     }
-  }
-}
-
-class _EstimationActionsSheetWrapper extends StatefulWidget {
-  final ValueNotifier<bool> lockStatusNotifier;
-  final String estimationName;
-  final VoidCallback onRename;
-  final VoidCallback onFavourite;
-  final VoidCallback onRemove;
-  final VoidCallback onLogs;
-  final ValueChanged<bool> onLockToggle;
-
-  const _EstimationActionsSheetWrapper({
-    required this.lockStatusNotifier,
-    required this.estimationName,
-    required this.onRename,
-    required this.onFavourite,
-    required this.onRemove,
-    required this.onLogs,
-    required this.onLockToggle,
-  });
-
-  @override
-  State<_EstimationActionsSheetWrapper> createState() =>
-      _EstimationActionsSheetWrapperState();
-}
-
-class _EstimationActionsSheetWrapperState
-    extends State<_EstimationActionsSheetWrapper> {
-  @override
-  void dispose() {
-    widget.lockStatusNotifier.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return EstimationActionsSheet(
-      estimationName: widget.estimationName,
-      lockStatusNotifier: widget.lockStatusNotifier,
-      onRename: widget.onRename,
-      onFavourite: widget.onFavourite,
-      onRemove: widget.onRemove,
-      onLockToggle: widget.onLockToggle,
-      onLogs: widget.onLogs,
-    );
   }
 }

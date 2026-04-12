@@ -44,7 +44,11 @@ void main() {
                 onCopy: onCopy,
                 onShare: onShare,
                 onLogs: onLogs,
-                onLockToggle: onLockToggle ?? (_) {},
+                onLockToggle: (value) {
+                  if (onLockToggle != null) {
+                    onLockToggle(value);
+                  }
+                },
               );
             },
           ),
