@@ -22,7 +22,9 @@ void main() {
 
     setUpAll(() {
       clock = FakeClockImpl(DateTime(2025, 1, 1, 8, 0));
-      final bootstrap = FakeAppBootstrapFactory.create(clock: clock);
+      final bootstrap = FakeAppBootstrapFactory.create(
+        supabaseWrapper: FakeSupabaseWrapper(clock: clock),
+      );
       Modular.init(_ProjectDropdownBlocTestModule(bootstrap));
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;

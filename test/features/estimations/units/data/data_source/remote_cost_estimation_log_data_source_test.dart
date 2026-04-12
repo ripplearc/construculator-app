@@ -23,7 +23,11 @@ void main() {
     setUpAll(() {
       fakeClock = FakeClockImpl();
       Modular.init(
-        EstimationModule(FakeAppBootstrapFactory.create(clock: fakeClock)),
+        EstimationModule(
+          FakeAppBootstrapFactory.create(
+            supabaseWrapper: FakeSupabaseWrapper(clock: fakeClock),
+          ),
+        ),
       );
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;

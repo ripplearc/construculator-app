@@ -78,7 +78,11 @@ void main() {
     setUpAll(() {
       fakeClock = FakeClockImpl();
       Modular.init(
-        GlobalSearchModule(FakeAppBootstrapFactory.create(clock: fakeClock)),
+        GlobalSearchModule(
+          FakeAppBootstrapFactory.create(
+            supabaseWrapper: FakeSupabaseWrapper(clock: fakeClock),
+          ),
+        ),
       );
       fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     });

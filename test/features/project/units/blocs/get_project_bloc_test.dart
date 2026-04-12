@@ -10,6 +10,7 @@ import 'package:construculator/libraries/project/domain/entities/project_entity.
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -54,7 +55,9 @@ void main() {
 
     setUpAll(() {
       clock = FakeClockImpl();
-      final appBootstrap = FakeAppBootstrapFactory.create(clock: clock);
+      final appBootstrap = FakeAppBootstrapFactory.create(
+        supabaseWrapper: FakeSupabaseWrapper(clock: clock),
+      );
       Modular.init(ProjectModule(appBootstrap));
       Modular.replaceInstance<ProjectRepository>(FakeProjectRepository());
       Modular.replaceInstance<AuthRepository>(FakeAuthRepository(clock: clock));

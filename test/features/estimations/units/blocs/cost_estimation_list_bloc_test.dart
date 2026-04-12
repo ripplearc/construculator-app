@@ -7,7 +7,6 @@ import 'package:construculator/features/estimation/data/repositories/cost_estima
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
-
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -33,7 +32,9 @@ void main() {
 
     setUpAll(() {
       fakeClock = FakeClockImpl();
-      final bootstrap = FakeAppBootstrapFactory.create(clock: fakeClock);
+      final bootstrap = FakeAppBootstrapFactory.create(
+        supabaseWrapper: FakeSupabaseWrapper(clock: fakeClock),
+      );
       Modular.init(_TestModule(bootstrap));
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;

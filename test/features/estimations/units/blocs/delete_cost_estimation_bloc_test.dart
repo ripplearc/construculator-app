@@ -1,7 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
-
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -27,7 +26,9 @@ void main() {
 
     setUpAll(() {
       fakeClock = FakeClockImpl();
-      final bootstrap = FakeAppBootstrapFactory.create(clock: fakeClock);
+      final bootstrap = FakeAppBootstrapFactory.create(
+        supabaseWrapper: FakeSupabaseWrapper(clock: fakeClock),
+      );
       Modular.init(EstimationModule(bootstrap));
 
       fakeSupabaseWrapper =
