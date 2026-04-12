@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:construculator/libraries/errors/exceptions.dart';
+import 'package:construculator/libraries/project/domain/permission_constants.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_auth_response.dart';
@@ -2121,6 +2122,290 @@ void main() {
       });
     });
 
+    group('Permission Methods', () {
+      const projectId = 'project-123';
+      const otherProjectId = 'project-456';
+
+      group('getProjectPermissions', () {
+        test('returns empty list when user has no permissions', () {
+          final permissions = fakeWrapper.getProjectPermissions(projectId);
+
+          expect(permissions, isEmpty);
+          expect(
+            fakeWrapper.getMethodCallsFor('getProjectPermissions'),
+            hasLength(1),
+          );
+        });
+
+        test('returns permissions for specific project', () {
+          fakeWrapper.setProjectPermissions(projectId, [
+            PermissionConstants.editCostEstimation,
+            PermissionConstants.getCostEstimations,
+            PermissionConstants.lockCostEstimation,
+          ]);
+
+          final permissions = fakeWrapper.getProjectPermissions(projectId);
+
+          expect(permissions, hasLength(3));
+          expect(permissions, contains(PermissionConstants.editCostEstimation));
+          expect(permissions, contains(PermissionConstants.getCostEstimations));
+          expect(permissions, contains(PermissionConstants.lockCostEstimation));
+        });
+
+        test('does not return permissions from other projects', () {
+          fakeWrapper.setProjectPermissions(projectId, ['permission_a']);
+          fakeWrapper.setProjectPermissions(otherProjectId, ['permission_b']);
+
+          final permissions = fakeWrapper.getProjectPermissions(projectId);
+
+          expect(permissions, hasLength(1));
+          expect(permissions, contains('permission_a'));
+          expect(permissions, isNot(contains('permission_b')));
+        });
+
+        test('records method call with project ID', () {
+          fakeWrapper.getProjectPermissions(projectId);
+
+          final calls = fakeWrapper.getMethodCallsFor('getProjectPermissions');
+          expect(calls, hasLength(1));
+          expect(calls.first['projectId'], equals(projectId));
+        });
+      });
+
+      group('hasProjectPermission', () {
+        test('returns false when user has no permissions', () {
+          final hasPermission = fakeWrapper.hasProjectPermission(
+            projectId,
+            PermissionConstants.editCostEstimation,
+          );
+
+          expect(hasPermission, isFalse);
+        });
+
+        test('returns true when user has specific permission', () {
+          fakeWrapper.setProjectPermissions(projectId, [
+            PermissionConstants.editCostEstimation,
+            PermissionConstants.getCostEstimations,
+          ]);
+
+          final hasEdit = fakeWrapper.hasProjectPermission(
+            projectId,
+            PermissionConstants.editCostEstimation,
+          );
+          final hasGet = fakeWrapper.hasProjectPermission(
+            projectId,
+            PermissionConstants.getCostEstimations,
+          );
+
+          expect(hasEdit, isTrue);
+          expect(hasGet, isTrue);
+        });
+
+        test('returns false when user lacks specific permission', () {
+          fakeWrapper.setProjectPermissions(projectId, [
+            PermissionConstants.getCostEstimations,
+          ]);
+
+          final hasPermission = fakeWrapper.hasProjectPermission(
+            projectId,
+            PermissionConstants.editCostEstimation,
+          );
+
+          expect(hasPermission, isFalse);
+        });
+
+        test('returns false for permissions from other projects', () {
+          fakeWrapper.setProjectPermissions(otherProjectId, [
+            PermissionConstants.editCostEstimation,
+          ]);
+
+          final hasPermission = fakeWrapper.hasProjectPermission(
+            projectId,
+            PermissionConstants.editCostEstimation,
+          );
+
+          expect(hasPermission, isFalse);
+        });
+
+        test('records method call with all parameters', () {
+          fakeWrapper.hasProjectPermission(
+            projectId,
+            PermissionConstants.editCostEstimation,
+          );
+
+          final calls = fakeWrapper.getMethodCallsFor('hasProjectPermission');
+          expect(calls, hasLength(1));
+          expect(
+            calls,
+            equals([
+              {
+                'method': 'hasProjectPermission',
+                'projectId': projectId,
+                'permissionKey': PermissionConstants.editCostEstimation,
+              },
+            ]),
+          );
+        });
+      });
+
+      group('refreshSession', () {
+        test('completes successfully by default', () async {
+          await fakeWrapper.refreshSession();
+
+          final calls = fakeWrapper.getMethodCallsFor('refreshSession');
+          expect(calls, hasLength(1));
+        });
+
+        test('throws exception when configured to fail', () async {
+          fakeWrapper.shouldThrowOnRefreshSession = true;
+          fakeWrapper.refreshSessionErrorMessage = 'Token expired';
+
+          await expectLater(
+            fakeWrapper.refreshSession(),
+            throwsA(
+              isA<ServerException>().having(
+                (e) => e.toString(),
+                'message',
+                contains('Token expired'),
+              ),
+            ),
+          );
+        });
+
+        test(
+          'throws AuthException when configured with auth error type',
+          () async {
+            fakeWrapper.shouldThrowOnRefreshSession = true;
+            fakeWrapper.refreshSessionErrorMessage = 'Invalid refresh token';
+            fakeWrapper.refreshSessionExceptionType =
+                SupabaseExceptionType.auth;
+
+            await expectLater(
+              fakeWrapper.refreshSession(),
+              throwsA(
+                isA<supabase.AuthException>().having(
+                  (e) => e.message,
+                  'message',
+                  contains('Invalid refresh token'),
+                ),
+              ),
+            );
+          },
+        );
+
+        test('supports delayed operations', () async {
+          fakeWrapper.shouldDelayOperations = true;
+          fakeWrapper.completer = Completer();
+
+          final future = fakeWrapper.refreshSession();
+
+          expect(fakeWrapper.getMethodCallsFor('refreshSession'), isEmpty);
+
+          fakeWrapper.completer!.complete();
+          await future;
+
+          expect(fakeWrapper.getMethodCallsFor('refreshSession'), hasLength(1));
+        });
+
+        test('records method call even when throwing', () async {
+          fakeWrapper.shouldThrowOnRefreshSession = true;
+
+          try {
+            await fakeWrapper.refreshSession();
+          } catch (_) {}
+
+          expect(fakeWrapper.getMethodCallsFor('refreshSession'), hasLength(1));
+        });
+      });
+
+      group('getInternalUserId', () {
+        test('returns null by default', () {
+          final userId = fakeWrapper.getInternalUserId();
+
+          expect(userId, isNull);
+        });
+
+        test('returns configured user ID', () {
+          const userId = 'user-internal-123';
+          fakeWrapper.setInternalUserId(userId);
+
+          final result = fakeWrapper.getInternalUserId();
+
+          expect(result, equals(userId));
+        });
+
+        test('can be set to null', () {
+          fakeWrapper.setInternalUserId('user-123');
+          fakeWrapper.setInternalUserId(null);
+
+          final result = fakeWrapper.getInternalUserId();
+
+          expect(result, isNull);
+        });
+
+        test('records method call', () {
+          fakeWrapper.getInternalUserId();
+
+          final calls = fakeWrapper.getMethodCallsFor('getInternalUserId');
+          expect(calls, hasLength(1));
+        });
+      });
+
+      group('Permission Test Utilities', () {
+        test('setProjectPermissions sets permissions correctly', () {
+          fakeWrapper.setProjectPermissions(projectId, ['perm1', 'perm2']);
+
+          final permissions = fakeWrapper.getProjectPermissions(projectId);
+
+          expect(permissions, hasLength(2));
+          expect(permissions, containsAll(['perm1', 'perm2']));
+        });
+
+        test('setProjectPermissions replaces existing permissions', () {
+          fakeWrapper.setProjectPermissions(projectId, ['perm1']);
+          fakeWrapper.setProjectPermissions(projectId, ['perm2', 'perm3']);
+
+          final permissions = fakeWrapper.getProjectPermissions(projectId);
+
+          expect(permissions, hasLength(2));
+          expect(permissions, containsAll(['perm2', 'perm3']));
+          expect(permissions, isNot(contains('perm1')));
+        });
+
+        test('clearProjectPermissions removes all permissions', () {
+          fakeWrapper.setProjectPermissions(projectId, [
+            'perm1',
+            'perm2',
+            'perm3',
+          ]);
+          fakeWrapper.clearProjectPermissions(projectId);
+
+          final permissions = fakeWrapper.getProjectPermissions(projectId);
+
+          expect(permissions, isEmpty);
+        });
+
+        test('clearProjectPermissions only affects specified project', () {
+          fakeWrapper.setProjectPermissions(projectId, ['perm1']);
+          fakeWrapper.setProjectPermissions(otherProjectId, ['perm2']);
+
+          fakeWrapper.clearProjectPermissions(projectId);
+
+          expect(fakeWrapper.getProjectPermissions(projectId), isEmpty);
+          expect(
+            fakeWrapper.getProjectPermissions(otherProjectId),
+            contains('perm2'),
+          );
+        });
+
+        test('setInternalUserId updates user ID', () {
+          fakeWrapper.setInternalUserId('user-123');
+
+          expect(fakeWrapper.getInternalUserId(), equals('user-123'));
+        });
+      });
+    });
+
     group('reset', () {
       test(
         'clears addTableData state so tables are empty after reset',
@@ -2170,6 +2455,7 @@ void main() {
         fakeWrapper.shouldThrowOnDeleteMatch = true;
         fakeWrapper.shouldThrowOnUpsert = true;
         fakeWrapper.shouldThrowOnRpc = true;
+        fakeWrapper.shouldThrowOnRefreshSession = true;
         fakeWrapper.shouldReturnEmptyOnSelectMatch = true;
         fakeWrapper.signInErrorMessage = 'Sign in failed';
         fakeWrapper.signUpErrorMessage = 'Sign up failed';
@@ -2185,6 +2471,7 @@ void main() {
         fakeWrapper.deleteErrorMessage = 'Delete failed';
         fakeWrapper.deleteMatchErrorMessage = 'Delete match failed';
         fakeWrapper.rpcErrorMessage = 'RPC failed';
+        fakeWrapper.refreshSessionErrorMessage = 'Refresh session failed';
         fakeWrapper.selectExceptionType = SupabaseExceptionType.postgrest;
         fakeWrapper.selectMultipleExceptionType = SupabaseExceptionType.socket;
         fakeWrapper.selectMatchExceptionType = SupabaseExceptionType.socket;
@@ -2194,6 +2481,7 @@ void main() {
         fakeWrapper.deleteExceptionType = SupabaseExceptionType.type;
         fakeWrapper.deleteMatchExceptionType = SupabaseExceptionType.type;
         fakeWrapper.rpcExceptionType = SupabaseExceptionType.postgrest;
+        fakeWrapper.refreshSessionExceptionType = SupabaseExceptionType.auth;
         fakeWrapper.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
         fakeWrapper.shouldReturnNullUser = true;
         fakeWrapper.shouldReturnNullOnSelect = true;
@@ -2231,6 +2519,7 @@ void main() {
         expect(fakeWrapper.shouldThrowOnDeleteMatch, isFalse);
         expect(fakeWrapper.shouldThrowOnUpsert, isFalse);
         expect(fakeWrapper.shouldThrowOnRpc, isFalse);
+        expect(fakeWrapper.shouldThrowOnRefreshSession, isFalse);
         expect(fakeWrapper.shouldReturnEmptyOnSelectMatch, isFalse);
         expect(fakeWrapper.signInErrorMessage, isNull);
         expect(fakeWrapper.signUpErrorMessage, isNull);
@@ -2246,6 +2535,7 @@ void main() {
         expect(fakeWrapper.deleteErrorMessage, isNull);
         expect(fakeWrapper.deleteMatchErrorMessage, isNull);
         expect(fakeWrapper.rpcErrorMessage, isNull);
+        expect(fakeWrapper.refreshSessionErrorMessage, isNull);
         expect(fakeWrapper.selectExceptionType, isNull);
         expect(fakeWrapper.selectMultipleExceptionType, isNull);
         expect(fakeWrapper.selectMatchExceptionType, isNull);
@@ -2255,6 +2545,7 @@ void main() {
         expect(fakeWrapper.deleteExceptionType, isNull);
         expect(fakeWrapper.deleteMatchExceptionType, isNull);
         expect(fakeWrapper.rpcExceptionType, isNull);
+        expect(fakeWrapper.refreshSessionExceptionType, isNull);
         expect(fakeWrapper.postgrestErrorCode, isNull);
         expect(fakeWrapper.shouldReturnNullUser, isFalse);
         expect(fakeWrapper.shouldReturnNullOnSelect, isFalse);

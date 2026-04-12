@@ -86,10 +86,11 @@ class ProjectRepositoryImpl implements ProjectRepository {
   @override
   Stream<List<Project>> watchProjects(String userId) {
     _watchUserId = userId;
-    final controller = _projectsController ??= StreamController<List<Project>>.broadcast(
-      onListen: _startWatchingProjectChanges,
-      onCancel: _stopWatchingIfNoListeners,
-    );
+    final controller = _projectsController ??=
+        StreamController<List<Project>>.broadcast(
+          onListen: _startWatchingProjectChanges,
+          onCancel: _stopWatchingIfNoListeners,
+        );
 
     return controller.stream;
   }
