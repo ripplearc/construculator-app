@@ -771,6 +771,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       'filterValue': filterValue,
     });
 
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
     if (shouldThrowOnUpdate) {
       _throwConfiguredException(
         updateExceptionType,
