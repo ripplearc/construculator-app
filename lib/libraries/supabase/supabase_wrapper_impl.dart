@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:stack_trace/stack_trace.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
@@ -9,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 class SupabaseWrapperImpl implements SupabaseWrapper {
   late supabase.SupabaseClient _supabaseClient;
   final EnvLoader _envLoader;
+  static final _logger = AppLogger().tag('SupabaseWrapperImpl');
 
   SupabaseWrapperImpl({required EnvLoader envLoader}) : _envLoader = envLoader;
 
@@ -268,5 +270,72 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
   @override
   Future<T> rpc<T>(String functionName, {Map<String, dynamic>? params}) async {
     return await _supabaseClient.rpc(functionName, params: params);
+  }
+
+  @override
+  List<String> getProjectPermissions(String projectId) {
+    final user = currentUser;
+    if (user == null) return [];
+
+    final appMetadata = user.appMetadata;
+    final projectsRaw = appMetadata['projects'];
+
+    if (projectsRaw is! Map<String, dynamic>) {
+      if (projectsRaw != null) {
+        _logger.warning(
+          'Invalid JWT structure: projects is not a Map, got ${projectsRaw.runtimeType}',
+        );
+      }
+      return [];
+    }
+
+    final permissionsRaw = projectsRaw[projectId];
+    if (permissionsRaw is! List) {
+      if (permissionsRaw != null) {
+        _logger.warning(
+          'Invalid JWT structure: permissions for project $projectId is not a List, got ${permissionsRaw.runtimeType}',
+        );
+      }
+      return [];
+    }
+
+    final permissions = permissionsRaw.whereType<String>().toList();
+    final droppedCount = permissionsRaw.length - permissions.length;
+    if (droppedCount > 0) {
+      _logger.warning(
+        'Dropped $droppedCount non-String permission entries from JWT for project $projectId',
+      );
+    }
+
+    return permissions;
+  }
+
+  @override
+  bool hasProjectPermission(String projectId, String permissionKey) {
+    return getProjectPermissions(projectId).contains(permissionKey);
+  }
+
+  @override
+  Future<void> refreshSession() async {
+    await _supabaseClient.auth.refreshSession();
+  }
+
+  @override
+  String? getInternalUserId() {
+    final user = currentUser;
+    if (user == null) return null;
+
+    final appMetadata = user.appMetadata;
+    final userId = appMetadata['internal_user_id'];
+
+    if (userId is String) return userId;
+
+    if (userId != null) {
+      _logger.warning(
+        'Invalid JWT structure: internal_user_id is not a String, got ${userId.runtimeType}',
+      );
+    }
+
+    return null;
   }
 }
