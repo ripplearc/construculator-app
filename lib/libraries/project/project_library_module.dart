@@ -1,6 +1,8 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/project/data/current_project_notifier_impl.dart';
+import 'package:construculator/libraries/project/data/data_source/interfaces/permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_data_source.dart';
+import 'package:construculator/libraries/project/data/data_source/local_jwt_project_permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/remote_project_data_source.dart';
 import 'package:construculator/libraries/project/data/repositories/project_repository_impl.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
@@ -33,6 +35,12 @@ void _registerDependencies(Injector i) {
 
   i.addLazySingleton<ProjectDataSource>(
     () => RemoteProjectDataSource(
+      supabaseWrapper: Modular.get<SupabaseWrapper>(),
+    ),
+  );
+
+  i.addLazySingleton<ProjectPermissionDataSource>(
+    () => LocalJwtProjectPermissionDataSource(
       supabaseWrapper: Modular.get<SupabaseWrapper>(),
     ),
   );
