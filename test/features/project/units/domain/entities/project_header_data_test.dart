@@ -76,7 +76,10 @@ void main() {
         final avatarImage = headerData.userAvatarImage;
         expect(avatarImage, isNotNull);
         expect(avatarImage, isA<NetworkImage>());
-        expect((avatarImage as NetworkImage).url, 'https://example.com/avatar.jpg');
+        expect(
+          (avatarImage as NetworkImage).url,
+          'https://example.com/avatar.jpg',
+        );
       });
 
       test('returns null when user profile is null', () {

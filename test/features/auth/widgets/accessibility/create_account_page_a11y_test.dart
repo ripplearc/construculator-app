@@ -3,8 +3,6 @@ import 'package:construculator/features/auth/auth_module.dart';
 import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
 import 'package:construculator/features/auth/presentation/pages/create_account_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
-import 'package:construculator/libraries/config/testing/fake_app_config.dart';
-import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -18,6 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
+import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 
 class _CreateAccountPageA11yTestModule extends Module {
@@ -26,10 +25,10 @@ class _CreateAccountPageA11yTestModule extends Module {
 
   @override
   List<Module> get imports => [
-        RouterTestModule(),
-        ClockTestModule(),
-        AuthModule(appBootstrap),
-      ];
+    RouterTestModule(),
+    ClockTestModule(),
+    AuthModule(appBootstrap),
+  ];
 }
 
 void main() {
@@ -42,9 +41,7 @@ void main() {
     fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     CoreToast.disableTimers();
 
-    final appBootstrap = AppBootstrap(
-      config: FakeAppConfig(),
-      envLoader: FakeEnvLoader(),
+    final appBootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
 
@@ -162,8 +159,9 @@ void main() {
   }
 
   group('CreateAccountPage – accessibility', () {
-    testWidgets('meets a11y guidelines for continue button in both themes',
-        (tester) async {
+    testWidgets('meets a11y guidelines for continue button in both themes', (
+      tester,
+    ) async {
       await renderPage(tester);
       final buttonLabel = l10n().agreeAndContinueButton;
       await setupA11yTest(tester);
@@ -185,24 +183,27 @@ void main() {
       );
     });
 
-    testWidgets('meets a11y guidelines for terms and services link in both themes',
-        (tester) async {
-      await renderPage(tester);
-      final termsLink = l10n().termsAndServicesLink;
-      await setupA11yTest(tester);
+    testWidgets(
+      'meets a11y guidelines for terms and services link in both themes',
+      (tester) async {
+        await renderPage(tester);
+        final termsLink = l10n().termsAndServicesLink;
+        await setupA11yTest(tester);
 
-      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-        tester,
-        (theme) => makeTestableWidget(
-          theme: theme,
-          child: CreateAccountPage(email: testEmail),
-        ),
-        find.text(termsLink),
-      );
-    });
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(
+            theme: theme,
+            child: CreateAccountPage(email: testEmail),
+          ),
+          find.text(termsLink),
+        );
+      },
+    );
 
-    testWidgets('meets a11y guidelines for role selector in both themes',
-        (tester) async {
+    testWidgets('meets a11y guidelines for role selector in both themes', (
+      tester,
+    ) async {
       await renderPage(tester);
       final roleLabelText = l10n().roleLabel;
       await setupA11yTest(tester);
@@ -229,7 +230,8 @@ void main() {
           tester,
           (theme) {
             fakeSupabase.shouldThrowOnInsert = true;
-            fakeSupabase.authErrorCode = SupabaseAuthErrorCode.invalidCredentials;
+            fakeSupabase.authErrorCode =
+                SupabaseAuthErrorCode.invalidCredentials;
             return makeTestableWidget(
               theme: theme,
               child: CreateAccountPage(email: testEmail),

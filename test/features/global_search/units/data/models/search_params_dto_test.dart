@@ -129,8 +129,14 @@ void main() {
       });
 
       test('two instances with different scope are not equal', () {
-        const params1 = SearchParamsDto(query: 'bridge', scope: SearchScopeDto.estimation);
-        const params2 = SearchParamsDto(query: 'bridge', scope: SearchScopeDto.member);
+        const params1 = SearchParamsDto(
+          query: 'bridge',
+          scope: SearchScopeDto.estimation,
+        );
+        const params2 = SearchParamsDto(
+          query: 'bridge',
+          scope: SearchScopeDto.member,
+        );
 
         expect(params1, isNot(equals(params2)));
       });

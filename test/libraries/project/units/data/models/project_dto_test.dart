@@ -134,10 +134,20 @@ void main() {
         DatabaseConstants.idColumn: 'project-123',
         DatabaseConstants.projectNameColumn: 'My Project',
         DatabaseConstants.creatorUserIdColumn: 'creator-1',
-        DatabaseConstants.createdAtColumn:
-            DateTime(2025, 1, 1, 10, 30).toIso8601String(),
-        DatabaseConstants.updatedAtColumn:
-            DateTime(2025, 1, 2, 11, 45).toIso8601String(),
+        DatabaseConstants.createdAtColumn: DateTime(
+          2025,
+          1,
+          1,
+          10,
+          30,
+        ).toIso8601String(),
+        DatabaseConstants.updatedAtColumn: DateTime(
+          2025,
+          1,
+          2,
+          11,
+          45,
+        ).toIso8601String(),
       };
 
       final archived = ProjectDto.fromJson({
@@ -168,10 +178,20 @@ void main() {
         DatabaseConstants.idColumn: 'project-123',
         DatabaseConstants.projectNameColumn: 'My Project',
         DatabaseConstants.creatorUserIdColumn: 'creator-1',
-        DatabaseConstants.createdAtColumn:
-            DateTime(2025, 1, 1, 10, 30).toIso8601String(),
-        DatabaseConstants.updatedAtColumn:
-            DateTime(2025, 1, 2, 11, 45).toIso8601String(),
+        DatabaseConstants.createdAtColumn: DateTime(
+          2025,
+          1,
+          1,
+          10,
+          30,
+        ).toIso8601String(),
+        DatabaseConstants.updatedAtColumn: DateTime(
+          2025,
+          1,
+          2,
+          11,
+          45,
+        ).toIso8601String(),
         DatabaseConstants.statusColumn: 'active',
       };
 
@@ -204,8 +224,14 @@ void main() {
         DatabaseConstants.exportStorageProviderColumn: null,
       }).toDomain();
 
-      expect(googleDriveSnake.exportStorageProvider, StorageProvider.googleDrive);
-      expect(googleDriveCamel.exportStorageProvider, StorageProvider.googleDrive);
+      expect(
+        googleDriveSnake.exportStorageProvider,
+        StorageProvider.googleDrive,
+      );
+      expect(
+        googleDriveCamel.exportStorageProvider,
+        StorageProvider.googleDrive,
+      );
       expect(oneDriveSnake.exportStorageProvider, StorageProvider.oneDrive);
       expect(oneDriveCamel.exportStorageProvider, StorageProvider.oneDrive);
       expect(dropbox.exportStorageProvider, StorageProvider.dropbox);
@@ -245,4 +271,3 @@ void main() {
     });
   });
 }
-

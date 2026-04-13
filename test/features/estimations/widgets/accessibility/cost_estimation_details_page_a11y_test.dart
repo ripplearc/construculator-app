@@ -3,8 +3,7 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
-import 'package:construculator/libraries/config/testing/fake_app_config.dart';
-import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -18,6 +17,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
+import '../../../../utils/fake_app_bootstrap_factory.dart';
 
 class _CostEstimationDetailsPageA11yTestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -52,9 +52,7 @@ void main() {
     clock = FakeClockImpl();
     fakeSupabase = FakeSupabaseWrapper(clock: clock);
 
-    appBootstrap = AppBootstrap(
-      config: FakeAppConfig(),
-      envLoader: FakeEnvLoader(),
+    appBootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
     Modular.init(_CostEstimationDetailsPageA11yTestModule(appBootstrap));
@@ -146,29 +144,28 @@ void main() {
       },
     );
 
-    testWidgets(
-      'meets a11y text contrast for app bar title in both themes',
-      (tester) async {
-        setUpAuthenticatedUser(
-          credentialId: 'test-credential-id',
-          email: 'test@example.com',
-        );
+    testWidgets('meets a11y text contrast for app bar title in both themes', (
+      tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
 
-        await setupA11yTest(tester);
-        await pumpAppAtRoute(tester, testEstimationRoute);
+      await setupA11yTest(tester);
+      await pumpAppAtRoute(tester, testEstimationRoute);
 
-        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-          tester,
-          (theme) => makeApp(theme: theme),
-          find.text('Estimation Details'),
-          checkTextContrast: false,
-          setupAfterPump: (t) async {
-            Modular.to.navigate(testEstimationRoute);
-            await t.pumpAndSettle();
-          },
-        );
-      },
-    );
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        (theme) => makeApp(theme: theme),
+        find.text('Estimation Details'),
+        checkTextContrast: false,
+        setupAfterPump: (t) async {
+          Modular.to.navigate(testEstimationRoute);
+          await t.pumpAndSettle();
+        },
+      );
+    });
 
     testWidgets(
       'meets a11y text contrast for estimation ID text in both themes',

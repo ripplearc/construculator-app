@@ -3,8 +3,6 @@ import 'package:construculator/features/auth/auth_module.dart';
 import 'package:construculator/features/auth/presentation/bloc/enter_password_bloc/enter_password_bloc.dart';
 import 'package:construculator/features/auth/presentation/pages/enter_password_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
-import 'package:construculator/libraries/config/testing/fake_app_config.dart';
-import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -18,6 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
+import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 
 class _EnterPasswordPageA11yTestModule extends Module {
@@ -26,10 +25,10 @@ class _EnterPasswordPageA11yTestModule extends Module {
 
   @override
   List<Module> get imports => [
-        RouterTestModule(),
-        ClockTestModule(),
-        AuthModule(appBootstrap),
-      ];
+    RouterTestModule(),
+    ClockTestModule(),
+    AuthModule(appBootstrap),
+  ];
 }
 
 void main() {
@@ -41,9 +40,7 @@ void main() {
     fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     CoreToast.disableTimers();
 
-    final appBootstrap = AppBootstrap(
-      config: FakeAppConfig(),
-      envLoader: FakeEnvLoader(),
+    final appBootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
 
@@ -102,8 +99,9 @@ void main() {
   }
 
   group('EnterPasswordPage – accessibility', () {
-    testWidgets('meets a11y guidelines for continue button in both themes',
-        (tester) async {
+    testWidgets('meets a11y guidelines for continue button in both themes', (
+      tester,
+    ) async {
       await setupA11yTest(tester);
       await renderPage(tester);
 
@@ -121,23 +119,26 @@ void main() {
       );
     });
 
-    testWidgets('meets a11y guidelines for forgot password link in both themes',
-        (tester) async {
-      await setupA11yTest(tester);
-      await renderPage(tester);
+    testWidgets(
+      'meets a11y guidelines for forgot password link in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        await renderPage(tester);
 
-      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-        tester,
-        (theme) => makeTestableWidget(
-          theme: theme,
-          child: EnterPasswordPage(email: ''),
-        ),
-        find.text(l10n().forgotPasswordTitle),
-      );
-    });
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(
+            theme: theme,
+            child: EnterPasswordPage(email: ''),
+          ),
+          find.text(l10n().forgotPasswordTitle),
+        );
+      },
+    );
 
-    testWidgets('meets a11y guidelines for edit link in both themes',
-        (tester) async {
+    testWidgets('meets a11y guidelines for edit link in both themes', (
+      tester,
+    ) async {
       await setupA11yTest(tester);
       await renderPage(tester);
 
@@ -192,10 +193,12 @@ void main() {
           find.byKey(const Key('toast_close_button')),
           setupAfterPump: (t) async {
             await enterPassword(t, 'WrongPassword123!');
-            await t.tap(find.descendant(
-              of: find.byType(ListView),
-              matching: find.text(l10n().continueButton),
-            ));
+            await t.tap(
+              find.descendant(
+                of: find.byType(ListView),
+                matching: find.text(l10n().continueButton),
+              ),
+            );
             await t.pumpAndSettle();
           },
         );

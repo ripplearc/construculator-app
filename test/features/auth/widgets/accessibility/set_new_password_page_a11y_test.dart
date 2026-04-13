@@ -3,8 +3,7 @@ import 'package:construculator/features/auth/auth_module.dart';
 import 'package:construculator/features/auth/presentation/bloc/set_new_password_bloc/set_new_password_bloc.dart';
 import 'package:construculator/features/auth/presentation/pages/set_new_password_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
-import 'package:construculator/libraries/config/testing/fake_app_config.dart';
-import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -18,6 +17,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
+import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 
 class _SetNewPasswordPageA11yTestModule extends Module {
@@ -26,10 +26,10 @@ class _SetNewPasswordPageA11yTestModule extends Module {
 
   @override
   List<Module> get imports => [
-        RouterTestModule(),
-        ClockTestModule(),
-        AuthModule(appBootstrap),
-      ];
+    RouterTestModule(),
+    ClockTestModule(),
+    AuthModule(appBootstrap),
+  ];
 }
 
 void main() {
@@ -48,9 +48,7 @@ void main() {
     fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     CoreToast.disableTimers();
 
-    final appBootstrap = AppBootstrap(
-      config: FakeAppConfig(),
-      envLoader: FakeEnvLoader(),
+    final appBootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
 
@@ -121,33 +119,36 @@ void main() {
   }
 
   group('SetNewPasswordPage – accessibility', () {
-    testWidgets('meets a11y guidelines for set password button in both themes',
-        (tester) async {
-      const email = 'email@example.com';
-      fakeSupabase.setCurrentUser(createFakeUser(email));
-      await setupA11yTest(tester);
-      await renderPage(tester, email: email);
+    testWidgets(
+      'meets a11y guidelines for set password button in both themes',
+      (tester) async {
+        const email = 'email@example.com';
+        fakeSupabase.setCurrentUser(createFakeUser(email));
+        await setupA11yTest(tester);
+        await renderPage(tester, email: email);
 
-      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-        tester,
-        (theme) {
-          fakeSupabase.setCurrentUser(createFakeUser(email));
-          return makeTestableWidget(
-            theme: theme,
-            child: SetNewPasswordPage(email: email),
-          );
-        },
-        find.text(l10n().setPasswordButton),
-        setupAfterPump: (t) async {
-          await enterNewPassword(t, '@Password123!');
-          await enterConfirmPassword(t, '@Password123!');
-          await t.pumpAndSettle();
-        },
-      );
-    });
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) {
+            fakeSupabase.setCurrentUser(createFakeUser(email));
+            return makeTestableWidget(
+              theme: theme,
+              child: SetNewPasswordPage(email: email),
+            );
+          },
+          find.text(l10n().setPasswordButton),
+          setupAfterPump: (t) async {
+            await enterNewPassword(t, '@Password123!');
+            await enterConfirmPassword(t, '@Password123!');
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
 
-    testWidgets('meets a11y guidelines for new password label in both themes',
-        (tester) async {
+    testWidgets('meets a11y guidelines for new password label in both themes', (
+      tester,
+    ) async {
       await setupA11yTest(tester);
       await renderPage(tester);
 
@@ -161,20 +162,22 @@ void main() {
       );
     });
 
-    testWidgets('meets a11y guidelines for confirm password label in both themes',
-        (tester) async {
-      await setupA11yTest(tester);
-      await renderPage(tester);
+    testWidgets(
+      'meets a11y guidelines for confirm password label in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        await renderPage(tester);
 
-      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-        tester,
-        (theme) => makeTestableWidget(
-          theme: theme,
-          child: SetNewPasswordPage(email: ''),
-        ),
-        find.text(l10n().confirmPasswordLabel),
-      );
-    });
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(
+            theme: theme,
+            child: SetNewPasswordPage(email: ''),
+          ),
+          find.text(l10n().confirmPasswordLabel),
+        );
+      },
+    );
 
     testWidgets(
       'meets a11y guidelines when password too short error shown in both themes',
