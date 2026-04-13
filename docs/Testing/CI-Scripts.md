@@ -262,6 +262,61 @@ MacOS developers should always verify iOS builds pass locally before creating PR
 
 If any required tool is missing, the script fails fast.
 
+### Environment-Specific Configuration
+
+The CI builds use environment-specific configuration files generated from Codemagic environment groups. This allows different builds (dev, qa, prod) to use different API endpoints, api keys, and service configurations without hardcoding secrets.
+
+**How it works:**
+
+1. **Environment groups in Codemagic UI** store variables like `SENTRY_DSN`, `API_URL`, `SUPABASE_URL`, etc.
+2. **Pre-build script** (`scripts/ci/generate_env_file.sh`) reads these variables and generates the appropriate `.env` file.
+3. **Build command** passes `--dart-define=ENVIRONMENT=xxx` to select which config the app loads at runtime.
+
+**Environment groups:**
+
+- `construculator_dev` → generates `assets/env/.env.dev` (used by fishfood builds)
+- `construculator_qa` → generates `assets/env/.env.qa` (used by dogfood builds)
+- `construculator_prod` → generates `assets/env/.env.prod` (production builds)
+
+**Workflow mapping:**
+
+- `comprehensive-check`, `periodic-check`, `ios-debug-build` → use `construculator_dev`
+- `dogfood-release` → uses `construculator_qa`
+
+**Adding new environment variables:**
+
+1. Update `scripts/ci/generate_env_file.sh` to read and write the new variable to the `.env` file.
+2. Add the variable to each environment group in Codemagic UI:
+   - Navigate to: Codemagic → construculator-app → Environment variables → Select group
+   - Select the environment group (`construculator_dev`, `construculator_qa`, or `construculator_prod`)
+   - Enter variable name (matches script expectations: `SENTRY_DSN`, `API_URL`, etc.)
+   - Enter value (environment-specific)
+   - Mark as "Secure" if it contains secrets (API keys, tokens, DSNs)
+   - Save
+
+
+Example variables in `construculator_dev`:
+
+```
+ENVIRONMENT=dev
+SENTRY_DSN=           (empty - Sentry disabled in dev)
+API_URL=http://localhost:8000/api
+SUPABASE_URL=http://localhost:54321
+DEBUG_MODE=true
+ANALYTICS_ENABLED=false
+```
+
+Example variables in `construculator_qa`:
+
+```
+ENVIRONMENT=qa
+SENTRY_DSN=https://...@sentry.io/...
+API_URL=https://qa-api.construculator.com/api
+SUPABASE_URL=https://qa-project.supabase.co
+DEBUG_MODE=false
+ANALYTICS_ENABLED=true
+```
+
 ### Common environment variables
 
 - `ARC_CODE_COVERAGE_TARGET`: standard required coverage.
