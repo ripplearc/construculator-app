@@ -17,6 +17,7 @@ import 'package:construculator/features/estimation/presentation/bloc/delete_cost
 import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_details_page.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
+import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter/material.dart';
@@ -77,7 +78,10 @@ class EstimationModule extends Module {
   ];
 
   @override
-  List<Module> get imports => [AuthModule(appBootstrap)];
+  List<Module> get imports => [
+        AuthModule(appBootstrap),
+        ProjectLibraryModule(appBootstrap),
+      ];
 
   @override
   void binds(Injector i) {
@@ -117,10 +121,16 @@ class EstimationModule extends Module {
       () => DeleteCostEstimationBloc(costEstimationRepository: i.get()),
     );
     i.add<ChangeLockStatusBloc>(
-      () => ChangeLockStatusBloc(repository: i.get()),
+      () => ChangeLockStatusBloc(
+        repository: i.get(),
+        projectRepository: i.get(),
+      ),
     );
     i.add<RenameEstimationBloc>(
-      () => RenameEstimationBloc(repository: i.get()),
+      () => RenameEstimationBloc(
+        repository: i.get(),
+        projectRepository: i.get(),
+      ),
     );
     i.add<CostEstimationLogBloc>(
       () => CostEstimationLogBloc(repository: i.get()),
