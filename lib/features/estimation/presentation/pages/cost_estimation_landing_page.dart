@@ -473,6 +473,8 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
         return l10n.connectionError;
       case EstimationErrorType.authenticationError:
         return l10n.userIdNotAvailable;
+      case EstimationErrorType.permissionDenied:
+        return l10n.permissionDenied;
       default:
         return l10n.unexpectedErrorMessage;
     }
