@@ -10,12 +10,10 @@ class EstimationRenameSheet extends StatefulWidget {
   const EstimationRenameSheet({
     super.key,
     required this.estimationId,
-    required this.projectId,
     required this.currentName,
   });
 
   final String estimationId;
-  final String projectId;
   final String currentName;
 
   @override
@@ -50,7 +48,6 @@ class _EstimationRenameSheetState extends State<EstimationRenameSheet> {
       RenameEstimationRequested(
         estimationId: widget.estimationId,
         newName: _nameController.text,
-        projectId: widget.projectId,
       ),
     );
   }
