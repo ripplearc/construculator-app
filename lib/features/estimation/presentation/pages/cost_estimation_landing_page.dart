@@ -135,7 +135,6 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
                   ChangeLockStatusRequested(
                     estimationId: estimation.id,
                     isLocked: isLocked,
-                    projectId: widget.projectId,
                   ),
                 );
               },
