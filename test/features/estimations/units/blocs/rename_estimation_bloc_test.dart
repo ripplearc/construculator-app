@@ -3,6 +3,9 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/project/domain/permission_constants.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -18,6 +21,7 @@ void main() {
   group('RenameEstimationBloc', () {
     late RenameEstimationBloc bloc;
     late FakeSupabaseWrapper fakeSupabaseWrapper;
+    late FakeProjectRepository fakeProjectRepository;
     late FakeClockImpl fakeClock;
 
     const testProjectId = 'test-project-123';
@@ -34,6 +38,10 @@ void main() {
 
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+
+      Modular.replaceInstance<ProjectRepository>(FakeProjectRepository());
+      fakeProjectRepository =
+          Modular.get<ProjectRepository>() as FakeProjectRepository;
     });
 
     tearDownAll(() {
@@ -42,6 +50,9 @@ void main() {
 
     setUp(() {
       fakeSupabaseWrapper.reset();
+      fakeProjectRepository.setProjectPermissions(testProjectId, [
+        PermissionConstants.editCostEstimation,
+      ]);
       bloc = Modular.get<RenameEstimationBloc>();
     });
 
@@ -352,6 +363,101 @@ void main() {
             equals('Retried Name'),
           ),
         ],
+      );
+    });
+
+    group('Permission checks', () {
+      blocTest<RenameEstimationBloc, RenameEstimationState>(
+        'should emit permission denied failure when user lacks edit permission',
+        build: () {
+          fakeProjectRepository.setProjectPermissions(testProjectId, []);
+          final estimationMap =
+              EstimationTestDataMapFactory.createFakeEstimationData(
+                id: testEstimationId,
+                projectId: testProjectId,
+                estimateName: testEstimationName,
+              );
+          seedEstimationTable([estimationMap]);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          const RenameEstimationRequested(
+            estimationId: testEstimationId,
+            newName: testNewName,
+            projectId: testProjectId,
+          ),
+        ),
+        expect: () => [
+          isA<RenameEstimationFailure>()
+              .having(
+                (s) => s.failure,
+                'failure',
+                isA<EstimationFailure>().having(
+                  (f) => f.errorType,
+                  'errorType',
+                  EstimationErrorType.permissionDenied,
+                ),
+              )
+              .having((s) => s.isSaveEnabled, 'isSaveEnabled', isTrue),
+        ],
+      );
+
+      blocTest<RenameEstimationBloc, RenameEstimationState>(
+        'should succeed when user has edit permission',
+        build: () {
+          fakeProjectRepository.setProjectPermissions(testProjectId, [
+            PermissionConstants.editCostEstimation,
+          ]);
+          final estimationMap =
+              EstimationTestDataMapFactory.createFakeEstimationData(
+                id: testEstimationId,
+                projectId: testProjectId,
+                estimateName: testEstimationName,
+              );
+          seedEstimationTable([estimationMap]);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          const RenameEstimationRequested(
+            estimationId: testEstimationId,
+            newName: testNewName,
+            projectId: testProjectId,
+          ),
+        ),
+        expect: () => [
+          isA<RenameEstimationInProgress>(),
+          isA<RenameEstimationSuccess>().having(
+            (s) => s.newName,
+            'newName',
+            equals(testNewName),
+          ),
+        ],
+      );
+
+      blocTest<RenameEstimationBloc, RenameEstimationState>(
+        'should not proceed to rename when permission denied',
+        build: () {
+          fakeProjectRepository.setProjectPermissions(testProjectId, []);
+          final estimationMap =
+              EstimationTestDataMapFactory.createFakeEstimationData(
+                id: testEstimationId,
+                projectId: testProjectId,
+                estimateName: testEstimationName,
+              );
+          seedEstimationTable([estimationMap]);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          const RenameEstimationRequested(
+            estimationId: testEstimationId,
+            newName: testNewName,
+            projectId: testProjectId,
+          ),
+        ),
+        verify: (_) {
+          final updateCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
+          expect(updateCalls, isEmpty);
+        },
       );
     });
   });
