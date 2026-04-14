@@ -105,6 +105,7 @@ pre_check() {
   # Changed tests
   local changed_tests=$(git diff --name-only --diff-filter=d "$base_commit" -- \
     "test/features/**/units/*.dart" \
+    "test/app/**/units test/app/**/widgets/*.dart" \
     "test/features/**/widgets/*.dart" \
     "test/libraries/**/units/*.dart")
 
@@ -195,6 +196,7 @@ comprehensive_check() {
     fvm flutter test \
     test/libraries/**/units \
     test/features/**/units \
+    test/app/**/units test/app/**/widgets \
     test/features/**/widgets \
     --coverage --machine > test-results/flutter.json
 
