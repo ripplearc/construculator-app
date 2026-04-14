@@ -1068,5 +1068,10 @@
   "loadMoreLogsError": "Failed to load more logs",
   "@loadMoreLogsError": {
     "description": "Error message shown when loading more logs fails"
+  },
+  "permissionDenied": "You don't have permission to perform this action",
+  "@permissionDenied": {
+    "description": "Error message shown when user lacks permission for an operation",
+    "context": "N/A"
   }
 }

@@ -1293,6 +1293,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to load more logs'**
   String get loadMoreLogsError;
+
+  /// Error message shown when user lacks permission for an operation
+  ///
+  /// In en, this message translates to:
+  /// **'You don\'t have permission to perform this action'**
+  String get permissionDenied;
 }
 
 class _AppLocalizationsDelegate
