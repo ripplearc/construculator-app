@@ -183,7 +183,6 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           value: renameEstimationBloc,
           child: EstimationRenameSheet(
             estimationId: estimation.id,
-            projectId: widget.projectId,
             currentName: estimation.estimateName,
           ),
         );

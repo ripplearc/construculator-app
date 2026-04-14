@@ -104,7 +104,6 @@ void main() {
       PermissionConstants.deleteCostEstimation,
       PermissionConstants.lockCostEstimation,
     ]);
-    fakeCurrentProjectNotifier.reset(projectId: testProjectId);
     fakeSupabase.reset();
     fakeAppRouter.reset();
   });

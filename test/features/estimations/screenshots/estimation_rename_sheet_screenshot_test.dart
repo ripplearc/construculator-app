@@ -2,6 +2,8 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/estimation_rename_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -14,11 +16,17 @@ import '../../../utils/screenshot/font_loader.dart';
 void main() {
   const size = Size(390, 300);
   const ratio = 1.0;
+  const testProjectId = 'test-project-123';
+  late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
+
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
     await loadAppFonts();
     Modular.init(EstimationModule(FakeAppBootstrapFactory.create()));
+
+    fakeCurrentProjectNotifier = FakeCurrentProjectNotifier(initialProjectId: testProjectId);
+    Modular.replaceInstance<CurrentProjectNotifier>(fakeCurrentProjectNotifier);
   });
 
   tearDownAll(() {
@@ -29,7 +37,6 @@ void main() {
     Future<void> pumpRenameSheet({
       required WidgetTester tester,
       required String estimationId,
-      required String projectId,
       required String initialName,
     }) async {
       await tester.pumpWidget(
@@ -43,7 +50,6 @@ void main() {
               value: Modular.get<RenameEstimationBloc>(),
               child: EstimationRenameSheet(
                 estimationId: estimationId,
-                projectId: projectId,
                 currentName: initialName,
               ),
             ),
@@ -62,7 +68,6 @@ void main() {
       await pumpRenameSheet(
         tester: tester,
         estimationId: 'test-estimation-123',
-        projectId: 'test-project-123',
         initialName: 'Existing Estimation Name',
       );
 
@@ -83,7 +88,6 @@ void main() {
         await pumpRenameSheet(
           tester: tester,
           estimationId: 'test-estimation-123',
-          projectId: 'test-project-123',
           initialName: 'Old Name',
         );
 
