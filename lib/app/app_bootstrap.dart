@@ -1,5 +1,6 @@
 import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
+import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 
 /// The application requires that certain services—such as the Supabase client—are fully
@@ -35,6 +36,7 @@ import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.da
 /// - [Config] — Manages environment selection and config loading
 /// - [EnvLoader] — Loads `.env` or secret configuration
 /// - [SupabaseWrapper] — Initializes and exposes the Supabase client
+/// - [SentryWrapper] — Initializes error tracking and user context
 ///
 /// These are grouped into [AppBootstrap] and passed to the [AppModule].
 ///
@@ -51,15 +53,21 @@ import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.da
 /// final supabaseWrapper = SupabaseWrapperImpl(envLoader: envLoader);
 /// await supabaseWrapper.initialize();
 ///
+/// final sentryWrapper = SentryWrapperImpl(envLoader: envLoader, config: config);
+///
 /// final bootstrap = AppBootstrap(
 ///   config: config,
 ///   envLoader: envLoader,
 ///   supabaseWrapper: supabaseWrapper,
+///   sentryWrapper: sentryWrapper,
 /// );
 ///
-/// runApp(ModularApp(
-///   module: AppModule(bootstrap),
-///   child: const AppWidget(),
+/// // Initialize Sentry SDK and wrap app execution for error tracking
+/// await sentryWrapper.initialize(() => runApp(
+///   ModularApp(
+///     module: AppModule(bootstrap),
+///     child: const AppWidget(),
+///   ),
 /// ));
 /// ```
 ///
@@ -73,12 +81,19 @@ class AppBootstrap {
   /// The app config, required by supabase wrapper for initialization.
   final Config config;
 
-  /// The supabase wrapper, has to be instantiated before passing to the app module.
+  /// The Supabase wrapper, must be fully initialized before passing to the app module.
+  /// Used for authentication, database operations, and real-time subscriptions.
   final SupabaseWrapper supabaseWrapper;
+
+  /// The Sentry wrapper, must be created before app initialization.
+  /// Wraps app execution to capture errors, tracks user context, and logs breadcrumbs.
+  /// Its [initialize] method must be called with the app runner to enable error tracking.
+  final SentryWrapper sentryWrapper;
 
   AppBootstrap({
     required this.envLoader,
     required this.config,
     required this.supabaseWrapper,
+    required this.sentryWrapper,
   });
 }

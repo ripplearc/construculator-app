@@ -24,6 +24,7 @@ import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart'
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
+import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
@@ -39,6 +40,7 @@ class AuthTestModule extends Module {
         envLoader: FakeEnvLoader(),
         config: FakeAppConfig(),
         supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
+        sentryWrapper: FakeSentryWrapper(),
       ),
     ),
     RouterTestModule(),

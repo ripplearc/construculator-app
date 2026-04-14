@@ -27,8 +27,12 @@ class AuthLibraryModule extends Module {
   void exportedBinds(Injector i) {
     i.addLazySingleton<AuthNotifier>(() => authNotifierImpl);
     i.addLazySingleton<AuthManager>(
-      () =>
-          AuthManagerImpl(wrapper: i(), authRepository: i(), authNotifier: i()),
+      () => AuthManagerImpl(
+        wrapper: i(),
+        authRepository: i(),
+        authNotifier: i(),
+        sentryWrapper: appBootstrap.sentryWrapper,
+      ),
     );
   }
 }
