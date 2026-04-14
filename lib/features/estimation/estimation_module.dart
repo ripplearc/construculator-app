@@ -17,6 +17,7 @@ import 'package:construculator/features/estimation/presentation/bloc/rename_esti
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_details_page.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/time/clock_module.dart';
@@ -78,7 +79,11 @@ class EstimationModule extends Module {
   ];
 
   @override
-  List<Module> get imports => [AuthLibraryModule(appBootstrap), ClockModule()];
+  List<Module> get imports => [
+    AuthLibraryModule(appBootstrap),
+    ClockModule(),
+    ProjectLibraryModule(appBootstrap),
+  ];
 
   @override
   void binds(Injector i) {
@@ -122,8 +127,11 @@ class EstimationModule extends Module {
           ChangeLockStatusBloc(repository: i.get(), projectRepository: i.get()),
     );
     i.add<RenameEstimationBloc>(
-      () =>
-          RenameEstimationBloc(repository: i.get(), projectRepository: i.get()),
+      () => RenameEstimationBloc(
+        repository: i.get(),
+        projectRepository: i.get(),
+        currentProjectNotifier: i.get(),
+      ),
     );
     i.add<CostEstimationLogBloc>(
       () => CostEstimationLogBloc(repository: i.get()),

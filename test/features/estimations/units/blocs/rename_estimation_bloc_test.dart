@@ -5,6 +5,8 @@ import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/project/domain/permission_constants.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -23,6 +25,7 @@ void main() {
     late FakeSupabaseWrapper fakeSupabaseWrapper;
     late FakeProjectRepository fakeProjectRepository;
     late FakeClockImpl fakeClock;
+    late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
 
     const testProjectId = 'test-project-123';
     const testEstimationId = 'test-estimation-123';
@@ -42,6 +45,13 @@ void main() {
       Modular.replaceInstance<ProjectRepository>(FakeProjectRepository());
       fakeProjectRepository =
           Modular.get<ProjectRepository>() as FakeProjectRepository;
+
+      fakeCurrentProjectNotifier = FakeCurrentProjectNotifier(
+        initialProjectId: testProjectId,
+      );
+      Modular.replaceInstance<CurrentProjectNotifier>(
+        fakeCurrentProjectNotifier,
+      );
     });
 
     tearDownAll(() {
@@ -50,6 +60,7 @@ void main() {
 
     setUp(() {
       fakeSupabaseWrapper.reset();
+      fakeCurrentProjectNotifier.reset(projectId: testProjectId);
       fakeProjectRepository.setProjectPermissions(testProjectId, [
         PermissionConstants.editCostEstimation,
       ]);
@@ -165,6 +176,37 @@ void main() {
 
     group('RenameEstimationRequested', () {
       blocTest<RenameEstimationBloc, RenameEstimationState>(
+        'should emit unexpected failure when current project is unavailable',
+        build: () {
+          fakeCurrentProjectNotifier.reset(projectId: null);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          const RenameEstimationRequested(
+            estimationId: testEstimationId,
+            newName: testNewName,
+          ),
+        ),
+        expect: () => [
+          isA<RenameEstimationFailure>()
+              .having(
+                (s) => s.failure,
+                'failure',
+                isA<EstimationFailure>().having(
+                  (f) => f.errorType,
+                  'errorType',
+                  EstimationErrorType.unexpectedError,
+                ),
+              )
+              .having((s) => s.isSaveEnabled, 'isSaveEnabled', isTrue),
+        ],
+        verify: (_) {
+          final updateCalls = fakeSupabaseWrapper.getMethodCallsFor('update');
+          expect(updateCalls, isEmpty);
+        },
+      );
+
+      blocTest<RenameEstimationBloc, RenameEstimationState>(
         'should emit in progress then success with new name when renaming succeeds',
         build: () {
           final estimationMap =
@@ -180,7 +222,6 @@ void main() {
           const RenameEstimationRequested(
             estimationId: testEstimationId,
             newName: testNewName,
-            projectId: testProjectId,
           ),
         ),
         expect: () => [
@@ -209,7 +250,6 @@ void main() {
           const RenameEstimationRequested(
             estimationId: testEstimationId,
             newName: '  $testNewName  ',
-            projectId: testProjectId,
           ),
         ),
         expect: () => [
@@ -234,7 +274,6 @@ void main() {
           const RenameEstimationRequested(
             estimationId: testEstimationId,
             newName: testNewName,
-            projectId: testProjectId,
           ),
         ),
         expect: () => [
@@ -265,7 +304,6 @@ void main() {
           const RenameEstimationRequested(
             estimationId: testEstimationId,
             newName: testNewName,
-            projectId: testProjectId,
           ),
         ),
         expect: () => [
@@ -298,7 +336,6 @@ void main() {
           const RenameEstimationRequested(
             estimationId: testEstimationId,
             newName: testNewName,
-            projectId: testProjectId,
           ),
         ),
         expect: () => [
@@ -338,7 +375,6 @@ void main() {
             const RenameEstimationRequested(
               estimationId: testEstimationId,
               newName: testNewName,
-              projectId: testProjectId,
             ),
           );
           await bloc.stream.firstWhere(
@@ -349,7 +385,6 @@ void main() {
             const RenameEstimationRequested(
               estimationId: testEstimationId,
               newName: 'Retried Name',
-              projectId: testProjectId,
             ),
           );
         },
@@ -384,7 +419,6 @@ void main() {
           const RenameEstimationRequested(
             estimationId: testEstimationId,
             newName: testNewName,
-            projectId: testProjectId,
           ),
         ),
         expect: () => [
@@ -421,7 +455,6 @@ void main() {
           const RenameEstimationRequested(
             estimationId: testEstimationId,
             newName: testNewName,
-            projectId: testProjectId,
           ),
         ),
         expect: () => [
@@ -451,7 +484,6 @@ void main() {
           const RenameEstimationRequested(
             estimationId: testEstimationId,
             newName: testNewName,
-            projectId: testProjectId,
           ),
         ),
         verify: (_) {

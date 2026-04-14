@@ -3,6 +3,7 @@ import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/project/domain/permission_constants.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -13,12 +14,15 @@ class RenameEstimationBloc
     extends Bloc<RenameEstimationEvent, RenameEstimationState> {
   final CostEstimationRepository _repository;
   final ProjectRepository _projectRepository;
+  final CurrentProjectNotifier _currentProjectNotifier;
 
   RenameEstimationBloc({
     required CostEstimationRepository repository,
     required ProjectRepository projectRepository,
+    required CurrentProjectNotifier currentProjectNotifier,
   }) : _repository = repository,
        _projectRepository = projectRepository,
+       _currentProjectNotifier = currentProjectNotifier,
        super(const RenameEstimationInitial()) {
     on<RenameEstimationReset>(_onReset);
     on<RenameEstimationTextChanged>(_onTextChanged);
@@ -44,11 +48,24 @@ class RenameEstimationBloc
     RenameEstimationRequested event,
     Emitter<RenameEstimationState> emit,
   ) async {
+    final projectId = _currentProjectNotifier.currentProjectId;
     final trimmedName = event.newName.trim();
     final isSaveEnabled = trimmedName.isNotEmpty;
 
+    if (projectId == null) {
+      emit(
+        RenameEstimationFailure(
+          const EstimationFailure(
+            errorType: EstimationErrorType.unexpectedError,
+          ),
+          isSaveEnabled: isSaveEnabled,
+        ),
+      );
+      return;
+    }
+
     final hasPermission = _projectRepository.hasProjectPermission(
-      event.projectId,
+      projectId,
       PermissionConstants.editCostEstimation,
     );
 
@@ -69,7 +86,7 @@ class RenameEstimationBloc
     final result = await _repository.renameEstimation(
       estimationId: event.estimationId,
       newName: trimmedName,
-      projectId: event.projectId,
+      projectId: projectId,
     );
 
     result.fold(
