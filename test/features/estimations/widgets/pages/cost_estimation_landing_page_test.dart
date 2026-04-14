@@ -17,6 +17,7 @@ import 'package:construculator/libraries/project/domain/permission_constants.dar
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -70,6 +71,7 @@ void main() {
   late AppBootstrap appBootstrap;
   late FakeAppRouter fakeAppRouter;
   late FakeProjectRepository fakeProjectRepository;
+  late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
 
   const debounceWaitTime = Duration(milliseconds: 400);
   const testEstimationRoute = '/test-landing/$testProjectId';
@@ -88,7 +90,9 @@ void main() {
 
     fakeProjectRepository = FakeProjectRepository();
     Modular.replaceInstance<ProjectRepository>(fakeProjectRepository);
-    Modular.get<CurrentProjectNotifier>().setCurrentProjectId(testProjectId);
+    fakeCurrentProjectNotifier = FakeCurrentProjectNotifier();
+    Modular.replaceInstance<CurrentProjectNotifier>(fakeCurrentProjectNotifier);
+    fakeCurrentProjectNotifier.setCurrentProjectId(testProjectId);
   });
 
   tearDownAll(() {
@@ -104,6 +108,7 @@ void main() {
       PermissionConstants.deleteCostEstimation,
       PermissionConstants.lockCostEstimation,
     ]);
+    fakeCurrentProjectNotifier.reset(projectId: testProjectId);
     fakeSupabase.reset();
     fakeAppRouter.reset();
   });
