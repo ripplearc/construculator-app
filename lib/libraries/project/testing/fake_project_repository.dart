@@ -24,6 +24,9 @@ class FakeProjectRepository implements ProjectRepository {
   /// Last emitted project list for deduplication (matches real impl behavior).
   List<Project>? _lastEmitted;
 
+  /// Tracks permissions by project ID for testing
+  final Map<String, List<String>> _projectPermissions = {};
+
   /// Controls whether [getProject] throws an exception
   bool shouldThrowOnGetProject = false;
 
@@ -173,6 +176,7 @@ class FakeProjectRepository implements ProjectRepository {
     _projects.clear();
     _accessibleProjects.clear();
     _methodCalls.clear();
+    _projectPermissions.clear();
     _lastEmitted = null;
     _emitProjectsUpdate();
   }
@@ -247,10 +251,40 @@ class FakeProjectRepository implements ProjectRepository {
 
     clearAllData();
     clearMethodCalls();
+    _projectPermissions.clear();
   }
 
   @override
   void dispose() {
     _projectsController.close();
+  }
+
+  @override
+  List<String> getProjectPermissions(String projectId) {
+    _methodCalls.add({
+      'method': 'getProjectPermissions',
+      'projectId': projectId,
+    });
+    return List<String>.from(_projectPermissions[projectId] ?? []);
+  }
+
+  @override
+  bool hasProjectPermission(String projectId, String permissionKey) {
+    _methodCalls.add({
+      'method': 'hasProjectPermission',
+      'projectId': projectId,
+      'permissionKey': permissionKey,
+    });
+    return _projectPermissions[projectId]?.contains(permissionKey) ?? false;
+  }
+
+  /// Sets permissions for a specific project (for testing)
+  void setProjectPermissions(String projectId, List<String> permissions) {
+    _projectPermissions[projectId] = List<String>.from(permissions);
+  }
+
+  /// Clears permissions for a specific project (for testing)
+  void clearProjectPermissions(String projectId) {
+    _projectPermissions.remove(projectId);
   }
 }
