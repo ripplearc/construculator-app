@@ -29,4 +29,44 @@ abstract class ProjectRepository {
   /// Implementations should cancel active subscriptions and close any
   /// internal controllers to avoid memory leaks.
   void dispose();
+
+  /// Get all permissions for a specific project
+  ///
+  /// Returns a list of permission keys (e.g., ['edit_cost_estimation', 'get_cost_estimations'])
+  /// that the current user has for the specified project.
+  ///
+  /// Returns an empty list if:
+  /// - User is not authenticated
+  /// - User has no permissions for the project
+  /// - Project ID not found
+  ///
+  /// **⚠️ IMPORTANT - Permission Staleness:**
+  /// Permissions are cached and may become stale after permission-changing operations:
+  /// - Accepting project invitations
+  /// - Role changes
+  /// - Permission updates by project admins
+  ///
+  /// The repository automatically refreshes cached permissions periodically.
+  /// For immediate updates after permission changes, consider implementing
+  /// a manual refresh mechanism in your application layer.
+  ///
+  /// [projectId] The UUID of the project
+  List<String> getProjectPermissions(String projectId);
+
+  /// Check if current user has specific permission for project
+  ///
+  /// Convenience method that checks if [permissionKey] exists in the
+  /// permissions list for [projectId].
+  ///
+  /// **⚠️ IMPORTANT - Permission Staleness:**
+  /// Permissions are cached and may become stale after permission-changing
+  /// operations (accepting invitations, role changes, etc.).
+  ///
+  /// The repository automatically refreshes cached permissions periodically.
+  /// For immediate updates after permission changes, consider implementing
+  /// a manual refresh mechanism in your application layer.
+  ///
+  /// [projectId] The UUID of the project
+  /// [permissionKey] The permission key to check (e.g., 'edit_cost_estimation')
+  bool hasProjectPermission(String projectId, String permissionKey);
 }
