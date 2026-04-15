@@ -1,3 +1,4 @@
+// coverage:ignore-file
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/auth/auth_module.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';

@@ -106,7 +106,9 @@ pre_check() {
   local changed_tests=$(git diff --name-only --diff-filter=d "$base_commit" -- \
     "test/features/**/units/*.dart" \
     "test/features/**/widgets/*.dart" \
-    "test/libraries/**/units/*.dart")
+    "test/libraries/**/units/*.dart" \
+    "test/app/**/units/*.dart" \
+    "test/app/**/widgets/*.dart")
 
   if [[ -z "$changed_tests" ]]; then
     echo "✅ No tests changed"
@@ -195,6 +197,8 @@ comprehensive_check() {
     fvm flutter test \
     test/libraries/**/units \
     test/features/**/units \
+    test/app/**/units \
+    test/app/**/widgets \
     test/features/**/widgets \
     --coverage --machine > test-results/flutter.json
 
