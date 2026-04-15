@@ -1235,6 +1235,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     shouldThrowOnGetUserProfile = false;
     _nextId = 1;
 
+    _projectPermissions.clear();
+    _internalUserId = null;
+
     clearAllData();
     clearMethodCalls();
     clearRpcResponses();

@@ -1,7 +1,4 @@
-/// Data source for accessing user permission data.
-///
-/// This abstraction provides access to permission information stored in JWT claims
-/// or other authentication/authorization sources.
+/// Provides access to project-scoped permission data for the current user.
 abstract class ProjectPermissionDataSource {
   /// Get all permissions for a specific project.
   ///
