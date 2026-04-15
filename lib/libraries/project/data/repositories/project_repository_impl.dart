@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/project/data/data_source/interfaces/permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_data_source.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
@@ -11,6 +12,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 /// Remote implementation of the project repository.
 class ProjectRepositoryImpl implements ProjectRepository {
   final ProjectDataSource _projectDataSource;
+  final ProjectPermissionDataSource _permissionDataSource;
   final Clock _clock;
   static final _logger = AppLogger().tag('ProjectRepositoryImpl');
   StreamController<List<Project>>? _projectsController;
@@ -22,8 +24,10 @@ class ProjectRepositoryImpl implements ProjectRepository {
 
   ProjectRepositoryImpl({
     required ProjectDataSource projectDataSource,
+    required ProjectPermissionDataSource permissionDataSource,
     Clock? clock,
   }) : _projectDataSource = projectDataSource,
+       _permissionDataSource = permissionDataSource,
        _clock = clock ?? Modular.get<Clock>();
 
   @override
@@ -198,5 +202,15 @@ class ProjectRepositoryImpl implements ProjectRepository {
       }
     }
     return true;
+  }
+
+  @override
+  List<String> getProjectPermissions(String projectId) {
+    return _permissionDataSource.getProjectPermissions(projectId);
+  }
+
+  @override
+  bool hasProjectPermission(String projectId, String permissionKey) {
+    return _permissionDataSource.hasProjectPermission(projectId, permissionKey);
   }
 }
