@@ -4,6 +4,7 @@ import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/utils/jwt_parser.dart';
 import 'package:stack_trace/stack_trace.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
@@ -274,12 +275,28 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
 
   @override
   List<String> getProjectPermissions(String projectId) {
-    final user = currentUser;
-    if (user == null) return [];
+    final session = _supabaseClient.auth.currentSession;
+    if (session == null) return [];
 
-    final appMetadata = user.appMetadata;
+    final payload = JwtParser.parsePayload(session.accessToken);
+    if (payload == null) {
+      _logger.warning(
+        'Failed to get project permissions for $projectId: JWT parsing failed',
+      );
+      return [];
+    }
+
+    final appMetadata = payload['app_metadata'];
+    if (appMetadata is! Map<String, dynamic>) {
+      if (appMetadata != null) {
+        _logger.warning(
+          'Invalid JWT structure: app_metadata is not a Map, got ${appMetadata.runtimeType}',
+        );
+      }
+      return [];
+    }
+
     final projectsRaw = appMetadata['projects'];
-
     if (projectsRaw is! Map<String, dynamic>) {
       if (projectsRaw != null) {
         _logger.warning(
@@ -322,12 +339,26 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
 
   @override
   String? getInternalUserId() {
-    final user = currentUser;
-    if (user == null) return null;
+    final session = _supabaseClient.auth.currentSession;
+    if (session == null) return null;
 
-    final appMetadata = user.appMetadata;
+    final payload = JwtParser.parsePayload(session.accessToken);
+    if (payload == null) {
+      _logger.warning('Failed to get internal user ID: JWT parsing failed');
+      return null;
+    }
+
+    final appMetadata = payload['app_metadata'];
+    if (appMetadata is! Map<String, dynamic>) {
+      if (appMetadata != null) {
+        _logger.warning(
+          'Invalid JWT structure: app_metadata is not a Map, got ${appMetadata.runtimeType}',
+        );
+      }
+      return null;
+    }
+
     final userId = appMetadata['internal_user_id'];
-
     if (userId is String) return userId;
 
     if (userId != null) {
