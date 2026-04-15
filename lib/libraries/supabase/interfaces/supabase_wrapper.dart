@@ -286,8 +286,8 @@ abstract class SupabaseWrapper {
 
   /// Get the internal user ID from JWT claims
   ///
-  /// Returns the internal application user ID (users.id) from app_metadata,
-  /// which is different from the credential_id (auth.users.id).
+  /// Returns the application-layer user ID stored in JWT app_metadata,
+  /// which differs from the authentication provider's user identifier.
   ///
   /// Returns null if user is not authenticated or internal_user_id is not set
   String? getInternalUserId();
