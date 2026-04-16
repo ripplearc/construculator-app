@@ -78,10 +78,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
     final l10n = context.l10n;
 
     bloc.add(
-      AddCostEstimationSubmitted(
-        estimationName: l10n.untitledEstimation,
-        projectId: widget.projectId,
-      ),
+      AddCostEstimationSubmitted(estimationName: l10n.untitledEstimation),
     );
   }
 
@@ -211,10 +208,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
             _router.pop();
             // TODO: https://ripplearc.youtrack.cloud/issue/CA-467/Refactor-Cost-Estimation-Landing-Page-to-retrieve-Project-ID-via-Bloc
             deleteCostEstimationBloc.add(
-              DeleteCostEstimationRequested(
-                estimationId: estimation.id,
-                projectId: widget.projectId,
-              ),
+              DeleteCostEstimationRequested(estimationId: estimation.id),
             );
           },
           onCancel: () {
