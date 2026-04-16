@@ -24,14 +24,10 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class CostEstimationLandingPage extends StatefulWidget {
-  // TODO: [CA-467] Remove projectId constructor parameter once retrieved via Bloc.
-  // https://ripplearc.youtrack.cloud/issue/CA-467
-  final String projectId;
-
   static const double _buttonBottomRatio = 0.135;
   static const double _buttonRightRatio = 0.05;
 
-  const CostEstimationLandingPage({super.key, required this.projectId});
+  const CostEstimationLandingPage({super.key});
 
   @override
   State<CostEstimationLandingPage> createState() =>
@@ -66,7 +62,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
       if (state is CostEstimationListWithData &&
           state.hasMore &&
           !state.isLoadingMore) {
-        bloc.add(CostEstimationListLoadMore(projectId: widget.projectId));
+        bloc.add(const CostEstimationListLoadMore());
       }
     }
   }
@@ -316,7 +312,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           onRefresh: () async {
             BlocProvider.of<CostEstimationListBloc>(
               context,
-            ).add(CostEstimationListRefresh(projectId: widget.projectId));
+            ).add(const CostEstimationListRefresh());
           },
           color: colorTheme.buttonSurface,
           child: _buildContent(state, l10n),

@@ -13,29 +13,17 @@ abstract class CostEstimationListEvent extends Equatable {
 
 /// Triggered to start watching estimations for a project
 class CostEstimationListStartWatching extends CostEstimationListEvent {
-  final String projectId;
-  const CostEstimationListStartWatching({required this.projectId});
-
-  @override
-  List<Object?> get props => [projectId];
+  const CostEstimationListStartWatching();
 }
 
 /// Triggered to load the next page of estimations
 class CostEstimationListLoadMore extends CostEstimationListEvent {
-  final String projectId;
-  const CostEstimationListLoadMore({required this.projectId});
-
-  @override
-  List<Object?> get props => [projectId];
+  const CostEstimationListLoadMore();
 }
 
 /// Refreshes the list of estimations for a project after a pull-to-refresh action
 class CostEstimationListRefresh extends CostEstimationListEvent {
-  final String projectId;
-  const CostEstimationListRefresh({required this.projectId});
-
-  @override
-  List<Object?> get props => [projectId];
+  const CostEstimationListRefresh();
 }
 
 /// Triggered when the stream emits new result (either success or failure)
@@ -46,4 +34,8 @@ class _CostEstimationListUpdated extends CostEstimationListEvent {
 
   @override
   List<Object?> get props => [result, hasMore];
+}
+
+class _CostEstimationListProjectUnavailable extends CostEstimationListEvent {
+  const _CostEstimationListProjectUnavailable();
 }
