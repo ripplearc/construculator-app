@@ -37,13 +37,13 @@ class EstimationModule extends Module {
   EstimationModule(this.appBootstrap);
 
   /// Exposes the Estimation Feature's UI entry point, hiding its Bloc dependencies.
-  static Widget landingPage({required String projectId}) {
+  static Widget landingPage() {
     return MultiBlocProvider(
       providers: [
         BlocProvider<CostEstimationListBloc>(
           create: (context) =>
               Modular.get<CostEstimationListBloc>()
-                ..add(CostEstimationListStartWatching(projectId: projectId)),
+                ..add(const CostEstimationListStartWatching()),
         ),
         BlocProvider<AddCostEstimationBloc>(
           create: (context) => Modular.get<AddCostEstimationBloc>(),
@@ -58,7 +58,7 @@ class EstimationModule extends Module {
           create: (context) => Modular.get<RenameEstimationBloc>(),
         ),
       ],
-      child: CostEstimationLandingPage(projectId: projectId),
+      child: const CostEstimationLandingPage(),
     );
   }
 
@@ -117,7 +117,10 @@ class EstimationModule extends Module {
     );
 
     i.add<CostEstimationListBloc>(
-      () => CostEstimationListBloc(repository: i.get()),
+      () => CostEstimationListBloc(
+        repository: i.get(),
+        currentProjectNotifier: i.get(),
+      ),
     );
     i.add<AddCostEstimationBloc>(
       () => AddCostEstimationBloc(addCostEstimationUseCase: i.get()),
