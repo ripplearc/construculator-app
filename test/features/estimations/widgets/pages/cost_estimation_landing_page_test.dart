@@ -56,11 +56,10 @@ class _CostEstimationLandingPageTestModule extends Module {
   void routes(RouteManager r) {
     r.module(estimationBaseRoute, module: EstimationModule(appBootstrap));
     r.child(
-      '/test-landing/:projectId',
+      '/test-landing',
       guards: [AuthGuard()],
       child: (context) {
-        final projectId = Modular.args.params['projectId'];
-        return EstimationModule.landingPage(projectId: projectId);
+        return EstimationModule.landingPage();
       },
     );
   }
@@ -75,7 +74,7 @@ void main() {
   late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
 
   const debounceWaitTime = Duration(milliseconds: 400);
-  const testEstimationRoute = '/test-landing/$testProjectId';
+  const testEstimationRoute = '/test-landing';
   BuildContext? buildContext;
 
   setUpAll(() {

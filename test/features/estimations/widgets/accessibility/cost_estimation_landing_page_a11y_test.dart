@@ -4,6 +4,8 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -44,11 +46,10 @@ class _CostEstimationLandingPageA11yTestModule extends Module {
   void routes(RouteManager r) {
     r.module(estimationBaseRoute, module: EstimationModule(appBootstrap));
     r.child(
-      '/test-landing/:projectId',
+      '/test-landing',
       guards: [AuthGuard()],
       child: (context) {
-        final projectId = Modular.args.params['projectId'];
-        return EstimationModule.landingPage(projectId: projectId);
+        return EstimationModule.landingPage();
       },
     );
   }
@@ -59,8 +60,9 @@ void main() {
   late Clock clock;
   late AppBootstrap appBootstrap;
   late FakeAppRouter fakeAppRouter;
+  late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
 
-  const testEstimationRoute = '/test-landing/$testProjectId';
+  const testEstimationRoute = '/test-landing';
   BuildContext? buildContext;
 
   setUpAll(() {
@@ -75,6 +77,11 @@ void main() {
     Modular.init(_CostEstimationLandingPageA11yTestModule(appBootstrap));
     fakeAppRouter = Modular.get<AppRouter>() as FakeAppRouter;
     Modular.setInitialRoute(testEstimationRoute);
+
+    fakeCurrentProjectNotifier = FakeCurrentProjectNotifier(
+      initialProjectId: testProjectId,
+    );
+    Modular.replaceInstance<CurrentProjectNotifier>(fakeCurrentProjectNotifier);
   });
 
   tearDownAll(() {

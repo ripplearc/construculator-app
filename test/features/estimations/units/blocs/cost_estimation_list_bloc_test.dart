@@ -9,6 +9,8 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -27,7 +29,9 @@ void main() {
     late FakeSupabaseWrapper fakeSupabaseWrapper;
     late CostEstimationRepository repository;
     late FakeClockImpl fakeClock;
+    late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
     const String testProjectId = 'test-project-123';
+    const String secondProjectId = 'test-project-456';
     const Duration streamDebounceWaitDuration = Duration(milliseconds: 400);
 
     setUpAll(() {
@@ -39,6 +43,13 @@ void main() {
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
       repository = Modular.get<CostEstimationRepository>();
+
+      fakeCurrentProjectNotifier = FakeCurrentProjectNotifier(
+        initialProjectId: testProjectId,
+      );
+      Modular.replaceInstance<CurrentProjectNotifier>(
+        fakeCurrentProjectNotifier,
+      );
     });
 
     tearDownAll(() {
@@ -47,6 +58,7 @@ void main() {
 
     setUp(() {
       fakeSupabaseWrapper.reset();
+      fakeCurrentProjectNotifier.reset(projectId: testProjectId);
       bloc = Modular.get<CostEstimationListBloc>();
     });
 
@@ -99,9 +111,7 @@ void main() {
           seedEstimationTable([estimationMap1, estimationMap2]);
           return bloc;
         },
-        act: (bloc) => bloc.add(
-          const CostEstimationListStartWatching(projectId: testProjectId),
-        ),
+        act: (bloc) => bloc.add(const CostEstimationListStartWatching()),
         wait: streamDebounceWaitDuration,
         expect: () => [
           isA<CostEstimationListLoading>(),
@@ -134,9 +144,7 @@ void main() {
           seedEstimationTable([]);
           return bloc;
         },
-        act: (bloc) => bloc.add(
-          const CostEstimationListStartWatching(projectId: testProjectId),
-        ),
+        act: (bloc) => bloc.add(const CostEstimationListStartWatching()),
         wait: streamDebounceWaitDuration,
         expect: () => [
           isA<CostEstimationListLoading>(),
@@ -156,9 +164,7 @@ void main() {
           seedEstimationTable([estimationMap]);
           return bloc;
         },
-        act: (bloc) => bloc.add(
-          const CostEstimationListStartWatching(projectId: testProjectId),
-        ),
+        act: (bloc) => bloc.add(const CostEstimationListStartWatching()),
         wait: streamDebounceWaitDuration,
         expect: () => [
           isA<CostEstimationListLoading>(),
@@ -182,9 +188,7 @@ void main() {
               SupabaseExceptionType.socket;
           return bloc;
         },
-        act: (bloc) => bloc.add(
-          const CostEstimationListStartWatching(projectId: testProjectId),
-        ),
+        act: (bloc) => bloc.add(const CostEstimationListStartWatching()),
         wait: streamDebounceWaitDuration,
         expect: () => [
           isA<CostEstimationListLoading>(),
@@ -208,9 +212,7 @@ void main() {
               SupabaseExceptionType.type;
           return bloc;
         },
-        act: (bloc) => bloc.add(
-          const CostEstimationListStartWatching(projectId: testProjectId),
-        ),
+        act: (bloc) => bloc.add(const CostEstimationListStartWatching()),
         wait: streamDebounceWaitDuration,
         expect: () => [
           isA<CostEstimationListLoading>(),
@@ -232,9 +234,7 @@ void main() {
               SupabaseExceptionType.timeout;
           return bloc;
         },
-        act: (bloc) => bloc.add(
-          const CostEstimationListStartWatching(projectId: testProjectId),
-        ),
+        act: (bloc) => bloc.add(const CostEstimationListStartWatching()),
         wait: streamDebounceWaitDuration,
         expect: () => [
           isA<CostEstimationListLoading>(),
@@ -251,6 +251,20 @@ void main() {
 
     group('Edge cases', () {
       blocTest<CostEstimationListBloc, CostEstimationListState>(
+        'should emit error with unexpected failure when start watching with null project id',
+        build: () {
+          fakeCurrentProjectNotifier.setCurrentProjectId(null);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(const CostEstimationListStartWatching()),
+        expect: () => [
+          isA<CostEstimationListError>()
+              .having((s) => s.failure, 'failure', UnexpectedFailure())
+              .having((s) => s.estimates, 'estimates', isEmpty),
+        ],
+      );
+
+      blocTest<CostEstimationListBloc, CostEstimationListState>(
         'should retain existing estimations when stream emits a failure',
         build: () {
           final estimationMap = buildEstimationMap(
@@ -263,9 +277,7 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
+          bloc.add(const CostEstimationListStartWatching());
 
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
 
@@ -300,6 +312,45 @@ void main() {
               ]),
         ],
       );
+
+      blocTest<CostEstimationListBloc, CostEstimationListState>(
+        'should emit unexpected failure and keep loaded estimates when project id becomes null',
+        build: () {
+          final estimationMap = buildEstimationMap(
+            id: 'est-prev-1',
+            projectId: testProjectId,
+            estimateName: 'Previous Estimation',
+            totalCost: 3000.0,
+          );
+          seedEstimationTable([estimationMap]);
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(const CostEstimationListStartWatching());
+
+          await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
+          fakeCurrentProjectNotifier.setCurrentProjectId(null);
+        },
+        wait: streamDebounceWaitDuration,
+        expect: () => [
+          isA<CostEstimationListLoading>(),
+          isA<CostEstimationListLoaded>()
+              .having((s) => s.estimates.length, 'estimates length', 1)
+              .having(
+                (s) => s.estimates[0].estimateName,
+                'estimate name',
+                'Previous Estimation',
+              ),
+          isA<CostEstimationListError>()
+              .having((s) => s.failure, 'failure', UnexpectedFailure())
+              .having((s) => s.estimates.length, 'estimates length', 1)
+              .having(
+                (s) => s.estimates[0].estimateName,
+                'estimate name',
+                'Previous Estimation',
+              ),
+        ],
+      );
     });
 
     group('Load more scenarios', () {
@@ -319,11 +370,9 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
+          bloc.add(const CostEstimationListStartWatching());
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
-          bloc.add(const CostEstimationListLoadMore(projectId: testProjectId));
+          bloc.add(const CostEstimationListLoadMore());
         },
         wait: streamDebounceWaitDuration,
         expect: () => [
@@ -373,11 +422,9 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
+          bloc.add(const CostEstimationListStartWatching());
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
-          bloc.add(const CostEstimationListLoadMore(projectId: testProjectId));
+          bloc.add(const CostEstimationListLoadMore());
         },
         wait: streamDebounceWaitDuration,
         expect: () => [
@@ -392,7 +439,7 @@ void main() {
         'should not load more when state is not CostEstimationListLoaded',
         build: () => bloc,
         act: (bloc) {
-          bloc.add(const CostEstimationListLoadMore(projectId: testProjectId));
+          bloc.add(const CostEstimationListLoadMore());
         },
         expect: () => [],
       );
@@ -413,16 +460,14 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
+          bloc.add(const CostEstimationListStartWatching());
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
 
           fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
           fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.timeout;
 
-          bloc.add(const CostEstimationListLoadMore(projectId: testProjectId));
+          bloc.add(const CostEstimationListLoadMore());
         },
         wait: streamDebounceWaitDuration,
         expect: () => [
@@ -468,12 +513,10 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
+          bloc.add(const CostEstimationListStartWatching());
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
 
-          bloc.add(const CostEstimationListLoadMore(projectId: testProjectId));
+          bloc.add(const CostEstimationListLoadMore());
         },
         wait: streamDebounceWaitDuration,
         expect: () => [
@@ -519,9 +562,7 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
+          bloc.add(const CostEstimationListStartWatching());
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
 
           fakeSupabaseWrapper.clearTableData(
@@ -540,7 +581,7 @@ void main() {
             ),
           ]);
 
-          bloc.add(const CostEstimationListRefresh(projectId: testProjectId));
+          bloc.add(const CostEstimationListRefresh());
         },
         wait: streamDebounceWaitDuration,
         expect: () => [
@@ -566,10 +607,8 @@ void main() {
           return bloc;
         },
         act: (bloc) {
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
-          bloc.add(const CostEstimationListRefresh(projectId: testProjectId));
+          bloc.add(const CostEstimationListStartWatching());
+          bloc.add(const CostEstimationListRefresh());
         },
         expect: () => [isA<CostEstimationListLoading>()],
         verify: (_) {
@@ -592,9 +631,7 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
+          bloc.add(const CostEstimationListStartWatching());
           await bloc.stream.firstWhere((s) => s is CostEstimationListError);
           await repository.fetchInitialEstimations(testProjectId);
         },
@@ -616,9 +653,7 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
+          bloc.add(const CostEstimationListStartWatching());
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
           await repository.fetchInitialEstimations(testProjectId);
         },
@@ -632,6 +667,91 @@ void main() {
 
     group('Bloc lifecycle', () {
       blocTest<CostEstimationListBloc, CostEstimationListState>(
+        'should not react to project changes after close',
+        build: () {
+          final estimationMap = buildEstimationMap(
+            id: 'est-1',
+            projectId: testProjectId,
+            estimateName: 'Project One Estimate',
+          );
+          seedEstimationTable([estimationMap]);
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(const CostEstimationListStartWatching());
+          await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
+
+          await bloc.close();
+
+          fakeCurrentProjectNotifier.setCurrentProjectId(secondProjectId);
+          await Future<void>.delayed(Duration.zero);
+        },
+        wait: streamDebounceWaitDuration,
+        expect: () => [
+          isA<CostEstimationListLoading>(),
+          isA<CostEstimationListLoaded>()
+              .having((s) => s.estimates.length, 'estimates length', 1)
+              .having(
+                (s) => s.estimates[0].estimateName,
+                'estimate name',
+                'Project One Estimate',
+              ),
+        ],
+        verify: (_) {
+          final calls = fakeSupabaseWrapper.getMethodCallsFor(
+            'selectPaginated',
+          );
+          expect(calls, hasLength(1));
+          expect(fakeCurrentProjectNotifier.projectIdChangedEvents, [
+            secondProjectId,
+          ]);
+        },
+      );
+
+      blocTest<CostEstimationListBloc, CostEstimationListState>(
+        'should re-watch and refetch when current project id changes',
+        build: () {
+          seedEstimationTable([
+            buildEstimationMap(
+              id: 'est-project-1',
+              projectId: testProjectId,
+              estimateName: 'Project One Estimate',
+            ),
+            buildEstimationMap(
+              id: 'est-project-2',
+              projectId: secondProjectId,
+              estimateName: 'Project Two Estimate',
+            ),
+          ]);
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(const CostEstimationListStartWatching());
+          await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
+          fakeCurrentProjectNotifier.setCurrentProjectId(secondProjectId);
+        },
+        wait: streamDebounceWaitDuration,
+        expect: () => [
+          isA<CostEstimationListLoading>(),
+          isA<CostEstimationListLoaded>()
+              .having((s) => s.estimates.length, 'project 1 length', 1)
+              .having(
+                (s) => s.estimates[0].estimateName,
+                'project 1 estimate name',
+                'Project One Estimate',
+              ),
+          isA<CostEstimationListLoading>(),
+          isA<CostEstimationListLoaded>()
+              .having((s) => s.estimates.length, 'project 2 length', 1)
+              .having(
+                (s) => s.estimates[0].estimateName,
+                'project 2 estimate name',
+                'Project Two Estimate',
+              ),
+        ],
+      );
+
+      blocTest<CostEstimationListBloc, CostEstimationListState>(
         'should cancel stream subscription when bloc is fetched again',
         build: () {
           final estimationMap = buildEstimationMap(
@@ -642,13 +762,9 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
+          bloc.add(const CostEstimationListStartWatching());
           await bloc.stream.firstWhere((s) => s is CostEstimationListLoaded);
-          bloc.add(
-            const CostEstimationListStartWatching(projectId: testProjectId),
-          );
+          bloc.add(const CostEstimationListStartWatching());
         },
         wait: streamDebounceWaitDuration,
         expect: () => [
