@@ -76,7 +76,7 @@ class EstimationModule extends Module {
     );
 
     i.addLazySingleton<AddCostEstimationUseCase>(
-      () => AddCostEstimationUseCase(i.get(), i.get(), i.get()),
+      () => AddCostEstimationUseCase(i.get(), i.get(), i.get(), i.get()),
     );
     i.add<CostEstimationListBloc>(
       () => CostEstimationListBloc(repository: i.get()),
@@ -85,7 +85,10 @@ class EstimationModule extends Module {
       () => AddCostEstimationBloc(addCostEstimationUseCase: i.get()),
     );
     i.add<DeleteCostEstimationBloc>(
-      () => DeleteCostEstimationBloc(costEstimationRepository: i.get()),
+      () => DeleteCostEstimationBloc(
+        costEstimationRepository: i.get(),
+        currentProjectNotifier: i.get(),
+      ),
     );
     i.add<ChangeLockStatusBloc>(
       () => ChangeLockStatusBloc(
