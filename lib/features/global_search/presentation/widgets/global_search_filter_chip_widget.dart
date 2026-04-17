@@ -13,7 +13,11 @@ class GlobalSearchFilterChipWidget extends StatelessWidget {
     this.onTap,
   });
 
+  /// The text label displayed inside the chip.
   final String label;
+
+  /// Called when the chip is tapped. If null, the chip is rendered in a
+  /// disabled (non-interactive) state.
   final VoidCallback? onTap;
 
   @override
