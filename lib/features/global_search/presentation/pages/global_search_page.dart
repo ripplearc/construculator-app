@@ -1,5 +1,4 @@
 import 'package:construculator/features/global_search/presentation/widgets/global_search_empty_recent_widget.dart';
-import 'package:construculator/features/global_search/presentation/widgets/global_search_filter_chip_widget.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
@@ -184,14 +183,14 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
             ),
             child: Row(
               children: [
-                // TODO: [CA-638] Wire GlobalSearchFilterChipWidget.onTap to GlobalSearchBloc filter state. https://ripplearc.youtrack.cloud/issue/CA-638/DashboardGlobalSearch-Wire-GlobalSearchFilterChipWidget.onTap-to-GlobalSearchBloc-filter-state
-                GlobalSearchFilterChipWidget(label: l10n.globalSearchFilterTags),
+                // TODO: [CA-638] Wire CoreFilterChip.onTap to GlobalSearchBloc filter state. https://ripplearc.youtrack.cloud/issue/CA-638/DashboardGlobalSearch-Wire-CoreFilterChip.onTap-to-GlobalSearchBloc-filter-state
+                CoreFilterChip(label: l10n.globalSearchFilterTags),
                 const SizedBox(width: CoreSpacing.space2),
-                GlobalSearchFilterChipWidget(
+                CoreFilterChip(
                   label: l10n.globalSearchFilterModified,
                 ),
                 const SizedBox(width: CoreSpacing.space2),
-                GlobalSearchFilterChipWidget(
+                CoreFilterChip(
                   label: l10n.globalSearchFilterType,
                 ),
               ],
