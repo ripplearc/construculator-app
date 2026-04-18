@@ -24,7 +24,7 @@ class FakeProjectRepository implements ProjectRepository {
   /// Last emitted project list for deduplication (matches real impl behavior).
   List<Project>? _lastEmitted;
 
-  /// Tracks permissions by project ID for testing
+  // Tracks permissions by project ID for testing
   final Map<String, List<String>> _projectPermissions = {};
 
   /// Controls whether [getProject] throws an exception
@@ -251,7 +251,6 @@ class FakeProjectRepository implements ProjectRepository {
 
     clearAllData();
     clearMethodCalls();
-    _projectPermissions.clear();
   }
 
   @override
