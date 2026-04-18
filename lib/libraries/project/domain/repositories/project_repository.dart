@@ -40,15 +40,8 @@ abstract class ProjectRepository {
   /// - User has no permissions for the project
   /// - Project ID not found
   ///
-  /// **⚠️ IMPORTANT - Permission Staleness:**
-  /// Permissions are cached and may become stale after permission-changing operations:
-  /// - Accepting project invitations
-  /// - Role changes
-  /// - Permission updates by project admins
-  ///
-  /// The repository automatically refreshes cached permissions periodically.
-  /// For immediate updates after permission changes, consider implementing
-  /// a manual refresh mechanism in your application layer.
+  /// **⚠️ Permissions may become stale** after role changes or invitation
+  /// acceptance. Re-query to get updated values.
   ///
   /// [projectId] The UUID of the project
   List<String> getProjectPermissions(String projectId);
@@ -58,13 +51,8 @@ abstract class ProjectRepository {
   /// Convenience method that checks if [permissionKey] exists in the
   /// permissions list for [projectId].
   ///
-  /// **⚠️ IMPORTANT - Permission Staleness:**
-  /// Permissions are cached and may become stale after permission-changing
-  /// operations (accepting invitations, role changes, etc.).
-  ///
-  /// The repository automatically refreshes cached permissions periodically.
-  /// For immediate updates after permission changes, consider implementing
-  /// a manual refresh mechanism in your application layer.
+  /// **⚠️ Permissions may become stale** after role changes or invitation
+  /// acceptance. Re-query to get updated values.
   ///
   /// [projectId] The UUID of the project
   /// [permissionKey] The permission key to check (e.g., 'edit_cost_estimation')
