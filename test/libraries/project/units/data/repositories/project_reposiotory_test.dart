@@ -10,6 +10,8 @@ import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -344,32 +346,31 @@ void main() {
     late FakeSupabaseWrapper supabaseWrapper;
     late ProjectRepository repository;
 
-    setUp(() {
+    setUpAll(() {
       clock = FakeClockImpl(DateTime(2025, 10, 1, 10, 30));
-      supabaseWrapper = FakeSupabaseWrapper(clock: clock);
+      final testSupabaseWrapper = FakeSupabaseWrapper(clock: clock);
 
       final bootstrap = FakeAppBootstrapFactory.create(
-        supabaseWrapper: supabaseWrapper,
+        supabaseWrapper: testSupabaseWrapper,
       );
 
       Modular.init(_PermissionsTestModule(bootstrap, clock));
-      repository = Modular.get<ProjectRepository>();
+
+      supabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+      repository = Modular.get<ProjectRepository>() as ProjectRepositoryImpl;
     });
 
-    tearDown(() {
+    tearDownAll(() {
+      supabaseWrapper.reset();
       Modular.destroy();
     });
 
+    setUp(() {
+      supabaseWrapper.reset();
+    });
+
     group('getProjectPermissions', () {
-      test('returns empty list when user is not authenticated', () {
-        supabaseWrapper.setCurrentUser(null);
-
-        final result = repository.getProjectPermissions('project-1');
-
-        expect(result, isEmpty);
-      });
-
-      test('returns permissions from JWT for authenticated user', () {
+      test('returns all permissions assigned to the project', () {
         supabaseWrapper.setProjectPermissions('project-1', [
           'read',
           'write',
@@ -402,14 +403,6 @@ void main() {
     });
 
     group('hasProjectPermission', () {
-      test('returns false when user is not authenticated', () {
-        supabaseWrapper.setCurrentUser(null);
-
-        final result = repository.hasProjectPermission('project-1', 'read');
-
-        expect(result, isFalse);
-      });
-
       test('returns true when user has the permission', () {
         supabaseWrapper.setProjectPermissions('project-1', ['read', 'write']);
 

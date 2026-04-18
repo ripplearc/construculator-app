@@ -251,7 +251,6 @@ class FakeProjectRepository implements ProjectRepository {
 
     clearAllData();
     clearMethodCalls();
-    _projectPermissions.clear();
   }
 
   @override
