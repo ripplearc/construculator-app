@@ -1,4 +1,5 @@
 import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
+import 'package:construculator/libraries/estimation/domain/enums/estimation_sort_option.dart';
 
 /// Interface that abstracts cost estimation data source operations.
 /// This allows the cost estimation service to work with any cost estimation backend.
@@ -8,12 +9,16 @@ abstract class CostEstimationDataSource {
   /// [projectId] The project to fetch estimations for
   /// [offset] The starting index (0-based)
   /// [limit] The number of items to fetch
+  /// [sortBy] Defines which field to sort by (createdAt or updatedAt)
+  /// [ascending] Defines the sort order
   ///
   /// Returns a [List<CostEstimateDto>] for the requested page.
   Future<List<CostEstimateDto>> getEstimations({
     required String projectId,
     required int offset,
     required int limit,
+    EstimationSortOption sortBy = EstimationSortOption.createdAt,
+    bool ascending = false,
   });
 
   /// Used to create a new cost estimation
