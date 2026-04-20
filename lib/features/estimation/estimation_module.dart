@@ -110,7 +110,12 @@ class EstimationModule extends Module {
     );
 
     i.addLazySingleton<AddCostEstimationUseCase>(
-      () => AddCostEstimationUseCase(i.get(), i.get(), i.get(), i.get()),
+      () => AddCostEstimationUseCase(
+        repository: i.get(),
+        authRepository: i.get(),
+        clock: i.get(),
+        currentProjectNotifier: i.get(),
+      ),
     );
 
     i.add<CostEstimationListBloc>(
