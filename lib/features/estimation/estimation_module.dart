@@ -15,7 +15,6 @@ import 'package:construculator/features/estimation/presentation/pages/cost_estim
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
-import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/time/clock_module.dart';
 import 'package:flutter/material.dart';

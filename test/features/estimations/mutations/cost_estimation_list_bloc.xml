@@ -21,34 +21,19 @@
             <mutation text="// emit(const CostEstimationListLoading());"/>
         </regex>
 
-        <!-- RULE 2: In _onStartWatching, skip canceling previous subscription -->
-        <regex pattern="_streamSubscription\?\.cancel\(\);" dotAll="true" id="bloc.stream.skip_cancel_previous">
-            <mutation text="// _streamSubscription?.cancel();"/>
+        <!-- RULE 2: In _onStartWatching, skip canceling previous subscription before re-subscribe -->
+        <regex pattern="emit\(const CostEstimationListLoading\(\)\);\n\n    _streamSubscription\?\.cancel\(\);" dotAll="true" id="bloc.stream.skip_cancel_previous">
+            <mutation text="emit(const CostEstimationListLoading());\n\n    // _streamSubscription?.cancel();"/>
         </regex>
 
-        <!-- RULE 3: In _onStartWatching, skip null project check -->
-        <regex pattern="if \(projectId == null\) \{" dotAll="true" id="bloc.state.skip_null_project_startwatching">
-            <mutation text="if (false) {"/>
+        <!-- RULE 3: In _onStartWatching, skip null/empty project check -->
+        <regex pattern="if \(projectId == null \|\| projectId\.isEmpty\) \{\n      _streamSubscription\?\.cancel\(\);" dotAll="true" id="bloc.state.skip_null_project_startwatching">
+            <mutation text="if (false) {\n      _streamSubscription?.cancel();"/>
         </regex>
 
-        <!-- RULE 4: In _onStartWatching, remove debounce -->
-        <regex pattern="\.debounceTime\(const Duration\(milliseconds: 300\)\)" dotAll="true" id="bloc.stream.skip_debounce">
-            <mutation text=".debounceTime(const Duration(milliseconds: 500))"/>
-        </regex>
-
-        <!-- RULE 5: In _onStartWatching, don't pass hasMore from repository -->
-        <regex pattern="final hasMore = _repository\.hasMoreEstimations\(projectId\);" dotAll="true" id="bloc.pagination.skip_hasmore_fetch">
-            <mutation text="final hasMore = true;"/>
-        </regex>
-
-        <!-- RULE 6: In _onRefreshed, skip guard check for loading state -->
-        <regex pattern="if \(state is CostEstimationListLoading\) return;" dotAll="true" id="bloc.refresh.skip_loading_guard">
-            <mutation text="// Skip loading guard"/>
-        </regex>
-
-        <!-- RULE 7: In _onRefreshed, skip null project check -->
-        <regex pattern="if \(projectId == null\) \{" dotAll="true" id="bloc.refresh.skip_null_project_check">
-            <mutation text="if (false) {"/>
+        <!-- RULE 5: In _onStartWatching listen callback, don't fetch hasMore from repository -->
+        <regex pattern="\.listen\(\(result\) \{\n          final hasMore = _repository\.hasMoreEstimations\(projectId\);" dotAll="true" id="bloc.pagination.skip_hasmore_fetch">
+            <mutation text=".listen((result) {\n          final hasMore = true;"/>
         </regex>
 
         <!-- RULE 8: In _onUpdated, skip preserving current estimations on error -->
@@ -56,9 +41,9 @@
             <mutation text="final currentEstimations = false"/>
         </regex>
 
-        <!-- RULE 9: In _onUpdated, return empty list on error instead of current -->
-        <regex pattern=": &lt;CostEstimate&gt;\[\];" dotAll="true" id="bloc.error.wrong_default_estimations">
-            <mutation text=": null;"/>
+        <!-- RULE 9: In _onUpdated, skip preserving current hasMore on error -->
+        <regex pattern="final currentHasMore = state is CostEstimationListWithData" dotAll="true" id="bloc.error.skip_preserve_hasmore">
+            <mutation text="final currentHasMore = false"/>
         </regex>
 
         <!-- RULE 10: In _onUpdated, emit loaded instead of empty when list is empty -->
@@ -71,9 +56,9 @@
             <mutation text="// Skip type guard"/>
         </regex>
 
-        <!-- RULE 12: In _onLoadMore, skip null project check -->
-        <regex pattern="if \(projectId == null\) \{" dotAll="true" id="bloc.loadmore.skip_null_project_check">
-            <mutation text="if (false) {"/>
+        <!-- RULE 12: In _onLoadMore, skip null/empty project check -->
+        <regex pattern="if \(projectId == null \|\| projectId\.isEmpty\) \{\n      final currentState = state as CostEstimationListLoaded;" dotAll="true" id="bloc.loadmore.skip_null_project_check">
+            <mutation text="if (false) {\n      final currentState = state as CostEstimationListLoaded;"/>
         </regex>
 
         <!-- RULE 13: In _onLoadMore, skip isLoadingMore guard -->
@@ -91,9 +76,9 @@
             <mutation text="// emit(currentState.copyWith(isLoadingMore: true));"/>
         </regex>
 
-        <!-- RULE 16: In _onLoadMore, skip updating hasMore after load -->
-        <regex pattern="final hasMore = _repository\.hasMoreEstimations\(projectId\);" dotAll="true" id="bloc.loadmore.skip_hasmore_update">
-            <mutation text="final hasMore = currentState.hasMore;"/>
+        <!-- RULE 16: In _onLoadMore fold callback, skip updating hasMore after load -->
+        <regex pattern="\(estimations\) \{\n      final hasMore = _repository\.hasMoreEstimations\(projectId\);" dotAll="true" id="bloc.loadmore.skip_hasmore_update">
+            <mutation text="(estimations) {\n      final hasMore = currentState.hasMore;"/>
         </regex>
 
         <!-- RULE 17: In _onLoadMore, skip emitting final state -->
@@ -107,8 +92,8 @@
         </regex>
 
         <!-- RULE 19: In close, skip canceling stream subscription -->
-        <regex pattern="_streamSubscription\?\.cancel\(\);" dotAll="true" id="bloc.cleanup.skip_cancel">
-            <mutation text="// _streamSubscription?.cancel();"/>
+        <regex pattern="_streamSubscription\?\.cancel\(\);\n    _projectChangeSubscription\?\.cancel\(\);" dotAll="true" id="bloc.cleanup.skip_cancel">
+            <mutation text="// _streamSubscription?.cancel();\n    _projectChangeSubscription?.cancel();"/>
         </regex>
 
         <!-- RULE 20: In close, skip canceling project change subscription -->

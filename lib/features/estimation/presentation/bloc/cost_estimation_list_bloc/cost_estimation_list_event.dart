@@ -38,4 +38,7 @@ class _CostEstimationListUpdated extends CostEstimationListEvent {
 
 class _CostEstimationListProjectUnavailable extends CostEstimationListEvent {
   const _CostEstimationListProjectUnavailable();
+
+  @override
+  List<Object?> get props => [];
 }
