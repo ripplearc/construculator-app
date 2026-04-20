@@ -29,8 +29,8 @@ class DeleteCostEstimationBloc
     Emitter<DeleteCostEstimationState> emit,
   ) async {
     final projectId = _currentProjectNotifier.currentProjectId;
-    if (projectId == null) {
-      _logger.error('Current project ID is null, cannot delete estimation');
+    if (projectId == null || projectId.isEmpty) {
+      _logger.error('Current project ID is null or empty, cannot delete estimation');
       emit(
         const DeleteCostEstimationFailure(
           failure: EstimationFailure(
