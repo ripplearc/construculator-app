@@ -18,6 +18,7 @@ import 'package:construculator/libraries/time/interfaces/clock.dart';
 /// This use case encapsulates the business logic for creating cost estimations
 /// and handles the setup of default values for new estimations. It ensures
 /// that all required fields are properly initialized with appropriate defaults.
+/// The project context is obtained from [CurrentProjectNotifier].
 class AddCostEstimationUseCase {
   final CostEstimationRepository _repository;
   final AuthRepository _authRepository;
@@ -25,12 +26,15 @@ class AddCostEstimationUseCase {
   final CurrentProjectNotifier _currentProjectNotifier;
   static final _logger = AppLogger().tag('AddCostEstimationUseCase');
 
-  AddCostEstimationUseCase(
-    this._repository,
-    this._authRepository,
-    this._clock,
-    this._currentProjectNotifier,
-  );
+  AddCostEstimationUseCase({
+    required CostEstimationRepository repository,
+    required AuthRepository authRepository,
+    required Clock clock,
+    required CurrentProjectNotifier currentProjectNotifier,
+  }) : _repository = repository,
+       _authRepository = authRepository,
+       _clock = clock,
+       _currentProjectNotifier = currentProjectNotifier;
 
   /// Creates a new cost estimation with the specified name.
   ///
