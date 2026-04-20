@@ -50,11 +50,13 @@ class CostEstimationListBloc
     _ensureProjectChangeListener();
 
     final projectId = _currentProjectNotifier.currentProjectId;
-    if (projectId == null) {
+    if (projectId == null || projectId.isEmpty) {
       _streamSubscription?.cancel();
       _streamSubscription = null;
       _activeProjectId = null;
-      _logger.error('Current project ID is null, cannot manage estimations');
+      _logger.error(
+        'Current project ID is null or empty, cannot manage estimations',
+      );
       _emitProjectUnavailableError(emit);
       return;
     }
@@ -80,7 +82,7 @@ class CostEstimationListBloc
         .listen((projectId) {
           if (isClosed || projectId == _activeProjectId) return;
 
-          if (projectId == null) {
+          if (projectId == null || projectId.isEmpty) {
             add(const _CostEstimationListProjectUnavailable());
             return;
           }
@@ -117,8 +119,10 @@ class CostEstimationListBloc
     if (state is CostEstimationListLoading) return;
 
     final projectId = _currentProjectNotifier.currentProjectId;
-    if (projectId == null) {
-      _logger.error('Current project ID is null, cannot manage estimations');
+    if (projectId == null || projectId.isEmpty) {
+      _logger.error(
+        'Current project ID is null or empty, cannot manage estimations',
+      );
       _emitProjectUnavailableError(
         emit,
         estimates: state is CostEstimationListWithData
@@ -177,7 +181,9 @@ class CostEstimationListBloc
     _streamSubscription = null;
     _activeProjectId = null;
 
-    _logger.error('Current project ID is null, cannot manage estimations');
+    _logger.error(
+      'Current project ID is null or empty, cannot manage estimations',
+    );
 
     _emitProjectUnavailableError(
       emit,
@@ -197,9 +203,11 @@ class CostEstimationListBloc
     if (state is! CostEstimationListLoaded) return;
 
     final projectId = _currentProjectNotifier.currentProjectId;
-    if (projectId == null) {
+    if (projectId == null || projectId.isEmpty) {
       final currentState = state as CostEstimationListLoaded;
-      _logger.error('Current project ID is null, cannot manage estimations');
+      _logger.error(
+        'Current project ID is null or empty, cannot manage estimations',
+      );
       _emitProjectUnavailableError(
         emit,
         estimates: currentState.estimates.toList(),

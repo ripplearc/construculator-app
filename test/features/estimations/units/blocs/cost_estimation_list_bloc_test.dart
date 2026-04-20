@@ -619,6 +619,29 @@ void main() {
           fakeSupabaseWrapper.completer!.complete();
         },
       );
+
+      blocTest<CostEstimationListBloc, CostEstimationListState>(
+        'should emit unexpected failure when refresh is called with null project id',
+        build: () {
+          fakeCurrentProjectNotifier.setCurrentProjectId(null);
+          final estimationMap = buildEstimationMap(
+            id: 'est-1',
+            projectId: testProjectId,
+            estimateName: 'Some Estimation',
+            totalCost: 1000.0,
+          );
+          seedEstimationTable([estimationMap]);
+          return bloc;
+        },
+        act: (bloc) {
+          bloc.add(const CostEstimationListRefresh());
+        },
+        expect: () => [
+          isA<CostEstimationListError>()
+              .having((s) => s.failure, 'failure', UnexpectedFailure())
+              .having((s) => s.estimates, 'estimates', isEmpty),
+        ],
+      );
     });
 
     group('Stream distinct comparison', () {
@@ -684,7 +707,6 @@ void main() {
           await bloc.close();
 
           fakeCurrentProjectNotifier.setCurrentProjectId(secondProjectId);
-          await Future<void>.delayed(Duration.zero);
         },
         wait: streamDebounceWaitDuration,
         expect: () => [
