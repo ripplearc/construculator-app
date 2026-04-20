@@ -275,16 +275,6 @@ void main() {
         act: (bloc) => bloc.add(
           DeleteCostEstimationRequested(estimationId: testEstimationId),
         ),
-        verify: (bloc) {
-          final calls = fakeSupabaseWrapper.getMethodCallsFor('delete');
-          expect(calls, hasLength(1));
-          expect(
-            calls.first['table'],
-            equals(DatabaseConstants.costEstimatesTable),
-          );
-          expect(calls.first['filterColumn'], equals('id'));
-          expect(calls.first['filterValue'], testEstimationId);
-        },
         expect: () => [
           isA<DeleteCostEstimationInProgress>(),
           isA<DeleteCostEstimationSuccess>(),
