@@ -676,4 +676,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loadMoreLogsError => 'Failed to load more logs';
+
+  @override
+  String estimationCardOwner(String ownerName) {
+    return 'Owner: $ownerName';
+  }
 }

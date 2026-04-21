@@ -1293,6 +1293,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to load more logs'**
   String get loadMoreLogsError;
+
+  /// Owner label on EstimationCard in global search results
+  ///
+  /// In en, this message translates to:
+  /// **'Owner: {ownerName}'**
+  String estimationCardOwner(String ownerName);
 }
 
 class _AppLocalizationsDelegate

@@ -1068,5 +1068,15 @@
   "loadMoreLogsError": "Failed to load more logs",
   "@loadMoreLogsError": {
     "description": "Error message shown when loading more logs fails"
+  },
+  "estimationCardOwner": "Owner: {ownerName}",
+  "@estimationCardOwner": {
+    "description": "Owner label on EstimationCard in global search results",
+    "placeholders": {
+      "ownerName": {
+        "type": "String",
+        "example": "Jane Smith"
+      }
+    }
   }
 }
