@@ -1,3 +1,4 @@
+import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
@@ -64,31 +65,40 @@ class _DashboardPageState extends State<DashboardPage> {
         centerTitle: true,
         backgroundColor: colors.pageBackground,
       ),
-      body: Container(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.dashboard,
-                size: 64,
-                color: Theme.of(context).primaryColor,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.dashboard,
+                    size: 64,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Welcome back, $userInfo',
+                    textAlign: TextAlign.center,
+                    style: typography.headlineMediumSemiBold,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'You are now logged in to your account',
+                    textAlign: TextAlign.center,
+                    style: typography.bodyLargeRegular,
+                  ),
+                  const SizedBox(height: 32),
+                ],
               ),
-              const SizedBox(height: 24),
-              Text(
-                'Welcome back, $userInfo',
-                textAlign: TextAlign.center,
-                style: typography.headlineMediumSemiBold,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'You are now logged in to your account',
-                textAlign: TextAlign.center,
-                style: typography.bodyLargeRegular,
-              ),
-              const SizedBox(height: 32),
-              CoreButton(
+            ),
+            const SizedBox(height: 32),
+            const RecentEstimationsSection(),
+            const SizedBox(height: 32),
+            Center(
+              child: CoreButton(
                 onPressed: () {
                   final authManager = Modular.get<AuthManager>();
                   authManager.logout();
@@ -97,8 +107,8 @@ class _DashboardPageState extends State<DashboardPage> {
                 label: 'Logout',
                 centerAlign: true,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
