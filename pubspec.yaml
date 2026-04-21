@@ -51,6 +51,7 @@ dev_dependencies:
   json_serializable: 6.9.5
   custom_lint: 0.7.5
   bloc_test: 10.0.0
+  mocktail: ^1.0.5
 
 
 flutter:
