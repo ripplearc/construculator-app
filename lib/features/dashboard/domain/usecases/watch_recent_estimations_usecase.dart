@@ -1,8 +1,8 @@
-import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
-import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/either/interfaces/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/estimation/domain/enums/estimation_sort_option.dart';
+import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:equatable/equatable.dart';
 
 /// Parameters for retrieving recent estimations
@@ -35,7 +35,6 @@ class WatchRecentEstimationsUseCase {
     return _repository.watchEstimations(
       params.projectId,
       sortBy: EstimationSortOption.updatedAt,
-      // Descending order to get the most recent ones
       ascending: false,
       limit: params.limit,
     );
