@@ -1,6 +1,6 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/libraries/formatting/formatting_helper.dart';
+import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -105,7 +105,7 @@ class CostEstimationTile extends StatelessWidget {
         ),
         const SizedBox(width: CoreSpacing.space2),
         Text(
-          FormattingHelper.formatDate(createdAt),
+          DisplayFormatter.formatDate(createdAt),
           style: typography.bodySmallRegular,
         ),
         const SizedBox(width: CoreSpacing.space2),
@@ -119,14 +119,14 @@ class CostEstimationTile extends StatelessWidget {
         ),
         const SizedBox(width: CoreSpacing.space2),
         Text(
-          FormattingHelper.formatTime(createdAt),
+          DisplayFormatter.formatTime(createdAt),
           style: typography.bodySmallRegular,
         ),
         const SizedBox(width: CoreSpacing.space2),
         Expanded(
           child: Text(
             textAlign: TextAlign.right,
-            FormattingHelper.formatCurrency(estimation.totalCost),
+            DisplayFormatter.formatCurrency(estimation.totalCost),
             style: typography.bodyLargeSemiBold.copyWith(
               color: appColors.textDark,
             ),

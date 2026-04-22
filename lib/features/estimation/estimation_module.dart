@@ -1,5 +1,4 @@
 import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/features/auth/auth_module.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_log_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/remote_cost_estimation_data_source.dart';
@@ -17,8 +16,10 @@ import 'package:construculator/features/estimation/presentation/bloc/delete_cost
 import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_details_page.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
+import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
+import 'package:construculator/libraries/time/clock_module.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -77,7 +78,7 @@ class EstimationModule extends Module {
   ];
 
   @override
-  List<Module> get imports => [AuthModule(appBootstrap)];
+  List<Module> get imports => [AuthLibraryModule(appBootstrap), ClockModule()];
 
   @override
   void binds(Injector i) {
