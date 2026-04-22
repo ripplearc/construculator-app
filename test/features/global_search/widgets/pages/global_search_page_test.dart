@@ -45,7 +45,7 @@ void main() {
     );
   }
 
-  setUpAll(() {
+  setUp(() {
     fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
 
     final appBootstrap = FakeAppBootstrapFactory.create(
@@ -57,7 +57,7 @@ void main() {
     router = Modular.get<AppRouter>() as FakeAppRouter;
   });
 
-  tearDownAll(() {
+  tearDown(() {
     Modular.destroy();
   });
 
@@ -120,7 +120,7 @@ void main() {
     ) async {
       await renderPage(tester);
 
-      expect(find.bySemanticsLabel(l10n().globalSearchClearSearchSemanticLabel), findsNothing);
+      expect(find.byKey(const ValueKey('core_search_box_clear_button')), findsNothing);
     });
 
     testWidgets(
@@ -131,18 +131,18 @@ void main() {
         await tester.enterText(
           find.ancestor(
             of: find.text(l10n().globalSearchHint),
-            matching: find.byType(TextField),
+            matching: find.byType(TextFormField),
           ),
           'concrete',
         );
         await tester.pump();
 
-        expect(find.bySemanticsLabel(l10n().globalSearchClearSearchSemanticLabel), findsOneWidget);
+        expect(find.byKey(const ValueKey('core_search_box_clear_button')), findsOneWidget);
 
-        await tester.tap(find.bySemanticsLabel(l10n().globalSearchClearSearchSemanticLabel));
+        await tester.tap(find.byKey(const ValueKey('core_search_box_clear_button')));
         await tester.pump();
 
-        expect(find.bySemanticsLabel(l10n().globalSearchClearSearchSemanticLabel), findsNothing);
+        expect(find.byKey(const ValueKey('core_search_box_clear_button')), findsNothing);
       },
     );
 
