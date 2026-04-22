@@ -29,7 +29,7 @@ void main() {
   late FakeSupabaseWrapper fakeSupabase;
   BuildContext? buildContext;
 
-  setUpAll(() {
+  setUp(() {
     fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
 
     final appBootstrap = FakeAppBootstrapFactory.create(
@@ -40,7 +40,7 @@ void main() {
     Modular.replaceInstance<SupabaseWrapper>(fakeSupabase);
   });
 
-  tearDownAll(() {
+  tearDown(() {
     Modular.destroy();
   });
 
@@ -82,10 +82,10 @@ void main() {
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
         (theme) => makeTestableWidget(theme: theme),
-        find.byKey(const Key('global_search_clear_button')),
+        find.byKey(const ValueKey('core_search_box_clear_button')),
         checkTapTargetSize: true,
         setupAfterPump: (t) async {
-          await t.enterText(find.byType(TextField), 'concrete');
+          await t.enterText(find.byType(TextFormField), 'concrete');
           await t.pump();
         },
       );

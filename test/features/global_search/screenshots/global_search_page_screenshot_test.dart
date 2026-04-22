@@ -33,6 +33,9 @@ void main() {
 
   setUpAll(() async {
     await loadAppFontsAll();
+  });
+
+  setUp(() {
     final fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     final appBootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
@@ -41,7 +44,7 @@ void main() {
     Modular.replaceInstance<SupabaseWrapper>(fakeSupabase);
   });
 
-  tearDownAll(() {
+  tearDown(() {
     Modular.destroy();
   });
 
@@ -84,7 +87,7 @@ void main() {
 
         final textFieldFinder = find.descendant(
           of: find.byType(GlobalSearchPage),
-          matching: find.byType(TextField),
+          matching: find.byType(TextFormField),
         );
         await tester.enterText(textFieldFinder, 'concrete');
         await tester.pumpAndSettle();

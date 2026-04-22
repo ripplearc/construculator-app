@@ -13,12 +13,10 @@ class GlobalSearchEmptyRecentWidget extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(
-            'assets/icons/search_icon.png',
-            width: CoreSpacing.space32,
-            height: CoreSpacing.space32,
-            errorBuilder: (context, error, stackTrace) =>
-                const SizedBox(width: CoreSpacing.space32, height: CoreSpacing.space32),
+          CoreIconWidget(
+            icon: CoreIcons.search,
+            size: CoreIconSize.size32,
+            color: context.colorTheme.iconDark,
           ),
           const SizedBox(height: CoreSpacing.space6),
           Padding(

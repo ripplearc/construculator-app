@@ -2,6 +2,7 @@ import 'package:construculator/features/global_search/presentation/widgets/globa
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
@@ -35,14 +36,13 @@ void main() {
       expect(find.text(l10n().globalSearchEmptyRecentMessage), findsOneWidget);
     });
 
-    testWidgets('renders search icon image', (tester) async {
+    testWidgets('renders search icon from CoreIcons', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(child: const GlobalSearchEmptyRecentWidget()),
       );
 
-      final image = tester.widget<Image>(find.byType(Image));
-      expect(image.image, isA<AssetImage>());
-      expect((image.image as AssetImage).assetName, 'assets/icons/search_icon.png');
+      final icon = tester.widget<CoreIconWidget>(find.byType(CoreIconWidget));
+      expect(icon.icon, CoreIcons.search);
     });
   });
 }

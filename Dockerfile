@@ -17,23 +17,28 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         curl \
         git \
-    openssh-client \
+        openssh-client \
         unzip \
         xz-utils \
         zip \
         libglu1-mesa \
         xvfb \
         ca-certificates \
-    lcov \
-    apt-transport-https \
-    wget \
-    gnupg \
-    openjdk-17-jdk \
-    && wget -qO- https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/dart.gpg && \
-    echo 'deb [signed-by=/usr/share/keyrings/dart.gpg arch=amd64] https://storage.googleapis.com/download.dartlang.org/linux/debian stable main' | tee /etc/apt/sources.list.d/dart_stable.list && \
-    apt-get update && \
-    apt-get install -y dart && \
-    rm -rf /var/lib/apt/lists/*
+        lcov \
+        apt-transport-https \
+        wget \
+        gnupg \
+        openjdk-17-jdk \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Dart SDK directly (supports both amd64 and arm64)
+# The zip extracts to dart-sdk/, rename to match DART_SDK env var (/usr/lib/dart)
+RUN ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "arm64" ]; then DART_ARCH="arm64"; else DART_ARCH="x64"; fi && \
+    wget -q "https://storage.googleapis.com/dart-archive/channels/stable/release/latest/sdk/dartsdk-linux-${DART_ARCH}-release.zip" -O /tmp/dartsdk.zip && \
+    unzip -q /tmp/dartsdk.zip -d /usr/lib && \
+    mv /usr/lib/dart-sdk /usr/lib/dart && \
+    rm /tmp/dartsdk.zip
 
 # Update certificates and configure git
 RUN update-ca-certificates && \
@@ -66,9 +71,12 @@ RUN dart pub global activate fvm
 # Copy .fvmrc to use project's Flutter version
 COPY --chown=flutter:flutter .fvmrc ./
 
-# Install Flutter using FVM based on .fvmrc and set it as default
+# Install Flutter using FVM based on .fvmrc and set it as default.
+# Re-activate FVM after install so its snapshot is compiled with Flutter's
+# bundled Dart (which is in PATH before the system Dart via fvm/default/bin).
 RUN fvm install && \
-    fvm global ${FLUTTER_VERSION}
+    fvm global ${FLUTTER_VERSION} && \
+    dart pub global activate fvm
 
 # Ensure PATH and SSH alias are exported in interactive shells
 RUN echo 'export PATH="$PATH:$HOME/.pub-cache/bin:$HOME/fvm/default/bin:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools"' >> ~/.bashrc
