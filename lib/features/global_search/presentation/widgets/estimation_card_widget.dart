@@ -4,10 +4,22 @@ import 'package:construculator/libraries/formatting/formatting_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+/// A card widget that displays a cost estimation summary in global search results.
+///
+/// Renders the estimation name, last-updated date/time, total cost, and an
+/// optional owner name. Fires [onTap] for the card body and [onMenuTap] for
+/// the trailing overflow menu.
 class EstimationCard extends StatelessWidget {
+  /// The cost estimation to display.
   final CostEstimate estimation;
+
+  /// Optional name of the estimation owner; omits the owner row when null.
   final String? ownerName;
+
+  /// Called when the card body is tapped.
   final VoidCallback onTap;
+
+  /// Called when the trailing menu icon is tapped; hides the icon when null.
   final VoidCallback? onMenuTap;
 
   const EstimationCard({
@@ -21,7 +33,6 @@ class EstimationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appColors = context.colorTheme;
-    final owner = ownerName;
     return Container(
       margin: EdgeInsets.symmetric(vertical: CoreSpacing.space3),
       decoration: BoxDecoration(
@@ -48,9 +59,9 @@ class EstimationCard extends StatelessWidget {
               _buildTopRow(context),
               const SizedBox(height: CoreSpacing.space3),
               _buildMiddleRow(context),
-              if (owner != null) ...[
+              if (ownerName != null) ...[
                 const SizedBox(height: CoreSpacing.space3),
-                _buildOwnerRow(context, owner),
+                _buildOwnerRow(context, ownerName!),
               ],
             ],
           ),
@@ -68,7 +79,7 @@ class EstimationCard extends StatelessWidget {
           key: const Key('moneyIcon'),
           icon: CoreIcons.cost,
           color: appColors.iconGrayMid,
-          size: CoreSpacing.space6,
+          size: CoreIconSize.size24,
         ),
         const SizedBox(width: CoreSpacing.space3),
         Expanded(
@@ -96,7 +107,7 @@ class EstimationCard extends StatelessWidget {
                   key: const Key('menuIcon'),
                   icon: CoreIcons.moreVert,
                   color: appColors.iconDark,
-                  size: CoreSpacing.space6,
+                  size: CoreIconSize.size24,
                 ),
               ),
             ),
@@ -116,7 +127,7 @@ class EstimationCard extends StatelessWidget {
           key: const Key('calendarIcon'),
           icon: CoreIcons.calendar,
           color: appColors.iconGrayMid,
-          size: CoreSpacing.space3,
+          size: CoreIconSize.size16,
         ),
         const SizedBox(width: CoreSpacing.space2),
         Expanded(
@@ -167,7 +178,7 @@ class EstimationCard extends StatelessWidget {
           key: const Key('personIcon'),
           icon: CoreIcons.person,
           color: appColors.iconGrayMid,
-          size: CoreSpacing.space3,
+          size: CoreIconSize.size16,
         ),
         const SizedBox(width: CoreSpacing.space2),
         Expanded(
