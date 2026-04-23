@@ -1,7 +1,7 @@
-import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
-import 'package:construculator/features/estimation/domain/entities/enums.dart';
-import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
-import 'package:construculator/features/estimation/domain/entities/markup_configuration_entity.dart';
+import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/libraries/estimation/domain/entities/enums.dart';
+import 'package:construculator/libraries/estimation/domain/entities/lock_status_entity.dart';
+import 'package:construculator/libraries/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:construculator/features/estimation/domain/usecases/add_cost_estimation_usecase.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 

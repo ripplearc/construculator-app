@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
-import 'package:construculator/features/estimation/data/repositories/cost_estimation_repository_impl.dart';
-import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
+import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
+import 'package:construculator/libraries/estimation/data/repositories/cost_estimation_repository_impl.dart';
+import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/libraries/errors/failures.dart';

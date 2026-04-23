@@ -4,7 +4,7 @@
     <!-- Targets: Remote data source implementation for cost estimations -->
 
     <files>
-        <file>lib/features/estimation/data/data_source/remote_cost_estimation_data_source.dart</file>
+        <file>lib/libraries/estimation/data/data_source/remote_cost_estimation_data_source.dart</file>
     </files>
 
     <exclude>
@@ -87,7 +87,7 @@
     </rules>
 
     <commands>
-        <command group="estimation_data_source" expected-return="0">flutter test test/features/estimations/units/data/data_source/remote_cost_estimation_data_source_test.dart</command>
+        <command group="estimation_data_source" expected-return="0">flutter test test/libraries/estimation/units/data/data_source/remote_cost_estimation_data_source_test.dart</command>
     </commands>
 
     <threshold failure="85">

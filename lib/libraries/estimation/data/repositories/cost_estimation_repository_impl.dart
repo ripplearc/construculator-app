@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
-import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
-import 'package:construculator/features/estimation/data/models/pagination_state.dart';
-import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
-import 'package:construculator/features/estimation/domain/entities/lock_status_entity.dart';
-import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
+import 'package:construculator/libraries/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
+import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
+import 'package:construculator/libraries/estimation/data/models/pagination_state.dart';
+import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/libraries/estimation/domain/entities/lock_status_entity.dart';
+import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';

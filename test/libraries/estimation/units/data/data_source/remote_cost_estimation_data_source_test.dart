@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
-import 'package:construculator/features/estimation/data/data_source/remote_cost_estimation_data_source.dart';
-import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
-import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/libraries/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
+import 'package:construculator/libraries/estimation/data/data_source/remote_cost_estimation_data_source.dart';
+import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
+import 'package:construculator/libraries/estimation/testing/estimation_library_test_module.dart';
 
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -66,7 +66,7 @@ void main() {
       fakeClock = FakeClockImpl();
       fakeSupabaseWrapper = FakeSupabaseWrapper(clock: fakeClock);
       Modular.init(
-        EstimationModule(
+        EstimationLibraryTestModule(
           FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabaseWrapper),
         ),
       );

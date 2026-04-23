@@ -1,4 +1,4 @@
-import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/auth/domain/entities/user_profile_entity.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:equatable/equatable.dart';
