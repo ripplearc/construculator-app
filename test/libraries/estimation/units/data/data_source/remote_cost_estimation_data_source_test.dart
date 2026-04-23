@@ -1,10 +1,9 @@
 import 'dart:io';
 
-import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
 import 'package:construculator/libraries/estimation/data/data_source/remote_cost_estimation_data_source.dart';
 import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
-import 'package:construculator/libraries/estimation/estimation_library_module.dart';
+import 'package:construculator/libraries/estimation/testing/estimation_library_test_module.dart';
 
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -67,7 +66,7 @@ void main() {
       fakeClock = FakeClockImpl();
       fakeSupabaseWrapper = FakeSupabaseWrapper(clock: fakeClock);
       Modular.init(
-        _TestAppModule(
+        EstimationLibraryTestModule(
           FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabaseWrapper),
         ),
       );
@@ -686,13 +685,4 @@ void main() {
       );
     });
   });
-}
-
-class _TestAppModule extends Module {
-  final AppBootstrap appBootstrap;
-
-  _TestAppModule(this.appBootstrap);
-
-  @override
-  List<Module> get imports => [EstimationLibraryModule(appBootstrap)];
 }
