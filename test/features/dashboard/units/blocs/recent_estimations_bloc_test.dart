@@ -120,4 +120,23 @@ void main() {
       ),
     ],
   );
+
+  blocTest<RecentEstimationsBloc, RecentEstimationsState>(
+    're-watches when the current project changes after start',
+    build: () {
+      repository.streamToReturn = Stream.value(Right(tEstimations));
+      return bloc;
+    },
+    act: (bloc) async {
+      bloc.add(const RecentEstimationsWatchStarted());
+      await Future<void>.delayed(Duration.zero);
+      currentProjectNotifier.setCurrentProjectId('another_project');
+    },
+    expect: () => [
+      const RecentEstimationsLoading(lastKnownEstimations: null),
+      RecentEstimationsLoaded(tEstimations),
+      RecentEstimationsLoading(lastKnownEstimations: tEstimations),
+      RecentEstimationsLoaded(tEstimations),
+    ],
+  );
 }
