@@ -41,9 +41,9 @@ class RecentEstimationsBloc
     _subscription?.cancel();
 
     _subscription =
-        _watchRecentEstimationsUseCase(
-          RecentEstimationsParams(projectId: event.projectId),
-        ).listen((result) {
+        _watchRecentEstimationsUseCase(const RecentEstimationsParams()).listen((
+          result,
+        ) {
           add(_RecentEstimationsUpdated(result));
         });
   }

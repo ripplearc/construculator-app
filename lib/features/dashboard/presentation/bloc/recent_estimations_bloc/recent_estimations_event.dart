@@ -8,11 +8,7 @@ abstract class RecentEstimationsEvent extends Equatable {
 }
 
 class RecentEstimationsWatchStarted extends RecentEstimationsEvent {
-  final String projectId;
-  const RecentEstimationsWatchStarted(this.projectId);
-
-  @override
-  List<Object?> get props => [projectId];
+  const RecentEstimationsWatchStarted();
 }
 
 class _RecentEstimationsUpdated extends RecentEstimationsEvent {
