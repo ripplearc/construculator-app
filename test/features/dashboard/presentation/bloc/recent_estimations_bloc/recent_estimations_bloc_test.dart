@@ -7,16 +7,24 @@ import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/estimation/domain/enums/estimation_sort_option.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   late RecentEstimationsBloc bloc;
   late _FakeCostEstimationRepository repository;
+  late FakeCurrentProjectNotifier currentProjectNotifier;
   late WatchRecentEstimationsUseCase useCase;
 
   setUp(() {
     repository = _FakeCostEstimationRepository();
-    useCase = WatchRecentEstimationsUseCase(repository);
+    currentProjectNotifier = FakeCurrentProjectNotifier(
+      initialProjectId: 'test_project_id',
+    );
+    useCase = WatchRecentEstimationsUseCase(
+      repository,
+      currentProjectNotifier,
+    );
     bloc = RecentEstimationsBloc(watchRecentEstimationsUseCase: useCase);
   });
 
@@ -45,8 +53,7 @@ void main() {
       repository.streamToReturn = Stream.value(Right(tEstimations));
       return bloc;
     },
-    act: (bloc) =>
-        bloc.add(const RecentEstimationsWatchStarted('test_project_id')),
+    act: (bloc) => bloc.add(const RecentEstimationsWatchStarted()),
     expect: () => [
       const RecentEstimationsLoading(lastKnownEstimations: null),
       RecentEstimationsLoaded(tEstimations),
@@ -59,8 +66,7 @@ void main() {
       repository.streamToReturn = Stream.value(Left(ServerFailure()));
       return bloc;
     },
-    act: (bloc) =>
-        bloc.add(const RecentEstimationsWatchStarted('test_project_id')),
+    act: (bloc) => bloc.add(const RecentEstimationsWatchStarted()),
     expect: () => [
       const RecentEstimationsLoading(lastKnownEstimations: null),
       const RecentEstimationsError('ServerFailure()'),
@@ -74,11 +80,23 @@ void main() {
       return bloc;
     },
     seed: () => RecentEstimationsLoaded(tEstimations),
-    act: (bloc) =>
-        bloc.add(const RecentEstimationsWatchStarted('another_project')),
+    act: (bloc) => bloc.add(const RecentEstimationsWatchStarted()),
     expect: () => [
       RecentEstimationsLoading(lastKnownEstimations: tEstimations),
       RecentEstimationsLoaded(tEstimations),
+    ],
+  );
+
+  blocTest<RecentEstimationsBloc, RecentEstimationsState>(
+    'emits [RecentEstimationsLoading, RecentEstimationsError] when there is no current project',
+    build: () {
+      currentProjectNotifier.setCurrentProjectId(null);
+      return bloc;
+    },
+    act: (bloc) => bloc.add(const RecentEstimationsWatchStarted()),
+    expect: () => [
+      const RecentEstimationsLoading(lastKnownEstimations: null),
+      const RecentEstimationsError('EstimationFailure()'),
     ],
   );
 }
