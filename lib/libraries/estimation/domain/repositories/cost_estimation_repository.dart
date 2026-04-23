@@ -21,8 +21,11 @@ abstract class CostEstimationRepository {
   /// a [Failure] or a [List<CostEstimate>] associated with the specified
   /// project ID.
   Future<Either<Failure, List<CostEstimate>>> fetchInitialEstimations(
-    String projectId,
-  );
+    String projectId, {
+    EstimationSortOption sortBy = EstimationSortOption.createdAt,
+    bool ascending = false,
+    int? limit,
+  });
 
   /// Loads the next page of cost estimates for a specific project.
   ///
@@ -30,11 +33,19 @@ abstract class CostEstimationRepository {
   /// Returns [Either] containing a [Failure] or [List<CostEstimate>]
   /// representing the full accumulated list.
   Future<Either<Failure, List<CostEstimate>>> loadMoreEstimations(
-    String projectId,
-  );
+    String projectId, {
+    EstimationSortOption sortBy = EstimationSortOption.createdAt,
+    bool ascending = false,
+    int? limit,
+  });
 
   /// Returns whether there are more pages to load for a project.
-  bool hasMoreEstimations(String projectId);
+  bool hasMoreEstimations(
+    String projectId, {
+    EstimationSortOption sortBy = EstimationSortOption.createdAt,
+    bool ascending = false,
+    int? limit,
+  });
 
   /// Watches all cost estimates for a specific project.
   ///
@@ -46,8 +57,11 @@ abstract class CostEstimationRepository {
   /// The stream includes their markup configurations, lock status, and
   /// calculated totals.
   Stream<Either<Failure, List<CostEstimate>>> watchEstimations(
-    String projectId,
-  );
+    String projectId, {
+    EstimationSortOption sortBy = EstimationSortOption.createdAt,
+    bool ascending = false,
+    int? limit,
+  });
 
   /// Creates a new cost estimation.
   ///
