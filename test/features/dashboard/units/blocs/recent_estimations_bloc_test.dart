@@ -41,7 +41,10 @@ void main() {
   });
 
   void seedEstimationTable(List<Map<String, dynamic>> rows) {
-    fakeSupabaseWrapper.addTableData(DatabaseConstants.costEstimatesTable, rows);
+    fakeSupabaseWrapper.addTableData(
+      DatabaseConstants.costEstimatesTable,
+      rows,
+    );
   }
 
   final tDate = DateTime(2025, 1, 1, 8, 0);
@@ -124,7 +127,10 @@ void main() {
   blocTest<RecentEstimationsBloc, RecentEstimationsState>(
     're-watches when the current project changes after start',
     build: () {
-      repository.streamToReturn = Stream.value(Right(tEstimations));
+      repository.streamFactory = () =>
+          Stream<Either<Failure, List<CostEstimate>>>.value(
+            Right<Failure, List<CostEstimate>>(tEstimations),
+          );
       return bloc;
     },
     act: (bloc) async {
