@@ -34,7 +34,6 @@ class _ProjectDropdownProjectsUpdated extends ProjectDropdownEvent {
   @override
   List<Object?> get props => [projects];
 }
-
 /// Triggers a failure event when project list loading fails.
 class _ProjectDropdownProjectsLoadFailed extends ProjectDropdownEvent {
   final String message;
