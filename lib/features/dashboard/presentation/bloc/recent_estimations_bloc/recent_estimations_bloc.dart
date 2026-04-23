@@ -27,7 +27,6 @@ class RecentEstimationsBloc
     RecentEstimationsWatchStarted event,
     Emitter<RecentEstimationsState> emit,
   ) {
-    // Preserve last known state if available to avoid flicker
     List<CostEstimate>? previousEstimations;
     if (state is RecentEstimationsLoaded) {
       previousEstimations = (state as RecentEstimationsLoaded).estimations;
