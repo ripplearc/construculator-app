@@ -50,7 +50,7 @@ void main() {
   blocTest<RecentEstimationsBloc, RecentEstimationsState>(
     'emits [RecentEstimationsLoading, RecentEstimationsLoaded] when data streams successfully',
     build: () {
-      repository.streamToReturn = Stream.value(Right(tEstimations));
+      repository.resultToReturn = Right(tEstimations);
       return bloc;
     },
     act: (bloc) => bloc.add(const RecentEstimationsWatchStarted()),
@@ -63,7 +63,7 @@ void main() {
   blocTest<RecentEstimationsBloc, RecentEstimationsState>(
     'emits [RecentEstimationsLoading, RecentEstimationsError] when data stream fails',
     build: () {
-      repository.streamToReturn = Stream.value(Left(ServerFailure()));
+      repository.resultToReturn = Left(ServerFailure());
       return bloc;
     },
     act: (bloc) => bloc.add(const RecentEstimationsWatchStarted()),
@@ -76,7 +76,7 @@ void main() {
   blocTest<RecentEstimationsBloc, RecentEstimationsState>(
     'preserves lastKnownEstimations when re-watching',
     build: () {
-      repository.streamToReturn = Stream.value(Right(tEstimations));
+      repository.resultToReturn = Right(tEstimations);
       return bloc;
     },
     seed: () => RecentEstimationsLoaded(tEstimations),
@@ -96,14 +96,16 @@ void main() {
     act: (bloc) => bloc.add(const RecentEstimationsWatchStarted()),
     expect: () => [
       const RecentEstimationsLoading(lastKnownEstimations: null),
-      const RecentEstimationsError('EstimationFailure()'),
+      const RecentEstimationsError(
+        'EstimationFailure(EstimationErrorType.unexpectedError)',
+      ),
     ],
   );
 }
 
 class _FakeCostEstimationRepository implements CostEstimationRepository {
-  Stream<Either<Failure, List<CostEstimate>>> streamToReturn =
-      const Stream.empty();
+  Either<Failure, List<CostEstimate>> resultToReturn =
+      const Right<Failure, List<CostEstimate>>([]);
 
   @override
   Stream<Either<Failure, List<CostEstimate>>> watchEstimations(
@@ -111,7 +113,7 @@ class _FakeCostEstimationRepository implements CostEstimationRepository {
     EstimationSortOption sortBy = EstimationSortOption.createdAt,
     bool ascending = false,
     int? limit,
-  }) => streamToReturn;
+  }) => Stream.value(resultToReturn);
 
   @override
   Future<Either<Failure, CostEstimate>> changeLockStatus({
