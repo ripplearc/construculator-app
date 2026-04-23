@@ -1,5 +1,6 @@
 import 'package:construculator/libraries/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
 import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
+import 'package:construculator/libraries/estimation/domain/enums/estimation_sort_option.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -23,17 +24,24 @@ class RemoteCostEstimationDataSource implements CostEstimationDataSource {
     required String projectId,
     required int offset,
     required int limit,
+    EstimationSortOption sortBy = EstimationSortOption.createdAt,
+    bool ascending = false,
   }) async {
     _logger.debug(
       'Getting cost estimations for project: $projectId, '
-      'offset: $offset, limit: $limit',
+      'offset: $offset, limit: $limit, sortBy: $sortBy, ascending: $ascending',
     );
+
+    final orderColumn = sortBy == EstimationSortOption.updatedAt
+        ? DatabaseConstants.updatedAtColumn
+        : createdAtColumn;
+
     final response = await supabaseWrapper.selectPaginated(
       table: costEstimatesTable,
       filterColumn: projectIdColumn,
       filterValue: projectId,
-      orderColumn: createdAtColumn,
-      ascending: false,
+      orderColumn: orderColumn,
+      ascending: ascending,
       rangeFrom: offset,
       rangeTo: offset + limit - 1,
     );

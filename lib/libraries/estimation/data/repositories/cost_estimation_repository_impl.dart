@@ -8,6 +8,8 @@ import 'package:construculator/libraries/estimation/data/models/cost_estimate_dt
 import 'package:construculator/libraries/estimation/data/models/pagination_state.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/estimation/domain/entities/lock_status_entity.dart';
+import 'package:construculator/libraries/estimation/domain/enums/estimation_sort_option.dart'
+    show EstimationSortOption;
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
@@ -27,6 +29,14 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
 
   CostEstimationRepositoryImpl({required CostEstimationDataSource dataSource})
     : _dataSource = dataSource;
+
+  String _buildStreamKey(
+    String projectId,
+    EstimationSortOption sortBy,
+    int? limit,
+  ) {
+    return '$projectId:${sortBy.name}:${limit ?? 'all'}';
+  }
 
   Failure _handleError(
     Object error,
@@ -103,39 +113,47 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
 
   @override
   Future<Either<Failure, List<CostEstimate>>> fetchInitialEstimations(
-    String projectId,
-  ) async {
+    String projectId, {
+    EstimationSortOption sortBy = EstimationSortOption.createdAt,
+    bool ascending = false,
+    int? limit,
+  }) async {
+    final streamKey = _buildStreamKey(projectId, sortBy, limit);
     try {
       _logger.debug(
-        'Getting first page of estimations for project: $projectId',
+        'Getting first page of estimations for project: $projectId (streamKey: $streamKey)',
       );
 
-      _cachedEstimations[projectId] = [];
+      _cachedEstimations[streamKey] = [];
+
+      final fetchLimit = limit ?? defaultPageSize;
 
       final costEstimateDtos = await _dataSource.getEstimations(
         projectId: projectId,
         offset: 0,
-        limit: defaultPageSize,
+        limit: fetchLimit,
+        sortBy: sortBy,
+        ascending: ascending,
       );
 
       final costEstimates = costEstimateDtos
           .map((dto) => dto.toDomain())
           .toList();
 
-      final hasMore = costEstimates.length >= defaultPageSize;
+      final hasMore = costEstimates.length >= fetchLimit;
 
-      _paginationStates[projectId] = PaginationState(
+      _paginationStates[streamKey] = PaginationState(
         currentOffset: costEstimates.length,
-        pageSize: defaultPageSize,
+        pageSize: fetchLimit,
         hasMore: hasMore,
       );
 
-      _cachedEstimations[projectId] = costEstimates;
-      _emitToStream(projectId, Right(costEstimates));
+      _cachedEstimations[streamKey] = costEstimates;
+      _emitToStream(streamKey, Right(costEstimates));
 
       _logger.debug(
         'Retrieved ${costEstimates.length} estimations (hasMore: $hasMore) '
-        'for project: $projectId',
+        'for stream: $streamKey',
       );
 
       return Right(costEstimates);
@@ -145,32 +163,41 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         'getting first page of estimations',
         projectId: projectId,
       );
-      _emitToStream(projectId, Left(failure));
+      _emitToStream(streamKey, Left(failure));
       return Left(failure);
     }
   }
 
   @override
   Future<Either<Failure, List<CostEstimate>>> loadMoreEstimations(
-    String projectId,
-  ) async {
-    final paginationState = _paginationStates[projectId];
+    String projectId, {
+    EstimationSortOption sortBy = EstimationSortOption.createdAt,
+    bool ascending = false,
+    int? limit,
+  }) async {
+    final streamKey = _buildStreamKey(projectId, sortBy, limit);
+    final paginationState = _paginationStates[streamKey];
 
     if (paginationState == null) {
       _logger.warning(
-        'loadMore called before initial fetch for project: $projectId',
+        'loadMore called before initial fetch for stream: $streamKey',
       );
-      return fetchInitialEstimations(projectId);
+      return fetchInitialEstimations(
+        projectId,
+        sortBy: sortBy,
+        ascending: ascending,
+        limit: limit,
+      );
     }
 
     if (!paginationState.hasMore) {
       _logger.debug('Skipping loadMore: hasMore=${paginationState.hasMore}');
-      return Right(_cachedEstimations[projectId] ?? []);
+      return Right(_cachedEstimations[streamKey] ?? []);
     }
 
     try {
       _logger.debug(
-        'Loading more estimations for project: $projectId, '
+        'Loading more estimations for stream: $streamKey, '
         'offset: ${paginationState.currentOffset}',
       );
 
@@ -178,6 +205,8 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         projectId: projectId,
         offset: paginationState.currentOffset,
         limit: paginationState.pageSize,
+        sortBy: sortBy,
+        ascending: ascending,
       );
 
       final newEstimates = costEstimateDtos
@@ -186,22 +215,22 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
 
       final hasMore = newEstimates.length >= paginationState.pageSize;
 
-      final existingEstimates = _cachedEstimations[projectId] ?? [];
+      final existingEstimates = _cachedEstimations[streamKey] ?? [];
       final allEstimates = [...existingEstimates, ...newEstimates];
 
-      _paginationStates[projectId] = PaginationState(
+      _paginationStates[streamKey] = PaginationState(
         currentOffset: allEstimates.length,
         pageSize: paginationState.pageSize,
         hasMore: hasMore,
       );
 
-      _cachedEstimations[projectId] = allEstimates;
-      _emitToStream(projectId, Right(allEstimates));
+      _cachedEstimations[streamKey] = allEstimates;
+      _emitToStream(streamKey, Right(allEstimates));
 
       _logger.debug(
         'Loaded ${newEstimates.length} more estimations '
         '(total: ${allEstimates.length}, hasMore: $hasMore) '
-        'for project: $projectId',
+        'for stream: $streamKey',
       );
 
       return Right(allEstimates);
@@ -212,33 +241,43 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         projectId: projectId,
       );
 
-      _emitToStream(projectId, Left(failure));
+      _emitToStream(streamKey, Left(failure));
       return Left(failure);
     }
   }
 
   @override
-  bool hasMoreEstimations(String projectId) {
-    return _paginationStates[projectId]?.hasMore ?? true;
+  bool hasMoreEstimations(
+    String projectId, {
+    EstimationSortOption sortBy = EstimationSortOption.createdAt,
+    bool ascending = false,
+    int? limit,
+  }) {
+    final streamKey = _buildStreamKey(projectId, sortBy, limit);
+    return _paginationStates[streamKey]?.hasMore ?? true;
   }
 
   @override
   Stream<Either<Failure, List<CostEstimate>>> watchEstimations(
-    String projectId,
-  ) {
-    _logger.debug('Watching cost estimations for project: $projectId');
+    String projectId, {
+    EstimationSortOption sortBy = EstimationSortOption.createdAt,
+    bool ascending = false,
+    int? limit,
+  }) {
+    final streamKey = _buildStreamKey(projectId, sortBy, limit);
+    _logger.debug('Watching cost estimations for stream: $streamKey');
 
-    final controller = _streamControllers.putIfAbsent(projectId, () {
+    final controller = _streamControllers.putIfAbsent(streamKey, () {
       final newController =
           StreamController<Either<Failure, List<CostEstimate>>>.broadcast(
             onCancel: () {
               _logger.debug(
-                'Stream cancelled for project: $projectId, cleaning up',
+                'Stream cancelled for stream: $streamKey, cleaning up',
               );
-              _streamControllers[projectId]?.close();
-              _streamControllers.remove(projectId);
-              _cachedEstimations.remove(projectId);
-              _paginationStates.remove(projectId);
+              _streamControllers[streamKey]?.close();
+              _streamControllers.remove(streamKey);
+              _cachedEstimations.remove(streamKey);
+              _paginationStates.remove(streamKey);
             },
           );
       fetchInitialEstimations(projectId);
@@ -249,23 +288,29 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
   }
 
   void _emitToStream(
-    String projectId,
+    String streamKey,
     Either<Failure, List<CostEstimate>> result,
   ) {
     result.fold(
       (_) {},
-      (estimations) => _cachedEstimations[projectId] = estimations,
+      (estimations) => _cachedEstimations[streamKey] = estimations,
     );
 
-    if (_streamControllers.containsKey(projectId) &&
-        _streamControllers[projectId]?.isClosed == false) {
-      _streamControllers[projectId]?.add(result);
+    if (_streamControllers.containsKey(streamKey) &&
+        _streamControllers[streamKey]?.isClosed == false) {
+      _streamControllers[streamKey]?.add(result);
     }
   }
 
   CostEstimate? _getOriginalEstimation(String projectId, String estimationId) {
-    if (!_streamControllers.containsKey(projectId)) {
-      return null;
+    final projectKeys = _cachedEstimations.keys.where(
+      (k) => k.startsWith('$projectId:'),
+    );
+    for (final key in projectKeys) {
+      try {
+        final cached = _cachedEstimations[key] ?? [];
+        return cached.firstWhere((e) => e.id == estimationId);
+      } catch (_) {}
     }
 
     final cachedEstimations = _cachedEstimations[projectId] ?? [];
@@ -277,16 +322,17 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     required String estimationId,
     required CostEstimate Function(CostEstimate) updateFn,
   }) {
-    if (!_streamControllers.containsKey(projectId)) {
-      return;
+    final projectKeys = _streamControllers.keys.where(
+      (k) => k.startsWith('$projectId:'),
+    );
+    for (final key in projectKeys) {
+      final cachedEstimations = _cachedEstimations[key] ?? [];
+      final updatedList = cachedEstimations.map((e) {
+        return e.id == estimationId ? updateFn(e) : e;
+      }).toList();
+
+      _emitToStream(key, Right(updatedList));
     }
-
-    final cachedEstimations = _cachedEstimations[projectId] ?? [];
-    final updatedList = cachedEstimations.map((e) {
-      return e.id == estimationId ? updateFn(e) : e;
-    }).toList();
-
-    _emitToStream(projectId, Right(updatedList));
   }
 
   void _finalizeOptimisticUpdate(
@@ -294,20 +340,21 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     String estimationId,
     CostEstimate updatedEstimation,
   ) {
-    if (!_streamControllers.containsKey(projectId)) {
-      return;
-    }
-
-    final cachedEstimations = _cachedEstimations[projectId] ?? [];
-    final updatedList = cachedEstimations.map((e) {
-      return e.id == estimationId ? updatedEstimation : e;
-    }).toList();
-
-    _logger.debug(
-      'Updating stream with locked/unlocked estimation for project: $projectId',
+    final projectKeys = _streamControllers.keys.where(
+      (k) => k.startsWith('$projectId:'),
     );
+    for (final key in projectKeys) {
+      final cachedEstimations = _cachedEstimations[key] ?? [];
+      final updatedList = cachedEstimations.map((e) {
+        return e.id == estimationId ? updatedEstimation : e;
+      }).toList();
 
-    _emitToStream(projectId, Right(updatedList));
+      _logger.debug(
+        'Updating stream with locked/unlocked estimation for stream: $key',
+      );
+
+      _emitToStream(key, Right(updatedList));
+    }
   }
 
   void _rollbackOptimisticUpdate(
@@ -315,17 +362,19 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     String estimationId,
     CostEstimate? originalEstimation,
   ) {
-    if (originalEstimation == null ||
-        !_streamControllers.containsKey(projectId)) {
-      return;
+    if (originalEstimation == null) return;
+
+    final projectKeys = _streamControllers.keys.where(
+      (k) => k.startsWith('$projectId:'),
+    );
+    for (final key in projectKeys) {
+      final cachedEstimations = _cachedEstimations[key] ?? [];
+      final updatedList = cachedEstimations.map((e) {
+        return e.id == estimationId ? originalEstimation : e;
+      }).toList();
+
+      _emitToStream(key, Right(updatedList));
     }
-
-    final cachedEstimations = _cachedEstimations[projectId] ?? [];
-    final updatedList = cachedEstimations.map((e) {
-      return e.id == estimationId ? originalEstimation : e;
-    }).toList();
-
-    _emitToStream(projectId, Right(updatedList));
   }
 
   @override
@@ -363,23 +412,24 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     String projectId,
     CostEstimate newEstimation,
   ) {
-    if (_streamControllers.containsKey(projectId)) {
-      final cachedEstimations = _cachedEstimations[projectId] ?? [];
+    final projectKeys = _streamControllers.keys.where(
+      (k) => k.startsWith('$projectId:'),
+    );
+    for (final key in projectKeys) {
+      final cachedEstimations = _cachedEstimations[key] ?? [];
 
       final updatedEstimations = [newEstimation, ...cachedEstimations];
 
-      final paginationState = _paginationStates[projectId];
+      final paginationState = _paginationStates[key];
       if (paginationState != null) {
-        _paginationStates[projectId] = paginationState.copyWith(
+        _paginationStates[key] = paginationState.copyWith(
           currentOffset: paginationState.currentOffset + 1,
         );
       }
 
-      _logger.debug(
-        'Updating stream with new estimation for project: $projectId',
-      );
+      _logger.debug('Updating stream with new estimation for stream: $key');
 
-      _emitToStream(projectId, Right(updatedEstimations));
+      _emitToStream(key, Right(updatedEstimations));
     }
   }
 
@@ -387,16 +437,19 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     String projectId,
     String estimationId,
   ) {
-    if (_streamControllers.containsKey(projectId)) {
-      final cachedEstimations = _cachedEstimations[projectId] ?? [];
+    final projectKeys = _streamControllers.keys.where(
+      (k) => k.startsWith('$projectId:'),
+    );
+    for (final key in projectKeys) {
+      final cachedEstimations = _cachedEstimations[key] ?? [];
       final updatedEstimations = cachedEstimations
           .where((estimation) => estimation.id != estimationId)
           .toList();
 
-      final paginationState = _paginationStates[projectId];
+      final paginationState = _paginationStates[key];
       if (paginationState != null &&
           updatedEstimations.length < cachedEstimations.length) {
-        _paginationStates[projectId] = paginationState.copyWith(
+        _paginationStates[key] = paginationState.copyWith(
           currentOffset: (paginationState.currentOffset - 1).clamp(
             0,
             paginationState.currentOffset,
@@ -405,10 +458,10 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       }
 
       _logger.debug(
-        'Updating stream with deleted estimation for project: $projectId, estimationId: $estimationId',
+        'Updating stream with deleted estimation for stream: $key, estimationId: $estimationId',
       );
 
-      _emitToStream(projectId, Right(updatedEstimations));
+      _emitToStream(key, Right(updatedEstimations));
     }
   }
 
