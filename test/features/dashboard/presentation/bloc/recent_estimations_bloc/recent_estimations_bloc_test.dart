@@ -25,7 +25,10 @@ void main() {
       repository,
       currentProjectNotifier,
     );
-    bloc = RecentEstimationsBloc(watchRecentEstimationsUseCase: useCase);
+    bloc = RecentEstimationsBloc(
+      watchRecentEstimationsUseCase: useCase,
+      currentProjectNotifier: currentProjectNotifier,
+    );
   });
 
   final tDate = DateTime.now();
@@ -99,6 +102,25 @@ void main() {
       const RecentEstimationsError(
         'EstimationFailure(EstimationErrorType.unexpectedError)',
       ),
+    ],
+  );
+
+  blocTest<RecentEstimationsBloc, RecentEstimationsState>(
+    're-watches when the current project changes after start',
+    build: () {
+      repository.streamToReturn = Stream.value(Right(tEstimations));
+      return bloc;
+    },
+    act: (bloc) async {
+      bloc.add(const RecentEstimationsWatchStarted());
+      await Future<void>.delayed(Duration.zero);
+      currentProjectNotifier.setCurrentProjectId('another_project');
+    },
+    expect: () => [
+      const RecentEstimationsLoading(lastKnownEstimations: null),
+      RecentEstimationsLoaded(tEstimations),
+      RecentEstimationsLoading(lastKnownEstimations: tEstimations),
+      RecentEstimationsLoaded(tEstimations),
     ],
   );
 }

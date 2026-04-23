@@ -2,7 +2,6 @@ import 'package:construculator/features/dashboard/presentation/bloc/recent_estim
 import 'package:construculator/features/dashboard/presentation/widgets/estimation_card.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -17,27 +16,12 @@ class RecentEstimationsSection extends StatefulWidget {
 
 class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
   late RecentEstimationsBloc _bloc;
-  late CurrentProjectNotifier _projectNotifier;
 
   @override
   void initState() {
     super.initState();
     _bloc = Modular.get<RecentEstimationsBloc>();
-    _projectNotifier = Modular.get<CurrentProjectNotifier>();
-
-    // Start watching immediately if a project is selected
-    if (_projectNotifier.currentProjectId != null) {
-      _bloc.add(
-        RecentEstimationsWatchStarted(_projectNotifier.currentProjectId!),
-      );
-    }
-
-    // Re-watch when project changes
-    _projectNotifier.onCurrentProjectChanged.listen((projectId) {
-      if (projectId != null && mounted) {
-        _bloc.add(RecentEstimationsWatchStarted(projectId));
-      }
-    });
+    _bloc.add(const RecentEstimationsWatchStarted());
   }
 
   @override
