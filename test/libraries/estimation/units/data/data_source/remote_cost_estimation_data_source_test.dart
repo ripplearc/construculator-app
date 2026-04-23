@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
 import 'package:construculator/libraries/estimation/data/data_source/remote_cost_estimation_data_source.dart';
 import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
@@ -66,7 +67,7 @@ void main() {
       fakeClock = FakeClockImpl();
       fakeSupabaseWrapper = FakeSupabaseWrapper(clock: fakeClock);
       Modular.init(
-        EstimationLibraryTestModule(
+        _TestAppModule(
           FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabaseWrapper),
         ),
       );
@@ -718,4 +719,13 @@ void main() {
       );
     });
   });
+}
+
+class _TestAppModule extends Module {
+  final AppBootstrap appBootstrap;
+
+  _TestAppModule(this.appBootstrap);
+
+  @override
+  List<Module> get imports => [EstimationLibraryModule(appBootstrap)];
 }
