@@ -33,6 +33,9 @@ class RecentEstimationsBloc
     RecentEstimationsWatchStarted event,
     Emitter<RecentEstimationsState> emit,
   ) {
+    _projectSubscription ??= _currentProjectNotifier.onCurrentProjectChanged
+        .listen((_) => add(const _RecentEstimationsProjectChanged()));
+
     List<CostEstimate>? previousEstimations;
     if (state is RecentEstimationsLoaded) {
       previousEstimations = (state as RecentEstimationsLoaded).estimations;
@@ -51,6 +54,13 @@ class RecentEstimationsBloc
         ) {
           add(_RecentEstimationsUpdated(result));
         });
+  }
+
+  void _onProjectChanged(
+    _RecentEstimationsProjectChanged event,
+    Emitter<RecentEstimationsState> emit,
+  ) {
+    add(const RecentEstimationsWatchStarted());
   }
 
   void _onUpdated(

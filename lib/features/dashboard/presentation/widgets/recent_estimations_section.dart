@@ -1,7 +1,11 @@
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/estimation_card.dart';
+import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -16,6 +20,9 @@ class RecentEstimationsSection extends StatefulWidget {
 
 class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
   late RecentEstimationsBloc _bloc;
+  final AppRouter _router = Modular.get<AppRouter>();
+  final CurrentProjectNotifier _currentProjectNotifier =
+      Modular.get<CurrentProjectNotifier>();
 
   @override
   void initState() {
@@ -36,23 +43,20 @@ class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Recent cost estimations',
+              context.l10n.recentCostEstimationsTitle,
               style: typography.titleMediumSemiBold.copyWith(
                 color: colors.textDark,
               ),
             ),
             TextButton(
-              onPressed: () {
-                // Navigate to full list
-                // For now, we can just log or implement route
-              },
+              onPressed: _openAllEstimations,
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: Text(
-                'View all',
+                context.l10n.viewAllButton,
                 style: typography.bodyMediumSemiBold.copyWith(
                   color: colors.textLink,
                 ),
@@ -62,13 +66,12 @@ class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
         ),
         const SizedBox(height: 16),
         SizedBox(
-          height: 120, // Approximate height for the card
+          height: 120,
           child: BlocBuilder<RecentEstimationsBloc, RecentEstimationsState>(
             bloc: _bloc,
             builder: (context, state) {
               if (state is RecentEstimationsLoading &&
                   state.lastKnownEstimations == null) {
-                // Initial loading skeleton
                 return ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: 3,
@@ -86,7 +89,7 @@ class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
               } else if (state is RecentEstimationsError) {
                 return Center(
                   child: Text(
-                    'Failed to load recent estimations.',
+                    context.l10n.recentEstimationsLoadError,
                     style: typography.bodyMediumRegular.copyWith(
                       color: colors.statusError,
                     ),
@@ -94,7 +97,6 @@ class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
                 );
               }
 
-              // Loaded or Loading with previous data
               List<CostEstimate> estimations = [];
               if (state is RecentEstimationsLoaded) {
                 estimations = state.estimations;
@@ -105,7 +107,7 @@ class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
               if (estimations.isEmpty) {
                 return Center(
                   child: Text(
-                    'No recent estimations found.',
+                    context.l10n.recentEstimationsEmptyState,
                     style: typography.bodyMediumRegular.copyWith(
                       color: colors.textBody,
                     ),
@@ -120,9 +122,7 @@ class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
                   final estimation = estimations[index];
                   return EstimationCard(
                     estimation: estimation,
-                    onTap: () {
-                      // Navigate to estimation details
-                    },
+                    onTap: () => _openEstimationDetails(estimation.id),
                   );
                 },
               );
@@ -131,5 +131,22 @@ class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
         ),
       ],
     );
+  }
+
+  void _openAllEstimations() {
+    final projectId = _currentProjectNotifier.currentProjectId;
+    if (projectId == null || projectId.isEmpty) {
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => EstimationModule.landingPage(projectId: projectId),
+      ),
+    );
+  }
+
+  void _openEstimationDetails(String estimationId) {
+    _router.pushNamed('$fullEstimationDetailsRoute/$estimationId');
   }
 }

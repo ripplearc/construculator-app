@@ -2,6 +2,7 @@ import 'package:construculator/libraries/estimation/domain/entities/cost_estimat
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class EstimationCard extends StatelessWidget {
   final CostEstimate estimation;
@@ -28,10 +29,10 @@ class EstimationCard extends StatelessWidget {
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: colors.pageBackground, // usually white or slightly off-white
+          color: colors.pageBackground,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: colors.lineLight),
-          // Or use CoreShadows if available, but a light border matches standard Figma cards well
+          boxShadow: CoreShadows.small,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
