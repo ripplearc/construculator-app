@@ -49,12 +49,16 @@ class _DashboardPageTestModule extends Module {
     // Provide a stub use-case that emits an empty stream so the bloc never
     // triggers a real network call during widget tests.
     i.addLazySingleton<WatchRecentEstimationsUseCase>(
-      () => WatchRecentEstimationsUseCase(_NeverEstimationRepository()),
+      () => WatchRecentEstimationsUseCase(
+        _NeverEstimationRepository(),
+        projectNotifier,
+      ),
     );
     i.addLazySingleton<RecentEstimationsBloc>(
       () => RecentEstimationsBloc(
         watchRecentEstimationsUseCase:
             Modular.get<WatchRecentEstimationsUseCase>(),
+        currentProjectNotifier: projectNotifier,
       ),
     );
   }
