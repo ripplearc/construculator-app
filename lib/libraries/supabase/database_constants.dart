@@ -13,6 +13,7 @@ class DatabaseConstants {
   // Table names
   static const String costEstimatesTable = 'cost_estimates';
   static const String costEstimationLogsTable = 'cost_estimate_logs';
+  static const String costItemsTable = 'cost_items';
   static const String projectsTable = 'projects';
   static const String projectMembersTable = 'project_members';
   static const String searchHistoryTable = 'search_history';
