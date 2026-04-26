@@ -20,6 +20,28 @@ void main() {
       expect(bloc.state.loadedTabIndexes, {0});
     });
 
+    test('events expose value equality through props', () {
+      expect(
+        const AppShellTabSelected(2).props,
+        const AppShellTabSelected(2).props,
+      );
+      expect(
+        const AppShellTabSelected(2),
+        equals(const AppShellTabSelected(2)),
+      );
+    });
+
+    test('state copyWith preserves values when parameters are omitted', () {
+      const state = AppShellState(selectedTabIndex: 1, loadedTabIndexes: {0, 1});
+
+      final copiedState = state.copyWith();
+
+      expect(copiedState.selectedTabIndex, 1);
+      expect(copiedState.loadedTabIndexes, {0, 1});
+      expect(copiedState.props, [1, {0, 1}]);
+      expect(copiedState, equals(state));
+    });
+
     blocTest<AppShellBloc, AppShellState>(
       'updates selected tab and tracks lazy-loaded tabs',
       build: () => AppShellBloc(),

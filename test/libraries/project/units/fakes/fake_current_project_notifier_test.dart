@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -125,6 +127,19 @@ void main() {
 
         await sub1.cancel();
         await sub2.cancel();
+      });
+
+      test('dispose closes the stream', () async {
+        final done = Completer<void>();
+        final sub = fakeNotifier.onCurrentProjectChanged.listen(
+          (_) {},
+          onDone: done.complete,
+        );
+
+        fakeNotifier.dispose();
+
+        await done.future;
+        await sub.cancel();
       });
     });
   });
