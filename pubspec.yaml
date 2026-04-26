@@ -57,8 +57,18 @@ flutter:
     - assets/images/
 
 flutter_native_splash:
+  # iOS configuration
   image: "assets/icons/splash_icon.png"
-  background_image: "assets/images/splash_bg.png"
-  android: true # Disabled default Android splash screen to use custom one with animation 
+  color: "#003A54"
+  color_dark: "#003A54"
+
+  branding: "assets/icons/branding.png"
+  branding_dark: "assets/icons/branding.png"
+  branding_mode: bottom
+  branding_bottom_padding: 50
+
+  # ios_content_mode: scaleAspectFit
+
+  # Disable Android native splash (using custom AnimatedVectorDrawable instead)
+  android: false
   ios: true
-  
