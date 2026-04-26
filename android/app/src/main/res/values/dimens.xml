@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Splash screen branding image bottom padding -->
+    <dimen name="splash_branding_bottom_padding">50dp</dimen>
+</resources>
