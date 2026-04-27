@@ -23,7 +23,8 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class CostEstimationLandingPage extends StatefulWidget {
-  // TODO: https://ripplearc.youtrack.cloud/issue/CA-467/Refactor-Cost-Estimation-Landing-Page-to-retrieve-Project-ID-via-Bloc
+  // TODO: [CA-467] Remove projectId constructor parameter once retrieved via Bloc.
+  // https://ripplearc.youtrack.cloud/issue/CA-467
   final String projectId;
 
   static const double _buttonBottomRatio = 0.135;

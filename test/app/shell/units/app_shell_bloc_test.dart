@@ -1,25 +1,37 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
+import 'package:construculator/app/shell/default_tab_providers.dart';
+import 'package:construculator/app/shell/tab_module_manager.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../../utils/fake_app_bootstrap_factory.dart';
+
+TabModuleManager _noOpLoader() {
+  final clock = FakeClockImpl();
+  return TabModuleManager(
+    FakeAppBootstrapFactory.create(
+      supabaseWrapper: FakeSupabaseWrapper(clock: clock),
+    ),
+    providers: {
+      for (final tab in ShellTab.values) tab: const NoOpTabModuleProvider(),
+    },
+  );
+}
 
 void main() {
   late AppShellBloc bloc;
 
-  setUpAll(() {
-    Modular.init(_AppShellBlocTestModule());
-  });
-
-  tearDownAll(() {
-    Modular.destroy();
-  });
-
   setUp(() {
+    Modular.init(_AppShellBlocTestModule());
     bloc = Modular.get<AppShellBloc>();
   });
 
   tearDown(() async {
     await bloc.close();
+    Modular.destroy();
   });
 
   group('AppShellBloc', () {
@@ -81,6 +93,7 @@ void main() {
 class _AppShellBlocTestModule extends Module {
   @override
   void binds(Injector i) {
-    i.add<AppShellBloc>(AppShellBloc.new);
+    i.add<TabModuleManager>(_noOpLoader);
+    i.add<AppShellBloc>(() => AppShellBloc(moduleLoader: i.get()));
   }
 }

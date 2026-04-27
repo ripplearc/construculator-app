@@ -24,7 +24,8 @@ class EstimationModule extends Module {
 
   /// Exposes the Estimation Feature's UI entry point, hiding its Bloc dependencies.
   static Widget landingPage() {
-    // TODO: https://ripplearc.youtrack.cloud/issue/CA-467/Refactor-Cost-Estimation-Landing-Page-to-retrieve-Project-ID-via-Bloc
+    // TODO: [CA-467] Refactor landingPage() to retrieve projectId via Bloc instead of hardcoding.
+    // https://ripplearc.youtrack.cloud/issue/CA-467
     const projectId = '';
     return MultiBlocProvider(
       providers: [
