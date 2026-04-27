@@ -1,10 +1,7 @@
-import 'dart:async';
-
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
-import 'package:construculator/app/shell/tab_module_manager.dart';
+import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/app/shell/widgets/tab_navigator.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
-import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
@@ -18,10 +15,9 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// The primary shell page for the application's authenticated interface.
 ///
-/// This widget provides the bottom navigation bar and manages the state of the 
-/// tab navigation using [AppShellBloc] and [TabModuleManager]. It implements 
-/// lazy loading of features, ensuring each tab's dependencies are only initialized
-/// when the user navigates there for the first time.
+/// This widget provides the bottom navigation bar and manages the state of
+/// tab navigation using [AppShellBloc]. Module lazy-loading is orchestrated
+/// inside the BLoC, keeping this Page a pure presentation concern.
 class AppShellPage extends StatefulWidget {
   const AppShellPage({super.key});
 
@@ -31,33 +27,14 @@ class AppShellPage extends StatefulWidget {
 
 class _AppShellPageState extends State<AppShellPage> {
   final AppShellBloc _bloc = Modular.get<AppShellBloc>();
-  final TabModuleManager _moduleLoader = Modular.get<TabModuleManager>();
 
   final List<GlobalKey<NavigatorState>> _tabNavigatorKeys = List.generate(
     ShellTab.values.length,
     (_) => GlobalKey<NavigatorState>(),
   );
 
-  StreamSubscription<ProjectDropdownState>? _dropdownSubscription;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _moduleLoader.ensureTabModuleLoaded(ShellTab.home).then((_) {
-      if (!mounted) return;
-
-      final dropdownBloc = Modular.get<ProjectDropdownBloc>();
-      dropdownBloc.add(const ProjectDropdownStarted());
-
-      // TODO: https://ripplearc.youtrack.cloud/issue/CA-621
-      _dropdownSubscription = dropdownBloc.stream.listen((_) {});
-    });
-  }
-
   @override
   void dispose() {
-    _dropdownSubscription?.cancel();
     _bloc.close();
     super.dispose();
   }
@@ -82,9 +59,7 @@ class _AppShellPageState extends State<AppShellPage> {
     SystemNavigator.pop();
   }
 
-  Future<void> _handleTabTap(int index) async {
-    final tab = ShellTab.values[index];
-    await _moduleLoader.ensureTabModuleLoaded(tab);
+  void _handleTabTap(int index) {
     _bloc.add(AppShellTabSelected(index));
   }
 
@@ -102,7 +77,8 @@ class _AppShellPageState extends State<AppShellPage> {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
-    // TODO: https://ripplearc.youtrack.cloud/issue/CA-621
+    // TODO: [CA-621] Wire ProjectDropdownBloc result into app bar via CurrentProjectNotifier.
+    // https://ripplearc.youtrack.cloud/issue/CA-621
     const projectId = '';
     final coreColors = Theme.of(context).coreColors;
     if (projectId.isEmpty) {

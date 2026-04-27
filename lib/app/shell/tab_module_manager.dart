@@ -5,27 +5,13 @@ import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/members/members_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-/// Represents the tabs available in the app shell's bottom navigation bar.
-enum ShellTab {
-  /// The home/dashboard tab.
-  home,
 
-  /// The calculations feature tab.
-  calculations,
+export 'package:construculator/app/shell/module_model.dart' show ShellTab;
 
-  /// The cost estimation feature tab.
-  estimation,
-
-  /// The team members feature tab.
-  members,
-}
-
-/// Manages lazy loading of modules for shell tabs.
+/// Manages lazy loading of feature modules for each shell tab.
 ///
-/// Modules are provided via `TabModuleProvider`. Feature branches can supply
-/// their own providers when constructing this manager. When no providers are
-/// supplied the manager uses safe no-op defaults so the main branch can run
-/// without depending on feature-specific modules.
+/// Modules are provided via [TabModuleProvider]. Tests can supply lightweight
+/// fake providers; production uses [_ProductionTabModuleProvider] by default.
 class TabModuleManager {
   final AppBootstrap appBootstrap;
   final Map<ShellTab, TabModuleProvider> _providers;

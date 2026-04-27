@@ -13,8 +13,8 @@ class ShellModule extends Module {
 
   @override
   void binds(Injector i) {
-    i.add<AppShellBloc>(AppShellBloc.new);
     i.addSingleton<TabModuleManager>(() => TabModuleManager(appBootstrap));
+    i.add<AppShellBloc>(() => AppShellBloc(moduleLoader: i.get()));
   }
 
   @override

@@ -5,7 +5,6 @@ import 'package:construculator/app/shell/default_tab_providers.dart';
 import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
-import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
@@ -21,7 +20,6 @@ import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
-import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -70,13 +68,6 @@ class _AppShellTestModule extends Module {
   void binds(Injector i) {
     i.addLazySingleton<AuthManager>(() => authManager);
     i.addLazySingleton<AuthNotifier>(() => authNotifier);
-    i.add<AppShellBloc>(AppShellBloc.new);
-    i.add<ProjectDropdownBloc>(
-      () => ProjectDropdownBloc(
-        projectRepository: FakeProjectRepository(),
-        authManager: authManager,
-      ),
-    );
     i.addLazySingleton<AppRouter>(FakeAppRouter.new);
     i.addLazySingleton<CurrentProjectNotifier>(() => currentProjectNotifier);
     i.addLazySingleton<ProjectUIProvider>(() => _FakeProjectUiProvider());
@@ -89,6 +80,7 @@ class _AppShellTestModule extends Module {
         },
       ),
     );
+    i.add<AppShellBloc>(() => AppShellBloc(moduleLoader: i.get()));
   }
 }
 
