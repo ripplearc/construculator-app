@@ -5,7 +5,6 @@ import 'package:construculator/libraries/estimation/data/repositories/cost_estim
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/app/app_bootstrap.dart';
-
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
@@ -1503,10 +1502,7 @@ void main() {
 
           // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
           final queue = StreamQueue(repository.watchEstimations(testProjectId));
-
           await expectLater(
-            queue.next,
-            completion(
               rightEstimations(
                 predicate<List<CostEstimate>>(
                   (estimations) =>
