@@ -59,6 +59,6 @@ flutter:
 flutter_native_splash:
   image: "assets/icons/splash_icon.png"
   background_image: "assets/images/splash_bg.png"
-  android: true # Disabled default Android splash screen to use custom one with animation 
+  android: false
   ios: true
   
