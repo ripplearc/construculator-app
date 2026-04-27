@@ -1,0 +1,96 @@
+<animated-vector
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+    <aapt:attr name="android:drawable">
+        <vector
+            android:name="vector"
+            android:width="432dp"
+            android:height="432dp"
+            android:viewportWidth="103"
+            android:viewportHeight="91">
+
+            <group
+                android:pivotX="51.5"
+                android:pivotY="45.5"
+                android:scaleX="0.6"
+                android:scaleY="0.6"
+                android:translateY="-5">
+
+                <path
+                    android:name="path"
+                    android:pathData="M 51.5 55.041 C 51.5 55.041 63.592 66.676 72.223 73.02 C 83.442 81.266 103 91 103 91 C 103 91 87.969 87.714 69.981 76.091 C 62.511 71.264 51.5 61.182 51.5 61.182 C 51.5 61.182 40.491 71.267 33.019 76.091 C 16.965 86.454 0 91 0 91 C 0 91 19.558 81.266 30.777 73.02 C 39.408 66.676 51.5 55.041 51.5 55.041 Z"
+                    android:fillColor="#ffffff"
+                    android:strokeWidth="1"
+                    android:fillType="evenOdd"/>
+                <group
+                    android:name="group"
+                    android:translateX="-0.918866906482002"
+                    android:translateY="24.06338832174844">
+                <path
+                    android:name="path_2"
+                    android:pathData="M 15.055 21.979 C 15.055 13.631 21.807 6.863 30.135 6.863 L 74.12 6.863 C 82.448 6.863 89.2 13.631 89.2 21.979 L 89.2 78.034 L 84.174 74.885 L 84.174 21.979 C 84.174 16.413 79.672 11.902 74.12 11.902 L 30.135 11.902 C 24.583 11.902 20.082 16.413 20.082 21.979 L 20.082 74.255 L 15.055 78.034 L 15.055 21.979 Z"
+                    android:fillColor="#ffffff"
+                    android:strokeWidth="1"
+                    android:fillType="evenOdd"/>
+                <path
+                    android:name="path_3"
+                    android:pathData="M 33.924 16.941 L 70.327 16.941 C 72.664 16.941 74.909 17.871 76.562 19.524 C 78.215 21.177 79.144 23.421 79.144 25.759 L 79.144 25.759 C 79.144 28.097 78.215 30.341 76.562 31.994 C 74.909 33.647 72.664 34.577 70.327 34.577 L 33.924 34.577 C 31.586 34.577 29.342 33.647 27.689 31.994 C 26.036 30.341 25.106 28.097 25.106 25.759 L 25.106 25.759 C 25.106 23.421 26.036 21.177 27.689 19.524 C 29.342 17.871 31.586 16.941 33.924 16.941 M 29.106 38.353 L 36.187 38.353 C 37.247 38.353 38.265 38.775 39.015 39.525 C 39.765 40.274 40.187 41.293 40.187 42.353 L 40.187 49.469 C 40.187 50.529 39.765 51.548 39.015 52.297 C 38.265 53.047 37.247 53.469 36.187 53.469 L 29.106 53.469 C 28.046 53.469 27.028 53.047 26.278 52.297 C 25.528 51.548 25.106 50.529 25.106 49.469 L 25.106 42.353 C 25.106 41.293 25.528 40.274 26.278 39.525 C 27.028 38.775 28.046 38.353 29.106 38.353 M 47.958 38.353 L 56.295 38.353 C 57.355 38.353 58.373 38.775 59.123 39.525 C 59.873 40.274 60.295 41.293 60.295 42.353 L 60.295 49.469 C 60.295 50.529 59.873 51.548 59.123 52.297 C 58.373 53.047 57.355 53.469 56.295 53.469 L 47.958 53.469 C 46.897 53.469 45.879 53.047 45.129 52.297 C 44.38 51.548 43.958 50.529 43.958 49.469 L 43.958 42.353 C 43.958 41.293 44.38 40.274 45.129 39.525 C 45.879 38.775 46.897 38.353 47.958 38.353"
+                    android:fillColor="#ffffff"
+                    android:strokeWidth="1"/>
+                <path
+                    android:name="path_4"
+                    android:pathData="M 68 38 L 75.08 38 C 76.141 38 77.159 38.422 77.909 39.172 C 78.659 39.921 79.08 40.94 79.08 42 L 79.08 49.116 C 79.08 50.176 78.659 51.195 77.909 51.944 C 77.159 52.694 76.141 53.116 75.08 53.116 L 68 53.116 C 66.94 53.116 65.921 52.694 65.172 51.944 C 64.422 51.195 64 50.176 64 49.116 L 64 42 C 64 40.94 64.422 39.921 65.172 39.172 C 65.921 38.422 66.94 38 68 38"
+                    android:fillColor="#00aee0"
+                    android:strokeWidth="1"/>
+                <path
+                    android:name="path_5"
+                    android:pathData="M 36.468 57.248 C 38.355 57.248 39.953 58.561 40.364 60.349 C 36.372 63.757 31.844 67.409 27.736 70.207 C 26.243 69.656 25.112 68.231 25.112 66.451 L 25.112 61.248 C 25.112 59.039 26.903 57.248 29.112 57.248 L 36.468 57.248 Z M 66.764 57.248 C 64.894 57.248 63.308 58.537 62.88 60.3 C 66.798 63.669 71.228 67.325 75.263 70.285 C 76.87 69.801 78.12 68.322 78.12 66.451 L 78.12 61.248 C 78.12 59.039 76.329 57.248 74.12 57.248 L 66.764 57.248 Z"
+                    android:fillColor="#ffffff"
+                    android:strokeWidth="1"/>
+                </group>
+
+            </group>
+        </vector>
+    </aapt:attr>
+    <target android:name="group">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:propertyName="translateY"
+                android:duration="600"
+                android:valueFrom="71.85071942446045"
+                android:valueTo="0"
+                android:valueType="floatType"
+                android:interpolator="@android:interpolator/fast_out_slow_in"/>
+        </aapt:attr>
+    </target>
+
+    <!-- Blue button blink animation - starts after building animation finishes -->
+    <target android:name="path_4">
+        <aapt:attr name="android:animation">
+            <set android:ordering="sequentially">
+                <objectAnimator
+                    android:propertyName="fillColor"
+                    android:duration="600"
+                    android:valueFrom="#00aee0"
+                    android:valueTo="#00aee0"
+                    android:valueType="colorType"/>
+                <!-- Blink to brighter blue (100ms ease in&out) -->
+                <objectAnimator
+                    android:propertyName="fillColor"
+                    android:duration="100"
+                    android:valueFrom="#00aee0"
+                    android:valueTo="#00DFFF"
+                    android:valueType="colorType"
+                    android:interpolator="@android:anim/accelerate_decelerate_interpolator"/>
+                <!-- Blink back to original (100ms ease in&out) -->
+                <objectAnimator
+                    android:propertyName="fillColor"
+                    android:duration="100"
+                    android:valueFrom="#00DFFF"
+                    android:valueTo="#00aee0"
+                    android:valueType="colorType"
+                    android:interpolator="@android:anim/accelerate_decelerate_interpolator"/>
+            </set>
+        </aapt:attr>
+    </target>
+</animated-vector>
