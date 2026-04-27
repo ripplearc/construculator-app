@@ -5,7 +5,7 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/widgets.dart';
 
 extension AuthErrorTypeExtension on AuthErrorType {
-  String? localizedMessage(BuildContext context) {
+  String localizedMessage(BuildContext context) {
     final l10n = context.l10n;
     switch (this) {
       case AuthErrorType.userNotFound:

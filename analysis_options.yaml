@@ -36,6 +36,10 @@ custom_lint:
     - sealed_over_dynamic
     - avoid_static_colors
     - avoid_static_typography
+    - forbid_modular_get_outside_module: false # TODO: [CA-627] [Infra] Publish forbid_modular_get_outside_module linter rule and audit construculator-app violations https://ripplearc.youtrack.cloud/issue/CA-627/Infra-Publish-forbidmodulargetinbloc-linter-rule-and-audit-construculator-app-violations
+    - document_enum: false # TODO: [CA-641] [Infra] Enable & Resolve document_enum Linter Violations https://ripplearc.youtrack.cloud/issue/CA-641/Infra-Enable-Resolve-documentenum-Linter-Violations
+    - feature_module_isolation: false # TODO: [CA-642] [Infra] Enforce Feature Module Isolation & Refactor Cross-Module Dependencies https://ripplearc.youtrack.cloud/issue/CA-642/Infra-Enforce-Feature-Module-Isolation-Refactor-Cross-Module-Dependencies
+    - restrict_core_icon_data: false # TODO: [CA-633] [Lint] Scope restrict_core_icon_data rule in ripplearc-flutter-lint to fire only outside coreui https://ripplearc.youtrack.cloud/issue/CA-633/Lint-Scope-restrictcoreicondata-rule-in-ripplearc-flutter-lint-to-fire-only-outside-coreui
 
   no_direct_instantiation:
     ignored_base_classes:

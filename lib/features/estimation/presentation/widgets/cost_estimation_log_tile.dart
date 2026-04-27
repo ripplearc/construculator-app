@@ -3,7 +3,7 @@ import 'package:construculator/features/estimation/domain/entities/cost_estimati
 import 'package:construculator/features/estimation/presentation/helpers/cost_estimation_activity_title_formatter.dart';
 import 'package:construculator/features/estimation/presentation/helpers/cost_item_edited_field_mapper.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/libraries/formatting/formatting_helper.dart';
+import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -241,7 +241,7 @@ class CostEstimationLogTile extends StatelessWidget {
         ),
         const SizedBox(width: CoreSpacing.space2),
         Text(
-          FormattingHelper.formatDate(log.loggedAt),
+          DisplayFormatter.formatDate(log.loggedAt),
           key: const Key('dateText'),
           style: typography.bodySmallRegular,
         ),
@@ -256,7 +256,7 @@ class CostEstimationLogTile extends StatelessWidget {
         ),
         const SizedBox(width: CoreSpacing.space2),
         Text(
-          FormattingHelper.formatTime(log.loggedAt),
+          DisplayFormatter.formatTime(log.loggedAt),
           key: const Key('timeText'),
           style: typography.bodySmallRegular.copyWith(
             color: appColors.textBody,

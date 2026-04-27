@@ -238,9 +238,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           listener: (context, state) {
             if (state is AddCostEstimationFailure) {
               final message = _mapFailureToMessage(l10n, state.failure);
-              if (message != null) {
-                CoreToast.showError(context, message, l10n.closeLabel);
-              }
+              CoreToast.showError(context, message, l10n.closeLabel);
             }
           },
         ),
@@ -296,9 +294,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           listener: (context, state) {
             if (state is RenameEstimationFailure) {
               final message = _mapFailureToMessage(context.l10n, state.failure);
-              if (message != null) {
-                CoreToast.showError(context, message, context.l10n.closeLabel);
-              }
+              CoreToast.showError(context, message, context.l10n.closeLabel);
             }
           },
         ),
@@ -466,7 +462,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
     _router.pushNamed('$fullEstimationDetailsRoute/$estimationId');
   }
 
-  String? _mapFailureToMessage(AppLocalizations l10n, Failure failure) {
+  String _mapFailureToMessage(AppLocalizations l10n, Failure failure) {
     if (failure is! EstimationFailure) {
       return l10n.unexpectedErrorMessage;
     }
