@@ -1,12 +1,12 @@
 name: construculator
 description: "A calculator for construction workers"
 
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 version: 1.0.0+1
 
 environment:
-  sdk: '3.8.0'
+  sdk: "3.8.0"
 
 dependencies:
   flutter:
@@ -14,7 +14,6 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  
   cupertino_icons: 1.0.8
   flutter_bloc: 9.1.0
   flutter_modular: 6.3.4
@@ -33,11 +32,6 @@ dependencies:
   intl: 0.20.2
   sentry_flutter: ^9.15.0
 
-
-
-  
-  
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -52,11 +46,10 @@ dev_dependencies:
   custom_lint: 0.7.5
   bloc_test: 10.0.0
 
-
 flutter:
   uses-material-design: true
   generate: true
-  
+
   assets:
     # Environment files
     - assets/env/
@@ -64,11 +57,18 @@ flutter:
     - assets/images/
 
 flutter_native_splash:
+  # iOS configuration
   image: "assets/icons/splash_icon.png"
-  background_image: "assets/images/splash_bg.png"
-  android: true
+  color: "#003A54"
+  color_dark: "#003A54"
+
+  branding: "assets/icons/branding.png"
+  branding_dark: "assets/icons/branding.png"
+  branding_mode: bottom
+  branding_bottom_padding: 50
+
+  # ios_content_mode: scaleAspectFit
+
+  # Disable Android native splash (using custom AnimatedVectorDrawable instead)
+  android: false
   ios: true
-  android_12:
-    image: "assets/icons/splash_icon.png"
-    color: "#015B7C"
-    icon_background_color: "#FFFFFF"
