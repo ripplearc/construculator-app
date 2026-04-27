@@ -20,7 +20,6 @@ import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
-import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
@@ -70,13 +69,6 @@ class _AppShellTestModule extends Module {
   void binds(Injector i) {
     i.addLazySingleton<AuthManager>(() => authManager);
     i.addLazySingleton<AuthNotifier>(() => authNotifier);
-    i.add<AppShellBloc>(AppShellBloc.new);
-    i.add<ProjectDropdownBloc>(
-      () => ProjectDropdownBloc(
-        projectRepository: FakeProjectRepository(),
-        authManager: authManager,
-      ),
-    );
     i.addLazySingleton<AppRouter>(FakeAppRouter.new);
     i.addLazySingleton<CurrentProjectNotifier>(() => currentProjectNotifier);
     i.addLazySingleton<ProjectUIProvider>(() => _FakeProjectUiProvider());
