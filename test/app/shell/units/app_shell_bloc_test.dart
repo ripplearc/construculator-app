@@ -1,4 +1,3 @@
-// ignore_for_file: no_direct_instantiation
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/default_tab_providers.dart';
@@ -71,7 +70,7 @@ void main() {
 
     blocTest<AppShellBloc, AppShellState>(
       'updates selected tab and tracks lazy-loaded tabs',
-      build: () => AppShellBloc(),
+      build: () => Modular.get<AppShellBloc>(),
       act: (bloc) {
         bloc.add(const AppShellTabSelected(1));
         bloc.add(const AppShellTabSelected(3));
@@ -84,7 +83,7 @@ void main() {
 
     blocTest<AppShellBloc, AppShellState>(
       'does not emit when selecting current tab',
-      build: () => AppShellBloc(),
+      build: () => Modular.get<AppShellBloc>(),
       act: (bloc) => bloc.add(const AppShellTabSelected(0)),
       expect: () => <AppShellState>[],
     );
