@@ -4,17 +4,16 @@
     <aapt:attr name="android:drawable">
         <vector
             android:name="vector"
-            android:width="240dp"
-            android:height="240dp"
+            android:width="432dp"
+            android:height="432dp"
             android:viewportWidth="103"
             android:viewportHeight="91">
 
-            <!-- Scaling wrapper to fit properly -->
             <group
                 android:pivotX="51.5"
                 android:pivotY="45.5"
-                android:scaleX="0.5"
-                android:scaleY="0.5"
+                android:scaleX="0.6"
+                android:scaleY="0.6"
                 android:translateY="-5">
 
                 <path
@@ -57,9 +56,9 @@
         <aapt:attr name="android:animation">
             <objectAnimator
                 android:propertyName="translateY"
-                android:duration="800"
+                android:duration="600"
                 android:valueFrom="71.85071942446045"
-                android:valueTo="-3"
+                android:valueTo="0"
                 android:valueType="floatType"
                 android:interpolator="@android:interpolator/fast_out_slow_in"/>
         </aapt:attr>
@@ -69,10 +68,9 @@
     <target android:name="path_4">
         <aapt:attr name="android:animation">
             <set android:ordering="sequentially">
-                <!-- Wait for building animation to finish (800ms) -->
                 <objectAnimator
                     android:propertyName="fillColor"
-                    android:duration="800"
+                    android:duration="600"
                     android:valueFrom="#00aee0"
                     android:valueTo="#00aee0"
                     android:valueType="colorType"/>

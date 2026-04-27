@@ -8,7 +8,7 @@
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
         <item name="android:windowSplashScreenBackground">#003A54</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_from_shapeshifter</item>
-        <item name="android:windowSplashScreenAnimationDuration">1200</item>
+        <item name="android:windowSplashScreenAnimationDuration">1000</item>
         <item name="android:windowSplashScreenIconBackgroundColor">#003A54</item>
     </style>
     <!-- Theme applied to the Android Window as soon as the process has started.
