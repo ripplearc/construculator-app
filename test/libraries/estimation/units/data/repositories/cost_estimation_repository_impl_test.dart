@@ -1,13 +1,13 @@
-import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
-import 'package:construculator/libraries/estimation/estimation_library_module.dart';
-import 'package:construculator/libraries/estimation/data/repositories/cost_estimation_repository_impl.dart';
-import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
-import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
+import 'package:async/async.dart';
 import 'package:construculator/app/app_bootstrap.dart';
-
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
+import 'package:construculator/libraries/estimation/data/repositories/cost_estimation_repository_impl.dart';
+import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
+import 'package:construculator/libraries/estimation/estimation_library_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -39,6 +39,21 @@ void main() {
   const int defaultPageDatasetSize =
       CostEstimationRepositoryImpl.defaultPageSize;
   const int twoPagesDatasetSize = defaultPageDatasetSize * 2;
+
+  Matcher rightEstimations(Matcher matcher) {
+    return predicate<Either<Failure, List<CostEstimate>>>((result) {
+      final estimations = result.getRightOrNull();
+      return estimations != null &&
+          matcher.matches(estimations, <Object?, Object?>{});
+    });
+  }
+
+  Matcher leftFailure(Matcher matcher) {
+    return predicate<Either<Failure, List<CostEstimate>>>((result) {
+      final failure = result.getLeftOrNull();
+      return failure != null && matcher.matches(failure, <Object?, Object?>{});
+    });
+  }
 
   group('CostEstimationRepositoryImpl', () {
     late CostEstimationRepositoryImpl repository;
@@ -532,23 +547,18 @@ void main() {
           fakeSupabaseWrapper.selectPaginatedExceptionType =
               SupabaseExceptionType.timeout;
 
-          final stream = repository.watchEstimations(testProjectId);
-          final streamUpdates = <Either<Failure, List<CostEstimate>>>[];
-          final subscription = stream.listen(streamUpdates.add);
-
-          await pumpEventQueue();
-
-          expect(streamUpdates, hasLength(1));
-          expect(streamUpdates[0].isLeft(), isTrue);
-          expectFailure(
-            streamUpdates[0],
-            (failure) => expect(
-              failure,
-              EstimationFailure(errorType: EstimationErrorType.timeoutError),
+          await expectLater(
+            repository.watchEstimations(testProjectId),
+            emits(
+              leftFailure(
+                equals(
+                  EstimationFailure(
+                    errorType: EstimationErrorType.timeoutError,
+                  ),
+                ),
+              ),
             ),
           );
-
-          await subscription.cancel();
         },
       );
     });
@@ -599,43 +609,34 @@ void main() {
             allMaps.reversed.toList(),
           );
 
-          final stream = repository.watchEstimations(testProjectId);
-          final streamUpdates = <Either<Failure, List<CostEstimate>>>[];
-          final subscription = stream.listen(streamUpdates.add);
+          final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
-          await pumpEventQueue();
-
-          expect(streamUpdates, hasLength(1));
-          streamUpdates[0].fold((_) => fail('Expected success'), (estimates) {
-            expect(estimates, hasLength(defaultPageDatasetSize));
-            expect(
-              estimates,
-              equals(allEstimations.sublist(0, defaultPageDatasetSize)),
-            );
-          });
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals(allEstimations.sublist(0, defaultPageDatasetSize)),
+              ),
+            ),
+          );
 
           await repository.loadMoreEstimations(testProjectId);
-          await pumpEventQueue();
-
-          expect(streamUpdates, hasLength(2));
-          streamUpdates[1].fold((_) => fail('Expected success'), (estimates) {
-            expect(estimates, hasLength(defaultPageDatasetSize * 2));
-            expect(
-              estimates,
-              equals(allEstimations.sublist(0, defaultPageDatasetSize * 2)),
-            );
-          });
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals(allEstimations.sublist(0, defaultPageDatasetSize * 2)),
+              ),
+            ),
+          );
 
           await repository.loadMoreEstimations(testProjectId);
-          await pumpEventQueue();
+          await expectLater(
+            queue.next,
+            completion(rightEstimations(equals(allEstimations))),
+          );
 
-          expect(streamUpdates, hasLength(3));
-          streamUpdates[2].fold((_) => fail('Expected success'), (estimates) {
-            expect(estimates, hasLength(totalSize));
-            expect(estimates, equals(allEstimations));
-          });
-
-          await subscription.cancel();
+          await queue.cancel();
         },
       );
 
@@ -670,16 +671,19 @@ void main() {
       test(
         'should return failure and emit to stream when data source throws on loadMore',
         () async {
-          seedEstimations(CostEstimationRepositoryImpl.defaultPageSize);
+          final seededMaps = seedEstimations(
+            CostEstimationRepositoryImpl.defaultPageSize,
+          );
 
-          final stream = repository.watchEstimations(testProjectId);
-          final streamUpdates = <Either<Failure, List<CostEstimate>>>[];
-          final subscription = stream.listen(streamUpdates.add);
+          final initialEstimations = mapsToDomainEntities(
+            seededMaps.reversed.toList(),
+          );
+          final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
-          await pumpEventQueue();
-
-          expect(streamUpdates, hasLength(1));
-          expect(streamUpdates[0].isRight(), isTrue);
+          await expectLater(
+            queue.next,
+            completion(rightEstimations(equals(initialEstimations))),
+          );
 
           fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
           fakeSupabaseWrapper.selectPaginatedExceptionType =
@@ -697,19 +701,20 @@ void main() {
             ),
           );
 
-          await pumpEventQueue();
-
-          expect(streamUpdates, hasLength(2));
-          expect(streamUpdates[1].isLeft(), isTrue);
-          expectFailure(
-            streamUpdates[1],
-            (failure) => expect(
-              failure,
-              EstimationFailure(errorType: EstimationErrorType.timeoutError),
+          await expectLater(
+            queue.next,
+            completion(
+              leftFailure(
+                equals(
+                  EstimationFailure(
+                    errorType: EstimationErrorType.timeoutError,
+                  ),
+                ),
+              ),
             ),
           );
 
-          await subscription.cancel();
+          await queue.cancel();
         },
       );
 
@@ -793,15 +798,12 @@ void main() {
         final stream1 = repository.watchEstimations(testProjectId);
         final stream2 = repository.watchEstimations(testProjectId);
 
-        final results1 = <Either<Failure, List<CostEstimate>>>[];
-        final results2 = <Either<Failure, List<CostEstimate>>>[];
+        final result1Future = stream1.first;
+        final result2Future = stream2.first;
+        final result1 = await result1Future;
+        final result2 = await result2Future;
 
-        stream1.listen(results1.add);
-        stream2.listen(results2.add);
-
-        await pumpEventQueue();
-
-        expect(results1, equals(results2));
+        expect(result1, equals(result2));
       });
     });
 
@@ -944,16 +946,15 @@ void main() {
           );
           seedEstimationTable([existingMap]);
 
-          final stream = repository.watchEstimations(testProjectId);
-          final updates = <Either<Failure, List<CostEstimate>>>[];
-          final subscription = stream.listen(updates.add);
+          final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
-          await pumpEventQueue();
-
-          expect(updates, hasLength(1));
-          updates[0].fold(
-            (_) => fail('Expected success'),
-            (estimates) => expect(estimates, hasLength(1)),
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals([CostEstimateDto.fromJson(existingMap).toDomain()]),
+              ),
+            ),
           );
 
           final newEstimationDto = buildEstimationDto(
@@ -966,19 +967,21 @@ void main() {
           final newEstimateResult = await repository.createEstimation(
             newEstimationDto.toDomain(),
           );
+          final createdEstimation = newEstimateResult.getRightOrNull()!;
 
-          await pumpEventQueue();
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals([
+                  createdEstimation,
+                  CostEstimateDto.fromJson(existingMap).toDomain(),
+                ]),
+              ),
+            ),
+          );
 
-          expect(updates, hasLength(2));
-          updates[1].fold((_) => fail('Expected success'), (estimates) {
-            expect(estimates, hasLength(2));
-            expect(estimates, [
-              newEstimateResult.getRightOrNull()!,
-              CostEstimateDto.fromJson(existingMap).toDomain(),
-            ]);
-          });
-
-          await subscription.cancel();
+          await queue.cancel();
         },
       );
 
@@ -990,22 +993,27 @@ void main() {
             allMaps.reversed.toList(),
           );
 
-          final stream = repository.watchEstimations(testProjectId);
-          final updates = <Either<Failure, List<CostEstimate>>>[];
-          final subscription = stream.listen(updates.add);
+          final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
-          await pumpEventQueue();
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals(allEstimations.sublist(0, defaultPageDatasetSize)),
+              ),
+            ),
+          );
 
           await repository.loadMoreEstimations(testProjectId);
-          await pumpEventQueue();
 
-          updates.last.fold((_) => fail('Expected success'), (estimates) {
-            expect(estimates.length, equals(defaultPageDatasetSize * 2));
-            expect(
-              estimates,
-              equals(allEstimations.sublist(0, defaultPageDatasetSize * 2)),
-            );
-          });
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals(allEstimations.sublist(0, defaultPageDatasetSize * 2)),
+              ),
+            ),
+          );
 
           final newEstimationDto = buildEstimationDto(
             id: 'new-estimate',
@@ -1019,28 +1027,28 @@ void main() {
             newEstimationDto.toDomain(),
           );
           final createdEstimation = createResult.getRightOrNull()!;
-          await pumpEventQueue();
-
-          updates.last.fold((_) => fail('Expected success'), (estimates) {
-            expect(estimates.length, equals((defaultPageDatasetSize * 2) + 1));
-            expect(
-              estimates,
-              equals([
-                createdEstimation,
-                ...allEstimations.sublist(0, defaultPageDatasetSize * 2),
-              ]),
-            );
-          });
 
           await repository.loadMoreEstimations(testProjectId);
-          await pumpEventQueue();
 
-          updates.last.fold((_) => fail('Expected success'), (estimates) {
-            expect(estimates.length, equals((defaultPageDatasetSize * 3) + 1));
-            expect(estimates, equals([createdEstimation, ...allEstimations]));
-          });
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals([
+                  createdEstimation,
+                  ...allEstimations.sublist(0, defaultPageDatasetSize * 2),
+                ]),
+              ),
+            ),
+          );
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(equals([createdEstimation, ...allEstimations])),
+            ),
+          );
 
-          await subscription.cancel();
+          await queue.cancel();
         },
       );
     });
@@ -1071,11 +1079,13 @@ void main() {
 
           final stream = repository.watchEstimations(testProjectId);
           final subscription = stream.listen((_) {});
+          final queue = StreamQueue(stream);
 
-          await pumpEventQueue();
+          await expectLater(queue.next, completion(rightEstimations(isEmpty)));
 
           repository.dispose();
 
+          await queue.cancel();
           await subscription.cancel();
 
           expect(() => repository.dispose(), returnsNormally);
@@ -1152,14 +1162,12 @@ void main() {
           final estimation2 = CostEstimateDto.fromJson(estimationMap2);
           seedEstimationTable([estimationMap1, estimationMap2]);
 
-          final stream = repository.watchEstimations(testProjectId);
-          final updates = <Either<Failure, List<CostEstimate>>>[];
+          final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
-          stream.listen((event) {
-            updates.add(event);
-          });
-
-          await pumpEventQueue();
+          await expectLater(
+            queue.next,
+            completion(rightEstimations(hasLength(2))),
+          );
 
           final result = await repository.deleteEstimation(
             estimateIdDefault,
@@ -1168,17 +1176,12 @@ void main() {
 
           expect(result.isRight(), isTrue);
 
-          await pumpEventQueue();
+          await expectLater(
+            queue.next,
+            completion(rightEstimations(equals([estimation2.toDomain()]))),
+          );
 
-          expect(updates, isNotEmpty);
-          final lastUpdate = updates.last;
-          lastUpdate.fold((_) => fail('Expected success but got failure'), (
-            estimations,
-          ) {
-            expect(estimations, hasLength(1));
-            expect(estimations, equals([estimation2.toDomain()]));
-          });
-
+          await queue.cancel();
           repository.dispose();
         },
       );
@@ -1311,53 +1314,55 @@ void main() {
             allMaps.reversed.toList(),
           );
 
-          final stream = repository.watchEstimations(testProjectId);
-          final updates = <Either<Failure, List<CostEstimate>>>[];
-          final subscription = stream.listen(updates.add);
+          final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
-          await pumpEventQueue();
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals(allEstimations.sublist(0, defaultPageDatasetSize)),
+              ),
+            ),
+          );
 
           await repository.loadMoreEstimations(testProjectId);
-          await pumpEventQueue();
-
-          updates.last.fold((_) => fail('Expected success'), (estimates) {
-            expect(estimates.length, equals(defaultPageDatasetSize * 2));
-            expect(
-              estimates,
-              equals(allEstimations.sublist(0, defaultPageDatasetSize * 2)),
-            );
-          });
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals(allEstimations.sublist(0, defaultPageDatasetSize * 2)),
+              ),
+            ),
+          );
 
           await repository.deleteEstimation('estimate-29', testProjectId);
-          await pumpEventQueue();
-
-          updates.last.fold((_) => fail('Expected success'), (estimates) {
-            expect(estimates.length, equals((defaultPageDatasetSize * 2) - 1));
-            expect(
-              estimates,
-              equals(
-                allEstimations
-                    .sublist(0, defaultPageDatasetSize * 2)
-                    .where((e) => e.id != 'estimate-29')
-                    .toList(),
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals(
+                  allEstimations
+                      .sublist(0, defaultPageDatasetSize * 2)
+                      .where((e) => e.id != 'estimate-29')
+                      .toList(),
+                ),
               ),
-            );
-          });
+            ),
+          );
 
           await repository.loadMoreEstimations(testProjectId);
-          await pumpEventQueue();
-
-          updates.last.fold((_) => fail('Expected success'), (estimates) {
-            expect(estimates.length, equals(totalEstimations - 1));
-            expect(
-              estimates,
-              equals(
-                allEstimations.where((e) => e.id != 'estimate-29').toList(),
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals(
+                  allEstimations.where((e) => e.id != 'estimate-29').toList(),
+                ),
               ),
-            );
-          });
+            ),
+          );
 
-          await subscription.cancel();
+          await queue.cancel();
         },
       );
 
@@ -1367,17 +1372,12 @@ void main() {
           maps.reversed.toList(),
         );
 
-        final stream = repository.watchEstimations(testProjectId);
-        final updates = <Either<Failure, List<CostEstimate>>>[];
-        final subscription = stream.listen(updates.add);
+        final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
-        await pumpEventQueue();
-
-        expect(updates, hasLength(1));
-        expectResult(updates[0], (estimates) {
-          expect(estimates, hasLength(smallDatasetSize));
-          expect(estimates, equals(expectedEstimations));
-        });
+        await expectLater(
+          queue.next,
+          completion(rightEstimations(equals(expectedEstimations))),
+        );
 
         fakeSupabaseWrapper.shouldThrowOnDelete = true;
         fakeSupabaseWrapper.deleteExceptionType = SupabaseExceptionType.timeout;
@@ -1389,26 +1389,22 @@ void main() {
 
         expect(result.isLeft(), isTrue);
 
-        await pumpEventQueue();
-
-        expect(updates, hasLength(3));
-
-        expectResult(updates[1], (estimates) {
-          expect(estimates, hasLength(smallDatasetSize - 1));
-          expect(
-            estimates,
-            equals(
-              expectedEstimations.where((e) => e.id != 'estimate-0').toList(),
+        await expectLater(
+          queue.next,
+          completion(
+            rightEstimations(
+              equals(
+                expectedEstimations.where((e) => e.id != 'estimate-0').toList(),
+              ),
             ),
-          );
-        });
+          ),
+        );
+        await expectLater(
+          queue.next,
+          completion(rightEstimations(equals(expectedEstimations))),
+        );
 
-        expectResult(updates[2], (estimates) {
-          expect(estimates, hasLength(smallDatasetSize));
-          expect(estimates, equals(expectedEstimations));
-        });
-
-        await subscription.cancel();
+        await queue.cancel();
       });
     });
 
@@ -1423,11 +1419,20 @@ void main() {
           );
           seedEstimationTable([initialMap]);
 
-          final stream = repository.watchEstimations(testProjectId);
-          final updates = <Either<Failure, List<CostEstimate>>>[];
-          stream.listen(updates.add);
+          final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
-          await pumpEventQueue();
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                predicate<List<CostEstimate>>(
+                  (estimations) =>
+                      estimations.length == 1 &&
+                      estimations.first.lockStatus.isLocked == false,
+                ),
+              ),
+            ),
+          );
 
           final result = await repository.changeLockStatus(
             estimationId: estimateIdDefault,
@@ -1435,18 +1440,37 @@ void main() {
             projectId: testProjectId,
           );
 
-          await pumpEventQueue();
-
           expect(result.isRight(), isTrue);
           expectResult(result, (updatedEstimation) {
             expect(updatedEstimation.lockStatus.isLocked, isTrue);
           });
 
-          expect(updates, hasLength(3));
-          updates.last.fold((_) => fail('Stream update failed'), (estimations) {
-            expect(estimations, hasLength(1));
-            expect(estimations.first.lockStatus.isLocked, isTrue);
-          });
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                predicate<List<CostEstimate>>(
+                  (estimations) =>
+                      estimations.length == 1 &&
+                      estimations.first.lockStatus.isLocked,
+                ),
+              ),
+            ),
+          );
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                predicate<List<CostEstimate>>(
+                  (estimations) =>
+                      estimations.length == 1 &&
+                      estimations.first.lockStatus.isLocked,
+                ),
+              ),
+            ),
+          );
+
+          await queue.cancel();
         },
       );
 
@@ -1462,11 +1486,20 @@ void main() {
           );
           seedEstimationTable([initialMap]);
 
-          final stream = repository.watchEstimations(testProjectId);
-          final updates = <Either<Failure, List<CostEstimate>>>[];
-          stream.listen(updates.add);
+          final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
-          await pumpEventQueue();
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                predicate<List<CostEstimate>>(
+                  (estimations) =>
+                      estimations.length == 1 &&
+                      estimations.first.lockStatus.isLocked,
+                ),
+              ),
+            ),
+          );
 
           final result = await repository.changeLockStatus(
             estimationId: estimateIdDefault,
@@ -1474,18 +1507,37 @@ void main() {
             projectId: testProjectId,
           );
 
-          await pumpEventQueue();
-
           expect(result.isRight(), isTrue);
           result.fold((_) => fail('Unlocking failed'), (updatedEstimation) {
             expect(updatedEstimation.lockStatus.isLocked, isFalse);
           });
 
-          expect(updates, hasLength(3));
-          updates.last.fold((_) => fail('Stream update failed'), (estimations) {
-            expect(estimations, hasLength(1));
-            expect(estimations.first.lockStatus.isLocked, isFalse);
-          });
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                predicate<List<CostEstimate>>(
+                  (estimations) =>
+                      estimations.length == 1 &&
+                      estimations.first.lockStatus.isLocked == false,
+                ),
+              ),
+            ),
+          );
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                predicate<List<CostEstimate>>(
+                  (estimations) =>
+                      estimations.length == 1 &&
+                      estimations.first.lockStatus.isLocked == false,
+                ),
+              ),
+            ),
+          );
+
+          await queue.cancel();
         },
       );
 
@@ -1551,16 +1603,20 @@ void main() {
           );
           seedEstimationTable([initialMap]);
 
-          final stream = repository.watchEstimations(testProjectId);
-          final updates = <Either<Failure, List<CostEstimate>>>[];
-          stream.listen(updates.add);
+          final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
-          await pumpEventQueue();
-
-          expect(updates, hasLength(1));
-          updates[0].fold((_) => fail('Initial load failed'), (estimations) {
-            expect(estimations.first.lockStatus.isLocked, isFalse);
-          });
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                predicate<List<CostEstimate>>(
+                  (estimations) =>
+                      estimations.length == 1 &&
+                      estimations.first.lockStatus.isLocked == false,
+                ),
+              ),
+            ),
+          );
 
           final resultFuture = repository.changeLockStatus(
             estimationId: estimateIdDefault,
@@ -1568,22 +1624,35 @@ void main() {
             projectId: testProjectId,
           );
 
-          await pumpEventQueue();
-
-          expect(updates.length, greaterThan(1));
-          updates[1].fold((_) => fail('Optimistic update failed'), (
-            estimations,
-          ) {
-            expect(estimations.first.lockStatus.isLocked, isTrue);
-          });
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                predicate<List<CostEstimate>>(
+                  (estimations) =>
+                      estimations.length == 1 &&
+                      estimations.first.lockStatus.isLocked,
+                ),
+              ),
+            ),
+          );
 
           await resultFuture;
 
-          await pumpEventQueue();
-          final lastUpdate = updates.last;
-          lastUpdate.fold((_) => fail('Final update failed'), (estimations) {
-            expect(estimations.first.lockStatus.isLocked, isTrue);
-          });
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                predicate<List<CostEstimate>>(
+                  (estimations) =>
+                      estimations.length == 1 &&
+                      estimations.first.lockStatus.isLocked,
+                ),
+              ),
+            ),
+          );
+
+          await queue.cancel();
         },
       );
 
@@ -1595,11 +1664,20 @@ void main() {
         );
         seedEstimationTable([initialMap]);
 
-        final stream = repository.watchEstimations(testProjectId);
-        final updates = <Either<Failure, List<CostEstimate>>>[];
-        stream.listen(updates.add);
+        final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
-        await pumpEventQueue();
+        await expectLater(
+          queue.next,
+          completion(
+            rightEstimations(
+              predicate<List<CostEstimate>>(
+                (estimations) =>
+                    estimations.length == 1 &&
+                    estimations.first.lockStatus.isLocked == false,
+              ),
+            ),
+          ),
+        );
 
         fakeSupabaseWrapper.shouldThrowOnUpdate = true;
         fakeSupabaseWrapper.updateExceptionType = SupabaseExceptionType.timeout;
@@ -1613,16 +1691,32 @@ void main() {
 
         expect(result.isLeft(), isTrue);
 
-        await pumpEventQueue();
+        await expectLater(
+          queue.next,
+          completion(
+            rightEstimations(
+              predicate<List<CostEstimate>>(
+                (estimations) =>
+                    estimations.length == 1 &&
+                    estimations.first.lockStatus.isLocked,
+              ),
+            ),
+          ),
+        );
+        await expectLater(
+          queue.next,
+          completion(
+            rightEstimations(
+              predicate<List<CostEstimate>>(
+                (estimations) =>
+                    estimations.length == 1 &&
+                    estimations.first.lockStatus.isLocked == false,
+              ),
+            ),
+          ),
+        );
 
-        expect(updates.length, greaterThanOrEqualTo(3));
-        updates[1].fold((_) => fail('Optimistic update failed'), (estimations) {
-          expect(estimations.first.lockStatus.isLocked, isTrue);
-        });
-
-        updates.last.fold((_) => fail('Rollback update failed'), (estimations) {
-          expect(estimations.first.lockStatus.isLocked, isFalse);
-        });
+        await queue.cancel();
       });
 
       test('should succeed without active stream listeners', () async {
@@ -1730,23 +1824,21 @@ void main() {
           );
           seedEstimationTable([initialMap]);
 
-          final stream = repository.watchEstimations(testProjectId);
-          final updates = <Either<Failure, List<CostEstimate>>>[];
-          stream.listen(updates.add);
+          final expectedEstimation = CostEstimateDto.fromJson(
+            initialMap,
+          ).toDomain();
+          final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
-          await pumpEventQueue();
+          await expectLater(
+            queue.next,
+            completion(rightEstimations(equals([expectedEstimation]))),
+          );
 
           final result = await repository.renameEstimation(
             estimationId: estimateIdDefault,
             newName: newEstimateName,
             projectId: testProjectId,
           );
-
-          await pumpEventQueue();
-
-          final expectedEstimation = CostEstimateDto.fromJson(
-            initialMap,
-          ).toDomain();
 
           expect(result.isRight(), isTrue);
           expectResult(result, (updatedEstimation) {
@@ -1757,17 +1849,28 @@ void main() {
               ),
             );
           });
-
-          expect(updates, hasLength(3));
-          updates.last.fold((_) => fail('Stream update failed'), (estimations) {
-            expect(estimations, hasLength(1));
-            expect(
-              estimations.first,
-              equals(
-                expectedEstimation.copyWith(estimateName: newEstimateName),
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals([
+                  expectedEstimation.copyWith(estimateName: newEstimateName),
+                ]),
               ),
-            );
-          });
+            ),
+          );
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals([
+                  expectedEstimation.copyWith(estimateName: newEstimateName),
+                ]),
+              ),
+            ),
+          );
+
+          await queue.cancel();
         },
       );
 
@@ -1784,20 +1887,15 @@ void main() {
           );
           seedEstimationTable([initialMap]);
 
-          final stream = repository.watchEstimations(testProjectId);
-          final updates = <Either<Failure, List<CostEstimate>>>[];
-          stream.listen(updates.add);
-
-          await pumpEventQueue();
-
           final expectedEstimation = CostEstimateDto.fromJson(
             initialMap,
           ).toDomain();
+          final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
-          expect(updates, hasLength(1));
-          updates[0].fold((_) => fail('Initial load failed'), (estimations) {
-            expect(estimations.first, equals(expectedEstimation));
-          });
+          await expectLater(
+            queue.next,
+            completion(rightEstimations(equals([expectedEstimation]))),
+          );
 
           final resultFuture = repository.renameEstimation(
             estimationId: estimateIdDefault,
@@ -1805,32 +1903,31 @@ void main() {
             projectId: testProjectId,
           );
 
-          await pumpEventQueue();
-
-          expect(updates.length, greaterThan(1));
-          updates[1].fold((_) => fail('Optimistic update failed'), (
-            estimations,
-          ) {
-            expect(
-              estimations.first,
-              equals(
-                expectedEstimation.copyWith(estimateName: newEstimateName),
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals([
+                  expectedEstimation.copyWith(estimateName: newEstimateName),
+                ]),
               ),
-            );
-          });
+            ),
+          );
 
           await resultFuture;
 
-          await pumpEventQueue();
-          final lastUpdate = updates.last;
-          lastUpdate.fold((_) => fail('Final update failed'), (estimations) {
-            expect(
-              estimations.first,
-              equals(
-                expectedEstimation.copyWith(estimateName: newEstimateName),
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals([
+                  expectedEstimation.copyWith(estimateName: newEstimateName),
+                ]),
               ),
-            );
-          });
+            ),
+          );
+
+          await queue.cancel();
         },
       );
 
@@ -1872,15 +1969,15 @@ void main() {
         );
         seedEstimationTable([initialMap]);
 
-        final stream = repository.watchEstimations(testProjectId);
-        final updates = <Either<Failure, List<CostEstimate>>>[];
-        stream.listen(updates.add);
-
-        await pumpEventQueue();
-
         final expectedEstimation = CostEstimateDto.fromJson(
           initialMap,
         ).toDomain();
+        final queue = StreamQueue(repository.watchEstimations(testProjectId));
+
+        await expectLater(
+          queue.next,
+          completion(rightEstimations(equals([expectedEstimation]))),
+        );
 
         fakeSupabaseWrapper.shouldThrowOnUpdate = true;
         fakeSupabaseWrapper.updateExceptionType = SupabaseExceptionType.timeout;
@@ -1894,19 +1991,22 @@ void main() {
 
         expect(result.isLeft(), isTrue);
 
-        await pumpEventQueue();
+        await expectLater(
+          queue.next,
+          completion(
+            rightEstimations(
+              equals([
+                expectedEstimation.copyWith(estimateName: newEstimateName),
+              ]),
+            ),
+          ),
+        );
+        await expectLater(
+          queue.next,
+          completion(rightEstimations(equals([expectedEstimation]))),
+        );
 
-        expect(updates.length, greaterThanOrEqualTo(3));
-        updates[1].fold((_) => fail('Optimistic update failed'), (estimations) {
-          expect(
-            estimations.first,
-            equals(expectedEstimation.copyWith(estimateName: newEstimateName)),
-          );
-        });
-
-        updates.last.fold((_) => fail('Rollback update failed'), (estimations) {
-          expect(estimations.first, equals(expectedEstimation));
-        });
+        await queue.cancel();
       });
 
       test('should call supabaseWrapper with correct parameters', () async {

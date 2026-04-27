@@ -4,6 +4,9 @@ import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 
+/// Supabase-backed implementation of [CostEstimationDataSource].
+/// Wraps [SupabaseWrapper] calls for paginated reads and CRUD operations
+/// on the cost estimates table.
 class RemoteCostEstimationDataSource implements CostEstimationDataSource {
   final SupabaseWrapper supabaseWrapper;
   static final _logger = AppLogger().tag('RemoteCostEstimationDataSource');

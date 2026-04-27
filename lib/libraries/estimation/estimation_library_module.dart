@@ -6,6 +6,9 @@ import 'package:construculator/libraries/estimation/domain/repositories/cost_est
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
+/// Modular module that registers estimation data-layer dependencies
+/// as exported bindings so any importing module gains access to
+/// [CostEstimationDataSource] and [CostEstimationRepository].
 class EstimationLibraryModule extends Module {
   final AppBootstrap appBootstrap;
 
@@ -15,16 +18,14 @@ class EstimationLibraryModule extends Module {
   List<Module> get imports => [SupabaseModule(appBootstrap)];
 
   @override
-  void exportedBinds(Injector i) => _registerDependencies(i);
-}
+  void exportedBinds(Injector i) {
+    i.addLazySingleton<CostEstimationDataSource>(
+      () => RemoteCostEstimationDataSource(supabaseWrapper: i.get()),
+    );
 
-void _registerDependencies(Injector i) {
-  i.addLazySingleton<CostEstimationDataSource>(
-    () => RemoteCostEstimationDataSource(supabaseWrapper: i.get()),
-  );
-
-  i.addLazySingleton<CostEstimationRepository>(
-    () => CostEstimationRepositoryImpl(dataSource: i.get()),
-    config: BindConfig(onDispose: (repository) => repository.dispose()),
-  );
+    i.addLazySingleton<CostEstimationRepository>(
+      () => CostEstimationRepositoryImpl(dataSource: i.get()),
+      config: BindConfig(onDispose: (repository) => repository.dispose()),
+    );
+  }
 }

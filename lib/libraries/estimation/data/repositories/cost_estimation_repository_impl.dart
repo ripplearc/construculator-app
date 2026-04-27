@@ -1,15 +1,15 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:construculator/libraries/either/either.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
 import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/libraries/estimation/data/models/pagination_state.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/estimation/domain/entities/lock_status_entity.dart';
-import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
-import 'package:construculator/libraries/either/either.dart';
-import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
@@ -241,7 +241,8 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
               _paginationStates.remove(projectId);
             },
           );
-      fetchInitialEstimations(projectId);
+      // Initial fetch failures are emitted to the stream for active listeners.
+      unawaited(fetchInitialEstimations(projectId));
       return newController;
     });
 
@@ -269,7 +270,13 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     }
 
     final cachedEstimations = _cachedEstimations[projectId] ?? [];
-    return cachedEstimations.firstWhere((e) => e.id == estimationId);
+    for (final estimation in cachedEstimations) {
+      if (estimation.id == estimationId) {
+        return estimation;
+      }
+    }
+
+    return null;
   }
 
   void _emitOptimisticUpdate({
