@@ -1212,5 +1212,19 @@
   "@dashboardLoggedInSubtitle": {
     "description": "Subtitle shown below the welcome greeting on the dashboard",
     "context": "N/A"
+  },
+  "searchResultsMostRelevant": "Most relevant",
+  "@searchResultsMostRelevant": {
+    "description": "Section header shown above the search results list"
+  },
+  "searchResultsEmpty": "No results for \"{query}\"",
+  "@searchResultsEmpty": {
+    "description": "Empty state message shown when a search returns no results",
+    "placeholders": {
+      "query": {
+        "type": "String",
+        "example": "Wall cost"
+      }
+    }
   }
 }
