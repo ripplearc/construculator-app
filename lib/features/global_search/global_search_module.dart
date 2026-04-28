@@ -1,9 +1,11 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/estimation/data/estimation_tile_provider_impl.dart';
 import 'package:construculator/features/global_search/data/data_source/interfaces/global_search_data_source.dart';
 import 'package:construculator/features/global_search/data/data_source/remote_global_search_data_source.dart';
 import 'package:construculator/features/global_search/data/repositories/global_search_repository_impl.dart';
 import 'package:construculator/features/global_search/domain/repositories/global_search_repository.dart';
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -31,6 +33,9 @@ class GlobalSearchModule extends Module {
     );
     i.add<GlobalSearchBloc>(
       () => GlobalSearchBloc(repository: i()),
+    );
+    i.addSingleton<EstimationTileProvider>(
+      () => const EstimationTileProviderImpl(),
     );
   }
 }

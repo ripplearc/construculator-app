@@ -698,4 +698,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get permissionDenied =>
       'You don\'t have permission to perform this action';
+
+  @override
+  String get searchResultsMostRelevant => 'Most relevant';
+
+  @override
+  String searchResultsEmpty(String query) {
+    return 'No results for \"$query\"';
+  }
 }
