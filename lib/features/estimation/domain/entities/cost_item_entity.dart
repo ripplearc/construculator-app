@@ -114,21 +114,24 @@ enum Unit {
 /// Labor pricing strategies supported by the estimation model.
 enum LaborCalculationMethodType {
   /// Labor is priced per hour of work.
-  hourly,
+  perHour('per_hour'),
 
   /// Labor is priced per day of work.
-  daily,
+  perDay('per_day'),
 
   /// Labor is priced per unit of completed work.
-  perUnit;
+  perUnit('per_unit');
 
-  String toJson() => name;
+  final String value;
+  const LaborCalculationMethodType(this.value);
+
+  String toJson() => value;
 
   /// Deserializes a [LaborCalculationMethodType] from JSON string.
   ///
-  /// Falls back to [LaborCalculationMethodType.hourly] for unknown values to
+  /// Falls back to [LaborCalculationMethodType.perHour] for unknown values to
   /// ensure forward compatibility with new calculation methods added in future
-  /// versions. Hourly is chosen as the default because it is the most common
+  /// versions. Per hour is chosen as the default because it is the most common
   /// labor pricing strategy and provides a conservative fallback that requires
   /// explicit time tracking.
   ///
@@ -136,8 +139,8 @@ enum LaborCalculationMethodType {
   /// Consider logging unknown values if strict validation is required.
   static LaborCalculationMethodType fromJson(String value) {
     return LaborCalculationMethodType.values.firstWhere(
-      (e) => e.name.toLowerCase() == value.toLowerCase(),
-      orElse: () => LaborCalculationMethodType.hourly,
+      (e) => e.value == value,
+      orElse: () => LaborCalculationMethodType.perHour,
     );
   }
 }
