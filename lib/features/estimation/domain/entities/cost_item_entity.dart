@@ -114,21 +114,24 @@ enum Unit {
 /// Labor pricing strategies supported by the estimation model.
 enum LaborCalculationMethodType {
   /// Labor is priced per hour of work.
-  hourly,
+  perHour('per_hour'),
 
   /// Labor is priced per day of work.
-  daily,
+  perDay('per_day'),
 
   /// Labor is priced per unit of completed work.
-  perUnit;
+  perUnit('per_unit');
 
-  String toJson() => name;
+  final String value;
+  const LaborCalculationMethodType(this.value);
+
+  String toJson() => value;
 
   /// Deserializes a [LaborCalculationMethodType] from JSON string.
   ///
-  /// Falls back to [LaborCalculationMethodType.hourly] for unknown values to
+  /// Falls back to [LaborCalculationMethodType.perHour] for unknown values to
   /// ensure forward compatibility with new calculation methods added in future
-  /// versions. Hourly is chosen as the default because it is the most common
+  /// versions. Per hour is chosen as the default because it is the most common
   /// labor pricing strategy and provides a conservative fallback that requires
   /// explicit time tracking.
   ///
@@ -136,15 +139,18 @@ enum LaborCalculationMethodType {
   /// Consider logging unknown values if strict validation is required.
   static LaborCalculationMethodType fromJson(String value) {
     return LaborCalculationMethodType.values.firstWhere(
-      (e) => e.name.toLowerCase() == value.toLowerCase(),
-      orElse: () => LaborCalculationMethodType.hourly,
+      (e) => e.value == value,
+      orElse: () => LaborCalculationMethodType.perHour,
     );
   }
 }
 
 /// Value object representing a monetary amount
 class Money extends Equatable {
+  /// The monetary amount in the given [currency].
   final double amount;
+
+  /// ISO 4217 currency code; defaults to `'USD'`.
   final String currency;
 
   const Money({required this.amount, this.currency = 'USD'});
@@ -152,6 +158,7 @@ class Money extends Equatable {
   @override
   List<Object?> get props => [amount, currency];
 
+  /// Creates a copy of this [Money] with the given fields replaced.
   Money copyWith({double? amount, String? currency}) {
     return Money(
       amount: amount ?? this.amount,
@@ -162,7 +169,10 @@ class Money extends Equatable {
 
 /// Value object representing a quantity with unit
 class Quantity extends Equatable {
+  /// The numeric quantity of units.
   final double value;
+
+  /// The unit of measurement for this quantity.
   final Unit unit;
 
   const Quantity({required this.value, required this.unit});
@@ -170,6 +180,7 @@ class Quantity extends Equatable {
   @override
   List<Object?> get props => [value, unit];
 
+  /// Creates a copy of this [Quantity] with the given fields replaced.
   Quantity copyWith({double? value, Unit? unit}) {
     return Quantity(value: value ?? this.value, unit: unit ?? this.unit);
   }
@@ -282,6 +293,13 @@ sealed class CostItem extends Equatable {
   final double itemTotalCost;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  /// ISO 4217 currency code for this cost item's monetary values.
+  final String currency;
+
+  /// Optional brand or manufacturer name for this cost item.
+  final String? brand;
+
   final String? productLink;
   final String? description;
 
@@ -294,6 +312,8 @@ sealed class CostItem extends Equatable {
     required this.itemTotalCost,
     required this.createdAt,
     required this.updatedAt,
+    required this.currency,
+    this.brand,
     this.productLink,
     this.description,
   });
@@ -308,6 +328,8 @@ sealed class CostItem extends Equatable {
     itemTotalCost,
     createdAt,
     updatedAt,
+    currency,
+    brand,
     productLink,
     description,
   ];
@@ -337,8 +359,10 @@ class MaterialCostItem extends CostItem {
     required super.itemTotalCost,
     required super.createdAt,
     required super.updatedAt,
+    required super.currency,
     required this.unitPrice,
     required this.quantity,
+    super.brand,
     super.productLink,
     super.description,
   }) : super(itemType: CostItemType.material);
@@ -366,8 +390,10 @@ class MaterialCostItem extends CostItem {
     double? itemTotalCost,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? currency,
     Money? unitPrice,
     Quantity? quantity,
+    Object? brand,
     Object? productLink,
     Object? description,
   }) {
@@ -379,8 +405,10 @@ class MaterialCostItem extends CostItem {
       itemTotalCost: itemTotalCost ?? this.itemTotalCost,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      currency: currency ?? this.currency,
       unitPrice: unitPrice ?? this.unitPrice,
       quantity: quantity ?? this.quantity,
+      brand: brand == _clearField ? null : (brand as String?) ?? this.brand,
       productLink: productLink == _clearField
           ? null
           : (productLink as String?) ?? this.productLink,
@@ -405,9 +433,11 @@ class LaborCostItem extends CostItem {
     required super.itemTotalCost,
     required super.createdAt,
     required super.updatedAt,
+    required super.currency,
     required this.laborCalcMethod,
     required this.laborValue,
     this.crewSize,
+    super.brand,
     super.productLink,
     super.description,
   }) : super(itemType: CostItemType.labor);
@@ -441,9 +471,11 @@ class LaborCostItem extends CostItem {
     double? itemTotalCost,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? currency,
     LaborCalculationMethodType? laborCalcMethod,
     LaborValue? laborValue,
     Object? crewSize,
+    Object? brand,
     Object? productLink,
     Object? description,
   }) {
@@ -455,10 +487,12 @@ class LaborCostItem extends CostItem {
       itemTotalCost: itemTotalCost ?? this.itemTotalCost,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      currency: currency ?? this.currency,
       laborCalcMethod: laborCalcMethod ?? this.laborCalcMethod,
       laborValue: laborValue ?? this.laborValue,
       crewSize:
           crewSize == _clearField ? null : (crewSize as int?) ?? this.crewSize,
+      brand: brand == _clearField ? null : (brand as String?) ?? this.brand,
       productLink: productLink == _clearField
           ? null
           : (productLink as String?) ?? this.productLink,
@@ -493,8 +527,10 @@ class EquipmentCostItem extends CostItem {
     required super.itemTotalCost,
     required super.createdAt,
     required super.updatedAt,
+    required super.currency,
     required this.unitPrice,
     required this.quantity,
+    super.brand,
     super.productLink,
     super.description,
   }) : super(itemType: CostItemType.equipment);
@@ -522,8 +558,10 @@ class EquipmentCostItem extends CostItem {
     double? itemTotalCost,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? currency,
     Money? unitPrice,
     Quantity? quantity,
+    Object? brand,
     Object? productLink,
     Object? description,
   }) {
@@ -535,8 +573,10 @@ class EquipmentCostItem extends CostItem {
       itemTotalCost: itemTotalCost ?? this.itemTotalCost,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      currency: currency ?? this.currency,
       unitPrice: unitPrice ?? this.unitPrice,
       quantity: quantity ?? this.quantity,
+      brand: brand == _clearField ? null : (brand as String?) ?? this.brand,
       productLink: productLink == _clearField
           ? null
           : (productLink as String?) ?? this.productLink,

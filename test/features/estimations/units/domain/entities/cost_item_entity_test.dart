@@ -65,45 +65,55 @@ void main() {
 
   group('LaborCalculationMethodType enum', () {
     test('toJson returns correct string values', () {
-      expect(LaborCalculationMethodType.hourly.toJson(), 'hourly');
-      expect(LaborCalculationMethodType.daily.toJson(), 'daily');
-      expect(LaborCalculationMethodType.perUnit.toJson(), 'perUnit');
+      expect(LaborCalculationMethodType.perHour.toJson(), 'per_hour');
+      expect(LaborCalculationMethodType.perDay.toJson(), 'per_day');
+      expect(LaborCalculationMethodType.perUnit.toJson(), 'per_unit');
     });
 
     test('fromJson creates correct enum from string', () {
       expect(
-        LaborCalculationMethodType.fromJson('hourly'),
-        LaborCalculationMethodType.hourly,
+        LaborCalculationMethodType.fromJson('per_hour'),
+        LaborCalculationMethodType.perHour,
       );
       expect(
-        LaborCalculationMethodType.fromJson('daily'),
-        LaborCalculationMethodType.daily,
+        LaborCalculationMethodType.fromJson('per_day'),
+        LaborCalculationMethodType.perDay,
       );
       expect(
-        LaborCalculationMethodType.fromJson('perUnit'),
+        LaborCalculationMethodType.fromJson('per_unit'),
         LaborCalculationMethodType.perUnit,
       );
     });
 
-    test('fromJson is case-insensitive', () {
+    test('fromJson is case-sensitive and exact match', () {
+      // These should fall back to perHour as they don't match exactly
       expect(
-        LaborCalculationMethodType.fromJson('HOURLY'),
-        LaborCalculationMethodType.hourly,
+        LaborCalculationMethodType.fromJson('PER_HOUR'),
+        LaborCalculationMethodType.perHour,
       );
       expect(
-        LaborCalculationMethodType.fromJson('Daily'),
-        LaborCalculationMethodType.daily,
+        LaborCalculationMethodType.fromJson('Per_Day'),
+        LaborCalculationMethodType.perHour,
       );
     });
 
-    test('fromJson returns hourly for invalid value', () {
+    test('fromJson returns perHour for invalid value', () {
       expect(
         LaborCalculationMethodType.fromJson('invalid'),
-        LaborCalculationMethodType.hourly,
+        LaborCalculationMethodType.perHour,
       );
       expect(
         LaborCalculationMethodType.fromJson(''),
-        LaborCalculationMethodType.hourly,
+        LaborCalculationMethodType.perHour,
+      );
+      // Old format should also fall back
+      expect(
+        LaborCalculationMethodType.fromJson('hourly'),
+        LaborCalculationMethodType.perHour,
+      );
+      expect(
+        LaborCalculationMethodType.fromJson('daily'),
+        LaborCalculationMethodType.perHour,
       );
     });
   });
@@ -256,7 +266,7 @@ void main() {
       expect(updated.laborUnitValue, 25.0); // Preserved
     });
 
-    test('copyWith preserves null when parameter omitted', () {
+    test('copyWith preserves existing value when parameter omitted', () {
       const laborValue = LaborValue(laborDays: 5.0);
       final updated = laborValue.copyWith(laborHours: 40.0);
 
@@ -290,6 +300,7 @@ void main() {
       itemTotalCost: 5000.0,
       createdAt: DateTime(2024, 1, 1),
       updatedAt: DateTime(2024, 1, 1),
+      currency: 'USD',
       unitPrice: const Money(amount: 100.0, currency: 'USD'),
       quantity: const Quantity(value: 50.0, unit: Unit.cubicMeters),
       productLink: 'https://example.com/concrete',
@@ -359,6 +370,7 @@ void main() {
         itemTotalCost: 5000.0,
         createdAt: DateTime(2024, 1, 1),
         updatedAt: DateTime(2024, 1, 1),
+        currency: 'USD',
         unitPrice: const Money(amount: 100.0),
         quantity: const Quantity(value: 50.0, unit: Unit.cubicMeters),
       );
@@ -371,6 +383,7 @@ void main() {
         itemTotalCost: 5000.0,
         createdAt: DateTime(2024, 1, 1),
         updatedAt: DateTime(2024, 1, 1),
+        currency: 'USD',
         unitPrice: const Money(amount: 100.0),
         quantity: const Quantity(value: 50.0, unit: Unit.cubicMeters),
       );
@@ -397,7 +410,8 @@ void main() {
       itemTotalCost: 2000.0,
       createdAt: DateTime(2024, 1, 1),
       updatedAt: DateTime(2024, 1, 1),
-      laborCalcMethod: LaborCalculationMethodType.hourly,
+      currency: 'USD',
+      laborCalcMethod: LaborCalculationMethodType.perHour,
       laborValue: const LaborValue(
         laborHours: 40.0,
         laborUnitType: 'hourly',
@@ -412,7 +426,7 @@ void main() {
       expect(testItem.estimateId, 'estimate-1');
       expect(testItem.itemName, 'Electrician Work');
       expect(testItem.itemType, CostItemType.labor);
-      expect(testItem.laborCalcMethod, LaborCalculationMethodType.hourly);
+      expect(testItem.laborCalcMethod, LaborCalculationMethodType.perHour);
       expect(testItem.laborValue.laborHours, 40.0);
       expect(testItem.crewSize, 2);
       expect(testItem.description, 'Electrical installation');
@@ -424,10 +438,10 @@ void main() {
 
     test('copyWith creates new instance with updated values', () {
       final updated = testItem.copyWith(
-        laborCalcMethod: LaborCalculationMethodType.daily,
+        laborCalcMethod: LaborCalculationMethodType.perDay,
       );
 
-      expect(updated.laborCalcMethod, LaborCalculationMethodType.daily);
+      expect(updated.laborCalcMethod, LaborCalculationMethodType.perDay);
       expect(updated.id, testItem.id);
       expect(updated.itemName, testItem.itemName);
     });
@@ -470,7 +484,8 @@ void main() {
         itemTotalCost: 2000.0,
         createdAt: DateTime(2024, 1, 1),
         updatedAt: DateTime(2024, 1, 1),
-        laborCalcMethod: LaborCalculationMethodType.hourly,
+        currency: 'USD',
+        laborCalcMethod: LaborCalculationMethodType.perHour,
         laborValue: const LaborValue(laborHours: 40.0),
       );
 
@@ -482,7 +497,8 @@ void main() {
         itemTotalCost: 2000.0,
         createdAt: DateTime(2024, 1, 1),
         updatedAt: DateTime(2024, 1, 1),
-        laborCalcMethod: LaborCalculationMethodType.hourly,
+        currency: 'USD',
+        laborCalcMethod: LaborCalculationMethodType.perHour,
         laborValue: const LaborValue(laborHours: 40.0),
       );
 
@@ -505,6 +521,7 @@ void main() {
       itemTotalCost: 2500.0,
       createdAt: DateTime(2024, 1, 1),
       updatedAt: DateTime(2024, 1, 1),
+      currency: 'USD',
       unitPrice: const Money(amount: 500.0, currency: 'USD'),
       quantity: const Quantity(value: 5.0, unit: Unit.days),
       productLink: 'https://example.com/excavator',
@@ -573,6 +590,7 @@ void main() {
         itemTotalCost: 2500.0,
         createdAt: DateTime(2024, 1, 1),
         updatedAt: DateTime(2024, 1, 1),
+        currency: 'USD',
         unitPrice: const Money(amount: 500.0),
         quantity: const Quantity(value: 5.0, unit: Unit.days),
       );
@@ -585,6 +603,7 @@ void main() {
         itemTotalCost: 2500.0,
         createdAt: DateTime(2024, 1, 1),
         updatedAt: DateTime(2024, 1, 1),
+        currency: 'USD',
         unitPrice: const Money(amount: 500.0),
         quantity: const Quantity(value: 5.0, unit: Unit.days),
       );
@@ -613,6 +632,7 @@ void main() {
           itemTotalCost: 5000.0,
           createdAt: DateTime(2024, 1, 1),
           updatedAt: DateTime(2024, 1, 1),
+          currency: 'USD',
           unitPrice: const Money(amount: 100.0),
           quantity: const Quantity(value: 50.0, unit: Unit.cubicMeters),
         ),
@@ -624,7 +644,8 @@ void main() {
           itemTotalCost: 2000.0,
           createdAt: DateTime(2024, 1, 1),
           updatedAt: DateTime(2024, 1, 1),
-          laborCalcMethod: LaborCalculationMethodType.hourly,
+          currency: 'USD',
+          laborCalcMethod: LaborCalculationMethodType.perHour,
           laborValue: const LaborValue(laborHours: 40.0),
         ),
         EquipmentCostItem(
@@ -635,6 +656,7 @@ void main() {
           itemTotalCost: 2500.0,
           createdAt: DateTime(2024, 1, 1),
           updatedAt: DateTime(2024, 1, 1),
+          currency: 'USD',
           unitPrice: const Money(amount: 500.0),
           quantity: const Quantity(value: 5.0, unit: Unit.days),
         ),
@@ -656,6 +678,7 @@ void main() {
           itemTotalCost: 5000.0,
           createdAt: DateTime(2024, 1, 1),
           updatedAt: DateTime(2024, 1, 1),
+          currency: 'USD',
           unitPrice: const Money(amount: 100.0),
           quantity: const Quantity(value: 50.0, unit: Unit.cubicMeters),
         ),
@@ -667,7 +690,8 @@ void main() {
           itemTotalCost: 2000.0,
           createdAt: DateTime(2024, 1, 1),
           updatedAt: DateTime(2024, 1, 1),
-          laborCalcMethod: LaborCalculationMethodType.hourly,
+          currency: 'USD',
+          laborCalcMethod: LaborCalculationMethodType.perHour,
           laborValue: const LaborValue(laborHours: 40.0),
         ),
       ];
