@@ -1073,5 +1073,65 @@
   "@permissionDenied": {
     "description": "Error message shown when user lacks permission for an operation",
     "context": "N/A"
+  },
+  "materialsTab": "Materials",
+  "@materialsTab": {
+    "description": "Label for materials tab in cost estimation details",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-6767&t=EvdR20sd5Hb9WvGE-4"
+  },
+  "laboursTab": "Labours",
+  "@laboursTab": {
+    "description": "Label for labours tab in cost estimation details",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-6767&t=EvdR20sd5Hb9WvGE-4"
+  },
+  "equipmentsTab": "Equipments",
+  "@equipmentsTab": {
+    "description": "Label for equipments tab in cost estimation details",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-6767&t=EvdR20sd5Hb9WvGE-4"
+  },
+  "noMaterialCostMessage": "No material cost added. For adding cost please click on add button",
+  "@noMaterialCostMessage": {
+    "description": "Empty state message shown when no material costs exist",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-6770&t=EvdR20sd5Hb9WvGE-4"
+  },
+  "noLabourCostMessage": "No labour cost added. For adding cost please click on add button",
+  "@noLabourCostMessage": {
+    "description": "Empty state message shown when no labour costs exist",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-6770&t=EvdR20sd5Hb9WvGE-4"
+  },
+  "noEquipmentCostMessage": "No equipment cost added. For adding cost please click on add button",
+  "@noEquipmentCostMessage": {
+    "description": "Empty state message shown when no equipment costs exist",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-6770&t=EvdR20sd5Hb9WvGE-4"
+  },
+  "addMaterialCostButton": "Add material cost",
+  "@addMaterialCostButton": {
+    "description": "Label for the add material cost floating action button on the cost estimation details page",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-6780&t=EvdR20sd5Hb9WvGE-4"
+  },
+  "previewButton": "Preview",
+  "@previewButton": {
+    "description": "Label for the preview button in the cost estimation details bottom bar",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57376-12679&t=EvdR20sd5Hb9WvGE-4"
+  },
+  "backLabel": "Back",
+  "@backLabel": {
+    "description": "Accessibility label for the back navigation icon",
+    "context": "N/A"
+  },
+  "editEstimationNameLabel": "Edit estimation name",
+  "@editEstimationNameLabel": {
+    "description": "Accessibility label for the edit icon shown next to the estimation title",
+    "context": "N/A"
+  },
+  "moreOptionsLabel": "More options",
+  "@moreOptionsLabel": {
+    "description": "Accessibility label for the more-options (overflow) icon in the app bar",
+    "context": "N/A"
+  },
+  "commentLabel": "Comment",
+  "@commentLabel": {
+    "description": "Accessibility label for the comment icon in the cost estimation details tab view",
+    "context": "N/A"
   }
 }

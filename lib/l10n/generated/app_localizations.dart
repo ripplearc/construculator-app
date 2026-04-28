@@ -1299,6 +1299,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You don\'t have permission to perform this action'**
   String get permissionDenied;
+
+  /// Label for materials tab in cost estimation details
+  ///
+  /// In en, this message translates to:
+  /// **'Materials'**
+  String get materialsTab;
+
+  /// Label for labours tab in cost estimation details
+  ///
+  /// In en, this message translates to:
+  /// **'Labours'**
+  String get laboursTab;
+
+  /// Label for equipments tab in cost estimation details
+  ///
+  /// In en, this message translates to:
+  /// **'Equipments'**
+  String get equipmentsTab;
+
+  /// Empty state message shown when no material costs exist
+  ///
+  /// In en, this message translates to:
+  /// **'No material cost added. For adding cost please click on add button'**
+  String get noMaterialCostMessage;
+
+  /// Empty state message shown when no labour costs exist
+  ///
+  /// In en, this message translates to:
+  /// **'No labour cost added. For adding cost please click on add button'**
+  String get noLabourCostMessage;
+
+  /// Empty state message shown when no equipment costs exist
+  ///
+  /// In en, this message translates to:
+  /// **'No equipment cost added. For adding cost please click on add button'**
+  String get noEquipmentCostMessage;
+
+  /// Label for the add material cost floating action button on the cost estimation details page
+  ///
+  /// In en, this message translates to:
+  /// **'Add material cost'**
+  String get addMaterialCostButton;
+
+  /// Label for the preview button in the cost estimation details bottom bar
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get previewButton;
+
+  /// Accessibility label for the back navigation icon
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get backLabel;
+
+  /// Accessibility label for the edit icon shown next to the estimation title
+  ///
+  /// In en, this message translates to:
+  /// **'Edit estimation name'**
+  String get editEstimationNameLabel;
+
+  /// Accessibility label for the more-options (overflow) icon in the app bar
+  ///
+  /// In en, this message translates to:
+  /// **'More options'**
+  String get moreOptionsLabel;
+
+  /// Accessibility label for the comment icon in the cost estimation details tab view
+  ///
+  /// In en, this message translates to:
+  /// **'Comment'**
+  String get commentLabel;
 }
 
 class _AppLocalizationsDelegate
