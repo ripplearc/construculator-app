@@ -1,6 +1,6 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/libraries/formatting/formatting_helper.dart';
+import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -59,9 +59,9 @@ class EstimationCard extends StatelessWidget {
               _buildTopRow(context),
               const SizedBox(height: CoreSpacing.space3),
               _buildMiddleRow(context),
-              if (ownerName != null) ...[
+              if (ownerName case final owner?) ...[
                 const SizedBox(height: CoreSpacing.space3),
-                _buildOwnerRow(context, ownerName!),
+                _buildOwnerRow(context, owner),
               ],
             ],
           ),
@@ -135,7 +135,7 @@ class EstimationCard extends StatelessWidget {
             children: [
               Flexible(
                 child: Text(
-                  FormattingHelper.formatDate(updatedAt),
+                  DisplayFormatter.formatDate(updatedAt),
                   style: typography.bodySmallRegular,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -152,7 +152,7 @@ class EstimationCard extends StatelessWidget {
               const SizedBox(width: CoreSpacing.space2),
               Flexible(
                 child: Text(
-                  FormattingHelper.formatTime(updatedAt),
+                  DisplayFormatter.formatTime(updatedAt),
                   style: typography.bodySmallRegular,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -162,7 +162,7 @@ class EstimationCard extends StatelessWidget {
         ),
         const SizedBox(width: CoreSpacing.space2),
         Text(
-          FormattingHelper.formatCurrency(estimation.totalCost),
+          DisplayFormatter.formatCurrency(estimation.totalCost),
           style: typography.bodyLargeSemiBold.copyWith(color: appColors.textDark),
         ),
       ],
