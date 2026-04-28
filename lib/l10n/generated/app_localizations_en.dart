@@ -681,4 +681,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String estimationCardOwner(String ownerName) {
     return 'Owner: $ownerName';
   }
+
+  @override
+  String get searchResultsMostRelevant => 'Most relevant';
+
+  @override
+  String searchResultsEmpty(String query) {
+    return 'No results for \"$query\"';
+  }
 }

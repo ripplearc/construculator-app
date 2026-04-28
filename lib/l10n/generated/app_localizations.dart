@@ -1299,6 +1299,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Owner: {ownerName}'**
   String estimationCardOwner(String ownerName);
+
+  /// Section header shown above the search results list
+  ///
+  /// In en, this message translates to:
+  /// **'Most relevant'**
+  String get searchResultsMostRelevant;
+
+  /// Empty state message shown when a search returns no results
+  ///
+  /// In en, this message translates to:
+  /// **'No results for \"{query}\"'**
+  String searchResultsEmpty(String query);
 }
 
 class _AppLocalizationsDelegate
