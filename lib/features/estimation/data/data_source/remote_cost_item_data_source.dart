@@ -7,39 +7,47 @@ import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.da
 /// Remote data source for cost item operations using Supabase.
 ///
 /// This data source handles all remote database operations for cost items,
-/// including fetching, creating, updating, and deleting cost items.
+/// including fetching and creating cost items.
+///
+/// Following Rule 11: Uses explicit method names that clearly indicate
+/// network fetch operations with specific scope (by estimate ID).
 class RemoteCostItemDataSource implements CostItemDataSource {
-  final SupabaseWrapper supabaseWrapper;
+  final SupabaseWrapper _supabaseWrapper;
   static final _logger = AppLogger().tag('RemoteCostItemDataSource');
 
-  static const String _itemTypeColumn = 'item_type';
-
-  RemoteCostItemDataSource({required this.supabaseWrapper});
+  RemoteCostItemDataSource({required SupabaseWrapper supabaseWrapper})
+      : _supabaseWrapper = supabaseWrapper;
 
   @override
-  Future<List<CostItemDto>> getCostItems({
+  Future<List<CostItemDto>> fetchCostItemsByEstimateId({
     required String estimateId,
-    required int offset,
-    required int limit,
+    String? itemType,
   }) async {
     _logger.debug(
-      'Getting cost items for estimate: $estimateId, '
-      'offset: $offset, limit: $limit',
+      'Fetching cost items for estimate: $estimateId'
+      '${itemType != null ? ', type: $itemType' : ''}',
     );
 
-    final response = await supabaseWrapper.selectPaginated(
+    // Build filters dynamically based on whether itemType is provided
+    final filters = <String, dynamic>{
+      DatabaseConstants.estimateIdColumn: estimateId,
+    };
+
+    if (itemType != null) {
+      filters[DatabaseConstants.itemTypeColumn] = itemType;
+    }
+
+    final response = await _supabaseWrapper.selectMatch(
       table: DatabaseConstants.costItemsTable,
-      filterColumn: DatabaseConstants.estimateIdColumn,
-      filterValue: estimateId,
-      orderColumn: DatabaseConstants.createdAtColumn,
+      filters: filters,
+      orderBy: DatabaseConstants.createdAtColumn,
       ascending: true,
-      rangeFrom: offset,
-      rangeTo: offset + limit - 1,
     );
 
     if (response.isEmpty) {
       _logger.warning(
-        'No cost items found for estimate: $estimateId at offset: $offset',
+        'No cost items found for estimate: $estimateId'
+        '${itemType != null ? ' with type: $itemType' : ''}',
       );
       return [];
     }
@@ -50,46 +58,11 @@ class RemoteCostItemDataSource implements CostItemDataSource {
   @override
   Future<CostItemDto> createCostItem(CostItemDto item) async {
     _logger.debug('Creating cost item: ${item.id}');
-    final response = await supabaseWrapper.insert(
+    final response = await _supabaseWrapper.insert(
       table: DatabaseConstants.costItemsTable,
       data: item.toJson(),
     );
 
     return CostItemDto.fromJson(response);
-  }
-
-  /// Fetches cost items filtered by type for a specific estimate.
-  ///
-  /// Returns a list of [CostItemDto] matching the specified item type,
-  /// ordered by creation date (oldest first).
-  ///
-  /// Note: This is a convenience method not part of the interface.
-  /// For paginated access, use [getCostItems] instead.
-  Future<List<CostItemDto>> getCostItemsByType({
-    required String estimateId,
-    required String itemType,
-  }) async {
-    _logger.debug(
-      'Getting cost items for estimate: $estimateId, type: $itemType',
-    );
-
-    final response = await supabaseWrapper.selectMatch(
-      table: DatabaseConstants.costItemsTable,
-      filters: {
-        DatabaseConstants.estimateIdColumn: estimateId,
-        _itemTypeColumn: itemType,
-      },
-      orderBy: DatabaseConstants.createdAtColumn,
-      ascending: true,
-    );
-
-    if (response.isEmpty) {
-      _logger.warning(
-        'No cost items of type $itemType found for estimate: $estimateId',
-      );
-      return [];
-    }
-
-    return response.map((item) => CostItemDto.fromJson(item)).toList();
   }
 }

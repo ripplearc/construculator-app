@@ -1,5 +1,4 @@
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_item_data_source.dart';
-import 'package:construculator/features/estimation/data/data_source/remote_cost_item_data_source.dart';
 import 'package:construculator/features/estimation/data/models/cost_item_dto.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -46,8 +45,8 @@ void main() {
       fakeSupabaseWrapper.addTableData(DatabaseConstants.costItemsTable, rows);
     }
 
-    group('getCostItems', () {
-      test('successfully fetches paginated cost items', () async {
+    group('fetchCostItemsByEstimateId', () {
+      test('successfully fetches all cost items without type filter', () async {
         final testItems = [
           CostItemTestDataMapFactory.createMaterialItemData(
             id: 'item-1',
@@ -71,17 +70,46 @@ void main() {
             .map((data) => CostItemDto.fromJson(data))
             .toList();
 
-        final result = await dataSource.getCostItems(
+        final result = await dataSource.fetchCostItemsByEstimateId(
           estimateId: testEstimateId,
-          offset: 0,
-          limit: 10,
         );
 
         expect(result.length, 3);
         expect(result, expectedDtos);
       });
 
-      test('uses correct table and filter parameters', () async {
+      test('successfully fetches cost items filtered by type', () async {
+        final testItems = [
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: 'item-1',
+            estimateId: testEstimateId,
+            itemName: 'Concrete',
+          ),
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: 'item-2',
+            estimateId: testEstimateId,
+            itemName: 'Steel',
+          ),
+          CostItemTestDataMapFactory.createLaborItemData(
+            id: 'item-3',
+            estimateId: testEstimateId,
+            itemName: 'Installation',
+          ),
+        ];
+        seedItemTable(testItems);
+
+        final result = await dataSource.fetchCostItemsByEstimateId(
+          estimateId: testEstimateId,
+          itemType: 'material',
+        );
+
+        expect(result.length, 2);
+        expect(result.every((item) => item.itemType == 'material'), isTrue);
+        expect(result[0].itemName, 'Concrete');
+        expect(result[1].itemName, 'Steel');
+      });
+
+      test('uses correct table and filter parameters without itemType', () async {
         seedItemTable([
           CostItemTestDataMapFactory.createMaterialItemData(
             id: 'item-1',
@@ -89,33 +117,73 @@ void main() {
           ),
         ]);
 
-        await dataSource.getCostItems(
+        await dataSource.fetchCostItemsByEstimateId(
           estimateId: testEstimateId,
-          offset: 0,
-          limit: 10,
         );
 
-        final calls = fakeSupabaseWrapper.getMethodCallsFor('selectPaginated');
+        final calls = fakeSupabaseWrapper.getMethodCallsFor('selectMatch');
         expect(calls.length, 1);
         final call = calls.first;
         expect(call, {
-          'method': 'selectPaginated',
+          'method': 'selectMatch',
           'table': DatabaseConstants.costItemsTable,
           'columns': '*',
-          'filterColumn': DatabaseConstants.estimateIdColumn,
-          'filterValue': testEstimateId,
-          'orderColumn': DatabaseConstants.createdAtColumn,
+          'filters': {
+            DatabaseConstants.estimateIdColumn: testEstimateId,
+          },
+          'orderBy': DatabaseConstants.createdAtColumn,
           'ascending': true,
-          'rangeFrom': 0,
-          'rangeTo': 9,
+        });
+      });
+
+      test('uses correct table and filter parameters with itemType', () async {
+        seedItemTable([
+          CostItemTestDataMapFactory.createLaborItemData(
+            id: 'item-1',
+            estimateId: testEstimateId,
+          ),
+        ]);
+
+        await dataSource.fetchCostItemsByEstimateId(
+          estimateId: testEstimateId,
+          itemType: 'labor',
+        );
+
+        final calls = fakeSupabaseWrapper.getMethodCallsFor('selectMatch');
+        expect(calls.length, 1);
+        final call = calls.first;
+        expect(call, {
+          'method': 'selectMatch',
+          'table': DatabaseConstants.costItemsTable,
+          'columns': '*',
+          'filters': {
+            DatabaseConstants.estimateIdColumn: testEstimateId,
+            DatabaseConstants.itemTypeColumn: 'labor',
+          },
+          'orderBy': DatabaseConstants.createdAtColumn,
+          'ascending': true,
         });
       });
 
       test('returns empty list when no items exist', () async {
-        final result = await dataSource.getCostItems(
+        final result = await dataSource.fetchCostItemsByEstimateId(
           estimateId: testEstimateId,
-          offset: 0,
-          limit: 10,
+        );
+
+        expect(result, isEmpty);
+      });
+
+      test('returns empty list when no items match the type filter', () async {
+        seedItemTable([
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: 'item-1',
+            estimateId: testEstimateId,
+          ),
+        ]);
+
+        final result = await dataSource.fetchCostItemsByEstimateId(
+          estimateId: testEstimateId,
+          itemType: 'equipment',
         );
 
         expect(result, isEmpty);
@@ -133,10 +201,8 @@ void main() {
 
         final expectedDto = CostItemDto.fromJson(testItem);
 
-        final result = await dataSource.getCostItems(
+        final result = await dataSource.fetchCostItemsByEstimateId(
           estimateId: testEstimateId,
-          offset: 0,
-          limit: 10,
         );
 
         expect(result.length, 1);
@@ -146,41 +212,63 @@ void main() {
       });
 
       test('propagates exceptions from supabase wrapper', () async {
-        fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
-        fakeSupabaseWrapper.selectPaginatedErrorMessage = 'Network error';
+        fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
+        fakeSupabaseWrapper.selectMatchErrorMessage = 'Network error';
 
         await expectLater(
-          dataSource.getCostItems(
+          dataSource.fetchCostItemsByEstimateId(
             estimateId: testEstimateId,
-            offset: 0,
-            limit: 10,
           ),
           throwsException,
         );
       });
 
-      test('handles pagination with offset correctly', () async {
-        seedItemTable(
-          List.generate(
-            20,
-            (i) => CostItemTestDataMapFactory.createMaterialItemData(
-              id: 'item-$i',
-              estimateId: testEstimateId,
-            ),
+      test('orders results by creation date ascending', () async {
+        final testItems = [
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: 'item-2',
+            estimateId: testEstimateId,
+            itemName: 'Second',
           ),
-        );
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: 'item-1',
+            estimateId: testEstimateId,
+            itemName: 'First',
+          ),
+        ];
+        seedItemTable(testItems);
 
-        await dataSource.getCostItems(
+        await dataSource.fetchCostItemsByEstimateId(
           estimateId: testEstimateId,
-          offset: 10,
-          limit: 5,
         );
 
-        final calls = fakeSupabaseWrapper.getMethodCallsFor('selectPaginated');
-        expect(calls.length, 1);
-        final call = calls.first;
-        expect(call['rangeFrom'], 10);
-        expect(call['rangeTo'], 14);
+        final calls = fakeSupabaseWrapper.getMethodCallsFor('selectMatch');
+        expect(calls.first['orderBy'], DatabaseConstants.createdAtColumn);
+        expect(calls.first['ascending'], isTrue);
+      });
+
+      test('fetches items for different estimate IDs correctly', () async {
+        final testItems = [
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: 'item-1',
+            estimateId: 'estimate-123',
+            itemName: 'Concrete',
+          ),
+          CostItemTestDataMapFactory.createMaterialItemData(
+            id: 'item-2',
+            estimateId: 'estimate-456',
+            itemName: 'Steel',
+          ),
+        ];
+        seedItemTable(testItems);
+
+        final result = await dataSource.fetchCostItemsByEstimateId(
+          estimateId: 'estimate-123',
+        );
+
+        expect(result.length, 1);
+        expect(result[0].estimateId, 'estimate-123');
+        expect(result[0].itemName, 'Concrete');
       });
     });
 
@@ -216,158 +304,59 @@ void main() {
         expect(calls.length, 1);
         expect(calls.first['table'], DatabaseConstants.costItemsTable);
       });
-    });
 
-    group('getCostItemsByType', () {
-      test('successfully fetches items filtered by type', () async {
-        final testItems = [
-          CostItemTestDataMapFactory.createMaterialItemData(
-            id: 'item-1',
-            estimateId: testEstimateId,
-            itemName: 'Concrete',
-          ),
-          CostItemTestDataMapFactory.createMaterialItemData(
-            id: 'item-2',
-            estimateId: testEstimateId,
-            itemName: 'Steel',
-          ),
-          CostItemTestDataMapFactory.createLaborItemData(
-            id: 'item-3',
-            estimateId: testEstimateId,
-            itemName: 'Installation',
-          ),
-        ];
-        seedItemTable(testItems);
-
-        final remoteDataSource = dataSource as RemoteCostItemDataSource;
-        final result = await remoteDataSource.getCostItemsByType(
-          estimateId: testEstimateId,
-          itemType: 'material',
-        );
-
-        expect(result.length, 2);
-        expect(result.every((item) => item.itemType == 'material'), isTrue);
-        expect(result[0].itemName, 'Concrete');
-        expect(result[1].itemName, 'Steel');
-      });
-
-      test('uses correct table and filter parameters', () async {
-        seedItemTable([
-          CostItemTestDataMapFactory.createLaborItemData(
-            id: 'item-1',
-            estimateId: testEstimateId,
-          ),
-        ]);
-
-        final remoteDataSource = dataSource as RemoteCostItemDataSource;
-        await remoteDataSource.getCostItemsByType(
-          estimateId: testEstimateId,
-          itemType: 'labor',
-        );
-
-        final calls = fakeSupabaseWrapper.getMethodCallsFor('selectMatch');
-        expect(calls.length, 1);
-        final call = calls.first;
-        expect(call, {
-          'method': 'selectMatch',
-          'table': DatabaseConstants.costItemsTable,
-          'columns': '*',
-          'filters': {
-            DatabaseConstants.estimateIdColumn: testEstimateId,
-            'item_type': 'labor',
-          },
-          'orderBy': DatabaseConstants.createdAtColumn,
-          'ascending': true,
-        });
-      });
-
-      test('returns empty list when no items match the type', () async {
-        seedItemTable([
-          CostItemTestDataMapFactory.createMaterialItemData(
-            id: 'item-1',
-            estimateId: testEstimateId,
-          ),
-        ]);
-
-        final remoteDataSource = dataSource as RemoteCostItemDataSource;
-        final result = await remoteDataSource.getCostItemsByType(
-          estimateId: testEstimateId,
-          itemType: 'equipment',
-        );
-
-        expect(result, isEmpty);
-      });
-
-      test('returns empty list when no items exist', () async {
-        final remoteDataSource = dataSource as RemoteCostItemDataSource;
-        final result = await remoteDataSource.getCostItemsByType(
-          estimateId: testEstimateId,
-          itemType: 'material',
-        );
-
-        expect(result, isEmpty);
-      });
-
-      test('converts JSON to CostItemDto correctly', () async {
+      test('inserts correct data', () async {
         final testItem = CostItemTestDataMapFactory.createEquipmentItemData(
           id: 'item-1',
           estimateId: testEstimateId,
-          itemName: 'Excavator',
+          itemName: 'Bulldozer',
+          unitPrice: 500.0,
+          quantity: 2.0,
         );
+        final itemDto = CostItemDto.fromJson(testItem);
         seedItemTable([testItem]);
 
-        final expectedDto = CostItemDto.fromJson(testItem);
+        await dataSource.createCostItem(itemDto);
 
-        final remoteDataSource = dataSource as RemoteCostItemDataSource;
-        final result = await remoteDataSource.getCostItemsByType(
+        final calls = fakeSupabaseWrapper.getMethodCallsFor('insert');
+        expect(calls.length, 1);
+        expect(calls.first['data'], itemDto.toJson());
+      });
+
+      test('returns created cost item with correct data', () async {
+        final testItem = CostItemTestDataMapFactory.createMaterialItemData(
+          id: '1',
           estimateId: testEstimateId,
-          itemType: 'equipment',
+          itemName: 'Cement',
+          unitPrice: 75.0,
+          quantity: 100.0,
         );
+        final itemDto = CostItemDto.fromJson(testItem);
+        seedItemTable([testItem]);
 
-        expect(result.length, 1);
-        final dto = result.first;
-        expect(dto, isA<CostItemDto>());
-        expect(dto, expectedDto);
+        final result = await dataSource.createCostItem(itemDto);
+
+        expect(result, isA<CostItemDto>());
+        expect(result.itemName, 'Cement');
+        expect(result.unitPrice, 75.0);
+        expect(result.quantity, 100.0);
+        expect(result.estimateId, testEstimateId);
       });
 
       test('propagates exceptions from supabase wrapper', () async {
-        fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
-        fakeSupabaseWrapper.selectMatchErrorMessage = 'Network error';
+        fakeSupabaseWrapper.shouldThrowOnInsert = true;
+        fakeSupabaseWrapper.insertErrorMessage = 'Insert failed';
 
-        final remoteDataSource = dataSource as RemoteCostItemDataSource;
+        final testItem = CostItemTestDataMapFactory.createMaterialItemData(
+          id: 'item-1',
+          estimateId: testEstimateId,
+        );
+        final itemDto = CostItemDto.fromJson(testItem);
+
         await expectLater(
-          remoteDataSource.getCostItemsByType(
-            estimateId: testEstimateId,
-            itemType: 'material',
-          ),
+          dataSource.createCostItem(itemDto),
           throwsException,
         );
-      });
-
-      test('orders results by creation date ascending', () async {
-        final testItems = [
-          CostItemTestDataMapFactory.createMaterialItemData(
-            id: 'item-2',
-            estimateId: testEstimateId,
-            itemName: 'Second',
-          ),
-          CostItemTestDataMapFactory.createMaterialItemData(
-            id: 'item-1',
-            estimateId: testEstimateId,
-            itemName: 'First',
-          ),
-        ];
-        seedItemTable(testItems);
-
-        final remoteDataSource = dataSource as RemoteCostItemDataSource;
-        await remoteDataSource.getCostItemsByType(
-          estimateId: testEstimateId,
-          itemType: 'material',
-        );
-
-        final calls = fakeSupabaseWrapper.getMethodCallsFor('selectMatch');
-        expect(calls.first['orderBy'], DatabaseConstants.createdAtColumn);
-        expect(calls.first['ascending'], isTrue);
       });
     });
   });

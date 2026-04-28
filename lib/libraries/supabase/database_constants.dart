@@ -64,4 +64,7 @@ class DatabaseConstants {
   static const String userColumn = 'user';
   static const String activityDetailsColumn = 'activity_details';
   static const String loggedAtColumn = 'logged_at';
+
+  // Cost Items columns
+  static const String itemTypeColumn = 'item_type';
 }
