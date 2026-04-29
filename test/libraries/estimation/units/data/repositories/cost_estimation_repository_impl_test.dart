@@ -16,8 +16,8 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../../../features/estimations/helpers/estimation_test_data_map_factory.dart';
 import '../../../../../utils/fake_app_bootstrap_factory.dart';
-import '../../../helpers/estimation_test_data_map_factory.dart';
 
 void main() {
   const String otherProjectId = 'other-project-456';
@@ -609,6 +609,7 @@ void main() {
             allMaps.reversed.toList(),
           );
 
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
           final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
           await expectLater(
@@ -678,6 +679,7 @@ void main() {
           final initialEstimations = mapsToDomainEntities(
             seededMaps.reversed.toList(),
           );
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
           final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
           await expectLater(
@@ -946,6 +948,7 @@ void main() {
           );
           seedEstimationTable([existingMap]);
 
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
           final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
           await expectLater(
@@ -993,6 +996,7 @@ void main() {
             allMaps.reversed.toList(),
           );
 
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
           final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
           await expectLater(
@@ -1079,6 +1083,7 @@ void main() {
 
           final stream = repository.watchEstimations(testProjectId);
           final subscription = stream.listen((_) {});
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
           final queue = StreamQueue(stream);
 
           await expectLater(queue.next, completion(rightEstimations(isEmpty)));
@@ -1162,6 +1167,7 @@ void main() {
           final estimation2 = CostEstimateDto.fromJson(estimationMap2);
           seedEstimationTable([estimationMap1, estimationMap2]);
 
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
           final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
           await expectLater(
@@ -1314,6 +1320,7 @@ void main() {
             allMaps.reversed.toList(),
           );
 
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
           final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
           await expectLater(
@@ -1372,6 +1379,7 @@ void main() {
           maps.reversed.toList(),
         );
 
+        // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
         final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
         await expectLater(
@@ -1419,6 +1427,7 @@ void main() {
           );
           seedEstimationTable([initialMap]);
 
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
           final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
           await expectLater(
@@ -1486,6 +1495,7 @@ void main() {
           );
           seedEstimationTable([initialMap]);
 
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
           final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
           await expectLater(
@@ -1603,6 +1613,7 @@ void main() {
           );
           seedEstimationTable([initialMap]);
 
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
           final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
           await expectLater(
@@ -1664,6 +1675,7 @@ void main() {
         );
         seedEstimationTable([initialMap]);
 
+        // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
         final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
         await expectLater(
@@ -1827,6 +1839,7 @@ void main() {
           final expectedEstimation = CostEstimateDto.fromJson(
             initialMap,
           ).toDomain();
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
           final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
           await expectLater(
@@ -1890,6 +1903,7 @@ void main() {
           final expectedEstimation = CostEstimateDto.fromJson(
             initialMap,
           ).toDomain();
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
           final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
           await expectLater(
@@ -1972,6 +1986,7 @@ void main() {
         final expectedEstimation = CostEstimateDto.fromJson(
           initialMap,
         ).toDomain();
+        // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
         final queue = StreamQueue(repository.watchEstimations(testProjectId));
 
         await expectLater(
