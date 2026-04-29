@@ -252,7 +252,9 @@ comprehensive_check() {
   run_custom_linter "$filtered_files"
 
   local unit_test_dirs=()
-  mapfile -t unit_test_dirs < <(
+  while IFS= read -r dir; do
+    [[ -n "$dir" ]] && unit_test_dirs+=("$dir")
+  done < <(
     find test/features test/libraries test/app -type d \
       \( -name "units" -o -name "widgets" \) 2>/dev/null | sort
   )
