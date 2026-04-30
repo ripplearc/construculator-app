@@ -152,13 +152,15 @@ void main() {
 
   Future<void> tapTabByLabel(WidgetTester tester, String label) async {
     await tester.tap(find.bySemanticsLabel(label));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
   }
 
   group('Tab Navigation', () {
     testWidgets('switches tabs and renders tab pages', (tester) async {
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text(l10n().homeTab), findsAtLeastNWidgets(1));
 
@@ -171,7 +173,8 @@ void main() {
 
     testWidgets('bottom navigation bar is always visible', (tester) async {
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.byType(CoreBottomNavBar), findsOneWidget);
 
@@ -183,7 +186,8 @@ void main() {
 
     testWidgets('lazy loads tabs on first access', (tester) async {
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.byType(DashboardPage), findsOneWidget);
       expect(find.byType(CalculationsPage), findsNothing);
@@ -201,7 +205,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.byType(DashboardPage, skipOffstage: false), findsOneWidget);
       expect(find.byType(CalculationsPage, skipOffstage: false), findsNothing);
@@ -230,7 +235,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       final dashboardElementBefore = tester.element(find.byType(DashboardPage));
 
@@ -250,7 +256,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       await tapTabByLabel(tester, l10n().calculationsTab);
       await tapTabByLabel(tester, l10n().membersTab);
@@ -287,7 +294,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       await tapTabByLabel(tester, l10n().calculationsTab);
       await tapTabByLabel(tester, l10n().homeTab);
@@ -308,7 +316,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       await tapTabByLabel(tester, l10n().costEstimation);
 
@@ -319,7 +328,8 @@ void main() {
   group('App Bar', () {
     testWidgets('shows default app bar title', (tester) async {
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text(l10n().appTitle), findsAtLeastNWidgets(1));
     });

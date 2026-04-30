@@ -6,6 +6,15 @@ import 'package:construculator/features/estimation/estimation_routes_module.dart
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
+class EstimationTabModuleProvider implements TabModuleProvider {
+  const EstimationTabModuleProvider();
+
+  @override
+  Future<void> load(AppBootstrap appBootstrap) async {
+    Modular.bindModule(EstimationModule(appBootstrap));
+  }
+}
+
 /// Modular module that owns the app shell's dependency bindings and root route.
 class ShellModule extends Module {
   final AppBootstrap appBootstrap;
