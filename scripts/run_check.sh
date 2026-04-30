@@ -81,22 +81,15 @@ build_extract_patterns_from_tracefile() {
   local tracefile="$1"
   local changed_files="$2"
 
-  declare -A covered_sources=()
-  local source_file
-
-  while IFS= read -r source_file; do
-    [[ -z "$source_file" ]] && continue
-    covered_sources["$source_file"]=1
-
-    if [[ "$source_file" == "$PWD/"* ]]; then
-      covered_sources["${source_file#"$PWD"/}"]=1
-    fi
-  done < <(grep '^SF:' "$tracefile" | cut -d: -f2-)
+  local covered_sources
+  covered_sources=$(grep '^SF:' "$tracefile" | cut -d: -f2- || true)
 
   local file
   while IFS= read -r file; do
     [[ -z "$file" ]] && continue
-    [[ -n "${covered_sources[$file]:-}" ]] && printf '*/%s\n' "$file"
+    if printf '%s\n' "$covered_sources" | grep -Fxq "$file" || printf '%s\n' "$covered_sources" | grep -Fxq "$PWD/$file"; then
+      printf '*/%s\n' "$file"
+    fi
   done <<< "$changed_files"
 }
 
@@ -305,11 +298,14 @@ comprehensive_check() {
   fi
 
   # Screenshot tests
-  if find test/features -type f -path "*/screenshots/*.dart" 2>/dev/null | grep -q .; then
+  local screenshot_test_dirs=()
+  while IFS= read -r dir; do
+    [[ -n "$dir" ]] && screenshot_test_dirs+=("$dir")
+  done < <(find test/features -type d -name "screenshots" 2>/dev/null | sort)
+
+  if [[ ${#screenshot_test_dirs[@]} -gt 0 ]]; then
     echo "🖼️ Screenshot tests..."
-    fvm flutter test \
-    test/features/**/screenshots \
-    --update-goldens
+    fvm flutter test "${screenshot_test_dirs[@]}" --update-goldens
   else
     echo "⏩ Skipping screenshot tests: no screenshot test files found."
   fi
