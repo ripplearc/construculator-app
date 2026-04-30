@@ -10,24 +10,13 @@ import 'package:construculator/features/estimation/presentation/bloc/cost_estima
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_log_bloc/cost_estimation_log_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
-import 'package:construculator/features/estimation/presentation/pages/cost_estimation_details_page.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
-import 'package:construculator/libraries/router/guards/auth_guard.dart';
-import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/time/clock_module.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
-
-class RouteDefinition {
-  final String route;
-  final WidgetBuilder widget;
-  final List<RouteGuard> guards;
-
-  RouteDefinition(this.route, this.widget, this.guards);
-}
 
 class EstimationModule extends Module {
   final AppBootstrap appBootstrap;
@@ -59,27 +48,12 @@ class EstimationModule extends Module {
     );
   }
 
-  final List<RouteDefinition> _routeDefinitions = [
-    RouteDefinition(estimationDetailsRoute, (context) {
-      final estimationId = Modular.args.params['estimationId'];
-
-      if (estimationId == null || estimationId.isEmpty) {
-        throw ArgumentError(
-          'estimationId is required for CostEstimationDetailsPage. '
-          'Ensure the route includes a valid estimationId parameter.',
-        );
-      }
-
-      return CostEstimationDetailsPage(estimationId: estimationId);
-    }, [AuthGuard()]),
-  ];
-
   @override
   List<Module> get imports => [
-        AuthLibraryModule(appBootstrap),
-        EstimationLibraryModule(appBootstrap),
-        ClockModule(),
-      ];
+    AuthLibraryModule(appBootstrap),
+    EstimationLibraryModule(appBootstrap),
+    ClockModule(),
+  ];
 
   @override
   void binds(Injector i) {
@@ -116,12 +90,5 @@ class EstimationModule extends Module {
     i.add<CostEstimationLogBloc>(
       () => CostEstimationLogBloc(repository: i.get()),
     );
-  }
-
-  @override
-  void routes(RouteManager r) {
-    for (final routeDef in _routeDefinitions) {
-      r.child(routeDef.route, guards: routeDef.guards, child: routeDef.widget);
-    }
   }
 }

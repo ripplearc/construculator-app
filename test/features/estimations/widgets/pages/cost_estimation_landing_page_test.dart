@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/features/estimation/estimation_routes_module.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_logs_list.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
@@ -48,7 +49,7 @@ class _CostEstimationLandingPageTestModule extends Module {
 
   @override
   void routes(RouteManager r) {
-    r.module(estimationBaseRoute, module: EstimationModule(appBootstrap));
+    r.module(estimationBaseRoute, module: EstimationRoutesModule(appBootstrap));
     r.child(
       '/test-landing/:projectId',
       guards: [AuthGuard()],
