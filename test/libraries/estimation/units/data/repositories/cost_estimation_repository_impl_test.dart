@@ -10,6 +10,7 @@ import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/libraries/estimation/data/repositories/cost_estimation_repository_impl.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/libraries/estimation/domain/enums/estimation_sort_option.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
@@ -767,6 +768,30 @@ void main() {
 
         expect(repository.hasMoreEstimations(testProjectId), isTrue);
       });
+
+      test(
+        'fetching with updatedAt must not reset createdAt pagination state',
+        () async {
+          seedEstimations(defaultPageDatasetSize, includeUpdatedAt: true);
+
+          await repository.fetchInitialEstimations(testProjectId);
+          expect(repository.hasMoreEstimations(testProjectId), isTrue);
+
+          await repository.fetchInitialEstimations(
+            testProjectId,
+            sortBy: EstimationSortOption.updatedAt,
+          );
+
+          expect(repository.hasMoreEstimations(testProjectId), isTrue);
+          expect(
+            repository.hasMoreEstimations(
+              testProjectId,
+              sortBy: EstimationSortOption.updatedAt,
+            ),
+            isTrue,
+          );
+        },
+      );
     });
 
     group('watchEstimations', () {
@@ -812,6 +837,49 @@ void main() {
 
         expect(result1, equals(result2));
       });
+
+      test(
+        'should isolate two concurrent streams with different sort keys',
+        () async {
+          seedEstimations(defaultPageDatasetSize, includeUpdatedAt: true);
+
+          final createdAtResults = <Either<Failure, List<CostEstimate>>>[];
+          final updatedAtResults = <Either<Failure, List<CostEstimate>>>[];
+
+          final createdAtStream = repository.watchEstimations(
+            testProjectId,
+            sortBy: EstimationSortOption.createdAt,
+          );
+          final updatedAtStream = repository.watchEstimations(
+            testProjectId,
+            sortBy: EstimationSortOption.updatedAt,
+          );
+
+          final createdAtSub = createdAtStream.listen(createdAtResults.add);
+          final updatedAtSub = updatedAtStream.listen(updatedAtResults.add);
+
+          await pumpEventQueue();
+
+          expect(createdAtResults, hasLength(1));
+          expect(updatedAtResults, hasLength(1));
+
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
+            'selectPaginated',
+          );
+          expect(methodCalls, hasLength(2));
+          expect(
+            methodCalls[0]['orderColumn'],
+            DatabaseConstants.createdAtColumn,
+          );
+          expect(
+            methodCalls[1]['orderColumn'],
+            DatabaseConstants.updatedAtColumn,
+          );
+
+          await createdAtSub.cancel();
+          await updatedAtSub.cancel();
+        },
+      );
     });
 
     group('createEstimation', () {
