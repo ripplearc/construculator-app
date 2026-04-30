@@ -280,7 +280,12 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
               _paginationStates.remove(streamKey);
             },
           );
-      fetchInitialEstimations(projectId);
+      fetchInitialEstimations(
+        projectId,
+        sortBy: sortBy,
+        ascending: ascending,
+        limit: limit,
+      );
       return newController;
     });
 
@@ -307,14 +312,16 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       (k) => k.startsWith('$projectId:'),
     );
     for (final key in projectKeys) {
-      try {
-        final cached = _cachedEstimations[key] ?? [];
-        return cached.firstWhere((e) => e.id == estimationId);
-      } catch (_) {}
+      final cached = _cachedEstimations[key] ?? [];
+      final matchIndex = cached.indexWhere((e) => e.id == estimationId);
+      if (matchIndex != -1) {
+        return cached[matchIndex];
+      }
     }
 
     final cachedEstimations = _cachedEstimations[projectId] ?? [];
-    return cachedEstimations.firstWhere((e) => e.id == estimationId);
+    final matchIndex = cachedEstimations.indexWhere((e) => e.id == estimationId);
+    return matchIndex == -1 ? null : cachedEstimations[matchIndex];
   }
 
   void _emitOptimisticUpdate({

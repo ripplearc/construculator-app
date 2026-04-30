@@ -20,6 +20,11 @@ abstract class CostEstimationRepository {
   /// Returns a [Future] that completes with an [Either] containing either
   /// a [Failure] or a [List<CostEstimate>] associated with the specified
   /// project ID.
+  /// [sortBy] Field to sort estimations by; defaults to
+  /// [EstimationSortOption.createdAt].
+  /// [ascending] Sort direction; defaults to descending (`false`).
+  /// [limit] Optional page size override; defaults to the repository
+  /// implementation's page size.
   Future<Either<Failure, List<CostEstimate>>> fetchInitialEstimations(
     String projectId, {
     EstimationSortOption sortBy = EstimationSortOption.createdAt,
@@ -32,6 +37,11 @@ abstract class CostEstimationRepository {
   /// Accumulates results with previously loaded pages.
   /// Returns [Either] containing a [Failure] or [List<CostEstimate>]
   /// representing the full accumulated list.
+  /// [sortBy] Field to sort estimations by; defaults to
+  /// [EstimationSortOption.createdAt].
+  /// [ascending] Sort direction; defaults to descending (`false`).
+  /// [limit] Optional page size override; defaults to the repository
+  /// implementation's page size.
   Future<Either<Failure, List<CostEstimate>>> loadMoreEstimations(
     String projectId, {
     EstimationSortOption sortBy = EstimationSortOption.createdAt,
@@ -40,6 +50,12 @@ abstract class CostEstimationRepository {
   });
 
   /// Returns whether there are more pages to load for a project.
+  ///
+  /// [sortBy] Field to sort estimations by; defaults to
+  /// [EstimationSortOption.createdAt].
+  /// [ascending] Sort direction; defaults to descending (`false`).
+  /// [limit] Optional page size override; defaults to the repository
+  /// implementation's page size.
   bool hasMoreEstimations(
     String projectId, {
     EstimationSortOption sortBy = EstimationSortOption.createdAt,
@@ -56,6 +72,11 @@ abstract class CostEstimationRepository {
   ///
   /// The stream includes their markup configurations, lock status, and
   /// calculated totals.
+  /// [sortBy] Field to sort estimations by; defaults to
+  /// [EstimationSortOption.createdAt].
+  /// [ascending] Sort direction; defaults to descending (`false`).
+  /// [limit] Optional page size override; defaults to the repository
+  /// implementation's page size.
   Stream<Either<Failure, List<CostEstimate>>> watchEstimations(
     String projectId, {
     EstimationSortOption sortBy = EstimationSortOption.createdAt,
