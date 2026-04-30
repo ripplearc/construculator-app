@@ -131,12 +131,20 @@ pre_check() {
   fi
 
   # Changed tests
-  local changed_tests=$(git diff --name-only --diff-filter=d "$base_commit" -- \
-    "test/features/**/units/*.dart" \
-    "test/features/**/widgets/*.dart" \
-    "test/libraries/**/units/*.dart" \
-    "test/app/**/units/*.dart" \
-    "test/app/**/widgets/*.dart")
+  local test_dirs=()
+  while IFS= read -r dir; do
+    [[ -n "$dir" ]] && test_dirs+=("$dir")
+  done < <(find test/features test/libraries test/app -type d \
+    \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
+
+  local changed_tests=""
+  if [[ ${#test_dirs[@]} -gt 0 ]]; then
+    local patterns=()
+    for dir in "${test_dirs[@]}"; do
+      patterns+=("$dir/*.dart")
+    done
+    changed_tests=$(git diff --name-only --diff-filter=d "$base_commit" -- "${patterns[@]}")
+  fi
 
   if [[ -z "$changed_tests" ]]; then
     echo "✅ No tests changed"

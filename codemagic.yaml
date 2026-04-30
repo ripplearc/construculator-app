@@ -50,12 +50,19 @@ workflows:
           # Find the common ancestor commit between source and target branches
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
 
-          # Find changed test files
-          CHANGED_UNIT_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/features/**/units/*.dart" "test/libraries/**/units/*.dart" "test/app/**/units/*.dart")
-          CHANGED_WIDGET_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/features/**/widgets/*.dart" "test/app/**/widgets/*.dart")
+          # Find changed test files using find to avoid ** globbing issues
+          TEST_DIRS=$(find test/features test/libraries test/app -type d \
+            \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
 
-          # Combine all changed tests
-          CHANGED_TESTS="$CHANGED_UNIT_TESTS $CHANGED_WIDGET_TESTS"
+          CHANGED_TESTS=""
+          if [ -n "$TEST_DIRS" ]; then
+            PATTERNS=()
+            while IFS= read -r dir; do
+              [ -n "$dir" ] && PATTERNS+=("$dir/*.dart")
+            done <<< "$TEST_DIRS"
+            CHANGED_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "${PATTERNS[@]}")
+          fi
+
 
           if [ -z "$CHANGED_TESTS" ]; then
             echo "✅ No test files modified. Skipping tests..."
@@ -147,12 +154,19 @@ workflows:
           # Find the common ancestor commit between source and target branches
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
 
-          # Find changed test files
-          CHANGED_UNIT_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/features/**/units/*.dart" "test/libraries/**/units/*.dart" "test/app/**/units/*.dart")
-          CHANGED_WIDGET_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/features/**/widgets/*.dart" "test/app/**/widgets/*.dart")
+          # Find changed test files using find to avoid ** globbing issues
+          TEST_DIRS=$(find test/features test/libraries test/app -type d \
+            \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
 
-          # Combine all changed tests
-          CHANGED_TESTS="$CHANGED_UNIT_TESTS $CHANGED_WIDGET_TESTS"
+          CHANGED_TESTS=""
+          if [ -n "$TEST_DIRS" ]; then
+            PATTERNS=()
+            while IFS= read -r dir; do
+              [ -n "$dir" ] && PATTERNS+=("$dir/*.dart")
+            done <<< "$TEST_DIRS"
+            CHANGED_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "${PATTERNS[@]}")
+          fi
+
 
           if [ -z "$CHANGED_TESTS" ]; then
             echo "✅ No test files modified. Skipping tests..."
