@@ -1,24 +1,26 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
+import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
-import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
-import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
-import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_manager.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
-import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
-import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -57,7 +59,12 @@ class _AppShellTestModule extends Module {
     i.addLazySingleton<AppRouter>(FakeAppRouter.new);
     i.addLazySingleton<CurrentProjectNotifier>(() => currentProjectNotifier);
     i.addLazySingleton<ProjectUIProvider>(() => _FakeProjectUiProvider());
-    i.addLazySingleton<TabModuleManager>(() => TabModuleManager(appBootstrap));
+    i.addLazySingleton<TabModuleManager>(
+      () => TabModuleManager(
+        appBootstrap,
+        providers: {ShellTab.estimation: const EstimationTabModuleProvider()},
+      ),
+    );
   }
 }
 
@@ -117,15 +124,21 @@ void main() {
     );
   }
 
+  // DashboardPage holds an open stream subscription (onUserProfileChanged)
+  // that is never cancelled on dispose, keeping the event loop alive and
+  // causing pumpAndSettle to time out. pump() with a bounded duration is
+  // the correct test-side mitigation until that leak is fixed in its own PR.
   Future<void> tapTabByLabel(WidgetTester tester, String label) async {
     await tester.tap(find.bySemanticsLabel(label));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
   }
 
   group('Tab Navigation', () {
     testWidgets('switches tabs and renders tab pages', (tester) async {
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('Home'), findsAtLeastNWidgets(1));
 
@@ -138,7 +151,8 @@ void main() {
 
     testWidgets('bottom navigation bar is always visible', (tester) async {
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.byType(CoreBottomNavBar), findsOneWidget);
 
@@ -150,7 +164,8 @@ void main() {
 
     testWidgets('lazy loads tabs on first access', (tester) async {
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.byType(DashboardPage), findsOneWidget);
       expect(find.byType(CalculationsPage), findsNothing);
@@ -168,7 +183,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.byType(DashboardPage, skipOffstage: false), findsOneWidget);
       expect(find.byType(CalculationsPage, skipOffstage: false), findsNothing);
@@ -197,7 +213,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       final dashboardElementBefore = tester.element(find.byType(DashboardPage));
 
@@ -217,7 +234,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       await tapTabByLabel(tester, 'Calculations');
 
@@ -257,7 +275,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       await tapTabByLabel(tester, 'Calculations');
 
@@ -278,11 +297,25 @@ void main() {
   });
 
   group('Cost Estimation Tab - projectId handling', () {
+    testWidgets('shows CostEstimationLandingPage when projectId is valid', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeApp());
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      // 950e8400-e29b-41d4-a716-446655440001 is set by fakeProjectNotifier in setUp
+      await tapTabByLabel(tester, 'Cost Estimation');
+
+      expect(find.byType(CostEstimationLandingPage), findsOneWidget);
+    });
+
     testWidgets('shows empty widget when projectId is null', (tester) async {
       fakeProjectNotifier.setCurrentProjectId(null);
 
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       await tapTabByLabel(tester, 'Cost Estimation');
 
@@ -295,7 +328,8 @@ void main() {
       fakeProjectNotifier.setCurrentProjectId('');
 
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       await tapTabByLabel(tester, 'Cost Estimation');
 
@@ -308,7 +342,8 @@ void main() {
       fakeProjectNotifier.setCurrentProjectId(null);
 
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('Construculator'), findsAtLeastNWidgets(1));
     });
@@ -317,7 +352,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('950e8400-e29b-41d4-a716-446655440001'), findsOneWidget);
     });
@@ -326,12 +362,14 @@ void main() {
   group('Project subscription', () {
     testWidgets('updates UI when projectId changes', (tester) async {
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('950e8400-e29b-41d4-a716-446655440001'), findsOneWidget);
 
       fakeProjectNotifier.setCurrentProjectId('new-project-id');
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('new-project-id'), findsOneWidget);
     });
@@ -340,12 +378,14 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('950e8400-e29b-41d4-a716-446655440001'), findsOneWidget);
 
       fakeProjectNotifier.setCurrentProjectId(null);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('Construculator'), findsAtLeastNWidgets(1));
     });

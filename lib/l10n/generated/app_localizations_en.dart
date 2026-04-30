@@ -682,4 +682,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loadMoreLogsError => 'Failed to load more logs';
+
+  @override
+  String get appTitle => 'Construculator';
+
+  @override
+  String get homeTab => 'Home';
+
+  @override
+  String get calculationsTab => 'Calculations';
+
+  @override
+  String get membersTab => 'Members';
 }
