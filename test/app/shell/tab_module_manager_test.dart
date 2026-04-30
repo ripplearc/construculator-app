@@ -4,6 +4,7 @@ import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -18,6 +19,7 @@ void main() {
         final appBootstrap = AppBootstrap(
           config: FakeAppConfig(),
           envLoader: FakeEnvLoader(),
+          sentryWrapper: FakeSentryWrapper(),
           supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
         );
         Modular.init(ShellModule(appBootstrap));
@@ -64,6 +66,7 @@ void main() {
         final appBootstrap = AppBootstrap(
           config: FakeAppConfig(),
           envLoader: FakeEnvLoader(),
+          sentryWrapper: FakeSentryWrapper(),
           supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
         );
         Modular.init(_TestShellModule(appBootstrap));
