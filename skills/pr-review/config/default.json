@@ -1,0 +1,38 @@
+{
+  "exclusion_patterns": {
+    "generated_code": [
+      "*.g.dart",
+      "*.freezed.dart",
+      "*.gr.dart",
+      "*.config.dart",
+      "*.chopper.dart",
+      "*.mocks.dart"
+    ],
+    "binary_files": [
+      "*.png",
+      "*.jpg",
+      "*.jpeg",
+      "*.gif",
+      "*.svg",
+      "*.ico",
+      "*.webp",
+      "*.ttf",
+      "*.otf",
+      "*.woff",
+      "*.woff2",
+      "*.pdf",
+      "*.zip",
+      "*.tar",
+      "*.gz",
+      "*.rar",
+      "*.7z",
+      "*.exe",
+      "*.dll",
+      "*.so",
+      "*.dylib"
+    ]
+  },
+  "diff_context_lines": 3,
+  "max_file_size_kb": 100,
+  "max_diff_lines": 500
+}
