@@ -83,10 +83,21 @@ class EstimationModule extends Module {
 
   @override
   void binds(Injector i) {
+    i.addLazySingleton<CostEstimationDataSource>(
+      () => RemoteCostEstimationDataSource(
+        supabaseWrapper: appBootstrap.supabaseWrapper,
+      ),
+    );
+
     i.addLazySingleton<CostEstimationLogDataSource>(
       () => RemoteCostEstimationLogDataSource(
         supabaseWrapper: appBootstrap.supabaseWrapper,
       ),
+    );
+
+    i.addLazySingleton<CostEstimationRepository>(
+      () => CostEstimationRepositoryImpl(dataSource: i.get()),
+      config: BindConfig(onDispose: (repository) => repository.dispose()),
     );
 
     i.addLazySingleton<CostEstimationLogRepository>(

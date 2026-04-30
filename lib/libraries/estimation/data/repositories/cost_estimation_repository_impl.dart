@@ -241,8 +241,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
               _paginationStates.remove(projectId);
             },
           );
-      // Initial fetch failures are emitted to the stream for active listeners.
-      unawaited(fetchInitialEstimations(projectId));
+      fetchInitialEstimations(projectId);
       return newController;
     });
 
@@ -270,13 +269,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     }
 
     final cachedEstimations = _cachedEstimations[projectId] ?? [];
-    for (final estimation in cachedEstimations) {
-      if (estimation.id == estimationId) {
-        return estimation;
-      }
-    }
-
-    return null;
+    return cachedEstimations.firstWhere((e) => e.id == estimationId);
   }
 
   void _emitOptimisticUpdate({
