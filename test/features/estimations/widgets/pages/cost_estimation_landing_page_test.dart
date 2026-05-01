@@ -12,7 +12,7 @@ import 'package:construculator/features/estimation/presentation/widgets/estimati
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
-
+import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
@@ -101,7 +101,25 @@ void main() {
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) {
         buildContext = context;
-        return child!;
+        final theChild = child!;
+        final currentPath = Modular.to.path;
+        if (theChild is SizedBox &&
+            theChild.width == null &&
+            theChild.height == null) {
+          return theChild;
+        }
+
+        if (currentPath.startsWith(testEstimationRoute) &&
+            currentPath.endsWith('/')) {
+          return theChild;
+        }
+
+        return Scaffold(
+          appBar: Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
+            projectId: testProjectId,
+          ),
+          body: theChild,
+        );
       },
     );
   }
@@ -1087,7 +1105,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byKey(const Key('menuIcon')));
+      await tester.tap(find.byKey(const Key('menuIcon')).first);
       await tester.pumpAndSettle();
 
       await tester.tap(find.byType(CoreSwitch));
@@ -1098,12 +1116,12 @@ void main() {
       );
       expect(switchAfterFirst.value, isTrue);
 
-      await tester.tapAt(const Offset(10, 10));
+      // The sheet is still open after the first toggle.
+      // Dismiss the toast that's blocking pointer events before the second toggle.
+      await tester.tap(find.text(l10n().closeLabel));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('menuIcon')));
-      await tester.pumpAndSettle();
-
+      // Toggle again in the same open sheet — no need to reopen the menu.
       await tester.tap(find.byType(CoreSwitch));
       await tester.pumpAndSettle();
 
