@@ -217,7 +217,7 @@ void main() {
         expect(methodCalls, hasLength(1));
         expect(methodCalls.first['ascending'], isTrue);
       });
-      
+
       test(
         'should rethrow exception when supabaseWrapper.selectPaginated throws',
         () async {
