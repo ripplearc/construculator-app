@@ -3,6 +3,7 @@ import 'package:construculator/features/estimation/data/data_source/interfaces/c
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_log_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/remote_cost_estimation_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/remote_cost_estimation_log_data_source.dart';
+import 'package:construculator/features/estimation/data/estimation_tile_provider_impl.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_log_repository_impl.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_repository_impl.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_log_repository.dart';
@@ -17,6 +18,7 @@ import 'package:construculator/features/estimation/presentation/bloc/rename_esti
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_details_page.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/time/clock_module.dart';
@@ -82,6 +84,10 @@ class EstimationModule extends Module {
 
   @override
   void binds(Injector i) {
+    i.addLazySingleton<EstimationTileProvider>(
+      () => const EstimationTileProviderImpl(),
+    );
+
     i.addLazySingleton<CostEstimationDataSource>(
       () => RemoteCostEstimationDataSource(
         supabaseWrapper: appBootstrap.supabaseWrapper,
