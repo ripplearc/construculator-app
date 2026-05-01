@@ -1,6 +1,5 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
-
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
@@ -17,7 +16,6 @@ import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
-
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -108,9 +106,7 @@ void main() {
     await tester.pumpAndSettle();
     Modular.to.navigate(route);
     await tester.pumpAndSettle();
-    await tester.pump(
-      const Duration(seconds: 1),
-    ); // Extra pump to ensure DB futures load in headless test
+    await tester.pump(const Duration(seconds: 1));
   }
 
   void setUpAuthenticatedUser({
