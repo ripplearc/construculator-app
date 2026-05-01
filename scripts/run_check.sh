@@ -74,7 +74,7 @@ filter_coverage_tracefile() {
     '**/*.freezed.dart' \
     '**/l10n/**' \
     -o "$tracefile" \
-    --ignore-errors unused 2>/dev/null
+    --ignore-errors unused
 }
 
 build_extract_patterns_from_tracefile() {
@@ -170,7 +170,7 @@ pre_check() {
         if [[ ${#extract_patterns[@]} -eq 0 ]]; then
           echo "✅ No changed source files with coverage records. Skipping coverage threshold check."
         else
-          lcov --quiet --extract coverage/lcov.info "${extract_patterns[@]}" -o coverage/changed.lcov.info --ignore-errors unused,empty 2>/dev/null || true
+          lcov --quiet --extract coverage/lcov.info "${extract_patterns[@]}" -o coverage/changed.lcov.info --ignore-errors unused,empty
 
           local lf=0
           local lh=0

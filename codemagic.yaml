@@ -78,7 +78,7 @@ workflows:
           HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
           mkdir -p test-results
           fvm flutter test $CHANGED_TESTS --coverage --machine > test-results/flutter.json
-          lcov --quiet --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info --ignore-errors unused 2>/dev/null
+          lcov --quiet --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info --ignore-errors unused
 
           CHANGED_SOURCE_FILES=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- 'lib/**/*.dart' | grep -v -E '(\.g\.dart$|\.freezed\.dart$|/generated/|/l10n/)' || true)
 
@@ -101,7 +101,7 @@ workflows:
             exit 0
           fi
 
-          lcov --quiet --extract coverage/lcov.info "${EXTRACT_PATTERNS[@]}" -o coverage/changed.lcov.info --ignore-errors unused,empty || true
+          lcov --quiet --extract coverage/lcov.info "${EXTRACT_PATTERNS[@]}" -o coverage/changed.lcov.info --ignore-errors unused,empty
 
           # Compute coverage
           LF_RAW=""
