@@ -10,6 +10,7 @@ import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 
 /// Use case for creating a new cost estimation.
@@ -17,24 +18,41 @@ import 'package:construculator/libraries/time/interfaces/clock.dart';
 /// This use case encapsulates the business logic for creating cost estimations
 /// and handles the setup of default values for new estimations. It ensures
 /// that all required fields are properly initialized with appropriate defaults.
+/// The project context is obtained from [CurrentProjectNotifier].
 class AddCostEstimationUseCase {
   final CostEstimationRepository _repository;
   final AuthRepository _authRepository;
   final Clock _clock;
+  final CurrentProjectNotifier _currentProjectNotifier;
   static final _logger = AppLogger().tag('AddCostEstimationUseCase');
 
-  AddCostEstimationUseCase(this._repository, this._authRepository, this._clock);
+  AddCostEstimationUseCase({
+    required CostEstimationRepository repository,
+    required AuthRepository authRepository,
+    required Clock clock,
+    required CurrentProjectNotifier currentProjectNotifier,
+  }) : _repository = repository,
+       _authRepository = authRepository,
+       _clock = clock,
+       _currentProjectNotifier = currentProjectNotifier;
 
   /// Creates a new cost estimation with the specified name.
   ///
   /// [estimationName] - The name for the new cost estimation.
-  /// [projectId] - The ID of the project this estimation belongs to.
   ///
   /// Returns a [Future] that emits an [Either] containing a [Failure] or the created [CostEstimate].
   Future<Either<Failure, CostEstimate>> call({
     required String estimationName,
-    required String projectId,
   }) async {
+    final projectId = _currentProjectNotifier.currentProjectId;
+
+    if (projectId == null || projectId.isEmpty) {
+      _logger.error('Project ID is null or empty');
+      return const Left(
+        EstimationFailure(errorType: EstimationErrorType.unexpectedError),
+      );
+    }
+
     _logger.debug(
       'Creating cost estimation: $estimationName for project: $projectId',
     );

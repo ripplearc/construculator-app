@@ -5,6 +5,8 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -20,6 +22,7 @@ void main() {
     late AddCostEstimationBloc bloc;
     late FakeSupabaseWrapper fakeSupabaseWrapper;
     late FakeClockImpl fakeClock;
+    late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
 
     const testProjectId = 'test-project-123';
     const testEstimationName = 'Test Estimation';
@@ -72,6 +75,13 @@ void main() {
 
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+
+      fakeCurrentProjectNotifier = FakeCurrentProjectNotifier(
+        initialProjectId: testProjectId,
+      );
+      Modular.replaceInstance<CurrentProjectNotifier>(
+        fakeCurrentProjectNotifier,
+      );
     });
 
     tearDownAll(() {
@@ -80,6 +90,7 @@ void main() {
 
     setUp(() {
       fakeSupabaseWrapper.reset();
+      fakeCurrentProjectNotifier.reset(projectId: testProjectId);
 
       setupAuth();
 
@@ -92,13 +103,29 @@ void main() {
 
     group('AddCostEstimationSubmitted', () {
       blocTest<AddCostEstimationBloc, AddCostEstimationState>(
+        'emits EstimationErrorType.unexpectedError when current project is unavailable',
+        build: () {
+          fakeCurrentProjectNotifier.reset(projectId: null);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          const AddCostEstimationSubmitted(estimationName: testEstimationName),
+        ),
+        expect: () => [
+          isA<AddCostEstimationInProgress>(),
+          isA<AddCostEstimationFailure>().having(
+            (s) => (s.failure as EstimationFailure).errorType,
+            'errorType',
+            EstimationErrorType.unexpectedError,
+          ),
+        ],
+      );
+
+      blocTest<AddCostEstimationBloc, AddCostEstimationState>(
         'emits [InProgress, Success] when estimation is created successfully',
         build: () => bloc,
         act: (bloc) => bloc.add(
-          const AddCostEstimationSubmitted(
-            estimationName: testEstimationName,
-            projectId: testProjectId,
-          ),
+          const AddCostEstimationSubmitted(estimationName: testEstimationName),
         ),
         expect: () => [
           isA<AddCostEstimationInProgress>(),
@@ -125,10 +152,7 @@ void main() {
           return bloc;
         },
         act: (bloc) => bloc.add(
-          const AddCostEstimationSubmitted(
-            estimationName: testEstimationName,
-            projectId: testProjectId,
-          ),
+          const AddCostEstimationSubmitted(estimationName: testEstimationName),
         ),
         expect: () => [
           isA<AddCostEstimationInProgress>(),
@@ -144,10 +168,7 @@ void main() {
           return bloc;
         },
         act: (bloc) => bloc.add(
-          const AddCostEstimationSubmitted(
-            estimationName: testEstimationName,
-            projectId: testProjectId,
-          ),
+          const AddCostEstimationSubmitted(estimationName: testEstimationName),
         ),
         expect: () => [
           isA<AddCostEstimationInProgress>(),
@@ -163,10 +184,7 @@ void main() {
         'created estimation has correct default values',
         build: () => bloc,
         act: (bloc) => bloc.add(
-          const AddCostEstimationSubmitted(
-            estimationName: testEstimationName,
-            projectId: testProjectId,
-          ),
+          const AddCostEstimationSubmitted(estimationName: testEstimationName),
         ),
         verify: (bloc) {
           final state = bloc.state as AddCostEstimationSuccess;
