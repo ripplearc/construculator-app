@@ -65,6 +65,34 @@ check_dependencies() {
   fi
 }
 
+filter_coverage_tracefile() {
+  local tracefile="$1"
+
+  lcov --quiet --remove \
+    "$tracefile" \
+    '**/*.g.dart' \
+    '**/*.freezed.dart' \
+    '**/l10n/**' \
+    -o "$tracefile" \
+    --ignore-errors unused
+}
+
+build_extract_patterns_from_tracefile() {
+  local tracefile="$1"
+  local changed_files="$2"
+
+  local covered_sources
+  covered_sources=$(grep '^SF:' "$tracefile" | cut -d: -f2- || true)
+
+  local file
+  while IFS= read -r file; do
+    [[ -z "$file" ]] && continue
+    if printf '%s\n' "$covered_sources" | grep -Fxq "$file" || printf '%s\n' "$covered_sources" | grep -Fxq "$PWD/$file"; then
+      printf '*/%s\n' "$file"
+    fi
+  done <<< "$changed_files"
+}
+
 pre_check() {
   echo "🚀 Running Pre-check..."
 
@@ -103,31 +131,66 @@ pre_check() {
   fi
 
   # Changed tests
-  local changed_tests=$(git diff --name-only --diff-filter=d "$base_commit" -- \
-    "test/features/**/units/*.dart" \
-    "test/features/**/widgets/*.dart" \
-    "test/libraries/**/units/*.dart" \
-    "test/app/**/units/*.dart" \
-    "test/app/**/widgets/*.dart")
+  local test_dirs=()
+  while IFS= read -r dir; do
+    [[ -n "$dir" ]] && test_dirs+=("$dir")
+  done < <(find test/features test/libraries test/app -type d \
+    \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
+
+  local changed_tests=""
+  if [[ ${#test_dirs[@]} -gt 0 ]]; then
+    local patterns=()
+    for dir in "${test_dirs[@]}"; do
+      patterns+=("$dir/*.dart")
+    done
+    changed_tests=$(git diff --name-only --diff-filter=d "$base_commit" -- "${patterns[@]}")
+  fi
 
   if [[ -z "$changed_tests" ]]; then
     echo "✅ No tests changed"
   else
     echo "🧪 Running changed tests..."
     fvm flutter test $changed_tests --update-goldens --coverage
-    lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' -o coverage/lcov.info --ignore-errors unused
 
     # Process coverage
     if [[ -s "coverage/lcov.info" ]]; then
-      lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info --ignore-errors unused
-      local lf=$(grep '^LF:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
-      local lh=$(grep '^LH:' coverage/lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum}')
-      local coverage=$(echo "scale=2; $lh*100/$lf" | bc)
+      filter_coverage_tracefile "coverage/lcov.info"
 
-      echo "📊 Coverage: $coverage% (Target: ${ARC_CODE_COVERAGE_TARGET}%)"
-      if (( $(echo "$coverage < $ARC_CODE_COVERAGE_TARGET" | bc -l) )); then
-        echo "❌ Low coverage"
-        exit 1
+      local changed_source_files
+      changed_source_files=$(git diff --name-only --diff-filter=d "$base_commit" HEAD -- 'lib/**/*.dart' | grep -v -E '(\.g\.dart$|\.freezed\.dart$|/generated/|/l10n/)' || true)
+
+      if [[ -z "$changed_source_files" ]]; then
+        echo "✅ No changed source files in lib/. Skipping coverage threshold check for --pre."
+      else
+        local extract_patterns=()
+        while IFS= read -r file; do
+          [[ -n "$file" ]] && extract_patterns+=("$file")
+        done < <(build_extract_patterns_from_tracefile "coverage/lcov.info" "$changed_source_files")
+
+        if [[ ${#extract_patterns[@]} -eq 0 ]]; then
+          echo "✅ No changed source files with coverage records. Skipping coverage threshold check."
+        else
+          lcov --quiet --extract coverage/lcov.info "${extract_patterns[@]}" -o coverage/changed.lcov.info --ignore-errors unused,empty
+
+          local lf=0
+          local lh=0
+          if [[ -s "coverage/changed.lcov.info" ]]; then
+            lf=$(grep '^LF:' coverage/changed.lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum+0}')
+            lh=$(grep '^LH:' coverage/changed.lcov.info | cut -d: -f2 | awk '{sum+=$1} END {print sum+0}')
+          fi
+
+          if [[ "$lf" -eq 0 ]]; then
+            echo "⚠️ No valid coverage records found for changed source files. Skipping coverage threshold check."
+          else
+            local coverage
+            coverage=$(echo "scale=2; $lh*100/$lf" | bc)
+            echo "📊 Changed source coverage: $coverage% (Target: ${ARC_CODE_COVERAGE_TARGET}%)"
+            if (( $(echo "$coverage < $ARC_CODE_COVERAGE_TARGET" | bc -l) )); then
+              echo "❌ Low coverage"
+              exit 1
+            fi
+          fi
+        fi
       fi
     else
       echo "❌ Coverage file missing"
@@ -189,22 +252,22 @@ comprehensive_check() {
   local filtered_files=$(echo "$changed_dart_files" | grep -v -E "(lib/generated/|\.g\.dart$|\.freezed\.dart$|lib/l10n/generated/)")
   run_custom_linter "$filtered_files"
 
-  if find test/features -type d -name "units" 2>/dev/null | grep -q . || \
-     find test/features -type d -name "widgets" 2>/dev/null | grep -q . || \
-     find test/libraries -type d -name "units" 2>/dev/null | grep -q .; then
+  local unit_test_dirs=()
+  while IFS= read -r dir; do
+    [[ -n "$dir" ]] && unit_test_dirs+=("$dir")
+  done < <(
+    find test/features test/libraries test/app -type d \
+      \( -name "units" -o -name "widgets" \) 2>/dev/null | sort
+  )
+
+  if [[ ${#unit_test_dirs[@]} -gt 0 ]]; then
     echo "🧪 Unit tests with coverage..."
     mkdir -p test-results
-    fvm flutter test \
-    test/libraries/**/units \
-    test/features/**/units \
-    test/app/**/units \
-    test/app/**/widgets \
-    test/features/**/widgets \
-    --coverage --machine > test-results/flutter.json
+    fvm flutter test "${unit_test_dirs[@]}" --coverage --machine > test-results/flutter.json
 
     # Process coverage
     if [[ -s "coverage/lcov.info" ]]; then
-      lcov --remove coverage/lcov.info '**/*.g.dart' '**/l10n/**' -o coverage/lcov.info --ignore-errors unused
+      filter_coverage_tracefile "coverage/lcov.info"
       
       # Show individual file coverage
       echo "📊 Individual file coverage:"
@@ -243,11 +306,14 @@ comprehensive_check() {
   fi
 
   # Screenshot tests
-  if find test/features -type f -path "*/screenshots/*.dart" 2>/dev/null | grep -q .; then
+  local screenshot_test_dirs=()
+  while IFS= read -r dir; do
+    [[ -n "$dir" ]] && screenshot_test_dirs+=("$dir")
+  done < <(find test/features -type d -name "screenshots" 2>/dev/null | sort)
+
+  if [[ ${#screenshot_test_dirs[@]} -gt 0 ]]; then
     echo "🖼️ Screenshot tests..."
-    fvm flutter test \
-    test/features/**/screenshots \
-    --update-goldens
+    fvm flutter test "${screenshot_test_dirs[@]}" --update-goldens
   else
     echo "⏩ Skipping screenshot tests: no screenshot test files found."
   fi

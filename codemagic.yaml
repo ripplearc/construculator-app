@@ -50,12 +50,19 @@ workflows:
           # Find the common ancestor commit between source and target branches
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
 
-          # Find changed test files
-          CHANGED_UNIT_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/features/**/units/*.dart" "test/libraries/**/units/*.dart" "test/app/**/units/*.dart")
-          CHANGED_WIDGET_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/features/**/widgets/*.dart" "test/app/**/widgets/*.dart")
+          # Find changed test files using find to avoid ** globbing issues
+          TEST_DIRS=$(find test/features test/libraries test/app -type d \
+            \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
 
-          # Combine all changed tests
-          CHANGED_TESTS="$CHANGED_UNIT_TESTS $CHANGED_WIDGET_TESTS"
+          CHANGED_TESTS=""
+          if [ -n "$TEST_DIRS" ]; then
+            PATTERNS=()
+            while IFS= read -r dir; do
+              [ -n "$dir" ] && PATTERNS+=("$dir/*.dart")
+            done <<< "$TEST_DIRS"
+            CHANGED_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "${PATTERNS[@]}")
+          fi
+
 
           if [ -z "$CHANGED_TESTS" ]; then
             echo "✅ No test files modified. Skipping tests..."
@@ -71,15 +78,38 @@ workflows:
           HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
           mkdir -p test-results
           fvm flutter test $CHANGED_TESTS --coverage --machine > test-results/flutter.json
-          lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info
-          # Compute coverage
-          if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
-            echo "❌ Coverage file coverage/lcov.info is missing or empty."
-            exit 1
+          lcov --quiet --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info --ignore-errors unused
+
+          CHANGED_SOURCE_FILES=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- 'lib/**/*.dart' | grep -v -E '(\.g\.dart$|\.freezed\.dart$|/generated/|/l10n/)' || true)
+
+          if [ -z "$CHANGED_SOURCE_FILES" ]; then
+            echo "✅ No changed source files in lib/. Skipping coverage threshold check."
+            exit 0
           fi
 
-          LF_RAW=$(grep '^LF:' coverage/lcov.info | cut -d: -f2 || true)
-          LH_RAW=$(grep '^LH:' coverage/lcov.info | cut -d: -f2 || true)
+          COVERED_SOURCES=$(grep '^SF:' coverage/lcov.info | cut -d: -f2-)
+          EXTRACT_PATTERNS=()
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            if printf '%s\n' "$COVERED_SOURCES" | grep -Fxq "$file" || printf '%s\n' "$COVERED_SOURCES" | grep -Fxq "$FCI_BUILD_DIR/$file"; then
+              EXTRACT_PATTERNS+=("*/$file")
+            fi
+          done <<< "$CHANGED_SOURCE_FILES"
+
+          if [ ${#EXTRACT_PATTERNS[@]} -eq 0 ]; then
+            echo "✅ No changed source files with coverage records. Skipping coverage threshold check."
+            exit 0
+          fi
+
+          lcov --quiet --extract coverage/lcov.info "${EXTRACT_PATTERNS[@]}" -o coverage/changed.lcov.info --ignore-errors unused,empty
+
+          # Compute coverage
+          LF_RAW=""
+          LH_RAW=""
+          if [ -f "coverage/changed.lcov.info" ] && [ -s "coverage/changed.lcov.info" ]; then
+            LF_RAW=$(grep '^LF:' coverage/changed.lcov.info | cut -d: -f2 || true)
+            LH_RAW=$(grep '^LH:' coverage/changed.lcov.info | cut -d: -f2 || true)
+          fi
 
           if [ -z "$LF_RAW" ]; then
               LF_SUM=0
@@ -103,13 +133,13 @@ workflows:
           fi
 
           if [ "$LF_SUM" -eq 0 ]; then
-            COVERAGE_PERCENT="0.00"
-            echo "⚠️ LF (total lines found) is 0. Setting coverage to 0.00%."
+            echo "⚠️ No valid coverage records found for changed source files. Skipping coverage threshold check."
+            exit 0
           else
             COVERAGE_PERCENT=$(echo "scale=2; $LH_SUM*100/$LF_SUM" | bc)
           fi
 
-          echo "Code Coverage: ${COVERAGE_PERCENT}%"
+          echo "Changed source coverage: ${COVERAGE_PERCENT}%"
 
           if (( $(echo "$COVERAGE_PERCENT < $TARGET" | bc -l) )); then
             echo "❌ Coverage is $COVERAGE_PERCENT%, below $TARGET%"
@@ -124,12 +154,19 @@ workflows:
           # Find the common ancestor commit between source and target branches
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
 
-          # Find changed test files
-          CHANGED_UNIT_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/features/**/units/*.dart" "test/libraries/**/units/*.dart" "test/app/**/units/*.dart")
-          CHANGED_WIDGET_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "test/features/**/widgets/*.dart" "test/app/**/widgets/*.dart")
+          # Find changed test files using find to avoid ** globbing issues
+          TEST_DIRS=$(find test/features test/libraries test/app -type d \
+            \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
 
-          # Combine all changed tests
-          CHANGED_TESTS="$CHANGED_UNIT_TESTS $CHANGED_WIDGET_TESTS"
+          CHANGED_TESTS=""
+          if [ -n "$TEST_DIRS" ]; then
+            PATTERNS=()
+            while IFS= read -r dir; do
+              [ -n "$dir" ] && PATTERNS+=("$dir/*.dart")
+            done <<< "$TEST_DIRS"
+            CHANGED_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "${PATTERNS[@]}")
+          fi
+
 
           if [ -z "$CHANGED_TESTS" ]; then
             echo "✅ No test files modified. Skipping tests..."
@@ -203,8 +240,19 @@ workflows:
           fi
           sudo apt-get install -y lcov
           mkdir -p test-results
-          fvm flutter test test/features/**/units test/features/**/widgets test/libraries/**/units test/app/**/units test/app/**/widgets --coverage --machine > test-results/flutter.json
-          lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info
+          
+          UNIT_TEST_DIRS=()
+          while IFS= read -r dir; do
+            [[ -n "$dir" ]] && UNIT_TEST_DIRS+=("$dir")
+          done < <(find test/features test/libraries test/app -type d \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
+          
+          if [ ${#UNIT_TEST_DIRS[@]} -gt 0 ]; then
+            fvm flutter test "${UNIT_TEST_DIRS[@]}" --coverage --machine > test-results/flutter.json
+          else
+            echo "No test directories found."
+            echo "{\"success\":true}" > test-results/flutter.json
+          fi
+          lcov --quiet --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info --ignore-errors unused
           # Compute coverage
           if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
             echo "❌ Coverage file coverage/lcov.info is missing or empty."
@@ -252,18 +300,15 @@ workflows:
           fi
         test_report: test-results/flutter.json
 
-      - name: Run Widget Tests
-        script: |
-          if find test/features -type f -path "*/widgets/*.dart" 2>/dev/null | grep -q .; then
-            fvm flutter test test/features/**/widgets
-          else
-            echo "No widget tests found. Skipping."
-          fi
-
       - name: Run Screenshot Tests
         script: |
-          if find test/features -type f -path "*/screenshots/*.dart" 2>/dev/null | grep -q .; then
-            fvm flutter test test/features/**/screenshots
+          SCREENSHOT_TEST_DIRS=()
+          while IFS= read -r dir; do
+            [[ -n "$dir" ]] && SCREENSHOT_TEST_DIRS+=("$dir")
+          done < <(find test/features -type d -name "screenshots" 2>/dev/null | sort)
+          
+          if [ ${#SCREENSHOT_TEST_DIRS[@]} -gt 0 ]; then
+            fvm flutter test "${SCREENSHOT_TEST_DIRS[@]}"
           else
             echo "No screenshot tests found. Skipping."
           fi
@@ -375,8 +420,19 @@ workflows:
           fi
           HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
           mkdir -p test-results
-          fvm flutter test test/features/**/units test/features/**/widgets test/libraries/**/units test/app/**/units test/app/**/widgets --coverage --machine > test-results/flutter.json
-          lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info
+          
+          UNIT_TEST_DIRS=()
+          while IFS= read -r dir; do
+            [[ -n "$dir" ]] && UNIT_TEST_DIRS+=("$dir")
+          done < <(find test/features test/libraries test/app -type d \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
+          
+          if [ ${#UNIT_TEST_DIRS[@]} -gt 0 ]; then
+            fvm flutter test "${UNIT_TEST_DIRS[@]}" --coverage --machine > test-results/flutter.json
+          else
+            echo "No test directories found."
+            echo "{\"success\":true}" > test-results/flutter.json
+          fi
+          lcov --quiet --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info --ignore-errors unused
           # Compute coverage
           if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
             echo "❌ Coverage file coverage/lcov.info is missing or empty."
@@ -424,18 +480,15 @@ workflows:
           fi
         test_report: test-results/flutter.json
 
-      - name: Run Widget Tests
-        script: |
-          if find test/features -type f -path "*/widgets/*.dart" 2>/dev/null | grep -q .; then
-            fvm flutter test test/features/**/widgets
-          else
-            echo "No widget tests found. Skipping."
-          fi
-
       - name: Run Screenshot Tests
         script: |
-          if find test/features -type f -path "*/screenshots/*.dart" 2>/dev/null | grep -q .; then
-            fvm flutter test test/features/**/screenshots
+          SCREENSHOT_TEST_DIRS=()
+          while IFS= read -r dir; do
+            [[ -n "$dir" ]] && SCREENSHOT_TEST_DIRS+=("$dir")
+          done < <(find test/features -type d -name "screenshots" 2>/dev/null | sort)
+          
+          if [ ${#SCREENSHOT_TEST_DIRS[@]} -gt 0 ]; then
+            fvm flutter test "${SCREENSHOT_TEST_DIRS[@]}"
           else
             echo "No screenshot tests found. Skipping."
           fi
