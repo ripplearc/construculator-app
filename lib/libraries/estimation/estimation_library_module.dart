@@ -12,6 +12,8 @@ import 'package:flutter_modular/flutter_modular.dart';
 class EstimationLibraryModule extends Module {
   final AppBootstrap appBootstrap;
 
+  /// Creates an [EstimationLibraryModule] with the given [appBootstrap]
+  /// used to configure the Supabase dependency.
   EstimationLibraryModule(this.appBootstrap);
 
   @override
