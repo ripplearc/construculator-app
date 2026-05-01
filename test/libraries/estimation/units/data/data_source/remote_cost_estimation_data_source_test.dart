@@ -196,14 +196,27 @@ void main() {
           sortBy: EstimationSortOption.updatedAt,
         );
 
-        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
-          selectMethod,
-        );
+        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(selectMethod);
         expect(methodCalls, hasLength(1));
         expect(
           methodCalls.first['orderColumn'],
           equals(DatabaseConstants.updatedAtColumn),
         );
+      });
+
+      test('should sort ascending when ascending parameter is true', () async {
+        fakeSupabaseWrapper.addTableData(tableName, []);
+
+        await dataSource.getEstimations(
+          projectId: testProjectId,
+          offset: 0,
+          limit: 20,
+          ascending: true,
+        );
+
+        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(selectMethod);
+        expect(methodCalls, hasLength(1));
+        expect(methodCalls.first['ascending'], isTrue);
       });
 
       test(
