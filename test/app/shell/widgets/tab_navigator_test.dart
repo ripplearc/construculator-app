@@ -66,7 +66,7 @@ void main() {
         ),
       );
 
-      expect(navigatorKey.currentState?.canPop(), isFalse);
+      expect(navigatorKey.currentState!.canPop(), isFalse);
     });
 
     testWidgets('canPop returns true after push', (tester) async {
@@ -94,12 +94,12 @@ void main() {
         ),
       );
 
-      expect(navigatorKey.currentState?.canPop(), isFalse);
+      expect(navigatorKey.currentState!.canPop(), isFalse);
 
       await tester.tap(find.text('Push'));
       await tester.pumpAndSettle();
 
-      expect(navigatorKey.currentState?.canPop(), isTrue);
+      expect(navigatorKey.currentState!.canPop(), isTrue);
     });
   });
 }
