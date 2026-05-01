@@ -676,4 +676,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loadMoreLogsError => 'Failed to load more logs';
+
+  @override
+  String get permissionDenied =>
+      'You don\'t have permission to perform this action';
 }

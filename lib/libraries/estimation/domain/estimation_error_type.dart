@@ -7,6 +7,7 @@
 /// - [timeoutError]: the operation timed out
 /// - [unexpectedDatabaseError]: database query or operation failed
 /// - [authenticationError]: user authentication failed or user not found
+/// - [permissionDenied]: user lacks required permission for the operation
 enum EstimationErrorType {
   connectionError,
   parsingError,
@@ -15,4 +16,5 @@ enum EstimationErrorType {
   unexpectedError,
   authenticationError,
   notFoundError,
+  permissionDenied,
 }

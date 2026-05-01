@@ -1,5 +1,8 @@
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/project/domain/permission_constants.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -9,10 +12,14 @@ part 'rename_estimation_state.dart';
 class RenameEstimationBloc
     extends Bloc<RenameEstimationEvent, RenameEstimationState> {
   final CostEstimationRepository _repository;
+  final ProjectRepository _projectRepository;
 
-  RenameEstimationBloc({required CostEstimationRepository repository})
-    : _repository = repository,
-      super(const RenameEstimationInitial()) {
+  RenameEstimationBloc({
+    required CostEstimationRepository repository,
+    required ProjectRepository projectRepository,
+  }) : _repository = repository,
+       _projectRepository = projectRepository,
+       super(const RenameEstimationInitial()) {
     on<RenameEstimationReset>(_onReset);
     on<RenameEstimationTextChanged>(_onTextChanged);
     on<RenameEstimationRequested>(_onRenameEstimationRequested);
@@ -37,9 +44,25 @@ class RenameEstimationBloc
     RenameEstimationRequested event,
     Emitter<RenameEstimationState> emit,
   ) async {
-    // TODO: https://github.com/Flutterando/modular/issues/331 (Handle permission checks and other edgecases as well)s
     final trimmedName = event.newName.trim();
     final isSaveEnabled = trimmedName.isNotEmpty;
+
+    final hasPermission = _projectRepository.hasProjectPermission(
+      event.projectId,
+      PermissionConstants.editCostEstimation,
+    );
+
+    if (!hasPermission) {
+      emit(
+        RenameEstimationFailure(
+          const EstimationFailure(
+            errorType: EstimationErrorType.permissionDenied,
+          ),
+          isSaveEnabled: isSaveEnabled,
+        ),
+      );
+      return;
+    }
 
     emit(RenameEstimationInProgress(isSaveEnabled: isSaveEnabled));
 

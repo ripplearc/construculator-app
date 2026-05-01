@@ -118,10 +118,12 @@ class EstimationModule extends Module {
       () => DeleteCostEstimationBloc(costEstimationRepository: i.get()),
     );
     i.add<ChangeLockStatusBloc>(
-      () => ChangeLockStatusBloc(repository: i.get()),
+      () =>
+          ChangeLockStatusBloc(repository: i.get(), projectRepository: i.get()),
     );
     i.add<RenameEstimationBloc>(
-      () => RenameEstimationBloc(repository: i.get()),
+      () =>
+          RenameEstimationBloc(repository: i.get(), projectRepository: i.get()),
     );
     i.add<CostEstimationLogBloc>(
       () => CostEstimationLogBloc(repository: i.get()),
