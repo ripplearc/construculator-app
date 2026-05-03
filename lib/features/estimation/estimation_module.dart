@@ -13,6 +13,7 @@ import 'package:construculator/features/estimation/presentation/bloc/rename_esti
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/time/clock_module.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -24,9 +25,8 @@ class EstimationModule extends Module {
 
   /// Exposes the Estimation Feature's UI entry point, hiding its Bloc dependencies.
   static Widget landingPage() {
-    // TODO: [CA-467] Refactor landingPage() to retrieve projectId via Bloc instead of hardcoding.
-    // https://ripplearc.youtrack.cloud/issue/CA-467
-    const projectId = '';
+    final projectId =
+        Modular.get<CurrentProjectNotifier>().currentProjectId ?? '';
     return MultiBlocProvider(
       providers: [
         BlocProvider<CostEstimationListBloc>(
@@ -46,7 +46,7 @@ class EstimationModule extends Module {
           create: (context) => Modular.get<RenameEstimationBloc>(),
         ),
       ],
-      child: const CostEstimationLandingPage(projectId: projectId),
+      child: CostEstimationLandingPage(projectId: projectId),
     );
   }
 

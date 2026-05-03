@@ -44,10 +44,7 @@ void main() {
       final bloc = Modular.get<GetProjectBloc>();
 
       expect(notifier, isA<CurrentProjectNotifierImpl>());
-      expect(
-        (notifier as CurrentProjectNotifierImpl).currentProjectId,
-        '950e8400-e29b-41d4-a716-446655440001',
-      );
+      expect((notifier as CurrentProjectNotifierImpl).currentProjectId, isNull);
       expect(useCase, isA<GetProjectHeaderUseCase>());
       expect(bloc, isA<GetProjectBloc>());
 

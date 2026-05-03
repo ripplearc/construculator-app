@@ -22,6 +22,7 @@ import 'package:construculator/libraries/project/presentation/project_ui_provide
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
+import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -114,6 +115,7 @@ void main() {
       config: FakeAppConfig(),
       envLoader: FakeEnvLoader(),
       supabaseWrapper: fakeSupabase,
+      sentryWrapper: FakeSentryWrapper(),
     );
 
     Modular.init(
