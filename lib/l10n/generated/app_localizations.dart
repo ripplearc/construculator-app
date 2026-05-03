@@ -778,6 +778,12 @@ abstract class AppLocalizations {
   /// **'Calculations'**
   String get calculations;
 
+  /// Label for members tab or header
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get members;
+
   /// Empty state message shown when no cost estimations exist
   ///
   /// In en, this message translates to:
