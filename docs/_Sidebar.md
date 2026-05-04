@@ -4,6 +4,9 @@
 ## Getting Started
 - [Localization](Localization)
 
+## Development Guidelines
+- [Agentic Skills Migration Plan](Agentic-Skills-Migration-Plan)
+
 ## Configuration
 - [Launcher Icons](Launcher-Icons-Configuration)
 
