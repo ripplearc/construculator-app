@@ -1,4 +1,4 @@
-import 'package:construculator/features/estimation/domain/entities/enums.dart';
+import 'package:construculator/libraries/estimation/domain/entities/enums.dart';
 import 'package:equatable/equatable.dart';
 
 /// Represents a markup value with its type and amount.

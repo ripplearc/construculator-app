@@ -1,6 +1,6 @@
-import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/features/global_search/domain/entities/search_results.dart';
 import 'package:construculator/libraries/auth/data/models/user_profile_dto.dart';
+import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/libraries/project/data/models/project_dto.dart';
 import 'package:equatable/equatable.dart';
 

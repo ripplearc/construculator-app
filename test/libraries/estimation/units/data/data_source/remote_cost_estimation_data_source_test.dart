@@ -1,9 +1,10 @@
 import 'dart:io';
 
-import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
-import 'package:construculator/features/estimation/data/data_source/remote_cost_estimation_data_source.dart';
-import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
-import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/libraries/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
+import 'package:construculator/libraries/estimation/data/data_source/remote_cost_estimation_data_source.dart';
+import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
+import 'package:construculator/libraries/estimation/estimation_library_module.dart';
 
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -13,8 +14,8 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
+import '../../../../../features/estimations/helpers/estimation_test_data_map_factory.dart';
 import '../../../../../utils/fake_app_bootstrap_factory.dart';
-import '../../../helpers/estimation_test_data_map_factory.dart';
 
 void main() {
   const String testProjectId = 'test-project-123';
@@ -66,7 +67,7 @@ void main() {
       fakeClock = FakeClockImpl();
       fakeSupabaseWrapper = FakeSupabaseWrapper(clock: fakeClock);
       Modular.init(
-        EstimationModule(
+        _TestAppModule(
           FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabaseWrapper),
         ),
       );
@@ -685,4 +686,13 @@ void main() {
       );
     });
   });
+}
+
+class _TestAppModule extends Module {
+  final AppBootstrap appBootstrap;
+
+  _TestAppModule(this.appBootstrap);
+
+  @override
+  List<Module> get imports => [EstimationLibraryModule(appBootstrap)];
 }

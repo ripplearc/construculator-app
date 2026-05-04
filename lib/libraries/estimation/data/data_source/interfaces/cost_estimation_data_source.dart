@@ -1,4 +1,4 @@
-import 'package:construculator/features/estimation/data/models/cost_estimate_dto.dart';
+import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
 
 /// Interface that abstracts cost estimation data source operations.
 /// This allows the cost estimation service to work with any cost estimation backend.
