@@ -1,6 +1,7 @@
 import 'package:construculator/libraries/either/interfaces/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/libraries/estimation/domain/enums/estimation_sort_option.dart';
 
 /// Abstract repository interface for cost estimation data operations.
 ///
