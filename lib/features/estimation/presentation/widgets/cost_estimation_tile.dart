@@ -1,138 +1,35 @@
 import 'package:construculator/features/estimation/domain/entities/cost_estimate_entity.dart';
-import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/libraries/formatting/display_formatter.dart';
+import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile_data.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 
+/// Public widget API for displaying a cost estimation summary in the
+/// estimation feature.
+///
+/// Resolves the [EstimationTileProvider] through Modular and delegates
+/// rendering, so the concrete tile can evolve without touching call sites.
 class CostEstimationTile extends StatelessWidget {
   final CostEstimate estimation;
   final VoidCallback onTap;
   final VoidCallback? onMenuTap;
+  final EstimationTileProvider? _provider;
 
   const CostEstimationTile({
     super.key,
     required this.estimation,
     required this.onTap,
     this.onMenuTap,
-  });
+    EstimationTileProvider? provider,
+  }) : _provider = provider;
 
   @override
   Widget build(BuildContext context) {
-    final appColors = context.colorTheme;
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: CoreSpacing.space3),
-      decoration: BoxDecoration(
-        color: appColors.pageBackground,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: CoreShadows.small,
-      ),
-      padding: const EdgeInsets.all(CoreSpacing.space4),
-      child: GestureDetector(
-        key: const Key('tileGestureDetector'),
-        onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildTopRow(context),
-            const SizedBox(height: CoreSpacing.space3),
-            _buildBottomRow(context),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopRow(BuildContext context) {
-    final appColors = context.colorTheme;
-    final typography = context.textTheme;
-    return Row(
-      children: [
-        CoreIconWidget(
-          key: const Key('moneyIcon'),
-          icon: CoreIcons.cost,
-          color: appColors.iconGrayMid,
-          size: 24,
-        ),
-        const SizedBox(width: CoreSpacing.space3),
-        Expanded(
-          child: Text(
-            estimation.estimateName,
-            style: typography.bodyLargeMedium.copyWith(
-              color: appColors.textDark,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        Semantics(
-          label: context.l10n.estimationMenuLabel(estimation.estimateName),
-          button: true,
-          child: SizedBox(
-            width: 48,
-            height: 48,
-            child: GestureDetector(
-              onTap: onMenuTap,
-              behavior: HitTestBehavior.opaque,
-              child: Center(
-                child: CoreIconWidget(
-                  key: const Key('menuIcon'),
-                  icon: CoreIcons.moreVert,
-                  color: appColors.iconDark,
-                  size: 24,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBottomRow(BuildContext context) {
-    final createdAt = estimation.createdAt;
-
-    final appColors = context.colorTheme;
-    final typography = context.textTheme;
-
-    return Row(
-      children: [
-        CoreIconWidget(
-          key: const Key('calendarIcon'),
-          icon: CoreIcons.calendar,
-          color: appColors.iconGrayMid,
-          size: 14,
-        ),
-        const SizedBox(width: CoreSpacing.space2),
-        Text(
-          DisplayFormatter.formatDate(createdAt),
-          style: typography.bodySmallRegular,
-        ),
-        const SizedBox(width: CoreSpacing.space2),
-        Container(
-          width: 4,
-          height: 4,
-          decoration: BoxDecoration(
-            color: appColors.lineDarkOutline,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: CoreSpacing.space2),
-        Text(
-          DisplayFormatter.formatTime(createdAt),
-          style: typography.bodySmallRegular,
-        ),
-        const SizedBox(width: CoreSpacing.space2),
-        Expanded(
-          child: Text(
-            textAlign: TextAlign.right,
-            DisplayFormatter.formatCurrency(estimation.totalCost),
-            style: typography.bodyLargeSemiBold.copyWith(
-              color: appColors.textDark,
-            ),
-          ),
-        ),
-      ],
+    final provider = _provider ?? Modular.get<EstimationTileProvider>();
+    return provider.buildEstimationTile(
+      data: CostEstimationTileData(estimation),
+      onTap: onTap,
+      onMenuTap: onMenuTap,
     );
   }
 }
