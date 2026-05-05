@@ -30,6 +30,7 @@ void main() {
           estimation: estimation,
           onTap: onTap ?? () {},
           onMenuTap: onMenuTap,
+          provider: Modular.get<EstimationTileProvider>(),
         ),
       ),
     );

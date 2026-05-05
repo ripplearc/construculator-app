@@ -14,6 +14,7 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
@@ -429,6 +430,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
                     onTap: () => _navigateToDetails(estimation.id),
                     onMenuTap: () =>
                         _showEstimationActionsSheet(estimation, colorTheme),
+                    provider: Modular.get<EstimationTileProvider>(),
                   );
                 },
               ),
