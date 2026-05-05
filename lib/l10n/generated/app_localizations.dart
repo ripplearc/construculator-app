@@ -328,6 +328,30 @@ abstract class AppLocalizations {
   /// **'Forgot Password?'**
   String get forgotPasswordTitle;
 
+  /// Section title for the dashboard recent estimations widget
+  ///
+  /// In en, this message translates to:
+  /// **'Recent cost estimations'**
+  String get recentCostEstimationsTitle;
+
+  /// Label for a button that opens the full list of estimations
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get viewAllButton;
+
+  /// Error message shown when recent estimations cannot be loaded
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load recent estimations.'**
+  String get recentEstimationsLoadError;
+
+  /// Empty state message shown when there are no recent estimations
+  ///
+  /// In en, this message translates to:
+  /// **'No recent estimations found.'**
+  String get recentEstimationsEmptyState;
+
   /// Text for hey enter your details to register with us
   ///
   /// In en, this message translates to:

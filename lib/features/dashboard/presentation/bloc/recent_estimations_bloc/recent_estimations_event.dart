@@ -11,6 +11,10 @@ class RecentEstimationsWatchStarted extends RecentEstimationsEvent {
   const RecentEstimationsWatchStarted();
 }
 
+class _RecentEstimationsProjectChanged extends RecentEstimationsEvent {
+  const _RecentEstimationsProjectChanged();
+}
+
 class _RecentEstimationsUpdated extends RecentEstimationsEvent {
   final Either<Failure, List<CostEstimate>> result;
   const _RecentEstimationsUpdated(this.result);
