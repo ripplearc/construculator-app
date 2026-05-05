@@ -18,7 +18,6 @@ import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart'
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
-import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -29,6 +28,7 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class _FakeProjectUiProvider extends ProjectUIProvider {
   @override
@@ -304,24 +304,22 @@ void main() {
   });
 
   group('Cost Estimation Tab', () {
-    testWidgets(
-      'shows CostEstimationLandingPage when estimation tab is tapped',
-      (tester) async {
-        await tester.pumpWidget(makeApp());
-        await tester.pumpAndSettle();
+    testWidgets('shows CostEstimationLandingPage when estimation tab is tapped', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeApp());
+      await tester.pumpAndSettle();
 
-        await tapTabByLabel(tester, l10n().costEstimation);
+      await tapTabByLabel(tester, l10n().costEstimation);
 
-        expect(find.byType(CostEstimationLandingPage), findsOneWidget);
-      },
-    );
+      expect(find.byType(CostEstimationLandingPage), findsOneWidget);
+    });
   });
 
   group('App Bar', () {
     testWidgets('shows default app bar title', (tester) async {
       await tester.pumpWidget(makeApp());
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
 
       expect(find.text(l10n().appTitle), findsAtLeastNWidgets(1));
     });
