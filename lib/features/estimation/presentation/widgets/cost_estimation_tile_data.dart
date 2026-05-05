@@ -5,6 +5,7 @@ import 'package:construculator/libraries/estimation/domain/estimation_tile_data.
 class CostEstimationTileData implements EstimationTileData {
   final CostEstimate _estimation;
 
+  /// Creates a [CostEstimationTileData] from a [CostEstimate] entity.
   const CostEstimationTileData(this._estimation);
 
   @override

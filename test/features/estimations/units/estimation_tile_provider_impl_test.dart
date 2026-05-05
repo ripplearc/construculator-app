@@ -3,6 +3,7 @@
 import 'package:construculator/features/estimation/data/estimation_tile_provider_impl.dart';
 import 'package:construculator/features/estimation/presentation/widgets/shared_estimation_tile.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_tile_data.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -17,7 +18,7 @@ void main() {
     });
 
     test('buildEstimationTile returns a SharedEstimationTile with the supplied data and callbacks', () {
-      final provider = Modular.get<EstimationTileProviderImpl>();
+      final provider = Modular.get<EstimationTileProvider>();
       final data = _FakeData();
       void onTap() {}
       void onMenuTap() {}
@@ -36,7 +37,7 @@ void main() {
     });
 
     test('buildEstimationTile passes through a null onMenuTap', () {
-      final provider = Modular.get<EstimationTileProviderImpl>();
+      final provider = Modular.get<EstimationTileProvider>();
 
       final widget = provider.buildEstimationTile(
         data: _FakeData(),
@@ -52,7 +53,7 @@ void main() {
 class _TestAppModule extends Module {
   @override
   void binds(Injector i) {
-    i.addLazySingleton<EstimationTileProviderImpl>(
+    i.addLazySingleton<EstimationTileProvider>(
       () => const EstimationTileProviderImpl(),
     );
   }
