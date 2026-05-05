@@ -1578,6 +1578,8 @@ void main() {
           // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
           final queue = StreamQueue(repository.watchEstimations(testProjectId));
           await expectLater(
+            queue.next,
+            completion(
               rightEstimations(
                 predicate<List<CostEstimate>>(
                   (estimations) =>
