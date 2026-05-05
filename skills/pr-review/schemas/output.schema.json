@@ -1,0 +1,122 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PR Review Output",
+  "type": "object",
+  "required": ["summary", "metadata", "issues", "rules_applied", "rules_skipped", "next_steps", "statistics"],
+  "properties": {
+    "summary": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["pr_branch", "base_branch", "skill_version"],
+      "properties": {
+        "pr_branch": {
+          "type": "string"
+        },
+        "base_branch": {
+          "type": "string"
+        },
+        "skill_version": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        },
+        "files_changed": {
+          "type": "integer"
+        }
+      }
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "description", "rule", "severity"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "rule": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "major", "minor", "suggestion"]
+          },
+          "file": {
+            "type": "string"
+          },
+          "line": {
+            "type": "integer"
+          },
+          "snippet": {
+            "type": "string"
+          },
+          "suggested_fix": {
+            "type": "string"
+          },
+          "references": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "rules_applied": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "rules_skipped": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "rule": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "next_steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "statistics": {
+      "type": "object",
+      "properties": {
+        "total_issues": {
+          "type": "integer"
+        },
+        "by_severity": {
+          "type": "object",
+          "properties": {
+            "critical": {"type": "integer"},
+            "major": {"type": "integer"},
+            "minor": {"type": "integer"},
+            "suggestion": {"type": "integer"}
+          }
+        },
+        "by_rule": {
+          "type": "object"
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
