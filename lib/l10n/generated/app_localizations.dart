@@ -1305,6 +1305,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to load more logs'**
   String get loadMoreLogsError;
+
+  /// Hint text displayed in the global search input field
+  ///
+  /// In en, this message translates to:
+  /// **'Search for Calculation and cost'**
+  String get globalSearchHint;
+
+  /// Section title for the recent searches list on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Recent searches'**
+  String get globalSearchRecentSearchesTitle;
+
+  /// Label for the Tags filter chip on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get globalSearchFilterTags;
+
+  /// Label for the Modified filter chip on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Modified'**
+  String get globalSearchFilterModified;
+
+  /// Label for the Type filter chip on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get globalSearchFilterType;
+
+  /// Message shown when there are no recent searches on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'No recent searches available'**
+  String get globalSearchEmptyRecentMessage;
+
+  /// Title text displayed in the dashboard app bar
+  ///
+  /// In en, this message translates to:
+  /// **'Construculator'**
+  String get dashboardTitle;
+
+  /// Accessibility label for the search icon button on the dashboard app bar
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get dashboardSearchSemanticLabel;
+
+  /// Accessibility label for the back button on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get globalSearchBackSemanticLabel;
+
+  /// Accessibility label for the clear search button on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get globalSearchClearSearchSemanticLabel;
 }
 
 class _AppLocalizationsDelegate

@@ -682,4 +682,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loadMoreLogsError => 'Failed to load more logs';
+
+  @override
+  String get globalSearchHint => 'Search for Calculation and cost';
+
+  @override
+  String get globalSearchRecentSearchesTitle => 'Recent searches';
+
+  @override
+  String get globalSearchFilterTags => 'Tags';
+
+  @override
+  String get globalSearchFilterModified => 'Modified';
+
+  @override
+  String get globalSearchFilterType => 'Type';
+
+  @override
+  String get globalSearchEmptyRecentMessage => 'No recent searches available';
+
+  @override
+  String get dashboardTitle => 'Construculator';
+
+  @override
+  String get dashboardSearchSemanticLabel => 'Search';
+
+  @override
+  String get globalSearchBackSemanticLabel => 'Back';
+
+  @override
+  String get globalSearchClearSearchSemanticLabel => 'Clear search';
 }
