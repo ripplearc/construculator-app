@@ -1,13 +1,24 @@
 import 'dart:async';
 
+import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/libraries/project/data/data_source/interfaces/permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_data_source.dart';
+import 'package:construculator/libraries/project/data/data_source/local_jwt_project_permission_data_source.dart';
 import 'package:construculator/libraries/project/data/models/project_dto.dart';
 import 'package:construculator/libraries/project/data/repositories/project_repository_impl.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/project_library_module.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../../../../utils/fake_app_bootstrap_factory.dart';
 
 void main() {
   group('ProjectRepositoryImpl', () {
@@ -329,6 +340,108 @@ void main() {
       );
     });
   });
+
+  group('ProjectRepositoryImpl - Permissions', () {
+    late FakeClockImpl clock;
+    late FakeSupabaseWrapper supabaseWrapper;
+    late ProjectRepository repository;
+
+    setUpAll(() {
+      clock = FakeClockImpl(DateTime(2025, 10, 1, 10, 30));
+      final testSupabaseWrapper = FakeSupabaseWrapper(clock: clock);
+
+      final bootstrap = FakeAppBootstrapFactory.create(
+        supabaseWrapper: testSupabaseWrapper,
+      );
+
+      Modular.init(_PermissionsTestModule(bootstrap, clock));
+
+      supabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+      repository = Modular.get<ProjectRepository>() as ProjectRepositoryImpl;
+    });
+
+    tearDownAll(() {
+      supabaseWrapper.reset();
+      Modular.destroy();
+    });
+
+    setUp(() {
+      supabaseWrapper.reset();
+    });
+
+    group('getProjectPermissions', () {
+      test('returns all permissions assigned to the project', () {
+        supabaseWrapper.setProjectPermissions('project-1', [
+          'read',
+          'write',
+          'delete',
+        ]);
+
+        final result = repository.getProjectPermissions('project-1');
+
+        expect(result, ['read', 'write', 'delete']);
+      });
+
+      test('returns empty list when project has no permissions', () {
+        final result = repository.getProjectPermissions(
+          'project-without-perms',
+        );
+
+        expect(result, isEmpty);
+      });
+
+      test('returns different permissions for different projects', () {
+        supabaseWrapper.setProjectPermissions('project-1', ['read']);
+        supabaseWrapper.setProjectPermissions('project-2', ['read', 'write']);
+
+        final result1 = repository.getProjectPermissions('project-1');
+        final result2 = repository.getProjectPermissions('project-2');
+
+        expect(result1, ['read']);
+        expect(result2, ['read', 'write']);
+      });
+    });
+
+    group('hasProjectPermission', () {
+      test('returns true when user has the permission', () {
+        supabaseWrapper.setProjectPermissions('project-1', ['read', 'write']);
+
+        final result = repository.hasProjectPermission('project-1', 'read');
+
+        expect(result, isTrue);
+      });
+
+      test('returns false when user does not have the permission', () {
+        supabaseWrapper.setProjectPermissions('project-1', ['read']);
+
+        final result = repository.hasProjectPermission('project-1', 'write');
+
+        expect(result, isFalse);
+      });
+
+      test('returns false when project has no permissions', () {
+        final result = repository.hasProjectPermission('project-1', 'read');
+
+        expect(result, isFalse);
+      });
+
+      test('is case-sensitive for permission keys', () {
+        supabaseWrapper.setProjectPermissions('project-1', ['read']);
+
+        expect(repository.hasProjectPermission('project-1', 'read'), isTrue);
+        expect(repository.hasProjectPermission('project-1', 'Read'), isFalse);
+        expect(repository.hasProjectPermission('project-1', 'READ'), isFalse);
+      });
+
+      test('is case-sensitive for project IDs', () {
+        supabaseWrapper.setProjectPermissions('project-1', ['read']);
+
+        expect(repository.hasProjectPermission('project-1', 'read'), isTrue);
+        expect(repository.hasProjectPermission('Project-1', 'read'), isFalse);
+        expect(repository.hasProjectPermission('PROJECT-1', 'read'), isFalse);
+      });
+    });
+  });
 }
 
 ProjectDto _createProjectDto({
@@ -399,6 +512,7 @@ class _FakeProjectDataSource implements ProjectDataSource {
   }
 }
 
+// TODO: Refactor to use FakeSupabaseWrapper instead of custom _FakeProjectDataSource (https://ripplearc.youtrack.cloud/issue/CA-635/Project-Refactor-projectrepositorytest.dart-to-use-FakeSupabaseWrapper-instead-of-custom-fake)
 class _ProjectRepositoryTestModule extends Module {
   final FakeClockImpl clock;
 
@@ -410,11 +524,32 @@ class _ProjectRepositoryTestModule extends Module {
     i.addLazySingleton<ProjectDataSource>(
       () => i.get<_FakeProjectDataSource>(),
     );
+    i.addLazySingleton<ProjectPermissionDataSource>(
+      () => LocalJwtProjectPermissionDataSource(
+        supabaseWrapper: FakeSupabaseWrapper(clock: clock),
+      ),
+    );
     i.addLazySingleton<ProjectRepositoryImpl>(
       () => ProjectRepositoryImpl(
         projectDataSource: i.get<ProjectDataSource>(),
         clock: clock,
+        permissionDataSource: i.get<ProjectPermissionDataSource>(),
       ),
     );
+  }
+}
+
+class _PermissionsTestModule extends Module {
+  final AppBootstrap _bootstrap;
+  final FakeClockImpl _clock;
+
+  _PermissionsTestModule(this._bootstrap, this._clock);
+
+  @override
+  List<Module> get imports => [ProjectLibraryModule(_bootstrap)];
+
+  @override
+  void binds(Injector i) {
+    i.addInstance<Clock>(_clock);
   }
 }
