@@ -1,3 +1,5 @@
+import 'package:construculator/features/dashboard/domain/usecases/watch_recent_estimations_usecase.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
@@ -7,6 +9,13 @@ import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_manager.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
+import 'package:construculator/libraries/either/either.dart';
+import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/libraries/estimation/domain/enums/estimation_sort_option.dart';
+import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -22,11 +31,13 @@ class _DashboardPageTestModule extends Module {
   final FakeAuthManager authManager;
   final FakeAuthNotifier authNotifier;
   final FakeAppRouter appRouter;
+  final FakeCurrentProjectNotifier projectNotifier;
 
   _DashboardPageTestModule({
     required this.authManager,
     required this.authNotifier,
     required this.appRouter,
+    required this.projectNotifier,
   });
 
   @override
@@ -34,7 +45,88 @@ class _DashboardPageTestModule extends Module {
     i.addLazySingleton<AuthManager>(() => authManager);
     i.addLazySingleton<AuthNotifier>(() => authNotifier);
     i.addLazySingleton<AppRouter>(() => appRouter);
+    i.addLazySingleton<CurrentProjectNotifier>(() => projectNotifier);
+    // Provide a stub use-case that emits an empty stream so the bloc never
+    // triggers a real network call during widget tests.
+    i.addLazySingleton<WatchRecentEstimationsUseCase>(
+      () => WatchRecentEstimationsUseCase(
+        _NeverEstimationRepository(),
+        projectNotifier,
+      ),
+    );
+    i.addLazySingleton<RecentEstimationsBloc>(
+      () => RecentEstimationsBloc(
+        watchRecentEstimationsUseCase:
+            Modular.get<WatchRecentEstimationsUseCase>(),
+        currentProjectNotifier: projectNotifier,
+      ),
+    );
   }
+}
+
+/// A stub [CostEstimationRepository] that never emits any data.
+/// Used in widget tests so the [RecentEstimationsSection] can resolve its
+/// dependencies without hitting a real network or database.
+class _NeverEstimationRepository implements CostEstimationRepository {
+  @override
+  Stream<Either<Failure, List<CostEstimate>>> watchEstimations(
+    String projectId, {
+    EstimationSortOption sortBy = EstimationSortOption.createdAt,
+    bool ascending = false,
+    int? limit,
+  }) => const Stream.empty();
+
+  @override
+  Future<Either<Failure, List<CostEstimate>>> fetchInitialEstimations(
+    String projectId, {
+    EstimationSortOption sortBy = EstimationSortOption.createdAt,
+    bool ascending = false,
+    int? limit,
+  }) async => Right([]);
+
+  @override
+  Future<Either<Failure, List<CostEstimate>>> loadMoreEstimations(
+    String projectId, {
+    EstimationSortOption sortBy = EstimationSortOption.createdAt,
+    bool ascending = false,
+    int? limit,
+  }) async => Right([]);
+
+  @override
+  bool hasMoreEstimations(
+    String projectId, {
+    EstimationSortOption sortBy = EstimationSortOption.createdAt,
+    bool ascending = false,
+    int? limit,
+  }) => false;
+
+  @override
+  Future<Either<Failure, CostEstimate>> createEstimation(
+    CostEstimate estimation,
+  ) async => Left(UnexpectedFailure());
+
+  @override
+  Future<Either<Failure, void>> deleteEstimation(
+    String estimationId,
+    String projectId,
+  ) async => Left(UnexpectedFailure());
+
+  @override
+  Future<Either<Failure, CostEstimate>> changeLockStatus({
+    required String estimationId,
+    required bool isLocked,
+    required String projectId,
+  }) async => Left(UnexpectedFailure());
+
+  @override
+  Future<Either<Failure, CostEstimate>> renameEstimation({
+    required String estimationId,
+    required String newName,
+    required String projectId,
+  }) async => Left(UnexpectedFailure());
+
+  @override
+  void dispose() {}
 }
 
 void main() {
@@ -43,6 +135,7 @@ void main() {
   late FakeAuthManager authManager;
   late FakeAuthNotifier authNotifier;
   late FakeAppRouter router;
+  late FakeCurrentProjectNotifier projectNotifier;
 
   setUp(() {
     clock = FakeClockImpl();
@@ -55,12 +148,14 @@ void main() {
       clock: clock,
     );
     router = FakeAppRouter();
+    projectNotifier = FakeCurrentProjectNotifier();
 
     Modular.init(
       _DashboardPageTestModule(
         authManager: authManager,
         authNotifier: authNotifier,
         appRouter: router,
+        projectNotifier: projectNotifier,
       ),
     );
   });
