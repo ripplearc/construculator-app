@@ -12,6 +12,9 @@ class RecentEstimationsParams extends Equatable {
   /// The maximum number of recent estimations to return
   final int limit;
 
+  /// Creates params for [WatchRecentEstimationsUseCase].
+  ///
+  /// [limit] defaults to 5 if not specified.
   const RecentEstimationsParams({this.limit = 5});
 
   @override
@@ -26,6 +29,8 @@ class WatchRecentEstimationsUseCase {
   final CostEstimationRepository _repository;
   final CurrentProjectNotifier _currentProjectNotifier;
 
+  /// Creates a [WatchRecentEstimationsUseCase] with the given [repository]
+  /// and [currentProjectNotifier].
   WatchRecentEstimationsUseCase(
     this._repository,
     this._currentProjectNotifier,
