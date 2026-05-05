@@ -31,7 +31,7 @@ class EstimationModule extends Module {
       providers: [
         BlocProvider<CostEstimationListBloc>(
           create: (context) => Modular.get<CostEstimationListBloc>()
-            ..add(const CostEstimationListStartWatching(projectId: projectId)),
+            ..add(CostEstimationListStartWatching(projectId: projectId)),
         ),
         BlocProvider<AddCostEstimationBloc>(
           create: (context) => Modular.get<AddCostEstimationBloc>(),
