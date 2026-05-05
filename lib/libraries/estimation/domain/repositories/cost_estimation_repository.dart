@@ -1,6 +1,7 @@
 import 'package:construculator/libraries/either/interfaces/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/libraries/estimation/domain/enums/estimation_sort_option.dart';
 
 /// Abstract repository interface for cost estimation data operations.
 ///
@@ -20,21 +21,48 @@ abstract class CostEstimationRepository {
   /// Returns a [Future] that completes with an [Either] containing either
   /// a [Failure] or a [List<CostEstimate>] associated with the specified
   /// project ID.
+  /// [sortBy] Field to sort estimations by; defaults to
+  /// [EstimationSortOption.createdAt].
+  /// [ascending] Sort direction; defaults to descending (`false`).
+  /// [limit] Optional page size override; defaults to the repository
+  /// implementation's page size.
   Future<Either<Failure, List<CostEstimate>>> fetchInitialEstimations(
-    String projectId,
-  );
+    String projectId, {
+    EstimationSortOption sortBy = EstimationSortOption.createdAt,
+    bool ascending = false,
+    int? limit,
+  });
 
   /// Loads the next page of cost estimates for a specific project.
   ///
   /// Accumulates results with previously loaded pages.
   /// Returns [Either] containing a [Failure] or [List<CostEstimate>]
   /// representing the full accumulated list.
+  /// [sortBy] Field to sort estimations by; defaults to
+  /// [EstimationSortOption.createdAt].
+  /// [ascending] Sort direction; defaults to descending (`false`).
+  /// [limit] Optional page size override; defaults to the repository
+  /// implementation's page size.
   Future<Either<Failure, List<CostEstimate>>> loadMoreEstimations(
-    String projectId,
-  );
+    String projectId, {
+    EstimationSortOption sortBy = EstimationSortOption.createdAt,
+    bool ascending = false,
+    int? limit,
+  });
 
   /// Returns whether there are more pages to load for a project.
-  bool hasMoreEstimations(String projectId);
+  ///
+  /// [sortBy] Field to sort estimations by; defaults to
+  /// [EstimationSortOption.createdAt].
+  /// [ascending] Sort direction; defaults to descending (`false`).
+  /// [limit] Optional page size override; defaults to the repository
+  /// implementation's page size.
+  bool hasMoreEstimations(
+    String projectId, {
+    EstimationSortOption sortBy = EstimationSortOption.createdAt,
+    bool ascending = false,
+    int? limit,
+  });
 
   /// Watches all cost estimates for a specific project.
   ///
@@ -45,9 +73,17 @@ abstract class CostEstimationRepository {
   ///
   /// The stream includes their markup configurations, lock status, and
   /// calculated totals.
+  /// [sortBy] Field to sort estimations by; defaults to
+  /// [EstimationSortOption.createdAt].
+  /// [ascending] Sort direction; defaults to descending (`false`).
+  /// [limit] Optional page size override; defaults to the repository
+  /// implementation's page size.
   Stream<Either<Failure, List<CostEstimate>>> watchEstimations(
-    String projectId,
-  );
+    String projectId, {
+    EstimationSortOption sortBy = EstimationSortOption.createdAt,
+    bool ascending = false,
+    int? limit,
+  });
 
   /// Creates a new cost estimation.
   ///

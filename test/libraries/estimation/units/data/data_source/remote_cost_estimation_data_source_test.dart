@@ -4,6 +4,7 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
 import 'package:construculator/libraries/estimation/data/data_source/remote_cost_estimation_data_source.dart';
 import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
+import 'package:construculator/libraries/estimation/domain/enums/estimation_sort_option.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
 
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -184,6 +185,39 @@ void main() {
           expect(call['rangeTo'], equals(19));
         },
       );
+
+      test('should order by updatedAt when requested', () async {
+        fakeSupabaseWrapper.addTableData(tableName, []);
+
+        await dataSource.getEstimations(
+          projectId: testProjectId,
+          offset: 0,
+          limit: 20,
+          sortBy: EstimationSortOption.updatedAt,
+        );
+
+        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(selectMethod);
+        expect(methodCalls, hasLength(1));
+        expect(
+          methodCalls.first['orderColumn'],
+          equals(DatabaseConstants.updatedAtColumn),
+        );
+      });
+
+      test('should sort ascending when ascending parameter is true', () async {
+        fakeSupabaseWrapper.addTableData(tableName, []);
+
+        await dataSource.getEstimations(
+          projectId: testProjectId,
+          offset: 0,
+          limit: 20,
+          ascending: true,
+        );
+
+        final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(selectMethod);
+        expect(methodCalls, hasLength(1));
+        expect(methodCalls.first['ascending'], isTrue);
+      });
 
       test(
         'should rethrow exception when supabaseWrapper.selectPaginated throws',
