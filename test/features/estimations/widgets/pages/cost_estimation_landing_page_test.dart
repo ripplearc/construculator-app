@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/features/estimation/estimation_routes_module.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_logs_list.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_tile.dart';
@@ -12,6 +13,7 @@ import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/estimation/data/repositories/cost_estimation_repository_impl.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -48,13 +50,12 @@ class _CostEstimationLandingPageTestModule extends Module {
 
   @override
   void routes(RouteManager r) {
-    r.module(estimationBaseRoute, module: EstimationModule(appBootstrap));
+    r.module(estimationBaseRoute, module: EstimationRoutesModule(appBootstrap));
     r.child(
       '/test-landing/:projectId',
       guards: [AuthGuard()],
       child: (context) {
-        final projectId = Modular.args.params['projectId'];
-        return EstimationModule.landingPage(projectId: projectId);
+        return EstimationModule.landingPage();
       },
     );
   }
@@ -90,6 +91,7 @@ void main() {
   setUp(() {
     fakeSupabase.reset();
     fakeAppRouter.reset();
+    Modular.get<CurrentProjectNotifier>().setCurrentProjectId(testProjectId);
   });
 
   Widget makeApp() {

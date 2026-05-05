@@ -1,28 +1,17 @@
 import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/app/shell/default_tab_providers.dart';
 import 'package:construculator/app/shell/module_model.dart';
+import 'package:construculator/features/calculations/calculations_module.dart';
+import 'package:construculator/features/dashboard/dashboard_module.dart';
+import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/features/members/members_module.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 
-/// Represents the tabs available in the app shell's bottom navigation bar.
-enum ShellTab {
-  /// The home/dashboard tab.
-  home,
+export 'package:construculator/app/shell/module_model.dart' show ShellTab;
 
-  /// The calculations feature tab.
-  calculations,
-
-  /// The cost estimation feature tab.
-  estimation,
-
-  /// The team members feature tab.
-  members,
-}
-
-/// Manages lazy loading of modules for shell tabs.
+/// Manages lazy loading of feature modules for each shell tab.
 ///
-/// Modules are provided via `TabModuleProvider`. Feature branches can supply
-/// their own providers when constructing this manager. When no providers are
-/// supplied the manager uses safe no-op defaults so the main branch can run
-/// without depending on feature-specific modules.
+/// Modules are provided via [TabModuleProvider]. Tests can supply lightweight
+/// fake providers; production uses [_ProductionTabModuleProvider] by default.
 class TabModuleManager {
   final AppBootstrap appBootstrap;
   final Map<ShellTab, TabModuleProvider> _providers;
@@ -34,10 +23,10 @@ class TabModuleManager {
   }) : _providers = providers ?? _defaultProviders();
 
   static Map<ShellTab, TabModuleProvider> _defaultProviders() => {
-    ShellTab.home: const NoOpTabModuleProvider(),
-    ShellTab.calculations: const NoOpTabModuleProvider(),
-    ShellTab.estimation: const NoOpTabModuleProvider(),
-    ShellTab.members: const NoOpTabModuleProvider(),
+    ShellTab.home: const _ProductionTabModuleProvider(ShellTab.home),
+    ShellTab.calculations: const _ProductionTabModuleProvider(ShellTab.calculations),
+    ShellTab.estimation: const _ProductionTabModuleProvider(ShellTab.estimation),
+    ShellTab.members: const _ProductionTabModuleProvider(ShellTab.members),
   };
 
   /// Ensures the module for [tab] is loaded, calling its provider exactly once.
@@ -53,4 +42,34 @@ class TabModuleManager {
 
   /// Returns `true` if the module for [tab] has already been loaded.
   bool isLoaded(ShellTab tab) => _loadedTabs.contains(tab);
+}
+
+/// A private provider implementation that lazily instantiates feature modules.
+///
+/// While real instances are generally encouraged, this provider defers the 
+/// construction of heavy feature modules (like [DashboardModule], 
+/// [CalculationsModule], etc.) until their tab is explicitly loaded. This avoids
+/// the overhead of constructing all module instances sequentially on fresh launch.
+class _ProductionTabModuleProvider implements TabModuleProvider {
+  final ShellTab tab;
+
+  const _ProductionTabModuleProvider(this.tab);
+
+  @override
+  Future<void> load(AppBootstrap appBootstrap) async {
+    switch (tab) {
+      case ShellTab.home:
+        Modular.bindModule(DashboardModule(appBootstrap));
+        break;
+      case ShellTab.calculations:
+        Modular.bindModule(CalculationsModule());
+        break;
+      case ShellTab.estimation:
+        Modular.bindModule(EstimationModule(appBootstrap));
+        break;
+      case ShellTab.members:
+        Modular.bindModule(MembersModule());
+        break;
+    }
+  }
 }

@@ -1,9 +1,10 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/features/estimation/estimation_routes_module.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
-
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
@@ -40,13 +41,12 @@ class _CostEstimationLandingPageA11yTestModule extends Module {
 
   @override
   void routes(RouteManager r) {
-    r.module(estimationBaseRoute, module: EstimationModule(appBootstrap));
+    r.module(estimationBaseRoute, module: EstimationRoutesModule(appBootstrap));
     r.child(
       '/test-landing/:projectId',
       guards: [AuthGuard()],
       child: (context) {
-        final projectId = Modular.args.params['projectId'];
-        return EstimationModule.landingPage(projectId: projectId);
+        return EstimationModule.landingPage();
       },
     );
   }
@@ -83,6 +83,7 @@ void main() {
   setUp(() {
     fakeSupabase.reset();
     fakeAppRouter.reset();
+    Modular.get<CurrentProjectNotifier>().setCurrentProjectId(testProjectId);
   });
 
   Widget makeApp({ThemeData? theme}) {
