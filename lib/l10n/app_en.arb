@@ -1126,5 +1126,25 @@
   "@globalSearchClearSearchSemanticLabel": {
     "description": "Accessibility label for the clear search button on the global search screen",
     "context": "N/A"
+  },
+  "globalSearchRecentSearchFillSemanticLabel": "Fill search field with {term}",
+  "@globalSearchRecentSearchFillSemanticLabel": {
+    "description": "Accessibility label for the trailing icon on a recent search row — fills the search field with the term",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design",
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
+  "globalSearchClearAllRecent": "Clear all searches",
+  "@globalSearchClearAllRecent": {
+    "description": "Label for the button that clears the entire recent search history on the global search screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "globalSearchClearAllRecentSemanticLabel": "Clear all recent searches",
+  "@globalSearchClearAllRecentSemanticLabel": {
+    "description": "Accessibility label for the clear all recent searches button on the global search screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
   }
 }
