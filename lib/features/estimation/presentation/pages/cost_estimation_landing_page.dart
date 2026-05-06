@@ -41,6 +41,7 @@ class CostEstimationLandingPage extends StatefulWidget {
 class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
   late final AppRouter _router;
   late final ScrollController _scrollController;
+  late final EstimationTileProvider _tileProvider;
 
   static const double _loadMoreThreshold = 200.0;
 
@@ -49,6 +50,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
     super.initState();
     _scrollController = ScrollController()..addListener(_onScroll);
     _router = Modular.get<AppRouter>();
+    _tileProvider = Modular.get<EstimationTileProvider>();
   }
 
   void _onScroll() {
@@ -430,7 +432,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
                     onTap: () => _navigateToDetails(estimation.id),
                     onMenuTap: () =>
                         _showEstimationActionsSheet(estimation, colorTheme),
-                    provider: Modular.get<EstimationTileProvider>(),
+                    provider: _tileProvider,
                   );
                 },
               ),

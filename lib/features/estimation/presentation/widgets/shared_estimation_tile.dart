@@ -67,7 +67,7 @@ class SharedEstimationTile extends StatelessWidget {
           key: const Key('moneyIcon'),
           icon: CoreIcons.cost,
           color: appColors.iconGrayMid,
-          size: 24,
+          size: CoreIconSize.size24,
         ),
         const SizedBox(width: CoreSpacing.space3),
         Expanded(
@@ -99,7 +99,7 @@ class SharedEstimationTile extends StatelessWidget {
             key: const Key('menuIcon'),
             icon: CoreIcons.moreVert,
             color: appColors.iconDark,
-            size: 24,
+            size: CoreIconSize.size24,
           ),
         ),
       ),
