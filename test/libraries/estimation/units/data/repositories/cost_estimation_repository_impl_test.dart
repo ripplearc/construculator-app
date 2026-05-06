@@ -61,7 +61,7 @@ void main() {
     late FakeSupabaseWrapper fakeSupabaseWrapper;
     late FakeClockImpl fakeClock;
 
-    setUpAll(() {
+    setUp(() {
       fakeClock = FakeClockImpl();
       Modular.init(
         _TestAppModule(
@@ -75,15 +75,12 @@ void main() {
       repository =
           Modular.get<CostEstimationRepository>()
               as CostEstimationRepositoryImpl;
-    });
-
-    tearDownAll(() {
-      Modular.dispose();
-    });
-
-    setUp(() {
       repository.dispose();
       fakeSupabaseWrapper.reset();
+    });
+
+    tearDown(() {
+      Modular.destroy();
     });
 
     Map<String, dynamic> buildEstimationMap({
@@ -838,9 +835,6 @@ void main() {
         () async {
           seedEstimations(defaultPageDatasetSize, includeUpdatedAt: true);
 
-          final createdAtResults = <Either<Failure, List<CostEstimate>>>[];
-          final updatedAtResults = <Either<Failure, List<CostEstimate>>>[];
-
           final createdAtStream = repository.watchEstimations(
             testProjectId,
             sortBy: EstimationSortOption.createdAt,
@@ -850,13 +844,19 @@ void main() {
             sortBy: EstimationSortOption.updatedAt,
           );
 
-          final createdAtSub = createdAtStream.listen(createdAtResults.add);
-          final updatedAtSub = updatedAtStream.listen(updatedAtResults.add);
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final createdAtQueue = StreamQueue(createdAtStream);
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final updatedAtQueue = StreamQueue(updatedAtStream);
 
-          await pumpEventQueue();
-
-          expect(createdAtResults, hasLength(1));
-          expect(updatedAtResults, hasLength(1));
+          await expectLater(
+            createdAtQueue.next,
+            completion(rightEstimations(anything)),
+          );
+          await expectLater(
+            updatedAtQueue.next,
+            completion(rightEstimations(anything)),
+          );
 
           final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
             'selectPaginated',
@@ -871,8 +871,8 @@ void main() {
             DatabaseConstants.updatedAtColumn,
           );
 
-          await createdAtSub.cancel();
-          await updatedAtSub.cancel();
+          await createdAtQueue.cancel();
+          await updatedAtQueue.cancel();
         },
       );
     });

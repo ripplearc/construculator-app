@@ -16,6 +16,11 @@ import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
+/// Supabase-backed implementation of [CostEstimationRepository].
+///
+/// Isolates reactive estimation streams, pagination state, and cache
+/// by a composite key of `projectId + sortBy + limit`, so multiple
+/// query contexts for the same project do not share state.
 class CostEstimationRepositoryImpl implements CostEstimationRepository {
   final CostEstimationDataSource _dataSource;
   static final _logger = AppLogger().tag('CostEstimationRepositoryImpl');
@@ -33,9 +38,10 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
   String _buildStreamKey(
     String projectId,
     EstimationSortOption sortBy,
+    bool ascending,
     int? limit,
   ) {
-    return '$projectId:${sortBy.name}:${limit ?? 'all'}';
+    return '$projectId:${sortBy.name}:${ascending ? 'asc' : 'desc'}:${limit ?? 'all'}';
   }
 
   Failure _handleError(
@@ -118,7 +124,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     bool ascending = false,
     int? limit,
   }) async {
-    final streamKey = _buildStreamKey(projectId, sortBy, limit);
+    final streamKey = _buildStreamKey(projectId, sortBy, ascending, limit);
     try {
       _logger.debug(
         'Getting first page of estimations for project: $projectId (streamKey: $streamKey)',
@@ -175,7 +181,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     bool ascending = false,
     int? limit,
   }) async {
-    final streamKey = _buildStreamKey(projectId, sortBy, limit);
+    final streamKey = _buildStreamKey(projectId, sortBy, ascending, limit);
     final paginationState = _paginationStates[streamKey];
 
     if (paginationState == null) {
@@ -201,25 +207,51 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         'offset: ${paginationState.currentOffset}',
       );
 
-      final costEstimateDtos = await _dataSource.getEstimations(
-        projectId: projectId,
-        offset: paginationState.currentOffset,
-        limit: paginationState.pageSize,
-        sortBy: sortBy,
-        ascending: ascending,
-      );
-
-      final newEstimates = costEstimateDtos
-          .map((dto) => dto.toDomain())
-          .toList();
-
-      final hasMore = newEstimates.length >= paginationState.pageSize;
-
       final existingEstimates = _cachedEstimations[streamKey] ?? [];
+      final existingIds = existingEstimates.map((e) => e.id).toSet();
+      final newEstimates = <CostEstimate>[];
+      var nextOffset = paginationState.currentOffset;
+      var hasMore = true;
+
+      while (newEstimates.length < paginationState.pageSize) {
+        final costEstimateDtos = await _dataSource.getEstimations(
+          projectId: projectId,
+          offset: nextOffset,
+          limit: paginationState.pageSize,
+          sortBy: sortBy,
+          ascending: ascending,
+        );
+
+        final fetchedEstimates = costEstimateDtos
+            .map((dto) => dto.toDomain())
+            .toList();
+
+        nextOffset += fetchedEstimates.length;
+
+        for (final estimation in fetchedEstimates) {
+          final isDuplicate =
+              existingIds.contains(estimation.id) ||
+              newEstimates.any((item) => item.id == estimation.id);
+          if (!isDuplicate) {
+            newEstimates.add(estimation);
+          }
+        }
+
+        if (fetchedEstimates.length < paginationState.pageSize) {
+          hasMore = false;
+          break;
+        }
+
+        if (fetchedEstimates.isEmpty) {
+          hasMore = false;
+          break;
+        }
+      }
+
       final allEstimates = [...existingEstimates, ...newEstimates];
 
       _paginationStates[streamKey] = PaginationState(
-        currentOffset: allEstimates.length,
+        currentOffset: nextOffset,
         pageSize: paginationState.pageSize,
         hasMore: hasMore,
       );
@@ -253,7 +285,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     bool ascending = false,
     int? limit,
   }) {
-    final streamKey = _buildStreamKey(projectId, sortBy, limit);
+    final streamKey = _buildStreamKey(projectId, sortBy, ascending, limit);
     return _paginationStates[streamKey]?.hasMore ?? true;
   }
 
@@ -264,7 +296,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
     bool ascending = false,
     int? limit,
   }) {
-    final streamKey = _buildStreamKey(projectId, sortBy, limit);
+    final streamKey = _buildStreamKey(projectId, sortBy, ascending, limit);
     _logger.debug('Watching cost estimations for stream: $streamKey');
 
     final controller = _streamControllers.putIfAbsent(streamKey, () {
@@ -319,9 +351,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       }
     }
 
-    final cachedEstimations = _cachedEstimations[projectId] ?? [];
-    final matchIndex = cachedEstimations.indexWhere((e) => e.id == estimationId);
-    return matchIndex == -1 ? null : cachedEstimations[matchIndex];
+    return null;
   }
 
   void _emitOptimisticUpdate({
@@ -426,13 +456,6 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       final cachedEstimations = _cachedEstimations[key] ?? [];
 
       final updatedEstimations = [newEstimation, ...cachedEstimations];
-
-      final paginationState = _paginationStates[key];
-      if (paginationState != null) {
-        _paginationStates[key] = paginationState.copyWith(
-          currentOffset: paginationState.currentOffset + 1,
-        );
-      }
 
       _logger.debug('Updating stream with new estimation for stream: $key');
 
@@ -585,7 +608,12 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         newName: newName,
       );
 
-      final updatedEstimation = updatedDto.toDomain();
+      final updatedEstimationFromRemote = updatedDto.toDomain();
+      final updatedEstimation = updatedEstimationFromRemote.copyWith(
+        updatedAt:
+            originalEstimation?.updatedAt ??
+            updatedEstimationFromRemote.updatedAt,
+      );
 
       _finalizeOptimisticUpdate(projectId, estimationId, updatedEstimation);
 
