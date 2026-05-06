@@ -2,7 +2,6 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/global_search/domain/entities/search_scope_entity.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
-
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/global_search/domain/search_error_type.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
