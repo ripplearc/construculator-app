@@ -1,9 +1,4 @@
 import 'package:async/async.dart';
-import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
-import 'package:construculator/libraries/estimation/estimation_library_module.dart';
-import 'package:construculator/libraries/estimation/data/repositories/cost_estimation_repository_impl.dart';
-import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
-import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
@@ -22,8 +17,8 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../../../../features/estimations/helpers/estimation_test_data_map_factory.dart';
 import '../../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../helpers/estimation_test_data_map_factory.dart';
 
 void main() {
   const String otherProjectId = 'other-project-456';
