@@ -2096,6 +2096,67 @@ void main() {
         await queue.cancel();
       });
 
+      test(
+        'should rollback optimistic rename for updatedAt stream when update fails',
+        () async {
+          fakeClock.set(DateTime.parse(timestamp2));
+          final initialMap = buildEstimationMap(
+            id: estimateIdDefault,
+            projectId: testProjectId,
+            estimateName: estimateNameDefault,
+            createdAt: timestamp2,
+            updatedAt: timestamp2,
+          );
+          seedEstimationTable([initialMap]);
+
+          final expectedEstimation = CostEstimateDto.fromJson(
+            initialMap,
+          ).toDomain();
+
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final queue = StreamQueue(
+            repository.watchEstimations(
+              testProjectId,
+              sortBy: EstimationSortOption.updatedAt,
+            ),
+          );
+
+          await expectLater(
+            queue.next,
+            completion(rightEstimations(equals([expectedEstimation]))),
+          );
+
+          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+          fakeSupabaseWrapper.updateExceptionType = SupabaseExceptionType.timeout;
+          fakeSupabaseWrapper.updateErrorMessage = errorMsgTimeout;
+
+          final result = await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+
+          expect(result.isLeft(), isTrue);
+
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals([
+                  expectedEstimation.copyWith(estimateName: newEstimateName),
+                ]),
+              ),
+            ),
+          );
+          await expectLater(
+            queue.next,
+            completion(rightEstimations(equals([expectedEstimation]))),
+          );
+
+          await queue.cancel();
+        },
+      );
+
       test('should call supabaseWrapper with correct parameters', () async {
         final initialMap = buildEstimationMap(
           id: estimateIdDefault,
