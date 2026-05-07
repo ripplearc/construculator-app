@@ -133,10 +133,14 @@ void main() {
           );
       return bloc;
     },
-    act: (bloc) async {
+    act: (bloc) {
       bloc.add(const RecentEstimationsWatchStarted());
-      await Future<void>.delayed(Duration.zero);
-      currentProjectNotifier.setCurrentProjectId('another_project');
+      return expectLater(
+        bloc.stream,
+        emitsThrough(RecentEstimationsLoaded(tEstimations)),
+      ).then((_) {
+        currentProjectNotifier.setCurrentProjectId('another_project');
+      });
     },
     expect: () => [
       const RecentEstimationsLoading(lastKnownEstimations: null),

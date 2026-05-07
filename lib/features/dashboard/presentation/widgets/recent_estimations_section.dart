@@ -3,13 +3,16 @@ import 'package:construculator/features/dashboard/presentation/widgets/estimatio
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+/// Displays the recent cost estimations section on the dashboard,
+/// including a horizontally scrollable list of [EstimationCard]s
+/// and navigation to the full estimations list.
 class RecentEstimationsSection extends StatefulWidget {
   const RecentEstimationsSection({super.key});
 
@@ -21,8 +24,6 @@ class RecentEstimationsSection extends StatefulWidget {
 class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
   late RecentEstimationsBloc _bloc;
   final AppRouter _router = Modular.get<AppRouter>();
-  final CurrentProjectNotifier _currentProjectNotifier =
-      Modular.get<CurrentProjectNotifier>();
 
   @override
   void initState() {
@@ -64,9 +65,9 @@ class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: CoreSpacing.space4),
         SizedBox(
-          height: 120,
+          height: CoreSpacing.space32 - CoreSpacing.space2,
           child: BlocBuilder<RecentEstimationsBloc, RecentEstimationsState>(
             bloc: _bloc,
             builder: (context, state) {
@@ -77,11 +78,11 @@ class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
                   itemCount: 3,
                   itemBuilder: (context, index) {
                     return Container(
-                      width: 160,
-                      margin: const EdgeInsets.only(right: 12),
+                      width: CoreSpacing.space40,
+                      margin: const EdgeInsets.only(right: CoreSpacing.space3),
                       decoration: BoxDecoration(
                         color: colors.backgroundGrayLight,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(CoreSpacing.space3),
                       ),
                     );
                   },
@@ -134,7 +135,7 @@ class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
   }
 
   void _openAllEstimations() {
-    final projectId = _currentProjectNotifier.currentProjectId;
+    final projectId = _bloc.currentProjectId;
     if (projectId == null || projectId.isEmpty) {
       return;
     }

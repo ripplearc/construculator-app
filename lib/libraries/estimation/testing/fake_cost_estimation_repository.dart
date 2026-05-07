@@ -14,6 +14,13 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
   Stream<Either<Failure, List<CostEstimate>>> streamToReturn =
       const Stream.empty();
 
+  /// Optional stream builder used by [watchEstimations] to create a fresh
+  /// stream per call.
+  ///
+  /// Useful in tests that trigger re-subscription, where a single-subscription
+  /// stream instance (for example `Stream.value`) cannot be listened to twice.
+  Stream<Either<Failure, List<CostEstimate>>> Function()? streamFactory;
+
   /// The last project ID passed to [watchEstimations].
   String? lastProjectId;
 
@@ -37,7 +44,7 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     lastSortBy = sortBy;
     lastAscending = ascending;
     lastLimit = limit;
-    return streamToReturn;
+    return streamFactory?.call() ?? streamToReturn;
   }
 
   @override

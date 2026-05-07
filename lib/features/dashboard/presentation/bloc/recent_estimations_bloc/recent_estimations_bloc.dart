@@ -21,6 +21,8 @@ class RecentEstimationsBloc
   StreamSubscription<Either<Failure, List<CostEstimate>>>? _subscription;
   StreamSubscription<String?>? _projectSubscription;
 
+  String? get currentProjectId => _currentProjectNotifier.currentProjectId;
+
   /// Defines constructor that takes a usecase as an injected dependency.
   RecentEstimationsBloc({
     required WatchRecentEstimationsUseCase watchRecentEstimationsUseCase,
