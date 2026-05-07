@@ -10,11 +10,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 part 'recent_estimations_event.dart';
 part 'recent_estimations_state.dart';
 
+/// Manages the [WatchRecentEstimationsUseCase] stream and exposes
+/// [RecentEstimationsLoading], [RecentEstimationsLoaded], and
+/// [RecentEstimationsError] states for the dashboard UI.
 class RecentEstimationsBloc
     extends Bloc<RecentEstimationsEvent, RecentEstimationsState> {
   final WatchRecentEstimationsUseCase _watchRecentEstimationsUseCase;
   StreamSubscription<Either<Failure, List<CostEstimate>>>? _subscription;
 
+  /// Defines constructor that takes a usecase as an injected dependency.
   RecentEstimationsBloc({
     required WatchRecentEstimationsUseCase watchRecentEstimationsUseCase,
   }) : _watchRecentEstimationsUseCase = watchRecentEstimationsUseCase,

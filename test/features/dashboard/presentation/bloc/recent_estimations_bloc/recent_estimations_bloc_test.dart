@@ -2,30 +2,36 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/dashboard/domain/usecases/watch_recent_estimations_usecase.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/libraries/either/either.dart';
-import 'package:construculator/libraries/either/interfaces/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
-import 'package:construculator/libraries/estimation/domain/enums/estimation_sort_option.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
+import 'package:construculator/libraries/estimation/testing/fake_cost_estimation_repository.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   late RecentEstimationsBloc bloc;
-  late _FakeCostEstimationRepository repository;
+  late FakeCostEstimationRepository repository;
   late FakeCurrentProjectNotifier currentProjectNotifier;
-  late WatchRecentEstimationsUseCase useCase;
+
+  setUpAll(() {
+    Modular.init(_RecentEstimationsBlocTestModule());
+  });
+
+  tearDownAll(() {
+    Modular.destroy();
+  });
 
   setUp(() {
-    repository = _FakeCostEstimationRepository();
-    currentProjectNotifier = FakeCurrentProjectNotifier(
-      initialProjectId: 'test_project_id',
-    );
-    useCase = WatchRecentEstimationsUseCase(
-      repository,
-      currentProjectNotifier,
-    );
-    bloc = RecentEstimationsBloc(watchRecentEstimationsUseCase: useCase);
+    repository =
+        Modular.get<CostEstimationRepository>() as FakeCostEstimationRepository;
+    currentProjectNotifier =
+        Modular.get<CurrentProjectNotifier>() as FakeCurrentProjectNotifier;
+    repository.streamToReturn = const Stream.empty();
+    currentProjectNotifier.setCurrentProjectId('test_project_id');
+    bloc = Modular.get<RecentEstimationsBloc>();
   });
 
   final tDate = DateTime.now();
@@ -50,7 +56,7 @@ void main() {
   blocTest<RecentEstimationsBloc, RecentEstimationsState>(
     'emits [RecentEstimationsLoading, RecentEstimationsLoaded] when data streams successfully',
     build: () {
-      repository.resultToReturn = Right(tEstimations);
+      repository.streamToReturn = Stream.value(Right(tEstimations));
       return bloc;
     },
     act: (bloc) => bloc.add(const RecentEstimationsWatchStarted()),
@@ -63,7 +69,7 @@ void main() {
   blocTest<RecentEstimationsBloc, RecentEstimationsState>(
     'emits [RecentEstimationsLoading, RecentEstimationsError] when data stream fails',
     build: () {
-      repository.resultToReturn = Left(ServerFailure());
+      repository.streamToReturn = Stream.value(Left(ServerFailure()));
       return bloc;
     },
     act: (bloc) => bloc.add(const RecentEstimationsWatchStarted()),
@@ -76,7 +82,7 @@ void main() {
   blocTest<RecentEstimationsBloc, RecentEstimationsState>(
     'preserves lastKnownEstimations when re-watching',
     build: () {
-      repository.resultToReturn = Right(tEstimations);
+      repository.streamToReturn = Stream.value(Right(tEstimations));
       return bloc;
     },
     seed: () => RecentEstimationsLoaded(tEstimations),
@@ -103,67 +109,20 @@ void main() {
   );
 }
 
-class _FakeCostEstimationRepository implements CostEstimationRepository {
-  Either<Failure, List<CostEstimate>> resultToReturn =
-      const Right<Failure, List<CostEstimate>>([]);
-
+class _RecentEstimationsBlocTestModule extends Module {
   @override
-  Stream<Either<Failure, List<CostEstimate>>> watchEstimations(
-    String projectId, {
-    EstimationSortOption sortBy = EstimationSortOption.createdAt,
-    bool ascending = false,
-    int? limit,
-  }) => Stream.value(resultToReturn);
-
-  @override
-  Future<Either<Failure, CostEstimate>> changeLockStatus({
-    required String estimationId,
-    required bool isLocked,
-    required String projectId,
-  }) => throw UnimplementedError();
-
-  @override
-  Future<Either<Failure, CostEstimate>> createEstimation(
-    CostEstimate estimation,
-  ) => throw UnimplementedError();
-
-  @override
-  Future<Either<Failure, void>> deleteEstimation(
-    String estimationId,
-    String projectId,
-  ) => throw UnimplementedError();
-
-  @override
-  void dispose() {}
-
-  @override
-  Future<Either<Failure, List<CostEstimate>>> fetchInitialEstimations(
-    String projectId, {
-    EstimationSortOption sortBy = EstimationSortOption.createdAt,
-    bool ascending = false,
-    int? limit,
-  }) => throw UnimplementedError();
-
-  @override
-  bool hasMoreEstimations(
-    String projectId, {
-    EstimationSortOption sortBy = EstimationSortOption.createdAt,
-    bool ascending = false,
-    int? limit,
-  }) => throw UnimplementedError();
-
-  @override
-  Future<Either<Failure, List<CostEstimate>>> loadMoreEstimations(
-    String projectId, {
-    EstimationSortOption sortBy = EstimationSortOption.createdAt,
-    bool ascending = false,
-    int? limit,
-  }) => throw UnimplementedError();
-
-  @override
-  Future<Either<Failure, CostEstimate>> renameEstimation({
-    required String estimationId,
-    required String newName,
-    required String projectId,
-  }) => throw UnimplementedError();
+  void binds(Injector i) {
+    i.addLazySingleton<CostEstimationRepository>(
+      () => FakeCostEstimationRepository(),
+    );
+    i.addLazySingleton<CurrentProjectNotifier>(
+      () => FakeCurrentProjectNotifier(initialProjectId: 'test_project_id'),
+    );
+    i.add<WatchRecentEstimationsUseCase>(
+      () => WatchRecentEstimationsUseCase(i(), i()),
+    );
+    i.add<RecentEstimationsBloc>(
+      () => RecentEstimationsBloc(watchRecentEstimationsUseCase: i()),
+    );
+  }
 }
