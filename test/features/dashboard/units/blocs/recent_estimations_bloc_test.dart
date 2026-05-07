@@ -127,10 +127,7 @@ void main() {
   blocTest<RecentEstimationsBloc, RecentEstimationsState>(
     're-watches when the current project changes after start',
     build: () {
-      repository.streamFactory = () =>
-          Stream<Either<Failure, List<CostEstimate>>>.value(
-            Right<Failure, List<CostEstimate>>(tEstimations),
-          );
+      seedEstimationTable([tEstimationMap]);
       return bloc;
     },
     act: (bloc) {
@@ -139,6 +136,16 @@ void main() {
         bloc.stream,
         emitsThrough(RecentEstimationsLoaded(tEstimations)),
       ).then((_) {
+        final anotherProjectEstimationMap =
+            EstimationTestDataMapFactory.createFakeEstimationData(
+              id: '2',
+              projectId: 'another_project',
+              estimateName: 'Test Estimate',
+              totalCost: 100.0,
+              createdAt: tDate.toIso8601String(),
+              updatedAt: tDate.toIso8601String(),
+            );
+        seedEstimationTable([anotherProjectEstimationMap]);
         currentProjectNotifier.setCurrentProjectId('another_project');
       });
     },
@@ -146,7 +153,18 @@ void main() {
       const RecentEstimationsLoading(lastKnownEstimations: null),
       RecentEstimationsLoaded(tEstimations),
       RecentEstimationsLoading(lastKnownEstimations: tEstimations),
-      RecentEstimationsLoaded(tEstimations),
+      RecentEstimationsLoaded([
+        CostEstimateDto.fromJson(
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: '2',
+            projectId: 'another_project',
+            estimateName: 'Test Estimate',
+            totalCost: 100.0,
+            createdAt: tDate.toIso8601String(),
+            updatedAt: tDate.toIso8601String(),
+          ),
+        ).toDomain(),
+      ]),
     ],
   );
 }
