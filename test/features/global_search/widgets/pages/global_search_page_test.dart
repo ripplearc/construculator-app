@@ -1,11 +1,15 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
+import 'package:construculator/features/global_search/presentation/widgets/global_search_empty_recent_widget.dart';
+import 'package:construculator/features/global_search/presentation/widgets/global_search_recent_searches_list.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -14,8 +18,21 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 
+const String _testUserId = 'user-page-test';
+const String _testUserEmail = 'page@test.com';
+
+Map<String, dynamic> _fakeHistoryRow(String term) => {
+  DatabaseConstants.idColumn: term,
+  DatabaseConstants.userIdColumn: _testUserId,
+  DatabaseConstants.searchTermColumn: term,
+  DatabaseConstants.scopeColumn: 'dashboard',
+  DatabaseConstants.searchCountColumn: 1,
+  DatabaseConstants.createdAtColumn: '2024-01-01T00:00:00.000Z',
+};
+
 class _GlobalSearchPageTestModule extends Module {
   final AppBootstrap appBootstrap;
+
   _GlobalSearchPageTestModule(this.appBootstrap);
 
   @override
@@ -29,6 +46,30 @@ void main() {
   late FakeSupabaseWrapper fakeSupabase;
   late FakeAppRouter router;
   BuildContext? buildContext;
+
+  setUpAll(() {
+    final clock = FakeClockImpl();
+    final bootstrap = FakeAppBootstrapFactory.create(
+      supabaseWrapper: FakeSupabaseWrapper(clock: clock),
+    );
+    Modular.init(_GlobalSearchPageTestModule(bootstrap));
+    final supabase = Modular.get<SupabaseWrapper>();
+    assert(supabase is FakeSupabaseWrapper, 'Expected FakeSupabaseWrapper, got ${supabase.runtimeType}');
+    fakeSupabase = supabase as FakeSupabaseWrapper;
+
+    final appRouter = Modular.get<AppRouter>();
+    assert(appRouter is FakeAppRouter, 'Expected FakeAppRouter, got ${appRouter.runtimeType}');
+    router = appRouter as FakeAppRouter;
+  });
+
+  tearDownAll(() {
+    Modular.destroy();
+  });
+
+  setUp(() {
+    fakeSupabase.reset();
+    router.reset();
+  });
 
   Widget makeTestableWidget({required Widget child, ThemeData? theme}) {
     return MaterialApp(
@@ -45,21 +86,19 @@ void main() {
     );
   }
 
-  setUp(() {
-    fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
-
-    final appBootstrap = FakeAppBootstrapFactory.create(
-      supabaseWrapper: fakeSupabase,
+  void seedRecentSearches() {
+    fakeSupabase.setCurrentUser(
+      FakeUser(
+        id: _testUserId,
+        email: _testUserEmail,
+        createdAt: '2024-01-01T00:00:00.000Z',
+      ),
     );
-
-    Modular.init(_GlobalSearchPageTestModule(appBootstrap));
-    Modular.replaceInstance<SupabaseWrapper>(fakeSupabase);
-    router = Modular.get<AppRouter>() as FakeAppRouter;
-  });
-
-  tearDown(() {
-    Modular.destroy();
-  });
+    fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
+      _fakeHistoryRow('Material of building'),
+      _fakeHistoryRow('MD bungalow'),
+    ]);
+  }
 
   AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
 
@@ -112,7 +151,7 @@ void main() {
     ) async {
       await renderPage(tester);
 
-      expect(find.text(l10n().globalSearchEmptyRecentMessage), findsOneWidget);
+      expect(find.byType(GlobalSearchEmptyRecentWidget), findsOneWidget);
     });
 
     testWidgets('clear button is not visible when search field is empty', (
@@ -154,5 +193,52 @@ void main() {
 
       expect(router.popCalls, greaterThan(0));
     });
+  });
+
+  group('User on GlobalSearchPage with recent searches', () {
+    testWidgets('sees recent search items', (tester) async {
+      seedRecentSearches();
+      await renderPage(tester);
+
+      expect(find.byType(GlobalSearchRecentSearchesList), findsOneWidget);
+      expect(find.text('Material of building'), findsOneWidget);
+      expect(find.text('MD bungalow'), findsOneWidget);
+    });
+
+    testWidgets('tapping trailing icon fills search field', (tester) async {
+      seedRecentSearches();
+      await renderPage(tester);
+
+      final trailingIcons = find.byKey(const Key('trailing_icon'));
+      expect(trailingIcons, findsWidgets);
+
+      await tester.tap(trailingIcons.first);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byType(TextFormField),
+          matching: find.text('Material of building'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('tapping row body fills search field', (tester) async {
+      seedRecentSearches();
+      await renderPage(tester);
+
+      await tester.tap(find.byKey(const ValueKey('recent_search_item_Material of building')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byType(TextFormField),
+          matching: find.text('Material of building'),
+        ),
+        findsOneWidget,
+      );
+    });
+
   });
 }

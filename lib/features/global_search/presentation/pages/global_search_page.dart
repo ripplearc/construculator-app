@@ -1,7 +1,10 @@
+import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_empty_recent_widget.dart';
+import 'package:construculator/features/global_search/presentation/widgets/global_search_recent_searches_list.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -9,9 +12,8 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 ///
 /// Provides a search input field, filter chips (Tags, Modified, Type),
 /// a recent searches section, and an empty state when no recent searches exist.
-///
-/// This screen is UI-only and is not yet connected to [GlobalSearchBloc].
 class GlobalSearchPage extends StatefulWidget {
+  /// Creates a [GlobalSearchPage].
   const GlobalSearchPage({super.key});
 
   @override
@@ -20,6 +22,32 @@ class GlobalSearchPage extends StatefulWidget {
 
 class _GlobalSearchPageState extends State<GlobalSearchPage> {
   late final AppRouter _router = Modular.get<AppRouter>();
+  late final GlobalSearchBloc _bloc = Modular.get<GlobalSearchBloc>();
+  late final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _bloc.add(const GlobalSearchStarted());
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    // Do NOT close _bloc — it is a singleton owned by the DI container.
+    // Closing it here would make it unusable on re-navigation.
+    super.dispose();
+  }
+
+  void _onItemTap(String term) {
+    _searchController.text = term;
+    _bloc.add(GlobalSearchPerformed(query: term));
+  }
+
+  void _onTrailingTap(String term) {
+    _searchController.text = term;
+    _bloc.add(GlobalSearchQueryUpdated(query: term));
+  }
 
   Widget _buildBackButton(BuildContext context) {
     final colors = context.colorTheme;
@@ -52,66 +80,117 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
     );
   }
 
+  Widget _buildBody(BuildContext context, GlobalSearchState state) {
+    if (state is GlobalSearchInitial) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (state is GlobalSearchReady && state.recentSearches.isNotEmpty) {
+      return GlobalSearchRecentSearchesList(
+        recentSearches: state.recentSearches,
+        onItemTap: _onItemTap,
+        onTrailingTap: _onTrailingTap,
+      );
+    }
+    return const GlobalSearchEmptyRecentWidget();
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colorTheme;
     final typography = context.textTheme;
     final l10n = context.l10n;
 
-    return Scaffold(
-      backgroundColor: colors.pageBackground,
-      appBar: AppBar(
+    return BlocProvider.value(
+      value: _bloc,
+      child: Scaffold(
         backgroundColor: colors.pageBackground,
-        automaticallyImplyLeading: false,
-        titleSpacing: 0,
-        title: Row(
+        appBar: AppBar(
+          backgroundColor: colors.pageBackground,
+          automaticallyImplyLeading: false,
+          titleSpacing: 0,
+          title: Row(
+            children: [
+              _buildBackButton(context),
+              Expanded(
+                child: CoreSearchBox(
+                  controller: _searchController,
+                  hintText: l10n.globalSearchHint,
+                  clearSemanticLabel: l10n.globalSearchClearSearchSemanticLabel,
+                  onChanged: (query) =>
+                      _bloc.add(GlobalSearchQueryUpdated(query: query)),
+                  onSearch: () => _bloc.add(
+                    GlobalSearchPerformed(
+                      query: _searchController.text,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildBackButton(context),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(
+                horizontal: CoreSpacing.space4,
+                vertical: CoreSpacing.space3,
+              ),
+              child: Row(
+                children: [
+                  // TODO: [CA-638] Wire CoreFilterChip.onTap to GlobalSearchBloc filter state. https://ripplearc.youtrack.cloud/issue/CA-638/DashboardGlobalSearch-Wire-CoreFilterChip.onTap-to-GlobalSearchBloc-filter-state
+                  CoreFilterChip(label: l10n.globalSearchFilterTags),
+                  const SizedBox(width: CoreSpacing.space2),
+                  CoreFilterChip(
+                    label: l10n.globalSearchFilterModified,
+                  ),
+                  const SizedBox(width: CoreSpacing.space2),
+                  CoreFilterChip(
+                    label: l10n.globalSearchFilterType,
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: CoreSpacing.space4,
+                vertical: CoreSpacing.space3,
+              ),
+              child: Text(
+                l10n.globalSearchRecentSearchesTitle,
+                style: typography.bodyLargeSemiBold,
+              ),
+            ),
             Expanded(
-              child: CoreSearchBox(
-                hintText: l10n.globalSearchHint,
-                clearSemanticLabel: l10n.globalSearchClearSearchSemanticLabel,
+              child: BlocConsumer<GlobalSearchBloc, GlobalSearchState>(
+                listener: (context, state) {
+                  final l10n = context.l10n;
+                  if (state is GlobalSearchLoadFailure) {
+                    CoreToast.showError(
+                      context,
+                      l10n.globalSearchLoadErrorMessage,
+                      l10n.closeLabel,
+                    );
+                  } else if (state is GlobalSearchRecentDeleteFailure) {
+                    CoreToast.showError(
+                      context,
+                      l10n.globalSearchDeleteErrorMessage,
+                      l10n.closeLabel,
+                    );
+                  } else if (state is GlobalSearchSuggestionsLoadFailure) {
+                    CoreToast.showWarning(
+                      context,
+                      l10n.globalSearchSuggestionsErrorMessage,
+                      l10n.closeLabel,
+                    );
+                  }
+                },
+                builder: (context, state) => _buildBody(context, state),
               ),
             ),
           ],
         ),
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(
-              horizontal: CoreSpacing.space4,
-              vertical: CoreSpacing.space3,
-            ),
-            child: Row(
-              children: [
-                // TODO: [CA-638] Wire CoreFilterChip.onTap to GlobalSearchBloc filter state. https://ripplearc.youtrack.cloud/issue/CA-638/DashboardGlobalSearch-Wire-CoreFilterChip.onTap-to-GlobalSearchBloc-filter-state
-                CoreFilterChip(label: l10n.globalSearchFilterTags),
-                const SizedBox(width: CoreSpacing.space2),
-                CoreFilterChip(
-                  label: l10n.globalSearchFilterModified,
-                ),
-                const SizedBox(width: CoreSpacing.space2),
-                CoreFilterChip(
-                  label: l10n.globalSearchFilterType,
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: CoreSpacing.space4,
-              vertical: CoreSpacing.space3,
-            ),
-            child: Text(
-              l10n.globalSearchRecentSearchesTitle,
-              style: typography.bodyLargeSemiBold,
-            ),
-          ),
-          const Expanded(child: GlobalSearchEmptyRecentWidget()),
-        ],
       ),
     );
   }
