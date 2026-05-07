@@ -14,6 +14,7 @@ import 'package:construculator/features/estimation/presentation/pages/cost_estim
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/time/clock_module.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -30,8 +31,9 @@ class EstimationModule extends Module {
     return MultiBlocProvider(
       providers: [
         BlocProvider<CostEstimationListBloc>(
-          create: (context) => Modular.get<CostEstimationListBloc>()
-            ..add(CostEstimationListStartWatching(projectId: projectId)),
+          create: (context) =>
+              Modular.get<CostEstimationListBloc>()
+                ..add(CostEstimationListStartWatching(projectId: projectId)),
         ),
         BlocProvider<AddCostEstimationBloc>(
           create: (context) => Modular.get<AddCostEstimationBloc>(),
@@ -54,6 +56,7 @@ class EstimationModule extends Module {
   List<Module> get imports => [
     AuthLibraryModule(appBootstrap),
     EstimationLibraryModule(appBootstrap),
+    ProjectLibraryModule(appBootstrap),
     ClockModule(),
   ];
 
@@ -86,10 +89,12 @@ class EstimationModule extends Module {
       () => DeleteCostEstimationBloc(costEstimationRepository: i.get()),
     );
     i.add<ChangeLockStatusBloc>(
-      () => ChangeLockStatusBloc(repository: i.get()),
+      () =>
+          ChangeLockStatusBloc(repository: i.get(), projectRepository: i.get()),
     );
     i.add<RenameEstimationBloc>(
-      () => RenameEstimationBloc(repository: i.get()),
+      () =>
+          RenameEstimationBloc(repository: i.get(), projectRepository: i.get()),
     );
     i.add<CostEstimationLogBloc>(
       () => CostEstimationLogBloc(repository: i.get()),

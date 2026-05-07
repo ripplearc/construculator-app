@@ -13,8 +13,11 @@ import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/estimation/data/repositories/cost_estimation_repository_impl.dart';
+import 'package:construculator/libraries/project/domain/permission_constants.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
+import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
@@ -66,6 +69,7 @@ void main() {
   late Clock clock;
   late AppBootstrap appBootstrap;
   late FakeAppRouter fakeAppRouter;
+  late FakeProjectRepository fakeProjectRepository;
 
   const debounceWaitTime = Duration(milliseconds: 400);
   const testEstimationRoute = '/test-landing/$testProjectId';
@@ -81,6 +85,10 @@ void main() {
     Modular.init(_CostEstimationLandingPageTestModule(appBootstrap));
     fakeAppRouter = Modular.get<AppRouter>() as FakeAppRouter;
     Modular.setInitialRoute(testEstimationRoute);
+
+    fakeProjectRepository = FakeProjectRepository();
+    Modular.replaceInstance<ProjectRepository>(fakeProjectRepository);
+    Modular.get<CurrentProjectNotifier>().setCurrentProjectId(testProjectId);
   });
 
   tearDownAll(() {
@@ -89,9 +97,15 @@ void main() {
   });
 
   setUp(() {
+    fakeProjectRepository.setProjectPermissions(testProjectId, [
+      PermissionConstants.getCostEstimations,
+      PermissionConstants.addCostEstimation,
+      PermissionConstants.editCostEstimation,
+      PermissionConstants.deleteCostEstimation,
+      PermissionConstants.lockCostEstimation,
+    ]);
     fakeSupabase.reset();
     fakeAppRouter.reset();
-    Modular.get<CurrentProjectNotifier>().setCurrentProjectId(testProjectId);
   });
 
   Widget makeApp() {
@@ -273,6 +287,9 @@ void main() {
             estimateName: 'Existing Estimation',
           ),
         );
+        fakeProjectRepository.setProjectPermissions(testProjectId, [
+          PermissionConstants.addCostEstimation,
+        ]);
 
         await pumpAppAtRoute(tester, testEstimationRoute);
         await tester.pumpAndSettle();
@@ -1180,6 +1197,37 @@ void main() {
         expect(find.text(l10n().connectionError), findsOneWidget);
 
         expect(fakeSupabase.getMethodCallsFor('update').length, 1);
+      },
+    );
+    testWidgets(
+      'shows permission denied error message when permission error occurs',
+      (tester) async {
+        setUpAuthenticatedUser(
+          credentialId: 'test-credential-id',
+          email: 'test@example.com',
+        );
+
+        addCostEstimationData(
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimation-1',
+            projectId: testProjectId,
+            estimateName: 'Kitchen Remodel',
+            isLocked: false,
+          ),
+        );
+
+        await pumpAppAtRoute(tester, testEstimationRoute);
+
+        fakeProjectRepository.setProjectPermissions(testProjectId, []);
+
+        await tester.tap(find.byKey(const Key('menuIcon')));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(CoreSwitch));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n().permissionDenied), findsOneWidget);
+        expect(find.byKey(const Key('toast_close_button')), findsOneWidget);
       },
     );
   });

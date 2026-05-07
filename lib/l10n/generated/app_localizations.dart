@@ -1329,6 +1329,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Members'**
   String get membersTab;
+
+  /// Error message shown when user lacks permission for an operation
+  ///
+  /// In en, this message translates to:
+  /// **'You don\'t have permission to perform this action'**
+  String get permissionDenied;
 }
 
 class _AppLocalizationsDelegate

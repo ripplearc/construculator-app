@@ -1096,5 +1096,10 @@
   "@membersTab": {
     "description": "Label for members tab in bottom navigation",
     "context": "AppShellPage"
+  },
+  "permissionDenied": "You don't have permission to perform this action",
+  "@permissionDenied": {
+    "description": "Error message shown when user lacks permission for an operation",
+    "context": "N/A"
   }
 }
