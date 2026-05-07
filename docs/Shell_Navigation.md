@@ -1,11 +1,6 @@
-# Construculator Documentation
+# Shell Navigation (HLD)
 
-Welcome to the Construculator App documentation wiki. This guide provides comprehensive information for developers working on the project.
-
-## Getting Started
-
-This documentation covers development guidelines, architectural decisions, and best practices.
-## Documentation
+High-level design for the authenticated app shell: bottom navigation tabs, state preservation, and the two-tier navigation rules (shell-level vs in-tab).
 
 ## Dashboard Bottom Navigation (HLD)
 
