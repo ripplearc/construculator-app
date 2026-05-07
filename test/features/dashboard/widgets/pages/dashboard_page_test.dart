@@ -1,6 +1,7 @@
 import 'package:construculator/features/dashboard/domain/usecases/watch_recent_estimations_usecase.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
@@ -159,6 +160,19 @@ void main() {
 
     expect(find.text('Welcome back, $firstName $lastName!'), findsOneWidget);
     expect(find.text('You are now logged in to your account'), findsOneWidget);
+  });
+
+  testWidgets('renders RecentEstimationsSection', (tester) async {
+    final credential = createCredential();
+    final user = createUser();
+
+    authManager.setCurrentCredential(credential);
+    authRepository.setUserProfile(user);
+
+    await tester.pumpWidget(makeApp());
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RecentEstimationsSection), findsOneWidget);
   });
 
   testWidgets('logout navigates to login', (tester) async {

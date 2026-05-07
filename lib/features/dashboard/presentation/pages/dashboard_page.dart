@@ -66,7 +66,7 @@ class _DashboardPageState extends State<DashboardPage> {
         backgroundColor: colors.pageBackground,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(CoreSpacing.space6),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -75,28 +75,28 @@ class _DashboardPageState extends State<DashboardPage> {
                 children: [
                   Icon(
                     Icons.dashboard,
-                    size: 64,
+                    size: CoreSpacing.space16,
                     color: Theme.of(context).primaryColor,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: CoreSpacing.space6),
                   Text(
                     'Welcome back, $userInfo',
                     textAlign: TextAlign.center,
                     style: typography.headlineMediumSemiBold,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: CoreSpacing.space2),
                   Text(
                     'You are now logged in to your account',
                     textAlign: TextAlign.center,
                     style: typography.bodyLargeRegular,
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: CoreSpacing.space8),
                 ],
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: CoreSpacing.space8),
             const RecentEstimationsSection(),
-            const SizedBox(height: 32),
+            const SizedBox(height: CoreSpacing.space8),
             Center(
               child: CoreButton(
                 onPressed: () {
