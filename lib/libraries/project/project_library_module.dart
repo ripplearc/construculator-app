@@ -48,6 +48,7 @@ void _registerDependencies(Injector i) {
   i.addLazySingleton<ProjectRepository>(
     () => ProjectRepositoryImpl(
       projectDataSource: Modular.get<ProjectDataSource>(),
+      permissionDataSource: Modular.get<ProjectPermissionDataSource>(),
     ),
     config: BindConfig(onDispose: (repository) => repository.dispose()),
   );

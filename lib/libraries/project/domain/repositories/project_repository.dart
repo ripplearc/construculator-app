@@ -29,4 +29,32 @@ abstract class ProjectRepository {
   /// Implementations should cancel active subscriptions and close any
   /// internal controllers to avoid memory leaks.
   void dispose();
+
+  /// Get all permissions for a specific project
+  ///
+  /// Returns a list of permission keys (e.g., ['edit_cost_estimation', 'get_cost_estimations'])
+  /// that the current user has for the specified project.
+  ///
+  /// Returns an empty list if:
+  /// - User is not authenticated
+  /// - User has no permissions for the project
+  /// - Project ID not found
+  ///
+  /// **⚠️ Permissions may become stale** after role changes or invitation
+  /// acceptance. Re-query to get updated values.
+  ///
+  /// [projectId] The UUID of the project
+  List<String> getProjectPermissions(String projectId);
+
+  /// Check if current user has specific permission for project
+  ///
+  /// Convenience method that checks if [permissionKey] exists in the
+  /// permissions list for [projectId].
+  ///
+  /// **⚠️ Permissions may become stale** after role changes or invitation
+  /// acceptance. Re-query to get updated values.
+  ///
+  /// [projectId] The UUID of the project
+  /// [permissionKey] The permission key to check (e.g., 'edit_cost_estimation')
+  bool hasProjectPermission(String projectId, String permissionKey);
 }
