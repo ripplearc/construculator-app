@@ -28,7 +28,7 @@ void main() {
     late CostEstimationRepository repository;
     late FakeClockImpl fakeClock;
     const String testProjectId = 'test-project-123';
-    const Duration streamDebounceWaitDuration = Duration(milliseconds: 400);
+    const Duration streamDebounceWaitDuration = Duration(milliseconds: 500);
 
     setUpAll(() {
       fakeClock = FakeClockImpl();
@@ -134,10 +134,13 @@ void main() {
           seedEstimationTable([]);
           return bloc;
         },
-        act: (bloc) => bloc.add(
-          const CostEstimationListStartWatching(projectId: testProjectId),
-        ),
-        wait: streamDebounceWaitDuration,
+        act: (bloc) async {
+          bloc.add(
+            const CostEstimationListStartWatching(projectId: testProjectId),
+          );
+          // Wait for the empty state to ensure the async operation and debounce complete
+          await bloc.stream.firstWhere((s) => s is CostEstimationListEmpty);
+        },
         expect: () => [
           isA<CostEstimationListLoading>(),
           isA<CostEstimationListEmpty>(),

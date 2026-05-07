@@ -34,6 +34,12 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Tracks RPC responses for different function names
   final Map<String, dynamic> _rpcResponses = {};
 
+  /// Tracks permissions by project ID for testing
+  final Map<String, List<String>> _projectPermissions = {};
+
+  /// Tracks internal user ID for testing
+  String? _internalUserId;
+
   /// Controls whether [signInWithPassword] throws an exception
   bool shouldThrowOnSignIn = false;
 
@@ -81,6 +87,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Controls whether [rpc] throws an exception
   bool shouldThrowOnRpc = false;
+
+  /// Controls whether [refreshSession] throws an exception
+  bool shouldThrowOnRefreshSession = false;
 
   /// Error message for sign in.
   /// Used to specify the error message thrown when [signInWithPassword] is attempted
@@ -146,6 +155,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Used to specify the error message thrown when [rpc] is attempted
   String? rpcErrorMessage;
 
+  /// Error message for refresh session.
+  /// Used to specify the error message thrown when [refreshSession] is attempted
+  String? refreshSessionErrorMessage;
+
   /// Error message for select.
   /// Used to specify the error message thrown when [select] is attempted
   SupabaseExceptionType? selectMultipleExceptionType;
@@ -176,6 +189,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
 
   /// Used to specify the type of exception thrown when [rpc] is attempted
   SupabaseExceptionType? rpcExceptionType;
+
+  /// Used to specify the type of exception thrown when [refreshSession] is attempted
+  SupabaseExceptionType? refreshSessionExceptionType;
 
   /// Used to specify the error code thrown when [signInWithPassword] is attempted
   SupabaseAuthErrorCode? authErrorCode;
@@ -944,6 +960,47 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   }
 
   @override
+  List<String> getProjectPermissions(String projectId) {
+    _methodCalls.add({
+      'method': 'getProjectPermissions',
+      'projectId': projectId,
+    });
+    return List<String>.from(_projectPermissions[projectId] ?? []);
+  }
+
+  @override
+  bool hasProjectPermission(String projectId, String permissionKey) {
+    _methodCalls.add({
+      'method': 'hasProjectPermission',
+      'projectId': projectId,
+      'permissionKey': permissionKey,
+    });
+    return _projectPermissions[projectId]?.contains(permissionKey) ?? false;
+  }
+
+  @override
+  Future<void> refreshSession() async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    _methodCalls.add({'method': 'refreshSession'});
+
+    if (shouldThrowOnRefreshSession) {
+      _throwConfiguredException(
+        refreshSessionExceptionType,
+        refreshSessionErrorMessage ?? 'Refresh session failed',
+      );
+    }
+  }
+
+  @override
+  String? getInternalUserId() {
+    _methodCalls.add({'method': 'getInternalUserId'});
+    return _internalUserId;
+  }
+
+  @override
   Future<void> initialize() {
     // No need to implement this method, fake supabase wrapper does not need
     // to initialize any dependencies
@@ -1082,6 +1139,21 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     _rpcResponses.clear();
   }
 
+  /// Sets permissions for a specific project (for testing)
+  void setProjectPermissions(String projectId, List<String> permissions) {
+    _projectPermissions[projectId] = List<String>.from(permissions);
+  }
+
+  /// Clears permissions for a specific project (for testing)
+  void clearProjectPermissions(String projectId) {
+    _projectPermissions.remove(projectId);
+  }
+
+  /// Sets the internal user ID (for testing)
+  void setInternalUserId(String? userId) {
+    _internalUserId = userId;
+  }
+
   /// Closes the auth state controller
   void dispose() {
     _authStateController.close();
@@ -1120,6 +1192,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     shouldThrowOnDeleteMatch = false;
     shouldThrowOnUpsert = false;
     shouldThrowOnRpc = false;
+    shouldThrowOnRefreshSession = false;
 
     signInErrorMessage = null;
     signUpErrorMessage = null;
@@ -1136,6 +1209,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     deleteMatchErrorMessage = null;
     upsertErrorMessage = null;
     rpcErrorMessage = null;
+    refreshSessionErrorMessage = null;
 
     selectExceptionType = null;
     selectPaginatedExceptionType = null;
@@ -1147,6 +1221,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     deleteMatchExceptionType = null;
     upsertExceptionType = null;
     rpcExceptionType = null;
+    refreshSessionExceptionType = null;
     postgrestErrorCode = null;
 
     shouldReturnNullUser = false;
@@ -1159,6 +1234,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     shouldReturnUser = false;
     shouldThrowOnGetUserProfile = false;
     _nextId = 1;
+
+    _projectPermissions.clear();
+    _internalUserId = null;
 
     clearAllData();
     clearMethodCalls();
