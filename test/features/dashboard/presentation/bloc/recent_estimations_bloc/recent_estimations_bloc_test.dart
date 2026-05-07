@@ -1,50 +1,59 @@
 import 'package:bloc_test/bloc_test.dart';
-import 'package:construculator/features/dashboard/domain/usecases/watch_recent_estimations_usecase.dart';
+import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
-import 'package:construculator/libraries/either/either.dart';
-import 'package:construculator/libraries/errors/failures.dart';
-import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
-import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
-import 'package:construculator/libraries/estimation/testing/fake_cost_estimation_repository.dart';
+import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
-import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
+import '../../../../../utils/fake_app_bootstrap_factory.dart';
+
 void main() {
   late RecentEstimationsBloc bloc;
-  late FakeCostEstimationRepository repository;
-  late FakeCurrentProjectNotifier currentProjectNotifier;
+  late FakeSupabaseWrapper fakeSupabaseWrapper;
+  late CurrentProjectNotifier currentProjectNotifier;
+
+  const testProjectId = 'test_project_id';
 
   setUpAll(() {
-    Modular.init(_RecentEstimationsBlocTestModule());
+    final bootstrap = FakeAppBootstrapFactory.create();
+    Modular.init(DashboardModule(bootstrap));
+    fakeSupabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
   });
 
   tearDownAll(() {
-    Modular.destroy();
+    Modular.dispose();
   });
 
   setUp(() {
-    repository =
-        Modular.get<CostEstimationRepository>() as FakeCostEstimationRepository;
-    currentProjectNotifier =
-        Modular.get<CurrentProjectNotifier>() as FakeCurrentProjectNotifier;
-    repository.streamToReturn = const Stream.empty();
-    currentProjectNotifier.setCurrentProjectId('test_project_id');
+    fakeSupabaseWrapper.reset();
+    fakeSupabaseWrapper.shouldThrowOnSelectPaginated = false;
+    fakeSupabaseWrapper.selectPaginatedExceptionType = null;
+
+    currentProjectNotifier = Modular.get<CurrentProjectNotifier>();
+    currentProjectNotifier.setCurrentProjectId(testProjectId);
     bloc = Modular.get<RecentEstimationsBloc>();
   });
 
-  final tDate = DateTime.now();
-  final tEstimations = [
-    CostEstimate.defaultEstimate(
-      id: '1',
-      projectId: 'test_project_id',
-      estimateName: 'Test Estimate',
-      totalCost: 100.0,
-      createdAt: tDate,
-      updatedAt: tDate,
-    ),
-  ];
+  void seedEstimationTable(List<Map<String, dynamic>> rows) {
+    fakeSupabaseWrapper.addTableData(DatabaseConstants.costEstimatesTable, rows);
+  }
+
+  final tDate = DateTime(2025, 1, 1, 8, 0);
+  final tEstimationMap = EstimationTestDataMapFactory.createFakeEstimationData(
+    id: '1',
+    projectId: testProjectId,
+    estimateName: 'Test Estimate',
+    totalCost: 100.0,
+    createdAt: tDate.toIso8601String(),
+    updatedAt: tDate.toIso8601String(),
+  );
+  final tEstimations = [CostEstimateDto.fromJson(tEstimationMap).toDomain()];
 
   test(
     'initial state should be RecentEstimationsLoading with null estimations',
@@ -56,7 +65,7 @@ void main() {
   blocTest<RecentEstimationsBloc, RecentEstimationsState>(
     'emits [RecentEstimationsLoading, RecentEstimationsLoaded] when data streams successfully',
     build: () {
-      repository.streamToReturn = Stream.value(Right(tEstimations));
+      seedEstimationTable([tEstimationMap]);
       return bloc;
     },
     act: (bloc) => bloc.add(const RecentEstimationsWatchStarted()),
@@ -69,20 +78,24 @@ void main() {
   blocTest<RecentEstimationsBloc, RecentEstimationsState>(
     'emits [RecentEstimationsLoading, RecentEstimationsError] when data stream fails',
     build: () {
-      repository.streamToReturn = Stream.value(Left(ServerFailure()));
+      fakeSupabaseWrapper.shouldThrowOnSelectPaginated = true;
+      fakeSupabaseWrapper.selectPaginatedExceptionType =
+          SupabaseExceptionType.socket;
       return bloc;
     },
     act: (bloc) => bloc.add(const RecentEstimationsWatchStarted()),
     expect: () => [
       const RecentEstimationsLoading(lastKnownEstimations: null),
-      const RecentEstimationsError('ServerFailure()'),
+      const RecentEstimationsError(
+        'EstimationFailure(EstimationErrorType.connectionError)',
+      ),
     ],
   );
 
   blocTest<RecentEstimationsBloc, RecentEstimationsState>(
     'preserves lastKnownEstimations when re-watching',
     build: () {
-      repository.streamToReturn = Stream.value(Right(tEstimations));
+      seedEstimationTable([tEstimationMap]);
       return bloc;
     },
     seed: () => RecentEstimationsLoaded(tEstimations),
@@ -107,22 +120,4 @@ void main() {
       ),
     ],
   );
-}
-
-class _RecentEstimationsBlocTestModule extends Module {
-  @override
-  void binds(Injector i) {
-    i.addLazySingleton<CostEstimationRepository>(
-      () => FakeCostEstimationRepository(),
-    );
-    i.addLazySingleton<CurrentProjectNotifier>(
-      () => FakeCurrentProjectNotifier(initialProjectId: 'test_project_id'),
-    );
-    i.add<WatchRecentEstimationsUseCase>(
-      () => WatchRecentEstimationsUseCase(i(), i()),
-    );
-    i.add<RecentEstimationsBloc>(
-      () => RecentEstimationsBloc(watchRecentEstimationsUseCase: i()),
-    );
-  }
 }
