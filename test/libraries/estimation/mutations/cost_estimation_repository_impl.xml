@@ -70,7 +70,7 @@
             <mutation text="final updatedEstimations = [...cachedEstimations, newEstimation];"/>
         </regex>
 
-        <!-- RULE 11: In _updateStreamWithDeletedEstimation, fail to decrement offset -->
+        <!-- RULE 10: In _updateStreamWithDeletedEstimation, fail to decrement offset -->
         <regex pattern="currentOffset: \(paginationState\.currentOffset - 1\)\.clamp\(" dotAll="true" id="repo.pagination.skip_decrement">
             <mutation text="currentOffset: paginationState.currentOffset.clamp("/>
         </regex>
