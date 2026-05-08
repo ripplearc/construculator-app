@@ -42,6 +42,9 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
   supabase.User? get currentUser => _supabaseClient.auth.currentUser;
 
   @override
+  supabase.Session? get currentSession => _supabaseClient.auth.currentSession;
+
+  @override
   bool get isAuthenticated => _supabaseClient.auth.currentUser != null;
 
   @override
