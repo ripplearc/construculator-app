@@ -3,6 +3,8 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/estimation_rename_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -40,6 +42,7 @@ void main() {
   late Clock clock;
   late AppBootstrap appBootstrap;
   late FakeAppRouter fakeAppRouter;
+  late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
 
   const testEstimationId = 'estimation-123';
   const testProjectId = 'project-123';
@@ -57,6 +60,9 @@ void main() {
     );
     Modular.init(_EstimationRenameSheetTestModule(appBootstrap));
     fakeAppRouter = Modular.get<AppRouter>() as FakeAppRouter;
+
+    fakeCurrentProjectNotifier = FakeCurrentProjectNotifier(initialProjectId: testProjectId);
+    Modular.replaceInstance<CurrentProjectNotifier>(fakeCurrentProjectNotifier);
   });
 
   tearDownAll(() {
@@ -67,6 +73,7 @@ void main() {
   setUp(() {
     fakeSupabase.reset();
     fakeAppRouter.reset();
+    fakeCurrentProjectNotifier.reset(projectId: testProjectId);
 
     fakeSupabase.addTableData('cost_estimates', [
       EstimationTestDataMapFactory.createFakeEstimationData(
@@ -79,7 +86,6 @@ void main() {
 
   Widget createWidget({
     String estimationId = testEstimationId,
-    String projectId = testProjectId,
     String initialName = testCurrentName,
     ThemeData? theme,
   }) {
@@ -97,7 +103,6 @@ void main() {
               create: (_) => Modular.get<RenameEstimationBloc>(),
               child: EstimationRenameSheet(
                 estimationId: estimationId,
-                projectId: projectId,
                 currentName: initialName,
               ),
             ),
