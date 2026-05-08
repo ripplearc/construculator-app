@@ -258,6 +258,18 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   supabase.User? get currentUser => _currentUser;
 
   @override
+  supabase.Session? get currentSession {
+    final user = _currentUser;
+    if (user == null) return null;
+
+    return FakeSession(
+      accessToken: 'fake-access-token-${user.id}',
+      refreshToken: 'fake-refresh-token',
+      user: user,
+    );
+  }
+
+  @override
   bool get isAuthenticated => _currentUser != null;
 
   @override

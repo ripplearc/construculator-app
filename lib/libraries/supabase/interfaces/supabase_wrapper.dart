@@ -11,6 +11,9 @@ abstract class SupabaseWrapper {
   /// The current user
   supabase.User? get currentUser;
 
+  /// The current session
+  supabase.Session? get currentSession;
+
   /// Whether the user is authenticated
   bool get isAuthenticated;
 
