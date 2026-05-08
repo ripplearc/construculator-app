@@ -5,12 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+void _noOp() {}
+
 void main() {
   final testDate = DateTime(2024, 3, 15, 14, 30);
 
   Widget createWidget({
     required EstimationTileData data,
-    VoidCallback? onTap,
+    VoidCallback onTap = _noOp,
     VoidCallback? onMenuTap,
   }) {
     return MaterialApp(
@@ -21,7 +23,7 @@ void main() {
       home: Scaffold(
         body: SharedEstimationTile(
           data: data,
-          onTap: onTap ?? () {},
+          onTap: onTap,
           onMenuTap: onMenuTap,
         ),
       ),
@@ -143,7 +145,7 @@ void main() {
 
         final semanticsWidgets = tester.widgetList<Semantics>(find.byType(Semantics));
         final cardSemantics = semanticsWidgets.where(
-          (s) => s.properties.label == 'Bridge Project' && (s.properties.button ?? false),
+          (s) => s.properties.label == 'Bridge Project' && s.properties.button == true,
         );
         expect(cardSemantics, isNotEmpty);
       });

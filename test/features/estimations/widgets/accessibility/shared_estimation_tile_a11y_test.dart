@@ -6,13 +6,15 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
 
+void _noOp() {}
+
 void main() {
   group('SharedEstimationTile A11y Tests', () {
     final testDate = DateTime(2024, 3, 15, 14, 30);
 
     Widget createWidget({
       required EstimationTileData data,
-      VoidCallback? onTap,
+      VoidCallback onTap = _noOp,
       VoidCallback? onMenuTap,
       ThemeData? theme,
     }) {
@@ -24,7 +26,7 @@ void main() {
         home: Scaffold(
           body: SharedEstimationTile(
             data: data,
-            onTap: onTap ?? () {},
+            onTap: onTap,
             onMenuTap: onMenuTap,
           ),
         ),
