@@ -10,6 +10,7 @@ import 'package:flutter/widgets.dart';
 class EstimationTileProviderImpl implements EstimationTileProvider {
   const EstimationTileProviderImpl();
 
+  /// Builds the estimation feature's concrete [SharedEstimationTile].
   @override
   Widget buildEstimationTile({
     required EstimationTileData data,

@@ -16,8 +16,13 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// semantics node when [onMenuTap] is provided, and is hidden from the a11y
 /// tree via [ExcludeSemantics] when null.
 class SharedEstimationTile extends StatelessWidget {
+  /// The data contract that drives the tile's display.
   final EstimationTileData data;
+
+  /// Called when the tile body is tapped.
   final VoidCallback onTap;
+
+  /// Called when the menu icon is tapped; null excludes the menu from the a11y tree.
   final VoidCallback? onMenuTap;
 
   const SharedEstimationTile({
@@ -126,7 +131,7 @@ class SharedEstimationTile extends StatelessWidget {
           key: const Key('calendarIcon'),
           icon: CoreIcons.calendar,
           color: appColors.iconGrayMid,
-          size: 14,
+          size: CoreIconSize.size16,
         ),
         const SizedBox(width: CoreSpacing.space2),
         Text(

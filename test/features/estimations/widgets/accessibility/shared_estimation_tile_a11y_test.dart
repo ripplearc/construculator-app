@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
-import '../../../../utils/screenshot/font_loader.dart';
 
 void main() {
   group('SharedEstimationTile A11y Tests', () {
@@ -79,6 +78,5 @@ class _FakeData implements EstimationTileData {
   const _FakeData({
     required this.estimateName,
     required this.displayDate,
-    this.totalCost = 15000.50,
-  });
+  }) : totalCost = 15000.50;
 }
