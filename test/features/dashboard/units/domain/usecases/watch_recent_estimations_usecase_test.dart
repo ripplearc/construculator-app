@@ -1,28 +1,49 @@
+import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/domain/usecases/watch_recent_estimations_usecase.dart';
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/estimation/domain/enums/estimation_sort_option.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/estimation/testing/fake_cost_estimation_repository.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../../../utils/fake_app_bootstrap_factory.dart';
+
 void main() {
+  const testProjectId = 'project-123';
+
   group('WatchRecentEstimationsUseCase', () {
     late FakeCostEstimationRepository repository;
     late FakeCurrentProjectNotifier currentProjectNotifier;
     late WatchRecentEstimationsUseCase useCase;
 
-    setUp(() {
+    setUpAll(() {
       repository = FakeCostEstimationRepository();
       currentProjectNotifier = FakeCurrentProjectNotifier(
-        initialProjectId: 'project-123',
+        initialProjectId: testProjectId,
       );
-      useCase = WatchRecentEstimationsUseCase(
-        repository,
-        currentProjectNotifier,
-      );
+      Modular.init(DashboardModule(FakeAppBootstrapFactory.create()));
+      Modular.replaceInstance<CostEstimationRepository>(repository);
+      Modular.replaceInstance<CurrentProjectNotifier>(currentProjectNotifier);
+      useCase = Modular.get<WatchRecentEstimationsUseCase>();
+    });
+
+    tearDownAll(() {
+      Modular.dispose();
+    });
+
+    setUp(() {
+      repository.streamToReturn = const Stream.empty();
+      repository.lastProjectId = null;
+      repository.lastSortBy = null;
+      repository.lastAscending = null;
+      repository.lastLimit = null;
+      currentProjectNotifier.reset(projectId: testProjectId);
     });
 
     test(
@@ -35,7 +56,7 @@ void main() {
         final resultStream = useCase(params);
 
         await expectLater(resultStream, emits(expectedResult));
-        expect(repository.lastProjectId, 'project-123');
+        expect(repository.lastProjectId, testProjectId);
         expect(repository.lastSortBy, EstimationSortOption.updatedAt);
         expect(repository.lastAscending, isFalse);
         expect(repository.lastLimit, 3);
