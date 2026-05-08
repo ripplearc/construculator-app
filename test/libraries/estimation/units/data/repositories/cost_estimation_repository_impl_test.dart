@@ -5,6 +5,7 @@ import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/libraries/estimation/data/repositories/cost_estimation_repository_impl.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/libraries/estimation/domain/enums/estimation_sort_option.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
@@ -16,8 +17,8 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../../../../features/estimations/helpers/estimation_test_data_map_factory.dart';
 import '../../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../helpers/estimation_test_data_map_factory.dart';
 
 void main() {
   const String otherProjectId = 'other-project-456';
@@ -60,7 +61,7 @@ void main() {
     late FakeSupabaseWrapper fakeSupabaseWrapper;
     late FakeClockImpl fakeClock;
 
-    setUpAll(() {
+    setUp(() {
       fakeClock = FakeClockImpl();
       Modular.init(
         _TestAppModule(
@@ -74,15 +75,12 @@ void main() {
       repository =
           Modular.get<CostEstimationRepository>()
               as CostEstimationRepositoryImpl;
-    });
-
-    tearDownAll(() {
-      Modular.dispose();
-    });
-
-    setUp(() {
       repository.dispose();
       fakeSupabaseWrapper.reset();
+    });
+
+    tearDown(() {
+      Modular.destroy();
     });
 
     Map<String, dynamic> buildEstimationMap({
@@ -762,6 +760,30 @@ void main() {
 
         expect(repository.hasMoreEstimations(testProjectId), isTrue);
       });
+
+      test(
+        'fetching with updatedAt must not reset createdAt pagination state',
+        () async {
+          seedEstimations(defaultPageDatasetSize, includeUpdatedAt: true);
+
+          await repository.fetchInitialEstimations(testProjectId);
+          expect(repository.hasMoreEstimations(testProjectId), isTrue);
+
+          await repository.fetchInitialEstimations(
+            testProjectId,
+            sortBy: EstimationSortOption.updatedAt,
+          );
+
+          expect(repository.hasMoreEstimations(testProjectId), isTrue);
+          expect(
+            repository.hasMoreEstimations(
+              testProjectId,
+              sortBy: EstimationSortOption.updatedAt,
+            ),
+            isTrue,
+          );
+        },
+      );
     });
 
     group('watchEstimations', () {
@@ -807,6 +829,52 @@ void main() {
 
         expect(result1, equals(result2));
       });
+
+      test(
+        'should isolate two concurrent streams with different sort keys',
+        () async {
+          seedEstimations(defaultPageDatasetSize, includeUpdatedAt: true);
+
+          final createdAtStream = repository.watchEstimations(
+            testProjectId,
+            sortBy: EstimationSortOption.createdAt,
+          );
+          final updatedAtStream = repository.watchEstimations(
+            testProjectId,
+            sortBy: EstimationSortOption.updatedAt,
+          );
+
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final createdAtQueue = StreamQueue(createdAtStream);
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final updatedAtQueue = StreamQueue(updatedAtStream);
+
+          await expectLater(
+            createdAtQueue.next,
+            completion(rightEstimations(anything)),
+          );
+          await expectLater(
+            updatedAtQueue.next,
+            completion(rightEstimations(anything)),
+          );
+
+          final methodCalls = fakeSupabaseWrapper.getMethodCallsFor(
+            'selectPaginated',
+          );
+          expect(methodCalls, hasLength(2));
+          expect(
+            methodCalls[0]['orderColumn'],
+            DatabaseConstants.createdAtColumn,
+          );
+          expect(
+            methodCalls[1]['orderColumn'],
+            DatabaseConstants.updatedAtColumn,
+          );
+
+          await createdAtQueue.cancel();
+          await updatedAtQueue.cancel();
+        },
+      );
     });
 
     group('createEstimation', () {
@@ -1497,7 +1565,6 @@ void main() {
 
           // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
           final queue = StreamQueue(repository.watchEstimations(testProjectId));
-
           await expectLater(
             queue.next,
             completion(

@@ -6,7 +6,7 @@ import 'package:construculator/libraries/project/data/models/project_dto.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../../../estimations/helpers/estimation_test_data_map_factory.dart'
+import '../../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart'
     as estimation_factory;
 
 void main() {

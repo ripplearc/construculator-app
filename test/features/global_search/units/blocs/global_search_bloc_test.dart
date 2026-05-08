@@ -14,9 +14,9 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../../../utils/fake_app_bootstrap_factory.dart';
-import '../../../estimations/helpers/estimation_test_data_map_factory.dart'
+import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart'
     as estimation_factory;
+import '../../../../utils/fake_app_bootstrap_factory.dart';
 
 // ---------------------------------------------------------------------------
 // Test data helpers
