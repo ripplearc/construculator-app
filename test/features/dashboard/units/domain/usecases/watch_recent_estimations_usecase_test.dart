@@ -46,6 +46,17 @@ void main() {
       currentProjectNotifier.reset(projectId: testProjectId);
     });
 
+    test('RecentEstimationsParams equality considers limit', () {
+      expect(
+        const RecentEstimationsParams(limit: 3),
+        equals(const RecentEstimationsParams(limit: 3)),
+      );
+      expect(
+        const RecentEstimationsParams(limit: 3),
+        isNot(equals(const RecentEstimationsParams(limit: 4))),
+      );
+    });
+
     test(
       'delegates to watchEstimations using current project id with updatedAt descending and requested limit',
       () async {
