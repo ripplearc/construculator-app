@@ -55,23 +55,6 @@ void main() {
         const RecentEstimationsParams(limit: 3),
         isNot(equals(const RecentEstimationsParams(limit: 4))),
       );
-      Modular.init(DashboardModule(FakeAppBootstrapFactory.create()));
-      Modular.replaceInstance<CostEstimationRepository>(repository);
-      Modular.replaceInstance<CurrentProjectNotifier>(currentProjectNotifier);
-      useCase = Modular.get<WatchRecentEstimationsUseCase>();
-    });
-
-    tearDownAll(() {
-      Modular.dispose();
-    });
-
-    setUp(() {
-      repository.streamToReturn = const Stream.empty();
-      repository.lastProjectId = null;
-      repository.lastSortBy = null;
-      repository.lastAscending = null;
-      repository.lastLimit = null;
-      currentProjectNotifier.reset(projectId: testProjectId);
     });
 
     test(
