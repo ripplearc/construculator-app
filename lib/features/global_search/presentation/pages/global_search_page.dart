@@ -24,6 +24,7 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
   late final AppRouter _router = Modular.get<AppRouter>();
   late final GlobalSearchBloc _bloc = Modular.get<GlobalSearchBloc>();
   late final TextEditingController _searchController = TextEditingController();
+  GlobalSearchReady? _lastReady;
 
   @override
   void initState() {
@@ -82,9 +83,13 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
     if (state is GlobalSearchInitial) {
       return const Center(child: CoreLoadingIndicator());
     }
-    if (state is GlobalSearchReady && state.recentSearches.isNotEmpty) {
+    if (state is GlobalSearchReady) {
+      _lastReady = state;
+    }
+    final effectiveReady = state is GlobalSearchReady ? state : _lastReady;
+    if (effectiveReady != null && effectiveReady.recentSearches.isNotEmpty) {
       return GlobalSearchRecentSearchesList(
-        recentSearches: state.recentSearches,
+        recentSearches: effectiveReady.recentSearches,
         onItemTap: _onItemTap,
         onTrailingTap: _onTrailingTap,
       );
