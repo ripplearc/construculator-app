@@ -746,10 +746,4 @@ class AppLocalizationsEn extends AppLocalizations {
     return 'Fill search field with $term';
   }
 
-  @override
-  String get globalSearchClearAllRecent => 'Clear all searches';
-
-  @override
-  String get globalSearchClearAllRecentSemanticLabel =>
-      'Clear all recent searches';
 }

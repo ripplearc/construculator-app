@@ -1181,15 +1181,5 @@
         "type": "String"
       }
     }
-  },
-  "globalSearchClearAllRecent": "Clear all searches",
-  "@globalSearchClearAllRecent": {
-    "description": "Label for the button that clears the entire recent search history on the global search screen",
-    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
-  },
-  "globalSearchClearAllRecentSemanticLabel": "Clear all recent searches",
-  "@globalSearchClearAllRecentSemanticLabel": {
-    "description": "Accessibility label for the clear all recent searches button on the global search screen",
-    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
   }
 }

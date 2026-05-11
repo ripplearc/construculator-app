@@ -32,7 +32,7 @@ void main() {
   group('GlobalSearchRecentSearchesList', () {
     testWidgets('renders all items', (tester) async {
       await tester.pumpWidget(makeTestableWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(GlobalSearchRecentSearchItem), findsNWidgets(2));
       expect(find.text('Material of building'), findsOneWidget);
@@ -41,7 +41,7 @@ void main() {
 
     testWidgets('renders correct number of items', (tester) async {
       await tester.pumpWidget(makeTestableWidget(recentSearches: ['a', 'b', 'c']));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(GlobalSearchRecentSearchItem), findsNWidgets(3));
     });
@@ -51,7 +51,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(onItemTap: (t) => tappedTerm = t),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.text('Material of building'));
       await tester.pump();
@@ -64,7 +64,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(onTrailingTap: (t) => tappedTerm = t),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tap via the accessible semantic label we own rather than a key internal
       // to CoreSearchRowItem — avoids coupling to the package's implementation.
@@ -78,7 +78,7 @@ void main() {
 
     testWidgets('each item has a unique ValueKey based on its term', (tester) async {
       await tester.pumpWidget(makeTestableWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(
         find.byKey(const ValueKey('recent_search_item_Material of building')),
@@ -90,16 +90,11 @@ void main() {
       );
     });
 
-    testWidgets('empty list renders nothing', (tester) async {
-      // The widget asserts non-empty in debug mode; this test documents that
-      // an empty list produces zero GlobalSearchRecentSearchItem widgets in
-      // a release build (callers must guard before rendering this widget).
-      await tester.pumpWidget(
-        makeTestableWidget(recentSearches: const []),
+    testWidgets('asserts when recentSearches is empty', (tester) async {
+      expect(
+        () => tester.pumpWidget(makeTestableWidget(recentSearches: const [])),
+        throwsAssertionError,
       );
-      await tester.pumpAndSettle();
-
-      expect(find.byType(GlobalSearchRecentSearchItem), findsNothing);
     });
   });
 }
