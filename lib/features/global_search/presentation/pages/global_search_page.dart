@@ -34,8 +34,6 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
   @override
   void dispose() {
     _searchController.dispose();
-    // Do NOT close _bloc — it is a singleton owned by the DI container.
-    // Closing it here would make it unusable on re-navigation.
     super.dispose();
   }
 
@@ -82,7 +80,7 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
 
   Widget _buildBody(BuildContext context, GlobalSearchState state) {
     if (state is GlobalSearchInitial) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CoreLoadingIndicator());
     }
     if (state is GlobalSearchReady && state.recentSearches.isNotEmpty) {
       return GlobalSearchRecentSearchesList(

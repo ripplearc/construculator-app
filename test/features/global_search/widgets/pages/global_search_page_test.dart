@@ -54,11 +54,11 @@ void main() {
     );
     Modular.init(_GlobalSearchPageTestModule(bootstrap));
     final supabase = Modular.get<SupabaseWrapper>();
-    assert(supabase is FakeSupabaseWrapper, 'Expected FakeSupabaseWrapper, got ${supabase.runtimeType}');
+    expect(supabase, isA<FakeSupabaseWrapper>());
     fakeSupabase = supabase as FakeSupabaseWrapper;
 
     final appRouter = Modular.get<AppRouter>();
-    assert(appRouter is FakeAppRouter, 'Expected FakeAppRouter, got ${appRouter.runtimeType}');
+    expect(appRouter, isA<FakeAppRouter>());
     router = appRouter as FakeAppRouter;
   });
 
@@ -180,6 +180,7 @@ void main() {
 
         await tester.tap(find.byKey(const ValueKey('core_search_box_clear_button')));
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
 
         expect(find.byKey(const ValueKey('core_search_box_clear_button')), findsNothing);
       },
@@ -213,7 +214,8 @@ void main() {
       expect(trailingIcons, findsWidgets);
 
       await tester.tap(trailingIcons.first);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(
         find.descendant(
@@ -229,7 +231,8 @@ void main() {
       await renderPage(tester);
 
       await tester.tap(find.byKey(const ValueKey('recent_search_item_Material of building')));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 5));
 
       expect(
         find.descendant(
