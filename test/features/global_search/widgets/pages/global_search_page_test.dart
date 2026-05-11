@@ -210,10 +210,13 @@ void main() {
       seedRecentSearches();
       await renderPage(tester);
 
-      final trailingIcons = find.byKey(const Key('trailing_icon'));
-      expect(trailingIcons, findsWidgets);
+      final trailingIcon = find.descendant(
+        of: find.byKey(const ValueKey('recent_search_item_Material of building')),
+        matching: find.byKey(const Key('trailing_icon')),
+      );
+      expect(trailingIcon, findsOneWidget);
 
-      await tester.tap(trailingIcons.first);
+      await tester.tap(trailingIcon);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
