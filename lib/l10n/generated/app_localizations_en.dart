@@ -746,4 +746,15 @@ class AppLocalizationsEn extends AppLocalizations {
     return 'Fill search field with $term';
   }
 
+  @override
+  String get globalSearchLoadErrorMessage =>
+      'Failed to load recent searches. Please try again.';
+
+  @override
+  String get globalSearchDeleteErrorMessage =>
+      'Failed to remove recent search. Please try again.';
+
+  @override
+  String get globalSearchSuggestionsErrorMessage =>
+      'Could not load suggestions.';
 }

@@ -55,7 +55,7 @@ void main() {
     );
     Modular.init(_GlobalSearchPageScreenshotModule(bootstrap));
     final supabase = Modular.get<SupabaseWrapper>();
-    assert(supabase is FakeSupabaseWrapper, 'Expected FakeSupabaseWrapper, got ${supabase.runtimeType}');
+    expect(supabase, isA<FakeSupabaseWrapper>());
     fakeSupabase = supabase as FakeSupabaseWrapper;
   });
 
