@@ -1372,17 +1372,6 @@ abstract class AppLocalizations {
   /// **'Fill search field with {term}'**
   String globalSearchRecentSearchFillSemanticLabel(String term);
 
-  /// Label for the button that clears the entire recent search history on the global search screen
-  ///
-  /// In en, this message translates to:
-  /// **'Clear all searches'**
-  String get globalSearchClearAllRecent;
-
-  /// Accessibility label for the clear all recent searches button
-  ///
-  /// In en, this message translates to:
-  /// **'Clear all recent searches'**
-  String get globalSearchClearAllRecentSemanticLabel;
 }
 
 class _AppLocalizationsDelegate
