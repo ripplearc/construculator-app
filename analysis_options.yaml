@@ -46,6 +46,7 @@ custom_lint:
         - 'State'
     ast_type_prefixes:
         - 'Fake'
+        - '_Fake'
         - 'AppBootstrap'
         - 'AppLogger'
         - 'Map'

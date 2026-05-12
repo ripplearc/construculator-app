@@ -14,6 +14,7 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
@@ -40,6 +41,7 @@ class CostEstimationLandingPage extends StatefulWidget {
 class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
   late final AppRouter _router;
   late final ScrollController _scrollController;
+  late final EstimationTileProvider _tileProvider;
 
   static const double _loadMoreThreshold = 200.0;
 
@@ -48,6 +50,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
     super.initState();
     _scrollController = ScrollController()..addListener(_onScroll);
     _router = Modular.get<AppRouter>();
+    _tileProvider = Modular.get<EstimationTileProvider>();
   }
 
   void _onScroll() {
@@ -429,6 +432,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
                     onTap: () => _navigateToDetails(estimation.id),
                     onMenuTap: () =>
                         _showEstimationActionsSheet(estimation, colorTheme),
+                    provider: _tileProvider,
                   );
                 },
               ),
