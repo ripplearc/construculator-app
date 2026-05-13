@@ -6,7 +6,7 @@ description: |
 
   ⚠️ INVOCATION: Only use when the ticket touches the presentation layer (UI, screens, BLoC state management).
 
-  Trigger: Any of the following phrases exactly: "write UI code", "implement presentation layer", "create page", "create bloc"
+  Trigger: Any of the following phrases exactly as written, without variations: "write UI code", "implement presentation layer", "create page", "create bloc"
 
 disable-model-invocation: false
 ---
@@ -46,10 +46,9 @@ import 'package:construculator/libraries/extensions/build_context_extensions.dar
 - **Colors:** `context.colorTheme.primary`, `context.colorTheme.pageBackground`
 - **Typography:** `context.textTheme.bodyMediumRegular`, `context.textTheme.titleLargeBold`
 
-**Key rules:**
+**UI Rules:**
 - **RULE_4:** Use CoreUI components ONLY — never `Material` widgets directly
 - **RULE_10:** All text via `context.l10n.keyName` — no hardcoded strings
-- **RULE_5:** Zero business logic — no validation, calculations, or conditional state coordination
 - Pages are **passive** — they display state from BLoC; they don't decide what state means
 
 **BLoC access (preferred):** Prefer resolving BLoCs via `BuildContext` instead of `Modular.get`. This keeps wiring explicit and works well with `BlocProvider`.
@@ -89,7 +88,7 @@ bloc/{feature}_bloc/
 └── {feature}_state.dart       # Sealed state classes
 ```
 
-**Key rules:**
+**State Management Rules:**
 - **RULE_12:** State derivation happens HERE, not in widgets (e.g., `total`, `isValid`, `filteredItems`)
 - **RULE_5:** BLoC orchestrates UseCases; doesn't implement business logic
 - Events: User actions (`SubmitPressed`, `FieldChanged`) or lifecycle (`PageLoaded`)
@@ -102,7 +101,7 @@ bloc/{feature}_bloc/
 
 **Purpose:** Reusable UI components; receive data via constructor; no state management.
 
-**Key rules:**
+**Widget Rules:**
 - **RULE_4:** CoreUI components only (from `ripplearc_coreui` package)
 - **RULE_10:** Localized text via `context.l10n.keyName`
 - **RULE_5:** Zero logic — widgets are **dumb presenters**
@@ -166,10 +165,10 @@ void _registerDependencies(Injector i) {
 ## References
 
 - **RULE_4:** `skills/rules/04-coreui-components.md` — CoreUI components
-- **RULE_5:** `skills/rules/05-ui-business-separation.md` — No business logic in UI
+- **RULE_5:** `skills/rules/05-ui-business-separation.md` — No business logic in UI + State derivation in BLoC
 - **RULE_7:** `skills/rules/07-self-documenting-code.md` — Comments explain why
 - **RULE_10:** `skills/rules/10-localization.md` — All user-facing text
-- **RULE_12:** `skills/rules/12-state-derivation.md` — Derive in BLoC, not widgets
 - **CoreUI API:** `skills/references/coreui-api.md`
 - **Examples:** `lib/features/auth/presentation/`, `lib/features/project/presentation/`
-- **Future:** `write-tests` skill (planned — widget tests for pages)
+- `write-tests` skill — Widget tests for pages
+

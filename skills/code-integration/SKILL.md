@@ -103,7 +103,7 @@ Then import in `lib/app/app_module.dart`.
 - **RULE_15:** Sentry logging at boundaries
 - **Clean Architecture:** Domain depends on wrappers, not SDKs
 - **Example:** `lib/libraries/supabase/supabase_wrapper.dart`
-- **Future:** `write-tests` skill (planned — wrapper tests with fake SDK clients)
+- `write-tests` skill — Wrapper tests with fake SDK clients
 
 ⚠️ **Use sparingly** — Most data access uses existing wrappers (`SupabaseWrapper`, `AuthManager`). Only for external services or SDKs that are not previously implemented or integrated in the codebase.
 
