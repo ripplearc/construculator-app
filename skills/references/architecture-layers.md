@@ -9,10 +9,10 @@ This reference defines the responsibility boundaries and directory conventions f
 ```
 ┌─────────────────────────────────────────┐
 │ PRESENTATION (UI)                        │
-│ - Widgets, Screens, BLoCs               │
+│ - Widgets, Pages, BLoCs                 │
 │ - User interaction & state rendering    │
 │ - lib/features/**/presentation/         │
-│ - lib/app/presentation/                 │
+│ - lib/app/                              │
 └─────────────────────────────────────────┘
            ↓ Events / States
 ┌─────────────────────────────────────────┐
@@ -20,7 +20,7 @@ This reference defines the responsibility boundaries and directory conventions f
 │ - UseCases, Entities, Services          │
 │ - Pure business rules                   │
 │ - lib/features/**/domain/               │
-│ - lib/core/domain/                      │
+│ - lib/libraries/**/domain/              │
 └─────────────────────────────────────────┘
            ↓ Calls / Returns
 ┌─────────────────────────────────────────┐
@@ -28,7 +28,7 @@ This reference defines the responsibility boundaries and directory conventions f
 │ - Repositories, DataSources, DTOs       │
 │ - External integrations                 │
 │ - lib/features/**/data/                 │
-│ - lib/core/data/                        │
+│ - lib/libraries/**/data/                │
 └─────────────────────────────────────────┘
 ```
 
@@ -36,7 +36,7 @@ This reference defines the responsibility boundaries and directory conventions f
 
 ## Presentation Layer
 
-**Location:** `lib/features/**/presentation/` or `lib/app/presentation/`
+**Location:** `lib/features/**/presentation/` or `lib/app/`
 
 **Responsibilities:**
 - Render UI based on state
@@ -45,7 +45,7 @@ This reference defines the responsibility boundaries and directory conventions f
 - Display errors and loading states
 
 **What belongs here:**
-- `*Screen` widgets
+- `*Page` widgets (top-level screens)
 - `*Bloc` + `*Event` + `*State`
 - `*Widget` (presentation components)
 - `*Controller` (for forms, animations)
@@ -57,7 +57,7 @@ This reference defines the responsibility boundaries and directory conventions f
 - ❌ State derivations (use selectors in BLoC instead)
 
 **Naming:** Abstract, user-facing names (see RULE_2)
-- `LoginScreen` (not `SupabaseAuthScreen`)
+- `LoginPage` (not `SupabaseAuthPage`)
 - `EstimationBloc` (not `PostgresEstimationBloc`)
 
 **Related Rules:**
@@ -69,7 +69,7 @@ This reference defines the responsibility boundaries and directory conventions f
 
 ## Domain Layer
 
-**Location:** `lib/features/**/domain/` or `lib/core/domain/`
+**Location:** `lib/features/**/domain/` or `lib/libraries/**/domain/`
 
 **Responsibilities:**
 - Business logic and rules
@@ -98,13 +98,12 @@ This reference defines the responsibility boundaries and directory conventions f
 **Related Rules:**
 - RULE_2: Naming Conventions
 - RULE_3: Test Double Pattern
-- RULE_9: Unit Test Behavior
 
 ---
 
 ## Data Layer
 
-**Location:** `lib/features/**/data/` or `lib/core/data/`
+**Location:** `lib/features/**/data/` or `lib/libraries/**/data/`
 
 **Responsibilities:**
 - Implement repository interfaces
@@ -187,9 +186,9 @@ class ValidationService {
 ```
 lib/features/estimation/
 ├── data/
-│   ├── datasources/
-│   │   ├── local_estimation_datasource.dart
-│   │   └── remote_estimation_datasource.dart
+│   ├── data_source/
+│   │   ├── local_estimation_data_source.dart
+│   │   └── remote_estimation_data_source.dart
 │   ├── models/
 │   │   └── estimation_dto.dart
 │   └── repositories/
@@ -207,29 +206,32 @@ lib/features/estimation/
     │   ├── estimation_bloc.dart
     │   ├── estimation_event.dart
     │   └── estimation_state.dart
-    ├── screens/
-    │   └── estimation_list_screen.dart
+    ├── pages/
+    │   └── estimation_list_page.dart
     └── widgets/
         └── estimation_card.dart
 ```
 
-### Core (Shared) Structure
+### Libraries (Shared) Structure
 ```
-lib/core/
+lib/libraries/estimation/
 ├── data/
-│   ├── clients/
-│   │   ├── supabase_client.dart
-│   │   └── http_client.dart
-│   └── error/
-│       └── exceptions.dart
-├── domain/
-│   ├── error/
-│   │   └── failures.dart
-│   └── usecases/
-│       └── usecase.dart (base class)
-└── presentation/
-    └── theme/
-        └── app_theme.dart
+│   ├── data_source/
+│   │   └── interfaces/
+│   ├── models/
+│   └── repositories/
+└── domain/
+    ├── entities/
+    ├── enums/
+    └── repositories/
+
+lib/libraries/errors/
+└── domain/
+    └── failures.dart
+
+lib/libraries/supabase/
+└── data/
+    └── supabase_client.dart
 ```
 
 ---
@@ -257,7 +259,7 @@ lib/core/
 
 ```dart
 // ❌ Bad: Validation in widget
-class LoginScreen extends StatelessWidget {
+class LoginPage extends StatelessWidget {
   void _onSubmit() {
     if (email.contains('@') && password.length >= 8) {  // ❌ Business logic!
       context.read<AuthBloc>().add(LoginRequested(email, password));
@@ -266,7 +268,7 @@ class LoginScreen extends StatelessWidget {
 }
 
 // ✅ Good: Validation in Domain
-class LoginScreen extends StatelessWidget {
+class LoginPage extends StatelessWidget {
   void _onSubmit() {
     // Just dispatch, let domain validate
     context.read<AuthBloc>().add(LoginRequested(email, password));
@@ -339,7 +341,7 @@ class SaveEstimationUseCase {
 
 | Layer | Responsibility | Example Classes | Naming Style |
 |-------|---------------|-----------------|--------------|
-| **Presentation** | Render & collect input | `*Screen`, `*Bloc`, `*Widget` | Abstract, user-facing |
+| **Presentation** | Render & collect input | `*Page`, `*Bloc`, `*Widget` | Abstract, user-facing |
 | **Domain** | Business logic | `*UseCase`, `*Entity`, `*Service` | Business-focused |
 | **Data** | External integration | `*RepositoryImpl`, `*DataSource`, `*Dto` | Technology-aware |
 

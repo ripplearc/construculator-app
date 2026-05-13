@@ -51,251 +51,31 @@ Do I need to expose a stream of data?
 
 ### Creating StreamControllers Safely
 
-#### ✅ Correct Pattern
+| ✅ Required | ❌ Forbidden |
+|------------|-------------|
+| `StreamController(onCancel: () => cleanup())` | No `onCancel` callback |
+| Track subscriptions in `Map<String, StreamSubscription>` | Untracked subscriptions |
+| `dispose()` method cancels all subscriptions | No `dispose()` method |
+| `.distinct()` on streams to prevent duplicates | Duplicate event flooding |
 
-```dart
-class EstimationRepository {
-  final Map<String, StreamController<List<Estimation>>> _controllers = {};
-  final Map<String, StreamSubscription> _subscriptions = {};
+### Key Patterns
 
-  Stream<List<Estimation>> watchEstimations(String projectId) {
-    // Return existing stream if already watching
-    if (_controllers.containsKey(projectId)) {
-      return _controllers[projectId]!.stream;
-    }
+| Pattern | Implementation | Purpose |
+|---------|---------------|---------|
+| **Optimistic Update** | Update stream first, persist to server, rollback on error | Avoid network thrashing |
+| **Deduplication** | `.distinct()` on streams | Skip duplicate events |
+| **Debouncing** | `.debounceTime(Duration(milliseconds: 300))` | Handle high-frequency input |
+| **BLoC Cleanup** | Cancel subscriptions in `close()` method | Prevent memory leaks |
+| **Combining Streams** | `Rx.combineLatest()` with `.distinct()` | Coordinate multiple data sources |
 
-    // Create new controller with cleanup on cancel
-    final controller = StreamController<List<Estimation>>(
-      onCancel: () {
-        // ✅ Cleanup when no more listeners
-        _subscriptions[projectId]?.cancel();
-        _subscriptions.remove(projectId);
-        _controllers[projectId]?.close();
-        _controllers.remove(projectId);
-      },
-    );
+### Red Flags
 
-    _controllers[projectId] = controller;
-
-    // Subscribe to Supabase stream
-    final subscription = _dataSource
-        .watchEstimations(projectId)
-        .distinct()  // ✅ Prevent duplicate events
-        .listen(
-          (data) => controller.add(data),
-          onError: (error) => controller.addError(error),
-        );
-
-    _subscriptions[projectId] = subscription;
-
-    return controller.stream;
-  }
-
-  Future<void> dispose() async {
-    // ✅ Cleanup all controllers on dispose
-    for (final subscription in _subscriptions.values) {
-      await subscription.cancel();
-    }
-    for (final controller in _controllers.values) {
-      await controller.close();
-    }
-    _controllers.clear();
-    _subscriptions.clear();
-  }
-}
-```
-
-#### ❌ Wrong: No Cleanup
-
-```dart
-class EstimationRepository {
-  final Map<String, StreamController<List<Estimation>>> _controllers = {};
-
-  Stream<List<Estimation>> watchEstimations(String projectId) {
-    final controller = StreamController<List<Estimation>>();  // ❌ No onCancel
-    _controllers[projectId] = controller;
-
-    _dataSource.watchEstimations(projectId).listen(
-      (data) => controller.add(data),  // ❌ No subscription tracking
-    );
-
-    return controller.stream;
-  }
-
-  // ❌ No dispose method - memory leak!
-}
-```
-
-### Optimistic UI Pattern (Avoid Network Thrashing)
-
-**Problem:** Every write operation triggers a full network re-fetch
-
-❌ **Bad: Network Thrashing**
-
-```dart
-Future<void> addEstimation(Estimation estimation) async {
-  await _dataSource.create(estimation);
-  // ❌ Full re-fetch after every write
-  await _refreshAllEstimations();  // Network call!
-}
-```
-
-✅ **Good: Optimistic Update**
-
-```dart
-Future<void> addEstimation(Estimation estimation) async {
-  // ✅ Update local stream immediately
-  final current = _estimationsController.value;
-  _estimationsController.add([...current, estimation]);
-
-  try {
-    // Persist to server
-    await _dataSource.create(estimation);
-    // Stream will naturally update when Supabase notifies us
-  } catch (e) {
-    // ✅ Rollback on error
-    _estimationsController.add(current);
-    rethrow;
-  }
-}
-```
-
-### Preventing Event Flooding
-
-#### ✅ Use `distinct()` for Deduplication
-
-```dart
-Stream<List<Estimation>> watchEstimations(String projectId) {
-  return _dataSource
-      .watchEstimations(projectId)
-      .distinct((prev, next) {
-        // ✅ Only emit when data actually changed
-        return const DeepCollectionEquality().equals(prev, next);
-      });
-}
-```
-
-#### ✅ Use `debounceTime()` for High-Frequency Events
-
-```dart
-Stream<String> get searchQuery => _searchController.stream
-    .debounceTime(const Duration(milliseconds: 300))  // ✅ Wait for typing to stop
-    .distinct();  // ✅ Skip duplicate searches
-```
-
-### BLoC Stream Subscriptions
-
-**Always cancel subscriptions in `close()`:**
-
-```dart
-class EstimationBloc extends Bloc<EstimationEvent, EstimationState> {
-  final EstimationRepository repository;
-  StreamSubscription<List<Estimation>>? _estimationsSubscription;
-
-  EstimationBloc({required this.repository}) : super(EstimationInitial()) {
-    on<LoadEstimations>(_onLoadEstimations);
-  }
-
-  Future<void> _onLoadEstimations(
-    LoadEstimations event,
-    Emitter<EstimationState> emit,
-  ) async {
-    // ✅ Cancel previous subscription
-    await _estimationsSubscription?.cancel();
-
-    // Subscribe to stream
-    _estimationsSubscription = repository
-        .watchEstimations(event.projectId)
-        .listen((estimations) {
-          add(_EstimationsUpdated(estimations));  // Internal event
-        });
-  }
-
-  @override
-  Future<void> close() async {
-    // ✅ Cancel subscription on dispose
-    await _estimationsSubscription?.cancel();
-    return super.close();
-  }
-}
-```
-
-### Common Patterns
-
-#### Pattern 1: Single BehaviorSubject (Stateful Stream)
-
-```dart
-class UserRepository {
-  final BehaviorSubject<User?> _userSubject = BehaviorSubject<User?>.seeded(null);
-
-  Stream<User?> get userStream => _userSubject.stream.distinct();
-
-  Future<void> updateUser(User user) async {
-    // ✅ Optimistic update
-    _userSubject.add(user);
-
-    try {
-      await _dataSource.updateUser(user);
-    } catch (e) {
-      // ✅ Rollback on error
-      _userSubject.add(null);
-      rethrow;
-    }
-  }
-
-  Future<void> dispose() async {
-    await _userSubject.close();  // ✅ Cleanup
-  }
-}
-```
-
-#### Pattern 2: Combining Multiple Streams
-
-```dart
-Stream<ScreenState> get state => Rx.combineLatest3(
-  authBloc.stream,
-  estimationBloc.stream,
-  projectBloc.stream,
-  (auth, estimation, project) => ScreenState(
-    canEdit: auth.isAuthenticated && project.isOwner,
-    estimations: estimation.items,
-    projectName: project.name,
-  ),
-).distinct();  // ✅ Emit only when combined result changes
-```
-
-### Red Flags to Avoid
-
-❌ **Zombie Controllers:**
-```dart
-// StreamController stored but never closed
-final _controller = StreamController();  // ❌ Leak
-```
-
-❌ **Network Thrashing:**
-```dart
-// Re-fetching everything on every write
-await create(item);
-await getAllItems();  // ❌ Unnecessary network call
-```
-
-❌ **Event Flooding:**
-```dart
-// No distinct() on frequently updating stream
-stream.listen((data) {
-  setState(() {});  // ❌ Rebuilds on every tick, even duplicates
-});
-```
-
-❌ **Dangling Subscriptions:**
-```dart
-class MyBloc {
-  MyBloc() {
-    repository.stream.listen(...);  // ❌ Never cancelled
-  }
-  // ❌ No close() method
-}
-```
+| ❌ Violation | Description |
+|------------|-------------|
+| **Zombie Controllers** | `StreamController` never closed in `dispose()` |
+| **Network Thrashing** | Full re-fetch after every write operation |
+| **Event Flooding** | No `.distinct()` on frequently updating streams |
+| **Dangling Subscriptions** | `.listen()` without cancellation in `close()` |
 
 ---
 
@@ -303,100 +83,19 @@ class MyBloc {
 
 ### Detection Patterns
 
-**Pattern 1: Unclosed StreamControllers**
-
-Search for `StreamController` creation without corresponding cleanup:
-
-```bash
-# Find StreamControllers
-grep -rn "StreamController<" lib/
-
-# Check if file has dispose/close method
-grep -A 50 "StreamController" {file} | grep -E "(dispose|close)\s*\("
-```
-
-**Severity:** Critical if no cleanup found
-
-**Pattern 2: Missing onCancel**
-
-```bash
-# Find StreamControllers without onCancel
-grep -A 5 "StreamController<" lib/ | grep -v "onCancel"
-```
-
-**Severity:** Major
-
-**Pattern 3: Network Thrashing**
-
-Look for write operations followed by full re-fetch:
-
-```dart
-// Anti-pattern
-await create(...);
-await getAll();  // ❌ Full re-fetch
-```
-
-**Regex:** `await\s+(?:create|update|delete)\([^)]*\);[\s\n]*await\s+(?:getAll|fetch|load)`
-
-**Severity:** Major
-
-**Pattern 4: Missing distinct()**
-
-Streams without `distinct()` that feed into UI:
-
-```bash
-grep -rn "\.stream" lib/features/**/presentation/ | grep -v "distinct()"
-```
-
-**Severity:** Minor
-
-**Pattern 5: Uncancelled Subscriptions in BLoC**
-
-BLoCs with `listen()` but no `close()` method:
-
-```bash
-# Find BLoCs with subscriptions
-grep -A 20 "class.*Bloc" lib/ | grep "\.listen("
-
-# Check for close() method
-grep -A 100 "class.*Bloc" {file} | grep "@override.*close()"
-```
-
-**Severity:** Critical
-
-### Common Violations
-
-| ❌ Violation | ✅ Fix | Severity |
-|-------------|--------|----------|
-| `StreamController()` without `onCancel` | Add `onCancel: () { cleanup }` | Major |
-| No `dispose()` method with controllers | Add `dispose()` and close all controllers | Critical |
-| BLoC subscription without cleanup | Cancel in `close()` override | Critical |
-| Stream without `distinct()` | Add `.distinct()` before `listen()` | Minor |
-| Re-fetch after every write | Use optimistic updates | Major |
-| `listen()` without storing subscription | Store subscription, cancel in dispose | Major |
+| Violation | What to Check | Severity |
+|-----------|--------------|----------|
+| **Unclosed StreamControllers** | `StreamController` without `dispose()` or `close()` method | Critical |
+| **Missing onCancel** | `StreamController()` without `onCancel: () {}` callback | Major |
+| **Network Thrashing** | Write operation followed by full re-fetch (pattern: `await create/update/delete` + `await getAll`) | Major |
+| **Missing distinct()** | Streams feeding UI without `.distinct()` | Minor |
+| **Uncancelled BLoC Subscriptions** | `.listen()` in BLoC without `close()` override | Critical |
+| **Untracked Subscriptions** | `.listen()` without storing `StreamSubscription` | Major |
 
 ---
-
-## Summary: Suggested Fixes
-
-1. **Add cleanup logic:** Every `StreamController` needs `onCancel` callback or explicit `dispose()`
-2. **Cancel subscriptions:** Store and cancel all subscriptions in `close()` or `dispose()`
-3. **Use distinct():** Add `.distinct()` to prevent duplicate events from triggering rebuilds
-4. **Optimistic updates:** Update local stream immediately, don't re-fetch after writes
-5. **Leverage built-in streams:** Use Supabase/Firebase streams directly instead of wrapping in custom controllers
 
 ## References
 
 - [RULE_6 Gist: Stream Performance](https://gist.github.com/ripplearcgit/7818b412bf5fbe06269e0c3830e136f5)
 - [Dart Streams Documentation](https://dart.dev/tutorials/language/streams)
 - [RxDart Documentation](https://pub.dev/packages/rxdart)
-- Review Script Lines: 319-334 in `scripts/review_pr.sh`
-
-## Notes
-
-**Common Stream Libraries:**
-- `dart:async` - Built-in StreamController, StreamSubscription
-- `rxdart` - BehaviorSubject, combineLatest, debounceTime, distinct
-- `stream_transform` - Additional stream operators
-
-**Key Principle:** Streams are powerful but dangerous. Treat them like file handles - always clean up when done.

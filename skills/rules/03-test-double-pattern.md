@@ -92,110 +92,37 @@ Is this dependency MY code (in this codebase)?
 
 ### How to Write Tests
 
-#### Example 1: Testing a BLoC
+#### ✅ Correct: Chain real components, fake only external dependencies
 
 ```dart
-// ✅ CORRECT: Real UseCase + Fake DataSource
 void main() {
   late AuthBloc bloc;
-  late AuthenticationService authService;
-  late FakeAuthDataSource fakeDataSource; // Fake external dependency
+  late FakeAuthDataSource fakeDataSource;
 
   setUp(() {
-    // Fake the external dependency (Supabase)
-    fakeDataSource = FakeAuthDataSource();
-
-    // Real repository implementation
-    final authRepository = AuthRepositoryImpl(
-      remoteDataSource: fakeDataSource,  // Inject fake
-    );
-
-    // Real service
-    authService = AuthenticationService(
-      repository: authRepository,  // Inject real
-    );
-
-    // Real BLoC
-    bloc = AuthBloc(
-      authService: authService,  // Inject real
-    );
+    fakeDataSource = FakeAuthDataSource(); // Fake external (Supabase)
+    final authRepository = AuthRepositoryImpl(remoteDataSource: fakeDataSource); // Real
+    final authService = AuthenticationService(repository: authRepository); // Real
+    bloc = AuthBloc(authService: authService); // Real
   });
 
   test('should emit authenticated state when login succeeds', () {
-    // Arrange: Configure fake to return success
     fakeDataSource.mockLoginSuccess(userId: '123');
-
-    // Act: Use real BLoC
     bloc.add(LoginRequested(email: 'test@example.com', password: 'pass123'));
-
-    // Assert: Verify real state emission
-    expect(
-      bloc.stream,
-      emitsInOrder([
-        AuthLoading(),
-        AuthAuthenticated(userId: '123'),
-      ]),
-    );
-  });
-}
-
-// ❌ WRONG: Faking the UseCase/Service
-void main() {
-  late AuthBloc bloc;
-  late MockAuthService mockAuthService;  // ❌ Don't mock your own code
-
-  setUp(() {
-    mockAuthService = MockAuthService();
-    bloc = AuthBloc(authService: mockAuthService);
-  });
-
-  test('should emit authenticated state when login succeeds', () {
-    // ❌ This doesn't test real business logic
-    when(mockAuthService.login(any, any))
-        .thenAnswer((_) async => Right(User(id: '123')));
-
-    bloc.add(LoginRequested(email: 'test@example.com', password: 'pass123'));
-
-    // This test passes even if AuthService implementation is broken!
-    expect(bloc.stream, emitsInOrder([...]));
+    expect(bloc.stream, emitsInOrder([AuthLoading(), AuthAuthenticated(userId: '123')]));
   });
 }
 ```
 
-#### Example 2: Testing a UseCase
+#### ❌ Wrong: Mocking internal business logic
 
 ```dart
-// ✅ CORRECT: Real Repository + Fake DataSource
 void main() {
-  late GetEstimationsUseCase useCase;
-  late EstimationRepository repository;
-  late FakeEstimationDataSource fakeDataSource;
+  late MockAuthService mockAuthService; // ❌ Don't mock your own code
 
-  setUp(() {
-    fakeDataSource = FakeEstimationDataSource();
-
-    repository = EstimationRepositoryImpl(
-      remoteDataSource: fakeDataSource,  // Fake external
-    );
-
-    useCase = GetEstimationsUseCase(
-      repository: repository,  // Real repository
-    );
-  });
-
-  test('should return estimations when repository succeeds', () async {
-    // Arrange
-    fakeDataSource.mockEstimations([
-      EstimationDto(id: '1', amount: 100),
-      EstimationDto(id: '2', amount: 200),
-    ]);
-
-    // Act: Test real UseCase → Real Repository → Fake DataSource
-    final result = await useCase.execute('project-123');
-
-    // Assert
-    expect(result.isRight(), true);
-    expect(result.getOrElse(() => []).length, 2);
+  test('should emit authenticated state', () {
+    when(mockAuthService.login(any, any)).thenReturn(...); // ❌ Doesn't test real logic
+    // Test passes even if AuthService implementation is broken!
   });
 }
 ```
@@ -239,34 +166,10 @@ class FakeAuthDataSource implements RemoteAuthDataSource {
 
 ### Detection Patterns
 
-**Pattern 1: Forbidden Mocks/Stubs**
-
-```bash
-# Search for mockito usage in tests
-grep -rn "Mock<" test/
-grep -rn "when(" test/
-grep -rn "verify(" test/
-grep -rn "@GenerateMocks" test/
-```
-
-**Severity:** Critical if found
-
-**Pattern 2: Faking Business Logic**
-
-Look for test files that fake:
-- UseCases (e.g., `MockGetUserUseCase`)
-- Services (e.g., `MockAuthenticationService`)
-- Repositories interfaces (e.g., `MockEstimationRepository`)
-- BLoCs (e.g., `MockAuthBloc`)
-
-**Severity:** Major violation
-
-**Pattern 3: Missing Real Integration**
-
-Check if tests:
-- Only test one layer in isolation
-- Don't exercise real business logic flow
-- Use stubs/mocks for internal components
+**Check for:**
+1. **Forbidden mocks/stubs:** `Mock<`, `when(`, `verify(`, `@GenerateMocks` (Critical)
+2. **Faking business logic:** Mock UseCases, Services, Repositories, BLoCs (Major)
+3. **Missing integration:** Tests only exercising one layer in isolation (Major)
 
 ### Common Violations
 
@@ -278,70 +181,8 @@ Check if tests:
 | `MockEstimationRepository` | Use real `EstimationRepositoryImpl` + fake `DataSource` | Major |
 | Using `mockito` package | Use hand-written fakes for external dependencies | Critical |
 
-### Review Questions
-
-When reviewing tests, ask:
-
-1. **Are any internal components mocked/stubbed?**
-   - If YES → Violation (should use real implementations)
-
-2. **Does the test exercise real business logic?**
-   - If NO → Violation (test is too isolated)
-
-3. **What is being faked?**
-   - If it's YOUR code → Violation
-   - If it's external dependency → Correct ✅
-
-4. **Does test setup chain real implementations?**
-   - BLoC → Real UseCase → Real Repository → Fake DataSource ✅
-
----
-
-## Key Benefits
-
-**Why Test Double Pattern is Better:**
-
-1. **Catches Integration Bugs:** Tests verify components work together correctly
-2. **Refactor-Safe:** Internal refactors don't break tests if behavior unchanged
-3. **Documents Real Flow:** Test setup shows how components actually integrate
-4. **Realistic Testing:** Exercises the same code paths production uses
-5. **Prevents False Confidence:** Can't pass tests by stubbing everything
-
-**Example of Bug Caught by Test Double:**
-
-```dart
-// Bug: UseCase passes wrong parameter to Repository
-class GetEstimationsUseCase {
-  Future<Either<Failure, List<Estimation>>> execute(String projectId) {
-    // 🐛 Bug: passing empty string instead of projectId
-    return repository.getEstimations('');
-  }
-}
-
-// ❌ Mock-based test WOULD NOT CATCH THIS:
-when(mockRepository.getEstimations(any))  // Accepts any argument
-    .thenAnswer((_) => Right([...]));
-
-// ✅ Test Double WOULD CATCH THIS:
-fakeDataSource.expectProjectId('project-123');  // Fake validates arguments
-final result = await useCase.execute('project-123');
-// Test fails because UseCase passed '' instead of 'project-123'
-```
-
 ---
 
 ## References
 - [Test Double Pattern Gist](https://gist.github.com/ripplearcgit/89687b7414f62a8c042b16b52e9ceb0b)
 - Related: RULE_8 (Widget Test Finders), RULE_9 (Unit Test Behavior)
-
-## Notes
-
-**Forbidden Tools:**
-- 🚫 `mockito` package
-- 🚫 `mocktail` package
-- 🚫 Any auto-mocking framework
-
-**Allowed Tools:**
-- ✅ Hand-written Fakes for external dependencies
-- ✅ In-memory implementations for DataSources
-- ✅ Test doubles for system/platform services

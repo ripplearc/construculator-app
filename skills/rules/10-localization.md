@@ -18,7 +18,7 @@ All user-facing strings should use `AppLocalizations` or the project localizatio
 
 ## Applicability
 
-This rule applies to all presentation code in `lib/features/**/presentation/` and `lib/app/presentation/` that renders user-visible text.
+This rule applies to all presentation code in `lib/features/**/presentation/` and `lib/app/` that renders user-visible text.
 
 ---
 

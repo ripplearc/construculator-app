@@ -18,7 +18,7 @@ All UI components, styling, and design tokens should use CoreUI rather than ad h
 
 ## Applicability
 
-This rule applies to all presentation code under `lib/features/**/presentation/` and `lib/app/presentation/`.
+This rule applies to all presentation code under `lib/features/**/presentation/` and `lib/app/`.
 
 ---
 

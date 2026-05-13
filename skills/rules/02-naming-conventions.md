@@ -158,86 +158,34 @@ LOW ABSTRACTION (Explicit Names)
 
 ### Examples by Layer
 
-#### ✅ Good: High Level (UseCase/UI)
+#### ✅ Good: Abstract names at high levels, explicit at low levels
 
 ```dart
-// UseCase - Abstract, business intent
+// UI/Domain - Abstract (focuses on "what")
 class GetEstimationsUseCase {
   Stream<List<Estimation>> execute(String projectId) {
     return repository.getEstimations(projectId);
   }
 }
 
-// BLoC - Abstract event name
-class EstimationBloc {
-  void _onLoadEstimations(LoadEstimations event, ...) {
-    // Abstract: "load" doesn't specify if it's from cache, network, etc.
-  }
-}
-```
-
-#### ❌ Bad: High Level with Low-Level Details
-
-```dart
-// Too explicit for domain layer
-class FetchInitialEstimationsFromSupabaseUseCase { } // ❌
-class RefreshCachedEstimationsUseCase { } // ❌
-
-// Correct alternative
-class GetEstimationsUseCase { } // ✅
-```
-
-#### ✅ Good: Low Level (Repository/DataSource)
-
-```dart
-// Repository Interface - More specific than UseCase
-abstract class EstimationRepository {
-  Stream<List<Estimation>> getEstimationsByProjectId(String projectId);
-}
-
-// Repository Implementation - Explicit about what it does
-class EstimationRepositoryImpl implements EstimationRepository {
-  @override
-  Stream<List<Estimation>> getEstimationsByProjectId(String projectId) {
-    return dataSource.fetchInitialEstimationsByProjectId(projectId);
-  }
-}
-
-// DataSource - Very explicit: source, intent, scope
+// Data - Explicit (specifies "how" and "scope")
 class RemoteEstimationDataSource {
   Future<List<EstimationDto>> fetchInitialEstimationsByProjectId(String id) {
-    // Clearly defines:
-    // - fetch (network operation)
-    // - Initial (resets pagination)
-    // - ByProjectId (lookup key)
+    // fetch = network, Initial = resets pagination, ByProjectId = lookup key
   }
 }
 ```
 
-#### ❌ Bad: Low Level with Vague Names
+#### ❌ Bad: Wrong abstraction level
 
 ```dart
-// Repository - too vague
-abstract class EstimationRepository {
-  Stream<List<Estimation>> getEstimations(String id); // ❌
-  // What does this do?
-  // - Is it from cache?
-  // - Does it reset pagination?
-  // - Does it create a project if missing?
-}
+// High level too explicit
+class FetchInitialEstimationsFromSupabaseUseCase { } // ❌ Exposes implementation
+class GetEstimationsUseCase { } // ✅
 
-// DataSource - too vague
+// Low level too vague
 class RemoteEstimationDataSource {
-  Future<List<EstimationDto>> getEstimations(String id); // ❌
-  // Same problems - hiding complexity
-}
-
-// Correct alternatives
-abstract class EstimationRepository {
-  Stream<List<Estimation>> getEstimationsByProjectId(String projectId); // ✅
-}
-
-class RemoteEstimationDataSource {
+  Future<List<EstimationDto>> getEstimations(String id); // ❌ Hides complexity
   Future<List<EstimationDto>> fetchInitialEstimationsByProjectId(String id); // ✅
 }
 ```
@@ -259,46 +207,12 @@ class RemoteEstimationDataSource {
 
 ### Detection Patterns
 
-**Pattern 1: Forbidden Suffixes**
-
-```bash
-# Grep for violations
-grep -rn "class.*Helper" lib/
-grep -rn "class.*Util" lib/
-grep -rn "class.*Utils" lib/
-grep -rn "class.*Manager(?!Service)" lib/
-```
-
-**Pattern 2: Wrong Suffix for Layer**
-
-Check that:
-- UseCases are in `lib/features/**/domain/usecases/`
-- Services are in `lib/features/**/domain/services/`
-- Repositories (interfaces) are in `lib/features/**/domain/repositories/`
-- RepositoryImpl are in `lib/features/**/data/repositories/`
-- DataSources are in `lib/features/**/data/datasources/`
-- BLoCs are in `lib/features/**/presentation/bloc/`
-
-**Pattern 3: Missing DataSource Prefix**
-
-```bash
-# DataSources must start with Local or Remote
-grep -rn "class.*DataSource" lib/features/**/data/datasources/ | grep -v "^(Local|Remote)"
-```
-
-**Pattern 4: UseCase Naming**
-
-```bash
-# UseCases should follow VerbNounUseCase pattern
-grep -rn "class.*UseCase" lib/features/**/domain/usecases/ | grep -v "^[A-Z][a-z]*[A-Z].*UseCase"
-```
-
-**Pattern 5: Vague Data Layer Names**
-
-Flag methods in Repository/DataSource that:
-- Use generic `get` without specifying scope (e.g., `getEstimations` without `ByProjectId`)
-- Don't indicate if operation is network (`fetch`), cache (`load`), or search (`find`)
-- Hide pagination reset or side effects
+**Check for:**
+1. **Forbidden suffixes:** `Helper`, `Util`, `Utils`, `Manager` (without Service)
+2. **Wrong suffix for layer:** UseCases not in domain/usecases/, DataSources not in data/data_source/, etc.
+3. **Missing DataSource prefix:** DataSources must start with `Local` or `Remote`
+4. **UseCase naming:** Must follow `VerbNounUseCase` pattern
+5. **Vague Data layer names:** Methods using generic `get` without scope, not indicating operation type (`fetch`/`load`/`find`), hiding side effects
 
 ### Common Violations
 
@@ -317,11 +231,3 @@ Flag methods in Repository/DataSource that:
 ## References
 - [RULE_2 Gist: Class Naming Convention](https://gist.github.com/ripplearcgit/89f05e4f83e087f63148bbbb1d99a178)
 - Related: RULE_5 (UI/Business Separation) - ensures classes in right layer
-
-## Notes
-
-This rule combines two related concepts:
-1. **Suffix Conventions** (original RULE_2) - What to call classes based on responsibility
-2. **Abstraction Naming** (original RULE_11) - How abstract or concrete names should be based on layer
-
-Both serve the same goal: making code self-documenting through consistent, meaningful names.

@@ -35,7 +35,7 @@ PRs that introduce or modify complex business logic, mathematical calculations, 
 - `lib/features/**/domain/usecases/*.dart`
 - `lib/features/**/domain/services/*.dart`
 - `lib/features/**/data/repositories/*_impl.dart`
-- `lib/features/**/data/datasources/*.dart` (if contains logic)
+- `lib/features/**/data/data_source/*.dart` (if contains logic)
 
 ---
 
