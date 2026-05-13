@@ -1,6 +1,15 @@
 # CoreUI API Reference
 
-> **Note:** This file is a local quick-reference summary. Always check the live README for the latest tokens:
+> **Note:** This file documents the **raw CoreUI library API** from the package.
+>
+> **For actual usage in this project**, use the BuildContext extensions instead:
+> - `context.colorTheme.*` for colors
+> - `context.textTheme.*` for typography
+> - `context.l10n.*` for localization
+>
+> See: `lib/libraries/extensions/build_context_extensions.dart`
+>
+> Always check the live README for the latest tokens:
 > https://github.com/ripplearc/coreui#readme
 
 ---
@@ -27,17 +36,17 @@
 
 | Method | Usage |
 |---|---|
-| `CoreTypography.displayLarge()` | Hero headings |
-| `CoreTypography.displayMedium()` | Section headings |
-| `CoreTypography.headlineLarge()` | Screen titles |
-| `CoreTypography.headlineMedium()` | Card titles |
-| `CoreTypography.titleLarge()` | List item titles |
-| `CoreTypography.titleMedium()` | Subtitles |
+| `CoreTypography.displayLargeBold()` | Hero headings |
+| `CoreTypography.displayMediumBold()` | Section headings |
+| `CoreTypography.headlineLargeBold()` | Screen titles |
+| `CoreTypography.headlineMediumBold()` | Card titles |
+| `CoreTypography.titleLargeBold()` | List item titles |
+| `CoreTypography.titleMediumBold()` | Subtitles |
 | `CoreTypography.bodyLargeRegular()` | Body copy |
 | `CoreTypography.bodyMediumRegular()` | Default body |
 | `CoreTypography.bodySmallRegular()` | Captions |
-| `CoreTypography.labelLarge()` | Button labels |
-| `CoreTypography.labelMedium()` | Tags / chips |
+| `CoreTypography.labelLargeBold()` | Button labels |
+| `CoreTypography.labelMediumBold()` | Tags / chips |
 
 ---
 
