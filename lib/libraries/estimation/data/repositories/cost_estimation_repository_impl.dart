@@ -212,11 +212,12 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       final newEstimates = <CostEstimate>[];
       var nextOffset = paginationState.currentOffset;
       var hasMore = true;
+      Set<String>? previousFetchedIds;
 
       while (newEstimates.length < paginationState.pageSize) {
         final costEstimateDtos = await _dataSource.getEstimations(
           projectId: projectId,
-          offset: nextOffset,
+          offset: 0,
           limit: paginationState.pageSize,
           sortBy: sortBy,
           ascending: ascending,
@@ -228,6 +229,22 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
 
         nextOffset += fetchedEstimates.length;
 
+        if (fetchedEstimates.isEmpty) {
+          hasMore = false;
+          break;
+        }
+
+        final fetchedIds = fetchedEstimates.map((e) => e.id).toSet();
+        if (previousFetchedIds != null && fetchedIds == previousFetchedIds) {
+          hasMore = false;
+          _logger.warning(
+            'Pagination received the same page twice for stream: $streamKey. '
+            'Stopping to avoid an infinite loop.',
+          );
+          break;
+        }
+        previousFetchedIds = fetchedIds;
+
         for (final estimation in fetchedEstimates) {
           final isDuplicate =
               existingIds.contains(estimation.id) ||
@@ -238,11 +255,6 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         }
 
         if (fetchedEstimates.length < paginationState.pageSize) {
-          hasMore = false;
-          break;
-        }
-
-        if (fetchedEstimates.isEmpty) {
           hasMore = false;
           break;
         }
