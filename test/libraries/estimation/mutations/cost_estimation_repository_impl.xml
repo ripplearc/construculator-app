@@ -26,8 +26,8 @@
         </regex>
 
         <!-- RULE 2: In fetchInitialEstimations, invert hasMore calculation -->
-        <regex pattern="final hasMore = costEstimates\.length >= defaultPageSize;" dotAll="true" id="repo.pagination.invert_hasmore">
-            <mutation text="final hasMore = costEstimates.length &lt; defaultPageSize;"/>
+        <regex pattern="final hasMore = costEstimates\.length >= fetchLimit;" dotAll="true" id="repo.pagination.invert_hasmore">
+            <mutation text="final hasMore = costEstimates.length &lt; fetchLimit;"/>
         </regex>
 
         <!-- RULE 3: In loadMoreEstimations, wrong empty return when there is no more (unique line). Do NOT mutate if(!hasMore) into if(hasMore): that skips the early return, runs the offset-0 while-loop, and can hang when newEstimates never reaches pageSize. -->
@@ -51,18 +51,18 @@
         </regex>
 
         <!-- RULE 7: In hasMoreEstimations, return wrong default value -->
-        <regex pattern="return _paginationStates\[projectId\]\?\.hasMore \?\? true;" dotAll="true" id="repo.pagination.wrong_default_hasmore">
-            <mutation text="return _paginationStates[projectId]?.hasMore ?? false;"/>
+        <regex pattern="return _paginationStates\[streamKey\]\?\.hasMore \?\? true;" dotAll="true" id="repo.pagination.wrong_default_hasmore">
+            <mutation text="return _paginationStates[streamKey]?.hasMore ?? false;"/>
         </regex>
 
         <!-- RULE 8: In _emitToStream, skip emitting to stream -->
-        <regex pattern="_streamControllers\[projectId\]\?\.add\(result\);" dotAll="true" id="repo.stream.skip_emit">
-            <mutation text="// _streamControllers[projectId]?.add(result);"/>
+        <regex pattern="_streamControllers\[streamKey\]\?\.add\(result\);" dotAll="true" id="repo.stream.skip_emit">
+            <mutation text="// _streamControllers[streamKey]?.add(result);"/>
         </regex>
 
-        <!-- RULE 9: In _updateStreamWithNewEstimation, fail to increment offset -->
-        <regex pattern="currentOffset: paginationState\.currentOffset \+ 1," dotAll="true" id="repo.pagination.skip_increment">
-            <mutation text="currentOffset: paginationState.currentOffset,"/>
+        <!-- RULE 9: In createEstimation, skip updating streams with new estimation -->
+        <regex pattern="_updateStreamWithNewEstimation\(estimation\.projectId, createdEstimation\);" dotAll="true" id="repo.create.skip_stream_update">
+            <mutation text="// _updateStreamWithNewEstimation(estimation.projectId, createdEstimation);"/>
         </regex>
 
         <!-- RULE 9: In _updateStreamWithNewEstimation, add to end instead of beginning -->
