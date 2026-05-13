@@ -226,7 +226,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
 
         final costEstimateDtos = await _dataSource.getEstimations(
           projectId: projectId,
-          offset: nextOffset,
+          offset: 0,
           limit: paginationState.pageSize,
           sortBy: sortBy,
           ascending: ascending,
