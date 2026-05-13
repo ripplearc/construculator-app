@@ -116,5 +116,5 @@ void _registerDependencies(Injector i) {
 - **RULE_5:** `skills/rules/05-ui-business-separation.md`
 - **RULE_15:** Sentry logging at boundaries
 - **Examples:** `lib/features/global_search/data/data_source/remote_global_search_data_source.dart`, `lib/features/global_search/data/repositories/global_search_repository_impl.dart`
-- **Future:** `write-tests` skill (planned — unit tests for data layer with fakes)
+- `write-tests` skill — Unit tests for data layer with fakes
 
