@@ -21,6 +21,13 @@ class DatabaseConstants {
   static const String globalSearchRpcFunction = 'global_search';
   static const String searchSuggestionsRpcFunction = 'get_search_suggestions';
 
+  // RPC param values
+  static const String globalSearchDashboardScope = 'dashboard';
+
+  // global_search RPC defaults
+  static const int globalSearchDefaultLimit = 20;
+  static const int globalSearchDefaultOffset = 0;
+
   // Column names
   static const String idColumn = 'id';
   static const String projectIdColumn = 'project_id';
