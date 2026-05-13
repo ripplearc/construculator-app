@@ -154,7 +154,6 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         hasMore: hasMore,
       );
 
-      _cachedEstimations[streamKey] = costEstimates;
       _emitToStream(streamKey, Right(costEstimates));
 
       _logger.debug(
@@ -213,11 +212,21 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       var nextOffset = paginationState.currentOffset;
       var hasMore = true;
       Set<String>? previousFetchedIds;
+      var iterationCount = 0;
 
       while (newEstimates.length < paginationState.pageSize) {
+        if (++iterationCount > paginationState.pageSize) {
+          hasMore = false;
+          _logger.warning(
+            'Max pagination iterations ($iterationCount) reached for '
+            'stream: $streamKey. Stopping to prevent runaway loop.',
+          );
+          break;
+        }
+
         final costEstimateDtos = await _dataSource.getEstimations(
           projectId: projectId,
-          offset: 0,
+          offset: nextOffset,
           limit: paginationState.pageSize,
           sortBy: sortBy,
           ascending: ascending,
@@ -235,7 +244,9 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         }
 
         final fetchedIds = fetchedEstimates.map((e) => e.id).toSet();
-        if (previousFetchedIds != null && fetchedIds == previousFetchedIds) {
+        if (previousFetchedIds != null &&
+            fetchedIds.length == previousFetchedIds.length &&
+            fetchedIds.containsAll(previousFetchedIds)) {
           hasMore = false;
           _logger.warning(
             'Pagination received the same page twice for stream: $streamKey. '
@@ -268,7 +279,6 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         hasMore: hasMore,
       );
 
-      _cachedEstimations[streamKey] = allEstimates;
       _emitToStream(streamKey, Right(allEstimates));
 
       _logger.debug(
