@@ -154,7 +154,6 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         hasMore: hasMore,
       );
 
-      _cachedEstimations[streamKey] = costEstimates;
       _emitToStream(streamKey, Right(costEstimates));
 
       _logger.debug(
@@ -212,8 +211,19 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
       final newEstimates = <CostEstimate>[];
       var nextOffset = paginationState.currentOffset;
       var hasMore = true;
+      Set<String>? previousFetchedIds;
+      var iterationCount = 0;
 
       while (newEstimates.length < paginationState.pageSize) {
+        if (++iterationCount > paginationState.pageSize) {
+          hasMore = false;
+          _logger.warning(
+            'Max pagination iterations ($iterationCount) reached for '
+            'stream: $streamKey. Stopping to prevent runaway loop.',
+          );
+          break;
+        }
+
         final costEstimateDtos = await _dataSource.getEstimations(
           projectId: projectId,
           offset: nextOffset,
@@ -228,6 +238,24 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
 
         nextOffset += fetchedEstimates.length;
 
+        if (fetchedEstimates.isEmpty) {
+          hasMore = false;
+          break;
+        }
+
+        final fetchedIds = fetchedEstimates.map((e) => e.id).toSet();
+        if (previousFetchedIds != null &&
+            fetchedIds.length == previousFetchedIds.length &&
+            fetchedIds.containsAll(previousFetchedIds)) {
+          hasMore = false;
+          _logger.warning(
+            'Pagination received the same page twice for stream: $streamKey. '
+            'Stopping to avoid an infinite loop.',
+          );
+          break;
+        }
+        previousFetchedIds = fetchedIds;
+
         for (final estimation in fetchedEstimates) {
           final isDuplicate =
               existingIds.contains(estimation.id) ||
@@ -241,11 +269,6 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
           hasMore = false;
           break;
         }
-
-        if (fetchedEstimates.isEmpty) {
-          hasMore = false;
-          break;
-        }
       }
 
       final allEstimates = [...existingEstimates, ...newEstimates];
@@ -256,7 +279,6 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
         hasMore: hasMore,
       );
 
-      _cachedEstimations[streamKey] = allEstimates;
       _emitToStream(streamKey, Right(allEstimates));
 
       _logger.debug(

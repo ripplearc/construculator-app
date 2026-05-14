@@ -21,18 +21,25 @@ import '../../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../helpers/estimation_test_data_map_factory.dart';
 
 void main() {
+  const String testProjectId = 'project-123';
   const String otherProjectId = 'other-project-456';
+  const String estimateIdDefault = 'estimate-1';
   const String estimateId2 = 'estimate-2';
   const String estimateId3 = 'estimate-3';
+  const String userIdDefault = 'user-123';
   const String userId2 = 'user-456';
+  const String estimateNameDefault = 'Initial Estimate';
   const String estimateName2 = 'Revised Estimate';
   const String estimateName3 = 'Final Estimate';
+  const String estimateDescDefault = 'Initial cost estimate';
   const String estimateDesc2 = 'Updated cost estimate with changes';
   const String estimateDesc3 = 'Final cost estimate';
   const String errorMsgServer = 'Server error occurred';
   const String errorMsgTimeout = 'Request timeout';
+  const double totalCostDefault = 100000.0;
   const double totalCost2 = 150000.0;
   const double totalCost3 = 200000.0;
+  const String timestampDefault = '2024-01-01T10:00:00.000Z';
   const String timestamp2 = '2024-01-02T14:30:00.000Z';
   const String timestamp3 = '2024-01-03T09:15:00.000Z';
 
@@ -2090,6 +2097,67 @@ void main() {
 
         await queue.cancel();
       });
+
+      test(
+        'should rollback optimistic rename for updatedAt stream when update fails',
+        () async {
+          fakeClock.set(DateTime.parse(timestamp2));
+          final initialMap = buildEstimationMap(
+            id: estimateIdDefault,
+            projectId: testProjectId,
+            estimateName: estimateNameDefault,
+            createdAt: timestamp2,
+            updatedAt: timestamp2,
+          );
+          seedEstimationTable([initialMap]);
+
+          final expectedEstimation = CostEstimateDto.fromJson(
+            initialMap,
+          ).toDomain();
+
+          // ignore: no_direct_instantiation, reason: StreamQueue is a test utility from package:async
+          final queue = StreamQueue(
+            repository.watchEstimations(
+              testProjectId,
+              sortBy: EstimationSortOption.updatedAt,
+            ),
+          );
+
+          await expectLater(
+            queue.next,
+            completion(rightEstimations(equals([expectedEstimation]))),
+          );
+
+          fakeSupabaseWrapper.shouldThrowOnUpdate = true;
+          fakeSupabaseWrapper.updateExceptionType = SupabaseExceptionType.timeout;
+          fakeSupabaseWrapper.updateErrorMessage = errorMsgTimeout;
+
+          final result = await repository.renameEstimation(
+            estimationId: estimateIdDefault,
+            newName: newEstimateName,
+            projectId: testProjectId,
+          );
+
+          expect(result.isLeft(), isTrue);
+
+          await expectLater(
+            queue.next,
+            completion(
+              rightEstimations(
+                equals([
+                  expectedEstimation.copyWith(estimateName: newEstimateName),
+                ]),
+              ),
+            ),
+          );
+          await expectLater(
+            queue.next,
+            completion(rightEstimations(equals([expectedEstimation]))),
+          );
+
+          await queue.cancel();
+        },
+      );
 
       test('should call supabaseWrapper with correct parameters', () async {
         final initialMap = buildEstimationMap(

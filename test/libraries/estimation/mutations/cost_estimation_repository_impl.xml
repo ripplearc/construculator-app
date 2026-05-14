@@ -20,24 +20,24 @@
     </exclude>
 
     <rules>
-        <!-- RULE 1: In fetchInitialEstimations, wrong offset value -->
-        <regex pattern="offset: 0," dotAll="true" id="repo.pagination.wrong_initial_offset">
-            <mutation text="offset: 10,"/>
+        <!-- RULE 1: In fetchInitialEstimations, wrong offset (unique: limit uses fetchLimit, not pageSize) -->
+        <regex pattern="offset: 0,\s*limit: fetchLimit," dotAll="true" id="repo.pagination.wrong_initial_offset">
+            <mutation text="offset: 10,        limit: fetchLimit,"/>
         </regex>
 
         <!-- RULE 2: In fetchInitialEstimations, invert hasMore calculation -->
-        <regex pattern="final hasMore = costEstimates\.length >= defaultPageSize;" dotAll="true" id="repo.pagination.invert_hasmore">
-            <mutation text="final hasMore = costEstimates.length &lt; defaultPageSize;"/>
+        <regex pattern="final hasMore = costEstimates\.length >= fetchLimit;" dotAll="true" id="repo.pagination.invert_hasmore">
+            <mutation text="final hasMore = costEstimates.length &lt; fetchLimit;"/>
         </regex>
 
-        <!-- RULE 3: In loadMoreEstimations, skip hasMore guard check -->
-        <regex pattern="if \(!paginationState\.hasMore\) \{" dotAll="true" id="repo.pagination.skip_hasmore_check">
-            <mutation text="if (paginationState.hasMore) {"/>
+        <!-- RULE 3: In loadMoreEstimations, wrong empty return when there is no more (unique line). Do NOT mutate if(!hasMore) into if(hasMore): that skips the early return, runs the offset-0 while-loop, and can hang when newEstimates never reaches pageSize. -->
+        <regex pattern="return Right\(_cachedEstimations\[streamKey\] \?\? \[\]\);" dotAll="true" id="repo.pagination.wrong_early_return_when_nomore">
+            <mutation text="return Right([]);"/>
         </regex>
 
-        <!-- RULE 4: In loadMoreEstimations, use wrong offset -->
-        <regex pattern="offset: paginationState\.currentOffset," dotAll="true" id="repo.pagination.wrong_offset">
-            <mutation text="offset: 0,"/>
+        <!-- RULE 4: In loadMoreEstimations, fail to advance nextOffset -->
+        <regex pattern="nextOffset \+= fetchedEstimates\.length;" dotAll="true" id="repo.pagination.skip_nextoffset_increment">
+            <mutation text="nextOffset += 0;"/>
         </regex>
 
         <!-- RULE 5: In loadMoreEstimations, don't append new data to existing -->
@@ -45,24 +45,24 @@
             <mutation text="final allEstimates = newEstimates;"/>
         </regex>
 
-        <!-- RULE 6: In loadMoreEstimations, use wrong offset calculation -->
-        <regex pattern="currentOffset: allEstimates\.length," dotAll="true" id="repo.pagination.wrong_offset_calculation">
-            <mutation text="currentOffset: newEstimates.length,"/>
+        <!-- RULE 6: In loadMoreEstimations, use wrong offset stored in pagination state -->
+        <regex pattern="currentOffset: nextOffset," dotAll="true" id="repo.pagination.wrong_offset_calculation">
+            <mutation text="currentOffset: allEstimates.length,"/>
         </regex>
 
         <!-- RULE 7: In hasMoreEstimations, return wrong default value -->
-        <regex pattern="return _paginationStates\[projectId\]\?\.hasMore \?\? true;" dotAll="true" id="repo.pagination.wrong_default_hasmore">
-            <mutation text="return _paginationStates[projectId]?.hasMore ?? false;"/>
+        <regex pattern="return _paginationStates\[streamKey\]\?\.hasMore \?\? true;" dotAll="true" id="repo.pagination.wrong_default_hasmore">
+            <mutation text="return _paginationStates[streamKey]?.hasMore ?? false;"/>
         </regex>
 
         <!-- RULE 8: In _emitToStream, skip emitting to stream -->
-        <regex pattern="_streamControllers\[projectId\]\?\.add\(result\);" dotAll="true" id="repo.stream.skip_emit">
-            <mutation text="// _streamControllers[projectId]?.add(result);"/>
+        <regex pattern="_streamControllers\[streamKey\]\?\.add\(result\);" dotAll="true" id="repo.stream.skip_emit">
+            <mutation text="// _streamControllers[streamKey]?.add(result);"/>
         </regex>
 
-        <!-- RULE 9: In _updateStreamWithNewEstimation, fail to increment offset -->
-        <regex pattern="currentOffset: paginationState\.currentOffset \+ 1," dotAll="true" id="repo.pagination.skip_increment">
-            <mutation text="currentOffset: paginationState.currentOffset,"/>
+        <!-- RULE 9: In createEstimation, skip updating streams with new estimation -->
+        <regex pattern="_updateStreamWithNewEstimation\(estimation\.projectId, createdEstimation\);" dotAll="true" id="repo.create.skip_stream_update">
+            <mutation text="// _updateStreamWithNewEstimation(estimation.projectId, createdEstimation);"/>
         </regex>
 
         <!-- RULE 10: In _updateStreamWithNewEstimation, add to end instead of beginning -->
@@ -75,94 +75,99 @@
             <mutation text="currentOffset: paginationState.currentOffset.clamp("/>
         </regex>
 
-        <!-- RULE 12: Skip emitting to stream on success -->
-        <regex pattern="_emitToStream\(projectId, Right\(costEstimates\)\);" dotAll="true" id="repo.stream.skip_emit_success">
-            <mutation text="// _emitToStream(projectId, Right(costEstimates));"/>
+        <!-- RULE 12: Skip emitting to stream on fetchInitial success -->
+        <regex pattern="_emitToStream\(streamKey, Right\(costEstimates\)\);" dotAll="true" id="repo.stream.skip_emit_success_initial">
+            <mutation text="// _emitToStream(streamKey, Right(costEstimates));"/>
         </regex>
 
-        <!-- RULE 13: Skip emitting to stream on error -->
-        <regex pattern="_emitToStream\(projectId, Left\(failure\)\);" dotAll="true" id="repo.stream.skip_emit_error">
-            <mutation text="// _emitToStream(projectId, Left(failure));"/>
+        <!-- RULE 13: Skip emitting to stream on loadMore success -->
+        <regex pattern="_emitToStream\(streamKey, Right\(allEstimates\)\);" dotAll="true" id="repo.stream.skip_emit_success_loadmore">
+            <mutation text="// _emitToStream(streamKey, Right(allEstimates));"/>
         </regex>
 
-        <!-- RULE 14: In deleteEstimation, skip updating stream before delete -->
+        <!-- RULE 14: Skip emitting to stream on error paths using Left(failure) -->
+        <regex pattern="_emitToStream\(streamKey, Left\(failure\)\);" dotAll="true" id="repo.stream.skip_emit_error">
+            <mutation text="// _emitToStream(streamKey, Left(failure));"/>
+        </regex>
+
+        <!-- RULE 15: In deleteEstimation, skip updating stream before delete -->
         <regex pattern="_updateStreamWithDeletedEstimation\(projectId, estimationId\);" dotAll="true" id="repo.delete.skip_stream_update">
             <mutation text="// _updateStreamWithDeletedEstimation(projectId, estimationId);"/>
         </regex>
 
-        <!-- RULE 15: In deleteEstimation, skip refetch on error -->
+        <!-- RULE 16: In deleteEstimation, skip refetch on error -->
         <regex pattern="await fetchInitialEstimations\(projectId\);" dotAll="true" id="repo.delete.skip_refetch_on_error">
             <mutation text="// await fetchInitialEstimations(projectId);"/>
         </regex>
 
-        <!-- RULE 16: In changeLockStatus, skip optimistic update -->
+        <!-- RULE 17: In changeLockStatus, skip optimistic update -->
         <regex pattern="_emitOptimisticUpdate\(\s*projectId: projectId,\s*estimationId: estimationId,\s*updateFn: \(e\) =&gt; e\.copyWith\(\s*lockStatus: isLocked \? LockStatus\.locked\(\) : LockStatus\.unlocked\(\),\s*\),\s*\);" dotAll="true" id="repo.lock.skip_optimistic_update">
             <mutation text="// _emitOptimisticUpdate(projectId: projectId, estimationId: estimationId, updateFn: (e) => e.copyWith(lockStatus: isLocked ? LockStatus.locked() : LockStatus.unlocked()));"/>
         </regex>
 
-        <!-- RULE 17: In changeLockStatus, skip final stream update -->
-        <regex pattern="_updateStreamWithEstimation\(projectId, estimationId, updatedEstimation\);" dotAll="true" id="repo.lock.skip_final_update">
-            <mutation text="// _updateStreamWithEstimation(projectId, estimationId, updatedEstimation);"/>
+        <!-- RULE 18: In changeLockStatus / renameEstimation, skip final stream update -->
+        <regex pattern="_finalizeOptimisticUpdate\(projectId, estimationId, updatedEstimation\);" dotAll="true" id="repo.optimistic.skip_finalize_update">
+            <mutation text="// _finalizeOptimisticUpdate(projectId, estimationId, updatedEstimation);"/>
         </regex>
 
-        <!-- RULE 18: In changeLockStatus, skip rollback on error -->
-        <regex pattern="_rollbackOptimisticUpdate\(projectId, estimationId, originalEstimation\);" dotAll="true" id="repo.lock.skip_rollback">
+        <!-- RULE 19: In changeLockStatus / renameEstimation, skip rollback on error -->
+        <regex pattern="_rollbackOptimisticUpdate\(projectId, estimationId, originalEstimation\);" dotAll="true" id="repo.optimistic.skip_rollback">
             <mutation text="// _rollbackOptimisticUpdate(projectId, estimationId, originalEstimation);"/>
         </regex>
 
-        <!-- RULE 19: In _emitOptimisticUpdate, update all estimations instead of target -->
+        <!-- RULE 20: In _emitOptimisticUpdate, update all estimations instead of target -->
         <regex pattern="return e\.id == estimationId\s*\? updateFn\(e\)\s*: e;" dotAll="true" id="repo.optimistic.update_all">
             <mutation text="return updateFn(e);"/>
         </regex>
 
-        <!-- RULE 20: In _updateStreamWithEstimation, update all estimations instead of target -->
+        <!-- RULE 21: In _finalizeOptimisticUpdate, update all estimations instead of target -->
         <regex pattern="return e\.id == estimationId \? updatedEstimation : e;" dotAll="true" id="repo.stream.update_all_final">
             <mutation text="return updatedEstimation;"/>
         </regex>
 
-        <!-- RULE 21: In _rollbackOptimisticUpdate, update all estimations instead of target -->
+        <!-- RULE 22: In _rollbackOptimisticUpdate, update all estimations instead of target -->
         <regex pattern="return e\.id == estimationId\s*\? originalEstimation\s*: e;" dotAll="true" id="repo.rollback.update_all">
             <mutation text="return originalEstimation;"/>
         </regex>
 
-        <!-- RULE 22: In _emitOptimisticUpdate, skip stream emission -->
-        <regex pattern="_emitToStream\(projectId, Right\(updatedList\)\);" dotAll="true" id="repo.lock.skip_optimistic_emission">
-            <mutation text="// _emitToStream(projectId, Right(updatedList));"/>
+        <!-- RULE 23: In _emitOptimisticUpdate / finalize / rollback, skip per-key emission -->
+        <regex pattern="_emitToStream\(key, Right\(updatedList\)\);" dotAll="true" id="repo.optimistic.skip_key_emission">
+            <mutation text="// _emitToStream(key, Right(updatedList));"/>
         </regex>
 
-        <!-- RULE 23: In _getOriginalEstimation, always return null -->
-        <regex pattern="if \(!_streamControllers\.containsKey\(projectId\)\) \{\s*return null;\s*\}" dotAll="true" id="repo.get_original.always_null">
-            <mutation text="return null;"/>
+        <!-- RULE 24: In _getOriginalEstimation, never find a match -->
+        <regex pattern="final matchIndex = cached\.indexWhere\(\(e\) =&gt; e\.id == estimationId\);" dotAll="true" id="repo.get_original.never_match">
+            <mutation text="final matchIndex = -1;"/>
         </regex>
 
-        <!-- RULE 24: In changeLockStatus, invert lock status in optimistic update -->
+        <!-- RULE 25: In changeLockStatus, invert lock status in optimistic update -->
         <regex pattern="lockStatus: isLocked \? LockStatus\.locked\(\) : LockStatus\.unlocked\(\)" dotAll="true" id="repo.lock.invert_optimistic_status">
             <mutation text="lockStatus: !isLocked ? LockStatus.locked() : LockStatus.unlocked()"/>
         </regex>
 
-        <!-- RULE 25: In renameEstimation, skip optimistic update -->
+        <!-- RULE 26: In renameEstimation, skip optimistic update -->
         <regex pattern="_emitOptimisticUpdate\(\s*projectId: projectId,\s*estimationId: estimationId,\s*updateFn: \(e\) =&gt; e\.copyWith\(estimateName: newName\),\s*\);" dotAll="true" id="repo.rename.skip_optimistic_update">
             <mutation text="// _emitOptimisticUpdate(projectId: projectId, estimationId: estimationId, updateFn: (e) => e.copyWith(estimateName: newName));"/>
         </regex>
 
-        <!-- RULE 26: In renameEstimation, skip final stream update -->
-        <regex pattern="_updateStreamWithEstimation\(projectId, estimationId, updatedEstimation\);" dotAll="true" id="repo.rename.skip_final_update">
-            <mutation text="// _updateStreamWithEstimation(projectId, estimationId, updatedEstimation);"/>
-        </regex>
-
-        <!-- RULE 27: In renameEstimation, skip rollback on error -->
-        <regex pattern="_rollbackOptimisticUpdate\(projectId, estimationId, originalEstimation\);" dotAll="true" id="repo.rename.skip_rollback">
-            <mutation text="// _rollbackOptimisticUpdate(projectId, estimationId, originalEstimation);"/>
-        </regex>
-
-        <!-- RULE 28: In renameEstimation, use empty string instead of newName -->
+        <!-- RULE 27: In renameEstimation, use empty string instead of newName -->
         <regex pattern="updateFn: \(e\) =&gt; e\.copyWith\(estimateName: newName\)" dotAll="true" id="repo.rename.empty_name">
             <mutation text="updateFn: (e) => e.copyWith(estimateName: '')"/>
         </regex>
 
-        <!-- RULE 29: In renameEstimation, use wrong field in optimistic update -->
+        <!-- RULE 28: In renameEstimation, use wrong field in optimistic update -->
         <regex pattern="e\.copyWith\(estimateName: newName\)" dotAll="true" id="repo.rename.wrong_field">
             <mutation text="e.copyWith(estimateDescription: newName)"/>
+        </regex>
+
+        <!-- RULE 29: In _buildStreamKey, collapse key (breaks sort/limit isolation) -->
+        <regex pattern="return '\$projectId:\$\{sortBy\.name\}:\$\{ascending \? 'asc' : 'desc'\}:\$\{limit \?\? 'all'\}';" dotAll="true" id="repo.streamkey.collapse_to_projectid">
+            <mutation text="return projectId;"/>
+        </regex>
+
+        <!-- RULE 30: In _emitToStream, skip syncing cache from successful emission -->
+        <regex pattern="\(estimations\) =&gt; _cachedEstimations\[streamKey\] = estimations" dotAll="true" id="repo.stream.skip_cache_sync">
+            <mutation text="(estimations) { }"/>
         </regex>
     </rules>
 

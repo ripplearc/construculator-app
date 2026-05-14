@@ -1,24 +1,25 @@
-const String estimateIdDefault = 'estimate-default';
+const String estimateIdDefault = 'estimate-1';
 const String testProjectId = 'test-project-123';
-const String estimateNameDefault = 'Default Estimate';
-const String estimateDescDefault = 'Default estimate description';
-const String userIdDefault = 'user-default';
+const String estimateNameDefault = 'Initial Estimate';
+const String estimateDescDefault = 'Initial cost estimate';
+const String userIdDefault = 'user-123';
+
 const String markupTypeOverall = 'overall';
+const String markupTypeGranular = 'granular';
 const String markupValueTypePercentage = 'percentage';
-const double overallMarkupDefault = 15.0;
-const double materialMarkupDefault = 10.0;
-const double laborMarkupDefault = 20.0;
+const String markupValueTypeAmount = 'amount';
+
+const double overallMarkupDefault = 10.0;
+const double materialMarkupDefault = 7.5;
+const double laborMarkupDefault = 12.5;
 const double equipmentMarkupDefault = 5.0;
 const double totalCostDefault = 100000.0;
-const String emptyString = '';
-const String timestampDefault = '2024-01-01T00:00:00.000Z';
 
-/// Fixture factory that produces estimation records as map payloads for tests.
+const String timestampDefault = '2024-01-01T10:00:00.000Z';
+
 class EstimationTestDataMapFactory {
-  /// Builds a map shaped like an estimation record, allowing targeted overrides.
-  ///
-  /// Only provide the fields you want to customize; all others fall back to
-  /// sensible test defaults.
+  static const String _defaultIsoTimestamp = timestampDefault;
+
   static Map<String, dynamic> createFakeEstimationData({
     String? id,
     String? projectId,
@@ -59,13 +60,14 @@ class EstimationTestDataMapFactory {
       'labor_markup_value': laborMarkupValue ?? laborMarkupDefault,
       'equipment_markup_value_type':
           equipmentMarkupValueType ?? markupValueTypePercentage,
-      'equipment_markup_value': equipmentMarkupValue ?? equipmentMarkupDefault,
+      'equipment_markup_value':
+          equipmentMarkupValue ?? equipmentMarkupDefault,
       'total_cost': totalCost ?? totalCostDefault,
       'is_locked': isLocked ?? false,
       'locked_by_user_id': lockedByUserId,
       'locked_at': lockedAt,
-      'created_at': createdAt ?? timestampDefault,
-      'updated_at': updatedAt ?? timestampDefault,
+      'created_at': createdAt ?? _defaultIsoTimestamp,
+      'updated_at': updatedAt ?? _defaultIsoTimestamp,
     };
   }
 }
