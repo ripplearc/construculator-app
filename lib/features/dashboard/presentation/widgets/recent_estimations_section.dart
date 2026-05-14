@@ -142,7 +142,7 @@ class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
 
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => EstimationModule.landingPage(projectId: projectId),
+        builder: (_) => EstimationModule.landingPage(),
       ),
     );
   }
