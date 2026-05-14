@@ -10,8 +10,8 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
-import '../../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
+import '../../../../utils/fake_app_bootstrap_factory.dart';
 
 void main() {
   late RecentEstimationsBloc bloc;
