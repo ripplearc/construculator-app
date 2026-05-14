@@ -195,6 +195,26 @@
     "description": "Title for forgot password page",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=254-13349&t=u7FRWeWPXiomVzNr-4"
   },
+  "recentCostEstimationsTitle": "Recent cost estimations",
+  "@recentCostEstimationsTitle": {
+    "description": "Section title for the dashboard recent estimations widget",
+    "context": "Dashboard"
+  },
+  "viewAllButton": "View all",
+  "@viewAllButton": {
+    "description": "Label for a button that opens the full list of estimations",
+    "context": "Dashboard recent estimations section"
+  },
+  "recentEstimationsLoadError": "Failed to load recent estimations.",
+  "@recentEstimationsLoadError": {
+    "description": "Error message shown when recent estimations cannot be loaded",
+    "context": "Dashboard recent estimations section"
+  },
+  "recentEstimationsEmptyState": "No recent estimations found.",
+  "@recentEstimationsEmptyState": {
+    "description": "Empty state message shown when there are no recent estimations",
+    "context": "Dashboard recent estimations section"
+  },
   "heyEnterYourDetailsToRegisterWithUs": "Hey, Enter your details to Register with us",
   "@heyEnterYourDetailsToRegisterWithUs": {
     "description": "Text for hey enter your details to register with us",

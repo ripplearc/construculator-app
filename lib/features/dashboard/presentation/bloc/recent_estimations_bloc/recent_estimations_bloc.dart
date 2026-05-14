@@ -4,6 +4,7 @@ import 'package:construculator/features/dashboard/domain/usecases/watch_recent_e
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -16,14 +17,21 @@ part 'recent_estimations_state.dart';
 class RecentEstimationsBloc
     extends Bloc<RecentEstimationsEvent, RecentEstimationsState> {
   final WatchRecentEstimationsUseCase _watchRecentEstimationsUseCase;
+  final CurrentProjectNotifier _currentProjectNotifier;
   StreamSubscription<Either<Failure, List<CostEstimate>>>? _subscription;
+  StreamSubscription<String?>? _projectSubscription;
+
+  String? get currentProjectId => _currentProjectNotifier.currentProjectId;
 
   /// Defines constructor that takes a usecase as an injected dependency.
   RecentEstimationsBloc({
     required WatchRecentEstimationsUseCase watchRecentEstimationsUseCase,
+    required CurrentProjectNotifier currentProjectNotifier,
   }) : _watchRecentEstimationsUseCase = watchRecentEstimationsUseCase,
+       _currentProjectNotifier = currentProjectNotifier,
        super(const RecentEstimationsLoading()) {
     on<RecentEstimationsWatchStarted>(_onWatchStarted);
+    on<_RecentEstimationsProjectChanged>(_onProjectChanged);
     on<_RecentEstimationsUpdated>(_onUpdated);
   }
 
@@ -31,6 +39,9 @@ class RecentEstimationsBloc
     RecentEstimationsWatchStarted event,
     Emitter<RecentEstimationsState> emit,
   ) {
+    _projectSubscription ??= _currentProjectNotifier.onCurrentProjectChanged
+        .listen((_) => add(const _RecentEstimationsProjectChanged()));
+
     List<CostEstimate>? previousEstimations;
     if (state is RecentEstimationsLoaded) {
       previousEstimations = (state as RecentEstimationsLoaded).estimations;
@@ -51,6 +62,13 @@ class RecentEstimationsBloc
         });
   }
 
+  void _onProjectChanged(
+    _RecentEstimationsProjectChanged event,
+    Emitter<RecentEstimationsState> emit,
+  ) {
+    add(const RecentEstimationsWatchStarted());
+  }
+
   void _onUpdated(
     _RecentEstimationsUpdated event,
     Emitter<RecentEstimationsState> emit,
@@ -63,6 +81,7 @@ class RecentEstimationsBloc
 
   @override
   Future<void> close() {
+    _projectSubscription?.cancel();
     _subscription?.cancel();
     return super.close();
   }

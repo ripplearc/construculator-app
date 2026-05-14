@@ -33,7 +33,10 @@ class DashboardModule extends Module {
       () => WatchRecentEstimationsUseCase(i(), i()),
     );
     i.add<RecentEstimationsBloc>(
-      () => RecentEstimationsBloc(watchRecentEstimationsUseCase: i()),
+      () => RecentEstimationsBloc(
+        watchRecentEstimationsUseCase: i(),
+        currentProjectNotifier: i(),
+      ),
     );
   }
 

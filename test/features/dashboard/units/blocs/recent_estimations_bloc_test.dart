@@ -41,7 +41,10 @@ void main() {
   });
 
   void seedEstimationTable(List<Map<String, dynamic>> rows) {
-    fakeSupabaseWrapper.addTableData(DatabaseConstants.costEstimatesTable, rows);
+    fakeSupabaseWrapper.addTableData(
+      DatabaseConstants.costEstimatesTable,
+      rows,
+    );
   }
 
   final tDate = DateTime(2025, 1, 1, 8, 0);
@@ -118,6 +121,50 @@ void main() {
       const RecentEstimationsError(
         'EstimationFailure(EstimationErrorType.unexpectedError)',
       ),
+    ],
+  );
+
+  blocTest<RecentEstimationsBloc, RecentEstimationsState>(
+    're-watches when the current project changes after start',
+    build: () {
+      seedEstimationTable([tEstimationMap]);
+      return bloc;
+    },
+    act: (bloc) {
+      bloc.add(const RecentEstimationsWatchStarted());
+      return expectLater(
+        bloc.stream,
+        emitsThrough(RecentEstimationsLoaded(tEstimations)),
+      ).then((_) {
+        final anotherProjectEstimationMap =
+            EstimationTestDataMapFactory.createFakeEstimationData(
+              id: '2',
+              projectId: 'another_project',
+              estimateName: 'Test Estimate',
+              totalCost: 100.0,
+              createdAt: tDate.toIso8601String(),
+              updatedAt: tDate.toIso8601String(),
+            );
+        seedEstimationTable([anotherProjectEstimationMap]);
+        currentProjectNotifier.setCurrentProjectId('another_project');
+      });
+    },
+    expect: () => [
+      const RecentEstimationsLoading(lastKnownEstimations: null),
+      RecentEstimationsLoaded(tEstimations),
+      RecentEstimationsLoading(lastKnownEstimations: tEstimations),
+      RecentEstimationsLoaded([
+        CostEstimateDto.fromJson(
+          EstimationTestDataMapFactory.createFakeEstimationData(
+            id: '2',
+            projectId: 'another_project',
+            estimateName: 'Test Estimate',
+            totalCost: 100.0,
+            createdAt: tDate.toIso8601String(),
+            updatedAt: tDate.toIso8601String(),
+          ),
+        ).toDomain(),
+      ]),
     ],
   );
 }

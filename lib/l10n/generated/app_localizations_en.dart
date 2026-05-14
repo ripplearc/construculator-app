@@ -132,6 +132,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get forgotPasswordTitle => 'Forgot Password?';
 
   @override
+  String get recentCostEstimationsTitle => 'Recent cost estimations';
+
+  @override
+  String get viewAllButton => 'View all';
+
+  @override
+  String get recentEstimationsLoadError => 'Failed to load recent estimations.';
+
+  @override
+  String get recentEstimationsEmptyState => 'No recent estimations found.';
+
+  @override
   String get heyEnterYourDetailsToRegisterWithUs =>
       'Hey, Enter your details to Register with us';
 
