@@ -2,6 +2,7 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/dashboard/domain/usecases/watch_recent_estimations_usecase.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/project_search_bloc/project_search_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
@@ -35,6 +36,10 @@ class DashboardModule extends Module {
         watchRecentEstimationsUseCase: i(),
         currentProjectNotifier: i(),
       ),
+    );
+
+    i.add<ProjectSearchBloc>(
+      () => ProjectSearchBloc(repository: i(), authManager: i()),
     );
   }
 
