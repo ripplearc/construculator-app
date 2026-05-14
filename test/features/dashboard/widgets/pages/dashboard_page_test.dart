@@ -53,8 +53,7 @@ class _DashboardPageTestModule extends Module {
     );
     i.addLazySingleton<RecentEstimationsBloc>(
       () => RecentEstimationsBloc(
-        watchRecentEstimationsUseCase:
-            Modular.get<WatchRecentEstimationsUseCase>(),
+        watchRecentEstimationsUseCase: i(),
         currentProjectNotifier: projectNotifier,
       ),
     );
