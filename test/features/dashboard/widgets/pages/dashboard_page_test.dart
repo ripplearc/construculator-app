@@ -1,5 +1,4 @@
-import 'package:construculator/features/dashboard/domain/usecases/watch_recent_estimations_usecase.dart';
-import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
+import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -8,12 +7,10 @@ import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_manager.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
-import 'package:construculator/libraries/estimation/testing/never_estimation_repository.dart';
-import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
-import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -24,75 +21,51 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
-
-class _DashboardPageTestModule extends Module {
-  final FakeAuthManager authManager;
-  final FakeAuthNotifier authNotifier;
-  final FakeAppRouter appRouter;
-  final FakeCurrentProjectNotifier projectNotifier;
-
-  _DashboardPageTestModule({
-    required this.authManager,
-    required this.authNotifier,
-    required this.appRouter,
-    required this.projectNotifier,
-  });
-
-  @override
-  void binds(Injector i) {
-    i.addLazySingleton<AuthManager>(() => authManager);
-    i.addLazySingleton<AuthNotifier>(() => authNotifier);
-    i.addLazySingleton<AppRouter>(() => appRouter);
-    i.addLazySingleton<CurrentProjectNotifier>(() => projectNotifier);
-    i.addLazySingleton<WatchRecentEstimationsUseCase>(
-      () => WatchRecentEstimationsUseCase(
-        NeverEstimationRepository(),
-        projectNotifier,
-      ),
-    );
-    i.addLazySingleton<RecentEstimationsBloc>(
-      () => RecentEstimationsBloc(
-        watchRecentEstimationsUseCase: i(),
-        currentProjectNotifier: projectNotifier,
-      ),
-    );
-  }
-}
 
 void main() {
   late FakeClockImpl clock;
+  late FakeSupabaseWrapper fakeSupabase;
   late FakeAuthRepository authRepository;
   late FakeAuthManager authManager;
   late FakeAuthNotifier authNotifier;
   late FakeAppRouter router;
-  late FakeCurrentProjectNotifier projectNotifier;
 
-  setUp(() {
+  setUpAll(() async {
+    await loadAppFontsAll();
+
     clock = FakeClockImpl();
+    fakeSupabase = FakeSupabaseWrapper(clock: clock);
     authNotifier = FakeAuthNotifier();
     authRepository = FakeAuthRepository(clock: clock);
     authManager = FakeAuthManager(
       authNotifier: authNotifier,
       authRepository: authRepository,
-      wrapper: FakeSupabaseWrapper(clock: clock),
+      wrapper: fakeSupabase,
       clock: clock,
     );
     router = FakeAppRouter();
-    projectNotifier = FakeCurrentProjectNotifier();
 
-    Modular.init(
-      _DashboardPageTestModule(
-        authManager: authManager,
-        authNotifier: authNotifier,
-        appRouter: router,
-        projectNotifier: projectNotifier,
-      ),
+    final bootstrap = FakeAppBootstrapFactory.create(
+      supabaseWrapper: fakeSupabase,
     );
+    Modular.init(DashboardModule(bootstrap));
+
+    Modular.replaceInstance<AuthNotifierController>(authNotifier);
+    Modular.replaceInstance<AuthNotifier>(authNotifier);
+    Modular.replaceInstance<AuthManager>(authManager);
+    Modular.replaceInstance<AppRouter>(router);
   });
 
-  tearDown(() {
+  tearDownAll(() {
     Modular.destroy();
+  });
+
+  setUp(() {
+    fakeSupabase.reset();
+    router.reset();
+    authRepository.returnNullUserProfile = false;
   });
 
   Widget makeApp() {
