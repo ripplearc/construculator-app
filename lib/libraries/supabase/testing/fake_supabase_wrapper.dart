@@ -430,6 +430,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required String filterColumn,
     required dynamic filterValue,
   }) async {
+    final tableDataSnapshot = List<Map<String, dynamic>>.from(_tables[table] ?? <Map<String, dynamic>>[]);
+
     if (shouldDelayOperations) {
       await completer?.future;
     }
@@ -452,8 +454,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       return [];
     }
 
-    final tableData = _tables[table] ?? [];
-    final filteredData = tableData
+    final filteredData = tableDataSnapshot
         .where((row) => row[filterColumn] == filterValue)
         .toList();
     return filteredData;
@@ -467,6 +468,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     String? orderBy,
     bool ascending = true,
   }) async {
+    final tableDataSnapshot = List<Map<String, dynamic>>.from(_tables[table] ?? <Map<String, dynamic>>[]);
+
     _methodCalls.add({
       'method': 'selectMatch',
       'table': table,
@@ -491,8 +494,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       return [];
     }
 
-    final tableData = _tables[table] ?? [];
-    final results = tableData
+    final results = tableDataSnapshot
         .where(
           (row) =>
               filters.entries.every((entry) => row[entry.key] == entry.value),
@@ -523,6 +525,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required String filterColumn,
     required List<dynamic> filterValues,
   }) async {
+    final tableDataSnapshot = List<Map<String, dynamic>>.from(_tables[table] ?? <Map<String, dynamic>>[]);
+
     if (shouldDelayOperations) {
       await completer?.future;
     }
@@ -545,8 +549,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       return [];
     }
 
-    final tableData = _tables[table] ?? [];
-    final filteredData = tableData
+    final filteredData = tableDataSnapshot
         .where((row) => filterValues.contains(row[filterColumn]))
         .toList();
     return filteredData;
@@ -563,6 +566,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required int rangeFrom,
     required int rangeTo,
   }) async {
+    final tableDataSnapshot = List<Map<String, dynamic>>.from(_tables[table] ?? <Map<String, dynamic>>[]);
+
     if (shouldDelayOperations) {
       await completer?.future;
     }
@@ -585,8 +590,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       );
     }
 
-    final tableData = _tables[table] ?? [];
-    var filteredData = tableData
+    var filteredData = tableDataSnapshot
         .where((row) => row[filterColumn] == filterValue)
         .toList();
 
