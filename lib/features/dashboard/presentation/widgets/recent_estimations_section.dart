@@ -1,6 +1,6 @@
+import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/estimation_card.dart';
-import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -140,9 +140,7 @@ class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
       return;
     }
 
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => EstimationModule.landingPage()),
-    );
+    Modular.get<AppShellBloc>().add(const AppShellTabSelected(2));
   }
 
   void _openEstimationDetails(String estimationId) {
