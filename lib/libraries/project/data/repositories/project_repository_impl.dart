@@ -8,7 +8,7 @@ import 'package:construculator/libraries/project/domain/entities/project_entity.
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
-import 'package:flutter_modular/flutter_modular.dart';
+
 
 /// Remote implementation of the project repository.
 class ProjectRepositoryImpl implements ProjectRepository {
@@ -33,11 +33,11 @@ class ProjectRepositoryImpl implements ProjectRepository {
     required ProjectDataSource projectDataSource,
     required ProjectPermissionDataSource permissionDataSource,
     required CurrentProjectNotifier currentProjectNotifier,
-    Clock? clock,
+    required Clock clock,
   }) : _projectDataSource = projectDataSource,
        _permissionDataSource = permissionDataSource,
        _currentProjectNotifier = currentProjectNotifier,
-       _clock = clock ?? Modular.get<Clock>();
+       _clock = clock;
 
   @override
   Future<Project> getProject(String id) async {

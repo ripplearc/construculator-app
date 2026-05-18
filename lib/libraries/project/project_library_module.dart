@@ -12,6 +12,7 @@ import 'package:construculator/libraries/project/interfaces/current_project_noti
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:construculator/libraries/time/clock_module.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class ProjectLibraryModule extends Module {
@@ -52,6 +53,7 @@ void _registerDependencies(Injector i) {
       projectDataSource: Modular.get<ProjectDataSource>(),
       permissionDataSource: Modular.get<ProjectPermissionDataSource>(),
       currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
+      clock: Modular.get<Clock>(),
     ),
     config: BindConfig(onDispose: (repository) => repository.dispose()),
   );

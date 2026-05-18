@@ -16,6 +16,7 @@ import 'package:construculator/libraries/estimation/data/estimation_tile_provide
 import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/time/clock_module.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -47,7 +48,12 @@ class EstimationModule extends Module {
           create: (context) => Modular.get<RenameEstimationBloc>(),
         ),
       ],
-      child: const CostEstimationLandingPage(),
+      child: CostEstimationLandingPage(
+        projectId: projectId,
+        router: Modular.get<AppRouter>(),
+        tileProvider: Modular.get<EstimationTileProvider>(),
+        logBlocBuilder: () => Modular.get<CostEstimationLogBloc>(),
+      ),
     );
   }
 
