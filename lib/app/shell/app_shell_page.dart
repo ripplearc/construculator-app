@@ -5,12 +5,14 @@ import 'package:construculator/features/calculations/presentation/pages/calculat
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// The primary shell page for the application's authenticated interface.
@@ -19,15 +21,26 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// tab navigation using [AppShellBloc]. Module lazy-loading is orchestrated
 /// inside the BLoC, keeping this Page a pure presentation concern.
 class AppShellPage extends StatefulWidget {
-  const AppShellPage({super.key});
+  final AppShellBloc bloc;
+  final ProjectUIProvider projectUIProvider;
+  final AuthNotifier authNotifier;
+  final AuthManager authManager;
+  final AppRouter router;
+
+  const AppShellPage({
+    super.key,
+    required this.bloc,
+    required this.projectUIProvider,
+    required this.authNotifier,
+    required this.authManager,
+    required this.router,
+  });
 
   @override
   State<AppShellPage> createState() => _AppShellPageState();
 }
 
 class _AppShellPageState extends State<AppShellPage> {
-  final AppShellBloc _bloc = Modular.get<AppShellBloc>();
-
   final List<GlobalKey<NavigatorState>> _tabNavigatorKeys = List.generate(
     ShellTab.values.length,
     (_) => GlobalKey<NavigatorState>(),
@@ -35,14 +48,14 @@ class _AppShellPageState extends State<AppShellPage> {
 
   @override
   void dispose() {
-    _bloc.close();
+    widget.bloc.close();
     super.dispose();
   }
 
   void _onPopInvoked(bool didPop) {
     if (didPop) return;
 
-    final state = _bloc.state;
+    final state = widget.bloc.state;
     final currentNavigator =
         _tabNavigatorKeys[state.selectedTabIndex].currentState;
 
@@ -52,7 +65,7 @@ class _AppShellPageState extends State<AppShellPage> {
     }
 
     if (state.selectedTabIndex != 0) {
-      _bloc.add(const AppShellTabSelected(0));
+      widget.bloc.add(const AppShellTabSelected(0));
       return;
     }
 
@@ -60,13 +73,17 @@ class _AppShellPageState extends State<AppShellPage> {
   }
 
   void _handleTabTap(int index) {
-    _bloc.add(AppShellTabSelected(index));
+    widget.bloc.add(AppShellTabSelected(index));
   }
 
   Widget _buildTabRoot(ShellTab tab) {
     switch (tab) {
       case ShellTab.home:
-        return const DashboardPage();
+        return DashboardPage(
+          authNotifier: widget.authNotifier,
+          authManager: widget.authManager,
+          router: widget.router,
+        );
       case ShellTab.calculations:
         return const CalculationsPage();
       case ShellTab.estimation:
@@ -105,7 +122,7 @@ class _AppShellPageState extends State<AppShellPage> {
     }
     return PreferredSize(
       preferredSize: const Size.fromHeight(kToolbarHeight),
-      child: Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
+      child: widget.projectUIProvider.buildProjectHeaderAppbar(
         projectId: projectId,
       ),
     );
@@ -114,7 +131,7 @@ class _AppShellPageState extends State<AppShellPage> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AppShellBloc, AppShellState>(
-      bloc: _bloc,
+      bloc: widget.bloc,
       builder: (context, state) {
         return PopScope(
           canPop: false,

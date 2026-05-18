@@ -1,6 +1,4 @@
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
-import 'package:construculator/libraries/time/interfaces/clock.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'auth_user.freezed.dart';
@@ -52,7 +50,7 @@ sealed class User with _$User {
   String get phoneNumber => '$countryCode$phone';
 
   /// Create an empty user
-  static User empty() => User(
+  static User empty({DateTime? createdAt, DateTime? updatedAt}) => User(
     id: '',
     credentialId: '',
     email: '',
@@ -61,8 +59,8 @@ sealed class User with _$User {
     lastName: '',
     professionalRole: '',
     profilePhotoUrl: '',
-    createdAt: Modular.get<Clock>().now(),
-    updatedAt: Modular.get<Clock>().now(),
+    createdAt: createdAt ?? DateTime.now(),
+    updatedAt: updatedAt ?? DateTime.now(),
     userStatus: UserProfileStatus.inactive,
     userPreferences: {},
   );
