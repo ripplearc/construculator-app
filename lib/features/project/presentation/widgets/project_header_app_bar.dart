@@ -2,12 +2,12 @@ import 'package:construculator/features/project/presentation/bloc/get_project_bl
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class ProjectHeaderAppBar extends StatelessWidget
     implements PreferredSizeWidget {
   final String projectId;
+  final GetProjectBloc getProjectBloc;
   final VoidCallback? onProjectTap;
   final VoidCallback? onSearchTap;
   final VoidCallback? onNotificationTap;
@@ -15,6 +15,7 @@ class ProjectHeaderAppBar extends StatelessWidget
   const ProjectHeaderAppBar({
     super.key,
     required this.projectId,
+    required this.getProjectBloc,
     this.onProjectTap,
     this.onSearchTap,
     this.onNotificationTap,
@@ -24,8 +25,7 @@ class ProjectHeaderAppBar extends StatelessWidget
   Widget build(BuildContext context) {
     final appColorTheme = context.colorTheme;
     return BlocProvider.value(
-      value: Modular.get<GetProjectBloc>()
-        ..add(GetProjectByIdLoadRequested(projectId)),
+      value: getProjectBloc..add(GetProjectByIdLoadRequested(projectId)),
       child: Builder(
         builder: (context) {
           return PhysicalModel(

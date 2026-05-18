@@ -20,18 +20,26 @@ import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class CostEstimationLandingPage extends StatefulWidget {
   // TODO: [CA-467] Remove projectId constructor parameter once retrieved via Bloc.
   // https://ripplearc.youtrack.cloud/issue/CA-467
   final String projectId;
+  final AppRouter router;
+  final EstimationTileProvider tileProvider;
+  final CostEstimationLogBloc Function() logBlocBuilder;
 
   static const double _buttonBottomRatio = 0.135;
   static const double _buttonRightRatio = 0.05;
 
-  const CostEstimationLandingPage({super.key, required this.projectId});
+  const CostEstimationLandingPage({
+    super.key,
+    required this.projectId,
+    required this.router,
+    required this.tileProvider,
+    required this.logBlocBuilder,
+  });
 
   @override
   State<CostEstimationLandingPage> createState() =>
@@ -39,18 +47,12 @@ class CostEstimationLandingPage extends StatefulWidget {
 }
 
 class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
-  late final AppRouter _router;
   late final ScrollController _scrollController;
-  late final EstimationTileProvider _tileProvider;
-
   static const double _loadMoreThreshold = 200.0;
-
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController()..addListener(_onScroll);
-    _router = Modular.get<AppRouter>();
-    _tileProvider = Modular.get<EstimationTileProvider>();
   }
 
   void _onScroll() {
@@ -122,15 +124,15 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
               lockStatusNotifier: lockStatusNotifier,
               estimationName: estimation.estimateName,
               onRename: () {
-                _router.pop();
+                widget.router.pop();
                 _showRenameSheet(estimation, colorTheme);
               },
               onFavourite: () {
-                _router.pop();
+                widget.router.pop();
                 // TODO: [CA-88] Implement favourite functionality,  https://ripplearc.youtrack.cloud/issue/CA-88
               },
               onRemove: () {
-                _router.pop();
+                widget.router.pop();
                 _showDeleteConfirmationSheet(estimation, colorTheme);
               },
               onLockToggle: (bool isLocked) {
@@ -146,7 +148,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
                 CoreQuickSheet.show(
                   context: context,
                   child: BlocProvider.value(
-                    value: Modular.get<CostEstimationLogBloc>(),
+                    value: widget.logBlocBuilder(),
                     child: CostEstimationLogsList(
                       estimateId: estimation.id,
                       estimateName: estimation.estimateName,
@@ -186,6 +188,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
             estimationId: estimation.id,
             projectId: widget.projectId,
             currentName: estimation.estimateName,
+            router: widget.router,
           ),
         );
       },
@@ -215,7 +218,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           imagesAttachedCount: 10,
           documentsAttachedCount: 10,
           onConfirm: () {
-            _router.pop();
+            widget.router.pop();
             deleteCostEstimationBloc.add(
               DeleteCostEstimationRequested(
                 estimationId: estimation.id,
@@ -224,7 +227,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
             );
           },
           onCancel: () {
-            _router.pop();
+            widget.router.pop();
           },
         );
       },
@@ -432,7 +435,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
                     onTap: () => _navigateToDetails(estimation.id),
                     onMenuTap: () =>
                         _showEstimationActionsSheet(estimation, colorTheme),
-                    provider: _tileProvider,
+                    provider: widget.tileProvider,
                   );
                 },
               ),
@@ -464,7 +467,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
   }
 
   void _navigateToDetails(String estimationId) {
-    _router.pushNamed('$fullEstimationDetailsRoute/$estimationId');
+    widget.router.pushNamed('$fullEstimationDetailsRoute/$estimationId');
   }
 
   String _mapFailureToMessage(AppLocalizations l10n, Failure failure) {
