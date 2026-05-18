@@ -21,8 +21,10 @@ import 'package:construculator/features/auth/presentation/pages/login_with_email
 import 'package:construculator/features/auth/presentation/pages/register_with_email_page.dart';
 import 'package:construculator/features/auth/presentation/pages/set_new_password_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/guards/no_auth_guard.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/router_module.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
@@ -52,7 +54,7 @@ class AuthModule extends Module {
 void _registerRoutes(RouteManager r) {
   r.child(
     registerWithEmailRoute,
-    guards: [NoAuthGuard()],
+    guards: [NoAuthGuard(Modular.get<AuthManager>())],
     child: (context) {
       final email = r.args.data ?? '';
       return MultiBlocProvider(
@@ -66,13 +68,16 @@ void _registerRoutes(RouteManager r) {
                 Modular.get<OtpVerificationBloc>(),
           ),
         ],
-        child: RegisterWithEmailPage(email: email),
+        child: RegisterWithEmailPage(
+          router: Modular.get<AppRouter>(),
+          email: email,
+        ),
       );
     },
   );
   r.child(
     createAccountRoute,
-    guards: [AuthGuard()],
+    guards: [AuthGuard(Modular.get<AuthManager>())],
     child: (context) => MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => Modular.get<CreateAccountBloc>()),
@@ -80,47 +85,59 @@ void _registerRoutes(RouteManager r) {
           create: (BuildContext context) => Modular.get<OtpVerificationBloc>(),
         ),
       ],
-      child: CreateAccountPage(email: r.args.data as String),
+      child: CreateAccountPage(
+        router: Modular.get<AppRouter>(),
+        email: r.args.data as String,
+      ),
     ),
   );
   r.child(
     loginWithEmailRoute,
-    guards: [NoAuthGuard()],
+    guards: [NoAuthGuard(Modular.get<AuthManager>())],
     child: (context) {
       final email = r.args.data ?? '';
       return BlocProvider(
         create: (context) => Modular.get<LoginWithEmailBloc>(),
-        child: LoginWithEmailPage(email: email),
+        child: LoginWithEmailPage(
+          router: Modular.get<AppRouter>(),
+          email: email,
+        ),
       );
     },
   );
   r.child(
     enterPasswordRoute,
-    guards: [NoAuthGuard()],
+    guards: [NoAuthGuard(Modular.get<AuthManager>())],
     child: (context) => BlocProvider(
       create: (context) => Modular.get<EnterPasswordBloc>(),
-      child: EnterPasswordPage(email: r.args.data as String),
+      child: EnterPasswordPage(
+        router: Modular.get<AppRouter>(),
+        email: r.args.data as String,
+      ),
     ),
   );
   r.child(
     forgotPasswordRoute,
-    guards: [NoAuthGuard()],
+    guards: [NoAuthGuard(Modular.get<AuthManager>())],
     child: (context) => MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => Modular.get<ForgotPasswordBloc>()),
         BlocProvider(create: (context) => Modular.get<OtpVerificationBloc>()),
       ],
-      child: ForgotPasswordPage(),
+      child: ForgotPasswordPage(router: Modular.get<AppRouter>()),
     ),
   );
   r.child(
     setNewPasswordRoute,
-    guards: [AuthGuard()],
+    guards: [AuthGuard(Modular.get<AuthManager>())],
     child: (context) {
       final email = r.args.data ?? '';
       return BlocProvider(
         create: (context) => Modular.get<SetNewPasswordBloc>(),
-        child: SetNewPasswordPage(email: email),
+        child: SetNewPasswordPage(
+          router: Modular.get<AppRouter>(),
+          email: email,
+        ),
       );
     },
   );

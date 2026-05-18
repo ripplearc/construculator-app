@@ -9,16 +9,21 @@ import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/shell_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 const usCountryCode = '+1';
 
 class CreateAccountPage extends StatefulWidget {
+  final AppRouter router;
   final String? email;
   final String? phone;
 
-  const CreateAccountPage({super.key, this.email, this.phone});
+  const CreateAccountPage({
+    super.key,
+    required this.router,
+    this.email,
+    this.phone,
+  });
 
   @override
   State<CreateAccountPage> createState() => _CreateAccountPageState();
@@ -51,7 +56,6 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   bool _canPressContinue = false;
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
-  final AppRouter _router = Modular.get<AppRouter>();
 
   bool get isEmailRegistration {
     final email = widget.email;
@@ -176,7 +180,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
       context,
       message: l10n.createAccountSuccessMessage,
       buttonLabel: l10n.continueButton,
-      onPressed: () => _router.navigate(shellRoute),
+      onPressed: () => widget.router.navigate(shellRoute),
     );
   }
 
