@@ -23,10 +23,16 @@ class DatabaseConstants {
   static const String searchSuggestionsRpcFunction = 'get_search_suggestions';
 
   // RPC param values
+  /// The scope value passed to the [globalSearchRpcFunction] RPC to restrict
+  /// results to the dashboard context (projects, estimations, members).
   static const String globalSearchDashboardScope = 'dashboard';
 
   // global_search RPC defaults
+  /// Default maximum number of results returned by the
+  /// [globalSearchRpcFunction] RPC.
   static const int globalSearchDefaultLimit = 20;
+
+  /// Default result offset for the [globalSearchRpcFunction] RPC (zero-based).
   static const int globalSearchDefaultOffset = 0;
 
   // Column names
