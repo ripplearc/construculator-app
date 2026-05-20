@@ -6,21 +6,26 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+  final AuthNotifier authNotifier;
+  final AuthManager authManager;
+  final AppRouter router;
+
+  const DashboardPage({
+    super.key,
+    required this.authNotifier,
+    required this.authManager,
+    required this.router,
+  });
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  final notifier = Modular.get<AuthNotifier>();
-  final authManager = Modular.get<AuthManager>();
   String userInfo = '...';
-  final AppRouter _router = Modular.get<AppRouter>();
   @override
   void dispose() {
     super.dispose();
@@ -28,17 +33,17 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   void initState() {
-    notifier.onUserProfileChanged.listen((event) {
+    widget.authNotifier.onUserProfileChanged.listen((event) {
       if (event == null) {
-        final cred = authManager.getCurrentCredentials();
-        _router.navigate(fullCreateAccountRoute, arguments: cred.data?.email);
+        final cred = widget.authManager.getCurrentCredentials();
+        widget.router.navigate(fullCreateAccountRoute, arguments: cred.data?.email);
       }
     });
-    final cred = authManager.getCurrentCredentials();
+    final cred = widget.authManager.getCurrentCredentials();
     if (cred.data?.id == null) {
-      _router.navigate(fullLoginRoute);
+      widget.router.navigate(fullLoginRoute);
     } else {
-      authManager
+      widget.authManager
           .getUserProfile(cred.data?.id ?? '')
           .then((result) {
             if (result.isSuccess && result.data != null) {
@@ -114,9 +119,8 @@ class _DashboardPageState extends State<DashboardPage> {
             Center(
               child: CoreButton(
                 onPressed: () {
-                  final authManager = Modular.get<AuthManager>();
-                  authManager.logout();
-                  _router.navigate(fullLoginRoute);
+                  widget.authManager.logout();
+                  widget.router.navigate(fullLoginRoute);
                 },
                 label: 'Logout',
                 centerAlign: true,

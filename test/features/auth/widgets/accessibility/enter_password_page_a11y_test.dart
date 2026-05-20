@@ -3,6 +3,7 @@ import 'package:construculator/features/auth/auth_module.dart';
 import 'package:construculator/features/auth/presentation/bloc/enter_password_bloc/enter_password_bloc.dart';
 import 'package:construculator/features/auth/presentation/pages/enter_password_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -82,7 +83,7 @@ void main() {
     String email = testEmail,
   }) async {
     await tester.pumpWidget(
-      makeTestableWidget(child: EnterPasswordPage(email: email)),
+      makeTestableWidget(child: EnterPasswordPage(email: email, router: Modular.get<AppRouter>())),
     );
     await tester.pumpAndSettle();
   }
@@ -109,7 +110,7 @@ void main() {
         tester,
         (theme) => makeTestableWidget(
           theme: theme,
-          child: EnterPasswordPage(email: testEmail),
+          child: EnterPasswordPage(email: testEmail, router: Modular.get<AppRouter>()),
         ),
         find.text(l10n().continueButton),
         setupAfterPump: (t) async {
@@ -129,7 +130,7 @@ void main() {
           tester,
           (theme) => makeTestableWidget(
             theme: theme,
-            child: EnterPasswordPage(email: ''),
+            child: EnterPasswordPage(email: '', router: Modular.get<AppRouter>()),
           ),
           find.text(l10n().forgotPasswordTitle),
         );
@@ -146,7 +147,7 @@ void main() {
         tester,
         (theme) => makeTestableWidget(
           theme: theme,
-          child: EnterPasswordPage(email: testEmail),
+          child: EnterPasswordPage(email: testEmail, router: Modular.get<AppRouter>()),
         ),
         find.byKey(const Key('edit_link')),
       );
@@ -164,7 +165,7 @@ void main() {
           tester,
           (theme) => makeTestableWidget(
             theme: theme,
-            child: EnterPasswordPage(email: testEmail),
+            child: EnterPasswordPage(email: testEmail, router: Modular.get<AppRouter>()),
           ),
           find.text(l10n().passwordRequiredError),
         );
@@ -187,7 +188,7 @@ void main() {
                 SupabaseAuthErrorCode.invalidCredentials;
             return makeTestableWidget(
               theme: theme,
-              child: EnterPasswordPage(email: testEmail),
+              child: EnterPasswordPage(email: testEmail, router: Modular.get<AppRouter>()),
             );
           },
           find.byKey(const Key('toast_close_button')),

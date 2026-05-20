@@ -82,7 +82,13 @@ void main() {
         buildContext = context;
         return child!;
       },
-      home: const AppShellPage(),
+      home: AppShellPage(
+        bloc: Modular.get<AppShellBloc>(),
+        projectUIProvider: Modular.get<ProjectUIProvider>(),
+        authNotifier: Modular.get<AuthNotifier>(),
+        authManager: Modular.get<AuthManager>(),
+        router: Modular.get<AppRouter>(),
+      ),
     );
   }
 

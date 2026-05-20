@@ -2,6 +2,7 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/auth/auth_module.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_details_page.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -24,7 +25,7 @@ class EstimationRoutesModule extends Module {
   void routes(RouteManager r) {
     r.child(
       estimationDetailsRoute,
-      guards: [AuthGuard()],
+      guards: [AuthGuard(Modular.get<AuthManager>())],
       child: (context) {
         final estimationId = Modular.args.params['estimationId'];
 

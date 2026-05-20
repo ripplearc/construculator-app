@@ -50,7 +50,7 @@ sealed class User with _$User {
   String get phoneNumber => '$countryCode$phone';
 
   /// Create an empty user
-  static User empty({DateTime? createdAt, DateTime? updatedAt}) => User(
+  static User empty({required DateTime createdAt, required DateTime updatedAt}) => User(
     id: '',
     credentialId: '',
     email: '',
@@ -59,8 +59,8 @@ sealed class User with _$User {
     lastName: '',
     professionalRole: '',
     profilePhotoUrl: '',
-    createdAt: createdAt ?? DateTime.now(),
-    updatedAt: updatedAt ?? DateTime.now(),
+    createdAt: createdAt,
+    updatedAt: updatedAt,
     userStatus: UserProfileStatus.inactive,
     userPreferences: {},
   );

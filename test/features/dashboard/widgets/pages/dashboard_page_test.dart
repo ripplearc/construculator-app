@@ -1,7 +1,6 @@
 import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
-import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
@@ -71,9 +70,11 @@ void main() {
   Widget makeApp() {
     return MaterialApp(
       theme: createTestTheme(),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: const DashboardPage(),
+      home: DashboardPage(
+        authNotifier: authNotifier,
+        authManager: authManager,
+        router: router,
+      ),
     );
   }
 
