@@ -38,15 +38,17 @@ disable-model-invocation: false
 **Setup:** Use Modular with real implementations; fake only `SupabaseWrapper` and library repositories.
 
 ```dart
-setUpAll(() {
+setUp(() {
+  fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
   final appBootstrap = FakeAppBootstrapFactory.create(
-    supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
+    supabaseWrapper: fakeSupabase,
   );
   Modular.init(FeatureTestModule(appBootstrap));
 
-  fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
   useCase = Modular.get<{Verb}{Noun}UseCase>(); // REAL UseCase with REAL Repository
 });
+
+tearDown(() => Modular.destroy());
 ```
 
 **Test both success and failure:**
@@ -167,9 +169,9 @@ class FeatureTestModule extends Module {
 }
 ```
 
-**In setUpAll:**
+**In setUp:**
 ```dart
-setUpAll(() {
+setUp(() {
   fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
 
   final appBootstrap = FakeAppBootstrapFactory.create(
@@ -179,7 +181,7 @@ setUpAll(() {
   Modular.init(FeatureTestModule(appBootstrap));
 });
 
-tearDownAll(() => Modular.destroy());
+tearDown(() => Modular.destroy());
 ```
 
 ## 5. Faking Decision Tree
@@ -331,7 +333,8 @@ testWidgets('shows loading indicator during fetch', (tester) async {
 
   // Success state
   expect(find.byKey(const Key('loading_indicator')), findsNothing);
-  expect(find.text('Data Loaded'), findsOneWidget);
+  final l10n = lookupAppLocalizations(const Locale('en'));
+  expect(find.text(l10n.dataLoaded), findsOneWidget);
 });
 ```
 
