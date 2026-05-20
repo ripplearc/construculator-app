@@ -49,8 +49,7 @@ class CostEstimationLogDto extends Equatable {
       estimateId: json['estimate_id'] as String,
       activity: json['activity'] as String,
       user: (json['user'] as Map<String, dynamic>?) ?? {},
-      activityDetails:
-          (json['activity_details'] as Map<String, dynamic>?) ?? {},
+      activityDetails: (json['activity_details'] as Map<String, dynamic>?) ?? {},
       loggedAt: json['logged_at'] as String,
     );
   }

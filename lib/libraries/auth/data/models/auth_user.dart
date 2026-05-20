@@ -50,10 +50,7 @@ sealed class User with _$User {
   String get phoneNumber => '$countryCode$phone';
 
   /// Create an empty user
-  static User empty({
-    required DateTime createdAt,
-    required DateTime updatedAt,
-  }) => User(
+  static User empty({required DateTime createdAt, required DateTime updatedAt}) => User(
     id: '',
     credentialId: '',
     email: '',

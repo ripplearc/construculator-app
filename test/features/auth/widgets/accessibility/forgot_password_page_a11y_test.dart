@@ -87,9 +87,7 @@ void main() {
 
   Future<void> renderPage(WidgetTester tester) async {
     await tester.pumpWidget(
-      makeTestableWidget(
-        child: ForgotPasswordPage(router: Modular.get<AppRouter>()),
-      ),
+      makeTestableWidget(child: ForgotPasswordPage(router: Modular.get<AppRouter>())),
     );
     await tester.pumpAndSettle();
   }
@@ -133,10 +131,8 @@ void main() {
 
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
-        (theme) => makeTestableWidget(
-          theme: theme,
-          child: ForgotPasswordPage(router: Modular.get<AppRouter>()),
-        ),
+        (theme) =>
+            makeTestableWidget(theme: theme, child: ForgotPasswordPage(router: Modular.get<AppRouter>())),
         find.text(l10n().continueButton),
         setupAfterPump: (t) async {
           await enterEmail(t, 'reset@example.com');
@@ -191,10 +187,8 @@ void main() {
 
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
-        (theme) => makeTestableWidget(
-          theme: theme,
-          child: ForgotPasswordPage(router: Modular.get<AppRouter>()),
-        ),
+        (theme) =>
+            makeTestableWidget(theme: theme, child: ForgotPasswordPage(router: Modular.get<AppRouter>())),
         find.text(l10n().verifyOtpButton),
         setupAfterPump: (t) async {
           await enterEmail(t, 'reset@example.com');

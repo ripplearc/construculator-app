@@ -93,9 +93,7 @@ void main() {
 
   Future<void> renderPage(WidgetTester tester, {String email = ''}) async {
     await tester.pumpWidget(
-      makeTestableWidget(
-        child: RegisterWithEmailPage(email: email, router: router),
-      ),
+      makeTestableWidget(child: RegisterWithEmailPage(email: email, router: router)),
     );
     await tester.pumpAndSettle();
   }
@@ -229,10 +227,7 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          child: RegisterWithEmailPage(
-            email: 'newuser@example.com',
-            router: router,
-          ),
+          child: RegisterWithEmailPage(email: 'newuser@example.com', router: router),
         ),
       );
       await tester.pump(const Duration(milliseconds: 300));

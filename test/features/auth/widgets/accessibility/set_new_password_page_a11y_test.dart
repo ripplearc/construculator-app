@@ -87,12 +87,7 @@ void main() {
 
   Future<void> renderPage(WidgetTester tester, {String email = ''}) async {
     await tester.pumpWidget(
-      makeTestableWidget(
-        child: SetNewPasswordPage(
-          email: email,
-          router: Modular.get<AppRouter>(),
-        ),
-      ),
+      makeTestableWidget(child: SetNewPasswordPage(email: email, router: Modular.get<AppRouter>())),
     );
     await tester.pumpAndSettle();
   }
@@ -138,10 +133,7 @@ void main() {
             fakeSupabase.setCurrentUser(createFakeUser(email));
             return makeTestableWidget(
               theme: theme,
-              child: SetNewPasswordPage(
-                email: email,
-                router: Modular.get<AppRouter>(),
-              ),
+              child: SetNewPasswordPage(email: email, router: Modular.get<AppRouter>()),
             );
           },
           find.text(l10n().setPasswordButton),
@@ -164,10 +156,7 @@ void main() {
         tester,
         (theme) => makeTestableWidget(
           theme: theme,
-          child: SetNewPasswordPage(
-            email: '',
-            router: Modular.get<AppRouter>(),
-          ),
+          child: SetNewPasswordPage(email: '', router: Modular.get<AppRouter>()),
         ),
         find.text(l10n().newPasswordLabel),
       );
@@ -183,10 +172,7 @@ void main() {
           tester,
           (theme) => makeTestableWidget(
             theme: theme,
-            child: SetNewPasswordPage(
-              email: '',
-              router: Modular.get<AppRouter>(),
-            ),
+            child: SetNewPasswordPage(email: '', router: Modular.get<AppRouter>()),
           ),
           find.text(l10n().confirmPasswordLabel),
         );
@@ -205,10 +191,7 @@ void main() {
           tester,
           (theme) => makeTestableWidget(
             theme: theme,
-            child: SetNewPasswordPage(
-              email: '',
-              router: Modular.get<AppRouter>(),
-            ),
+            child: SetNewPasswordPage(email: '', router: Modular.get<AppRouter>()),
           ),
           find.text(l10n().passwordTooShortError),
         );
@@ -228,10 +211,7 @@ void main() {
           tester,
           (theme) => makeTestableWidget(
             theme: theme,
-            child: SetNewPasswordPage(
-              email: '',
-              router: Modular.get<AppRouter>(),
-            ),
+            child: SetNewPasswordPage(email: '', router: Modular.get<AppRouter>()),
           ),
           find.text(l10n().passwordsDoNotMatchError),
         );
@@ -251,10 +231,7 @@ void main() {
             fakeSupabase.shouldThrowOnUpdate = true;
             return makeTestableWidget(
               theme: theme,
-              child: SetNewPasswordPage(
-                email: '',
-                router: Modular.get<AppRouter>(),
-              ),
+              child: SetNewPasswordPage(email: '', router: Modular.get<AppRouter>()),
             );
           },
           find.byKey(const Key('toast_close_button')),

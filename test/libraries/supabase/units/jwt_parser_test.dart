@@ -12,13 +12,11 @@ void main() {
           'email': 'test@example.com',
           'app_metadata': {
             'projects': {
-              'project-1': ['read', 'write'],
-            },
-          },
+              'project-1': ['read', 'write']
+            }
+          }
         };
-        final encodedPayload = base64Url.encode(
-          utf8.encode(json.encode(payload)),
-        );
+        final encodedPayload = base64Url.encode(utf8.encode(json.encode(payload)));
         final token = 'header.$encodedPayload.signature';
 
         final result = JwtParser.parsePayload(token);
@@ -30,14 +28,8 @@ void main() {
       });
 
       test('successfully parses JWT token with base64 padding', () {
-        final payload = {
-          'sub': '1234567890',
-          'name': 'John Doe',
-          'iat': 1516239022,
-        };
-        final encodedPayload = base64Url.encode(
-          utf8.encode(json.encode(payload)),
-        );
+        final payload = {'sub': '1234567890', 'name': 'John Doe', 'iat': 1516239022};
+        final encodedPayload = base64Url.encode(utf8.encode(json.encode(payload)));
         final token = 'header.$encodedPayload.signature';
 
         final result = JwtParser.parsePayload(token);
@@ -50,9 +42,7 @@ void main() {
 
       test('successfully parses JWT token without base64 padding', () {
         final payload = {'test': 'value'};
-        var encodedPayload = base64Url.encode(
-          utf8.encode(json.encode(payload)),
-        );
+        var encodedPayload = base64Url.encode(utf8.encode(json.encode(payload)));
 
         encodedPayload = encodedPayload.replaceAll('=', '');
         final token = 'header.$encodedPayload.signature';
@@ -68,18 +58,16 @@ void main() {
           'app_metadata': {
             'projects': {
               'project-1': ['read', 'write', 'delete'],
-              'project-2': ['read'],
+              'project-2': ['read']
             },
-            'internal_user_id': 'user-123',
+            'internal_user_id': 'user-123'
           },
           'user_metadata': {
             'name': 'Test User',
-            'preferences': {'theme': 'dark', 'language': 'en'},
-          },
+            'preferences': {'theme': 'dark', 'language': 'en'}
+          }
         };
-        final encodedPayload = base64Url.encode(
-          utf8.encode(json.encode(payload)),
-        );
+        final encodedPayload = base64Url.encode(utf8.encode(json.encode(payload)));
         final token = 'header.$encodedPayload.signature';
 
         final result = JwtParser.parsePayload(token);
@@ -94,11 +82,9 @@ void main() {
         final payload = {
           'email': 'user+test@example.com',
           'name': 'Test User™',
-          'description': 'Line 1\nLine 2\tTabbed',
+          'description': 'Line 1\nLine 2\tTabbed'
         };
-        final encodedPayload = base64Url.encode(
-          utf8.encode(json.encode(payload)),
-        );
+        final encodedPayload = base64Url.encode(utf8.encode(json.encode(payload)));
         final token = 'header.$encodedPayload.signature';
 
         final result = JwtParser.parsePayload(token);
@@ -159,9 +145,7 @@ void main() {
 
       test('returns null for token with valid base64 but non-object JSON', () {
         final jsonArray = ['item1', 'item2'];
-        final encodedPayload = base64Url.encode(
-          utf8.encode(json.encode(jsonArray)),
-        );
+        final encodedPayload = base64Url.encode(utf8.encode(json.encode(jsonArray)));
         final token = 'header.$encodedPayload.signature';
 
         final result = JwtParser.parsePayload(token);
@@ -169,18 +153,15 @@ void main() {
         expect(result, isNull);
       });
 
-      test(
-        'returns null for token with valid base64 but primitive JSON value',
-        () {
-          const primitiveValue = '"just a string"';
-          final encodedPayload = base64Url.encode(utf8.encode(primitiveValue));
-          final token = 'header.$encodedPayload.signature';
+      test('returns null for token with valid base64 but primitive JSON value', () {
+        const primitiveValue = '"just a string"';
+        final encodedPayload = base64Url.encode(utf8.encode(primitiveValue));
+        final token = 'header.$encodedPayload.signature';
 
-          final result = JwtParser.parsePayload(token);
+        final result = JwtParser.parsePayload(token);
 
-          expect(result, isNull);
-        },
-      );
+        expect(result, isNull);
+      });
 
       test('returns null for token with empty payload section', () {
         const token = 'header..signature';
@@ -192,9 +173,7 @@ void main() {
 
       test('parses JWT token with empty object payload', () {
         final payload = <String, dynamic>{};
-        final encodedPayload = base64Url.encode(
-          utf8.encode(json.encode(payload)),
-        );
+        final encodedPayload = base64Url.encode(utf8.encode(json.encode(payload)));
         final token = 'header.$encodedPayload.signature';
 
         final result = JwtParser.parsePayload(token);
@@ -205,9 +184,7 @@ void main() {
 
       test('parses JWT token with null values in payload', () {
         final payload = {'key1': null, 'key2': 'value', 'key3': null};
-        final encodedPayload = base64Url.encode(
-          utf8.encode(json.encode(payload)),
-        );
+        final encodedPayload = base64Url.encode(utf8.encode(json.encode(payload)));
         final token = 'header.$encodedPayload.signature';
 
         final result = JwtParser.parsePayload(token);
@@ -223,11 +200,9 @@ void main() {
           'int_value': 42,
           'double_value': 3.14,
           'negative': -100,
-          'exp_notation': 1.5e10,
+          'exp_notation': 1.5e10
         };
-        final encodedPayload = base64Url.encode(
-          utf8.encode(json.encode(payload)),
-        );
+        final encodedPayload = base64Url.encode(utf8.encode(json.encode(payload)));
         final token = 'header.$encodedPayload.signature';
 
         final result = JwtParser.parsePayload(token);
@@ -240,14 +215,8 @@ void main() {
       });
 
       test('parses JWT token with boolean values', () {
-        final payload = {
-          'is_admin': true,
-          'is_active': false,
-          'verified': true,
-        };
-        final encodedPayload = base64Url.encode(
-          utf8.encode(json.encode(payload)),
-        );
+        final payload = {'is_admin': true, 'is_active': false, 'verified': true};
+        final encodedPayload = base64Url.encode(utf8.encode(json.encode(payload)));
         final token = 'header.$encodedPayload.signature';
 
         final result = JwtParser.parsePayload(token);
@@ -262,11 +231,9 @@ void main() {
         final payload = {
           'roles': ['admin', 'user', 'moderator'],
           'numbers': [1, 2, 3, 4, 5],
-          'mixed': ['string', 123, true, null],
+          'mixed': ['string', 123, true, null]
         };
-        final encodedPayload = base64Url.encode(
-          utf8.encode(json.encode(payload)),
-        );
+        final encodedPayload = base64Url.encode(utf8.encode(json.encode(payload)));
         final token = 'header.$encodedPayload.signature';
 
         final result = JwtParser.parsePayload(token);

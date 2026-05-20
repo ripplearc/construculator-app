@@ -44,14 +44,17 @@ class ProjectDto extends Equatable {
       projectName: json[DatabaseConstants.projectNameColumn] as String,
       description: json[DatabaseConstants.descriptionColumn] as String?,
       creatorUserId: json[DatabaseConstants.creatorUserIdColumn] as String,
-      owningCompanyId: json[DatabaseConstants.owningCompanyIdColumn] as String?,
+      owningCompanyId:
+          json[DatabaseConstants.owningCompanyIdColumn] as String?,
       exportFolderLink:
           json[DatabaseConstants.exportFolderLinkColumn] as String?,
       exportStorageProvider:
           json[DatabaseConstants.exportStorageProviderColumn] as String?,
       createdAt: _parseDateTime(json[DatabaseConstants.createdAtColumn]),
       updatedAt: _parseDateTime(json[DatabaseConstants.updatedAtColumn]),
-      status: _parseProjectStatus(json[DatabaseConstants.statusColumn]),
+      status: _parseProjectStatus(
+        json[DatabaseConstants.statusColumn],
+      ),
     );
   }
 

@@ -34,12 +34,12 @@ class CreateAccountUseCaseParams extends Equatable {
 
   @override
   List<Object?> get props => [
-    email,
-    phone,
-    countryCode,
-    firstName,
-    lastName,
-    professionalRole,
-    password,
-  ];
+        email,
+        phone,
+        countryCode,
+        firstName,
+        lastName,
+        professionalRole,
+        password,
+      ];
 }

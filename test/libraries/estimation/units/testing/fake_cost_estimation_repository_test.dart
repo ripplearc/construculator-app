@@ -38,9 +38,7 @@ void main() {
     });
 
     test('createEstimation throws UnimplementedError', () {
-      final estimation = CostEstimate.defaultEstimate(
-        createdAt: DateTime.now(),
-      );
+      final estimation = CostEstimate.defaultEstimate(createdAt: DateTime.now());
       expect(
         () => repository.createEstimation(estimation),
         throwsUnimplementedError,

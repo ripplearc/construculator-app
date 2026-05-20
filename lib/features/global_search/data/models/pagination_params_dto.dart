@@ -16,7 +16,10 @@ class PaginationParamsDto extends Equatable {
   final int offset;
   final int limit;
 
-  const PaginationParamsDto({this.offset = 0, this.limit = 20});
+  const PaginationParamsDto({
+    this.offset = 0,
+    this.limit = 20,
+  });
 
   PaginationParamsDto copyWith({int? offset, int? limit}) {
     return PaginationParamsDto(

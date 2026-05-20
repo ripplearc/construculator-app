@@ -49,9 +49,7 @@ void main() {
       );
     });
 
-    testWidgets('a11y: tile passes in both themes (without menu)', (
-      tester,
-    ) async {
+    testWidgets('a11y: tile passes in both themes (without menu)', (tester) async {
       await setupA11yTest(tester);
 
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
@@ -79,6 +77,8 @@ class _FakeData implements EstimationTileData {
   @override
   final DateTime displayDate;
 
-  const _FakeData({required this.estimateName, required this.displayDate})
-    : totalCost = 15000.50;
+  const _FakeData({
+    required this.estimateName,
+    required this.displayDate,
+  }) : totalCost = 15000.50;
 }
