@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PR Review Input",
+  "type": "object",
+  "required": ["pr_branch"],
+  "properties": {
+    "pr_branch": {
+      "type": "string",
+      "description": "Branch containing the changes to review"
+    },
+    "base_branch": {
+      "type": "string",
+      "description": "Target branch for the PR",
+      "default": "main"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["RULE_4", "RULE_5", "RULE_10"]
+      },
+      "description": "Optional subset of POC rules to apply",
+      "default": null
+    },
+    "output_format": {
+      "type": "string",
+      "enum": ["json", "markdown", "both"],
+      "description": "Preferred output format (json for agent automation, markdown for humans)",
+      "default": "json"
+    },
+    "max_file_size_kb": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 1000,
+      "description": "Skip files larger than this size",
+      "default": 100
+    }
+  },
+  "additionalProperties": false
+}
