@@ -3,6 +3,7 @@ import 'package:construculator/features/auth/auth_module.dart';
 import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
 import 'package:construculator/features/auth/presentation/pages/create_account_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -86,7 +87,7 @@ void main() {
     String email = testEmail,
   }) async {
     await tester.pumpWidget(
-      makeTestableWidget(child: CreateAccountPage(email: email)),
+      makeTestableWidget(child: CreateAccountPage(email: email, router: Modular.get<AppRouter>())),
     );
     await tester.pumpAndSettle();
   }
@@ -170,7 +171,7 @@ void main() {
         tester,
         (theme) => makeTestableWidget(
           theme: theme,
-          child: CreateAccountPage(email: testEmail),
+          child: CreateAccountPage(email: testEmail, router: Modular.get<AppRouter>()),
         ),
         find.text(buttonLabel),
         setupAfterPump: (t) async {
@@ -194,7 +195,7 @@ void main() {
           tester,
           (theme) => makeTestableWidget(
             theme: theme,
-            child: CreateAccountPage(email: testEmail),
+            child: CreateAccountPage(email: testEmail, router: Modular.get<AppRouter>()),
           ),
           find.text(termsLink),
         );
@@ -212,7 +213,7 @@ void main() {
         tester,
         (theme) => makeTestableWidget(
           theme: theme,
-          child: CreateAccountPage(email: testEmail),
+          child: CreateAccountPage(email: testEmail, router: Modular.get<AppRouter>()),
         ),
         find.text(roleLabelText),
       );
@@ -234,7 +235,7 @@ void main() {
                 SupabaseAuthErrorCode.invalidCredentials;
             return makeTestableWidget(
               theme: theme,
-              child: CreateAccountPage(email: testEmail),
+              child: CreateAccountPage(email: testEmail, router: Modular.get<AppRouter>()),
             );
           },
           find.byKey(const Key('toast_close_button')),

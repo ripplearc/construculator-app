@@ -32,10 +32,19 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// selected it renders [ProjectHeaderAppBar]; otherwise it shows the static
 /// app title.
 class AppShellPage extends StatefulWidget {
+  /// The bloc driving tab selection and module loading.
   final AppShellBloc bloc;
+
+  /// Builds the project header app bar displayed above the tab content.
   final ProjectUIProvider projectUIProvider;
+
+  /// Notifies when the authenticated user's profile changes.
   final AuthNotifier authNotifier;
+
+  /// Manages authentication state and credentials.
   final AuthManager authManager;
+
+  /// Handles navigation across the top-level route stack.
   final AppRouter router;
 
   const AppShellPage({

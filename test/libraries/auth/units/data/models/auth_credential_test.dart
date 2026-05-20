@@ -16,7 +16,7 @@ void main() {
   group('UserCredential Model', () {
     group('empty factory', () {
       test('should create empty UserCredential with default values', () {
-        final credential = UserCredential.empty();
+        final credential = UserCredential.empty(createdAt: clock.now());
 
         expect(credential.id, '');
         expect(credential.email, '');
@@ -27,7 +27,7 @@ void main() {
       test('should create empty UserCredential with recent timestamp', () {
         final beforeCreation = clock.now();
 
-        final credential = UserCredential.empty();
+        final credential = UserCredential.empty(createdAt: clock.now());
 
         final afterCreation = clock.now();
 
@@ -48,8 +48,8 @@ void main() {
       test(
         'should create multiple empty credentials with different timestamps',
         () async {
-          final credential1 = UserCredential.empty();
-          final credential2 = UserCredential.empty();
+          final credential1 = UserCredential.empty(createdAt: clock.now());
+          final credential2 = UserCredential.empty(createdAt: clock.now());
 
           expect(credential1.id, credential2.id);
           expect(credential1.email, credential2.email);

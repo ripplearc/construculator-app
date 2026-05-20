@@ -3,7 +3,7 @@ import 'package:construculator/features/auth/auth_module.dart';
 import 'package:construculator/features/auth/presentation/bloc/login_with_email_bloc/login_with_email_bloc.dart';
 import 'package:construculator/features/auth/presentation/pages/login_with_email_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
-
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -78,7 +78,7 @@ void main() {
 
   Future<void> renderPage(WidgetTester tester, {String email = ''}) async {
     await tester.pumpWidget(
-      makeTestableWidget(child: LoginWithEmailPage(email: email)),
+      makeTestableWidget(child: LoginWithEmailPage(email: email, router: Modular.get<AppRouter>())),
     );
     await tester.pumpAndSettle();
   }
@@ -107,7 +107,7 @@ void main() {
         tester,
         (theme) => makeTestableWidget(
           theme: theme,
-          child: const LoginWithEmailPage(email: 'test@example.com'),
+          child: LoginWithEmailPage(email: 'test@example.com', router: Modular.get<AppRouter>()),
         ),
         find.text(l10n().continueButton),
       );
@@ -124,7 +124,7 @@ void main() {
         tester,
         (theme) => makeTestableWidget(
           theme: theme,
-          child: const LoginWithEmailPage(email: ''),
+          child: LoginWithEmailPage(email: '', router: Modular.get<AppRouter>()),
         ),
         find.byKey(const Key('auth_footer_link')),
       );
@@ -145,7 +145,7 @@ void main() {
           fakeSupabase.setRpcResponse('check_email_exists', false);
           return makeTestableWidget(
             theme: theme,
-            child: const LoginWithEmailPage(email: 'notregistered@example.com'),
+            child: LoginWithEmailPage(email: 'notregistered@example.com', router: Modular.get<AppRouter>()),
           );
         }, find.byKey(const Key('Register')));
       },
@@ -163,7 +163,7 @@ void main() {
           tester,
           (theme) => makeTestableWidget(
             theme: theme,
-            child: const LoginWithEmailPage(email: ''),
+            child: LoginWithEmailPage(email: '', router: Modular.get<AppRouter>()),
           ),
           find.text('Email is required'),
         );
@@ -182,7 +182,7 @@ void main() {
           tester,
           (theme) => makeTestableWidget(
             theme: theme,
-            child: const LoginWithEmailPage(email: 'invalid-email'),
+            child: LoginWithEmailPage(email: 'invalid-email', router: Modular.get<AppRouter>()),
           ),
           find.text('Please enter a valid email address'),
         );
@@ -204,7 +204,7 @@ void main() {
           fakeSupabase.shouldThrowOnRpc = true;
           return makeTestableWidget(
             theme: theme,
-            child: const LoginWithEmailPage(email: 'error@example.com'),
+            child: LoginWithEmailPage(email: 'error@example.com', router: Modular.get<AppRouter>()),
           );
         }, find.text('Close'));
       },

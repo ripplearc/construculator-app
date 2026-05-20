@@ -90,7 +90,7 @@ void main() {
 
   Future<void> renderPage(WidgetTester tester) async {
     await tester.pumpWidget(
-      makeTestableWidget(child: const ForgotPasswordPage()),
+      makeTestableWidget(child: ForgotPasswordPage(router: Modular.get<AppRouter>())),
     );
     await tester.pumpAndSettle();
   }
