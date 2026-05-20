@@ -160,6 +160,7 @@ void _registerDependencies(Injector i) {
 - **RULE_5:** `skills/rules/05-ui-business-separation.md` — No business logic in UI + State derivation in BLoC
 - **RULE_7:** `skills/rules/07-self-documenting-code.md` — Comments explain why
 - **RULE_10:** `skills/rules/10-localization.md` — All user-facing text
+- **RULE_12:** `skills/rules/12-state-derivation.md` — Derive in BLoC, not widgets
 - **CoreUI API:** `skills/references/coreui-api.md`
 - **Examples:** `lib/features/auth/presentation/`, `lib/features/project/presentation/`
 - `write-tests` skill — Widget tests for pages
