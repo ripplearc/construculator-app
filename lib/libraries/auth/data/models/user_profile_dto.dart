@@ -45,7 +45,8 @@ class UserProfileDto extends Equatable {
       credentialId: json[DatabaseConstants.credentialIdColumn] as String?,
       firstName: json[DatabaseConstants.firstNameColumn] as String,
       lastName: json[DatabaseConstants.lastNameColumn] as String,
-      professionalRole: json[DatabaseConstants.professionalRoleColumn] as String,
+      professionalRole:
+          json[DatabaseConstants.professionalRoleColumn] as String,
       profilePhotoUrl: json[DatabaseConstants.profilePhotoUrlColumn] as String?,
     );
   }

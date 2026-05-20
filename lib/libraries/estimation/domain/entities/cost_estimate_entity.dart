@@ -4,7 +4,6 @@ import 'package:construculator/libraries/estimation/domain/entities/markup_confi
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:equatable/equatable.dart';
 
-
 /// Represents a cost estimate for a construction project.
 ///
 /// A cost estimate is a comprehensive calculation of the expected costs

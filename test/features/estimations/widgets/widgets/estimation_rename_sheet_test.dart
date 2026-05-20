@@ -112,6 +112,7 @@ void main() {
               child: EstimationRenameSheet(
                 estimationId: estimationId,
                 currentName: initialName,
+                router: Modular.get<AppRouter>(),
               ),
             ),
           );

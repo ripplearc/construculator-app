@@ -103,7 +103,9 @@ void main() {
     String email = testEmail,
   }) async {
     await tester.pumpWidget(
-      makeTestableWidget(child: CreateAccountPage(email: email, router: router)),
+      makeTestableWidget(
+        child: CreateAccountPage(email: email, router: router),
+      ),
     );
     await tester.pumpAndSettle();
   }
@@ -532,7 +534,9 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        makeTestableWidget(child: CreateAccountPage(phone: '1234567890', router: router)),
+        makeTestableWidget(
+          child: CreateAccountPage(phone: '1234567890', router: router),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -551,7 +555,9 @@ void main() {
       fakeSupabase.setCurrentUser(createFakeUser(testEmail));
 
       await tester.pumpWidget(
-        makeTestableWidget(child: CreateAccountPage(phone: '5551234567', router: router)),
+        makeTestableWidget(
+          child: CreateAccountPage(phone: '5551234567', router: router),
+        ),
       );
       await tester.pumpAndSettle();
 

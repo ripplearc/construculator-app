@@ -15,6 +15,8 @@ class EstimationRenameSheet extends StatefulWidget {
 
   final String estimationId;
   final String currentName;
+
+  /// Handles navigation after a successful rename (pops the sheet).
   final AppRouter router;
 
   @override

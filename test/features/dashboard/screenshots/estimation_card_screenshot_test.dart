@@ -29,10 +29,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: Material(
             child: Center(
-              child: EstimationCard(
-                estimation: estimation,
-                onTap: onTap,
-              ),
+              child: EstimationCard(estimation: estimation, onTap: onTap),
             ),
           ),
         ),
@@ -64,7 +61,9 @@ void main() {
       );
     });
 
-    testWidgets('renders estimation card with long name correctly', (tester) async {
+    testWidgets('renders estimation card with long name correctly', (
+      tester,
+    ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
 
@@ -89,4 +88,3 @@ void main() {
     });
   });
 }
-

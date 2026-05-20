@@ -181,9 +181,7 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
     required Map<String, dynamic> data,
     required String onConflict,
   }) async {
-    await _supabaseClient
-        .from(table)
-        .upsert(data, onConflict: onConflict);
+    await _supabaseClient.from(table).upsert(data, onConflict: onConflict);
   }
 
   @override

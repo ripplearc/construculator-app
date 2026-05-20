@@ -53,7 +53,12 @@ class GlobalSearchReady extends GlobalSearchState {
   }
 
   @override
-  List<Object?> get props => [recentSearches, query, suggestions, suggestionsLoading];
+  List<Object?> get props => [
+    recentSearches,
+    query,
+    suggestions,
+    suggestionsLoading,
+  ];
 }
 
 /// Emitted while a search request is in flight.
