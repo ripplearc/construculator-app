@@ -92,7 +92,6 @@ class ProjectSearchRepositoryImpl implements ProjectSearchRepository {
     String? filterByOwner,
   }) async {
     if (query.trim().isEmpty || userId.trim().isEmpty) {
-      _logger.debug('Empty query or userId — skipping data source call');
       return Right([]);
     }
 
