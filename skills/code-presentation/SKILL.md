@@ -17,6 +17,8 @@ disable-model-invocation: false
 
 **Input:** Context from `plan-implementation` — page names, BLoC states, widget hierarchy.
 
+If the input context from `plan-implementation` is incomplete or missing, respond with an error message specifying the missing details before writing code.
+
 ## 1. Class Overview
 
 | Class Type | Naming (RULE_2) | Purpose | Location |
@@ -50,9 +52,27 @@ import 'package:construculator/libraries/extensions/build_context_extensions.dar
 - **RULE_5:** Zero business logic — no validation, calculations, or conditional state coordination
 - Pages are **passive** — they display state from BLoC; they don't decide what state means
 
-**BLoC access:** Use `Modular.get<{Feature}Bloc>()` in page widget, not constructor injection.
+**BLoC access (preferred):** Prefer resolving BLoCs via `BuildContext` instead of `Modular.get`. This keeps wiring explicit and works well with `BlocProvider`.
 
-**Routing:** Use `Modular.get<AppRouter>().push(...)` to navigate forward and `Modular.get<AppRouter>().pop()` to go back. Avoid direct `Navigator` usage.
+Two recommended approaches:
+
+1. Inline usage for simple callbacks:
+
+```dart
+onTabSelected: (index) => context.read<AppShellBloc>().add(AppShellTabSelected(index)),
+```
+
+2. Field resolution in `didChangeDependencies` (preferred when a `BlocProvider` is above the Page):
+
+Resolve the BLoC in `didChangeDependencies` (not in `build`) to avoid repeated lookups and to satisfy lints that forbid resolving dependencies during build.
+
+If your app does not provide the BLoC via `BlocProvider`, fall back to module registration and `Modular.get`.
+
+**Routing (three-tier model):**
+- **Tab switching** (within shell): Dispatch BLoC events (e.g. `context.read<AppShellBloc>().add(AppShellTabSelected(index))`) — handled by the shell's BLoC; widgets do not have to call `Navigator.push/pop` to switch tabs
+- **Full-screen navigation** (above shell): `Modular.get<AppRouter>().push(...)` / `.pop()` — replaces entire shell
+- **In-tab drill-downs** (within tab): `Navigator.of(context).push(...)` / `.pop()` — preserves tab state and other tabs
+  ⚠️ Never use AppRouter for tab-switching or in-tab navigation — it resets tab state and navigators.
 
 ## 3. BLoC Pattern
 
