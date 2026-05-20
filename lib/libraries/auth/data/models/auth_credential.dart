@@ -27,6 +27,10 @@ sealed class UserCredential with _$UserCredential {
       _$UserCredentialFromJson(json);
 
   /// Used to create an empty credential
-  static UserCredential empty({required DateTime createdAt}) =>
-      UserCredential(id: '', email: '', metadata: {}, createdAt: createdAt);
+  static UserCredential empty({required DateTime createdAt}) => UserCredential(
+    id: '',
+    email: '',
+    metadata: {},
+    createdAt: createdAt,
+  );
 }

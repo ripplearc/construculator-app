@@ -2129,8 +2129,7 @@ void main() {
           );
 
           fakeSupabaseWrapper.shouldThrowOnUpdate = true;
-          fakeSupabaseWrapper.updateExceptionType =
-              SupabaseExceptionType.timeout;
+          fakeSupabaseWrapper.updateExceptionType = SupabaseExceptionType.timeout;
           fakeSupabaseWrapper.updateErrorMessage = errorMsgTimeout;
 
           final result = await repository.renameEstimation(

@@ -24,12 +24,8 @@ class TabModuleManager {
 
   static Map<ShellTab, TabModuleProvider> _defaultProviders() => {
     ShellTab.home: const _ProductionTabModuleProvider(ShellTab.home),
-    ShellTab.calculations: const _ProductionTabModuleProvider(
-      ShellTab.calculations,
-    ),
-    ShellTab.estimation: const _ProductionTabModuleProvider(
-      ShellTab.estimation,
-    ),
+    ShellTab.calculations: const _ProductionTabModuleProvider(ShellTab.calculations),
+    ShellTab.estimation: const _ProductionTabModuleProvider(ShellTab.estimation),
     ShellTab.members: const _ProductionTabModuleProvider(ShellTab.members),
   };
 
@@ -50,8 +46,8 @@ class TabModuleManager {
 
 /// A private provider implementation that lazily instantiates feature modules.
 ///
-/// While real instances are generally encouraged, this provider defers the
-/// construction of heavy feature modules (like [DashboardModule],
+/// While real instances are generally encouraged, this provider defers the 
+/// construction of heavy feature modules (like [DashboardModule], 
 /// [CalculationsModule], etc.) until their tab is explicitly loaded. This avoids
 /// the overhead of constructing all module instances sequentially on fresh launch.
 class _ProductionTabModuleProvider implements TabModuleProvider {

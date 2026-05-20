@@ -79,9 +79,7 @@ void main() {
       );
     });
 
-    testWidgets('renders tile without menu tap (menu icon excluded from a11y)', (
-      tester,
-    ) async {
+    testWidgets('renders tile without menu tap (menu icon excluded from a11y)', (tester) async {
       await pumpTile(
         tester: tester,
         data: _FakeData(

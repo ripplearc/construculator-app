@@ -52,18 +52,21 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     required String estimationId,
     required bool isLocked,
     required String projectId,
-  }) => throw UnimplementedError();
+  }) =>
+      throw UnimplementedError();
 
   @override
   Future<Either<Failure, CostEstimate>> createEstimation(
     CostEstimate estimation,
-  ) => throw UnimplementedError();
+  ) =>
+      throw UnimplementedError();
 
   @override
   Future<Either<Failure, void>> deleteEstimation(
     String estimationId,
     String projectId,
-  ) => throw UnimplementedError();
+  ) =>
+      throw UnimplementedError();
 
   @override
   void dispose() {}
@@ -74,7 +77,8 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     EstimationSortOption sortBy = EstimationSortOption.createdAt,
     bool ascending = false,
     int? limit,
-  }) => throw UnimplementedError();
+  }) =>
+      throw UnimplementedError();
 
   @override
   bool hasMoreEstimations(
@@ -82,7 +86,8 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     EstimationSortOption sortBy = EstimationSortOption.createdAt,
     bool ascending = false,
     int? limit,
-  }) => throw UnimplementedError();
+  }) =>
+      throw UnimplementedError();
 
   @override
   Future<Either<Failure, List<CostEstimate>>> loadMoreEstimations(
@@ -90,12 +95,14 @@ class FakeCostEstimationRepository implements CostEstimationRepository {
     EstimationSortOption sortBy = EstimationSortOption.createdAt,
     bool ascending = false,
     int? limit,
-  }) => throw UnimplementedError();
+  }) =>
+      throw UnimplementedError();
 
   @override
   Future<Either<Failure, CostEstimate>> renameEstimation({
     required String estimationId,
     required String newName,
     required String projectId,
-  }) => throw UnimplementedError();
+  }) =>
+      throw UnimplementedError();
 }

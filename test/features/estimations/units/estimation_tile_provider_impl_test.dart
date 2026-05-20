@@ -17,27 +17,24 @@ void main() {
       Modular.destroy();
     });
 
-    test(
-      'buildEstimationTile returns a SharedEstimationTile with the supplied data and callbacks',
-      () {
-        final provider = Modular.get<EstimationTileProvider>();
-        final data = _FakeData();
-        void onTap() {}
-        void onMenuTap() {}
+    test('buildEstimationTile returns a SharedEstimationTile with the supplied data and callbacks', () {
+      final provider = Modular.get<EstimationTileProvider>();
+      final data = _FakeData();
+      void onTap() {}
+      void onMenuTap() {}
 
-        final widget = provider.buildEstimationTile(
-          data: data,
-          onTap: onTap,
-          onMenuTap: onMenuTap,
-        );
+      final widget = provider.buildEstimationTile(
+        data: data,
+        onTap: onTap,
+        onMenuTap: onMenuTap,
+      );
 
-        expect(widget, isA<SharedEstimationTile>());
-        final tile = widget as SharedEstimationTile;
-        expect(tile.data, same(data));
-        expect(tile.onTap, same(onTap));
-        expect(tile.onMenuTap, same(onMenuTap));
-      },
-    );
+      expect(widget, isA<SharedEstimationTile>());
+      final tile = widget as SharedEstimationTile;
+      expect(tile.data, same(data));
+      expect(tile.onTap, same(onTap));
+      expect(tile.onMenuTap, same(onMenuTap));
+    });
 
     test('buildEstimationTile passes through a null onMenuTap', () {
       final provider = Modular.get<EstimationTileProvider>();

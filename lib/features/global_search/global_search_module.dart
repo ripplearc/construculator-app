@@ -35,7 +35,9 @@ class GlobalSearchModule extends Module {
     i.addLazySingleton<GlobalSearchRepository>(
       () => GlobalSearchRepositoryImpl(dataSource: i()),
     );
-    i.add<GlobalSearchBloc>(() => GlobalSearchBloc(repository: i()));
+    i.add<GlobalSearchBloc>(
+      () => GlobalSearchBloc(repository: i()),
+    );
     i.addSingleton<EstimationTileProvider>(
       () => const EstimationTileProviderImpl(),
     );

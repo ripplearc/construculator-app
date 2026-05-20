@@ -41,27 +41,14 @@ class SearchParamsDto extends Equatable {
   }) {
     return SearchParamsDto(
       query: query ?? this.query,
-      filterByTag: filterByTag == _absent
-          ? this.filterByTag
-          : filterByTag as String?,
-      filterByDate: filterByDate == _absent
-          ? this.filterByDate
-          : filterByDate as DateTime?,
-      filterByOwner: filterByOwner == _absent
-          ? this.filterByOwner
-          : filterByOwner as String?,
+      filterByTag: filterByTag == _absent ? this.filterByTag : filterByTag as String?,
+      filterByDate: filterByDate == _absent ? this.filterByDate : filterByDate as DateTime?,
+      filterByOwner: filterByOwner == _absent ? this.filterByOwner : filterByOwner as String?,
       scope: scope == _absent ? this.scope : scope as SearchScopeDto?,
       pagination: pagination ?? this.pagination,
     );
   }
 
   @override
-  List<Object?> get props => [
-    query,
-    filterByTag,
-    filterByDate,
-    filterByOwner,
-    scope,
-    pagination,
-  ];
+  List<Object?> get props => [query, filterByTag, filterByDate, filterByOwner, scope, pagination];
 }
