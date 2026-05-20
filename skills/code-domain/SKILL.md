@@ -87,3 +87,4 @@ void _registerDependencies(Injector i) {
 - **Examples:** `lib/features/auth/domain/usecases/login_usecase.dart`, `lib/features/estimation/domain/repositories/cost_estimation_log_repository.dart`
 - **Next:** `code-data` (implements repository interfaces)
 - **Future:** `write-tests` skill (planned — unit tests for domain layer)
+

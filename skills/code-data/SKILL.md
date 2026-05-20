@@ -115,7 +115,7 @@ void _registerDependencies(Injector i) {
 ## Key Principles
 
 1. **Explicit names** — `fetchInitialEstimationsByProjectId`, not `getEstimations` (RULE_2)
-2. **Error boundary** — RemoteDataSource logs error then rethrows; RepositoryImpl is the boundary where exceptions become Failures
+2. **Error boundary** — RemoteDataSource rethrows without logging; RepositoryImpl is the error boundary where exceptions become Failures
 3. **DTO ↔ Entity** — DTOs for JSON; Entities for domain; validate/handle invalid JSON
 4. **RULE_15: Log once** — At RepositoryImpl boundary only (don't re-log as errors propagate)
 5. **Never throw from repository** — Always `Either<Failure, T>`
