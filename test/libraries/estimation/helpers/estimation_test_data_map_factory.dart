@@ -60,8 +60,7 @@ class EstimationTestDataMapFactory {
       'labor_markup_value': laborMarkupValue ?? laborMarkupDefault,
       'equipment_markup_value_type':
           equipmentMarkupValueType ?? markupValueTypePercentage,
-      'equipment_markup_value':
-          equipmentMarkupValue ?? equipmentMarkupDefault,
+      'equipment_markup_value': equipmentMarkupValue ?? equipmentMarkupDefault,
       'total_cost': totalCost ?? totalCostDefault,
       'is_locked': isLocked ?? false,
       'locked_by_user_id': lockedByUserId,

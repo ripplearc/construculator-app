@@ -33,7 +33,11 @@ void _registerDependencies(Injector i) {
     () => CurrentProjectNotifierImpl(),
   );
 
-  i.addLazySingleton<ProjectUIProvider>(() => ProjectUIProviderImpl());
+  i.addLazySingleton<ProjectUIProvider>(
+    () => ProjectUIProviderImpl(
+      getProjectBlocBuilder: () => i.get<GetProjectBloc>(),
+    ),
+  );
 
   i.addLazySingleton<GetProjectHeaderUseCase>(
     () => GetProjectHeaderUseCase(i(), i()),

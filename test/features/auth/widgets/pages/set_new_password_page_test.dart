@@ -89,7 +89,12 @@ void main() {
 
   Future<void> renderPage(WidgetTester tester, {String email = ''}) async {
     await tester.pumpWidget(
-      makeTestableWidget(child: SetNewPasswordPage(email: email, router: Modular.get<AppRouter>())),
+      makeTestableWidget(
+        child: SetNewPasswordPage(
+          email: email,
+          router: Modular.get<AppRouter>(),
+        ),
+      ),
     );
     await tester.pumpAndSettle();
   }

@@ -13,10 +13,7 @@ class PaginationParams extends Equatable {
   final int offset;
   final int limit;
 
-  const PaginationParams({
-    this.offset = 0,
-    this.limit = 20,
-  });
+  const PaginationParams({this.offset = 0, this.limit = 20});
 
   /// Returns a copy of this [PaginationParams] with the given fields replaced.
   PaginationParams copyWith({int? offset, int? limit}) {

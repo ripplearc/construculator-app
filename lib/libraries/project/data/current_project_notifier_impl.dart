@@ -16,17 +16,14 @@ class CurrentProjectNotifierImpl implements CurrentProjectNotifier, Disposable {
     : _currentProjectId = initialProjectId;
 
   @override
-
   /// Stream that emits the new project ID whenever [setCurrentProjectId] is called.
   Stream<String?> get onCurrentProjectChanged => _projectController.stream;
 
   @override
-
   /// The ID of the currently selected project, or `null` if none is selected.
   String? get currentProjectId => _currentProjectId;
 
   @override
-
   /// Updates the current project ID to [projectId] and notifies all listeners.
   void setCurrentProjectId(String? projectId) {
     _currentProjectId = projectId;
@@ -34,7 +31,6 @@ class CurrentProjectNotifierImpl implements CurrentProjectNotifier, Disposable {
   }
 
   @override
-
   /// Closes the underlying stream controller and releases resources.
   void dispose() {
     _projectController.close();

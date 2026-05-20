@@ -8,7 +8,6 @@ import 'package:construculator/libraries/project/domain/entities/project_entity.
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 
-
 /// Remote implementation of the project repository.
 class ProjectRepositoryImpl implements ProjectRepository {
   final ProjectDataSource _projectDataSource;
@@ -90,10 +89,11 @@ class ProjectRepositoryImpl implements ProjectRepository {
   @override
   Stream<List<Project>> watchProjects(String userId) {
     _watchUserId = userId;
-    final controller = _projectsController ??= StreamController<List<Project>>.broadcast(
-      onListen: _startWatchingProjectChanges,
-      onCancel: _stopWatchingIfNoListeners,
-    );
+    final controller = _projectsController ??=
+        StreamController<List<Project>>.broadcast(
+          onListen: _startWatchingProjectChanges,
+          onCancel: _stopWatchingIfNoListeners,
+        );
 
     return controller.stream;
   }

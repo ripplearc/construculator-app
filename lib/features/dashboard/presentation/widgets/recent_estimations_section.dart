@@ -13,7 +13,10 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// including a horizontally scrollable list of [EstimationCard]s
 /// and navigation to the full estimations list.
 class RecentEstimationsSection extends StatefulWidget {
+  /// The bloc that manages the state for the recent estimations section.
   final RecentEstimationsBloc bloc;
+
+  /// The router used for navigation (e.g., to the full estimations list or estimation details).
   final AppRouter router;
 
   const RecentEstimationsSection({

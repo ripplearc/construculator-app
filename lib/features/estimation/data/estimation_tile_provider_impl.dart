@@ -17,10 +17,6 @@ class EstimationTileProviderImpl implements EstimationTileProvider {
     required VoidCallback onTap,
     VoidCallback? onMenuTap,
   }) {
-    return SharedEstimationTile(
-      data: data,
-      onTap: onTap,
-      onMenuTap: onMenuTap,
-    );
+    return SharedEstimationTile(data: data, onTap: onTap, onMenuTap: onMenuTap);
   }
 }

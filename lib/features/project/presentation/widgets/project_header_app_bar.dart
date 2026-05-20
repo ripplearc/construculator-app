@@ -7,7 +7,10 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 class ProjectHeaderAppBar extends StatelessWidget
     implements PreferredSizeWidget {
   final String projectId;
+
+  /// The bloc used to fetch and stream the project details shown in the header.
   final GetProjectBloc getProjectBloc;
+
   final VoidCallback? onProjectTap;
   final VoidCallback? onSearchTap;
   final VoidCallback? onNotificationTap;

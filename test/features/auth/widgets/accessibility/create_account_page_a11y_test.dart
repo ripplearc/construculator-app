@@ -87,7 +87,12 @@ void main() {
     String email = testEmail,
   }) async {
     await tester.pumpWidget(
-      makeTestableWidget(child: CreateAccountPage(email: email, router: Modular.get<AppRouter>())),
+      makeTestableWidget(
+        child: CreateAccountPage(
+          email: email,
+          router: Modular.get<AppRouter>(),
+        ),
+      ),
     );
     await tester.pumpAndSettle();
   }
@@ -171,7 +176,10 @@ void main() {
         tester,
         (theme) => makeTestableWidget(
           theme: theme,
-          child: CreateAccountPage(email: testEmail, router: Modular.get<AppRouter>()),
+          child: CreateAccountPage(
+            email: testEmail,
+            router: Modular.get<AppRouter>(),
+          ),
         ),
         find.text(buttonLabel),
         setupAfterPump: (t) async {
@@ -195,7 +203,10 @@ void main() {
           tester,
           (theme) => makeTestableWidget(
             theme: theme,
-            child: CreateAccountPage(email: testEmail, router: Modular.get<AppRouter>()),
+            child: CreateAccountPage(
+              email: testEmail,
+              router: Modular.get<AppRouter>(),
+            ),
           ),
           find.text(termsLink),
         );
@@ -213,7 +224,10 @@ void main() {
         tester,
         (theme) => makeTestableWidget(
           theme: theme,
-          child: CreateAccountPage(email: testEmail, router: Modular.get<AppRouter>()),
+          child: CreateAccountPage(
+            email: testEmail,
+            router: Modular.get<AppRouter>(),
+          ),
         ),
         find.text(roleLabelText),
       );
@@ -235,7 +249,10 @@ void main() {
                 SupabaseAuthErrorCode.invalidCredentials;
             return makeTestableWidget(
               theme: theme,
-              child: CreateAccountPage(email: testEmail, router: Modular.get<AppRouter>()),
+              child: CreateAccountPage(
+                email: testEmail,
+                router: Modular.get<AppRouter>(),
+              ),
             );
           },
           find.byKey(const Key('toast_close_button')),

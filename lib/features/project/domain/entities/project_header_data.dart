@@ -15,10 +15,7 @@ class ProjectHeaderData extends Equatable {
   /// The user's profile information (may be null if not available)
   final User? userProfile;
 
-  const ProjectHeaderData({
-    required this.project,
-    this.userProfile,
-  });
+  const ProjectHeaderData({required this.project, this.userProfile});
 
   /// Helper getter to access the user's profile photo URL
   String? get userAvatarUrl => userProfile?.profilePhotoUrl;

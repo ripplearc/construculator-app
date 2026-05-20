@@ -26,8 +26,14 @@ class CostEstimationLandingPage extends StatefulWidget {
   // TODO: [CA-467] Remove projectId constructor parameter once retrieved via Bloc.
   // https://ripplearc.youtrack.cloud/issue/CA-467
   final String projectId;
+
+  /// The router used for navigation from the landing page.
   final AppRouter router;
+
+  /// Provides the necessary components to render a cost estimation tile.
   final EstimationTileProvider tileProvider;
+
+  /// A builder function that creates a [CostEstimationLogBloc] when viewing logs.
   final CostEstimationLogBloc Function() logBlocBuilder;
 
   static const double _buttonBottomRatio = 0.135;
@@ -48,7 +54,10 @@ class CostEstimationLandingPage extends StatefulWidget {
 
 class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
   late final ScrollController _scrollController;
+
+  // Begin fetching the next page when 200px from the list bottom.
   static const double _loadMoreThreshold = 200.0;
+
   @override
   void initState() {
     super.initState();
