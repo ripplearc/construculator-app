@@ -36,11 +36,11 @@ Map<String, dynamic> _fakeProjectData({
   };
 }
 
-void expectRight<L, R>(Either<L, R> result, void Function(R value) assertions) {
+void _expectRight<L, R>(Either<L, R> result, void Function(R value) assertions) {
   result.fold((_) => fail('Expected Right but got Left'), assertions);
 }
 
-void expectLeft<L, R>(Either<L, R> result, void Function(L error) assertions) {
+void _expectLeft<L, R>(Either<L, R> result, void Function(L error) assertions) {
   result.fold(assertions, (_) => fail('Expected Left but got Right'));
 }
 
@@ -110,10 +110,11 @@ void main() {
         );
 
         expect(result.isRight(), isTrue);
-        expectRight(result, (projects) {
+        _expectRight(result, (projects) {
           expect(projects, hasLength(1));
           expect(projects.first.id, equals('p-1'));
           expect(projects.first.projectName, equals('Foundation Work'));
+          expect(projects.first.creatorUserId, equals('user-1'));
         });
       });
 
@@ -129,7 +130,7 @@ void main() {
         );
 
         expect(result.isRight(), isTrue);
-        expectRight(result, (projects) => expect(projects, isEmpty));
+        _expectRight(result, (projects) => expect(projects, isEmpty));
       });
 
       test('returns Right with empty list when query is empty without RPC call',
@@ -140,7 +141,7 @@ void main() {
         );
 
         expect(result.isRight(), isTrue);
-        expectRight(result, (projects) => expect(projects, isEmpty));
+        _expectRight(result, (projects) => expect(projects, isEmpty));
         expect(fakeSupabaseWrapper.getMethodCallsFor('rpc'), isEmpty);
       });
 
@@ -152,7 +153,7 @@ void main() {
         );
 
         expect(result.isRight(), isTrue);
-        expectRight(result, (projects) => expect(projects, isEmpty));
+        _expectRight(result, (projects) => expect(projects, isEmpty));
         expect(fakeSupabaseWrapper.getMethodCallsFor('rpc'), isEmpty);
       });
 
@@ -165,7 +166,7 @@ void main() {
           );
 
           expect(result.isRight(), isTrue);
-          expectRight(result, (projects) => expect(projects, isEmpty));
+          _expectRight(result, (projects) => expect(projects, isEmpty));
           expect(fakeSupabaseWrapper.getMethodCallsFor('rpc'), isEmpty);
         },
       );
@@ -179,7 +180,7 @@ void main() {
           );
 
           expect(result.isRight(), isTrue);
-          expectRight(result, (projects) => expect(projects, isEmpty));
+          _expectRight(result, (projects) => expect(projects, isEmpty));
           expect(fakeSupabaseWrapper.getMethodCallsFor('rpc'), isEmpty);
         },
       );
@@ -222,7 +223,7 @@ void main() {
         );
 
         expect(result.isLeft(), isTrue);
-        expectLeft(
+        _expectLeft(
           result,
           (failure) => expect(
             failure,
@@ -243,7 +244,7 @@ void main() {
         );
 
         expect(result.isLeft(), isTrue);
-        expectLeft(
+        _expectLeft(
           result,
           (failure) => expect(
             failure,
@@ -263,7 +264,7 @@ void main() {
         );
 
         expect(result.isLeft(), isTrue);
-        expectLeft(
+        _expectLeft(
           result,
           (failure) => expect(
             failure,
@@ -287,7 +288,7 @@ void main() {
           );
 
           expect(result.isLeft(), isTrue);
-          expectLeft(
+          _expectLeft(
             result,
             (failure) => expect(
               failure,
@@ -312,7 +313,7 @@ void main() {
           );
 
           expect(result.isLeft(), isTrue);
-          expectLeft(
+          _expectLeft(
             result,
             (failure) => expect(
               failure,
@@ -337,7 +338,7 @@ void main() {
           );
 
           expect(result.isLeft(), isTrue);
-          expectLeft(
+          _expectLeft(
             result,
             (failure) => expect(
               failure,
@@ -361,7 +362,7 @@ void main() {
           );
 
           expect(result.isLeft(), isTrue);
-          expectLeft(
+          _expectLeft(
             result,
             (failure) => expect(
               failure,
@@ -386,7 +387,7 @@ void main() {
           );
 
           expect(result.isLeft(), isTrue);
-          expectLeft(
+          _expectLeft(
             result,
             (failure) => expect(
               failure,
@@ -407,7 +408,7 @@ void main() {
         );
 
         expect(result.isLeft(), isTrue);
-        expectLeft(
+        _expectLeft(
           result,
           (failure) => expect(failure, isA<UnexpectedFailure>()),
         );
