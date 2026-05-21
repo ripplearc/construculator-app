@@ -1093,7 +1093,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
   }
 
-  /// Adds data to a specific table
+  /// Replaces all rows for [table] and emits the new state to any active stream listeners
   void addTableData(String table, List<Map<String, dynamic>> data) {
     _tables[table] = data;
     _emitTableData(table);
