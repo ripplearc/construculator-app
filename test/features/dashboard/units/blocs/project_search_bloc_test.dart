@@ -345,6 +345,281 @@ void main() {
         ],
       );
     });
+
+    // -------------------------------------------------------------------------
+    // ProjectSearchHistoryRequestedEvent
+    // -------------------------------------------------------------------------
+
+    group('ProjectSearchHistoryRequestedEvent', () {
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'emits loading then loaded Initial with recents and suggestions on success',
+        setUp: () {
+          fakeSupabase.addTableData(
+            DatabaseConstants.projectSearchHistoryTable,
+            [
+              {
+                DatabaseConstants.userIdColumn: _testUserId,
+                DatabaseConstants.searchTermColumn: 'foundation',
+                DatabaseConstants.updatedAtColumn: '2024-06-01T00:00:00.000Z',
+              },
+              {
+                DatabaseConstants.userIdColumn: _testUserId,
+                DatabaseConstants.searchTermColumn: 'wall',
+                DatabaseConstants.updatedAtColumn: '2024-05-01T00:00:00.000Z',
+              },
+            ],
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.projectSearchSuggestionsRpcFunction,
+            <dynamic>['suggested-1', 'suggested-2'],
+          );
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) =>
+            bloc.add(const ProjectSearchHistoryRequestedEvent()),
+        expect: () => [
+          const ProjectSearchInitial(isLoadingHistory: true),
+          const ProjectSearchInitial(
+            recentSearches: ['foundation', 'wall'],
+            suggestions: ['suggested-1', 'suggested-2'],
+          ),
+        ],
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'emits empty Initial without repository calls when no user is authenticated',
+        setUp: () {
+          fakeSupabase.setCurrentUser(null);
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) =>
+            bloc.add(const ProjectSearchHistoryRequestedEvent()),
+        expect: () => [const ProjectSearchInitial()],
+        verify: (_) {
+          expect(fakeSupabase.getMethodCallsFor('selectMatch'), isEmpty);
+          expect(
+            fakeSupabase
+                .getMethodCallsFor('rpc')
+                .where(
+                  (call) =>
+                      call['functionName'] ==
+                      DatabaseConstants.projectSearchSuggestionsRpcFunction,
+                ),
+            isEmpty,
+          );
+        },
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'degrades suggestions to [] when suggestions RPC fails but recents succeed',
+        setUp: () {
+          fakeSupabase.addTableData(
+            DatabaseConstants.projectSearchHistoryTable,
+            [
+              {
+                DatabaseConstants.userIdColumn: _testUserId,
+                DatabaseConstants.searchTermColumn: 'foundation',
+                DatabaseConstants.updatedAtColumn: '2024-06-01T00:00:00.000Z',
+              },
+            ],
+          );
+          fakeSupabase.shouldThrowOnRpc = true;
+          fakeSupabase.rpcExceptionType = SupabaseExceptionType.timeout;
+          fakeSupabase.rpcErrorMessage = 'Timeout';
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) =>
+            bloc.add(const ProjectSearchHistoryRequestedEvent()),
+        expect: () => [
+          const ProjectSearchInitial(isLoadingHistory: true),
+          const ProjectSearchInitial(
+            recentSearches: ['foundation'],
+            suggestions: [],
+          ),
+        ],
+      );
+    });
+
+    // -------------------------------------------------------------------------
+    // ProjectSearchHistoryItemDismissedEvent
+    // -------------------------------------------------------------------------
+
+    group('ProjectSearchHistoryItemDismissedEvent', () {
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'removes term from cached recents and re-emits Initial on success',
+        setUp: () {
+          fakeSupabase.addTableData(
+            DatabaseConstants.projectSearchHistoryTable,
+            [
+              {
+                DatabaseConstants.userIdColumn: _testUserId,
+                DatabaseConstants.searchTermColumn: 'foundation',
+                DatabaseConstants.updatedAtColumn: '2024-06-01T00:00:00.000Z',
+              },
+              {
+                DatabaseConstants.userIdColumn: _testUserId,
+                DatabaseConstants.searchTermColumn: 'wall',
+                DatabaseConstants.updatedAtColumn: '2024-05-01T00:00:00.000Z',
+              },
+            ],
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.projectSearchSuggestionsRpcFunction,
+            <dynamic>[],
+          );
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchHistoryRequestedEvent());
+          // Wait for the non-loading Initial to land so the cached recents
+          // are populated before we dispatch the dismissal.
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is ProjectSearchInitial && !state.isLoadingHistory,
+          );
+          bloc.add(
+            const ProjectSearchHistoryItemDismissedEvent(
+              searchTerm: 'foundation',
+            ),
+          );
+        },
+        skip: 2,
+        expect: () => [
+          const ProjectSearchInitial(
+            recentSearches: ['wall'],
+            suggestions: [],
+          ),
+        ],
+        verify: (_) {
+          expect(
+            fakeSupabase.getMethodCallsFor('deleteMatch'),
+            hasLength(1),
+          );
+        },
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'emits nothing when no user is authenticated',
+        setUp: () {
+          fakeSupabase.setCurrentUser(null);
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) => bloc.add(
+          const ProjectSearchHistoryItemDismissedEvent(searchTerm: 'wall'),
+        ),
+        expect: () => <ProjectSearchState>[],
+        verify: (_) {
+          expect(fakeSupabase.getMethodCallsFor('deleteMatch'), isEmpty);
+        },
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'emits nothing when deleteMatch fails',
+        setUp: () {
+          fakeSupabase.shouldThrowOnDeleteMatch = true;
+          fakeSupabase.deleteMatchExceptionType =
+              SupabaseExceptionType.timeout;
+          fakeSupabase.deleteMatchErrorMessage = 'Timeout';
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) => bloc.add(
+          const ProjectSearchHistoryItemDismissedEvent(searchTerm: 'wall'),
+        ),
+        expect: () => <ProjectSearchState>[],
+      );
+    });
+
+    // -------------------------------------------------------------------------
+    // Save-after-search behavior
+    // -------------------------------------------------------------------------
+
+    group('save-after-search', () {
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'upserts with hasResults=true when search returns non-empty results',
+        setUp: () {
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {
+              'projects': [_fakeProjectData(id: 'p-1')],
+              'estimations': [],
+              'members': [],
+            },
+          );
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) =>
+            bloc.add(const ProjectSearchPerformedEvent(query: 'wall')),
+        wait: const Duration(milliseconds: 50),
+        verify: (_) {
+          final upserts = fakeSupabase
+              .getMethodCallsFor('upsert')
+              .where(
+                (call) =>
+                    call['table'] ==
+                    DatabaseConstants.projectSearchHistoryTable,
+              )
+              .toList();
+          expect(upserts, hasLength(1));
+          final data = upserts.first['data'] as Map<String, dynamic>;
+          expect(data[DatabaseConstants.hasResultsColumn], isTrue);
+          expect(
+            data[DatabaseConstants.searchTermColumn],
+            equals('wall'),
+          );
+        },
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'upserts with hasResults=false when search returns empty results',
+        setUp: () {
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {'projects': [], 'estimations': [], 'members': []},
+          );
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) =>
+            bloc.add(const ProjectSearchPerformedEvent(query: 'nothing')),
+        wait: const Duration(milliseconds: 50),
+        verify: (_) {
+          final upserts = fakeSupabase
+              .getMethodCallsFor('upsert')
+              .where(
+                (call) =>
+                    call['table'] ==
+                    DatabaseConstants.projectSearchHistoryTable,
+              )
+              .toList();
+          expect(upserts, hasLength(1));
+          final data = upserts.first['data'] as Map<String, dynamic>;
+          expect(data[DatabaseConstants.hasResultsColumn], isFalse);
+        },
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'does not upsert when search fails',
+        setUp: () {
+          fakeSupabase.shouldThrowOnRpc = true;
+          fakeSupabase.rpcExceptionType = SupabaseExceptionType.timeout;
+          fakeSupabase.rpcErrorMessage = 'Timeout';
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) =>
+            bloc.add(const ProjectSearchPerformedEvent(query: 'wall')),
+        wait: const Duration(milliseconds: 50),
+        verify: (_) {
+          final upserts = fakeSupabase
+              .getMethodCallsFor('upsert')
+              .where(
+                (call) =>
+                    call['table'] ==
+                    DatabaseConstants.projectSearchHistoryTable,
+              )
+              .toList();
+          expect(upserts, isEmpty);
+        },
+      );
+    });
   });
 }
 
