@@ -1,9 +1,13 @@
+import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_manager.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
@@ -16,61 +20,61 @@ import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+
+import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
-
-class _DashboardPageTestModule extends Module {
-  final FakeAuthManager authManager;
-  final FakeAuthNotifier authNotifier;
-  final FakeAppRouter appRouter;
-
-  _DashboardPageTestModule({
-    required this.authManager,
-    required this.authNotifier,
-    required this.appRouter,
-  });
-
-  @override
-  void binds(Injector i) {
-    i.addLazySingleton<AuthManager>(() => authManager);
-    i.addLazySingleton<AuthNotifier>(() => authNotifier);
-    i.addLazySingleton<AppRouter>(() => appRouter);
-  }
-}
 
 void main() {
   late FakeClockImpl clock;
+  late FakeSupabaseWrapper fakeSupabase;
   late FakeAuthRepository authRepository;
   late FakeAuthManager authManager;
   late FakeAuthNotifier authNotifier;
   late FakeAppRouter router;
 
-  setUp(() {
+  setUpAll(() async {
+    await loadAppFontsAll();
+
     clock = FakeClockImpl();
+    fakeSupabase = FakeSupabaseWrapper(clock: clock);
     authNotifier = FakeAuthNotifier();
     authRepository = FakeAuthRepository(clock: clock);
     authManager = FakeAuthManager(
       authNotifier: authNotifier,
       authRepository: authRepository,
-      wrapper: FakeSupabaseWrapper(clock: clock),
+      wrapper: fakeSupabase,
       clock: clock,
     );
     router = FakeAppRouter();
 
-    Modular.init(
-      _DashboardPageTestModule(
-        authManager: authManager,
-        authNotifier: authNotifier,
-        appRouter: router,
-      ),
+    final bootstrap = FakeAppBootstrapFactory.create(
+      supabaseWrapper: fakeSupabase,
     );
+    Modular.init(DashboardModule(bootstrap));
+
+    Modular.replaceInstance<AuthNotifierController>(authNotifier);
+    Modular.replaceInstance<AuthNotifier>(authNotifier);
+    Modular.replaceInstance<AuthManager>(authManager);
+    Modular.replaceInstance<AppRouter>(router);
   });
 
-  tearDown(() {
+  tearDownAll(() {
     Modular.destroy();
   });
 
+  setUp(() {
+    fakeSupabase.reset();
+    router.reset();
+    authRepository.returnNullUserProfile = false;
+  });
+
   Widget makeApp() {
-    return MaterialApp(theme: createTestTheme(), home: const DashboardPage());
+    return MaterialApp(
+      theme: createTestTheme(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: const DashboardPage(),
+    );
   }
 
   UserCredential createCredential({
@@ -128,6 +132,19 @@ void main() {
 
     expect(find.text('Welcome back, $firstName $lastName!'), findsOneWidget);
     expect(find.text('You are now logged in to your account'), findsOneWidget);
+  });
+
+  testWidgets('renders RecentEstimationsSection', (tester) async {
+    final credential = createCredential();
+    final user = createUser();
+
+    authManager.setCurrentCredential(credential);
+    authRepository.setUserProfile(user);
+
+    await tester.pumpWidget(makeApp());
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RecentEstimationsSection), findsOneWidget);
   });
 
   testWidgets('logout navigates to login', (tester) async {
