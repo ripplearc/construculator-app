@@ -1562,6 +1562,27 @@ void main() {
           );
         });
 
+        test('throws PostgrestException with 42501 on RLS denial', () async {
+          fakeWrapper.shouldThrowOnUpsert = true;
+          fakeWrapper.upsertExceptionType = SupabaseExceptionType.postgrest;
+          fakeWrapper.postgrestErrorCode = PostgresErrorCode.rlsViolation;
+          fakeWrapper.upsertErrorMessage = 'permission denied for table projects';
+
+          await expectLater(
+            () async => fakeWrapper.upsert(
+              table: 'projects',
+              data: {'id': 'p1'},
+              onConflict: 'id',
+            ),
+            throwsA(
+              isA<supabase.PostgrestException>()
+                  .having((e) => e.code, 'code', '42501')
+                  .having((e) => e.message, 'message',
+                      'permission denied for table projects'),
+            ),
+          );
+        });
+
         test('supports compound conflict columns', () async {
           fakeWrapper.addTableData('memberships', [
             {
