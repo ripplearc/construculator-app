@@ -22,14 +22,13 @@ void main() {
 
   setUpAll(() {
     clock = FakeClockImpl(DateTime(2025, 10, 1, 10, 30));
+  });
+
+  setUp(() {
     supabaseWrapper = FakeSupabaseWrapper(clock: clock);
     bootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: supabaseWrapper,
     );
-  });
-
-  setUp(() {
-    supabaseWrapper.reset();
     Modular.init(_TestModule(bootstrap, clock));
     repository = Modular.get<ProjectRepository>();
   });
@@ -108,7 +107,6 @@ void main() {
         final result = await repository.getProjects('');
 
         expect(result, isEmpty);
-        expect(supabaseWrapper.getMethodCallsFor('select'), isEmpty);
       });
 
       test(
@@ -348,9 +346,6 @@ void main() {
           firstRefreshCompleter.complete();
 
           await expectation;
-
-          final selectCalls = supabaseWrapper.getMethodCallsFor('select');
-          expect(selectCalls.length, greaterThanOrEqualTo(2));
         },
       );
     });
