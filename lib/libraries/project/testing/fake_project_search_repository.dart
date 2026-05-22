@@ -9,10 +9,8 @@ import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 
 /// Fake implementation of [ProjectSearchRepository] for testing.
 class FakeProjectSearchRepository implements ProjectSearchRepository {
-  /// Tracks method calls for assertions.
   final List<Map<String, dynamic>> _methodCalls = [];
 
-  /// Projects returned by [searchProjects] on success.
   final List<Project> _searchResults = [];
 
   /// Controls whether [searchProjects] throws an exception.
@@ -20,9 +18,6 @@ class FakeProjectSearchRepository implements ProjectSearchRepository {
 
   /// Used to specify the type of exception thrown by [searchProjects].
   SupabaseExceptionType? searchProjectsExceptionType;
-
-  /// Error message for [searchProjects] thrown exceptions.
-  String? searchProjectsErrorMessage;
 
   /// Used to specify the Postgres error code thrown by [searchProjects].
   PostgresErrorCode? postgrestErrorCode;
@@ -119,7 +114,6 @@ class FakeProjectSearchRepository implements ProjectSearchRepository {
   void reset() {
     shouldThrowOnSearchProjects = false;
     searchProjectsExceptionType = null;
-    searchProjectsErrorMessage = null;
     postgrestErrorCode = null;
     shouldDelayOperations = false;
     completer = null;
