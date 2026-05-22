@@ -66,7 +66,10 @@ onTabSelected: (index) => context.read<AppShellBloc>().add(AppShellTabSelected(i
 
 Resolve the BLoC in `didChangeDependencies` (not in `build`) to avoid repeated lookups and to satisfy lints that forbid resolving dependencies during build.
 
-If your app does not provide the BLoC via `BlocProvider`, fall back to module registration and `Modular.get`.
+If your app does not provide the BLoC via `BlocProvider`, fall back to module
+registration and resolve as a class field:
+  `final _bloc = Modular.get<FeatureBloc>();`
+Never call `Modular.get` inside `build()` — violates `forbid_modular_get_outside_module`.
 
 **Routing (three-tier model):**
 - **Tab switching** (within shell): Dispatch BLoC events (e.g. `context.read<AppShellBloc>().add(AppShellTabSelected(index))`) — handled by the shell's BLoC; widgets do not have to call `Navigator.push/pop` to switch tabs
@@ -154,7 +157,10 @@ void _registerDependencies(Injector i) {
 ### 🟡 Core Patterns (Always Apply)
 4. **Pages are passive** — Pages display BLoC-provided state and do not contain logic
 5. **BLoC coordinates state** — Derive computed values and state transitions in BLoC (RULE_12)
-6. **Routing via AppRouter** — Use `Modular.get<AppRouter>().push(...)` and `.pop()` for navigation
+6. **Routing (three-tier model):**
+   - Tab switching (within shell): `context.read<AppShellBloc>().add(AppShellTabSelected(index))`
+   - Full-screen (above shell): `_router.push(...)` — resolve as `final _router = Modular.get<AppRouter>();` class field
+   - In-tab drill-downs: `Navigator.of(context).push(...)` / `.pop()` — never AppRouter here
 7. **Testable widgets** — Widgets are dumb presenters; prefer `const` constructors and constructor-based inputs
 
 ## References
@@ -167,4 +173,3 @@ void _registerDependencies(Injector i) {
 - **CoreUI API:** `skills/references/coreui-api.md`
 - **Examples:** `lib/features/auth/presentation/`, `lib/features/project/presentation/`
 - **Future:** `write-tests` skill (planned — widget tests for pages)
-

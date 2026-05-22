@@ -29,6 +29,13 @@ disable-model-invocation: false
 - ✅ `fetchInitialEstimationsByProjectId`, `loadMoreLogs`, `hasMoreLogs`
 - ❌ `getEstimations`, `fetchData`, `load`
 
+## Entities
+
+Prefer `Equatable` for all entities to enable value equality without boilerplate:
+
+- ✅ Extend `Equatable` and override `props`
+- ❌ Don't manually override `==` and `hashCode`
+
 ## Enums
 
 Document each enum case with dartdoc comments explaining business meaning.
