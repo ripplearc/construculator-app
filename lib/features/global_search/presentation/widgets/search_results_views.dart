@@ -12,7 +12,7 @@ const double _emptyStateMaxMessageWidth = 320.0;
 ///
 /// Renders [EstimationCard] for each estimation in [results]. The
 /// [onEstimationTap] and [onEstimationMenuTap] callbacks are forwarded to each
-/// card. CalculationCard integration is tracked in TODO(CA-652).
+/// card.
 class SearchResultsList extends StatelessWidget {
   /// The search results to display.
   final SearchResults results;

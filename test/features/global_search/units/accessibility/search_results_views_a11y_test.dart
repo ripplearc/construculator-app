@@ -1,4 +1,4 @@
-import 'package:construculator/features/estimation/data/estimation_tile_provider_impl.dart';
+import 'package:construculator/libraries/estimation/testing/testing.dart';
 import 'package:construculator/features/global_search/domain/entities/search_results.dart';
 import 'package:construculator/features/global_search/presentation/widgets/search_results_views.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -41,7 +41,7 @@ void main() {
             results: results,
             onEstimationTap: (_) {},
             onEstimationMenuTap: onEstimationMenuTap,
-            estimationTileProvider: const EstimationTileProviderImpl(),
+            estimationTileProvider: const FakeEstimationTileProvider(),
           ),
         ),
       );

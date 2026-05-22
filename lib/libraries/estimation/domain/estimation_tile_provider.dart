@@ -17,8 +17,10 @@ abstract class EstimationTileProvider {
     VoidCallback? onMenuTap,
   });
 
-  /// Builds the tile directly from a [CostEstimate], keeping the mapping
-  /// inside the estimation feature so callers need no feature-layer imports.
+  /// Builds the tile widget directly from a [CostEstimate].
+  ///
+  /// Callers in other features can use this method without needing
+  /// access to feature-internal tile-data types.
   Widget buildFromEstimate({
     required CostEstimate estimate,
     required VoidCallback onTap,
