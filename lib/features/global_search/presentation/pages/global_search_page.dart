@@ -13,7 +13,6 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// Provides a search input field, filter chips (Tags, Modified, Type),
 /// a recent searches section, and an empty state when no recent searches exist.
 class GlobalSearchPage extends StatefulWidget {
-  /// Creates a [GlobalSearchPage].
   const GlobalSearchPage({super.key});
 
   @override
@@ -22,15 +21,8 @@ class GlobalSearchPage extends StatefulWidget {
 
 class _GlobalSearchPageState extends State<GlobalSearchPage> {
   late final AppRouter _router = Modular.get<AppRouter>();
-  late final GlobalSearchBloc _bloc = Modular.get<GlobalSearchBloc>();
   late final TextEditingController _searchController = TextEditingController();
   GlobalSearchReady? _lastReady;
-
-  @override
-  void initState() {
-    super.initState();
-    _bloc.add(const GlobalSearchStarted());
-  }
 
   @override
   void dispose() {
@@ -38,14 +30,14 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
     super.dispose();
   }
 
-  void _onItemTap(String term) {
+  void _onItemTap(BuildContext context, String term) {
     _searchController.text = term;
-    _bloc.add(GlobalSearchPerformed(query: term));
+    BlocProvider.of<GlobalSearchBloc>(context).add(GlobalSearchPerformed(query: term));
   }
 
-  void _onTrailingTap(String term) {
+  void _onTrailingTap(BuildContext context, String term) {
     _searchController.text = term;
-    _bloc.add(GlobalSearchQueryUpdated(query: term));
+    BlocProvider.of<GlobalSearchBloc>(context).add(GlobalSearchQueryUpdated(query: term));
   }
 
   Widget _buildBackButton(BuildContext context) {
@@ -90,8 +82,8 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
     if (effectiveReady != null && effectiveReady.recentSearches.isNotEmpty) {
       return GlobalSearchRecentSearchesList(
         recentSearches: effectiveReady.recentSearches,
-        onItemTap: _onItemTap,
-        onTrailingTap: _onTrailingTap,
+        onItemTap: (term) => _onItemTap(context, term),
+        onTrailingTap: (term) => _onTrailingTap(context, term),
       );
     }
     return const GlobalSearchEmptyRecentWidget();
@@ -103,9 +95,11 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
     final typography = context.textTheme;
     final l10n = context.l10n;
 
-    return BlocProvider.value(
-      value: _bloc,
-      child: Scaffold(
+    return BlocProvider(
+      create: (_) =>
+          Modular.get<GlobalSearchBloc>()..add(const GlobalSearchStarted()),
+      child: Builder(
+        builder: (innerContext) => Scaffold(
         backgroundColor: colors.pageBackground,
         appBar: AppBar(
           backgroundColor: colors.pageBackground,
@@ -113,19 +107,21 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
           titleSpacing: 0,
           title: Row(
             children: [
-              _buildBackButton(context),
+              _buildBackButton(innerContext),
               Expanded(
                 child: CoreSearchBox(
                   controller: _searchController,
                   hintText: l10n.globalSearchHint,
                   clearSemanticLabel: l10n.globalSearchClearSearchSemanticLabel,
                   onChanged: (query) =>
-                      _bloc.add(GlobalSearchQueryUpdated(query: query)),
-                  onSearch: () => _bloc.add(
-                    GlobalSearchPerformed(
-                      query: _searchController.text,
-                    ),
-                  ),
+                      BlocProvider.of<GlobalSearchBloc>(innerContext)
+                          .add(GlobalSearchQueryUpdated(query: query)),
+                  onSearch: () =>
+                      BlocProvider.of<GlobalSearchBloc>(innerContext).add(
+                        GlobalSearchPerformed(
+                          query: _searchController.text,
+                        ),
+                      ),
                 ),
               ),
             ],
@@ -194,6 +190,7 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
