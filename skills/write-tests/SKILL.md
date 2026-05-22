@@ -15,6 +15,8 @@ disable-model-invocation: false
 
 **Input:** Context from coding skills — classes created, file paths, business logic.
 
+> If any pattern below is unclear or you need a concrete Dart implementation, read `skills/write-tests/REFERENCE.md`.
+
 ## 1. Implementation Rules
 
 1. **Use REAL implementations within the same feature** — UseCase, BLoC, Repository, and DataSource tests should use the real feature code from the module.
@@ -35,154 +37,29 @@ disable-model-invocation: false
 
 ### UseCase Tests
 
-**Setup:** Use Modular with real implementations; fake only `SupabaseWrapper` and library repositories.
-
-```dart
-setUp(() {
-  fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
-  final appBootstrap = FakeAppBootstrapFactory.create(
-    supabaseWrapper: fakeSupabase,
-  );
-  Modular.init(FeatureTestModule(appBootstrap));
-
-  useCase = Modular.get<{Verb}{Noun}UseCase>(); // REAL UseCase with REAL Repository
-});
-
-tearDown(() => Modular.destroy());
-```
-
-**Test both success and failure:**
-- Configure `fakeSupabase` state for success path
-- Configure `fakeSupabase.shouldThrowOnX = true` for error path
-- Verify `Either<Failure, T>` results
+Init `FakeSupabaseWrapper` + `FakeAppBootstrapFactory`, pass to `FeatureTestModule`, then get the real UseCase from `Modular`. Test success by seeding fake state; test failure by setting `fakeSupabase.shouldThrowOnX = true`. Verify `Either<Failure, T>` results. Always call `Modular.destroy()` in `tearDown`.
 
 ### BLoC Tests
 
-**Use `bloc_test` package:**
-
-```dart
-import 'package:bloc_test/bloc_test.dart';
-
-blocTest<{Feature}Bloc, {Feature}State>(
-  'emits [Loading, Success] when operation succeeds',
-  build: () => Modular.get<{Feature}Bloc>(), // REAL BLoC
-  act: (bloc) => bloc.add(EventTriggered()),
-  expect: () => [
-    isA<{Feature}Loading>(),
-    isA<{Feature}Success>().having((s) => s.data, 'data', expectedData),
-  ],
-);
-```
-
-**Key:** Test state transitions; avoid testing implementation details like method call counts.
+Use the `bloc_test` package. Get the real BLoC from `Modular`. Use `blocTest` with `build`, `act`, and `expect`. Since BLoC states implement Equatable, prefer full object comparison in `expect` — e.g. `FeatureSuccess(data: expectedData)` — rather than `isA<>().having()`. Only fall back to `isA<>().having()` when the state does not implement Equatable or you intentionally want to match a partial subset of properties.
 
 ### Repository/DataSource Tests
 
-**Test REAL coordination logic:**
-- RepositoryImpl delegates to DataSource ✅
-- DataSource calls `SupabaseWrapper` methods ✅
-- Error mapping: exceptions → Failures ✅
+Test real coordination: RepositoryImpl delegates to DataSource; DataSource calls `SupabaseWrapper` methods; exceptions map to the correct Failure subtype.
 
 ## 3. Widget Test Patterns
 
 ### Page Tests
 
-**Setup:** Create test module + helper to wrap widget.
-
-```dart
-Widget makeTestableWidget({required Widget child}) {
-  return BlocProvider<{Feature}Bloc>(
-    create: (context) => Modular.get<{Feature}Bloc>(),
-    child: MaterialApp(
-      theme: createTestTheme(),
-      home: child,
-      locale: const Locale('en'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-    ),
-  );
-}
-```
-
-**Test pattern:**
-```dart
-testWidgets('displays data when loaded', (tester) async {
-  // Arrange: Set up fake state
-  fakeSupabase.addTableData('table_name', [{ /* data */ }]);
-
-  // Act: Render page
-  await tester.pumpWidget(makeTestableWidget(child: PageWidget()));
-  await tester.pumpAndSettle();
-
-  // Assert: Verify UI (RULE_10: use l10n for text, not hardcoded strings)
-  final l10n = lookupAppLocalizations(const Locale('en'));
-  expect(find.text(l10n.expectedLabel), findsOneWidget);
-  expect(find.byKey(const Key('data_key')), findsOneWidget);
-});
-```
-
-**Why use `l10n` in tests:**
-- **Refactor-safe** — Tests survive UX copy changes
-- **Verifies localization** — Ensures `context.l10n` is wired correctly
-- **Follows RULE_10** — No hardcoded strings, even in tests
-
-**Access localization in tests:**
-```dart
-final l10n = lookupAppLocalizations(const Locale('en'));
-expect(find.text(l10n.submitButton), findsOneWidget);
-```
+Create a `makeTestableWidget` helper that wraps the page in `BlocProvider` + `MaterialApp` with `createTestTheme()`, `locale: const Locale('en')`, and `AppLocalizations` delegates. Seed `fakeSupabase` before pumping. Use `pumpAndSettle()` after pump. Find text via `lookupAppLocalizations(const Locale('en'))` — never hardcoded strings (RULE_10).
 
 ### Widget Interaction Tests
 
-```dart
-testWidgets('button tap triggers event', (tester) async {
-  await tester.pumpWidget(makeTestableWidget(child: PageWidget()));
-  await tester.pumpAndSettle();
-
-  // Interact (RULE_4: CoreTextField, RULE_8: semantic key)
-  await tester.enterText(find.byKey(const Key('input_field')), 'input');
-  await tester.pumpAndSettle();
-
-  await tester.tap(find.text(l10n.submitButton));
-  await tester.pumpAndSettle();
-
-  // Verify result
-  expect(find.text(l10n.successMessage), findsOneWidget);
-});
-```
+Pump the page, interact using `tester.enterText` (find by key, RULE_8) and `tester.tap` (find by `l10n` string), `pumpAndSettle()` after each action, then assert the resulting state.
 
 ## 4. Test Module Setup
 
-**Pattern:** Import real feature module + test-specific modules.
-
-```dart
-class FeatureTestModule extends Module {
-  final AppBootstrap appBootstrap;
-  FeatureTestModule(this.appBootstrap);
-
-  @override
-  List<Module> get imports => [
-    RouterTestModule(),       // FakeAppRouter
-    ClockTestModule(),        // FakeClockImpl
-    FeatureModule(appBootstrap), // REAL implementations
-  ];
-}
-```
-
-**In setUp:**
-```dart
-setUp(() {
-  fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
-
-  final appBootstrap = FakeAppBootstrapFactory.create(
-    supabaseWrapper: fakeSupabase,
-  );
-
-  Modular.init(FeatureTestModule(appBootstrap));
-});
-
-tearDown(() => Modular.destroy());
-```
+`FeatureTestModule` imports `RouterTestModule`, `ClockTestModule`, and the real `FeatureModule(appBootstrap)`. In `setUp`, create `FakeSupabaseWrapper`, build `FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase)`, and call `Modular.init(FeatureTestModule(appBootstrap))`. In `tearDown`, call `Modular.destroy()`.
 
 ## 5. Faking Decision Tree
 
@@ -213,14 +90,10 @@ Is it from SAME feature?
 | `findsNWidgets(3)` (count-based) | `find.byKey` for specific widgets |
 | Faking repo in same feature | Use REAL repo with FakeSupabaseWrapper |
 | Using mocks (`when(...).thenReturn(...)`) | Use fakes that implement interface |
+| `isA<FeatureSuccess>().having((s) => s.data, ...)` | `FeatureSuccess(data: expectedData)` — full object via Equatable |
+| `expect(result.length, 2)` + per-item property checks | `expect(result, [item1, item2])` — full list via Equatable |
 
-**Why avoid `Future.delayed(Duration.zero)`?**
-- Creates flakiness; `pumpAndSettle()` handles frames automatically
-- If async, use `fakeSupabase.shouldDelayOperations = true` + `Completer`
-
-**Why avoid count-based finders?**
-- Brittle; breaks when UI changes
-- Use semantic finders: `byKey`, `text`, `byType` (sparingly)
+For async loading states, use `fakeSupabase.shouldDelayOperations = true` + `Completer` — not `Future.delayed`.
 
 ## 7. File Structure
 
@@ -246,97 +119,14 @@ test/features/{feature}/
 
 ## 8. Accessibility Testing
 
-**When:** Write a11y tests for pages/widgets with interactive elements (buttons, forms, navigation).
-
-**Pattern:** Use test harness from `docs/Testing/Accessibility-Testing.md`:
-
-```dart
-testWidgets('PageWidget meets a11y guidelines', (tester) async {
-  await setupA11yTest(tester);
-
-  await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-    tester,
-    (theme) => const PageWidget(),
-    find.byType(PageWidget),
-  );
-});
-```
-
-**Verifies:**
-- Tap target sizes (48x48 minimum)
-- Semantic labels for screen readers
-- Text contrast (light + dark themes)
-
-**File location:** `test/features/{feature}/accessibility/{page}_a11y_test.dart`
-
-**Reference:** `docs/Testing/Accessibility-Testing.md` — Comprehensive a11y testing guide
+Write a11y tests for pages/widgets with interactive elements. Use `setupA11yTest(tester)` + `expectMeetsTapTargetAndLabelGuidelinesForEachTheme` from the test harness. Verifies tap targets (48×48 min), semantic labels, and contrast across light/dark themes. File in `test/features/{feature}/accessibility/`. See `docs/Testing/Accessibility-Testing.md` for the full harness.
 
 ## 9. Common Patterns
 
-### Testing Invalid Inputs
-
-```dart
-testWidgets('shows validation error for empty input', (tester) async {
-  await renderPage(tester);
-  await tester.enterText(find.byKey(const Key('input_field')), '');
-
-  expect(find.text(l10n.requiredFieldError), findsOneWidget);
-});
-
-testWidgets('handles null or unsupported values safely', (tester) async {
-  fakeSupabase.setResponse(null);
-
-  await renderPage(tester);
-
-  expect(find.text(l10n.genericError), findsOneWidget);
-});
-```
-
-### Testing Error States
-
-```dart
-testWidgets('shows error when operation fails', (tester) async {
-  fakeSupabase.shouldThrowOnInsert = true;
-  fakeSupabase.insertExceptionType = SupabaseExceptionType.socket;
-
-  await renderPage(tester);
-  await tapSubmitButton(tester);
-
-  expect(find.text(l10n.connectionError), findsOneWidget);
-});
-```
-
-### Testing Authentication
-
-```dart
-setUp(() {
-  final user = FakeUser(id: 'user-123', email: 'test@example.com');
-  fakeSupabase.setCurrentUser(user);
-});
-```
-
-### Testing Loading States
-
-```dart
-testWidgets('shows loading indicator during fetch', (tester) async {
-  fakeSupabase.shouldDelayOperations = true;
-  fakeSupabase.completer = Completer();
-
-  await renderPage(tester);
-
-  // Loading state (RULE_4: CoreUI, RULE_8: semantic key)
-  expect(find.byKey(const Key('loading_indicator')), findsOneWidget);
-
-  // Complete operation
-  fakeSupabase.completer!.complete();
-  await tester.pumpAndSettle();
-
-  // Success state
-  expect(find.byKey(const Key('loading_indicator')), findsNothing);
-  final l10n = lookupAppLocalizations(const Locale('en'));
-  expect(find.text(l10n.dataLoaded), findsOneWidget);
-});
-```
+- **Invalid inputs** — Enter empty/null value; assert `l10n.requiredFieldError` or `l10n.genericError` appears.
+- **Error states** — Set `fakeSupabase.shouldThrowOnInsert = true` + `insertExceptionType`; assert error message via `l10n`.
+- **Authentication** — Seed `fakeSupabase.setCurrentUser(FakeUser(...))` in `setUp`.
+- **Loading states** — Set `shouldDelayOperations = true` + `Completer`; assert loading key present; complete; assert success state.
 
 ## Key Principles
 
@@ -347,6 +137,7 @@ testWidgets('shows loading indicator during fetch', (tester) async {
 5. **No flaky patterns** — `pumpAndSettle()` instead of `Future.delayed(Duration.zero)`
 6. **Test both paths** — Success AND error states
 7. **Use `bloc_test`** — For BLoC state transition testing
+8. **Full object comparisons** — Entities, DTOs, and states use Equatable; assert `expect(result, expected)` and `expect(list, [a, b, c])` directly instead of drilling into individual properties
 
 ## References
 

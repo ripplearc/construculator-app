@@ -26,49 +26,23 @@ disable-model-invocation: false
 | Data transformation logic (pagination, filtering, sorting) | Generated code |
 | Critical decision paths (authentication, authorization, payment) | Simple getters/setters |
 
-## What is Mutation Testing?
-
-**Concept:** Mutation testing modifies your code (introduces "mutants") and checks if your tests catch the bugs.
-
-**Core Principle:** Code coverage tells you IF tests executed a line; mutation testing tells you if tests VERIFY the line is correct.
-
-**Example:**
-```dart
-// Original code
-if (amount > 0) {
-  processPayment(amount);
-}
-
-// Mutant 1: Changed > to >=
-if (amount >= 0) {  // 🧬 Mutant
-  processPayment(amount);
-}
-
-// If your tests pass with this mutant, you're missing a boundary test!
-```
-
 ## Logic Classification
 
-**Critical Logic** (requires 80% mutation score):
+**Critical Logic** (requires 85% mutation score):
 - Authentication/authorization systems
-- Payment processing
-- Financial calculations
-- Access control checks
-- Data validation that affects security/correctness
+- Payment processing and financial calculations
+- Access control and data validation affecting security/correctness
 
-**Non-Critical Logic** (60% mutation score acceptable):
-- Display formatting
-- Sorting/filtering for UI
-- Non-essential calculations
-- Secondary features
+**Non-Critical Logic** (70% mutation score acceptable):
+- Display formatting, sorting/filtering for UI
+- Non-essential calculations and secondary features
 
 ## Running Mutation Tests
 
-**Step 1: Create mutation config file**
+**Step 1: Create mutation config**
 
-**File location:** `test/features/{feature}/mutations/{file}_mutations.xml`
+Location: `test/features/{feature}/mutations/{file}_mutations.xml`
 
-**Basic structure:**
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <mutations version="1.0">
@@ -77,145 +51,57 @@ if (amount >= 0) {  // 🧬 Mutant
     </files>
 
     <exclude>
-        <!-- Exclude logging statements -->
         <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
-        <!-- Exclude try-catch structure -->
         <regex pattern="try\s*{" dotAll="false"/>
         <regex pattern="catch\s*\(" dotAll="false"/>
     </exclude>
 
     <rules>
-        <!-- Define specific mutations to test -->
-        <regex pattern="if \(amount > 0\)" dotAll="true" id="boundary.check">
-            <mutation text="if (amount >= 0)"/>
-        </regex>
+        <!-- Define mutations specific to the logic under test -->
     </rules>
 
     <commands>
-        <command group="{usecase}" expected-return="0">
+        <!-- timeout in seconds: set to ~2x your normal test run time to catch infinite loops from mutations -->
+        <command group="{usecase}" expected-return="0" timeout="60">
             flutter test test/features/{feature}/units/domain/usecases/{usecase}_test.dart
         </command>
     </commands>
 
-    <threshold failure="80">
-        <rating over="85" name="A"/>
-        <rating over="75" name="B"/>
-        <rating over="65" name="C"/>
+    <threshold failure="85">
+        <rating over="90" name="A"/>
+        <rating over="85" name="B"/>
+        <rating over="70" name="C"/>
         <rating over="0" name="F"/>
     </threshold>
 </mutations>
 ```
 
-**Step 2: Run mutation tests**
+**Step 2: Run**
 
 ```bash
-# Using mutant package
 dart run mutant --config test/features/{feature}/mutations/{file}_mutations.xml
-
-# Or target specific file directly
-dart run mutant \
-  --file lib/features/{feature}/domain/usecases/{usecase}.dart \
-  --test-file test/features/{feature}/units/domain/usecases/{usecase}_test.dart
 ```
 
-**Step 3: Analyze results**
+**Step 3: Check the score**
 
-```
-Mutation Score: 85% (17/20 mutants killed)
+The report is written to `mutation-test-report/mutation-test-report.html`. Read it directly — it is always small (~8KB) and contains the overall score, detected/total counts, and quality rating.
 
-Surviving Mutants:
-- Line 42: Changed > to >= (SURVIVED)
-- Line 58: Removed null check (SURVIVED)
-- Line 71: Changed + to - (SURVIVED)
-```
+**If score ≥ 85% → done.**
 
-## Common Mutation Types
+**If score < 85% → extract undetected mutations:**
 
-| Mutation Type | Example | What it Tests |
-|---------------|---------|---------------|
-| **Conditional Boundary** | `>` → `>=` | Boundary conditions |
-| **Negation** | `if (x)` → `if (!x)` | Boolean logic |
-| **Arithmetic** | `+` → `-`, `*` → `/` | Calculations |
-| **Return Value** | `return x` → `return null` | Null handling |
-| **Constant** | `0.1` → `0.0` | Magic numbers |
-| **Statement Deletion** | Remove line | Statement necessity |
-
-## Interpreting Results
-
-**Mutant Killed ✅:**
-```
-✓ Mutant: Changed > to >= on line 42
-  Test: should not process zero amount
-  Status: KILLED
-```
-→ Good! Your test caught the bug.
-
-**Mutant Survived ❌:**
-```
-✗ Mutant: Changed > to >= on line 42
-  Test: (no test failed)
-  Status: SURVIVED
-```
-→ Gap in tests! Add test for boundary condition.
-
-**Equivalent Mutant ⚠️:**
-```
-~ Mutant: Changed && to &
-  Note: Logically equivalent
-  Status: EQUIVALENT
-```
-→ Can't be killed (doesn't change behavior). Mark as equivalent.
-
-## Adding Tests to Kill Mutants
-
-**Strategy 1: Test Boundary Conditions**
-
-```dart
-// Code with boundary
-if (age >= 18) {
-  grantAccess();
-}
-
-// Tests to kill boundary mutants
-test('should grant access when age is exactly 18', () { });  // Boundary
-test('should deny access when age is 17', () { });  // Just below
-test('should grant access when age is 19', () { });  // Just above
+```bash
+# List every survived mutation ID across all detail files
+find mutation-test-report/lib -name "*.dart.html" -exec \
+  grep -l "Undetected" {} \; | while read f; do
+    echo "=== $f ===";
+    grep -A8 "Undetected mutations" "$f" | grep -o 'Id: [^<]*';
+  done
 ```
 
-**Strategy 2: Test All Branches**
+⚠️ Do NOT read per-file detail HTML files in full — they can be 75KB+. Use the grep above instead.
 
-```dart
-// Code with multiple branches
-if (status == 'active') {
-  return ActiveState();
-} else if (status == 'pending') {
-  return PendingState();
-} else {
-  return InactiveState();
-}
-
-// Tests to kill branch mutants
-test('should return ActiveState when status is active', () { });
-test('should return PendingState when status is pending', () { });
-test('should return InactiveState when status is neither', () { });
-```
-
-**Strategy 3: Test Calculations**
-
-```dart
-// Code with calculation
-double calculateTax(double price) {
-  return price * 0.08;
-}
-
-// Tests to kill arithmetic mutants
-test('should calculate 8% tax correctly', () {
-  expect(calculateTax(100.0), 8.0);  // Kills * → /, * → +, etc.
-});
-test('should return 0 for 0 price', () {
-  expect(calculateTax(0.0), 0.0);  // Kills constant mutations
-});
-```
+For each survived mutation ID, add a test that directly asserts the behavior the mutation changes (boundary value, branch path, return value, etc.). Then re-run until score ≥ 85%.
 
 ## File Organization
 
@@ -226,73 +112,37 @@ test/features/{feature}/mutations/
 └── {datasource}_mutations.xml
 ```
 
-**Mutation configs are manually created for logic-heavy files only.**
+## Score Targets
 
-## Mutation Score Target
-
-| Score | Quality | Action |
-|-------|---------|--------|
-| **80-100%** | Excellent ✅ | Good coverage |
-| **60-79%** | Acceptable ⚠️ | For non-critical logic only |
-| **<60%** | Insufficient ❌ | Add more tests |
-
-**Note:** 100% is ideal but not always necessary. Some mutants are equivalent (don't change behavior).
-
-### Handling Low Mutation Scores
-
-**If score <60%:**
-1. Review list of surviving mutants
-2. Identify which mutants are in critical code paths
-3. Add tests targeting those specific mutations (see "Adding Tests to Kill Mutants")
-4. Re-run mutation tests to verify improvements
-5. If score remains low, investigate whether code has unnecessary complexity
-
-**If score 60-79%:**
-- Acceptable for non-critical logic
-- For critical logic (auth, payment), add more tests until ≥80%
-
-### Error Handling
-
-**If mutation tool fails:**
-1. Check XML config file for syntax errors
-2. Verify `dart run mutant` package is installed: `dart pub global activate mutant`
-3. Ensure test file path in `<commands>` is correct
-4. Check that target file exists and compiles
-5. Run tests manually first to verify they pass: `flutter test {test_file_path}`
+| Score | Status | Action |
+|-------|--------|--------|
+| 85–100% | ✅ Pass | Ship |
+| 70–84% | ⚠️ Acceptable | Non-critical logic only |
+| <70% | ❌ Insufficient | Extract survived mutations and add tests |
 
 ## Typical Targets
 
-**✅ Run mutation tests for:**
-- `lib/features/**/domain/usecases/*.dart` — Complex UseCases
-- `lib/features/**/domain/services/*.dart` — Business services
-- `lib/features/**/data/repositories/*_impl.dart` — If contains logic
-- `lib/features/**/data/data_source/*.dart` — If contains transformation logic
+**✅ Run for:**
+- `lib/features/**/domain/usecases/*.dart`
+- `lib/features/**/domain/services/*.dart`
+- `lib/features/**/data/repositories/*_impl.dart` — if contains logic
+- `lib/features/**/data/data_source/*.dart` — if contains transformation logic
 
-**❌ Skip mutation tests for:**
-- `lib/features/**/presentation/**` — UI code (use widget tests)
-- `lib/features/**/data/models/**` — DTOs (simple mapping)
+**❌ Skip:**
+- `lib/features/**/presentation/**`
+- `lib/features/**/data/models/**`
 - Generated code
 
 ## Best Practices
 
-1. **Run during PR review** — Not on every commit (mutation testing is slow)
-2. **Target changed files only** — Don't run on entire codebase
-3. **Document in PR** — Include mutation score in PR description
-4. **Focus on critical paths** — Authentication, authorization, payment, validation
-5. **80% minimum** — For critical logic; 60% acceptable for non-critical
-
-## Key Principles
-
-1. **Gated skill** — Only for logic-heavy changes (3+ conditional branches)
-2. **Quality over quantity** — Code coverage ≠ test quality
-3. **Test boundaries** — Edge cases (0, null, empty, max values)
-4. **Test all branches** — Every conditional path
-5. **80% mutation score** — Minimum for critical logic
+1. Run during PR review, not on every commit (mutation testing is slow)
+2. Target changed files only
+3. Include mutation score in PR description
+4. Focus on critical paths: auth, authorization, payment, validation
+5. Read `mutation-test-report.html` for score; grep detail HTML for survived mutation IDs — never read detail files in full
 
 ## References
 
-- **RULE_13:** `skills/rules/13-mutation-testing.md` — Mutation testing for logic-heavy changes
-- **Examples:** `test/features/estimations/mutations/add_cost_estimation_usecase.xml`
-- **Mutation Package:** [Dart Mutant](https://pub.dev/packages/mutant)
-- **Concept:** [Mutation Testing Introduction](https://en.wikipedia.org/wiki/Mutation_testing)
-
+- **RULE_13:** `skills/rules/13-mutation-testing.md`
+- **Example config:** `test/features/estimations/mutations/add_cost_estimation_usecase.xml`
+- **Package:** `dart pub global activate mutant`
