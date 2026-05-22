@@ -1,5 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/project_search_bloc/project_search_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
@@ -24,6 +25,10 @@ class DashboardModule extends Module {
   void binds(Injector i) {
     i.add<ProjectDropdownBloc>(
       () => ProjectDropdownBloc(projectRepository: i(), authManager: i()),
+    );
+
+    i.add<ProjectSearchBloc>(
+      () => ProjectSearchBloc(repository: i(), authManager: i()),
     );
   }
 
