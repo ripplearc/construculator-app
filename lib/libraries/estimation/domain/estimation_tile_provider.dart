@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_tile_data.dart';
 import 'package:flutter/widgets.dart';
 
@@ -12,6 +13,14 @@ abstract class EstimationTileProvider {
   /// The optional [onMenuTap] callback is invoked when the menu icon is tapped.
   Widget buildEstimationTile({
     required EstimationTileData data,
+    required VoidCallback onTap,
+    VoidCallback? onMenuTap,
+  });
+
+  /// Builds the tile directly from a [CostEstimate], keeping the mapping
+  /// inside the estimation feature so callers need no feature-layer imports.
+  Widget buildFromEstimate({
+    required CostEstimate estimate,
     required VoidCallback onTap,
     VoidCallback? onMenuTap,
   });

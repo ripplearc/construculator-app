@@ -1359,6 +1359,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You don\'t have permission to perform this action'**
   String get permissionDenied;
+
+  /// Section header shown above the search results list
+  ///
+  /// In en, this message translates to:
+  /// **'Most relevant'**
+  String get searchResultsMostRelevant;
+
+  /// Empty state message shown when a search returns no results
+  ///
+  /// In en, this message translates to:
+  /// **'No results for \"{query}\"'**
+  String searchResultsEmpty(String query);
 }
 
 class _AppLocalizationsDelegate
