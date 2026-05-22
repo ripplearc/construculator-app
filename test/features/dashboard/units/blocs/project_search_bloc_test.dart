@@ -345,6 +345,100 @@ void main() {
         ],
       );
     });
+
+    // -------------------------------------------------------------------------
+    // ProjectSearchHistoryRequestedEvent
+    // -------------------------------------------------------------------------
+
+    group('ProjectSearchHistoryRequestedEvent', () {
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'emits loading then loaded Initial with recents and suggestions on success',
+        setUp: () {
+          fakeSupabase.addTableData(
+            DatabaseConstants.projectSearchHistoryTable,
+            [
+              {
+                DatabaseConstants.userIdColumn: _testUserId,
+                DatabaseConstants.searchTermColumn: 'foundation',
+                DatabaseConstants.updatedAtColumn: '2024-06-01T00:00:00.000Z',
+              },
+              {
+                DatabaseConstants.userIdColumn: _testUserId,
+                DatabaseConstants.searchTermColumn: 'wall',
+                DatabaseConstants.updatedAtColumn: '2024-05-01T00:00:00.000Z',
+              },
+            ],
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.projectSearchSuggestionsRpcFunction,
+            <dynamic>['suggested-1', 'suggested-2'],
+          );
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) =>
+            bloc.add(const ProjectSearchHistoryRequestedEvent()),
+        expect: () => [
+          const ProjectSearchInitial(isLoadingHistory: true),
+          const ProjectSearchInitial(
+            recentSearches: ['foundation', 'wall'],
+            suggestions: ['suggested-1', 'suggested-2'],
+          ),
+        ],
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'emits empty Initial without repository calls when no user is authenticated',
+        setUp: () {
+          fakeSupabase.setCurrentUser(null);
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) =>
+            bloc.add(const ProjectSearchHistoryRequestedEvent()),
+        expect: () => [const ProjectSearchInitial()],
+        verify: (_) {
+          expect(fakeSupabase.getMethodCallsFor('selectMatch'), isEmpty);
+          expect(
+            fakeSupabase
+                .getMethodCallsFor('rpc')
+                .where(
+                  (call) =>
+                      call['functionName'] ==
+                      DatabaseConstants.projectSearchSuggestionsRpcFunction,
+                ),
+            isEmpty,
+          );
+        },
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'degrades suggestions to [] when suggestions RPC fails but recents succeed',
+        setUp: () {
+          fakeSupabase.addTableData(
+            DatabaseConstants.projectSearchHistoryTable,
+            [
+              {
+                DatabaseConstants.userIdColumn: _testUserId,
+                DatabaseConstants.searchTermColumn: 'foundation',
+                DatabaseConstants.updatedAtColumn: '2024-06-01T00:00:00.000Z',
+              },
+            ],
+          );
+          fakeSupabase.shouldThrowOnRpc = true;
+          fakeSupabase.rpcExceptionType = SupabaseExceptionType.timeout;
+          fakeSupabase.rpcErrorMessage = 'Timeout';
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) =>
+            bloc.add(const ProjectSearchHistoryRequestedEvent()),
+        expect: () => [
+          const ProjectSearchInitial(isLoadingHistory: true),
+          const ProjectSearchInitial(
+            recentSearches: ['foundation'],
+            suggestions: [],
+          ),
+        ],
+      );
+    });
   });
 }
 

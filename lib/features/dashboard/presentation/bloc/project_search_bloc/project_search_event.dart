@@ -37,3 +37,10 @@ class ProjectSearchPerformedEvent extends ProjectSearchEvent {
   @override
   List<Object?> get props => [query];
 }
+
+/// Dispatched when the project-search surface opens to request recent searches
+/// and personalized suggestions in parallel.
+class ProjectSearchHistoryRequestedEvent extends ProjectSearchEvent {
+  /// Creates a [ProjectSearchHistoryRequestedEvent].
+  const ProjectSearchHistoryRequestedEvent();
+}

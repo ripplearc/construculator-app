@@ -10,10 +10,31 @@ sealed class ProjectSearchState extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Cold start before any search has been performed.
+/// Idle / cold-start state shown when no active search is in flight.
+///
+/// Carries the user's [recentSearches] and personalized [suggestions] so the
+/// UI can render both surfaces from a single state. [isLoadingHistory] is
+/// `true` while the parallel fetch of recents + suggestions is in flight.
 class ProjectSearchInitial extends ProjectSearchState {
-  /// Creates a [ProjectSearchInitial].
-  const ProjectSearchInitial();
+  /// The user's recent project-search terms, most recently used first.
+  final List<String> recentSearches;
+
+  /// Personalized project-search suggestion terms.
+  final List<String> suggestions;
+
+  /// `true` while recents and suggestions are being fetched.
+  final bool isLoadingHistory;
+
+  /// Creates a [ProjectSearchInitial] with the given [recentSearches],
+  /// [suggestions], and [isLoadingHistory] flag.
+  const ProjectSearchInitial({
+    this.recentSearches = const [],
+    this.suggestions = const [],
+    this.isLoadingHistory = false,
+  });
+
+  @override
+  List<Object?> get props => [recentSearches, suggestions, isLoadingHistory];
 }
 
 /// Emitted while a search request is in flight.
