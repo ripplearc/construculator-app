@@ -11,9 +11,6 @@ import 'package:rxdart/rxdart.dart';
 part 'project_search_event.dart';
 part 'project_search_state.dart';
 
-/// Debounce duration applied to [ProjectSearchQueryUpdatedEvent] events.
-///
-/// Kept here so the BLoC owns the contract — no UI-side debouncing required.
 const Duration _kQueryDebounceDuration = Duration(milliseconds: 300);
 
 EventTransformer<E> _debounce<E>(Duration duration) =>
@@ -36,32 +33,23 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
        _authManager = authManager,
        super(const ProjectSearchInitial()) {
     on<ProjectSearchQueryUpdatedEvent>(
-      _onQueryUpdated,
+      (event, emit) => _handleQuery(event.query, emit),
       transformer: _debounce(_kQueryDebounceDuration),
     );
-    on<ProjectSearchPerformedEvent>(_onPerformed);
+    on<ProjectSearchPerformedEvent>(
+      (event, emit) => _handleQuery(event.query, emit),
+    );
   }
 
-  Future<void> _onQueryUpdated(
-    ProjectSearchQueryUpdatedEvent event,
+  Future<void> _handleQuery(
+    String query,
     Emitter<ProjectSearchState> emit,
   ) async {
-    if (event.query.trim().isEmpty) {
+    if (query.trim().isEmpty) {
       emit(const ProjectSearchInitial());
       return;
     }
-    await _executeSearch(event.query, emit);
-  }
-
-  Future<void> _onPerformed(
-    ProjectSearchPerformedEvent event,
-    Emitter<ProjectSearchState> emit,
-  ) async {
-    if (event.query.trim().isEmpty) {
-      emit(const ProjectSearchInitial());
-      return;
-    }
-    await _executeSearch(event.query, emit);
+    await _executeSearch(query, emit);
   }
 
   Future<void> _executeSearch(
