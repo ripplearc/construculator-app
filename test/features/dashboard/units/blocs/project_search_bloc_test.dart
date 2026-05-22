@@ -48,21 +48,13 @@ void main() {
     late FakeSupabaseWrapper fakeSupabase;
     late FakeClockImpl fakeClock;
 
-    setUpAll(() {
+    setUp(() {
       fakeClock = FakeClockImpl();
       final bootstrap = FakeAppBootstrapFactory.create(
         supabaseWrapper: FakeSupabaseWrapper(clock: fakeClock),
       );
       Modular.init(_ProjectSearchBlocTestModule(bootstrap));
       fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
-    });
-
-    tearDownAll(() {
-      Modular.dispose();
-    });
-
-    setUp(() {
-      fakeSupabase.reset();
       fakeSupabase.setCurrentUser(
         FakeUser(
           id: _testUserId,
@@ -70,6 +62,11 @@ void main() {
           createdAt: fakeClock.now().toIso8601String(),
         ),
       );
+    });
+
+    tearDown(() {
+      fakeSupabase.reset();
+      Modular.destroy();
     });
 
     test('initial state is ProjectSearchInitial', () {
@@ -212,8 +209,6 @@ void main() {
         },
         build: () => Modular.get<ProjectSearchBloc>(),
         act: (bloc) {
-          // Both events added synchronously — debounce coalesces them and only
-          // fires the handler for the last one (switchMap cancels the first).
           bloc.add(const ProjectSearchQueryUpdatedEvent(query: 'first'));
           bloc.add(const ProjectSearchQueryUpdatedEvent(query: 'last'));
         },
