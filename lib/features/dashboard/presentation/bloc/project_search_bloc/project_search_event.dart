@@ -44,3 +44,16 @@ class ProjectSearchHistoryRequestedEvent extends ProjectSearchEvent {
   /// Creates a [ProjectSearchHistoryRequestedEvent].
   const ProjectSearchHistoryRequestedEvent();
 }
+
+/// Dispatched when the user dismisses a single recent-search chip.
+class ProjectSearchHistoryItemDismissedEvent extends ProjectSearchEvent {
+  /// The recent-search term to remove from history.
+  final String searchTerm;
+
+  /// Creates a [ProjectSearchHistoryItemDismissedEvent] with the given
+  /// [searchTerm].
+  const ProjectSearchHistoryItemDismissedEvent({required this.searchTerm});
+
+  @override
+  List<Object?> get props => [searchTerm];
+}
