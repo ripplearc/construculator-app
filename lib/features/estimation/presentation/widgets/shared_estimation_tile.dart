@@ -39,7 +39,7 @@ class SharedEstimationTile extends StatelessWidget {
       button: true,
       label: data.estimateName,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: CoreSpacing.space3),
+        margin: const EdgeInsets.symmetric(vertical: CoreSpacing.space2),
         decoration: BoxDecoration(
           color: appColors.pageBackground,
           borderRadius: BorderRadius.circular(CoreSpacing.space3),

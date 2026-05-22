@@ -1,4 +1,4 @@
-import 'package:construculator/features/estimation/data/estimation_tile_provider_impl.dart';
+import 'package:construculator/libraries/estimation/testing/testing.dart';
 import 'package:construculator/features/global_search/domain/entities/search_results.dart';
 import 'package:construculator/features/global_search/presentation/widgets/search_results_views.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -57,12 +57,12 @@ void main() {
             results: results,
             onEstimationTap: (_) {},
             onEstimationMenuTap: (_) {},
-            estimationTileProvider: const EstimationTileProviderImpl(),
+            estimationTileProvider: const FakeEstimationTileProvider(),
           ),
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
   }
 
   Future<void> pumpEmptyView({
@@ -84,7 +84,7 @@ void main() {
         home: Material(child: SearchResultsEmptyView(query: query)),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
   }
 
   Future<void> pumpLoadingView({

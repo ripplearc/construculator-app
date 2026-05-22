@@ -14,7 +14,7 @@ class EstimationCard extends StatelessWidget {
   final VoidCallback onTap;
 
   /// Called when the overflow menu icon is tapped.
-  /// When null, the menu icon remains visible but is not interactive.
+  /// Pass null to opt out of menu interactions.
   final VoidCallback? onMenuTap;
 
   final EstimationTileProvider _provider;
