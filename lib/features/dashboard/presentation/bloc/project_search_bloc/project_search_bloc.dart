@@ -18,12 +18,16 @@ EventTransformer<E> _debounce<E>(Duration duration) =>
 
 /// BLoC for managing project search state on the dashboard.
 ///
-/// Handles debounced query updates and explicit search submissions, delegating
-/// to [ProjectSearchRepository] and mapping results to typed states.
+/// Handles debounced query updates and explicit search submissions, plus the
+/// recent-searches and suggestions surfaces shown on the idle state.
+/// Delegates to [ProjectSearchRepository] and maps results to typed states.
 class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
   final ProjectSearchRepository _repository;
   final AuthManager _authManager;
   static final _logger = AppLogger().tag('ProjectSearchBloc');
+
+  List<String> _cachedRecents = const [];
+  List<String> _cachedSuggestions = const [];
 
   /// Creates a [ProjectSearchBloc] with the given [repository] and [authManager].
   ProjectSearchBloc({
@@ -36,9 +40,8 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
       (event, emit) => _handleQuery(event.query, emit),
       transformer: _debounce(_kQueryDebounceDuration),
     );
-    on<ProjectSearchPerformedEvent>(
-      (event, emit) => _handleQuery(event.query, emit),
-    );
+    on<ProjectSearchPerformedEvent>(_onPerformed);
+    on<ProjectSearchHistoryRequestedEvent>(_onHistoryRequested);
   }
 
   Future<void> _handleQuery(
@@ -50,6 +53,62 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
       return;
     }
     await _executeSearch(query, emit);
+  }
+
+  Future<void> _onPerformed(
+    ProjectSearchPerformedEvent event,
+    Emitter<ProjectSearchState> emit,
+  ) async {
+    if (event.query.trim().isEmpty) {
+      emit(const ProjectSearchInitial());
+      return;
+    }
+    await _executeSearch(event.query, emit);
+  }
+
+  Future<void> _onHistoryRequested(
+    ProjectSearchHistoryRequestedEvent event,
+    Emitter<ProjectSearchState> emit,
+  ) async {
+    final userId = _authManager.getCurrentCredentials().data?.id;
+    if (userId == null || userId.isEmpty) {
+      _logger.warning('History request aborted: no authenticated user');
+      emit(const ProjectSearchInitial());
+      return;
+    }
+
+    emit(
+      ProjectSearchInitial(
+        recentSearches: _cachedRecents,
+        suggestions: _cachedSuggestions,
+        isLoadingHistory: true,
+      ),
+    );
+
+    final results = await Future.wait([
+      _repository.getRecentProjectSearches(userId: userId),
+      _repository.getProjectSearchSuggestions(userId: userId),
+    ]);
+
+    final recents = results[0].fold<List<String>>(
+      (failure) {
+        _logger.warning('Failed to load recent project searches: $failure');
+        return const [];
+      },
+      (terms) => terms,
+    );
+    final suggestions = results[1].fold<List<String>>(
+      (failure) {
+        _logger.warning('Failed to load project search suggestions: $failure');
+        return const [];
+      },
+      (terms) => terms,
+    );
+
+    _cachedRecents = recents;
+    _cachedSuggestions = suggestions;
+
+    emit(_initialFromCache());
   }
 
   Future<void> _executeSearch(
@@ -84,4 +143,9 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
           emit(ProjectSearchResultsLoaded(results: projects, query: query)),
     );
   }
+
+  ProjectSearchInitial _initialFromCache() => ProjectSearchInitial(
+    recentSearches: _cachedRecents,
+    suggestions: _cachedSuggestions,
+  );
 }
