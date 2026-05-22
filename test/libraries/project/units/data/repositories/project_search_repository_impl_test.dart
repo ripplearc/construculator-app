@@ -414,5 +414,452 @@ void main() {
         );
       });
     });
+
+    // -----------------------------------------------------------------------
+    // Shared error-matrix scenarios — used by all four history/suggestion
+    // methods. Each scenario configures the FakeSupabaseWrapper and asserts
+    // the mapped Failure on the Either<Left>.
+    // -----------------------------------------------------------------------
+
+    void configureWrapperToThrowOn({
+      required FakeSupabaseWrapper wrapper,
+      required _WrapperOp op,
+      required SupabaseExceptionType type,
+      PostgresErrorCode? postgresCode,
+    }) {
+      switch (op) {
+        case _WrapperOp.rpc:
+          wrapper.shouldThrowOnRpc = true;
+          wrapper.rpcExceptionType = type;
+          wrapper.rpcErrorMessage = 'rpc error';
+        case _WrapperOp.upsert:
+          wrapper.shouldThrowOnUpsert = true;
+          wrapper.upsertExceptionType = type;
+          wrapper.upsertErrorMessage = 'upsert error';
+        case _WrapperOp.selectMatch:
+          wrapper.shouldThrowOnSelectMatch = true;
+          wrapper.selectMatchExceptionType = type;
+          wrapper.selectMatchErrorMessage = 'select error';
+        case _WrapperOp.deleteMatch:
+          wrapper.shouldThrowOnDeleteMatch = true;
+          wrapper.deleteMatchExceptionType = type;
+          wrapper.deleteMatchErrorMessage = 'delete error';
+      }
+      wrapper.postgrestErrorCode = postgresCode;
+    }
+
+    /// Asserts that [action] maps the given thrown exception to [expected].
+    Future<void> assertMappedFailure({
+      required _WrapperOp op,
+      required SupabaseExceptionType throwType,
+      PostgresErrorCode? postgresCode,
+      required Future<Either<Failure, Object?>> Function() action,
+      required Failure expected,
+    }) async {
+      configureWrapperToThrowOn(
+        wrapper: fakeSupabaseWrapper,
+        op: op,
+        type: throwType,
+        postgresCode: postgresCode,
+      );
+      final result = await action();
+      _expectLeft(result, (failure) => expect(failure, expected));
+    }
+
+    /// Runs the full _handleError matrix against [action].
+    void runErrorMatrix({
+      required String label,
+      required _WrapperOp op,
+      required Future<Either<Failure, Object?>> Function() action,
+    }) {
+      test('$label — TimeoutException → timeoutError failure', () async {
+        await assertMappedFailure(
+          op: op,
+          throwType: SupabaseExceptionType.timeout,
+          action: action,
+          expected: SearchFailure(errorType: SearchErrorType.timeoutError),
+        );
+      });
+
+      test('$label — SocketException → connectionError failure', () async {
+        await assertMappedFailure(
+          op: op,
+          throwType: SupabaseExceptionType.socket,
+          action: action,
+          expected: SearchFailure(errorType: SearchErrorType.connectionError),
+        );
+      });
+
+      test('$label — TypeError → parsingError failure', () async {
+        await assertMappedFailure(
+          op: op,
+          throwType: SupabaseExceptionType.type,
+          action: action,
+          expected: SearchFailure(errorType: SearchErrorType.parsingError),
+        );
+      });
+
+      test(
+        '$label — PostgrestException(noDataFound) → notFoundError failure',
+        () async {
+          await assertMappedFailure(
+            op: op,
+            throwType: SupabaseExceptionType.postgrest,
+            postgresCode: PostgresErrorCode.noDataFound,
+            action: action,
+            expected: SearchFailure(errorType: SearchErrorType.notFoundError),
+          );
+        },
+      );
+
+      test(
+        '$label — PostgrestException(connectionFailure) → connectionError failure',
+        () async {
+          await assertMappedFailure(
+            op: op,
+            throwType: SupabaseExceptionType.postgrest,
+            postgresCode: PostgresErrorCode.connectionFailure,
+            action: action,
+            expected: SearchFailure(
+              errorType: SearchErrorType.connectionError,
+            ),
+          );
+        },
+      );
+
+      test(
+        '$label — PostgrestException(unableToConnect) → connectionError failure',
+        () async {
+          await assertMappedFailure(
+            op: op,
+            throwType: SupabaseExceptionType.postgrest,
+            postgresCode: PostgresErrorCode.unableToConnect,
+            action: action,
+            expected: SearchFailure(
+              errorType: SearchErrorType.connectionError,
+            ),
+          );
+        },
+      );
+
+      test(
+        '$label — PostgrestException(connectionDoesNotExist) → connectionError failure',
+        () async {
+          await assertMappedFailure(
+            op: op,
+            throwType: SupabaseExceptionType.postgrest,
+            postgresCode: PostgresErrorCode.connectionDoesNotExist,
+            action: action,
+            expected: SearchFailure(
+              errorType: SearchErrorType.connectionError,
+            ),
+          );
+        },
+      );
+
+      test(
+        '$label — PostgrestException(unhandled code) → unexpectedDatabaseError failure',
+        () async {
+          await assertMappedFailure(
+            op: op,
+            throwType: SupabaseExceptionType.postgrest,
+            postgresCode: PostgresErrorCode.uniqueViolation,
+            action: action,
+            expected: SearchFailure(
+              errorType: SearchErrorType.unexpectedDatabaseError,
+            ),
+          );
+        },
+      );
+
+      test('$label — unknown error → UnexpectedFailure', () async {
+        configureWrapperToThrowOn(
+          wrapper: fakeSupabaseWrapper,
+          op: op,
+          type: SupabaseExceptionType.unknown,
+        );
+        final result = await action();
+        _expectLeft(result, (failure) => expect(failure, isA<UnexpectedFailure>()));
+      });
+    }
+
+    group('saveRecentProjectSearch', () {
+      test('returns Right(null) on success and upserts via wrapper', () async {
+        final result = await repository.saveRecentProjectSearch(
+          userId: testUserId,
+          searchTerm: 'foundation',
+          hasResults: true,
+        );
+
+        expect(result.isRight(), isTrue);
+        expect(fakeSupabaseWrapper.getMethodCallsFor('upsert'), hasLength(1));
+      });
+
+      test('returns Right(null) without upsert when userId is empty', () async {
+        final result = await repository.saveRecentProjectSearch(
+          userId: '',
+          searchTerm: 'foundation',
+        );
+
+        expect(result.isRight(), isTrue);
+        expect(fakeSupabaseWrapper.getMethodCallsFor('upsert'), isEmpty);
+      });
+
+      test(
+        'returns Right(null) without upsert when userId is whitespace only',
+        () async {
+          final result = await repository.saveRecentProjectSearch(
+            userId: '   ',
+            searchTerm: 'foundation',
+          );
+
+          expect(result.isRight(), isTrue);
+          expect(fakeSupabaseWrapper.getMethodCallsFor('upsert'), isEmpty);
+        },
+      );
+
+      test(
+        'returns Right(null) without upsert when searchTerm is empty',
+        () async {
+          final result = await repository.saveRecentProjectSearch(
+            userId: testUserId,
+            searchTerm: '',
+          );
+
+          expect(result.isRight(), isTrue);
+          expect(fakeSupabaseWrapper.getMethodCallsFor('upsert'), isEmpty);
+        },
+      );
+
+      test(
+        'returns Right(null) without upsert when searchTerm is whitespace only',
+        () async {
+          final result = await repository.saveRecentProjectSearch(
+            userId: testUserId,
+            searchTerm: '   ',
+          );
+
+          expect(result.isRight(), isTrue);
+          expect(fakeSupabaseWrapper.getMethodCallsFor('upsert'), isEmpty);
+        },
+      );
+
+      runErrorMatrix(
+        label: 'saveRecentProjectSearch',
+        op: _WrapperOp.upsert,
+        action: () => repository.saveRecentProjectSearch(
+          userId: testUserId,
+          searchTerm: 'wall',
+        ),
+      );
+    });
+
+    group('getRecentProjectSearches', () {
+      test('returns Right with terms in wrapper order on success', () async {
+        fakeSupabaseWrapper.addTableData(
+          DatabaseConstants.projectSearchHistoryTable,
+          [
+            {
+              DatabaseConstants.userIdColumn: testUserId,
+              DatabaseConstants.searchTermColumn: 'older',
+              DatabaseConstants.updatedAtColumn: '2024-01-01T00:00:00.000Z',
+            },
+            {
+              DatabaseConstants.userIdColumn: testUserId,
+              DatabaseConstants.searchTermColumn: 'newer',
+              DatabaseConstants.updatedAtColumn: '2024-06-01T00:00:00.000Z',
+            },
+          ],
+        );
+
+        final result = await repository.getRecentProjectSearches(
+          userId: testUserId,
+        );
+
+        expect(result.isRight(), isTrue);
+        _expectRight(
+          result,
+          (terms) => expect(terms, equals(['newer', 'older'])),
+        );
+      });
+
+      test(
+        'returns Right([]) without selectMatch when userId is empty',
+        () async {
+          final result = await repository.getRecentProjectSearches(userId: '');
+
+          expect(result.isRight(), isTrue);
+          _expectRight(result, (terms) => expect(terms, isEmpty));
+          expect(
+            fakeSupabaseWrapper.getMethodCallsFor('selectMatch'),
+            isEmpty,
+          );
+        },
+      );
+
+      test(
+        'returns Right([]) without selectMatch when userId is whitespace only',
+        () async {
+          final result = await repository.getRecentProjectSearches(
+            userId: '   ',
+          );
+
+          expect(result.isRight(), isTrue);
+          _expectRight(result, (terms) => expect(terms, isEmpty));
+          expect(
+            fakeSupabaseWrapper.getMethodCallsFor('selectMatch'),
+            isEmpty,
+          );
+        },
+      );
+
+      runErrorMatrix(
+        label: 'getRecentProjectSearches',
+        op: _WrapperOp.selectMatch,
+        action: () => repository.getRecentProjectSearches(userId: testUserId),
+      );
+    });
+
+    group('deleteRecentProjectSearch', () {
+      test('returns Right(null) on success and deletes via wrapper', () async {
+        final result = await repository.deleteRecentProjectSearch(
+          userId: testUserId,
+          searchTerm: 'wall',
+        );
+
+        expect(result.isRight(), isTrue);
+        expect(
+          fakeSupabaseWrapper.getMethodCallsFor('deleteMatch'),
+          hasLength(1),
+        );
+      });
+
+      test(
+        'returns Right(null) without delete when userId is empty',
+        () async {
+          final result = await repository.deleteRecentProjectSearch(
+            userId: '',
+            searchTerm: 'wall',
+          );
+
+          expect(result.isRight(), isTrue);
+          expect(
+            fakeSupabaseWrapper.getMethodCallsFor('deleteMatch'),
+            isEmpty,
+          );
+        },
+      );
+
+      test(
+        'returns Right(null) without delete when userId is whitespace only',
+        () async {
+          final result = await repository.deleteRecentProjectSearch(
+            userId: '   ',
+            searchTerm: 'wall',
+          );
+
+          expect(result.isRight(), isTrue);
+          expect(
+            fakeSupabaseWrapper.getMethodCallsFor('deleteMatch'),
+            isEmpty,
+          );
+        },
+      );
+
+      test(
+        'returns Right(null) without delete when searchTerm is empty',
+        () async {
+          final result = await repository.deleteRecentProjectSearch(
+            userId: testUserId,
+            searchTerm: '',
+          );
+
+          expect(result.isRight(), isTrue);
+          expect(
+            fakeSupabaseWrapper.getMethodCallsFor('deleteMatch'),
+            isEmpty,
+          );
+        },
+      );
+
+      test(
+        'returns Right(null) without delete when searchTerm is whitespace only',
+        () async {
+          final result = await repository.deleteRecentProjectSearch(
+            userId: testUserId,
+            searchTerm: '   ',
+          );
+
+          expect(result.isRight(), isTrue);
+          expect(
+            fakeSupabaseWrapper.getMethodCallsFor('deleteMatch'),
+            isEmpty,
+          );
+        },
+      );
+
+      runErrorMatrix(
+        label: 'deleteRecentProjectSearch',
+        op: _WrapperOp.deleteMatch,
+        action: () => repository.deleteRecentProjectSearch(
+          userId: testUserId,
+          searchTerm: 'wall',
+        ),
+      );
+    });
+
+    group('getProjectSearchSuggestions', () {
+      test('returns Right with string suggestions on success', () async {
+        fakeSupabaseWrapper.setRpcResponse(
+          DatabaseConstants.projectSearchSuggestionsRpcFunction,
+          <dynamic>['foundation', 'wall', 42, null, 'steel'],
+        );
+
+        final result = await repository.getProjectSearchSuggestions(
+          userId: testUserId,
+        );
+
+        expect(result.isRight(), isTrue);
+        _expectRight(
+          result,
+          (terms) => expect(terms, equals(['foundation', 'wall', 'steel'])),
+        );
+      });
+
+      test(
+        'returns Right([]) without RPC when userId is empty',
+        () async {
+          final result = await repository.getProjectSearchSuggestions(
+            userId: '',
+          );
+
+          expect(result.isRight(), isTrue);
+          _expectRight(result, (terms) => expect(terms, isEmpty));
+          expect(fakeSupabaseWrapper.getMethodCallsFor('rpc'), isEmpty);
+        },
+      );
+
+      test(
+        'returns Right([]) without RPC when userId is whitespace only',
+        () async {
+          final result = await repository.getProjectSearchSuggestions(
+            userId: '   ',
+          );
+
+          expect(result.isRight(), isTrue);
+          _expectRight(result, (terms) => expect(terms, isEmpty));
+          expect(fakeSupabaseWrapper.getMethodCallsFor('rpc'), isEmpty);
+        },
+      );
+
+      runErrorMatrix(
+        label: 'getProjectSearchSuggestions',
+        op: _WrapperOp.rpc,
+        action: () =>
+            repository.getProjectSearchSuggestions(userId: testUserId),
+      );
+    });
   });
 }
+
+enum _WrapperOp { rpc, upsert, selectMatch, deleteMatch }
