@@ -160,13 +160,15 @@ Input: {"rules": ["RULE_4"]}
 
 ### Step 5: Load Rule Modules
 
-For each applicable rule, load the rule file and extract detection patterns:
+For each applicable rule, load the rule file from shared rules directory and extract detection patterns:
 
 ```bash
-cat skills/pr-review/rules/04-coreui-components.md
-cat skills/pr-review/rules/05-ui-business-separation.md
-cat skills/pr-review/rules/10-localization.md
+cat skills/rules/04-coreui-components.md
+cat skills/rules/05-ui-business-separation.md
+cat skills/rules/10-localization.md
 ```
+
+**Note:** All rules are now in the shared `skills/rules/` directory and can be referenced by any skill.
 
 Each rule module provides:
 - Detection patterns (regex or semantic patterns)
@@ -222,8 +224,8 @@ For RULE_4, search for:
   "snippet": "Padding(\n  padding: EdgeInsets.all(24.0),  // ← Issue here\n  child: ...",
   "suggested_fix": "Replace EdgeInsets.all(24.0) with EdgeInsets.all(CoreSpacing.space24)",
   "references": [
-    "skills/pr-review/rules/04-coreui-components.md",
-    "skills/pr-review/references/coreui-api.md#spacing"
+    "skills/rules/04-coreui-components.md",
+    "skills/references/coreui-api.md#spacing"
   ]
 }
 ```
