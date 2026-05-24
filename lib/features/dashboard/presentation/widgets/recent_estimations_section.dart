@@ -1,4 +1,5 @@
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
+import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/estimation_card.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
@@ -24,6 +25,7 @@ class RecentEstimationsSection extends StatefulWidget {
 class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
   late RecentEstimationsBloc _bloc;
   final AppRouter _router = Modular.get<AppRouter>();
+  final AppShellBloc _appShellBloc = Modular.get<AppShellBloc>();
 
   @override
   void initState() {
@@ -140,7 +142,7 @@ class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
       return;
     }
 
-    Modular.get<AppShellBloc>().add(const AppShellTabSelected(2));
+    _appShellBloc.add(AppShellTabSelected(ShellTab.estimation.index));
   }
 
   void _openEstimationDetails(String estimationId) {
