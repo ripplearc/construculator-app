@@ -14,7 +14,7 @@
                 android:pivotY="45.5"
                 android:scaleX="0.6"
                 android:scaleY="0.6"
-                android:translateY="-5">
+                android:translateY="-2">
 
                 <path
                     android:name="path"
