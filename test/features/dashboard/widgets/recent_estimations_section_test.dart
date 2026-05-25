@@ -1,3 +1,7 @@
+import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
+import 'package:construculator/app/shell/default_tab_providers.dart';
+import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
 
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
@@ -24,6 +28,28 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/screenshot/font_loader.dart';
+
+class _DashboardWithShellTestModule extends Module {
+  final AppBootstrap appBootstrap;
+
+  _DashboardWithShellTestModule(this.appBootstrap);
+
+  @override
+  List<Module> get imports => [DashboardModule(appBootstrap)];
+
+  @override
+  void binds(Injector i) {
+    i.addLazySingleton<TabModuleManager>(
+      () => TabModuleManager(
+        appBootstrap,
+        providers: {
+          for (final tab in ShellTab.values) tab: const NoOpTabModuleProvider(),
+        },
+      ),
+    );
+    i.add<AppShellBloc>(() => AppShellBloc(moduleLoader: i.get()));
+  }
+}
 
 void main() {
   late FakeClockImpl clock;
@@ -54,14 +80,13 @@ void main() {
   }
 
   Future<void> pumpSection(WidgetTester tester) async {
+    final settled = bloc.stream.firstWhere(
+      (state) =>
+          state is RecentEstimationsLoaded || state is RecentEstimationsError,
+    );
     await tester.pumpWidget(buildTestApp());
     await tester.pump();
-    await tester.runAsync(() async {
-      await bloc.stream.firstWhere(
-        (state) =>
-            state is RecentEstimationsLoaded || state is RecentEstimationsError,
-      );
-    });
+    await tester.runAsync(() => settled);
     await tester.pump();
   }
 
@@ -83,7 +108,7 @@ void main() {
     final bootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
-    Modular.init(DashboardModule(bootstrap));
+    Modular.init(_DashboardWithShellTestModule(bootstrap));
 
     Modular.replaceInstance<AppRouter>(router);
     Modular.replaceInstance<CostEstimationRepository>(fakeRepository);
@@ -95,7 +120,6 @@ void main() {
   });
 
   tearDown(() {
-    bloc.close();
     Modular.destroy();
   });
 
