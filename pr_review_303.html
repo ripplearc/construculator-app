@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PR #303 Code Review — docs: add CLAUDE.md agent guidance</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 860px; margin: 40px auto; padding: 0 24px; color: #24292f; line-height: 1.6; }
+    h1 { font-size: 1.5rem; border-bottom: 2px solid #e1e4e8; padding-bottom: 12px; }
+    h2 { font-size: 1.15rem; margin-top: 28px; color: #0969da; }
+    h3 { font-size: 1rem; margin-top: 20px; color: #57606a; }
+    .meta { background: #f6f8fa; border: 1px solid #e1e4e8; border-radius: 6px; padding: 12px 16px; margin-bottom: 24px; font-size: 0.9rem; }
+    .meta span { display: inline-block; margin-right: 20px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; }
+    .badge-green { background: #dafbe1; color: #1a7f37; }
+    .badge-yellow { background: #fff8c5; color: #9a6700; }
+    .badge-red { background: #ffebe9; color: #cf222e; }
+    .badge-blue { background: #ddf4ff; color: #0969da; }
+    ul { padding-left: 20px; }
+    li { margin-bottom: 6px; }
+    code { background: #f6f8fa; border: 1px solid #e1e4e8; border-radius: 4px; padding: 1px 5px; font-size: 0.88em; font-family: "SFMono-Regular", Consolas, monospace; }
+    blockquote { border-left: 4px solid #0969da; margin: 0; padding: 8px 16px; background: #f6f8fa; border-radius: 0 4px 4px 0; }
+    .verdict { background: #dafbe1; border: 1px solid #4ac26b; border-radius: 6px; padding: 14px 18px; margin-top: 28px; }
+    .section-label { font-weight: 700; }
+    hr { border: none; border-top: 1px solid #e1e4e8; margin: 24px 0; }
+  </style>
+</head>
+<body>
+
+<h1>Code Review — PR #303</h1>
+<p><strong>docs: add CLAUDE.md agent guidance</strong></p>
+
+<div class="meta">
+  <span><strong>Author:</strong> ripplearcgit</span>
+  <span><strong>Branch:</strong> <code>chore/add-claude-md → main</code></span>
+  <span><strong>Files changed:</strong> 1</span>
+  <span><strong>Additions:</strong> +68 / Deletions: 0</span>
+  <span><strong>Reviewed:</strong> 2026-05-25</span>
+</div>
+
+<h2>Overview</h2>
+<p>
+  This PR adds a single <code>CLAUDE.md</code> file (68 lines) at the repository root, providing behavioral
+  guidance for AI agents. It covers project commands, CI trigger syntax, Clean Architecture layout,
+  DI/routing conventions, bloc-per-action pattern, <code>Either</code> error handling, enforced lint rules,
+  staged (currently disabled) conventions, and logging. This is a <strong>documentation-only</strong> change
+  with no runtime impact.
+</p>
+
+<hr />
+
+<h2>What's Working Well</h2>
+<ul>
+  <li>
+    <span class="section-label">Clear intent separation:</span> The file explicitly opens with
+    <em>"behavioral guidance for agents, not architecture documentation"</em> — sets correct expectations
+    and prevents scope creep into the file over time.
+  </li>
+  <li>
+    <span class="section-label">Enforced vs. unenforced lint split <span class="badge badge-blue">High value</span>:</span>
+    Separating currently-disabled conventions (CA-627, CA-641, CA-642, CA-633) from hard-enforced rules is
+    the most important part of this file. It prevents agents from incorrectly blocking changes on rules the
+    linter doesn't yet enforce, and gives a clear path for when they <em>will</em> be enforced.
+  </li>
+  <li>
+    <span class="section-label">Bloc-per-action pattern:</span> Concisely explained with concrete examples
+    (<code>add</code> / <code>delete</code> / <code>rename</code> / <code>change_lock</code> / <code>list</code>).
+    Agents will generate correctly granular blocs rather than monolithic screen-blocs.
+  </li>
+  <li>
+    <span class="section-label">YouTrack ticket references:</span> Each unenforced convention links a ticket
+    (e.g. CA-642) — keeps the guidance traceable and makes it easy to find the cleanup context.
+  </li>
+  <li>
+    <span class="section-label">Lean and focused:</span> Follows its own stated principle — doesn't balloon
+    into a full architecture doc. 68 lines is well-calibrated.
+  </li>
+</ul>
+
+<hr />
+
+<h2>Issues &amp; Suggestions</h2>
+
+<h3><span class="badge badge-yellow">Moderate</span> Contradictory DI guidance</h3>
+<p>
+  The <em>Hard Rules</em> section says:
+</p>
+<blockquote>No direct instantiation of injectable types — resolve via DI / <code>Modular.get</code>.</blockquote>
+<p>
+  But the <em>Conventions</em> section says:
+</p>
+<blockquote>No <code>Modular.get</code> outside a module — constructor-inject into blocs/usecases instead (CA-627).</blockquote>
+<p>
+  An agent following the hard rule literally could call <code>Modular.get</code> inside a bloc — exactly what
+  the convention prohibits. Consider rewording the hard rule to:
+</p>
+<blockquote>
+  <strong>No direct instantiation</strong> of injectable types — wire dependencies through the module's
+  <code>binds()</code> and constructor-inject. Never call <code>Modular.get</code> inside blocs or usecases.
+</blockquote>
+<p>This collapses both statements into one unambiguous instruction.</p>
+
+<h3><span class="badge badge-yellow">Moderate</span> Non-exhaustive <code>libraries/</code> list</h3>
+<p>
+  The libraries list uses <code>…</code> (ellipsis) but doesn't call this out explicitly. An agent may treat
+  the list as complete and fail to discover other libraries (e.g. <code>permissions</code>, <code>analytics</code>).
+  Suggest adding: <em>"(partial — see <code>lib/libraries/</code> for the full list)"</em>.
+</p>
+
+<h3><span class="badge badge-green">Minor</span> Missing UI-layer error surfacing guidance</h3>
+<p>
+  The <code>Either</code> section covers cross-layer usage but stops at the domain boundary. Agents have no
+  guidance on mapping <code>Failure</code> to user-facing messages in the presentation layer. A single line
+  like <em>"presentation maps <code>Failure</code> to localized UI messages; see <code>ErrorMessageMapper</code>
+  or the l10n ARB files"</em> would close the loop.
+</p>
+
+<h3><span class="badge badge-green">Minor</span> No PowerSync / offline-first note</h3>
+<p>
+  The intro mentions PowerSync but the body doesn't. Agents could write data sources that assume live network
+  availability and inadvertently break offline behaviour. Even one line — <em>"PowerSync handles offline sync;
+  data sources must not assume live network"</em> — would prevent a class of bugs.
+</p>
+
+<h3><span class="badge badge-green">Minor</span> Stale CI path risk</h3>
+<p>
+  The hardcoded reference <code>.github/workflows/run_c_check.yml</code> will silently go stale if the workflow
+  file is renamed. Low risk, but worth noting for future maintainers.
+</p>
+
+<h3><span class="badge badge-green">Minor</span> No <code>AppBootstrap</code> extension guidance</h3>
+<p>
+  <code>main.dart</code> is described as building <code>AppBootstrap</code> but agents have no guidance on how to
+  extend it when adding a new environment-level config. A pointer to the bootstrap class or a one-line pattern
+  would help.
+</p>
+
+<hr />
+
+<h2>Security Considerations</h2>
+<p>None — documentation-only change. No executable code, no secrets, no dependency changes.</p>
+
+<h2>Test Coverage</h2>
+<p>
+  The PR includes a manual test plan: verify commands are accurate, confirm the enforced vs. disabled lint split
+  matches <code>analysis_options.yaml</code>, and confirm the feature list is complete. No automated test is
+  applicable or needed for a documentation file.
+</p>
+
+<hr />
+
+<div class="verdict">
+  <strong>Verdict: Approve with minor suggestions ✅</strong><br /><br />
+  The enforced-vs-disabled lint split alone makes this worth merging. The DI wording contradiction is the only
+  item worth fixing before merge (or immediately after in a follow-up). The remaining suggestions are
+  enhancements for a future iteration.
+</div>
+
+</body>
+</html>
