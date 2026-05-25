@@ -10,7 +10,10 @@ class MainActivity: FlutterActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             splashScreen.setOnExitAnimationListener { splashScreenView ->
-                splashScreenView.remove()
+                val animStart = splashScreenView.iconAnimationStart?.toEpochMilli() ?: 0L
+                val animDuration = splashScreenView.iconAnimationDuration?.toMillis() ?: 0L
+                val remaining = (animDuration - (System.currentTimeMillis() - animStart)).coerceAtLeast(0L)
+                splashScreenView.postDelayed({ splashScreenView.remove() }, remaining)
             }
         }
         super.onCreate(savedInstanceState)
