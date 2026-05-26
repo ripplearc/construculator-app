@@ -1,4 +1,5 @@
 import 'package:construculator/features/dashboard/dashboard_module.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -77,6 +78,7 @@ void main() {
         authNotifier: authNotifier,
         authManager: authManager,
         router: router,
+        recentEstimationsBloc: Modular.get<RecentEstimationsBloc>(),
       ),
     );
   }

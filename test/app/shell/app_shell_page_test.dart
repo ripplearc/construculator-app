@@ -163,11 +163,14 @@ void main() {
       },
       home: BlocProvider<AppShellBloc>(
         create: (_) => Modular.get<AppShellBloc>(),
-        child: AppShellPage(
-          projectUIProvider: Modular.get<ProjectUIProvider>(),
-          authNotifier: Modular.get<AuthNotifier>(),
-          authManager: Modular.get<AuthManager>(),
-          router: Modular.get<AppRouter>(),
+        child: Builder(
+          builder: (_) => AppShellPage(
+            projectUIProvider: Modular.get<ProjectUIProvider>(),
+            authNotifier: Modular.get<AuthNotifier>(),
+            authManager: Modular.get<AuthManager>(),
+            router: Modular.get<AppRouter>(),
+            recentEstimationsBloc: Modular.get<RecentEstimationsBloc>(),
+          ),
         ),
       ),
     );

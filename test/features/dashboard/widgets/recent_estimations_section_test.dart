@@ -49,7 +49,9 @@ void main() {
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(body: RecentEstimationsSection()),
+      home: Scaffold(
+        body: RecentEstimationsSection(bloc: bloc, router: router),
+      ),
     );
   }
 
