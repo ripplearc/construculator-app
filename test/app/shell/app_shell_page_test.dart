@@ -7,11 +7,14 @@ import 'package:construculator/features/dashboard/presentation/pages/dashboard_p
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/features/dashboard/domain/usecases/watch_recent_estimations_usecase.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_manager.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/estimation/testing/fake_cost_estimation_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
@@ -31,6 +34,7 @@ void main() {
   late FakeAuthManager authManager;
   late FakeAuthNotifier authNotifier;
   late FakeCurrentProjectNotifier fakeProjectNotifier;
+  late RecentEstimationsBloc recentEstimationsBloc;
 
   setUpAll(() {
     CoreToast.disableTimers();
@@ -50,6 +54,14 @@ void main() {
       wrapper: fakeSupabase,
       clock: clock,
     );
+    fakeProjectNotifier = FakeCurrentProjectNotifier();
+    recentEstimationsBloc = RecentEstimationsBloc(
+      watchRecentEstimationsUseCase: WatchRecentEstimationsUseCase(
+        FakeCostEstimationRepository(),
+        fakeProjectNotifier,
+      ),
+      currentProjectNotifier: fakeProjectNotifier,
+    );
 
     Modular.init(
       ShellModule(
@@ -66,6 +78,7 @@ void main() {
   });
 
   tearDown(() {
+    recentEstimationsBloc.close();
     Modular.destroy();
   });
 
@@ -91,6 +104,7 @@ void main() {
           authNotifier: authNotifier,
           authManager: authManager,
           router: router ?? FakeAppRouter(),
+          recentEstimationsBloc: recentEstimationsBloc,
         ),
       ),
     );

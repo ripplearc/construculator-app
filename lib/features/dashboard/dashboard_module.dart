@@ -61,6 +61,7 @@ class DashboardModule extends Module {
         authNotifier: Modular.get<AuthNotifier>(),
         authManager: Modular.get<AuthManager>(),
         router: Modular.get<AppRouter>(),
+        recentEstimationsBloc: Modular.get<RecentEstimationsBloc>(),
       ),
     );
   }
