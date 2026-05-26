@@ -25,7 +25,7 @@ class EstimationRoutesModule extends Module {
   void routes(RouteManager r) {
     r.child(
       estimationDetailsRoute,
-      guards: [AuthGuard(Modular.get<AuthManager>())],
+      guards: [AuthGuard(() => Modular.get<AuthManager>())],
       child: (context) {
         final estimationId = Modular.args.params['estimationId'];
 

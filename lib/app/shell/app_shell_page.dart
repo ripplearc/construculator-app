@@ -21,11 +21,11 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// tab navigation using [AppShellBloc]. Module lazy-loading is orchestrated
 /// inside the BLoC, keeping this Page a pure presentation concern.
 class AppShellPage extends StatefulWidget {
-  /// The bloc driving tab selection and module loading.
-  final AppShellBloc bloc;
-
   /// Builds the project header app bar displayed above the tab content.
   final ProjectUIProvider projectUIProvider;
+
+  // TODO: [CA-708] Remove once DashboardPage reads authNotifier, authManager, and router from the module directly.
+  // https://ripplearc.youtrack.cloud/issue/CA-708
 
   /// Notifies when the authenticated user's profile changes.
   final AuthNotifier authNotifier;
@@ -38,7 +38,6 @@ class AppShellPage extends StatefulWidget {
 
   const AppShellPage({
     super.key,
-    required this.bloc,
     required this.projectUIProvider,
     required this.authNotifier,
     required this.authManager,
@@ -50,21 +49,23 @@ class AppShellPage extends StatefulWidget {
 }
 
 class _AppShellPageState extends State<AppShellPage> {
+  late AppShellBloc _bloc;
+
   final List<GlobalKey<NavigatorState>> _tabNavigatorKeys = List.generate(
     ShellTab.values.length,
     (_) => GlobalKey<NavigatorState>(),
   );
 
   @override
-  void dispose() {
-    widget.bloc.close();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _bloc = context.read<AppShellBloc>();
   }
 
   void _onPopInvoked(bool didPop) {
     if (didPop) return;
 
-    final state = widget.bloc.state;
+    final state = _bloc.state;
     final currentNavigator =
         _tabNavigatorKeys[state.selectedTabIndex].currentState;
 
@@ -74,7 +75,7 @@ class _AppShellPageState extends State<AppShellPage> {
     }
 
     if (state.selectedTabIndex != 0) {
-      widget.bloc.add(const AppShellTabSelected(0));
+      _bloc.add(const AppShellTabSelected(0));
       return;
     }
 
@@ -82,12 +83,14 @@ class _AppShellPageState extends State<AppShellPage> {
   }
 
   void _handleTabTap(int index) {
-    widget.bloc.add(AppShellTabSelected(index));
+    _bloc.add(AppShellTabSelected(index));
   }
 
   Widget _buildTabRoot(ShellTab tab) {
     switch (tab) {
       case ShellTab.home:
+        // TODO: [CA-708] Remove authNotifier, authManager, and router from DashboardPage once the page reads them from the module directly.
+        // https://ripplearc.youtrack.cloud/issue/CA-708
         return DashboardPage(
           authNotifier: widget.authNotifier,
           authManager: widget.authManager,
@@ -140,7 +143,6 @@ class _AppShellPageState extends State<AppShellPage> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AppShellBloc, AppShellState>(
-      bloc: widget.bloc,
       builder: (context, state) {
         return PopScope(
           canPop: false,

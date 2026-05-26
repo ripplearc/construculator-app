@@ -48,7 +48,7 @@ class DashboardModule extends Module {
   void routes(RouteManager r) {
     r.child(
       dashboardRoute,
-      guards: [AuthGuard(Modular.get<AuthManager>())],
+      guards: [AuthGuard(() => Modular.get<AuthManager>())],
       child: (context) => DashboardPage(
         authNotifier: Modular.get<AuthNotifier>(),
         authManager: Modular.get<AuthManager>(),

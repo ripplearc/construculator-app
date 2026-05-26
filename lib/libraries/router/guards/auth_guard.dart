@@ -5,11 +5,11 @@ import 'package:flutter_modular/flutter_modular.dart';
 /// Guard that ensures the user is authenticated before allowing access to a route.
 /// Use this guard on routes that requires that the user is authenticated.
 class AuthGuard extends RouteGuard {
-  final AuthManager authManager;
-  AuthGuard(this.authManager) : super(redirectTo: fullLoginRoute);
+  final AuthManager Function() _getAuthManager;
+  AuthGuard(this._getAuthManager) : super(redirectTo: fullLoginRoute);
 
   @override
   Future<bool> canActivate(String path, ModularRoute router) async {
-    return authManager.isAuthenticated();
+    return _getAuthManager().isAuthenticated();
   }
 }
