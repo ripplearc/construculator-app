@@ -28,7 +28,10 @@ void main() {
       build: () => AppShellBloc(moduleLoader: tabModuleManager),
       act: (b) => b.add(const AppShellInitialized()),
       expect: () => [
-        const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {0}),
+        AppShellState(
+          selectedTabIndex: ShellTab.home.index,
+          loadedTabIndexes: {ShellTab.home.index},
+        ),
       ],
       verify: (_) => expect(tabModuleManager.isLoaded(ShellTab.home), isTrue),
     );
@@ -69,8 +72,14 @@ void main() {
         bloc.add(const AppShellInitialized());
       },
       expect: () => [
-        const AppShellState(selectedTabIndex: 1, loadedTabIndexes: {0, 1}),
-        const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {0}),
+        AppShellState(
+          selectedTabIndex: ShellTab.calculations.index,
+          loadedTabIndexes: {ShellTab.home.index, ShellTab.calculations.index},
+        ),
+        AppShellState(
+          selectedTabIndex: ShellTab.home.index,
+          loadedTabIndexes: {ShellTab.home.index},
+        ),
       ],
       verify: (bloc) {
         expect(tabModuleManager.isLoaded(ShellTab.home), isTrue);
@@ -85,8 +94,18 @@ void main() {
         bloc.add(const AppShellTabSelected(ShellTab.members));
       },
       expect: () => [
-        const AppShellState(selectedTabIndex: 1, loadedTabIndexes: {0, 1}),
-        const AppShellState(selectedTabIndex: 3, loadedTabIndexes: {0, 1, 3}),
+        AppShellState(
+          selectedTabIndex: ShellTab.calculations.index,
+          loadedTabIndexes: {ShellTab.home.index, ShellTab.calculations.index},
+        ),
+        AppShellState(
+          selectedTabIndex: ShellTab.members.index,
+          loadedTabIndexes: {
+            ShellTab.home.index,
+            ShellTab.calculations.index,
+            ShellTab.members.index,
+          },
+        ),
       ],
       verify: (bloc) {
         expect(tabModuleManager.isLoaded(ShellTab.home), isTrue);
