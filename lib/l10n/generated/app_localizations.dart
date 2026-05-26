@@ -1426,6 +1426,23 @@ abstract class AppLocalizations {
   /// **'Fill search field with {term}'**
   String globalSearchRecentSearchFillSemanticLabel(String term);
 
+  /// Error toast shown when loading recent searches fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load recent searches. Please try again.'**
+  String get globalSearchLoadErrorMessage;
+
+  /// Error toast shown when deleting a recent search fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to remove recent search. Please try again.'**
+  String get globalSearchDeleteErrorMessage;
+
+  /// Warning toast shown when loading search suggestions fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load suggestions.'**
+  String get globalSearchSuggestionsErrorMessage;
 }
 
 class _AppLocalizationsDelegate
