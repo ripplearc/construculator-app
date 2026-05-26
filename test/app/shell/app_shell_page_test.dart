@@ -5,6 +5,8 @@ import 'package:construculator/app/shell/default_tab_providers.dart';
 import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
+import 'package:construculator/features/dashboard/domain/usecases/watch_recent_estimations_usecase.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
@@ -17,6 +19,8 @@ import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
+import 'package:construculator/libraries/estimation/testing/never_estimation_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
@@ -82,6 +86,16 @@ class _AppShellTestModule extends Module {
       ),
     );
     i.add<AppShellBloc>(() => AppShellBloc(moduleLoader: i.get()));
+    i.addLazySingleton<CostEstimationRepository>(NeverEstimationRepository.new);
+    i.add<WatchRecentEstimationsUseCase>(
+      () => WatchRecentEstimationsUseCase(i(), i()),
+    );
+    i.add<RecentEstimationsBloc>(
+      () => RecentEstimationsBloc(
+        watchRecentEstimationsUseCase: i(),
+        currentProjectNotifier: i(),
+      ),
+    );
   }
 }
 
