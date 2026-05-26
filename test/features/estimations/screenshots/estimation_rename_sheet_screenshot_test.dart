@@ -2,7 +2,7 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/estimation_rename_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
-import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -46,7 +46,7 @@ void main() {
                 estimationId: estimationId,
                 projectId: projectId,
                 currentName: initialName,
-                router: Modular.get<AppRouter>(),
+                router: FakeAppRouter(),
               ),
             ),
           ),
