@@ -60,6 +60,7 @@ class _AppShellPageState extends State<AppShellPage> {
   }
 
   void _handleTabTap(int index) {
+    assert(index < ShellTab.values.length, 'Tab index $index out of range');
     _bloc.add(AppShellTabSelected(ShellTab.values[index]));
   }
 

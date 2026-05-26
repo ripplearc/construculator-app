@@ -24,13 +24,14 @@ class RecentEstimationsSection extends StatefulWidget {
 
 class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
   late RecentEstimationsBloc _bloc;
+  late AppShellBloc _appShellBloc;
   final AppRouter _router = Modular.get<AppRouter>();
-  final AppShellBloc _appShellBloc = Modular.get<AppShellBloc>();
 
   @override
   void initState() {
     super.initState();
     _bloc = Modular.get<RecentEstimationsBloc>();
+    _appShellBloc = Modular.get<AppShellBloc>();
     _bloc.add(const RecentEstimationsWatchStarted());
   }
 

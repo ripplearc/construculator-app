@@ -15,6 +15,7 @@ class AppShellInitialized extends AppShellEvent {
 
 /// Event triggered when a user selects a tab in the app shell.
 class AppShellTabSelected extends AppShellEvent {
+  /// The tab that was selected.
   final ShellTab tab;
 
   const AppShellTabSelected(this.tab);

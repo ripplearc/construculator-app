@@ -229,9 +229,9 @@ void main() {
     await pumpSection(tester);
 
     final appShellBloc = Modular.get<AppShellBloc>();
-    final tabSelected = appShellBloc.stream.firstWhere(
-      (state) => state.selectedTabIndex == ShellTab.estimation.index,
-    );
+    final tabSelected = appShellBloc.stream
+        .firstWhere((state) => state.selectedTabIndex == ShellTab.estimation.index)
+        .timeout(const Duration(seconds: 5));
 
     await tester.tap(find.text('View all'));
     await tester.pump();
