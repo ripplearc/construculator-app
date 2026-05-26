@@ -1136,5 +1136,20 @@
         "type": "String"
       }
     }
+  },
+  "globalSearchLoadErrorMessage": "Failed to load recent searches. Please try again.",
+  "@globalSearchLoadErrorMessage": {
+    "description": "Error toast shown when loading recent searches fails",
+    "context": "N/A"
+  },
+  "globalSearchDeleteErrorMessage": "Failed to remove recent search. Please try again.",
+  "@globalSearchDeleteErrorMessage": {
+    "description": "Error toast shown when deleting a recent search fails",
+    "context": "N/A"
+  },
+  "globalSearchSuggestionsErrorMessage": "Could not load suggestions.",
+  "@globalSearchSuggestionsErrorMessage": {
+    "description": "Warning toast shown when loading search suggestions fails",
+    "context": "N/A"
   }
 }

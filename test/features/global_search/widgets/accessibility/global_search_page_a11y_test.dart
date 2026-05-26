@@ -3,7 +3,9 @@ import 'package:construculator/features/global_search/global_search_module.dart'
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -14,8 +16,21 @@ import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 
+const String _testUserId = 'user-a11y-test';
+const String _testUserEmail = 'a11y@test.com';
+
+Map<String, dynamic> _fakeHistoryRow(String term) => {
+  DatabaseConstants.idColumn: term,
+  DatabaseConstants.userIdColumn: _testUserId,
+  DatabaseConstants.searchTermColumn: term,
+  DatabaseConstants.scopeColumn: 'dashboard',
+  DatabaseConstants.searchCountColumn: 1,
+  DatabaseConstants.createdAtColumn: '2024-01-01T00:00:00.000Z',
+};
+
 class _GlobalSearchPageA11yTestModule extends Module {
   final AppBootstrap appBootstrap;
+
   _GlobalSearchPageA11yTestModule(this.appBootstrap);
 
   @override
@@ -29,19 +44,22 @@ void main() {
   late FakeSupabaseWrapper fakeSupabase;
   BuildContext? buildContext;
 
-  setUp(() {
-    fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
-
-    final appBootstrap = FakeAppBootstrapFactory.create(
-      supabaseWrapper: fakeSupabase,
+  setUpAll(() {
+    final bootstrap = FakeAppBootstrapFactory.create(
+      supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
     );
-
-    Modular.init(_GlobalSearchPageA11yTestModule(appBootstrap));
-    Modular.replaceInstance<SupabaseWrapper>(fakeSupabase);
+    Modular.init(_GlobalSearchPageA11yTestModule(bootstrap));
+    final supabase = Modular.get<SupabaseWrapper>();
+    expect(supabase, isA<FakeSupabaseWrapper>());
+    fakeSupabase = supabase as FakeSupabaseWrapper;
   });
 
-  tearDown(() {
+  tearDownAll(() {
     Modular.destroy();
+  });
+
+  setUp(() {
+    fakeSupabase.reset();
   });
 
   Widget makeTestableWidget({ThemeData? theme}) {
@@ -128,5 +146,32 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'meets a11y guidelines for recent search item in both themes',
+      (tester) async {
+        fakeSupabase.setCurrentUser(
+          FakeUser(
+            id: _testUserId,
+            email: _testUserEmail,
+            createdAt: '2024-01-01T00:00:00.000Z',
+          ),
+        );
+        fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
+          _fakeHistoryRow('Material of building'),
+        ]);
+
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme),
+          find.byKey(const ValueKey('recent_search_item_Material of building')),
+          checkTapTargetSize: true,
+          checkLabeledTapTarget: true,
+        );
+      },
+    );
+
   });
 }
