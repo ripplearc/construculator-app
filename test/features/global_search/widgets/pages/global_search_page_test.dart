@@ -235,6 +235,9 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey('recent_search_item_Material of building')));
       await tester.pump();
+      // 5 s needed: filling the field fires onChanged → GlobalSearchQueryUpdated
+      // → RxDart debounceTime(300 ms) timer → async RPC. Shorter durations leave
+      // a pending timer at teardown and fail the !timersPending invariant.
       await tester.pump(const Duration(seconds: 5));
 
       expect(
