@@ -322,10 +322,21 @@ void main() {
     test('getProjects should throw TimeoutException when configured', () async {
       fakeRepository.shouldThrowOnGetProjects = true;
       fakeRepository.getProjectsExceptionType = SupabaseExceptionType.timeout;
+      fakeRepository.getProjectsErrorMessage = 'Request timeout';
 
       expect(
         () => fakeRepository.getProjects('user-1'),
         throwsA(isA<TimeoutException>()),
+      );
+    });
+
+    test('getProjects should throw TypeError when configured', () async {
+      fakeRepository.shouldThrowOnGetProjects = true;
+      fakeRepository.getProjectsExceptionType = SupabaseExceptionType.type;
+
+      expect(
+        () => fakeRepository.getProjects('user-1'),
+        throwsA(isA<TypeError>()),
       );
     });
 
@@ -371,6 +382,7 @@ void main() {
         emitsError(isA<ServerException>()),
       );
     });
+
 
     test('emitProjectsUpdate does not throw', () {
       expect(() => fakeRepository.emitProjectsUpdate(), returnsNormally);
@@ -420,13 +432,21 @@ void main() {
       expect(fakeRepository.getProjectPermissions('project-1'), isEmpty);
     });
 
-    test('permission method calls are tracked', () {
-      fakeRepository.setProjectPermissions('project-1', ['read']);
+    test('tracks method calls for getProjectPermissions', () {
       fakeRepository.getProjectPermissions('project-1');
+
+      final calls = fakeRepository.getMethodCallsFor('getProjectPermissions');
+      expect(calls, hasLength(1));
+      expect(calls.first['projectId'], 'project-1');
+    });
+
+    test('tracks method calls for hasProjectPermission', () {
       fakeRepository.hasProjectPermission('project-1', 'read');
 
-      expect(fakeRepository.getMethodCallsFor('getProjectPermissions'), hasLength(1));
-      expect(fakeRepository.getMethodCallsFor('hasProjectPermission'), hasLength(1));
+      final calls = fakeRepository.getMethodCallsFor('hasProjectPermission');
+      expect(calls, hasLength(1));
+      expect(calls.first['projectId'], 'project-1');
+      expect(calls.first['permissionKey'], 'read');
     });
   });
 
