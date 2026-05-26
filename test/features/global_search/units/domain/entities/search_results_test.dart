@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
 
 void main() {
-  final _testProject = ProjectDto(
+  final testProject = ProjectDto(
     id: 'project-1',
     projectName: 'Bridge Project',
     creatorUserId: 'user-1',
@@ -17,14 +17,14 @@ void main() {
     status: ProjectStatus.active,
   ).toDomain();
 
-  final _testEstimation = CostEstimateDto.fromJson(
+  final testEstimation = CostEstimateDto.fromJson(
     EstimationTestDataMapFactory.createFakeEstimationData(
       id: 'estimate-1',
       projectId: 'project-1',
     ),
   ).toDomain();
 
-  const _testMember = UserProfile(
+  const testMember = UserProfile(
     id: 'user-1',
     firstName: 'Jane',
     lastName: 'Doe',
@@ -60,7 +60,7 @@ void main() {
       });
 
       test('replaces projects when provided', () {
-        final results = SearchResults(projects: [_testProject]);
+        final results = SearchResults(projects: [testProject]);
 
         final copy = results.copyWith(projects: []);
 
@@ -68,7 +68,7 @@ void main() {
       });
 
       test('replaces estimations when provided', () {
-        final results = SearchResults(estimations: [_testEstimation]);
+        final results = SearchResults(estimations: [testEstimation]);
 
         final copy = results.copyWith(estimations: []);
 
@@ -76,7 +76,7 @@ void main() {
       });
 
       test('replaces members when provided', () {
-        const results = SearchResults(members: [_testMember]);
+        const results = SearchResults(members: [testMember]);
 
         final copy = results.copyWith(members: []);
 
@@ -85,15 +85,15 @@ void main() {
 
       test('preserves unchanged fields when updating one field', () {
         final results = SearchResults(
-          projects: [_testProject],
-          members: [_testMember],
+          projects: [testProject],
+          members: [testMember],
         );
 
-        final copy = results.copyWith(estimations: [_testEstimation]);
+        final copy = results.copyWith(estimations: [testEstimation]);
 
-        expect(copy.projects, [_testProject]);
-        expect(copy.members, [_testMember]);
-        expect(copy.estimations, [_testEstimation]);
+        expect(copy.projects, [testProject]);
+        expect(copy.members, [testMember]);
+        expect(copy.estimations, [testEstimation]);
       });
     });
 
@@ -107,12 +107,12 @@ void main() {
 
       test('two instances with same content are equal', () {
         final results1 = SearchResults(
-          projects: [_testProject],
-          members: [_testMember],
+          projects: [testProject],
+          members: [testMember],
         );
         final results2 = SearchResults(
-          projects: [_testProject],
-          members: [_testMember],
+          projects: [testProject],
+          members: [testMember],
         );
 
         expect(results1, equals(results2));
@@ -128,14 +128,14 @@ void main() {
           status: ProjectStatus.active,
         ).toDomain();
 
-        final results1 = SearchResults(projects: [_testProject]);
+        final results1 = SearchResults(projects: [testProject]);
         final results2 = SearchResults(projects: [projectB]);
 
         expect(results1, isNot(equals(results2)));
       });
 
       test('populated instance is not equal to empty instance', () {
-        final results = SearchResults(projects: [_testProject]);
+        final results = SearchResults(projects: [testProject]);
 
         expect(results, isNot(equals(const SearchResults())));
       });

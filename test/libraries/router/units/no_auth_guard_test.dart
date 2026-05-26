@@ -23,23 +23,23 @@ class _NoAuthGuardTestModule extends Module {
 }
 
 void main() {
-  late FakeAuthManager _authManager;
-  late FakeClockImpl _clock;
-  late _NoAuthGuardTestModule _testModule;
+  late FakeAuthManager authManager;
+  late FakeClockImpl clock;
+  late _NoAuthGuardTestModule testModule;
 
   setUp(() {
-    _clock = FakeClockImpl();
-    final fakeSupabase = FakeSupabaseWrapper(clock: _clock);
+    clock = FakeClockImpl();
+    final fakeSupabase = FakeSupabaseWrapper(clock: clock);
     final authNotifier = FakeAuthNotifier();
-    final authRepository = FakeAuthRepository(clock: _clock);
-    _authManager = FakeAuthManager(
+    final authRepository = FakeAuthRepository(clock: clock);
+    authManager = FakeAuthManager(
       authNotifier: authNotifier,
       authRepository: authRepository,
       wrapper: fakeSupabase,
-      clock: _clock,
+      clock: clock,
     );
-    _testModule = _NoAuthGuardTestModule(_authManager);
-    Modular.init(_testModule);
+    testModule = _NoAuthGuardTestModule(authManager);
+    Modular.init(testModule);
   });
 
   tearDown(() {
@@ -50,23 +50,23 @@ void main() {
     test('canActivate returns true when user is not authenticated', () async {
       final guard = NoAuthGuard();
 
-      final result = await guard.canActivate('/', _testModule.emptyRoute());
+      final result = await guard.canActivate('/', testModule.emptyRoute());
 
       expect(result, isTrue);
     });
 
     test('canActivate returns false when user is authenticated', () async {
-      _authManager.setCurrentCredential(
+      authManager.setCurrentCredential(
         UserCredential(
           id: 'user-1',
           email: 'user@example.com',
           metadata: const {},
-          createdAt: _clock.now(),
+          createdAt: clock.now(),
         ),
       );
       final guard = NoAuthGuard();
 
-      final result = await guard.canActivate('/', _testModule.emptyRoute());
+      final result = await guard.canActivate('/', testModule.emptyRoute());
 
       expect(result, isFalse);
     });
