@@ -288,6 +288,203 @@ void main() {
     });
   });
 
+  group('getProjects', () {
+    test('returns accessible projects for a given userId', () async {
+      final project1 = createFakeProject(id: 'p1', projectName: 'Alpha');
+      final project2 = createFakeProject(id: 'p2', projectName: 'Beta');
+      fakeRepository.addProject('p1', project1);
+      fakeRepository.addProject('p2', project2);
+
+      final result = await fakeRepository.getProjects('user-1');
+
+      expect(result, containsAll([project1, project2]));
+    });
+
+    test('tracks method calls for getProjects', () async {
+      await fakeRepository.getProjects('user-1');
+
+      final calls = fakeRepository.getMethodCallsFor('getProjects');
+      expect(calls, hasLength(1));
+      expect(calls.first['userId'], 'user-1');
+    });
+
+    test('throws ServerException when shouldThrowOnGetProjects is true',
+        () async {
+      fakeRepository.shouldThrowOnGetProjects = true;
+
+      expect(
+        () => fakeRepository.getProjects('user-1'),
+        throwsA(isA<ServerException>()),
+      );
+    });
+
+    test('throws TimeoutException when configured with timeout type', () async {
+      fakeRepository.shouldThrowOnGetProjects = true;
+      fakeRepository.getProjectsExceptionType = SupabaseExceptionType.timeout;
+      fakeRepository.getProjectsErrorMessage = 'Request timeout';
+
+      expect(
+        () => fakeRepository.getProjects('user-1'),
+        throwsA(isA<TimeoutException>()),
+      );
+    });
+
+    test('throws TypeError when configured with type exception', () async {
+      fakeRepository.shouldThrowOnGetProjects = true;
+      fakeRepository.getProjectsExceptionType = SupabaseExceptionType.type;
+
+      expect(
+        () => fakeRepository.getProjects('user-1'),
+        throwsA(isA<TypeError>()),
+      );
+    });
+  });
+
+  group('watchProjects', () {
+    test('emits current accessible projects immediately', () async {
+      final project = createFakeProject(id: 'p1');
+      fakeRepository.addProject('p1', project);
+
+      final stream = fakeRepository.watchProjects('user-1');
+      final firstEmit = await stream.first;
+
+      expect(firstEmit, contains(project));
+    });
+
+    test('tracks method calls for watchProjects', () async {
+      final stream = fakeRepository.watchProjects('user-1');
+      await stream.first;
+
+      final calls = fakeRepository.getMethodCallsFor('watchProjects');
+      expect(calls, hasLength(1));
+      expect(calls.first['userId'], 'user-1');
+    });
+
+    test('throws when shouldThrowOnWatchProjects is true', () async {
+      fakeRepository.shouldThrowOnWatchProjects = true;
+
+      await expectLater(
+        fakeRepository.watchProjects('user-1'),
+        emitsError(isA<ServerException>()),
+      );
+    });
+  });
+
+  group('setAccessibleProjects', () {
+    test('replaces accessible projects list', () async {
+      final project1 = createFakeProject(id: 'p1');
+      fakeRepository.addProject('p1', project1);
+
+      final project2 = createFakeProject(id: 'p2');
+      fakeRepository.setAccessibleProjects([project2]);
+
+      final result = await fakeRepository.getProjects('user-1');
+      expect(result, [project2]);
+      expect(result, isNot(contains(project1)));
+    });
+  });
+
+  group('emitProjectsUpdate', () {
+    test('emits updated project list to watchProjects subscribers', () async {
+      final project = createFakeProject(id: 'p1');
+      fakeRepository.addProject('p1', project);
+
+      final stream = fakeRepository.watchProjects('user-1');
+      final emits = <List<dynamic>>[];
+
+      final sub = stream.listen(emits.add);
+      await pumpEventQueue();
+
+      fakeRepository.emitProjectsUpdate();
+      await pumpEventQueue();
+
+      sub.cancel();
+      expect(emits, isNotEmpty);
+    });
+  });
+
+  group('emitProjectsError', () {
+    test('can be called without throwing', () {
+      expect(
+        () => fakeRepository.emitProjectsError(Exception('test error')),
+        returnsNormally,
+      );
+    });
+
+    test('can be called with a stack trace without throwing', () {
+      expect(
+        () => fakeRepository.emitProjectsError(
+          Exception('test error'),
+          StackTrace.current,
+        ),
+        returnsNormally,
+      );
+    });
+  });
+
+  group('Permissions', () {
+    test('setProjectPermissions stores permissions for a project', () {
+      fakeRepository.setProjectPermissions('p1', ['read', 'write']);
+
+      expect(
+        fakeRepository.getProjectPermissions('p1'),
+        containsAll(['read', 'write']),
+      );
+    });
+
+    test('getProjectPermissions returns empty list for unknown project', () {
+      final result = fakeRepository.getProjectPermissions('unknown');
+
+      expect(result, isEmpty);
+    });
+
+    test('hasProjectPermission returns true when permission exists', () {
+      fakeRepository.setProjectPermissions('p1', ['read', 'write']);
+
+      expect(fakeRepository.hasProjectPermission('p1', 'read'), isTrue);
+    });
+
+    test('hasProjectPermission returns false when permission is absent', () {
+      fakeRepository.setProjectPermissions('p1', ['read']);
+
+      expect(fakeRepository.hasProjectPermission('p1', 'delete'), isFalse);
+    });
+
+    test(
+      'hasProjectPermission returns false for unknown project',
+      () {
+        expect(
+          fakeRepository.hasProjectPermission('unknown', 'read'),
+          isFalse,
+        );
+      },
+    );
+
+    test('clearProjectPermissions removes permissions for a project', () {
+      fakeRepository.setProjectPermissions('p1', ['read', 'write']);
+      fakeRepository.clearProjectPermissions('p1');
+
+      expect(fakeRepository.getProjectPermissions('p1'), isEmpty);
+    });
+
+    test('tracks method calls for getProjectPermissions', () {
+      fakeRepository.getProjectPermissions('p1');
+
+      final calls = fakeRepository.getMethodCallsFor('getProjectPermissions');
+      expect(calls, hasLength(1));
+      expect(calls.first['projectId'], 'p1');
+    });
+
+    test('tracks method calls for hasProjectPermission', () {
+      fakeRepository.hasProjectPermission('p1', 'read');
+
+      final calls = fakeRepository.getMethodCallsFor('hasProjectPermission');
+      expect(calls, hasLength(1));
+      expect(calls.first['projectId'], 'p1');
+      expect(calls.first['permissionKey'], 'read');
+    });
+  });
+
   group('Repository Reset', () {
     test('reset should clear all configurations and data', () async {
       final testProject = createFakeProject(id: 'test-id');
