@@ -32,11 +32,11 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// selected it renders [ProjectHeaderAppBar]; otherwise it shows the static
 /// app title.
 class AppShellPage extends StatefulWidget {
-  /// The bloc driving tab selection and module loading.
-  final AppShellBloc bloc;
-
   /// Builds the project header app bar displayed above the tab content.
   final ProjectUIProvider projectUIProvider;
+
+  // TODO: [CA-708] Remove once DashboardPage reads authNotifier, authManager, and router from the module directly.
+  // https://ripplearc.youtrack.cloud/issue/CA-708
 
   /// Notifies when the authenticated user's profile changes.
   final AuthNotifier authNotifier;
@@ -49,7 +49,6 @@ class AppShellPage extends StatefulWidget {
 
   const AppShellPage({
     super.key,
-    required this.bloc,
     required this.projectUIProvider,
     required this.authNotifier,
     required this.authManager,
@@ -62,6 +61,7 @@ class AppShellPage extends StatefulWidget {
 
 class _AppShellPageState extends State<AppShellPage> {
   static final _logger = AppLogger().tag('AppShellPage');
+  late AppShellBloc _bloc;
   late final CurrentProjectNotifier _currentProjectNotifier;
   StreamSubscription<String?>? _projectSubscription;
   String? _currentProjectId;
@@ -74,6 +74,7 @@ class _AppShellPageState extends State<AppShellPage> {
   @override
   void initState() {
     super.initState();
+    _bloc = context.read<AppShellBloc>();
     _currentProjectNotifier = Modular.get<CurrentProjectNotifier>();
     _currentProjectId = _currentProjectNotifier.currentProjectId;
     _projectSubscription = _currentProjectNotifier.onCurrentProjectChanged
@@ -87,7 +88,7 @@ class _AppShellPageState extends State<AppShellPage> {
   @override
   void dispose() {
     _projectSubscription?.cancel();
-    // Do not close _currentProjectNotifier or widget.bloc — both are DI-owned.
+    // Do not close _currentProjectNotifier or _bloc — both are DI-owned.
     // Closing a DI-owned BLoC leaves the container holding a closed instance,
     // causing "cannot add events after close" on re-navigation.
     super.dispose();
@@ -96,7 +97,7 @@ class _AppShellPageState extends State<AppShellPage> {
   void _onPopInvoked(bool didPop) {
     if (didPop) return;
 
-    final state = widget.bloc.state;
+    final state = _bloc.state;
     final currentNavigator =
         _tabNavigatorKeys[state.selectedTabIndex].currentState;
 
@@ -106,7 +107,7 @@ class _AppShellPageState extends State<AppShellPage> {
     }
 
     if (state.selectedTabIndex != 0) {
-      widget.bloc.add(const AppShellTabSelected(ShellTab.home));
+      _bloc.add(const AppShellTabSelected(ShellTab.home));
       return;
     }
 
@@ -115,12 +116,14 @@ class _AppShellPageState extends State<AppShellPage> {
 
   void _handleTabTap(int index) {
     assert(index < ShellTab.values.length, 'Tab index $index out of range');
-    widget.bloc.add(AppShellTabSelected(ShellTab.values[index]));
+    _bloc.add(AppShellTabSelected(ShellTab.values[index]));
   }
 
   Widget _buildTabRoot(ShellTab tab) {
     switch (tab) {
       case ShellTab.home:
+        // TODO: [CA-708] Remove authNotifier, authManager, and router from DashboardPage once the page reads them from the module directly.
+        // https://ripplearc.youtrack.cloud/issue/CA-708
         return DashboardPage(
           authNotifier: widget.authNotifier,
           authManager: widget.authManager,
@@ -198,7 +201,6 @@ class _AppShellPageState extends State<AppShellPage> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AppShellBloc, AppShellState>(
-      bloc: widget.bloc,
       builder: (context, state) {
         return PopScope(
           canPop: false,

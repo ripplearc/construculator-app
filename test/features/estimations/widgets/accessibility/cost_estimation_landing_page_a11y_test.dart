@@ -47,7 +47,7 @@ class _CostEstimationLandingPageA11yTestModule extends Module {
     r.module(estimationBaseRoute, module: EstimationRoutesModule(appBootstrap));
     r.child(
       '/test-landing',
-      guards: [AuthGuard(Modular.get<AuthManager>())],
+      guards: [AuthGuard(() => Modular.get<AuthManager>())],
       child: (context) {
         return EstimationModule.landingPage();
       },

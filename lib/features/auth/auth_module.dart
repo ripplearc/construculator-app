@@ -54,7 +54,7 @@ class AuthModule extends Module {
 void _registerRoutes(RouteManager r) {
   r.child(
     registerWithEmailRoute,
-    guards: [NoAuthGuard(Modular.get<AuthManager>())],
+    guards: [NoAuthGuard(() => Modular.get<AuthManager>())],
     child: (context) {
       final email = r.args.data ?? '';
       return MultiBlocProvider(
@@ -77,7 +77,7 @@ void _registerRoutes(RouteManager r) {
   );
   r.child(
     createAccountRoute,
-    guards: [AuthGuard(Modular.get<AuthManager>())],
+    guards: [AuthGuard(() => Modular.get<AuthManager>())],
     child: (context) => MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => Modular.get<CreateAccountBloc>()),
@@ -93,7 +93,7 @@ void _registerRoutes(RouteManager r) {
   );
   r.child(
     loginWithEmailRoute,
-    guards: [NoAuthGuard(Modular.get<AuthManager>())],
+    guards: [NoAuthGuard(() => Modular.get<AuthManager>())],
     child: (context) {
       final email = r.args.data ?? '';
       return BlocProvider(
@@ -107,7 +107,7 @@ void _registerRoutes(RouteManager r) {
   );
   r.child(
     enterPasswordRoute,
-    guards: [NoAuthGuard(Modular.get<AuthManager>())],
+    guards: [NoAuthGuard(() => Modular.get<AuthManager>())],
     child: (context) => BlocProvider(
       create: (context) => Modular.get<EnterPasswordBloc>(),
       child: EnterPasswordPage(
@@ -118,7 +118,7 @@ void _registerRoutes(RouteManager r) {
   );
   r.child(
     forgotPasswordRoute,
-    guards: [NoAuthGuard(Modular.get<AuthManager>())],
+    guards: [NoAuthGuard(() => Modular.get<AuthManager>())],
     child: (context) => MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => Modular.get<ForgotPasswordBloc>()),
@@ -129,7 +129,7 @@ void _registerRoutes(RouteManager r) {
   );
   r.child(
     setNewPasswordRoute,
-    guards: [AuthGuard(Modular.get<AuthManager>())],
+    guards: [AuthGuard(() => Modular.get<AuthManager>())],
     child: (context) {
       final email = r.args.data ?? '';
       return BlocProvider(
