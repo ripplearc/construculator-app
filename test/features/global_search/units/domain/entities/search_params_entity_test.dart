@@ -48,20 +48,20 @@ void main() {
     });
 
     group('copyWith', () {
-      const _base = SearchParams(query: 'bridge');
+      const base = SearchParams(query: 'bridge');
 
       test('returns equivalent object when no arguments are passed', () {
-        expect(_base.copyWith(), _base);
+        expect(base.copyWith(), base);
       });
 
       test('updates query when provided', () {
-        final copy = _base.copyWith(query: 'road');
+        final copy = base.copyWith(query: 'road');
 
         expect(copy.query, 'road');
       });
 
       test('sets filterByTag when provided', () {
-        final copy = _base.copyWith(filterByTag: 'urgent');
+        final copy = base.copyWith(filterByTag: 'urgent');
 
         expect(copy.filterByTag, 'urgent');
       });
@@ -79,7 +79,7 @@ void main() {
 
       test('sets filterByDate when provided', () {
         final date = DateTime(2025, 6, 1);
-        final copy = _base.copyWith(filterByDate: date);
+        final copy = base.copyWith(filterByDate: date);
 
         expect(copy.filterByDate, date);
       });
@@ -96,7 +96,7 @@ void main() {
       });
 
       test('sets filterByOwner when provided', () {
-        final copy = _base.copyWith(filterByOwner: 'user-1');
+        final copy = base.copyWith(filterByOwner: 'user-1');
 
         expect(copy.filterByOwner, 'user-1');
       });
@@ -110,7 +110,7 @@ void main() {
       });
 
       test('sets scope when provided', () {
-        final copy = _base.copyWith(scope: SearchScope.member);
+        final copy = base.copyWith(scope: SearchScope.member);
 
         expect(copy.scope, SearchScope.member);
       });
@@ -124,7 +124,7 @@ void main() {
       });
 
       test('updates pagination when provided', () {
-        final copy = _base.copyWith(
+        final copy = base.copyWith(
           pagination: const PaginationParams(offset: 20, limit: 10),
         );
 
