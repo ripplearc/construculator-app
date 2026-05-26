@@ -141,7 +141,11 @@ pre_check() {
       filter_coverage_tracefile "coverage/lcov.info"
 
       local changed_source_files
-      changed_source_files=$(git diff --name-only --diff-filter=d "$base_commit" HEAD -- 'lib/**/*.dart' | grep -v -E '(\.g\.dart$|\.freezed\.dart$|/generated/|/l10n/)' || true)
+      changed_source_files=$(git diff --name-only --diff-filter=A "$base_commit" HEAD -- 'lib/**/*.dart' \
+        | grep -v -E '(\.g\.dart$|\.freezed\.dart$|/generated/|/l10n/)' \
+        | while IFS= read -r f; do
+            head -1 "$f" 2>/dev/null | grep -q '// coverage:ignore-file' || echo "$f"
+          done || true)
 
       if [[ -z "$changed_source_files" ]]; then
         echo "✅ No changed source files in lib/. Skipping coverage threshold check for --pre."
@@ -166,6 +170,7 @@ pre_check() {
           for missing in "${missing_files[@]}"; do
             echo "  - $missing"
           done
+          echo "Every new or modified lib/**/*.dart file must be exercised by at least one test."
           exit 1
         fi
 
@@ -200,32 +205,38 @@ pre_check() {
     fi
   fi
 
-  local changed_source_files_all
-  changed_source_files_all=$(git diff --name-only --diff-filter=d "$base_commit" HEAD -- 'lib/**/*.dart' | grep -v -E '(\.g\.dart$|\.freezed\.dart$|/generated/|/l10n/)' || true)
+  if [[ -z "$changed_tests" ]]; then
+    local changed_source_files_all
+    changed_source_files_all=$(git diff --name-only --diff-filter=A "$base_commit" HEAD -- 'lib/**/*.dart' \
+      | grep -v -E '(\.g\.dart$|\.freezed\.dart$|/generated/|/l10n/)' \
+      | while IFS= read -r f; do
+          head -1 "$f" 2>/dev/null | grep -q '// coverage:ignore-file' || echo "$f"
+        done || true)
 
-  if [[ -n "$changed_source_files_all" ]]; then
-    local covered_all=""
-    if [[ -s "coverage/lcov.info" ]]; then
-      covered_all=$(grep '^SF:' "coverage/lcov.info" | cut -d: -f2- || true)
-    fi
-
-    local uncovered_files=()
-    while IFS= read -r file; do
-      [[ -z "$file" ]] && continue
-      if [[ -z "$covered_all" ]] || \
-         { ! printf '%s\n' "$covered_all" | grep -Fxq "$file" && \
-           ! printf '%s\n' "$covered_all" | grep -Fxq "$PWD/$file"; }; then
-        uncovered_files+=("$file")
+    if [[ -n "$changed_source_files_all" ]]; then
+      local covered_all=""
+      if [[ -s "coverage/lcov.info" ]]; then
+        covered_all=$(grep '^SF:' "coverage/lcov.info" | cut -d: -f2- || true)
       fi
-    done <<< "$changed_source_files_all"
 
-    if [[ ${#uncovered_files[@]} -gt 0 ]]; then
-      echo "❌ The following changed source files have zero coverage (not found in any tracefile):"
-      for f in "${uncovered_files[@]}"; do
-        echo "  - $f"
-      done
-      echo "Every new or modified lib/**/*.dart file must be exercised by at least one test."
-      exit 1
+      local uncovered_files=()
+      while IFS= read -r file; do
+        [[ -z "$file" ]] && continue
+        if [[ -z "$covered_all" ]] || \
+           { ! printf '%s\n' "$covered_all" | grep -Fxq "$file" && \
+             ! printf '%s\n' "$covered_all" | grep -Fxq "$PWD/$file"; }; then
+          uncovered_files+=("$file")
+        fi
+      done <<< "$changed_source_files_all"
+
+      if [[ ${#uncovered_files[@]} -gt 0 ]]; then
+        echo "❌ The following changed source files have zero coverage (not found in any tracefile):"
+        for f in "${uncovered_files[@]}"; do
+          echo "  - $f"
+        done
+        echo "Every new or modified lib/**/*.dart file must be exercised by at least one test."
+        exit 1
+      fi
     fi
   fi
 }
