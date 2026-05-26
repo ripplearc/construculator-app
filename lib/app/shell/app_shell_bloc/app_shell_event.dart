@@ -15,11 +15,10 @@ class AppShellInitialized extends AppShellEvent {
 
 /// Event triggered when a user selects a tab in the app shell.
 class AppShellTabSelected extends AppShellEvent {
-  /// The index of the selected tab.
-  final int index;
+  final ShellTab tab;
 
-  const AppShellTabSelected(this.index);
+  const AppShellTabSelected(this.tab);
 
   @override
-  List<Object> get props => [index];
+  List<Object> get props => [tab];
 }

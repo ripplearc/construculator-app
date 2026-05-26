@@ -1,9 +1,5 @@
-import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
-import 'package:construculator/app/shell/default_tab_providers.dart';
-import 'package:construculator/app/shell/tab_module_manager.dart';
-import 'package:construculator/features/dashboard/dashboard_module.dart';
-
+import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/estimation_card.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
@@ -26,30 +22,9 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
+import '../../../utils/dashboard_shell_test_module.dart';
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/screenshot/font_loader.dart';
-
-class _DashboardWithShellTestModule extends Module {
-  final AppBootstrap appBootstrap;
-
-  _DashboardWithShellTestModule(this.appBootstrap);
-
-  @override
-  List<Module> get imports => [DashboardModule(appBootstrap)];
-
-  @override
-  void binds(Injector i) {
-    i.addLazySingleton<TabModuleManager>(
-      () => TabModuleManager(
-        appBootstrap,
-        providers: {
-          for (final tab in ShellTab.values) tab: const NoOpTabModuleProvider(),
-        },
-      ),
-    );
-    i.add<AppShellBloc>(() => AppShellBloc(moduleLoader: i.get()));
-  }
-}
 
 void main() {
   late FakeClockImpl clock;
@@ -108,7 +83,7 @@ void main() {
     final bootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
-    Modular.init(_DashboardWithShellTestModule(bootstrap));
+    Modular.init(DashboardShellTestModule(bootstrap));
 
     Modular.replaceInstance<AppRouter>(router);
     Modular.replaceInstance<CostEstimationRepository>(fakeRepository);
@@ -120,6 +95,8 @@ void main() {
   });
 
   tearDown(() {
+    // Modular.destroy() closes all registered BLoCs, including
+    // RecentEstimationsBloc and AppShellBloc.
     Modular.destroy();
   });
 
@@ -236,6 +213,35 @@ void main() {
 
     expect(tester.widgetList(find.byType(Navigator)).length, navigatorCount);
     expect(router.navigationHistory, isEmpty);
+  });
+
+  testWidgets('tapping view all selects the estimation tab via AppShellBloc', (
+    tester,
+  ) async {
+    configureRepositoryStream([
+      estimationFromMap(
+        EstimationTestDataMapFactory.createFakeEstimationData(
+          projectId: testProjectId,
+        ),
+      ),
+    ]);
+
+    await pumpSection(tester);
+
+    final appShellBloc = Modular.get<AppShellBloc>();
+    final tabSelected = appShellBloc.stream.firstWhere(
+      (state) => state.selectedTabIndex == ShellTab.estimation.index,
+    );
+
+    await tester.tap(find.text('View all'));
+    await tester.pump();
+    await tester.runAsync(() => tabSelected);
+    await tester.pump();
+
+    expect(
+      appShellBloc.state.selectedTabIndex,
+      ShellTab.estimation.index,
+    );
   });
 
   testWidgets('keeps showing estimations while reloading', (tester) async {

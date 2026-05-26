@@ -1,8 +1,3 @@
-import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
-import 'package:construculator/app/shell/default_tab_providers.dart';
-import 'package:construculator/app/shell/tab_module_manager.dart';
-import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -25,30 +20,9 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+import '../../../../utils/dashboard_shell_test_module.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
-
-class _DashboardWithShellTestModule extends Module {
-  final AppBootstrap appBootstrap;
-
-  _DashboardWithShellTestModule(this.appBootstrap);
-
-  @override
-  List<Module> get imports => [DashboardModule(appBootstrap)];
-
-  @override
-  void binds(Injector i) {
-    i.addLazySingleton<TabModuleManager>(
-      () => TabModuleManager(
-        appBootstrap,
-        providers: {
-          for (final tab in ShellTab.values) tab: const NoOpTabModuleProvider(),
-        },
-      ),
-    );
-    i.add<AppShellBloc>(() => AppShellBloc(moduleLoader: i.get()));
-  }
-}
 
 void main() {
   late FakeClockImpl clock;
@@ -76,7 +50,7 @@ void main() {
     final bootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
-    Modular.init(_DashboardWithShellTestModule(bootstrap));
+    Modular.init(DashboardShellTestModule(bootstrap));
 
     Modular.replaceInstance<AuthNotifierController>(authNotifier);
     Modular.replaceInstance<AuthNotifier>(authNotifier);

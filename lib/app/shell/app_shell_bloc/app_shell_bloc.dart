@@ -32,15 +32,15 @@ class AppShellBloc extends Bloc<AppShellEvent, AppShellState> {
     AppShellTabSelected event,
     Emitter<AppShellState> emit,
   ) async {
-    if (event.index == state.selectedTabIndex) return;
+    final tabIndex = event.tab.index;
+    if (tabIndex == state.selectedTabIndex) return;
 
-    final tab = ShellTab.values[event.index];
-    await _moduleLoader.ensureTabModuleLoaded(tab);
+    await _moduleLoader.ensureTabModuleLoaded(event.tab);
 
     emit(
       state.copyWith(
-        selectedTabIndex: event.index,
-        loadedTabIndexes: {...state.loadedTabIndexes, event.index},
+        selectedTabIndex: tabIndex,
+        loadedTabIndexes: {...state.loadedTabIndexes, tabIndex},
       ),
     );
   }
