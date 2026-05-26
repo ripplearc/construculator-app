@@ -3,7 +3,9 @@ import 'package:construculator/features/global_search/global_search_module.dart'
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -14,8 +16,21 @@ import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/screenshot/await_images_extension.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
+const String _testUserId = 'user-screenshot-test';
+const String _testUserEmail = 'screenshot@test.com';
+
+Map<String, dynamic> _fakeHistoryRow(String term) => {
+  DatabaseConstants.idColumn: term,
+  DatabaseConstants.userIdColumn: _testUserId,
+  DatabaseConstants.searchTermColumn: term,
+  DatabaseConstants.scopeColumn: 'dashboard',
+  DatabaseConstants.searchCountColumn: 1,
+  DatabaseConstants.createdAtColumn: '2024-01-01T00:00:00.000Z',
+};
+
 class _GlobalSearchPageScreenshotModule extends Module {
   final AppBootstrap appBootstrap;
+
   _GlobalSearchPageScreenshotModule(this.appBootstrap);
 
   @override
@@ -31,21 +46,25 @@ void main() {
   const testName = 'global_search_page';
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  late FakeSupabaseWrapper fakeSupabase;
+
   setUpAll(() async {
     await loadAppFontsAll();
+    final bootstrap = FakeAppBootstrapFactory.create(
+      supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
+    );
+    Modular.init(_GlobalSearchPageScreenshotModule(bootstrap));
+    final supabase = Modular.get<SupabaseWrapper>();
+    expect(supabase, isA<FakeSupabaseWrapper>());
+    fakeSupabase = supabase as FakeSupabaseWrapper;
+  });
+
+  tearDownAll(() {
+    Modular.destroy();
   });
 
   setUp(() {
-    final fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
-    final appBootstrap = FakeAppBootstrapFactory.create(
-      supabaseWrapper: fakeSupabase,
-    );
-    Modular.init(_GlobalSearchPageScreenshotModule(appBootstrap));
-    Modular.replaceInstance<SupabaseWrapper>(fakeSupabase);
-  });
-
-  tearDown(() {
-    Modular.destroy();
+    fakeSupabase.reset();
   });
 
   Future<void> pumpGlobalSearchPage({required WidgetTester tester}) async {
@@ -101,5 +120,31 @@ void main() {
         );
       },
     );
+
+    testWidgets('renders with recent searches correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+
+      fakeSupabase.setCurrentUser(
+        FakeUser(
+          id: _testUserId,
+          email: _testUserEmail,
+          createdAt: '2024-01-01T00:00:00.000Z',
+        ),
+      );
+      fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
+        _fakeHistoryRow('Material of building'),
+        _fakeHistoryRow('MD bungalow'),
+      ]);
+
+      await pumpGlobalSearchPage(tester: tester);
+
+      await expectLater(
+        find.byType(GlobalSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_recent_searches.png',
+        ),
+      );
+    });
   });
 }

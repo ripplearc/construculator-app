@@ -1171,5 +1171,30 @@
   "@globalSearchClearSearchSemanticLabel": {
     "description": "Accessibility label for the clear search button on the global search screen",
     "context": "N/A"
+  },
+  "globalSearchRecentSearchFillSemanticLabel": "Fill search field with {term}",
+  "@globalSearchRecentSearchFillSemanticLabel": {
+    "description": "Accessibility label for the trailing icon on a recent search row — fills the search field with the term",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design",
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
+  "globalSearchLoadErrorMessage": "Failed to load recent searches. Please try again.",
+  "@globalSearchLoadErrorMessage": {
+    "description": "Error toast shown when loading recent searches fails",
+    "context": "N/A"
+  },
+  "globalSearchDeleteErrorMessage": "Failed to remove recent search. Please try again.",
+  "@globalSearchDeleteErrorMessage": {
+    "description": "Error toast shown when deleting a recent search fails",
+    "context": "N/A"
+  },
+  "globalSearchSuggestionsErrorMessage": "Could not load suggestions.",
+  "@globalSearchSuggestionsErrorMessage": {
+    "description": "Warning toast shown when loading search suggestions fails",
+    "context": "N/A"
   }
 }
