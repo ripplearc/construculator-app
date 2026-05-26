@@ -30,7 +30,7 @@ RUN apt-get update && \
     gnupg \
     openjdk-17-jdk \
     && wget -qO- https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/dart.gpg && \
-    echo 'deb [signed-by=/usr/share/keyrings/dart.gpg arch=amd64] https://storage.googleapis.com/download.dartlang.org/linux/debian stable main' | tee /etc/apt/sources.list.d/dart_stable.list && \
+    echo 'deb [signed-by=/usr/share/keyrings/dart.gpg] https://storage.googleapis.com/download.dartlang.org/linux/debian stable main' | tee /etc/apt/sources.list.d/dart_stable.list && \
     apt-get update && \
     apt-get install -y dart && \
     rm -rf /var/lib/apt/lists/*
@@ -69,6 +69,9 @@ COPY --chown=flutter:flutter .fvmrc ./
 # Install Flutter using FVM based on .fvmrc and set it as default
 RUN fvm install && \
     fvm global ${FLUTTER_VERSION}
+
+# Re-activate fvm using the Flutter-bundled Dart (3.8.0) to avoid kernel binary mismatch
+RUN /home/flutter/fvm/default/bin/dart pub global activate fvm
 
 # Ensure PATH and SSH alias are exported in interactive shells
 RUN echo 'export PATH="$PATH:$HOME/.pub-cache/bin:$HOME/fvm/default/bin:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools"' >> ~/.bashrc
