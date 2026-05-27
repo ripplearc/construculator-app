@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/local_jwt_project_permission_data_source.dart';
@@ -161,6 +162,15 @@ void main() {
           );
         },
       );
+
+      test('throws ProjectFailure when owned projects fetch fails', () async {
+        projectDataSource.getOwnedProjectsError = TimeoutException('timeout');
+
+        expect(
+          () => repository.getProjects('user-123'),
+          throwsA(isA<ProjectFailure>()),
+        );
+      });
     });
 
     group('watchProjects', () {
@@ -257,7 +267,7 @@ void main() {
                 if (!firstEmission.isCompleted) firstEmission.complete();
               },
               onError: (error, _) {
-                expect(error, isA<Exception>());
+                expect(error, isA<ProjectFailure>());
                 if (!errorReceived.isCompleted) errorReceived.complete();
               },
             );
@@ -464,6 +474,8 @@ class _FakeProjectDataSource implements ProjectDataSource {
   List<ProjectDto> sharedProjects = [];
   String? lastOwnedUserId;
   String? lastSharedUserId;
+  Object? getOwnedProjectsError;
+  Object? getSharedProjectsError;
   int getOwnedProjectsCalls = 0;
   Completer<void>? firstGetOwnedProjectsStartedCompleter;
   Completer<void>? nextGetOwnedProjectsCompleter;
@@ -474,6 +486,11 @@ class _FakeProjectDataSource implements ProjectDataSource {
   Future<List<ProjectDto>> getOwnedProjects(String userId) async {
     lastOwnedUserId = userId;
     getOwnedProjectsCalls++;
+
+    final error = getOwnedProjectsError;
+    if (error != null) {
+      throw error;
+    }
 
     final snapshot = List<ProjectDto>.from(ownedProjects);
     if (firstGetOwnedProjectsStartedCompleter?.isCompleted == false) {
@@ -492,6 +509,12 @@ class _FakeProjectDataSource implements ProjectDataSource {
   @override
   Future<List<ProjectDto>> getSharedProjects(String userId) async {
     lastSharedUserId = userId;
+
+    final error = getSharedProjectsError;
+    if (error != null) {
+      throw error;
+    }
+
     return sharedProjects;
   }
 

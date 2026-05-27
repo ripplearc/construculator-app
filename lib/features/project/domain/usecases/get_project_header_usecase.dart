@@ -38,6 +38,8 @@ class GetProjectHeaderUseCase {
       return Right(
         ProjectHeaderData(project: project, userProfile: userProfile),
       );
+    } on Failure catch (failure) {
+      return Left(failure);
     } on TimeoutException {
       return Left(NetworkFailure());
     } on SocketException {
