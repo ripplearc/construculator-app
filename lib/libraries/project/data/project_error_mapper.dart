@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/domain/project_error_type.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -27,6 +28,18 @@ class ProjectErrorMapper {
 
     if (error is FormatException || error is TypeError) {
       return ProjectErrorType.parsingError;
+    }
+
+    if (error is NotFoundException) {
+      return ProjectErrorType.notFoundError;
+    }
+
+    if (error is NetworkException) {
+      return ProjectErrorType.connectionError;
+    }
+
+    if (error is ServerException) {
+      return ProjectErrorType.unexpectedDatabaseError;
     }
 
     if (error is supabase.PostgrestException) {
