@@ -87,11 +87,7 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       return const Right(null);
     } catch (error, stackTrace) {
       return Left(
-        _handleError(
-          error,
-          'deleting project with id: $projectId',
-          stackTrace,
-        ),
+        _handleError(error, 'deleting project with id: $projectId', stackTrace),
       );
     }
   }
