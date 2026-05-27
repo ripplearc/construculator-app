@@ -16,6 +16,12 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
   /// Controls whether [fetchProjectSetting] throws a [ServerException].
   bool shouldThrowOnGet = false;
 
+  /// If non-null, this exception/object will be thrown directly by
+  /// [fetchProjectSetting] to allow tests to simulate different failures
+  /// (e.g., [TimeoutException]). This takes precedence over
+  /// [shouldThrowOnGet].
+  Object? exceptionToThrow;
+
   /// Controls whether [updateProject] throws a [ServerException].
   bool shouldThrowOnUpdate = false;
 
@@ -44,6 +50,10 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
   @override
   Future<ProjectDto> fetchProjectSetting(String projectId) async {
     _methodCalls.add({'method': 'fetchProjectSetting', 'projectId': projectId});
+
+    if (exceptionToThrow != null) {
+      throw exceptionToThrow!;
+    }
 
     if (shouldThrowOnGet) {
       throw ServerException(
@@ -135,6 +145,7 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
     deleteErrorMessage = null;
     projectToReturn = null;
     _methodCalls.clear();
+    exceptionToThrow = null;
   }
 
   /// Releases resources held by this fake.

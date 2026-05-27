@@ -47,9 +47,10 @@ class RemoteProjectSettingDataSource implements ProjectSettingDataSource {
     } on NotFoundException {
       rethrow;
     } catch (error, stackTrace) {
-      _logger.error(
+      _logger.warning(
         'Error while getting project setting for projectId: $projectId, error: $error',
-        stackTrace.toString(),
+        error,
+        stackTrace,
       );
       rethrow;
     }
@@ -84,9 +85,10 @@ class RemoteProjectSettingDataSource implements ProjectSettingDataSource {
 
       return ProjectDto.fromJson(result);
     } catch (error, stackTrace) {
-      _logger.error(
+      _logger.warning(
         'Error while updating project with id: ${projectDto.id}, error: $error',
-        stackTrace.toString(),
+        error,
+        stackTrace,
       );
       rethrow;
     }
@@ -105,9 +107,10 @@ class RemoteProjectSettingDataSource implements ProjectSettingDataSource {
         filters: {DatabaseConstants.idColumn: projectId},
       );
     } catch (error, stackTrace) {
-      _logger.error(
+      _logger.warning(
         'Error while deleting project with id: $projectId, error: $error',
-        stackTrace.toString(),
+        error,
+        stackTrace,
       );
       rethrow;
     }
@@ -128,9 +131,10 @@ class RemoteProjectSettingDataSource implements ProjectSettingDataSource {
         )
         .map((rows) => rows.isEmpty ? null : ProjectDto.fromJson(rows.first))
         .doOnError((Object error, StackTrace stackTrace) {
-          _logger.error(
+          _logger.warning(
             'Error while watching project changes for projectId: $projectId, error: $error',
-            stackTrace.toString(),
+            error,
+            stackTrace,
           );
         });
   }
