@@ -18,9 +18,9 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
   final ProjectPermissionDataSource _permissionDataSource;
   static final _logger = AppLogger().tag('ProjectSettingRepositoryImpl');
 
-  StreamController<Either<Failure, Project>>? _settingController;
-  StreamSubscription<ProjectDto?>? _changesSubscription;
-  String? _watchedProjectId;
+  final Map<String, StreamController<Either<Failure, Project>>>
+  _settingControllers = {};
+  final Map<String, StreamSubscription<ProjectDto?>> _changesSubscriptions = {};
 
   ProjectSettingRepositoryImpl({
     required ProjectSettingDataSource dataSource,
@@ -113,59 +113,55 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
 
   @override
   Stream<Either<Failure, Project>> watchProjectSetting(String projectId) {
-    _watchedProjectId = projectId;
-    final controller = _settingController ??=
-        StreamController<Either<Failure, Project>>.broadcast(
-          onListen: _startWatchingSettingChanges,
-          onCancel: _stopWatchingIfNoListeners,
-        );
+    final existing = _settingControllers[projectId];
+    if (existing != null && !existing.isClosed) {
+      return existing.stream;
+    }
+
+    final controller = StreamController<Either<Failure, Project>>.broadcast(
+      onListen: () => _startWatchingSettingChanges(projectId),
+      onCancel: () => _stopWatchingIfNoListeners(projectId),
+    );
+    _settingControllers[projectId] = controller;
     return controller.stream;
   }
 
-  void _startWatchingSettingChanges() {
-    if (_changesSubscription != null) {
+  void _startWatchingSettingChanges(String projectId) {
+    if (_changesSubscriptions.containsKey(projectId)) {
       return;
     }
 
-    final projectId = _watchedProjectId;
-    if (projectId == null || projectId.isEmpty) {
-      return;
-    }
-
-    _changesSubscription = _dataSource
+    _changesSubscriptions[projectId] = _dataSource
         .watchProjectChanges(projectId)
         .listen(
-          (_) => _refreshProjectSetting(),
+          (_) => _refreshProjectSetting(projectId),
           onError: (Object error, StackTrace stackTrace) {
-            _logger.error(
+            _logger.warning(
               'Error while watching project setting changes for projectId: $projectId',
               error,
               stackTrace,
             );
-            _settingController?.addError(error, stackTrace);
+            _settingControllers[projectId]?.addError(error, stackTrace);
           },
         );
 
-    _refreshProjectSetting();
+    _refreshProjectSetting(projectId);
   }
 
-  void _stopWatchingIfNoListeners() {
-    if (_settingController?.hasListener == true) {
+  void _stopWatchingIfNoListeners(String projectId) {
+    final controller = _settingControllers[projectId];
+    if (controller?.hasListener == true) {
       return;
     }
-    _changesSubscription?.cancel();
-    _changesSubscription = null;
-    _watchedProjectId = null;
+    _changesSubscriptions.remove(projectId)?.cancel();
+    _settingControllers.remove(projectId);
   }
 
-  Future<void> _refreshProjectSetting() async {
-    final projectId = _watchedProjectId;
-    if (projectId == null || projectId.isEmpty) {
-      return;
-    }
+  Future<void> _refreshProjectSetting(String projectId) async {
     final result = await getProjectSetting(projectId);
-    if (_settingController?.isClosed == false) {
-      _settingController?.add(result);
+    final controller = _settingControllers[projectId];
+    if (controller?.isClosed == false) {
+      controller?.add(result);
     }
   }
 
@@ -190,10 +186,13 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
 
   @override
   void dispose() {
-    _changesSubscription?.cancel();
-    _changesSubscription = null;
-    _settingController?.close();
-    _settingController = null;
-    _watchedProjectId = null;
+    for (final subscription in _changesSubscriptions.values) {
+      subscription.cancel();
+    }
+    _changesSubscriptions.clear();
+    for (final controller in _settingControllers.values) {
+      controller.close();
+    }
+    _settingControllers.clear();
   }
 }
