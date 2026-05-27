@@ -3,6 +3,7 @@ import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/features/estimation/estimation_routes_module.dart';
+import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -14,7 +15,9 @@ class ShellModule extends Module {
   @override
   void binds(Injector i) {
     i.addSingleton<TabModuleManager>(() => TabModuleManager(appBootstrap));
-    i.add<AppShellBloc>(() => AppShellBloc(moduleLoader: i.get()));
+    i.add<AppShellBloc>(
+      () => AppShellBloc(moduleLoader: i.get())..add(AppShellInitialized()),
+    );
   }
 
   @override
@@ -22,6 +25,7 @@ class ShellModule extends Module {
     r.child(
       '/',
       child: (_) => const AppShellPage(),
+      guards: [AuthGuard()],
       children: [
         ModuleRoute(
           estimationBaseRoute,

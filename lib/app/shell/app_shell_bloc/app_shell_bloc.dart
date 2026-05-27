@@ -24,9 +24,8 @@ class AppShellBloc extends Bloc<AppShellEvent, AppShellState> {
     AppShellInitialized event,
     Emitter<AppShellState> emit,
   ) async {
-    final initialTab = ShellTab.values[state.selectedTabIndex];
-    await _moduleLoader.ensureTabModuleLoaded(initialTab);
-    emit(state.copyWith(loadedTabIndexes: {state.selectedTabIndex}));
+    await _moduleLoader.ensureTabModuleLoaded(ShellTab.home);
+    emit(state.copyWith(loadedTabIndexes: {0}, selectedTabIndex: 0));
   }
 
   Future<void> _onTabSelected(
