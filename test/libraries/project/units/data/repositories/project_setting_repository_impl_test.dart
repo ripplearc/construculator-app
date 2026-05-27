@@ -49,6 +49,17 @@ void main() {
       Modular.destroy();
     });
 
+    test('exports the real repository and data source bindings', () {
+      expect(
+        Modular.get<ProjectSettingRepository>(),
+        isA<ProjectSettingRepositoryImpl>(),
+      );
+      expect(
+        Modular.get<ProjectSettingDataSource>(),
+        isA<RemoteProjectSettingDataSource>(),
+      );
+    });
+
     group('getProjectSetting', () {
       test('returns Right(project) when data source succeeds', () async {
         fakeSupabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
