@@ -11,6 +11,9 @@ class FakeProjectSettingRepository implements ProjectSettingRepository {
   /// Tracks method calls for boundary assertions.
   final List<Map<String, dynamic>> _methodCalls = [];
 
+  int _activeWatchListeners = 0;
+  bool _isDisposed = false;
+
   /// The [Project] returned by [getProjectSetting] and [updateProject].
   Project? projectToReturn;
 
@@ -33,11 +36,21 @@ class FakeProjectSettingRepository implements ProjectSettingRepository {
     errorType: ProjectErrorType.unexpectedError,
   );
 
-  final StreamController<Either<Failure, Project>> _watchController =
-      StreamController<Either<Failure, Project>>.broadcast();
+  late final StreamController<Either<Failure, Project>> _watchController;
 
   /// Creates a [FakeProjectSettingRepository].
-  FakeProjectSettingRepository();
+  FakeProjectSettingRepository() {
+    _watchController = StreamController<Either<Failure, Project>>.broadcast(
+      onListen: () {
+        _activeWatchListeners++;
+      },
+      onCancel: () {
+        if (_activeWatchListeners > 0) {
+          _activeWatchListeners--;
+        }
+      },
+    );
+  }
 
   @override
   Future<Either<Failure, Project>> getProjectSetting(String projectId) async {
@@ -81,10 +94,7 @@ class FakeProjectSettingRepository implements ProjectSettingRepository {
 
   @override
   Stream<Either<Failure, Project>> watchProjectSetting(String projectId) {
-    _methodCalls.add({
-      'method': 'watchProjectSetting',
-      'projectId': projectId,
-    });
+    _methodCalls.add({'method': 'watchProjectSetting', 'projectId': projectId});
 
     if (shouldFailOnWatch) {
       return Stream.value(Left(failureToReturn));
@@ -93,24 +103,57 @@ class FakeProjectSettingRepository implements ProjectSettingRepository {
     return _watchController.stream;
   }
 
+  void _emitToWatchController(Either<Failure, Project> result) {
+    if (_isDisposed ||
+        _watchController.isClosed ||
+        _activeWatchListeners == 0) {
+      return;
+    }
+
+    try {
+      _watchController.add(result);
+    } on StateError {
+      // The controller may have been closed between the guard and the add.
+    }
+  }
+
+  void _emitWatchControllerError(Object error, [StackTrace? stackTrace]) {
+    if (_isDisposed ||
+        _watchController.isClosed ||
+        _activeWatchListeners == 0) {
+      return;
+    }
+
+    try {
+      _watchController.addError(error, stackTrace);
+    } on StateError {
+      // The controller may have been closed between the guard and the add.
+    }
+  }
+
   @override
   void dispose() {
+    if (_isDisposed || _watchController.isClosed) {
+      return;
+    }
+
+    _isDisposed = true;
     _watchController.close();
   }
 
   /// Emits a [Right] with [project] to active [watchProjectSetting] subscribers.
   void emitProject(Project project) {
-    _watchController.add(Right(project));
+    _emitToWatchController(Right(project));
   }
 
   /// Emits a [Left] with [failure] to active [watchProjectSetting] subscribers.
   void emitFailure(Failure failure) {
-    _watchController.add(Left(failure));
+    _emitToWatchController(Left(failure));
   }
 
   /// Emits an error event to active [watchProjectSetting] subscribers.
   void emitStreamError(Object error, [StackTrace? stackTrace]) {
-    _watchController.addError(error, stackTrace);
+    _emitWatchControllerError(error, stackTrace);
   }
 
   /// Returns a copy of all recorded method calls.
@@ -118,9 +161,7 @@ class FakeProjectSettingRepository implements ProjectSettingRepository {
 
   /// Returns all calls for the given [methodName].
   List<Map<String, dynamic>> getMethodCallsFor(String methodName) {
-    return _methodCalls
-        .where((call) => call['method'] == methodName)
-        .toList();
+    return _methodCalls.where((call) => call['method'] == methodName).toList();
   }
 
   /// Resets all flags, data, and recorded calls.
@@ -134,5 +175,6 @@ class FakeProjectSettingRepository implements ProjectSettingRepository {
     );
     projectToReturn = null;
     _methodCalls.clear();
+    _isDisposed = false;
   }
 }
