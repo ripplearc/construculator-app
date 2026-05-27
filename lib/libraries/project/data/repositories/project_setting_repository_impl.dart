@@ -21,6 +21,10 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
   final ProjectPermissionDataSource _permissionDataSource;
   static final _logger = AppLogger().tag('ProjectSettingRepositoryImpl');
 
+  StreamController<Either<Failure, Project>>? _settingController;
+  StreamSubscription<ProjectDto?>? _changesSubscription;
+  String? _watchedProjectId;
+
   ProjectSettingRepositoryImpl({
     required ProjectSettingDataSource dataSource,
     required ProjectPermissionDataSource permissionDataSource,
@@ -33,13 +37,12 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       final dto = await _dataSource.fetchProjectSetting(projectId);
       return Right(dto.toDomain());
     } catch (error, stackTrace) {
-      return Left(
-        _handleError(
-          error,
-          'getting project setting for projectId: $projectId',
-          stackTrace,
-        ),
+      _logger.warning(
+        'Error while getting project setting for projectId: $projectId',
+        error,
+        stackTrace,
       );
+      return Left(_handleError(error, 'getting project setting'));
     }
   }
 
@@ -60,13 +63,12 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       final result = await _dataSource.updateProject(dto);
       return Right(result.toDomain());
     } catch (error, stackTrace) {
-      return Left(
-        _handleError(
-          error,
-          'updating project with id: ${project.id}',
-          stackTrace,
-        ),
+      _logger.warning(
+        'Error while updating project with id: ${project.id}',
+        error,
+        stackTrace,
       );
+      return Left(_handleError(error, 'updating project'));
     }
   }
 
@@ -86,9 +88,70 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       await _dataSource.deleteProject(projectId);
       return const Right(null);
     } catch (error, stackTrace) {
-      return Left(
-        _handleError(error, 'deleting project with id: $projectId', stackTrace),
+      _logger.warning(
+        'Error while deleting project with id: $projectId',
+        error,
+        stackTrace,
       );
+      return Left(_handleError(error, 'deleting project'));
+    }
+  }
+
+  @override
+  Stream<Either<Failure, Project>> watchProjectSetting(String projectId) {
+    _watchedProjectId = projectId;
+    final controller = _settingController ??=
+        StreamController<Either<Failure, Project>>.broadcast(
+          onListen: _startWatchingSettingChanges,
+          onCancel: _stopWatchingIfNoListeners,
+        );
+    return controller.stream;
+  }
+
+  void _startWatchingSettingChanges() {
+    if (_changesSubscription != null) {
+      return;
+    }
+
+    final projectId = _watchedProjectId;
+    if (projectId == null || projectId.isEmpty) {
+      return;
+    }
+
+    _changesSubscription = _dataSource
+        .watchProjectChanges(projectId)
+        .listen(
+          (_) => _refreshProjectSetting(),
+          onError: (Object error, StackTrace stackTrace) {
+            _logger.error(
+              'Error while watching project setting changes for projectId: $projectId',
+              error,
+              stackTrace,
+            );
+            _settingController?.addError(error, stackTrace);
+          },
+        );
+
+    _refreshProjectSetting();
+  }
+
+  void _stopWatchingIfNoListeners() {
+    if (_settingController?.hasListener == true) {
+      return;
+    }
+    _changesSubscription?.cancel();
+    _changesSubscription = null;
+    _watchedProjectId = null;
+  }
+
+  Future<void> _refreshProjectSetting() async {
+    final projectId = _watchedProjectId;
+    if (projectId == null || projectId.isEmpty) {
+      return;
+    }
+    final result = await getProjectSetting(projectId);
+    if (_settingController?.isClosed == false) {
+      _settingController?.add(result);
     }
   }
 
@@ -107,59 +170,39 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
     );
   }
 
-  Failure _handleError(Object error, String operation, StackTrace stackTrace) {
+  Failure _handleError(Object error, String operation) {
     if (error is NotFoundException) {
-      _logger.warning(
-        'Not found $operation: ${error.exception}',
-        error,
-        stackTrace,
-      );
+      _logger.warning('Not found $operation: ${error.exception}');
       return const ProjectFailure(errorType: ProjectErrorType.notFoundError);
     }
 
     if (error is ServerException) {
-      _logger.warning(
-        'Server error $operation: ${error.exception}',
-        error,
-        stackTrace,
-      );
+      _logger.warning('Server error $operation: ${error.exception}');
       return const ProjectFailure(
         errorType: ProjectErrorType.unexpectedDatabaseError,
       );
     }
 
     if (error is TimeoutException) {
-      _logger.warning(
-        'Timeout error $operation: ${error.message}',
-        error,
-        stackTrace,
-      );
+      _logger.warning('Timeout error $operation: ${error.message}');
       return const ProjectFailure(errorType: ProjectErrorType.timeoutError);
     }
 
     if (error is SocketException || error is NetworkException) {
       _logger.warning(
         'Connection error $operation: ${error is SocketException ? (error).message : error.toString()}',
-        error,
-        stackTrace,
       );
       return const ProjectFailure(errorType: ProjectErrorType.connectionError);
     }
 
     if (error is TypeError) {
-      _logger.warning(
-        'Parsing error $operation: ${error.toString()}',
-        error,
-        stackTrace,
-      );
+      _logger.warning('Parsing error $operation: ${error.toString()}');
       return const ProjectFailure(errorType: ProjectErrorType.parsingError);
     }
 
     if (error is supabase.PostgrestException) {
       _logger.warning(
         'PostgreSQL error $operation: code=${error.code}, message=${error.message}',
-        error,
-        stackTrace,
       );
       final postgresErrorCode = PostgresErrorCode.fromCode(error.code);
       if (postgresErrorCode == PostgresErrorCode.noDataFound) {
@@ -176,12 +219,16 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       );
     }
 
-    _logger.error('Unexpected error $operation: $error', error, stackTrace);
+    _logger.error('Unexpected error $operation: $error');
     return UnexpectedFailure();
   }
 
   @override
   void dispose() {
-    // No subscriptions or stream controllers to release in the read-only MVP.
+    _changesSubscription?.cancel();
+    _changesSubscription = null;
+    _settingController?.close();
+    _settingController = null;
+    _watchedProjectId = null;
   }
 }
