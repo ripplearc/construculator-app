@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
@@ -6,15 +8,11 @@ import 'package:construculator/libraries/project/domain/repositories/project_set
 
 /// Fake implementation of [ProjectSettingRepository] for testing.
 class FakeProjectSettingRepository implements ProjectSettingRepository {
-  // Tracks method calls for boundary assertions.
+  /// Tracks method calls for boundary assertions.
   final List<Map<String, dynamic>> _methodCalls = [];
 
-  /// The persisted project state. Read by [getProjectSetting], mutated by
-  /// [updateProject], and cleared by [deleteProject].
+  /// The [Project] returned by [getProjectSetting] and [updateProject].
   Project? projectToReturn;
-
-  /// When true, [createProject] returns a [Left] failure.
-  bool shouldFailOnCreate = false;
 
   /// When true, [getProjectSetting] returns a [Left] failure.
   bool shouldFailOnGet = false;
@@ -25,6 +23,9 @@ class FakeProjectSettingRepository implements ProjectSettingRepository {
   /// When true, [deleteProject] returns a [Left] failure.
   bool shouldFailOnDelete = false;
 
+  /// When true, [watchProjectSetting] returns a [Left] failure via the stream.
+  bool shouldFailOnWatch = false;
+
   /// The [Failure] returned when a [shouldFailOn*] flag is true.
   ///
   /// Defaults to [ProjectFailure] with [ProjectErrorType.unexpectedError].
@@ -32,16 +33,11 @@ class FakeProjectSettingRepository implements ProjectSettingRepository {
     errorType: ProjectErrorType.unexpectedError,
   );
 
-  @override
-  Future<Either<Failure, Project>> createProject(Project project) async {
-    _methodCalls.add({'method': 'createProject', 'project': project});
+  final StreamController<Either<Failure, Project>> _watchController =
+      StreamController<Either<Failure, Project>>.broadcast();
 
-    if (shouldFailOnCreate) {
-      return Left(failureToReturn);
-    }
-
-    return Right(project);
-  }
+  /// Creates a [FakeProjectSettingRepository].
+  FakeProjectSettingRepository();
 
   @override
   Future<Either<Failure, Project>> getProjectSetting(String projectId) async {
@@ -69,8 +65,7 @@ class FakeProjectSettingRepository implements ProjectSettingRepository {
       return Left(failureToReturn);
     }
 
-    projectToReturn = project;
-    return Right(project);
+    return Right(projectToReturn ?? project);
   }
 
   @override
@@ -81,8 +76,41 @@ class FakeProjectSettingRepository implements ProjectSettingRepository {
       return Left(failureToReturn);
     }
 
-    projectToReturn = null;
     return const Right(null);
+  }
+
+  @override
+  Stream<Either<Failure, Project>> watchProjectSetting(String projectId) {
+    _methodCalls.add({
+      'method': 'watchProjectSetting',
+      'projectId': projectId,
+    });
+
+    if (shouldFailOnWatch) {
+      return Stream.value(Left(failureToReturn));
+    }
+
+    return _watchController.stream;
+  }
+
+  @override
+  void dispose() {
+    _watchController.close();
+  }
+
+  /// Emits a [Right] with [project] to active [watchProjectSetting] subscribers.
+  void emitProject(Project project) {
+    _watchController.add(Right(project));
+  }
+
+  /// Emits a [Left] with [failure] to active [watchProjectSetting] subscribers.
+  void emitFailure(Failure failure) {
+    _watchController.add(Left(failure));
+  }
+
+  /// Emits an error event to active [watchProjectSetting] subscribers.
+  void emitStreamError(Object error, [StackTrace? stackTrace]) {
+    _watchController.addError(error, stackTrace);
   }
 
   /// Returns a copy of all recorded method calls.
@@ -90,22 +118,21 @@ class FakeProjectSettingRepository implements ProjectSettingRepository {
 
   /// Returns all calls for the given [methodName].
   List<Map<String, dynamic>> getMethodCallsFor(String methodName) {
-    return _methodCalls.where((call) => call['method'] == methodName).toList();
+    return _methodCalls
+        .where((call) => call['method'] == methodName)
+        .toList();
   }
 
   /// Resets all flags, data, and recorded calls.
   void reset() {
-    shouldFailOnCreate = false;
     shouldFailOnGet = false;
     shouldFailOnUpdate = false;
     shouldFailOnDelete = false;
+    shouldFailOnWatch = false;
     failureToReturn = const ProjectFailure(
       errorType: ProjectErrorType.unexpectedError,
     );
     projectToReturn = null;
     _methodCalls.clear();
   }
-
-  @override
-  void dispose() {}
 }

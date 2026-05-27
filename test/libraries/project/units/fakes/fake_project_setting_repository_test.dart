@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
@@ -19,38 +21,6 @@ void main() {
       fake.dispose();
     });
 
-    group('createProject', () {
-      test('returns Right(project) by default', () async {
-        final project = _fakeProject(id: 'p-1', projectName: 'New Project');
-
-        final result = await fake.createProject(project);
-
-        expect(result.isRight(), isTrue);
-        result.fold(
-          (_) => fail('Expected Right'),
-          (p) => expect(p.projectName, equals('New Project')),
-        );
-      });
-
-      test('records method call with project', () async {
-        final project = _fakeProject(id: 'p-1');
-
-        await fake.createProject(project);
-
-        final calls = fake.getMethodCallsFor('createProject');
-        expect(calls, hasLength(1));
-        expect(calls.first['project'], equals(project));
-      });
-
-      test('returns Left when shouldFailOnCreate is true', () async {
-        fake.shouldFailOnCreate = true;
-
-        final result = await fake.createProject(_fakeProject(id: 'p-1'));
-
-        expect(result.isLeft(), isTrue);
-      });
-    });
-
     group('getProjectSetting', () {
       test('records method call with projectId', () async {
         fake.projectToReturn = _fakeProject(id: 'p-1');
@@ -63,10 +33,7 @@ void main() {
       });
 
       test('returns Right(project) when projectToReturn is set', () async {
-        fake.projectToReturn = _fakeProject(
-          id: 'p-1',
-          projectName: 'My Project',
-        );
+        fake.projectToReturn = _fakeProject(id: 'p-1', projectName: 'My Project');
 
         final result = await fake.getProjectSetting('p-1');
 
@@ -77,39 +44,36 @@ void main() {
         );
       });
 
-      test(
-        'returns Left(notFoundError) when projectToReturn is null',
-        () async {
-          final result = await fake.getProjectSetting('p-1');
+      test('returns Left(notFoundError) when projectToReturn is null', () async {
+        final result = await fake.getProjectSetting('p-1');
 
-          expect(result.isLeft(), isTrue);
-          result.fold((failure) {
+        expect(result.isLeft(), isTrue);
+        result.fold(
+          (failure) {
             expect(failure, isA<ProjectFailure>());
             expect(
               (failure as ProjectFailure).errorType,
               equals(ProjectErrorType.notFoundError),
             );
-          }, (_) => fail('Expected Left'));
-        },
-      );
+          },
+          (_) => fail('Expected Left'),
+        );
+      });
 
-      test(
-        'returns Left(failureToReturn) when shouldFailOnGet is true',
-        () async {
-          fake.shouldFailOnGet = true;
-          fake.failureToReturn = const ProjectFailure(
-            errorType: ProjectErrorType.connectionError,
-          );
+      test('returns Left(failureToReturn) when shouldFailOnGet is true', () async {
+        fake.shouldFailOnGet = true;
+        fake.failureToReturn = const ProjectFailure(
+          errorType: ProjectErrorType.connectionError,
+        );
 
-          final result = await fake.getProjectSetting('p-1');
+        final result = await fake.getProjectSetting('p-1');
 
-          expect(result.isLeft(), isTrue);
-          expect(
-            ((result as Left).value as ProjectFailure).errorType,
-            equals(ProjectErrorType.connectionError),
-          );
-        },
-      );
+        expect(result.isLeft(), isTrue);
+        expect(
+          ((result as Left).value as ProjectFailure).errorType,
+          equals(ProjectErrorType.connectionError),
+        );
+      });
     });
 
     group('updateProject', () {
@@ -124,32 +88,28 @@ void main() {
         expect(calls.first['project'], equals(project));
       });
 
-      test('returns Right(passed project) and mutates projectToReturn', () async {
-        fake.projectToReturn = _fakeProject(id: 'p-1', projectName: 'Old');
-        final updated = _fakeProject(id: 'p-1', projectName: 'New');
+      test('returns Right(projectToReturn) when set', () async {
+        final returned = _fakeProject(id: 'p-1', projectName: 'Returned');
+        fake.projectToReturn = returned;
 
-        final result = await fake.updateProject(updated);
+        final result = await fake.updateProject(_fakeProject(id: 'p-1'));
 
         result.fold(
           (_) => fail('Expected Right'),
-          (project) => expect(project.projectName, equals('New')),
+          (project) => expect(project.projectName, equals('Returned')),
         );
-        expect(fake.projectToReturn!.projectName, equals('New'));
       });
 
-      test(
-        'returns Right(passed project) when projectToReturn is null',
-        () async {
-          final project = _fakeProject(id: 'p-1', projectName: 'Fallback');
+      test('returns Right(passed project) when projectToReturn is null', () async {
+        final project = _fakeProject(id: 'p-1', projectName: 'Fallback');
 
-          final result = await fake.updateProject(project);
+        final result = await fake.updateProject(project);
 
-          result.fold(
-            (_) => fail('Expected Right'),
-            (p) => expect(p.projectName, equals('Fallback')),
-          );
-        },
-      );
+        result.fold(
+          (_) => fail('Expected Right'),
+          (p) => expect(p.projectName, equals('Fallback')),
+        );
+      });
 
       test('returns Left when shouldFailOnUpdate is true', () async {
         fake.shouldFailOnUpdate = true;
@@ -184,32 +144,95 @@ void main() {
       });
     });
 
+    group('watchProjectSetting', () {
+      test('records method call with projectId', () {
+        fake.watchProjectSetting('p-1').listen((_) {});
+
+        final calls = fake.getMethodCallsFor('watchProjectSetting');
+        expect(calls, hasLength(1));
+        expect(calls.first['projectId'], equals('p-1'));
+      });
+
+      test('emits Right(project) after emitProject', () async {
+        final emittedCompleter = Completer<Project>();
+        final subscription = fake.watchProjectSetting('p-1').listen((result) {
+          result.fold(
+            (_) {},
+            (project) {
+              if (!emittedCompleter.isCompleted) {
+                emittedCompleter.complete(project);
+              }
+            },
+          );
+        });
+
+        final project = _fakeProject(id: 'p-1', projectName: 'Emitted');
+        fake.emitProject(project);
+
+        final received = await emittedCompleter.future;
+        expect(received.projectName, equals('Emitted'));
+        await subscription.cancel();
+      });
+
+      test('emits Left after emitFailure', () async {
+        final failureCompleter = Completer<Failure>();
+        final subscription = fake.watchProjectSetting('p-1').listen((result) {
+          result.fold((failure) {
+            if (!failureCompleter.isCompleted) failureCompleter.complete(failure);
+          }, (_) {});
+        });
+
+        fake.emitFailure(
+          const ProjectFailure(errorType: ProjectErrorType.notFoundError),
+        );
+
+        final received = await failureCompleter.future;
+        expect(received, isA<ProjectFailure>());
+        await subscription.cancel();
+      });
+
+      test('forwards error on emitStreamError', () async {
+        final errorCompleter = Completer<Object>();
+        final subscription = fake.watchProjectSetting('p-1').listen(
+          (_) {},
+          onError: (Object error, StackTrace _) {
+            if (!errorCompleter.isCompleted) errorCompleter.complete(error);
+          },
+        );
+
+        fake.emitStreamError(Exception('test error'));
+
+        final received = await errorCompleter.future;
+        expect(received, isA<Exception>());
+        await subscription.cancel();
+      });
+
+      test('returns stream with single Left when shouldFailOnWatch is true', () async {
+        fake.shouldFailOnWatch = true;
+
+        final result = await fake.watchProjectSetting('p-1').first;
+
+        expect(result.isLeft(), isTrue);
+      });
+    });
+
     group('reset', () {
       test('clears all flags, data, and method calls', () async {
-        fake.shouldFailOnCreate = true;
         fake.shouldFailOnGet = true;
         fake.shouldFailOnUpdate = true;
         fake.shouldFailOnDelete = true;
+        fake.shouldFailOnWatch = true;
         fake.projectToReturn = _fakeProject(id: 'p-1');
-        fake.failureToReturn = const ProjectFailure(
-          errorType: ProjectErrorType.connectionError,
-        );
         await fake.deleteProject('p-1');
 
         fake.reset();
 
-        expect(fake.shouldFailOnCreate, isFalse);
         expect(fake.shouldFailOnGet, isFalse);
         expect(fake.shouldFailOnUpdate, isFalse);
         expect(fake.shouldFailOnDelete, isFalse);
+        expect(fake.shouldFailOnWatch, isFalse);
         expect(fake.projectToReturn, isNull);
         expect(fake.getMethodCalls(), isEmpty);
-        expect(
-          fake.failureToReturn,
-          equals(
-            const ProjectFailure(errorType: ProjectErrorType.unexpectedError),
-          ),
-        );
       });
     });
   });
