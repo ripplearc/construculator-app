@@ -10,7 +10,7 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
   /// Tracks method calls for boundary assertions.
   final List<Map<String, dynamic>> _methodCalls = [];
 
-  /// The [ProjectDto] returned by [getProjectSetting] and [updateProject].
+  /// The [ProjectDto] returned by [fetchProjectSetting] and [updateProject].
   ProjectDto? projectToReturn;
 
   /// Controls whether [getProjectSetting] throws a [ServerException].
@@ -34,15 +34,15 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
   /// Error message for [deleteProject] when [shouldThrowOnDelete] is true.
   String? deleteErrorMessage;
 
-  final StreamController<void> _changesController =
-      StreamController<void>.broadcast();
+  final StreamController<ProjectDto?> _changesController =
+      StreamController<ProjectDto?>.broadcast();
 
   /// Creates a [FakeProjectSettingDataSource].
   FakeProjectSettingDataSource();
 
   @override
-  Future<ProjectDto> getProjectSetting(String projectId) async {
-    _methodCalls.add({'method': 'getProjectSetting', 'projectId': projectId});
+  Future<ProjectDto> fetchProjectSetting(String projectId) async {
+    _methodCalls.add({'method': 'fetchProjectSetting', 'projectId': projectId});
 
     if (shouldThrowOnGet) {
       throw ServerException(
@@ -89,11 +89,8 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
   }
 
   @override
-  Stream<void> watchProjectChanges(String projectId) {
-    _methodCalls.add({
-      'method': 'watchProjectChanges',
-      'projectId': projectId,
-    });
+  Stream<ProjectDto?> watchProjectChanges(String projectId) {
+    _methodCalls.add({'method': 'watchProjectChanges', 'projectId': projectId});
 
     if (shouldThrowOnWatch) {
       throw ServerException(
@@ -107,7 +104,7 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
 
   /// Emits a change event to active [watchProjectChanges] subscribers.
   void emitChange() {
-    _changesController.add(null);
+    _changesController.add(projectToReturn);
   }
 
   /// Emits an error to active [watchProjectChanges] subscribers.
@@ -120,9 +117,7 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
 
   /// Returns all calls for the given [methodName].
   List<Map<String, dynamic>> getMethodCallsFor(String methodName) {
-    return _methodCalls
-        .where((call) => call['method'] == methodName)
-        .toList();
+    return _methodCalls.where((call) => call['method'] == methodName).toList();
   }
 
   /// Resets all flags, error messages, data, and recorded calls.

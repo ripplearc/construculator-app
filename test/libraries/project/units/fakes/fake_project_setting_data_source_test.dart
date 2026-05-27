@@ -19,13 +19,13 @@ void main() {
       fake.dispose();
     });
 
-    group('getProjectSetting', () {
+    group('fetchProjectSetting', () {
       test('records method call with projectId', () async {
         fake.projectToReturn = _fakeDto(id: 'p-1');
 
-        await fake.getProjectSetting('p-1');
+        await fake.fetchProjectSetting('p-1');
 
-        final calls = fake.getMethodCallsFor('getProjectSetting');
+        final calls = fake.getMethodCallsFor('fetchProjectSetting');
         expect(calls, hasLength(1));
         expect(calls.first['projectId'], equals('p-1'));
       });
@@ -34,7 +34,7 @@ void main() {
         final dto = _fakeDto(id: 'p-1', projectName: 'My Project');
         fake.projectToReturn = dto;
 
-        final result = await fake.getProjectSetting('p-1');
+        final result = await fake.fetchProjectSetting('p-1');
 
         expect(result.id, equals('p-1'));
         expect(result.projectName, equals('My Project'));
@@ -44,27 +44,33 @@ void main() {
         fake.shouldThrowOnGet = true;
 
         await expectLater(
-          fake.getProjectSetting('p-1'),
+          fake.fetchProjectSetting('p-1'),
           throwsA(isA<ServerException>()),
         );
       });
 
-      test('throws ServerException with custom message when getErrorMessage is set', () async {
-        fake.shouldThrowOnGet = true;
-        fake.getErrorMessage = 'Custom get error';
+      test(
+        'throws ServerException with custom message when getErrorMessage is set',
+        () async {
+          fake.shouldThrowOnGet = true;
+          fake.getErrorMessage = 'Custom get error';
 
-        await expectLater(
-          fake.getProjectSetting('p-1'),
-          throwsA(isA<ServerException>()),
-        );
-      });
+          await expectLater(
+            fake.fetchProjectSetting('p-1'),
+            throwsA(isA<ServerException>()),
+          );
+        },
+      );
 
-      test('throws ServerException when projectToReturn is null and no error flag', () async {
-        await expectLater(
-          fake.getProjectSetting('p-1'),
-          throwsA(isA<ServerException>()),
-        );
-      });
+      test(
+        'throws ServerException when projectToReturn is null and no error flag',
+        () async {
+          await expectLater(
+            fake.fetchProjectSetting('p-1'),
+            throwsA(isA<ServerException>()),
+          );
+        },
+      );
     });
 
     group('updateProject', () {
@@ -139,25 +145,29 @@ void main() {
       });
 
       test('emits when emitChange is called', () async {
-        final emittedCompleter = Completer<void>();
-        final subscription = fake.watchProjectChanges('p-1').listen((_) {
-          if (!emittedCompleter.isCompleted) emittedCompleter.complete();
+        final emittedCompleter = Completer<ProjectDto?>();
+        final subscription = fake.watchProjectChanges('p-1').listen((dto) {
+          if (!emittedCompleter.isCompleted) emittedCompleter.complete(dto);
         });
 
+        fake.projectToReturn = _fakeDto(id: 'p-1');
         fake.emitChange();
 
-        await expectLater(emittedCompleter.future, completes);
+        final emitted = await emittedCompleter.future;
+        expect(emitted, isA<ProjectDto>());
         await subscription.cancel();
       });
 
       test('forwards errors when emitError is called', () async {
         final errorCompleter = Completer<Object>();
-        final subscription = fake.watchProjectChanges('p-1').listen(
-          (_) {},
-          onError: (Object error, StackTrace _) {
-            if (!errorCompleter.isCompleted) errorCompleter.complete(error);
-          },
-        );
+        final subscription = fake
+            .watchProjectChanges('p-1')
+            .listen(
+              (_) {},
+              onError: (Object error, StackTrace _) {
+                if (!errorCompleter.isCompleted) errorCompleter.complete(error);
+              },
+            );
 
         fake.emitError(Exception('test error'));
 
