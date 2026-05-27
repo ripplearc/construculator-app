@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_data_source.dart';
+import 'package:construculator/libraries/project/data/project_error_mapper.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
@@ -59,7 +61,7 @@ class ProjectRepositoryImpl implements ProjectRepository {
         'Error while getting project by id: $id, error: $error',
         stackTrace.toString(),
       );
-      rethrow;
+      throw ProjectErrorMapper.toFailure(error);
     }
   }
 
@@ -91,7 +93,7 @@ class ProjectRepositoryImpl implements ProjectRepository {
         'Error while getting accessible projects: $error',
         stackTrace.toString(),
       );
-      rethrow;
+      throw ProjectErrorMapper.toFailure(error);
     }
   }
 
@@ -131,6 +133,10 @@ class ProjectRepositoryImpl implements ProjectRepository {
               'Realtime subscription error — live updates unavailable: $error',
               stackTrace.toString(),
             );
+            _projectsController?.addError(
+              ProjectErrorMapper.toFailure(error),
+              stackTrace,
+            );
           },
         );
 
@@ -168,7 +174,10 @@ class ProjectRepositoryImpl implements ProjectRepository {
             'Error while refreshing accessible projects: $error',
             stackTrace.toString(),
           );
-          _projectsController?.addError(error, stackTrace);
+          _projectsController?.addError(
+            error is Failure ? error : ProjectErrorMapper.toFailure(error),
+            stackTrace,
+          );
           break;
         }
       } while (_hasPendingRefresh);
