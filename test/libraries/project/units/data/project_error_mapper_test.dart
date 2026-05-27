@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/project/data/project_error_mapper.dart';
 import 'package:construculator/libraries/project/domain/project_error_type.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
+import 'package:stack_trace/stack_trace.dart';
 
 void main() {
   group('ProjectErrorMapper', () {
@@ -35,6 +37,15 @@ void main() {
       expect(
         ProjectErrorMapper.toErrorType(TypeError()),
         ProjectErrorType.parsingError,
+      );
+    });
+
+    test('maps NotFoundException to notFoundError', () {
+      expect(
+        ProjectErrorMapper.toErrorType(
+          NotFoundException(Trace.current(), Exception('missing project')),
+        ),
+        ProjectErrorType.notFoundError,
       );
     });
 

@@ -35,34 +35,37 @@ void main() {
           _projectRow(id: 'project-1', projectName: 'My Project'),
         ]);
 
-        final result = await dataSource.getProjectSetting('project-1');
+        final result = await dataSource.fetchProjectSetting('project-1');
 
         expect(result.id, equals('project-1'));
         expect(result.projectName, equals('My Project'));
       });
 
-      test('throws ServerException when project does not exist', () async {
+      test('throws NotFoundException when project does not exist', () async {
         await expectLater(
-          dataSource.getProjectSetting('non-existent'),
-          throwsA(isA<ServerException>()),
+          dataSource.fetchProjectSetting('non-existent'),
+          throwsA(isA<NotFoundException>()),
         );
       });
 
-      test('rethrows when selectSingle throws due to shouldReturnNullOnSelect', () async {
-        supabaseWrapper.shouldReturnNullOnSelect = true;
+      test(
+        'rethrows when selectSingle throws due to shouldReturnNullOnSelect',
+        () async {
+          supabaseWrapper.shouldReturnNullOnSelect = true;
 
-        await expectLater(
-          dataSource.getProjectSetting('project-1'),
-          throwsA(isA<ServerException>()),
-        );
-      });
+          await expectLater(
+            dataSource.fetchProjectSetting('project-1'),
+            throwsA(isA<NotFoundException>()),
+          );
+        },
+      );
 
       test('rethrows PostgrestException from supabaseWrapper', () async {
         supabaseWrapper.shouldThrowOnSelect = true;
         supabaseWrapper.selectExceptionType = SupabaseExceptionType.postgrest;
 
         await expectLater(
-          dataSource.getProjectSetting('project-1'),
+          dataSource.fetchProjectSetting('project-1'),
           throwsA(isA<supabase.PostgrestException>()),
         );
       });
@@ -110,8 +113,7 @@ void main() {
         await dataSource.updateProject(dto);
 
         final updateCalls = supabaseWrapper.getMethodCallsFor('update');
-        final data =
-            updateCalls.first['data'] as Map<String, dynamic>;
+        final data = updateCalls.first['data'] as Map<String, dynamic>;
         expect(data[DatabaseConstants.descriptionColumn], equals('New desc'));
       });
 
@@ -135,8 +137,9 @@ void main() {
 
         await dataSource.deleteProject('project-1');
 
-        final deleteMatchCalls =
-            supabaseWrapper.getMethodCallsFor('deleteMatch');
+        final deleteMatchCalls = supabaseWrapper.getMethodCallsFor(
+          'deleteMatch',
+        );
         expect(deleteMatchCalls, hasLength(1));
         expect(
           deleteMatchCalls.first['table'],
@@ -167,10 +170,12 @@ void main() {
           _projectRow(id: 'project-1', projectName: 'Initial'),
         ]);
 
+        final emissions = <ProjectDto?>[];
         final emissionCompleter = Completer<void>();
         var emissionCount = 0;
         final subscription = dataSource.watchProjectChanges('project-1').listen(
-          (_) {
+          (projectDto) {
+            emissions.add(projectDto);
             emissionCount++;
             if (emissionCount >= 2 && !emissionCompleter.isCompleted) {
               emissionCompleter.complete();
@@ -185,6 +190,8 @@ void main() {
         ]);
 
         await expectLater(emissionCompleter.future, completes);
+        expect(emissions.first?.projectName, equals('Initial'));
+        expect(emissions.last?.projectName, equals('Updated'));
         await subscription.cancel();
       });
 

@@ -7,16 +7,25 @@ import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.da
 import 'package:rxdart/rxdart.dart';
 import 'package:stack_trace/stack_trace.dart';
 
+/// Remote data source for reading and mutating a single project's settings.
+///
+/// This layer talks directly to Supabase and throws low-level exceptions that
+/// higher layers map into project failures.
 class RemoteProjectSettingDataSource implements ProjectSettingDataSource {
   final SupabaseWrapper _supabaseWrapper;
   static final _logger = AppLogger().tag('RemoteProjectSettingDataSource');
 
+  /// Creates a remote project setting data source.
   const RemoteProjectSettingDataSource({
     required SupabaseWrapper supabaseWrapper,
   }) : _supabaseWrapper = supabaseWrapper;
 
   @override
-  Future<ProjectDto> getProjectSetting(String projectId) async {
+  /// Fetches a single project setting row by [projectId].
+  ///
+  /// Throws [NotFoundException] when the project does not exist and rethrows
+  /// unexpected Supabase or parsing errors.
+  Future<ProjectDto> fetchProjectSetting(String projectId) async {
     try {
       _logger.debug('Getting project setting for projectId: $projectId');
 
@@ -27,13 +36,16 @@ class RemoteProjectSettingDataSource implements ProjectSettingDataSource {
       );
 
       if (row == null) {
-        throw ServerException(
+        _logger.warning('Project not found for projectId: $projectId');
+        throw NotFoundException(
           Trace.current(),
           Exception('Project not found for id: $projectId'),
         );
       }
 
       return ProjectDto.fromJson(row);
+    } on NotFoundException {
+      rethrow;
     } catch (error, stackTrace) {
       _logger.error(
         'Error while getting project setting for projectId: $projectId, error: $error',
@@ -44,6 +56,10 @@ class RemoteProjectSettingDataSource implements ProjectSettingDataSource {
   }
 
   @override
+  /// Persists the editable project settings in remote storage.
+  ///
+  /// Returns the updated project row as stored remotely and rethrows
+  /// unexpected Supabase or parsing errors.
   Future<ProjectDto> updateProject(ProjectDto projectDto) async {
     try {
       _logger.debug('Updating project with id: ${projectDto.id}');
@@ -77,6 +93,9 @@ class RemoteProjectSettingDataSource implements ProjectSettingDataSource {
   }
 
   @override
+  /// Deletes the project row identified by [projectId].
+  ///
+  /// Throws on unexpected Supabase errors.
   Future<void> deleteProject(String projectId) async {
     try {
       _logger.debug('Deleting project with id: $projectId');
@@ -95,7 +114,11 @@ class RemoteProjectSettingDataSource implements ProjectSettingDataSource {
   }
 
   @override
-  Stream<void> watchProjectChanges(String projectId) {
+  /// Streams the latest project setting snapshot whenever the project row changes.
+  ///
+  /// Emits `null` when the project is deleted or temporarily missing and
+  /// forwards stream errors to subscribers.
+  Stream<ProjectDto?> watchProjectChanges(String projectId) {
     return _supabaseWrapper
         .watchTableFiltered(
           table: DatabaseConstants.projectsTable,
@@ -103,7 +126,7 @@ class RemoteProjectSettingDataSource implements ProjectSettingDataSource {
           filterColumn: DatabaseConstants.idColumn,
           filterValue: projectId,
         )
-        .map((_) {})
+        .map((rows) => rows.isEmpty ? null : ProjectDto.fromJson(rows.first))
         .doOnError((Object error, StackTrace stackTrace) {
           _logger.error(
             'Error while watching project changes for projectId: $projectId, error: $error',
