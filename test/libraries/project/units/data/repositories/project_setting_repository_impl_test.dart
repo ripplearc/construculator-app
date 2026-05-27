@@ -3,6 +3,9 @@ import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/permission_data_source.dart';
 import 'package:construculator/libraries/project/data/repositories/project_setting_repository_impl.dart';
+import 'package:construculator/libraries/project/domain/entities/enums.dart';
+import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/project/domain/permission_constants.dart';
 import 'package:construculator/libraries/project/domain/project_error_type.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_setting_repository.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
@@ -288,12 +291,125 @@ void main() {
         },
       );
     });
+
+    group('updateProject', () {
+      test('returns Left(permissionDenied) when permission missing', () async {
+        final project = Project(
+          id: 'p-1',
+          projectName: 'Name',
+          creatorUserId: 'user-1',
+          createdAt: DateTime(2025, 1, 1),
+          updatedAt: DateTime(2025, 1, 1),
+          status: ProjectStatus.active,
+        );
+
+        final result = await repository.updateProject(project);
+
+        expect(result.isLeft(), isTrue);
+        result.fold((failure) {
+          expect(failure, isA<ProjectFailure>());
+          expect(
+            (failure as ProjectFailure).errorType,
+            equals(ProjectErrorType.permissionDenied),
+          );
+        }, (_) => fail('Expected Left'));
+      });
+
+      test(
+        'returns Right(project) when permission present and update succeeds',
+        () async {
+          supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+            {
+              DatabaseConstants.idColumn: 'p-1',
+              DatabaseConstants.projectNameColumn: 'Old Name',
+              DatabaseConstants.creatorUserIdColumn: 'user-1',
+              DatabaseConstants.createdAtColumn: DateTime(2025, 1, 1),
+              DatabaseConstants.updatedAtColumn: DateTime(2025, 1, 2),
+              DatabaseConstants.statusColumn: 'active',
+            },
+          ]);
+
+          permissionDataSource.setPermissions('p-1', [
+            PermissionConstants.editProject,
+          ]);
+
+          final project = Project(
+            id: 'p-1',
+            projectName: 'New Name',
+            creatorUserId: 'user-1',
+            createdAt: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 3),
+            status: ProjectStatus.active,
+          );
+
+          final result = await repository.updateProject(project);
+
+          expect(result.isRight(), isTrue);
+          result.fold((_) => fail('Expected Right'), (p) {
+            expect(p.id, equals('p-1'));
+            expect(p.projectName, equals('New Name'));
+          });
+        },
+      );
+    });
+
+    group('deleteProject', () {
+      test('returns Left(permissionDenied) when permission missing', () async {
+        final result = await repository.deleteProject('p-1');
+
+        expect(result.isLeft(), isTrue);
+        result.fold((failure) {
+          expect(failure, isA<ProjectFailure>());
+          expect(
+            (failure as ProjectFailure).errorType,
+            equals(ProjectErrorType.permissionDenied),
+          );
+        }, (_) => fail('Expected Left'));
+      });
+
+      test(
+        'returns Right(null) when permission present and delete succeeds',
+        () async {
+          supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+            {
+              DatabaseConstants.idColumn: 'p-1',
+              DatabaseConstants.projectNameColumn: 'ToDelete',
+              DatabaseConstants.creatorUserIdColumn: 'user-1',
+              DatabaseConstants.createdAtColumn: DateTime(2025, 1, 1),
+              DatabaseConstants.updatedAtColumn: DateTime(2025, 1, 2),
+              DatabaseConstants.statusColumn: 'active',
+            },
+          ]);
+
+          permissionDataSource.setPermissions('p-1', [
+            PermissionConstants.deleteProject,
+          ]);
+
+          final result = await repository.deleteProject('p-1');
+
+          expect(result.isRight(), isTrue);
+          result.fold((_) => fail('Expected Right'), (_) => null);
+
+          // ensure row removed from fake supabase
+          final row = await supabaseWrapper.selectSingle(
+            table: DatabaseConstants.projectsTable,
+            filterColumn: DatabaseConstants.idColumn,
+            filterValue: 'p-1',
+          );
+          expect(row, isNull);
+        },
+      );
+    });
   });
 }
 
 class _TestAppModule extends Module {
   final AppBootstrap appBootstrap;
   _TestAppModule(this.appBootstrap);
+
+  void setPermissions(String projectId, List<String> permissions) {
+    _permissions[projectId] = List<String>.from(permissions);
+  }
 
   @override
   List<Module> get imports => [ProjectLibraryModule(appBootstrap)];
