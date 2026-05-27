@@ -33,7 +33,10 @@ void main() {
       });
 
       test('returns Right(project) when projectToReturn is set', () async {
-        fake.projectToReturn = _fakeProject(id: 'p-1', projectName: 'My Project');
+        fake.projectToReturn = _fakeProject(
+          id: 'p-1',
+          projectName: 'My Project',
+        );
 
         final result = await fake.getProjectSetting('p-1');
 
@@ -44,36 +47,39 @@ void main() {
         );
       });
 
-      test('returns Left(notFoundError) when projectToReturn is null', () async {
-        final result = await fake.getProjectSetting('p-1');
+      test(
+        'returns Left(notFoundError) when projectToReturn is null',
+        () async {
+          final result = await fake.getProjectSetting('p-1');
 
-        expect(result.isLeft(), isTrue);
-        result.fold(
-          (failure) {
+          expect(result.isLeft(), isTrue);
+          result.fold((failure) {
             expect(failure, isA<ProjectFailure>());
             expect(
               (failure as ProjectFailure).errorType,
               equals(ProjectErrorType.notFoundError),
             );
-          },
-          (_) => fail('Expected Left'),
-        );
-      });
+          }, (_) => fail('Expected Left'));
+        },
+      );
 
-      test('returns Left(failureToReturn) when shouldFailOnGet is true', () async {
-        fake.shouldFailOnGet = true;
-        fake.failureToReturn = const ProjectFailure(
-          errorType: ProjectErrorType.connectionError,
-        );
+      test(
+        'returns Left(failureToReturn) when shouldFailOnGet is true',
+        () async {
+          fake.shouldFailOnGet = true;
+          fake.failureToReturn = const ProjectFailure(
+            errorType: ProjectErrorType.connectionError,
+          );
 
-        final result = await fake.getProjectSetting('p-1');
+          final result = await fake.getProjectSetting('p-1');
 
-        expect(result.isLeft(), isTrue);
-        expect(
-          ((result as Left).value as ProjectFailure).errorType,
-          equals(ProjectErrorType.connectionError),
-        );
-      });
+          expect(result.isLeft(), isTrue);
+          expect(
+            ((result as Left).value as ProjectFailure).errorType,
+            equals(ProjectErrorType.connectionError),
+          );
+        },
+      );
     });
 
     group('updateProject', () {
@@ -100,16 +106,19 @@ void main() {
         );
       });
 
-      test('returns Right(passed project) when projectToReturn is null', () async {
-        final project = _fakeProject(id: 'p-1', projectName: 'Fallback');
+      test(
+        'returns Right(passed project) when projectToReturn is null',
+        () async {
+          final project = _fakeProject(id: 'p-1', projectName: 'Fallback');
 
-        final result = await fake.updateProject(project);
+          final result = await fake.updateProject(project);
 
-        result.fold(
-          (_) => fail('Expected Right'),
-          (p) => expect(p.projectName, equals('Fallback')),
-        );
-      });
+          result.fold(
+            (_) => fail('Expected Right'),
+            (p) => expect(p.projectName, equals('Fallback')),
+          );
+        },
+      );
 
       test('returns Left when shouldFailOnUpdate is true', () async {
         fake.shouldFailOnUpdate = true;
@@ -156,14 +165,11 @@ void main() {
       test('emits Right(project) after emitProject', () async {
         final emittedCompleter = Completer<Project>();
         final subscription = fake.watchProjectSetting('p-1').listen((result) {
-          result.fold(
-            (_) {},
-            (project) {
-              if (!emittedCompleter.isCompleted) {
-                emittedCompleter.complete(project);
-              }
-            },
-          );
+          result.fold((_) {}, (project) {
+            if (!emittedCompleter.isCompleted) {
+              emittedCompleter.complete(project);
+            }
+          });
         });
 
         final project = _fakeProject(id: 'p-1', projectName: 'Emitted');
@@ -178,7 +184,8 @@ void main() {
         final failureCompleter = Completer<Failure>();
         final subscription = fake.watchProjectSetting('p-1').listen((result) {
           result.fold((failure) {
-            if (!failureCompleter.isCompleted) failureCompleter.complete(failure);
+            if (!failureCompleter.isCompleted)
+              failureCompleter.complete(failure);
           }, (_) {});
         });
 
@@ -193,12 +200,14 @@ void main() {
 
       test('forwards error on emitStreamError', () async {
         final errorCompleter = Completer<Object>();
-        final subscription = fake.watchProjectSetting('p-1').listen(
-          (_) {},
-          onError: (Object error, StackTrace _) {
-            if (!errorCompleter.isCompleted) errorCompleter.complete(error);
-          },
-        );
+        final subscription = fake
+            .watchProjectSetting('p-1')
+            .listen(
+              (_) {},
+              onError: (Object error, StackTrace _) {
+                if (!errorCompleter.isCompleted) errorCompleter.complete(error);
+              },
+            );
 
         fake.emitStreamError(Exception('test error'));
 
@@ -207,12 +216,35 @@ void main() {
         await subscription.cancel();
       });
 
-      test('returns stream with single Left when shouldFailOnWatch is true', () async {
-        fake.shouldFailOnWatch = true;
+      test(
+        'returns stream with single Left when shouldFailOnWatch is true',
+        () async {
+          fake.shouldFailOnWatch = true;
 
-        final result = await fake.watchProjectSetting('p-1').first;
+          final result = await fake.watchProjectSetting('p-1').first;
 
-        expect(result.isLeft(), isTrue);
+          expect(result.isLeft(), isTrue);
+        },
+      );
+
+      test('ignores emits after dispose', () {
+        fake.watchProjectSetting('p-1').listen((_) {});
+        fake.dispose();
+
+        expect(
+          () => fake.emitProject(_fakeProject(id: 'p-1')),
+          returnsNormally,
+        );
+        expect(
+          () => fake.emitFailure(
+            const ProjectFailure(errorType: ProjectErrorType.connectionError),
+          ),
+          returnsNormally,
+        );
+        expect(
+          () => fake.emitStreamError(Exception('disposed stream')),
+          returnsNormally,
+        );
       });
     });
 
