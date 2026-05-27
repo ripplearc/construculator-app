@@ -9,7 +9,7 @@ abstract class ProjectSettingDataSource {
   /// Fetches the current state of a single project by its [projectId].
   ///
   /// Throws if the project does not exist or if a network error occurs.
-  Future<ProjectDto> getProjectSetting(String projectId);
+  Future<ProjectDto> fetchProjectSetting(String projectId);
 
   /// Persists the editable fields of [projectDto] to remote storage.
   ///
@@ -22,9 +22,9 @@ abstract class ProjectSettingDataSource {
   /// Throws on network or database errors.
   Future<void> deleteProject(String projectId);
 
-  /// Emits a void event whenever the project row identified by [projectId]
-  /// changes in remote storage.
+  /// Emits the latest project snapshot whenever the project row identified by
+  /// [projectId] changes in remote storage.
   ///
   /// Errors from the underlying stream are forwarded to subscribers.
-  Stream<void> watchProjectChanges(String projectId);
+  Stream<ProjectDto?> watchProjectChanges(String projectId);
 }
