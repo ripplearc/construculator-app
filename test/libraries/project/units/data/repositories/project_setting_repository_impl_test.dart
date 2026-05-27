@@ -1,164 +1,165 @@
 import 'dart:async';
 
-import 'package:construculator/libraries/either/either.dart';
-import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/errors/failures.dart';
-import 'package:construculator/libraries/project/data/data_source/interfaces/permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_setting_data_source.dart';
+import 'package:construculator/libraries/project/data/data_source/remote_project_setting_data_source.dart';
 import 'package:construculator/libraries/project/data/models/project_dto.dart';
 import 'package:construculator/libraries/project/data/repositories/project_setting_repository_impl.dart';
-import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/project_error_type.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:stack_trace/stack_trace.dart';
 
 void main() {
   group('ProjectSettingRepositoryImpl', () {
-    late _FakeProjectSettingDataSource dataSource;
-    late _FakeProjectPermissionDataSource permissionDataSource;
+    late RemoteProjectSettingDataSource dataSource;
     late ProjectSettingRepositoryImpl repository;
+    late FakeSupabaseWrapper supabaseWrapper;
+    late FakeClockImpl clock;
 
     setUp(() {
-      dataSource = _FakeProjectSettingDataSource();
-      permissionDataSource = _FakeProjectPermissionDataSource();
-      repository = ProjectSettingRepositoryImpl(
-        dataSource: dataSource,
-        permissionDataSource: permissionDataSource,
+      clock = FakeClockImpl(DateTime(2025, 1, 1));
+      supabaseWrapper = FakeSupabaseWrapper(clock: clock);
+      dataSource = RemoteProjectSettingDataSource(
+        supabaseWrapper: supabaseWrapper,
       );
+      repository = ProjectSettingRepositoryImpl(dataSource: dataSource);
     });
 
     tearDown(() {
       repository.dispose();
-      dataSource.dispose();
+      supabaseWrapper.dispose();
     });
 
     group('getProjectSetting', () {
       test('returns Right(project) when data source succeeds', () async {
-        dataSource.projectToReturn = _fakeDto(
-          id: 'p-1',
-          projectName: 'Test Project',
-        );
+        supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+          {
+            DatabaseConstants.idColumn: 'p-1',
+            DatabaseConstants.projectNameColumn: 'Test Project',
+            DatabaseConstants.creatorUserIdColumn: 'user-1',
+            DatabaseConstants.createdAtColumn: DateTime(2025, 1, 1),
+            DatabaseConstants.updatedAtColumn: DateTime(2025, 1, 2),
+            DatabaseConstants.statusColumn: 'active',
+          },
+        ]);
 
         final result = await repository.getProjectSetting('p-1');
 
         expect(result.isRight(), isTrue);
-        result.fold(
-          (_) => fail('Expected Right'),
-          (project) {
-            expect(project.id, equals('p-1'));
-            expect(project.projectName, equals('Test Project'));
-          },
-        );
+        result.fold((_) => fail('Expected Right'), (project) {
+          expect(project.id, equals('p-1'));
+          expect(project.projectName, equals('Test Project'));
+        });
       });
 
-      test('returns Left(notFoundError) on ServerException', () async {
-        dataSource.shouldThrowOnGet = true;
+      test(
+        'returns Left(unexpectedDatabaseError) on ServerException',
+        () async {
+          supabaseWrapper.shouldThrowOnSelect = true;
 
-        final result = await repository.getProjectSetting('p-1');
+          final result = await repository.getProjectSetting('p-1');
 
-        expect(result.isLeft(), isTrue);
-        result.fold(
-          (failure) {
+          expect(result.isLeft(), isTrue);
+          result.fold((failure) {
             expect(failure, isA<ProjectFailure>());
             expect(
               (failure as ProjectFailure).errorType,
-              equals(ProjectErrorType.notFoundError),
+              equals(ProjectErrorType.unexpectedDatabaseError),
             );
-          },
-          (_) => fail('Expected Left'),
-        );
-      });
+          }, (_) => fail('Expected Left'));
+        },
+      );
 
       test('returns Left(timeoutError) on TimeoutException', () async {
-        dataSource.exceptionToThrow = TimeoutException('timeout');
+        supabaseWrapper.shouldThrowOnSelect = true;
+        supabaseWrapper.selectExceptionType = SupabaseExceptionType.timeout;
 
         final result = await repository.getProjectSetting('p-1');
 
         expect(result.isLeft(), isTrue);
-        expect(
-          (result as Left).value,
-          equals(
-            const ProjectFailure(errorType: ProjectErrorType.timeoutError),
-          ),
-        );
+        result.fold((failure) {
+          expect(
+            failure,
+            equals(
+              const ProjectFailure(errorType: ProjectErrorType.timeoutError),
+            ),
+          );
+        }, (_) => fail('Expected Left'));
       });
 
       test('returns Left(UnexpectedFailure) on unknown error', () async {
-        dataSource.exceptionToThrow = Exception('unknown');
+        final throwingDataSource = _ThrowingDataSource();
+        final repoWithThrowingDs = ProjectSettingRepositoryImpl(
+          dataSource: throwingDataSource,
+        );
+
+        final result = await repoWithThrowingDs.getProjectSetting('p-1');
+
+        expect(result.isLeft(), isTrue);
+        result.fold((failure) {
+          expect(failure, isA<UnexpectedFailure>());
+        }, (_) => fail('Expected Left'));
+      });
+
+      test('maps PostgrestException PGRST116 to notFoundError', () async {
+        supabaseWrapper.shouldThrowOnSelect = true;
+        supabaseWrapper.selectExceptionType = SupabaseExceptionType.postgrest;
+        supabaseWrapper.postgrestErrorCode = PostgresErrorCode.noDataFound;
 
         final result = await repository.getProjectSetting('p-1');
 
         expect(result.isLeft(), isTrue);
-        expect((result as Left).value, isA<UnexpectedFailure>());
+        result.fold((failure) {
+          expect(failure, isA<ProjectFailure>());
+          expect(
+            (failure as ProjectFailure).errorType,
+            equals(ProjectErrorType.notFoundError),
+          );
+        }, (_) => fail('Expected Left'));
       });
+
+      test(
+        'maps PostgrestException connection codes to connectionError',
+        () async {
+          supabaseWrapper.shouldThrowOnSelect = true;
+          supabaseWrapper.selectExceptionType = SupabaseExceptionType.postgrest;
+          supabaseWrapper.postgrestErrorCode =
+              PostgresErrorCode.connectionFailure;
+
+          final result = await repository.getProjectSetting('p-1');
+
+          expect(result.isLeft(), isTrue);
+          result.fold((failure) {
+            expect(failure, isA<ProjectFailure>());
+            expect(
+              (failure as ProjectFailure).errorType,
+              equals(ProjectErrorType.connectionError),
+            );
+          }, (_) => fail('Expected Left'));
+        },
+      );
     });
   });
 }
 
-ProjectDto _fakeDto({required String id, String? projectName}) {
-  return ProjectDto(
-    id: id,
-    projectName: projectName ?? 'Test Project',
-    creatorUserId: 'user-1',
-    createdAt: DateTime(2025, 1, 1),
-    updatedAt: DateTime(2025, 1, 2),
-    status: ProjectStatus.active,
-  );
-}
-
-class _FakeProjectSettingDataSource implements ProjectSettingDataSource {
-  ProjectDto? projectToReturn;
-  bool shouldThrowOnGet = false;
-  Object? exceptionToThrow;
-
-  final StreamController<void> _changesController =
-      StreamController<void>.broadcast();
-
+class _ThrowingDataSource implements ProjectSettingDataSource {
   @override
-  Future<ProjectDto> getProjectSetting(String projectId) async {
-    final ex = exceptionToThrow;
-    if (ex != null) {
-      exceptionToThrow = null;
-      throw ex;
-    }
-
-    if (shouldThrowOnGet) {
-      throw ServerException(
-        Trace.current(),
-        Exception('Data source get failed'),
-      );
-    }
-
-    final dto = projectToReturn;
-    if (dto == null) {
-      throw ServerException(Trace.current(), Exception('Not found'));
-    }
-    return dto;
+  Future<ProjectDto> fetchProjectSetting(String projectId) async {
+    throw Exception('unknown');
   }
 
   @override
-  Future<ProjectDto> updateProject(ProjectDto projectDto) async => projectDto;
+  Future<ProjectDto> updateProject(ProjectDto projectDto) async =>
+      throw Exception('unknown');
 
   @override
-  Future<void> deleteProject(String projectId) async {}
+  Future<void> deleteProject(String projectId) async =>
+      throw Exception('unknown');
 
   @override
-  Stream<void> watchProjectChanges(String projectId) =>
-      _changesController.stream;
-
-  void dispose() => _changesController.close();
-}
-
-class _FakeProjectPermissionDataSource implements ProjectPermissionDataSource {
-  final Map<String, List<String>> _permissions = {};
-
-  @override
-  List<String> getProjectPermissions(String projectId) {
-    return List.from(_permissions[projectId] ?? []);
-  }
-
-  @override
-  bool hasProjectPermission(String projectId, String permissionKey) {
-    return _permissions[projectId]?.contains(permissionKey) ?? false;
-  }
+  Stream<ProjectDto?> watchProjectChanges(String projectId) =>
+      Stream.error(Exception('unknown'));
 }
