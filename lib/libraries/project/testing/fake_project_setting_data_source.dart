@@ -51,8 +51,9 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
   Future<ProjectDto> fetchProjectSetting(String projectId) async {
     _methodCalls.add({'method': 'fetchProjectSetting', 'projectId': projectId});
 
-    if (exceptionToThrow != null) {
-      throw exceptionToThrow!;
+    final exception = exceptionToThrow;
+    if (exception != null) {
+      throw exception;
     }
 
     if (shouldThrowOnGet) {
