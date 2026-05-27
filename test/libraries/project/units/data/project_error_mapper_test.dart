@@ -5,8 +5,8 @@ import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/project/data/project_error_mapper.dart';
 import 'package:construculator/libraries/project/domain/project_error_type.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import 'package:stack_trace/stack_trace.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 void main() {
   group('ProjectErrorMapper', () {

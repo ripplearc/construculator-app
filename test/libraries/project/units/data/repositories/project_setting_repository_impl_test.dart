@@ -1,20 +1,20 @@
-import 'dart:async';
-
+import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_setting_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/remote_project_setting_data_source.dart';
-import 'package:construculator/libraries/project/data/models/project_dto.dart';
 import 'package:construculator/libraries/project/data/repositories/project_setting_repository_impl.dart';
 import 'package:construculator/libraries/project/domain/project_error_type.dart';
+import 'package:construculator/libraries/project/testing/fake_project_setting_data_source.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:stack_trace/stack_trace.dart';
 
 void main() {
   group('ProjectSettingRepositoryImpl', () {
-    late RemoteProjectSettingDataSource dataSource;
+    late ProjectSettingDataSource dataSource;
     late ProjectSettingRepositoryImpl repository;
     late FakeSupabaseWrapper supabaseWrapper;
     late FakeClockImpl clock;
@@ -91,16 +91,95 @@ void main() {
       });
 
       test('returns Left(UnexpectedFailure) on unknown error', () async {
-        final throwingDataSource = _ThrowingDataSource();
-        final repoWithThrowingDs = ProjectSettingRepositoryImpl(
-          dataSource: throwingDataSource,
-        );
+        final fake = FakeProjectSettingDataSource()
+          ..exceptionToThrow = Exception('unknown');
+        final repoWithFake = ProjectSettingRepositoryImpl(dataSource: fake);
 
-        final result = await repoWithThrowingDs.getProjectSetting('p-1');
+        final result = await repoWithFake.getProjectSetting('p-1');
 
         expect(result.isLeft(), isTrue);
         result.fold((failure) {
           expect(failure, isA<UnexpectedFailure>());
+        }, (_) => fail('Expected Left'));
+      });
+
+      test('returns Left(notFoundError) on NotFoundException', () async {
+        final fake = FakeProjectSettingDataSource()
+          ..exceptionToThrow = NotFoundException(
+            Trace.current(),
+            Exception('not found'),
+          );
+        final repoWithFake = ProjectSettingRepositoryImpl(dataSource: fake);
+
+        final result = await repoWithFake.getProjectSetting('p-1');
+
+        expect(result.isLeft(), isTrue);
+        result.fold((failure) {
+          expect(
+            failure,
+            equals(
+              const ProjectFailure(errorType: ProjectErrorType.notFoundError),
+            ),
+          );
+        }, (_) => fail('Expected Left'));
+      });
+
+      test('returns Left(connectionError) on SocketException', () async {
+        supabaseWrapper.shouldThrowOnSelect = true;
+        supabaseWrapper.selectExceptionType = SupabaseExceptionType.socket;
+
+        final result = await repository.getProjectSetting('p-1');
+
+        expect(result.isLeft(), isTrue);
+        result.fold((failure) {
+          expect(
+            failure,
+            equals(
+              const ProjectFailure(
+                errorType: ProjectErrorType.connectionError,
+              ),
+            ),
+          );
+        }, (_) => fail('Expected Left'));
+      });
+
+      test('returns Left(connectionError) on NetworkException', () async {
+        final fake = FakeProjectSettingDataSource()
+          ..exceptionToThrow = NetworkException(
+            Trace.current(),
+            Exception('network error'),
+          );
+        final repoWithFake = ProjectSettingRepositoryImpl(dataSource: fake);
+
+        final result = await repoWithFake.getProjectSetting('p-1');
+
+        expect(result.isLeft(), isTrue);
+        result.fold((failure) {
+          expect(
+            failure,
+            equals(
+              const ProjectFailure(
+                errorType: ProjectErrorType.connectionError,
+              ),
+            ),
+          );
+        }, (_) => fail('Expected Left'));
+      });
+
+      test('returns Left(parsingError) on TypeError', () async {
+        supabaseWrapper.shouldThrowOnSelect = true;
+        supabaseWrapper.selectExceptionType = SupabaseExceptionType.type;
+
+        final result = await repository.getProjectSetting('p-1');
+
+        expect(result.isLeft(), isTrue);
+        result.fold((failure) {
+          expect(
+            failure,
+            equals(
+              const ProjectFailure(errorType: ProjectErrorType.parsingError),
+            ),
+          );
         }, (_) => fail('Expected Left'));
       });
 
@@ -143,23 +222,4 @@ void main() {
       );
     });
   });
-}
-
-class _ThrowingDataSource implements ProjectSettingDataSource {
-  @override
-  Future<ProjectDto> fetchProjectSetting(String projectId) async {
-    throw Exception('unknown');
-  }
-
-  @override
-  Future<ProjectDto> updateProject(ProjectDto projectDto) async =>
-      throw Exception('unknown');
-
-  @override
-  Future<void> deleteProject(String projectId) async =>
-      throw Exception('unknown');
-
-  @override
-  Stream<ProjectDto?> watchProjectChanges(String projectId) =>
-      Stream.error(Exception('unknown'));
 }

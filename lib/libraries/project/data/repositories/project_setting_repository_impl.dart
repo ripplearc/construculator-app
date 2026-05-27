@@ -27,48 +27,69 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       final dto = await _dataSource.fetchProjectSetting(projectId);
       return Right(dto.toDomain());
     } catch (error, stackTrace) {
-      _logger.warning(
-        'Error while getting project setting for projectId: $projectId',
-        error,
-        stackTrace,
+      return Left(
+        _handleError(
+          error,
+          'getting project setting for projectId: $projectId',
+          stackTrace,
+        ),
       );
-      return Left(_handleError(error, 'getting project setting'));
     }
   }
 
-  Failure _handleError(Object error, String operation) {
+  Failure _handleError(Object error, String operation, StackTrace stackTrace) {
     if (error is NotFoundException) {
-      _logger.warning('Not found $operation: ${error.exception}');
+      _logger.warning(
+        'Not found $operation: ${error.exception}',
+        error,
+        stackTrace,
+      );
       return const ProjectFailure(errorType: ProjectErrorType.notFoundError);
     }
 
     if (error is ServerException) {
-      _logger.warning('Server error $operation: ${error.exception}');
+      _logger.warning(
+        'Server error $operation: ${error.exception}',
+        error,
+        stackTrace,
+      );
       return const ProjectFailure(
         errorType: ProjectErrorType.unexpectedDatabaseError,
       );
     }
 
     if (error is TimeoutException) {
-      _logger.warning('Timeout error $operation: ${error.message}');
+      _logger.warning(
+        'Timeout error $operation: ${error.message}',
+        error,
+        stackTrace,
+      );
       return const ProjectFailure(errorType: ProjectErrorType.timeoutError);
     }
 
     if (error is SocketException || error is NetworkException) {
       _logger.warning(
         'Connection error $operation: ${error is SocketException ? (error).message : error.toString()}',
+        error,
+        stackTrace,
       );
       return const ProjectFailure(errorType: ProjectErrorType.connectionError);
     }
 
     if (error is TypeError) {
-      _logger.warning('Parsing error $operation: ${error.toString()}');
+      _logger.warning(
+        'Parsing error $operation: ${error.toString()}',
+        error,
+        stackTrace,
+      );
       return const ProjectFailure(errorType: ProjectErrorType.parsingError);
     }
 
     if (error is supabase.PostgrestException) {
       _logger.warning(
         'PostgreSQL error $operation: code=${error.code}, message=${error.message}',
+        error,
+        stackTrace,
       );
       final postgresErrorCode = PostgresErrorCode.fromCode(error.code);
       if (postgresErrorCode == PostgresErrorCode.noDataFound) {
@@ -85,10 +106,12 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       );
     }
 
-    _logger.error('Unexpected error $operation: $error');
+    _logger.error('Unexpected error $operation: $error', error, stackTrace);
     return UnexpectedFailure();
   }
 
   @override
-  void dispose() {}
+  void dispose() {
+    // No subscriptions or stream controllers to release in the read-only MVP.
+  }
 }
