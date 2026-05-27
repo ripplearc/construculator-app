@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
@@ -16,6 +18,10 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
   final ProjectPermissionDataSource _permissionDataSource;
   static final _logger = AppLogger().tag('ProjectSettingRepositoryImpl');
 
+  StreamController<Either<Failure, Project>>? _settingController;
+  StreamSubscription<ProjectDto?>? _changesSubscription;
+  String? _watchedProjectId;
+
   ProjectSettingRepositoryImpl({
     required ProjectSettingDataSource dataSource,
     required ProjectPermissionDataSource permissionDataSource,
@@ -28,13 +34,12 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       final dto = await _dataSource.fetchProjectSetting(projectId);
       return Right(dto.toDomain());
     } catch (error, stackTrace) {
-      return Left(
-        _handleError(
-          error,
-          'getting project setting for projectId: $projectId',
-          stackTrace,
-        ),
+      _logger.warning(
+        'Error while getting project setting for projectId: $projectId',
+        error,
+        stackTrace,
       );
+      return Left(_handleError(error));
     }
   }
 
@@ -55,13 +60,12 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       final result = await _dataSource.updateProject(dto);
       return Right(result.toDomain());
     } catch (error, stackTrace) {
-      return Left(
-        _handleError(
-          error,
-          'updating project with id: ${project.id}',
-          stackTrace,
-        ),
+      _logger.warning(
+        'Error while updating project with id: ${project.id}',
+        error,
+        stackTrace,
       );
+      return Left(_handleError(error));
     }
   }
 
@@ -81,9 +85,70 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       await _dataSource.deleteProject(projectId);
       return const Right(null);
     } catch (error, stackTrace) {
-      return Left(
-        _handleError(error, 'deleting project with id: $projectId', stackTrace),
+      _logger.warning(
+        'Error while deleting project with id: $projectId',
+        error,
+        stackTrace,
       );
+      return Left(_handleError(error));
+    }
+  }
+
+  @override
+  Stream<Either<Failure, Project>> watchProjectSetting(String projectId) {
+    _watchedProjectId = projectId;
+    final controller = _settingController ??=
+        StreamController<Either<Failure, Project>>.broadcast(
+          onListen: _startWatchingSettingChanges,
+          onCancel: _stopWatchingIfNoListeners,
+        );
+    return controller.stream;
+  }
+
+  void _startWatchingSettingChanges() {
+    if (_changesSubscription != null) {
+      return;
+    }
+
+    final projectId = _watchedProjectId;
+    if (projectId == null || projectId.isEmpty) {
+      return;
+    }
+
+    _changesSubscription = _dataSource
+        .watchProjectChanges(projectId)
+        .listen(
+          (_) => _refreshProjectSetting(),
+          onError: (Object error, StackTrace stackTrace) {
+            _logger.error(
+              'Error while watching project setting changes for projectId: $projectId',
+              error,
+              stackTrace,
+            );
+            _settingController?.addError(error, stackTrace);
+          },
+        );
+
+    _refreshProjectSetting();
+  }
+
+  void _stopWatchingIfNoListeners() {
+    if (_settingController?.hasListener == true) {
+      return;
+    }
+    _changesSubscription?.cancel();
+    _changesSubscription = null;
+    _watchedProjectId = null;
+  }
+
+  Future<void> _refreshProjectSetting() async {
+    final projectId = _watchedProjectId;
+    if (projectId == null || projectId.isEmpty) {
+      return;
+    }
+    final result = await getProjectSetting(projectId);
+    if (_settingController?.isClosed == false) {
+      _settingController?.add(result);
     }
   }
 
@@ -102,32 +167,16 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
     );
   }
 
-  static const _unexpectedErrorTypes = {
-    ProjectErrorType.unexpectedError,
-    ProjectErrorType.unexpectedDatabaseError,
-    ProjectErrorType.parsingError,
-  };
-
-  ProjectFailure _handleError(
-    Object error,
-    String operation,
-    StackTrace stackTrace,
-  ) {
-    final failure = ProjectErrorMapper.toFailure(error);
-    if (_unexpectedErrorTypes.contains(failure.errorType)) {
-      _logger.error('Error $operation: $error', error, stackTrace);
-    } else {
-      _logger.warning(
-        'Error $operation: ${failure.errorType.name}',
-        error,
-        stackTrace,
-      );
-    }
-    return failure;
+  ProjectFailure _handleError(Object error) {
+    return ProjectErrorMapper.toFailure(error);
   }
 
   @override
   void dispose() {
-    // No subscriptions or stream controllers to release in this PR's scope.
+    _changesSubscription?.cancel();
+    _changesSubscription = null;
+    _settingController?.close();
+    _settingController = null;
+    _watchedProjectId = null;
   }
 }
