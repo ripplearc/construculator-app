@@ -2,10 +2,14 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/project/data/current_project_notifier_impl.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_data_source.dart';
+import 'package:construculator/libraries/project/data/data_source/interfaces/project_setting_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/local_jwt_project_permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/remote_project_data_source.dart';
+import 'package:construculator/libraries/project/data/data_source/remote_project_setting_data_source.dart';
 import 'package:construculator/libraries/project/data/repositories/project_repository_impl.dart';
+import 'package:construculator/libraries/project/data/repositories/project_setting_repository_impl.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_setting_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
@@ -48,6 +52,20 @@ void _registerDependencies(Injector i) {
   i.addLazySingleton<ProjectRepository>(
     () => ProjectRepositoryImpl(
       projectDataSource: Modular.get<ProjectDataSource>(),
+      permissionDataSource: Modular.get<ProjectPermissionDataSource>(),
+    ),
+    config: BindConfig(onDispose: (repository) => repository.dispose()),
+  );
+
+  i.addLazySingleton<ProjectSettingDataSource>(
+    () => RemoteProjectSettingDataSource(
+      supabaseWrapper: Modular.get<SupabaseWrapper>(),
+    ),
+  );
+
+  i.addLazySingleton<ProjectSettingRepository>(
+    () => ProjectSettingRepositoryImpl(
+      dataSource: Modular.get<ProjectSettingDataSource>(),
       permissionDataSource: Modular.get<ProjectPermissionDataSource>(),
     ),
     config: BindConfig(onDispose: (repository) => repository.dispose()),

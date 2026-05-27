@@ -1,36 +1,46 @@
+import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/errors/failures.dart';
-import 'package:construculator/libraries/project/data/data_source/interfaces/project_setting_data_source.dart';
-import 'package:construculator/libraries/project/data/data_source/remote_project_setting_data_source.dart';
+import 'package:construculator/libraries/project/data/data_source/interfaces/permission_data_source.dart';
 import 'package:construculator/libraries/project/data/repositories/project_setting_repository_impl.dart';
 import 'package:construculator/libraries/project/domain/project_error_type.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_setting_repository.dart';
+import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/project/testing/fake_project_setting_data_source.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stack_trace/stack_trace.dart';
 
+import '../../../../../utils/fake_app_bootstrap_factory.dart';
+
 void main() {
   group('ProjectSettingRepositoryImpl', () {
-    late ProjectSettingDataSource dataSource;
     late ProjectSettingRepositoryImpl repository;
     late FakeSupabaseWrapper supabaseWrapper;
-    late FakeClockImpl clock;
 
     setUp(() {
-      clock = FakeClockImpl(DateTime(2025, 1, 1));
-      supabaseWrapper = FakeSupabaseWrapper(clock: clock);
-      dataSource = RemoteProjectSettingDataSource(
-        supabaseWrapper: supabaseWrapper,
+      final clock = FakeClockImpl(DateTime(2025, 1, 1));
+      Modular.init(
+        _TestAppModule(
+          FakeAppBootstrapFactory.create(
+            supabaseWrapper: FakeSupabaseWrapper(clock: clock),
+          ),
+        ),
       );
-      repository = ProjectSettingRepositoryImpl(dataSource: dataSource);
+      supabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+      repository =
+          Modular.get<ProjectSettingRepository>()
+              as ProjectSettingRepositoryImpl;
+      supabaseWrapper.reset();
     });
 
     tearDown(() {
-      repository.dispose();
-      supabaseWrapper.dispose();
+      Modular.destroy();
     });
 
     group('getProjectSetting', () {
@@ -129,9 +139,7 @@ void main() {
           expect(
             failure,
             equals(
-              const ProjectFailure(
-                errorType: ProjectErrorType.connectionError,
-              ),
+              const ProjectFailure(errorType: ProjectErrorType.connectionError),
             ),
           );
         }, (_) => fail('Expected Left'));
@@ -143,7 +151,11 @@ void main() {
             Trace.current(),
             Exception('network error'),
           );
-        final repoWithFake = ProjectSettingRepositoryImpl(dataSource: fake);
+        // ignore: no_direct_instantiation, reason: FakeProjectSettingDataSource is injected to simulate NetworkException, which cannot be triggered via FakeSupabaseWrapper
+        final repoWithFake = ProjectSettingRepositoryImpl(
+          dataSource: fake,
+          permissionDataSource: Modular.get<ProjectPermissionDataSource>(),
+        );
 
         final result = await repoWithFake.getProjectSetting('p-1');
 
@@ -152,9 +164,7 @@ void main() {
           expect(
             failure,
             equals(
-              const ProjectFailure(
-                errorType: ProjectErrorType.connectionError,
-              ),
+              const ProjectFailure(errorType: ProjectErrorType.connectionError),
             ),
           );
         }, (_) => fail('Expected Left'));
@@ -262,7 +272,8 @@ void main() {
         () async {
           supabaseWrapper.shouldThrowOnSelect = true;
           supabaseWrapper.selectExceptionType = SupabaseExceptionType.postgrest;
-          supabaseWrapper.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
+          supabaseWrapper.postgrestErrorCode =
+              PostgresErrorCode.uniqueViolation;
 
           final result = await repository.getProjectSetting('p-1');
 
@@ -278,4 +289,12 @@ void main() {
       );
     });
   });
+}
+
+class _TestAppModule extends Module {
+  final AppBootstrap appBootstrap;
+  _TestAppModule(this.appBootstrap);
+
+  @override
+  List<Module> get imports => [ProjectLibraryModule(appBootstrap)];
 }
