@@ -10,10 +10,10 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
   /// Tracks method calls for boundary assertions.
   final List<Map<String, dynamic>> _methodCalls = [];
 
-  /// The [ProjectDto] returned by [fetchProjectSetting] and [updateProject].
+  /// Project returned by [fetchProjectSetting] and [updateProject].
   ProjectDto? projectToReturn;
 
-  /// Controls whether [getProjectSetting] throws a [ServerException].
+  /// Controls whether [fetchProjectSetting] throws a [ServerException].
   bool shouldThrowOnGet = false;
 
   /// Controls whether [updateProject] throws a [ServerException].
@@ -25,7 +25,7 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
   /// Controls whether [watchProjectChanges] throws a [ServerException].
   bool shouldThrowOnWatch = false;
 
-  /// Error messages used when the corresponding [shouldThrowOn*] flag is set.
+  /// Error message for [fetchProjectSetting] when [shouldThrowOnGet] is true.
   String? getErrorMessage;
 
   /// Error message for [updateProject] when [shouldThrowOnUpdate] is true.
@@ -40,6 +40,7 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
   /// Creates a [FakeProjectSettingDataSource].
   FakeProjectSettingDataSource();
 
+  /// Returns the configured [projectToReturn] for the given [projectId].
   @override
   Future<ProjectDto> fetchProjectSetting(String projectId) async {
     _methodCalls.add({'method': 'fetchProjectSetting', 'projectId': projectId});
@@ -62,6 +63,7 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
     return project;
   }
 
+  /// Updates a project and returns either [projectToReturn] or [projectDto].
   @override
   Future<ProjectDto> updateProject(ProjectDto projectDto) async {
     _methodCalls.add({'method': 'updateProject', 'projectDto': projectDto});
@@ -76,6 +78,7 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
     return projectToReturn ?? projectDto;
   }
 
+  /// Records deletion of the project with the given [projectId].
   @override
   Future<void> deleteProject(String projectId) async {
     _methodCalls.add({'method': 'deleteProject', 'projectId': projectId});
@@ -88,6 +91,7 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
     }
   }
 
+  /// Watches project changes emitted through [emitChange] and [emitError].
   @override
   Stream<ProjectDto?> watchProjectChanges(String projectId) {
     _methodCalls.add({'method': 'watchProjectChanges', 'projectId': projectId});
