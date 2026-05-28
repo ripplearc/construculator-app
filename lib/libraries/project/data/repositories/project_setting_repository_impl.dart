@@ -37,6 +37,8 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       final dto = await _dataSource.fetchProjectSetting(projectId);
       return Right(dto.toDomain());
     } catch (error, stackTrace) {
+      // Log raw error and stack trace before domain mapping so diagnostics
+      // keep the original exception details instead of only the mapped Failure.
       _logger.warning(
         'Error while getting project setting for projectId: $projectId',
         error,
@@ -63,6 +65,8 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       final result = await _dataSource.updateProject(dto);
       return Right(result.toDomain());
     } catch (error, stackTrace) {
+      // Log raw error and stack trace before domain mapping so diagnostics
+      // keep the original exception details instead of only the mapped Failure.
       _logger.warning(
         'Error while updating project with id: ${project.id}',
         error,
@@ -88,6 +92,8 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       await _dataSource.deleteProject(projectId);
       return const Right(null);
     } catch (error, stackTrace) {
+      // Log raw error and stack trace before domain mapping so diagnostics
+      // keep the original exception details instead of only the mapped Failure.
       _logger.warning(
         'Error while deleting project with id: $projectId',
         error,
@@ -100,15 +106,17 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
   @override
   Stream<Either<Failure, Project>> watchProjectSetting(String projectId) {
     final existing = _settingControllers[projectId];
-    if (existing != null && !existing.isClosed) {
-      return existing.stream;
+    if (existing?.isClosed == true) {
+      _settingControllers.remove(projectId);
     }
 
-    final controller = StreamController<Either<Failure, Project>>.broadcast(
-      onListen: () => _startWatchingSettingChanges(projectId),
-      onCancel: () => _stopWatchingIfNoListeners(projectId),
+    final controller = _settingControllers.putIfAbsent(
+      projectId,
+      () => StreamController<Either<Failure, Project>>.broadcast(
+        onListen: () => _startWatchingSettingChanges(projectId),
+        onCancel: () => _stopWatchingIfNoListeners(projectId),
+      ),
     );
-    _settingControllers[projectId] = controller;
     return controller.stream;
   }
 
@@ -127,7 +135,10 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
               error,
               stackTrace,
             );
-            _settingControllers[projectId]?.addError(error, stackTrace);
+            final controller = _settingControllers[projectId];
+            if (controller?.isClosed == false) {
+              controller?.addError(error, stackTrace);
+            }
           },
         );
 
