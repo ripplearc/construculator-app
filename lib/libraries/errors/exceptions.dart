@@ -45,6 +45,14 @@ class ServerException extends AppException {
   ServerException(super.stackTrace, super.exception);
 }
 
+/// Exception thrown when a requested resource does not exist.
+///
+/// Use this exception for expected not-found outcomes so callers can map it to
+/// a not-found failure without treating it as a Sentry-level error.
+class NotFoundException extends AppException {
+  NotFoundException(super.stackTrace, super.exception);
+}
+
 /// Exception thrown when a client error occurs.
 ///
 /// Throw this exception when status of an upstream request
