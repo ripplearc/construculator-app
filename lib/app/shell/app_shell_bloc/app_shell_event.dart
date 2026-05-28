@@ -8,6 +8,11 @@ sealed class AppShellEvent extends Equatable {
   List<Object> get props => [];
 }
 
+/// Event triggered once on startup to load the initial tab's module.
+class AppShellInitialized extends AppShellEvent {
+  const AppShellInitialized();
+}
+
 /// Event triggered when a user selects a tab in the app shell.
 class AppShellTabSelected extends AppShellEvent {
   /// The index of the selected tab.
