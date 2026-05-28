@@ -2,7 +2,6 @@ import 'package:construculator/features/global_search/presentation/bloc/global_s
 import 'package:construculator/features/global_search/presentation/widgets/global_search_empty_recent_widget.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_recent_searches_list.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -20,7 +19,6 @@ class GlobalSearchPage extends StatefulWidget {
 }
 
 class _GlobalSearchPageState extends State<GlobalSearchPage> {
-  late final AppRouter _router = Modular.get<AppRouter>();
   late final TextEditingController _searchController = TextEditingController();
   GlobalSearchReady? _lastReady;
 
@@ -49,7 +47,7 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
       button: true,
       child: GestureDetector(
         key: const Key('global_search_back_button'),
-        onTap: () => _router.pop(),
+        onTap: () => Navigator.of(context).pop(),
         child: ConstrainedBox(
           constraints: const BoxConstraints(
             minWidth: CoreSpacing.space12,

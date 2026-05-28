@@ -1,10 +1,10 @@
 import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
+import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
-import 'package:construculator/libraries/router/routes/global_search_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -70,7 +70,11 @@ class _DashboardPageState extends State<DashboardPage> {
           CoreIconWidget(
             icon: CoreIcons.search,
             semanticLabel: l10n.dashboardSearchSemanticLabel,
-            onTap: () => _router.pushNamed(fullGlobalSearchRoute),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const GlobalSearchPage(),
+              ),
+            ),
           ),
           const SizedBox(width: CoreSpacing.space4),
         ],
