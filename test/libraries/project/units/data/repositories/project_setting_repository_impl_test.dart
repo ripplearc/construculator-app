@@ -37,7 +37,8 @@ void main() {
       );
       supabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
       repository =
-          Modular.get<ProjectSettingRepository>() as ProjectSettingRepositoryImpl;
+          Modular.get<ProjectSettingRepository>()
+              as ProjectSettingRepositoryImpl;
       supabaseWrapper.reset();
     });
 
@@ -146,9 +147,7 @@ void main() {
           expect(
             failure,
             equals(
-              const ProjectFailure(
-                errorType: ProjectErrorType.connectionError,
-              ),
+              const ProjectFailure(errorType: ProjectErrorType.connectionError),
             ),
           );
         }, (_) => fail('Expected Left'));
@@ -173,9 +172,7 @@ void main() {
           expect(
             failure,
             equals(
-              const ProjectFailure(
-                errorType: ProjectErrorType.connectionError,
-              ),
+              const ProjectFailure(errorType: ProjectErrorType.connectionError),
             ),
           );
         }, (_) => fail('Expected Left'));
@@ -274,7 +271,7 @@ void main() {
             },
           ]);
 
-          permissionDataSource.setPermissions('p-1', [
+          supabaseWrapper.setProjectPermissions('p-1', [
             PermissionConstants.editProject,
           ]);
 
@@ -326,7 +323,7 @@ void main() {
             },
           ]);
 
-          permissionDataSource.setPermissions('p-1', [
+          supabaseWrapper.setProjectPermissions('p-1', [
             PermissionConstants.deleteProject,
           ]);
 
@@ -351,10 +348,6 @@ void main() {
 class _TestAppModule extends Module {
   final AppBootstrap appBootstrap;
   _TestAppModule(this.appBootstrap);
-
-  void setPermissions(String projectId, List<String> permissions) {
-    _permissions[projectId] = List<String>.from(permissions);
-  }
 
   @override
   List<Module> get imports => [ProjectLibraryModule(appBootstrap)];
