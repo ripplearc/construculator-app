@@ -372,6 +372,47 @@ void main() {
     });
 
     group('watchProjectSetting', () {
+      test('reuses one stream controller per project', () async {
+        fakeSupabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+          _fakeProjectRow(id: 'p-1'),
+        ]);
+
+        final firstStream = repository.watchProjectSetting('p-1');
+        final secondStream = repository.watchProjectSetting('p-1');
+
+        final firstCompleter = Completer<Project>();
+        final secondCompleter = Completer<Project>();
+
+        final firstSubscription = firstStream.listen((result) {
+          result.fold((_) {}, (project) {
+            if (!firstCompleter.isCompleted) {
+              firstCompleter.complete(project);
+            }
+          });
+        });
+        final secondSubscription = secondStream.listen((result) {
+          result.fold((_) {}, (project) {
+            if (!secondCompleter.isCompleted) {
+              secondCompleter.complete(project);
+            }
+          });
+        });
+
+        await firstCompleter.future;
+        await secondCompleter.future;
+
+        expect(
+          fakeSupabaseWrapper
+              .getMethodCalls()
+              .where((c) => c['method'] == 'watchTableFiltered')
+              .length,
+          equals(1),
+        );
+
+        await firstSubscription.cancel();
+        await secondSubscription.cancel();
+      });
+
       test('emits current project on subscribe', () async {
         fakeSupabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
           _fakeProjectRow(id: 'p-1', projectName: 'v1'),
