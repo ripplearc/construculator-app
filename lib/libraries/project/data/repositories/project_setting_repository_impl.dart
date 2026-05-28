@@ -1,6 +1,5 @@
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
-import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_setting_data_source.dart';
 import 'package:construculator/libraries/project/data/models/project_dto.dart';
@@ -14,7 +13,6 @@ import 'package:construculator/libraries/project/domain/repositories/project_set
 class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
   final ProjectSettingDataSource _dataSource;
   final ProjectPermissionDataSource _permissionDataSource;
-  static final _logger = AppLogger().tag('ProjectSettingRepositoryImpl');
 
   ProjectSettingRepositoryImpl({
     required ProjectSettingDataSource dataSource,
@@ -28,14 +26,8 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       final dto = _toDtoFromEntity(project);
       final result = await _dataSource.createProject(dto);
       return Right(result.toDomain());
-    } catch (error, stackTrace) {
-      return Left(
-        _handleError(
-          error,
-          'creating project with name: ${project.projectName}',
-          stackTrace,
-        ),
-      );
+    } catch (error) {
+      return Left(ProjectErrorMapper.toFailure(error));
     }
   }
 
@@ -44,14 +36,8 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
     try {
       final dto = await _dataSource.fetchProjectSetting(projectId);
       return Right(dto.toDomain());
-    } catch (error, stackTrace) {
-      return Left(
-        _handleError(
-          error,
-          'getting project setting for projectId: $projectId',
-          stackTrace,
-        ),
-      );
+    } catch (error) {
+      return Left(ProjectErrorMapper.toFailure(error));
     }
   }
 
@@ -71,14 +57,8 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       final dto = _toDtoFromEntity(project);
       final result = await _dataSource.updateProject(dto);
       return Right(result.toDomain());
-    } catch (error, stackTrace) {
-      return Left(
-        _handleError(
-          error,
-          'updating project with id: ${project.id}',
-          stackTrace,
-        ),
-      );
+    } catch (error) {
+      return Left(ProjectErrorMapper.toFailure(error));
     }
   }
 
@@ -97,10 +77,8 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
     try {
       await _dataSource.deleteProject(projectId);
       return const Right(null);
-    } catch (error, stackTrace) {
-      return Left(
-        _handleError(error, 'deleting project with id: $projectId', stackTrace),
-      );
+    } catch (error) {
+      return Left(ProjectErrorMapper.toFailure(error));
     }
   }
 
@@ -117,30 +95,6 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       updatedAt: project.updatedAt,
       status: project.status,
     );
-  }
-
-  static const _unexpectedErrorTypes = {
-    ProjectErrorType.unexpectedError,
-    ProjectErrorType.unexpectedDatabaseError,
-    ProjectErrorType.parsingError,
-  };
-
-  ProjectFailure _handleError(
-    Object error,
-    String operation,
-    StackTrace stackTrace,
-  ) {
-    final failure = ProjectErrorMapper.toFailure(error);
-    if (_unexpectedErrorTypes.contains(failure.errorType)) {
-      _logger.error('Error $operation: $error', error, stackTrace);
-    } else {
-      _logger.warning(
-        'Error $operation: ${failure.errorType.name}',
-        error,
-        stackTrace,
-      );
-    }
-    return failure;
   }
 
   @override
