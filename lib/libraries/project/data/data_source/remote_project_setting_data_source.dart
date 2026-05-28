@@ -19,11 +19,11 @@ class RemoteProjectSettingDataSource implements ProjectSettingDataSource {
     required SupabaseWrapper supabaseWrapper,
   }) : _supabaseWrapper = supabaseWrapper;
 
-  @override
   /// Fetches a single project setting row by [projectId].
   ///
   /// Throws [NotFoundException] when the project does not exist and rethrows
   /// unexpected Supabase or parsing errors.
+  @override
   Future<ProjectDto> fetchProjectSetting(String projectId) async {
     try {
       _logger.debug('Getting project setting for projectId: $projectId');
@@ -55,11 +55,11 @@ class RemoteProjectSettingDataSource implements ProjectSettingDataSource {
     }
   }
 
-  @override
   /// Persists the editable project settings in remote storage.
   ///
   /// Returns the updated project row as stored remotely and rethrows
   /// unexpected Supabase or parsing errors.
+  @override
   Future<ProjectDto> updateProject(ProjectDto projectDto) async {
     try {
       _logger.debug('Updating project with id: ${projectDto.id}');
@@ -92,10 +92,10 @@ class RemoteProjectSettingDataSource implements ProjectSettingDataSource {
     }
   }
 
-  @override
   /// Deletes the project row identified by [projectId].
   ///
   /// Throws on unexpected Supabase errors.
+  @override
   Future<void> deleteProject(String projectId) async {
     try {
       _logger.debug('Deleting project with id: $projectId');
@@ -118,11 +118,11 @@ class RemoteProjectSettingDataSource implements ProjectSettingDataSource {
     }
   }
 
-  @override
   /// Streams the latest project setting snapshot whenever the project row changes.
   ///
   /// Emits `null` when the project is deleted or temporarily missing and
   /// forwards stream errors to subscribers.
+  @override
   Stream<ProjectDto?> watchProjectChanges(String projectId) {
     return _supabaseWrapper
         .watchTableFiltered(
