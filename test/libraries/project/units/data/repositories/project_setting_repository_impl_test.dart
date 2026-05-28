@@ -124,9 +124,9 @@ void main() {
         }, (_) => fail('Expected Left'));
       });
 
-      test('returns Left(UnexpectedFailure) on unexpected error', () async {
-        // AuthException is not handled by _handleError and falls through to
-        // UnexpectedFailure — the only reachable path via FakeSupabaseWrapper.
+      test('returns Left(unexpectedError) on unhandled error', () async {
+        // AuthException is not handled by ProjectErrorMapper and falls through
+        // to ProjectErrorType.unexpectedError.
         fakeSupabaseWrapper.shouldThrowOnSelect = true;
         fakeSupabaseWrapper.selectExceptionType = SupabaseExceptionType.auth;
 
@@ -134,7 +134,11 @@ void main() {
 
         expect(result.isLeft(), isTrue);
         result.fold((failure) {
-          expect(failure, isA<UnexpectedFailure>());
+          expect(failure, isA<ProjectFailure>());
+          expect(
+            (failure as ProjectFailure).errorType,
+            equals(ProjectErrorType.unexpectedError),
+          );
         }, (_) => fail('Expected Left'));
       });
 
