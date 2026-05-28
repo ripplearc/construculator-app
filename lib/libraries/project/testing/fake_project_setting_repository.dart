@@ -113,7 +113,7 @@ class FakeProjectSettingRepository implements ProjectSettingRepository {
     try {
       _watchController.add(result);
     } on StateError {
-      // The controller may have been closed between the guard and the add.
+      // Guards against concurrent dispose() closing the controller.
     }
   }
 
@@ -127,7 +127,7 @@ class FakeProjectSettingRepository implements ProjectSettingRepository {
     try {
       _watchController.addError(error, stackTrace);
     } on StateError {
-      // The controller may have been closed between the guard and the add.
+      // Guards against concurrent dispose() closing the controller.
     }
   }
 
