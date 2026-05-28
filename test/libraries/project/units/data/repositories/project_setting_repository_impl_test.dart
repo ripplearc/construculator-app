@@ -124,7 +124,9 @@ void main() {
         }, (_) => fail('Expected Left'));
       });
 
-      test('returns Left(unexpectedError) on unexpected error', () async {
+      test('returns Left(unexpectedError) on unhandled error', () async {
+        // AuthException is not handled by ProjectErrorMapper and falls through
+        // to ProjectErrorType.unexpectedError.
         fakeSupabaseWrapper.shouldThrowOnSelect = true;
         fakeSupabaseWrapper.selectExceptionType = SupabaseExceptionType.auth;
 

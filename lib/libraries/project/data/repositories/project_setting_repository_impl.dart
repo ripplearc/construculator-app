@@ -42,7 +42,7 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
         error,
         stackTrace,
       );
-      return Left(_handleError(error));
+      return Left(ProjectErrorMapper.toFailure(error));
     }
   }
 
@@ -70,7 +70,7 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
         error,
         stackTrace,
       );
-      return Left(_handleError(error));
+      return Left(ProjectErrorMapper.toFailure(error));
     }
   }
 
@@ -97,7 +97,7 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
         error,
         stackTrace,
       );
-      return Left(_handleError(error));
+      return Left(ProjectErrorMapper.toFailure(error));
     }
   }
 
@@ -180,10 +180,6 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       updatedAt: project.updatedAt,
       status: project.status,
     );
-  }
-
-  ProjectFailure _handleError(Object error) {
-    return ProjectErrorMapper.toFailure(error);
   }
 
   @override
