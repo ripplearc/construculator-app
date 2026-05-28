@@ -14,8 +14,19 @@ class AppShellBloc extends Bloc<AppShellEvent, AppShellState> {
 
   AppShellBloc({required TabModuleManager moduleLoader})
     : _moduleLoader = moduleLoader,
-      super(const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {0})) {
+      super(const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {})) {
+    on<AppShellInitialized>(_onInitialized);
     on<AppShellTabSelected>(_onTabSelected);
+    add(const AppShellInitialized());
+  }
+
+  Future<void> _onInitialized(
+    AppShellInitialized event,
+    Emitter<AppShellState> emit,
+  ) async {
+    final initialTab = ShellTab.values[state.selectedTabIndex];
+    await _moduleLoader.ensureTabModuleLoaded(initialTab);
+    emit(state.copyWith(loadedTabIndexes: {state.selectedTabIndex}));
   }
 
   Future<void> _onTabSelected(
