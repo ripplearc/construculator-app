@@ -102,6 +102,16 @@ void main() {
         expect(result.projectName, equals('Fallback'));
       });
 
+      test('persists result so subsequent fetchProjectSetting returns it',
+          () async {
+        final dto = _fakeDto(id: 'p-1', projectName: 'Written');
+
+        await fake.updateProject(dto);
+        final fetched = await fake.fetchProjectSetting('p-1');
+
+        expect(fetched.projectName, equals('Written'));
+      });
+
       test('throws ServerException when shouldThrowOnUpdate is true', () async {
         fake.shouldThrowOnUpdate = true;
 
@@ -125,6 +135,17 @@ void main() {
         await expectLater(fake.deleteProject('p-1'), completes);
       });
 
+      test('clears projectToReturn so subsequent fetch throws', () async {
+        fake.projectToReturn = _fakeDto(id: 'p-1');
+
+        await fake.deleteProject('p-1');
+
+        await expectLater(
+          fake.fetchProjectSetting('p-1'),
+          throwsA(isA<ServerException>()),
+        );
+      });
+
       test('throws ServerException when shouldThrowOnDelete is true', () async {
         fake.shouldThrowOnDelete = true;
 
@@ -137,6 +158,7 @@ void main() {
 
     group('watchProjectChanges', () {
       test('records method call with projectId', () {
+        fake.projectToReturn = _fakeDto(id: 'p-1');
         fake.watchProjectChanges('p-1').listen((_) {});
 
         final calls = fake.getMethodCallsFor('watchProjectChanges');
@@ -144,22 +166,62 @@ void main() {
         expect(calls.first['projectId'], equals('p-1'));
       });
 
-      test('emits when emitChange is called', () async {
-        final emittedCompleter = Completer<ProjectDto?>();
-        final subscription = fake.watchProjectChanges('p-1').listen((dto) {
-          if (!emittedCompleter.isCompleted) emittedCompleter.complete(dto);
-        });
+      test('emits current snapshot immediately on subscription', () async {
+        final dto = _fakeDto(id: 'p-1');
+        fake.projectToReturn = dto;
 
-        fake.projectToReturn = _fakeDto(id: 'p-1');
-        fake.emitChange();
+        final first = await fake.watchProjectChanges('p-1').first;
 
-        final emitted = await emittedCompleter.future;
-        expect(emitted, isA<ProjectDto>());
+        expect(first, equals(dto));
+      });
+
+      test('emits null snapshot when projectToReturn is null', () async {
+        final first = await fake.watchProjectChanges('p-1').first;
+
+        expect(first, isNull);
+      });
+
+      test('emits updated value when emitChange is called', () async {
+        fake.projectToReturn = _fakeDto(id: 'p-1', projectName: 'Initial');
+        final emittedValues = <ProjectDto?>[];
+
+        final subscription =
+            fake.watchProjectChanges('p-1').listen(emittedValues.add);
+        await Future.microtask(() {});
+
+        final updated = _fakeDto(id: 'p-1', projectName: 'Updated');
+        fake.projectToReturn = updated;
+        fake.emitChange('p-1');
+        await Future.microtask(() {});
+
+        expect(emittedValues, contains(updated));
         await subscription.cancel();
       });
 
+      test('isolates streams per project', () async {
+        fake.projectToReturn = _fakeDto(id: 'p-1');
+        final p1Values = <ProjectDto?>[];
+        final p2Values = <ProjectDto?>[];
+
+        final s1 = fake.watchProjectChanges('p-1').listen(p1Values.add);
+        final s2 = fake.watchProjectChanges('p-2').listen(p2Values.add);
+        await Future.microtask(() {});
+
+        final countBefore = p2Values.length;
+        fake.emitChange('p-1');
+        await Future.microtask(() {});
+
+        expect(p1Values.length, greaterThan(countBefore));
+        expect(p2Values.length, equals(countBefore));
+
+        await s1.cancel();
+        await s2.cancel();
+      });
+
       test('forwards errors when emitError is called', () async {
+        fake.projectToReturn = _fakeDto(id: 'p-1');
         final errorCompleter = Completer<Object>();
+
         final subscription = fake
             .watchProjectChanges('p-1')
             .listen(
@@ -169,7 +231,7 @@ void main() {
               },
             );
 
-        fake.emitError(Exception('test error'));
+        fake.emitError(Exception('test error'), 'p-1');
 
         final receivedError = await errorCompleter.future;
         expect(receivedError, isA<Exception>());

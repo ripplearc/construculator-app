@@ -3,12 +3,18 @@ import 'dart:async';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_setting_data_source.dart';
 import 'package:construculator/libraries/project/data/models/project_dto.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:stack_trace/stack_trace.dart';
 
 /// Fake implementation of [ProjectSettingDataSource] for testing.
 class FakeProjectSettingDataSource implements ProjectSettingDataSource {
   /// Tracks method calls for boundary assertions.
   final List<Map<String, dynamic>> _methodCalls = [];
+
+  /// Per-project stream controllers. Each project gets its own [BehaviorSubject]
+  /// so cross-project isolation can be verified and subscriptions receive the
+  /// current snapshot immediately on listen.
+  final Map<String, BehaviorSubject<ProjectDto?>> _projectControllers = {};
 
   /// Project returned by [fetchProjectSetting] and [updateProject].
   ProjectDto? projectToReturn;
@@ -39,9 +45,6 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
 
   /// Error message for [deleteProject] when [shouldThrowOnDelete] is true.
   String? deleteErrorMessage;
-
-  final StreamController<ProjectDto?> _changesController =
-      StreamController<ProjectDto?>.broadcast();
 
   /// Creates a [FakeProjectSettingDataSource].
   FakeProjectSettingDataSource();
@@ -74,7 +77,8 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
     return project;
   }
 
-  /// Updates a project and returns either [projectToReturn] or [projectDto].
+  /// Persists [projectDto] (or [projectToReturn] if set) and updates stored
+  /// state so subsequent reads reflect the mutation.
   @override
   Future<ProjectDto> updateProject(ProjectDto projectDto) async {
     _methodCalls.add({'method': 'updateProject', 'projectDto': projectDto});
@@ -86,10 +90,13 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
       );
     }
 
-    return projectToReturn ?? projectDto;
+    final result = projectToReturn ?? projectDto;
+    projectToReturn = result;
+    return result;
   }
 
-  /// Records deletion of the project with the given [projectId].
+  /// Records deletion and clears stored state so subsequent reads and watches
+  /// reflect the removal.
   @override
   Future<void> deleteProject(String projectId) async {
     _methodCalls.add({'method': 'deleteProject', 'projectId': projectId});
@@ -100,9 +107,12 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
         Exception(deleteErrorMessage ?? 'Delete project failed'),
       );
     }
+
+    projectToReturn = null;
   }
 
-  /// Watches project changes emitted through [emitChange] and [emitError].
+  /// Returns a per-project stream that immediately emits the current snapshot
+  /// on subscription, then emits on each [emitChange] call.
   @override
   Stream<ProjectDto?> watchProjectChanges(String projectId) {
     _methodCalls.add({'method': 'watchProjectChanges', 'projectId': projectId});
@@ -114,17 +124,24 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
       );
     }
 
-    return _changesController.stream;
+    return _getOrCreateController(projectId).stream;
   }
 
-  /// Emits a change event to active [watchProjectChanges] subscribers.
-  void emitChange() {
-    _changesController.add(projectToReturn);
+  /// Emits [projectToReturn] to subscribers watching [projectId].
+  void emitChange(String projectId) {
+    _getOrCreateController(projectId).add(projectToReturn);
   }
 
-  /// Emits an error to active [watchProjectChanges] subscribers.
-  void emitError(Object error, [StackTrace? stackTrace]) {
-    _changesController.addError(error, stackTrace);
+  /// Emits an error to subscribers watching [projectId].
+  void emitError(Object error, String projectId, [StackTrace? stackTrace]) {
+    _getOrCreateController(projectId).addError(error, stackTrace);
+  }
+
+  BehaviorSubject<ProjectDto?> _getOrCreateController(String projectId) {
+    return _projectControllers.putIfAbsent(
+      projectId,
+      () => BehaviorSubject<ProjectDto?>.seeded(projectToReturn),
+    );
   }
 
   /// Returns a copy of all recorded method calls.
@@ -135,7 +152,7 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
     return _methodCalls.where((call) => call['method'] == methodName).toList();
   }
 
-  /// Resets all flags, error messages, data, and recorded calls.
+  /// Resets all flags, error messages, data, recorded calls, and stream state.
   void reset() {
     shouldThrowOnGet = false;
     shouldThrowOnUpdate = false;
@@ -147,10 +164,17 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
     projectToReturn = null;
     _methodCalls.clear();
     exceptionToThrow = null;
+    for (final controller in _projectControllers.values) {
+      controller.close();
+    }
+    _projectControllers.clear();
   }
 
   /// Releases resources held by this fake.
   void dispose() {
-    _changesController.close();
+    for (final controller in _projectControllers.values) {
+      controller.close();
+    }
+    _projectControllers.clear();
   }
 }
