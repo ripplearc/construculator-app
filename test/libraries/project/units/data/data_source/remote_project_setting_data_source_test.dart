@@ -49,7 +49,7 @@ void main() {
       });
 
       test(
-        'rethrows when selectSingle throws due to shouldReturnNullOnSelect',
+        'throws NotFoundException when selectSingle returns null (shouldReturnNullOnSelect)',
         () async {
           supabaseWrapper.shouldReturnNullOnSelect = true;
 
@@ -159,6 +159,14 @@ void main() {
           throwsA(isA<supabase.PostgrestException>()),
         );
       });
+
+      test('throws ServerException when updating a non-existent row', () async {
+        final dto = _projectDto(id: 'non-existent', projectName: 'Name');
+        await expectLater(
+          dataSource.updateProject(dto),
+          throwsA(isA<ServerException>()),
+        );
+      });
     });
 
     group('deleteProject', () {
@@ -214,6 +222,7 @@ void main() {
             }
           },
         );
+        addTearDown(subscription.cancel);
 
         await pumpEventQueue();
 
@@ -224,7 +233,32 @@ void main() {
         await expectLater(emissionCompleter.future, completes);
         expect(emissions.first?.projectName, equals('Initial'));
         expect(emissions.last?.projectName, equals('Updated'));
-        await subscription.cancel();
+      });
+
+      test('emits null when the project row is deleted', () async {
+        supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+          _projectRow(id: 'project-1', projectName: 'Existing'),
+        ]);
+
+        final emissions = <ProjectDto?>[];
+        final deletionCompleter = Completer<void>();
+        final subscription = dataSource.watchProjectChanges('project-1').listen(
+          (projectDto) {
+            emissions.add(projectDto);
+            if (projectDto == null && !deletionCompleter.isCompleted) {
+              deletionCompleter.complete();
+            }
+          },
+        );
+        addTearDown(subscription.cancel);
+
+        await pumpEventQueue();
+
+        supabaseWrapper.addTableData(DatabaseConstants.projectsTable, []);
+
+        await expectLater(deletionCompleter.future, completes);
+        expect(emissions.first?.projectName, equals('Existing'));
+        expect(emissions.last, isNull);
       });
 
       test('forwards stream errors to subscribers', () async {
@@ -237,6 +271,7 @@ void main() {
                 if (!errorCompleter.isCompleted) errorCompleter.complete(error);
               },
             );
+        addTearDown(subscription.cancel);
 
         await pumpEventQueue();
 
@@ -247,7 +282,6 @@ void main() {
 
         final receivedError = await errorCompleter.future;
         expect(receivedError, isA<ServerException>());
-        await subscription.cancel();
       });
     });
   });
