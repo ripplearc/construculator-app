@@ -63,11 +63,30 @@ workflows:
             CHANGED_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "${PATTERNS[@]}")
           fi
 
+          # Identify changed source files (excluding generated code)
+          CHANGED_SOURCE_FILES=$(git diff --name-only --diff-filter=A $BASE_COMMIT HEAD -- 'lib/**/*.dart' \
+            | grep -v -E '(\.g\.dart$|\.freezed\.dart$|/generated/|/l10n/)' \
+            | while IFS= read -r f; do
+                head -1 "$f" 2>/dev/null | grep -q '// coverage:ignore-file' || echo "$f"
+              done || true)
 
           if [ -z "$CHANGED_TESTS" ]; then
-            echo "✅ No test files modified. Skipping tests..."
+            echo "✅ No test files modified. Skipping test execution..."
+
+            # Even with no changed tests, fail if new source files were added
+            # without any coverage (they won't be in any tracefile).
+            if [ -n "$CHANGED_SOURCE_FILES" ]; then
+              echo "❌ The following changed source files have zero coverage (no tests exist for them):"
+              while IFS= read -r file; do
+                [ -z "$file" ] && continue
+                echo "  - $file"
+              done <<< "$CHANGED_SOURCE_FILES"
+              echo "Every new or modified lib/**/*.dart file must be exercised by at least one test."
+              exit 1
+            fi
             exit 0
           fi
+
           echo "🔍 Running tests for changed files:"
           echo "$CHANGED_TESTS"
           TARGET=$ARC_CODE_COVERAGE_TARGET
@@ -80,8 +99,6 @@ workflows:
           fvm flutter test $CHANGED_TESTS --coverage --machine > test-results/flutter.json
           lcov --quiet --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info --ignore-errors unused
 
-          CHANGED_SOURCE_FILES=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- 'lib/**/*.dart' | grep -v -E '(\.g\.dart$|\.freezed\.dart$|/generated/|/l10n/)' || true)
-
           if [ -z "$CHANGED_SOURCE_FILES" ]; then
             echo "✅ No changed source files in lib/. Skipping coverage threshold check."
             exit 0
@@ -89,12 +106,24 @@ workflows:
 
           COVERED_SOURCES=$(grep '^SF:' coverage/lcov.info | cut -d: -f2-)
           EXTRACT_PATTERNS=()
+          MISSING_FILES=()
           while IFS= read -r file; do
             [ -z "$file" ] && continue
             if printf '%s\n' "$COVERED_SOURCES" | grep -Fxq "$file" || printf '%s\n' "$COVERED_SOURCES" | grep -Fxq "$FCI_BUILD_DIR/$file"; then
               EXTRACT_PATTERNS+=("*/$file")
+            else
+              MISSING_FILES+=("$file")
             fi
           done <<< "$CHANGED_SOURCE_FILES"
+
+          if [ ${#MISSING_FILES[@]} -gt 0 ]; then
+            echo "❌ The following changed source files have zero coverage and are absent from lcov.info:"
+            for missing in "${MISSING_FILES[@]}"; do
+              echo "  - $missing"
+            done
+            echo "Every new or modified lib/**/*.dart file must be exercised by at least one test."
+            exit 1
+          fi
 
           if [ ${#EXTRACT_PATTERNS[@]} -eq 0 ]; then
             echo "✅ No changed source files with coverage records. Skipping coverage threshold check."
