@@ -21,6 +21,7 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
   final Map<String, StreamController<Either<Failure, Project>>>
   _settingControllers = {};
   final Map<String, StreamSubscription<ProjectDto?>> _changesSubscriptions = {};
+  final Map<String, int> _refreshSequences = {};
 
   ProjectSettingRepositoryImpl({
     required ProjectSettingDataSource dataSource,
@@ -149,10 +150,17 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
     }
     _changesSubscriptions.remove(projectId)?.cancel();
     _settingControllers.remove(projectId);
+    _refreshSequences.remove(projectId);
   }
 
   Future<void> _refreshProjectSetting(String projectId) async {
+    final sequence = (_refreshSequences[projectId] ?? 0) + 1;
+    _refreshSequences[projectId] = sequence;
+
     final result = await getProjectSetting(projectId);
+
+    if (_refreshSequences[projectId] != sequence) return;
+
     final controller = _settingControllers[projectId];
     if (controller?.isClosed == false) {
       controller?.add(result);
@@ -188,5 +196,6 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       controller.close();
     }
     _settingControllers.clear();
+    _refreshSequences.clear();
   }
 }
