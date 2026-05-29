@@ -102,15 +102,17 @@ void main() {
         expect(result.projectName, equals('Fallback'));
       });
 
-      test('persists result so subsequent fetchProjectSetting returns it',
-          () async {
-        final dto = _fakeDto(id: 'p-1', projectName: 'Written');
+      test(
+        'persists result so subsequent fetchProjectSetting returns it',
+        () async {
+          final dto = _fakeDto(id: 'p-1', projectName: 'Written');
 
-        await fake.updateProject(dto);
-        final fetched = await fake.fetchProjectSetting('p-1');
+          await fake.updateProject(dto);
+          final fetched = await fake.fetchProjectSetting('p-1');
 
-        expect(fetched.projectName, equals('Written'));
-      });
+          expect(fetched.projectName, equals('Written'));
+        },
+      );
 
       test('throws ServerException when shouldThrowOnUpdate is true', () async {
         fake.shouldThrowOnUpdate = true;
@@ -185,14 +187,18 @@ void main() {
         fake.projectToReturn = _fakeDto(id: 'p-1', projectName: 'Initial');
         final emittedValues = <ProjectDto?>[];
 
-        final subscription =
-            fake.watchProjectChanges('p-1').listen(emittedValues.add);
-        await Future.microtask(() {});
+        final subscription = fake
+            .watchProjectChanges('p-1')
+            .listen(emittedValues.add);
+        await expectLater(
+          fake.watchProjectChanges('p-1'),
+          emits(_fakeDto(id: 'p-1', projectName: 'Initial')),
+        );
 
         final updated = _fakeDto(id: 'p-1', projectName: 'Updated');
         fake.projectToReturn = updated;
         fake.emitChange('p-1');
-        await Future.microtask(() {});
+        await expectLater(fake.watchProjectChanges('p-1'), emits(updated));
 
         expect(emittedValues, contains(updated));
         await subscription.cancel();
@@ -205,11 +211,14 @@ void main() {
 
         final s1 = fake.watchProjectChanges('p-1').listen(p1Values.add);
         final s2 = fake.watchProjectChanges('p-2').listen(p2Values.add);
-        await Future.microtask(() {});
+        await expectLater(
+          fake.watchProjectChanges('p-1'),
+          emits(_fakeDto(id: 'p-1')),
+        );
 
         final countBefore = p2Values.length;
         fake.emitChange('p-1');
-        await Future.microtask(() {});
+        await expectLater(fake.watchProjectChanges('p-1'), emits(anything));
 
         expect(p1Values.length, greaterThan(countBefore));
         expect(p2Values.length, equals(countBefore));
