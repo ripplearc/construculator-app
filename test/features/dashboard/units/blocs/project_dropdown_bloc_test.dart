@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -252,9 +253,9 @@ void main() {
           expect: () => [
             const ProjectDropdownLoadInProgress(),
             isA<ProjectDropdownLoadFailure>().having(
-              (state) => state.message,
-              'message',
-              isNotEmpty,
+              (state) => state.failure,
+              'failure',
+              isA<ProjectFailure>(),
             ),
           ],
         );
