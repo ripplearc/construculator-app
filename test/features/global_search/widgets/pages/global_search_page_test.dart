@@ -194,6 +194,44 @@ void main() {
 
       expect(router.popCalls, greaterThan(0));
     });
+
+    testWidgets('submitting an empty search shows the empty-query toast', (
+      tester,
+    ) async {
+      await renderPage(tester);
+
+      final searchField = find.ancestor(
+        of: find.text(l10n().globalSearchHint),
+        matching: find.byType(TextFormField),
+      );
+      await tester.showKeyboard(searchField);
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pump();
+
+      expect(find.text(l10n().globalSearchEmptyQueryMessage), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 10));
+    });
+
+    testWidgets(
+      'submitting a whitespace-only search shows the empty-query toast',
+      (tester) async {
+        await renderPage(tester);
+
+        final searchField = find.ancestor(
+          of: find.text(l10n().globalSearchHint),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(searchField, '   ');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.testTextInput.receiveAction(TextInputAction.search);
+        await tester.pump();
+
+        expect(find.text(l10n().globalSearchEmptyQueryMessage), findsOneWidget);
+
+        await tester.pump(const Duration(seconds: 10));
+      },
+    );
   });
 
   group('User on GlobalSearchPage with recent searches', () {

@@ -280,6 +280,37 @@ void main() {
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchEmptyQuery and skips search when query is empty',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchPerformed(query: '')),
+        expect: () => [const GlobalSearchEmptyQuery()],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchEmptyQuery and skips search when query is whitespace only',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchPerformed(query: '   ')),
+        expect: () => [const GlobalSearchEmptyQuery()],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'trims surrounding whitespace before searching and reports trimmed query',
+        setUp: () {
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {'projects': [], 'estimations': [], 'members': []},
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) =>
+            bloc.add(const GlobalSearchPerformed(query: '  foundation  ')),
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'foundation'),
+          const GlobalSearchLoadEmpty(query: 'foundation'),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
         'emits [GlobalSearchLoadInProgress, GlobalSearchLoadFailure] when Supabase throws on search',
         setUp: () {
           fakeSupabase.shouldThrowOnRpc = true;

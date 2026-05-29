@@ -175,7 +175,13 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
                         l10n.globalSearchSuggestionsErrorMessage,
                         l10n.closeLabel,
                       );
-                    }
+                    } else if (state is GlobalSearchEmptyQuery) {
+                    CoreToast.showWarning(
+                      context,
+                      l10n.globalSearchEmptyQueryMessage,
+                      l10n.closeLabel,
+                    );
+                  }
                   },
                   builder: (context, state) => _buildBody(context, state),
                 ),

@@ -797,4 +797,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get projectSelectorSemanticLabel => 'Select project';
+
+  @override
+  String get globalSearchEmptyQueryMessage => 'Please enter a search term.';
 }

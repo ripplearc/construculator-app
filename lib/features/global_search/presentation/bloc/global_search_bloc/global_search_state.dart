@@ -111,6 +111,13 @@ class GlobalSearchSuggestionsLoadFailure extends GlobalSearchState {
   List<Object?> get props => [failure];
 }
 
+/// Emitted when [GlobalSearchPerformed] is dispatched with an empty or
+/// whitespace-only query so the UI can surface a validation message.
+class GlobalSearchEmptyQuery extends GlobalSearchState {
+  /// Creates a [GlobalSearchEmptyQuery] state.
+  const GlobalSearchEmptyQuery();
+}
+
 /// Emitted when removing a recent search term from history fails.
 class GlobalSearchRecentDeleteFailure extends GlobalSearchState {
   /// The failure describing why the recent search deletion failed.
