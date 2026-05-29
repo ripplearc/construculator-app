@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- PROJECT SETTING REPOSITORY IMPLEMENTATION MUTATION TESTING -->
+    <!-- Targets: error-mapping logic (exception types → domain failures)  -->
+    <!--          and permission guard logic in updateProject / deleteProject -->
+
+    <files>
+        <file>lib/libraries/project/data/repositories/project_setting_repository_impl.dart</file>
+    </files>
+
+    <exclude>
+        <!-- Exclude logging statements from custom rules -->
+        <regex pattern="_logger\.(debug|info|warning|error|omg)\s*\(" dotAll="false"/>
+
+        <!-- Exclude the block-start + logger pattern that builtin.function.removeVoidCall1
+             matches (opening brace followed by a _logger call). Removing a logger call
+             is an equivalent mutant for return-value tests; testing log emission requires
+             a mock logger and is out of scope for this mapping-logic suite. -->
+        <regex pattern="\{[^}]*_logger\.(debug|info|warning|error|omg)" dotAll="true"/>
+
+        <!-- Exclude the block-end + logger pattern for builtin.function.removeVoidCall2
+             (closing brace or semicolon preceding a standalone _logger call). -->
+        <regex pattern="[};]\s*_logger\.(debug|info|warning|error|omg)" dotAll="true"/>
+
+        <!-- Exclude try-catch boilerplate -->
+        <regex pattern="try\s*\{" dotAll="false"/>
+        <regex pattern="catch\s*\(" dotAll="false"/>
+
+        <!-- Exclude override annotations -->
+        <regex pattern="@override" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- ── Exception-type dispatch ──────────────────────────────────────── -->
+
+        <!-- RULE 1: Swap NotFoundException check → NotFoundException falls to catch-all UnexpectedFailure.
+             Killed by: returns Left(notFoundError) on NotFoundException -->
+        <literal text="error is NotFoundException" id="repo.map.not_found_check">
+            <mutation text="error is ServerException"/>
+        </literal>
+
+        <!-- RULE 2: Swap ServerException check → ServerException falls to catch-all.
+             Killed by: returns Left(unexpectedDatabaseError) on ServerException -->
+        <literal text="error is ServerException" id="repo.map.server_exception_check">
+            <mutation text="error is TimeoutException"/>
+        </literal>
+
+        <!-- RULE 3: Swap TimeoutException check → TimeoutException falls to catch-all.
+             Killed by: returns Left(timeoutError) on TimeoutException -->
+        <literal text="error is TimeoutException" id="repo.map.timeout_check">
+            <mutation text="error is SocketException"/>
+        </literal>
+
+        <!-- RULE 4: Swap TypeError check → TypeError falls to catch-all.
+             Killed by: returns Left(parsingError) on TypeError -->
+        <literal text="error is TypeError" id="repo.map.type_error_check">
+            <mutation text="error is SocketException"/>
+        </literal>
+
+        <!-- ── PostgrestException code mapping ──────────────────────────────── -->
+
+        <!-- RULE 5: Neutralise noDataFound check → PGRST116 falls to unexpectedDatabaseError.
+             Killed by: maps PostgrestException PGRST116 to notFoundError -->
+        <literal text="PostgresErrorCode.noDataFound" id="repo.map.postgrest_no_data_found">
+            <mutation text="PostgresErrorCode.unknownError"/>
+        </literal>
+
+        <!-- RULE 6: Neutralise connectionFailure arm of the OR chain.
+             Killed by: maps PostgrestException connection codes to connectionError -->
+        <literal text="PostgresErrorCode.connectionFailure" id="repo.map.postgrest_connection_failure">
+            <mutation text="PostgresErrorCode.unknownError"/>
+        </literal>
+
+        <!-- RULE 7: Neutralise unableToConnect arm of the OR chain.
+             Killed by: maps PostgrestException unableToConnect to connectionError -->
+        <literal text="PostgresErrorCode.unableToConnect" id="repo.map.postgrest_unable_to_connect">
+            <mutation text="PostgresErrorCode.unknownError"/>
+        </literal>
+
+        <!-- RULE 8: Neutralise connectionDoesNotExist arm of the OR chain.
+             Killed by: maps PostgrestException connectionDoesNotExist to connectionError -->
+        <literal text="PostgresErrorCode.connectionDoesNotExist" id="repo.map.postgrest_conn_does_not_exist">
+            <mutation text="PostgresErrorCode.unknownError"/>
+        </literal>
+
+        <!-- RULE 9: Swap the Postgrest fallthrough return to a wrong failure type.
+             Killed by: maps PostgrestException unknown code to unexpectedDatabaseError -->
+        <regex pattern="(return const ProjectFailure\(\s*errorType: ProjectErrorType\.unexpectedDatabaseError,\s*\);\s*\})" dotAll="true" id="repo.map.postgrest_fallthrough_return">
+            <mutation text="return const ProjectFailure(errorType: ProjectErrorType.notFoundError,); }"/>
+        </regex>
+
+        <!-- ── Permission guards ────────────────────────────────────────────── -->
+
+        <!-- RULE 10: Swap editProject permission key → update always reports permissionDenied.
+             Killed by: returns Right(project) when permission present and update succeeds -->
+        <literal text="PermissionConstants.editProject" id="repo.permission.edit_project">
+            <mutation text="PermissionConstants.deleteProject"/>
+        </literal>
+
+        <!-- RULE 11: Swap deleteProject permission key → delete always reports permissionDenied.
+             Killed by: returns Right(null) when permission present and delete succeeds -->
+        <literal text="PermissionConstants.deleteProject" id="repo.permission.delete_project">
+            <mutation text="PermissionConstants.editProject"/>
+        </literal>
+    </rules>
+
+    <commands>
+        <command group="project_setting_repository" expected-return="0">flutter test test/libraries/project/units/data/repositories/project_setting_repository_impl_test.dart</command>
+    </commands>
+
+   <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
