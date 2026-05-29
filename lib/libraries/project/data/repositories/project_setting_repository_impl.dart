@@ -35,14 +35,15 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       final dto = await _dataSource.fetchProjectSetting(projectId);
       return Right(dto.toDomain());
     } catch (error, stackTrace) {
-      // Log raw error and stack trace before domain mapping so diagnostics
-      // keep the original exception details instead of only the mapped Failure.
-      _logger.warning(
-        'Error while getting project setting for projectId: $projectId',
-        error,
-        stackTrace,
-      );
-      return Left(ProjectErrorMapper.toFailure(error));
+      final failure = ProjectErrorMapper.toFailure(error);
+      if (failure.errorType == ProjectErrorType.unexpectedError) {
+        _logger.error(
+          'Unexpected error while getting project setting for projectId: $projectId',
+          error,
+          stackTrace,
+        );
+      }
+      return Left(failure);
     }
   }
 
@@ -63,14 +64,15 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       final result = await _dataSource.updateProject(dto);
       return Right(result.toDomain());
     } catch (error, stackTrace) {
-      // Log raw error and stack trace before domain mapping so diagnostics
-      // keep the original exception details instead of only the mapped Failure.
-      _logger.warning(
-        'Error while updating project with id: ${project.id}',
-        error,
-        stackTrace,
-      );
-      return Left(ProjectErrorMapper.toFailure(error));
+      final failure = ProjectErrorMapper.toFailure(error);
+      if (failure.errorType == ProjectErrorType.unexpectedError) {
+        _logger.error(
+          'Unexpected error while updating project with id: ${project.id}',
+          error,
+          stackTrace,
+        );
+      }
+      return Left(failure);
     }
   }
 
@@ -90,14 +92,15 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       await _dataSource.deleteProject(projectId);
       return const Right(null);
     } catch (error, stackTrace) {
-      // Log raw error and stack trace before domain mapping so diagnostics
-      // keep the original exception details instead of only the mapped Failure.
-      _logger.warning(
-        'Error while deleting project with id: $projectId',
-        error,
-        stackTrace,
-      );
-      return Left(ProjectErrorMapper.toFailure(error));
+      final failure = ProjectErrorMapper.toFailure(error);
+      if (failure.errorType == ProjectErrorType.unexpectedError) {
+        _logger.error(
+          'Unexpected error while deleting project with id: $projectId',
+          error,
+          stackTrace,
+        );
+      }
+      return Left(failure);
     }
   }
 
@@ -128,11 +131,6 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
         .listen(
           (_) => _refreshProjectSetting(projectId),
           onError: (Object error, StackTrace stackTrace) {
-            _logger.warning(
-              'Error while watching project setting changes for projectId: $projectId',
-              error,
-              stackTrace,
-            );
             final controller = _settingControllers[projectId];
             if (controller?.isClosed == false) {
               controller?.addError(error, stackTrace);
