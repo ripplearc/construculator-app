@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Code Review — PR #319: CA-250 repo error mapper refactor</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --red: #f85149;
+      --orange: #e3b341;
+      --purple: #a371f7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      padding: 2rem 1rem;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    header h1 { font-size: 1.6rem; color: var(--accent); }
+    header .meta { color: var(--muted); font-size: 0.9rem; margin-top: 0.4rem; }
+    header .meta a { color: var(--accent); text-decoration: none; }
+    .verdict {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1.1rem;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 2rem;
+    }
+    .verdict.changes { background: rgba(227,179,65,0.15); color: var(--orange); border: 1px solid var(--orange); }
+    .verdict.approve { background: rgba(63,185,80,0.12); color: var(--green); border: 1px solid var(--green); }
+    h2 {
+      font-size: 1.15rem;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.4rem;
+      margin: 2rem 0 1rem;
+    }
+    h3 { font-size: 1rem; color: var(--text); margin: 1.2rem 0 0.5rem; }
+    p { margin: 0.5rem 0; }
+    ul, ol { padding-left: 1.5rem; margin: 0.5rem 0; }
+    li { margin: 0.4rem 0; }
+    code {
+      background: rgba(110,118,129,0.15);
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.88em;
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.85em;
+      margin: 0.8rem 0;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.15em 0.55em;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      vertical-align: middle;
+    }
+    .badge-high   { background: rgba(248,81,73,0.15); color: var(--red);    border: 1px solid var(--red); }
+    .badge-medium { background: rgba(227,179,65,0.15); color: var(--orange); border: 1px solid var(--orange); }
+    .badge-low    { background: rgba(88,166,255,0.12); color: var(--accent); border: 1px solid var(--accent); }
+    .badge-good   { background: rgba(63,185,80,0.12); color: var(--green);  border: 1px solid var(--green); }
+    .issue-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin: 1rem 0;
+    }
+    .issue-card .issue-title {
+      font-weight: 600;
+      font-size: 0.98rem;
+      margin-bottom: 0.5rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.55rem 0.8rem;
+      border: 1px solid var(--border);
+    }
+    th { background: var(--surface); color: var(--muted); font-weight: 600; }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    .stat-row {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      margin: 1rem 0 1.5rem;
+    }
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.6rem 1rem;
+      text-align: center;
+      min-width: 100px;
+    }
+    .stat .val { font-size: 1.4rem; font-weight: 700; }
+    .stat .lbl { font-size: 0.75rem; color: var(--muted); margin-top: 0.1rem; }
+    .stat .val.green  { color: var(--green); }
+    .stat .val.red    { color: var(--red); }
+    .stat .val.yellow { color: var(--yellow); }
+    footer { border-top: 1px solid var(--border); margin-top: 3rem; padding-top: 1rem; color: var(--muted); font-size: 0.82rem; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>Code Review — PR #319</h1>
+    <div class="meta">
+      <strong>CA-250: refactor: map repository errors via ProjectErrorMapper</strong><br/>
+      Author: <a href="https://github.com/ayanasamuel8">ayanasamuel8</a> &nbsp;·&nbsp;
+      Branch: <code>CA-250/repo-error-mapper-refactor</code> → <code>CA-250/repo-fake-and-module</code><br/>
+      Reviewed: 2026-05-29 &nbsp;·&nbsp;
+      <a href="https://github.com/ripplearc/construculator-app/pull/319">View PR on GitHub ↗</a>
+    </div>
+  </header>
+
+  <div class="verdict changes">⚠ REQUEST CHANGES — 2 actionable issues before merge</div>
+
+  <!-- Stats -->
+  <div class="stat-row">
+    <div class="stat"><div class="val green">+60</div><div class="lbl">Additions</div></div>
+    <div class="stat"><div class="val red">−90</div><div class="lbl">Deletions</div></div>
+    <div class="stat"><div class="val yellow">3</div><div class="lbl">Files changed</div></div>
+    <div class="stat"><div class="val yellow">2</div><div class="lbl">Must-fix issues</div></div>
+    <div class="stat"><div class="val">2</div><div class="lbl">Suggestions</div></div>
+  </div>
+
+  <!-- Overview -->
+  <h2>Overview</h2>
+  <p>
+    This PR centralises the error-to-failure mapping that was previously handled inline by a private
+    <code>_handleError</code> method inside <code>ProjectSettingRepositoryImpl</code>. The 59-line
+    method is replaced by calls to <code>ProjectErrorMapper.toFailure(error)</code>, which already
+    covers the full range of exception types (timeout, socket, network, not-found, server, Postgres
+    codes, permission denied). The repository's catch blocks now conditionally call
+    <code>_logger.error()</code> only for <code>unexpectedError</code> cases, aligning with Sentry
+    quota guidance. Tests in both <code>project_error_mapper_test.dart</code> and
+    <code>project_setting_repository_impl_test.dart</code> are updated accordingly.
+  </p>
+  <p>The refactor goal is sound and the mapper itself is well-implemented. Two issues need addressing before merge.</p>
+
+  <!-- Issues -->
+  <h2>Issues Found</h2>
+
+  <!-- Issue 1 -->
+  <div class="issue-card">
+    <div class="issue-title">
+      <span class="badge badge-high">HIGH</span> &nbsp;
+      #1 — Stream <code>onError</code> path: all logging silently dropped
+    </div>
+    <p>
+      In the realtime subscription <code>.listen(onError:)</code> block, the PR removes the
+      existing <code>_logger.warning(...)</code> call without adding any replacement — neither
+      conditional logging nor a <code>ProjectErrorMapper</code> call. Unlike the three CRUD
+      catch-blocks (which preserved logging for unexpected errors), this path is now completely
+      silent. Realtime subscription failures will be swallowed server-side with no Sentry event
+      and no log entry.
+    </p>
+    <p><strong>File:</strong> <code>lib/libraries/project/data/repositories/project_setting_repository_impl.dart</code>, stream <code>onError</code> callback (~line 131).</p>
+    <p><strong>Fix:</strong> Apply the same pattern used in the CRUD catch-blocks:</p>
+    <pre>onError: (Object error, StackTrace stackTrace) {
+  final failure = ProjectErrorMapper.toFailure(error);
+  if (failure.errorType == ProjectErrorType.unexpectedError) {
+    _logger.error(
+      'Unexpected error watching project setting changes for projectId: $projectId',
+      error,
+      stackTrace,
+    );
+  }
+  final controller = _settingControllers[projectId];
+  if (controller?.isClosed == false) {
+    controller?.addError(error, stackTrace);
+  }
+}</pre>
+  </div>
+
+  <!-- Issue 2 -->
+  <div class="issue-card">
+    <div class="issue-title">
+      <span class="badge badge-medium">MEDIUM</span> &nbsp;
+      #2 — Expected errors (notFound, timeout, connection, parsing) are now completely silent
+    </div>
+    <p>
+      The old <code>_handleError</code> emitted a <code>_logger.warning()</code> for every handled
+      exception type. The new code only logs when <code>errorType == unexpectedError</code>.
+      All "expected" failures — not-found, timeout, connection, parsing, database — leave no
+      server-side trace. Investigating spikes of these errors in production will be difficult
+      without log data.
+    </p>
+    <p><strong>Fix:</strong> Add a <code>warning</code>-level log for non-unexpected failures to preserve operational visibility:</p>
+    <pre>final failure = ProjectErrorMapper.toFailure(error);
+if (failure.errorType == ProjectErrorType.unexpectedError) {
+  _logger.error('Unexpected error while getting project setting for projectId: $projectId', error, stackTrace);
+} else {
+  _logger.warning('Error (${failure.errorType.name}) getting project setting for projectId: $projectId', error, stackTrace);
+}
+return Left(failure);</pre>
+  </div>
+
+  <!-- Suggestions -->
+  <h2>Suggestions (non-blocking)</h2>
+
+  <div class="issue-card">
+    <div class="issue-title">
+      <span class="badge badge-low">SUGGESTION</span> &nbsp;
+      #3 — Pass <code>StackTrace</code> into <code>ProjectErrorMapper</code>
+    </div>
+    <p>
+      <code>toFailure(Object error)</code> currently discards the stack trace entirely.
+      All catch-blocks have <code>catch (error, stackTrace)</code> but pass only <code>error</code>.
+      Consider accepting an optional <code>StackTrace?</code> parameter to allow the mapper to
+      attach it to a <code>Failure</code> object or log it internally in the future without
+      requiring call-site changes.
+    </p>
+    <pre>static ProjectFailure toFailure(Object error, [StackTrace? stackTrace]) { ... }</pre>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-title">
+      <span class="badge badge-low">SUGGESTION</span> &nbsp;
+      #4 — Add stream error path test coverage
+    </div>
+    <p>
+      The repository test suite covers <code>fetchProjectSetting</code>, <code>updateProject</code>,
+      and <code>deleteProject</code> error paths but has no test for the realtime
+      <code>watchProjectSetting</code> stream emitting an error. A test verifying that the stream
+      controller receives the error (and logging behaves correctly) would close this gap.
+    </p>
+  </div>
+
+  <!-- What's Done Well -->
+  <h2>What's Done Well</h2>
+  <ul>
+    <li><span class="badge badge-good">GOOD</span> Centralising error mapping eliminates duplicated switch logic across repositories — the right architectural move.</li>
+    <li><span class="badge badge-good">GOOD</span> <code>ProjectErrorMapper</code> correctly lives in the <code>data</code> layer, keeping infra imports (<code>dart:io</code>, <code>supabase_flutter</code>) out of the repository file.</li>
+    <li><span class="badge badge-good">GOOD</span> Conditional <code>_logger.error()</code> only for <code>unexpectedError</code> in CRUD paths aligns with Sentry quota guidance.</li>
+    <li><span class="badge badge-good">GOOD</span> New mapper tests (<code>PostgrestException</code> connection codes + unique violation) fill real coverage gaps and use concrete error code values.</li>
+    <li><span class="badge badge-good">GOOD</span> Normalising the fallback from <code>UnexpectedFailure()</code> to <code>ProjectFailure(errorType: unexpectedError)</code> unifies the type hierarchy — cleaner and less error-prone for callers.</li>
+    <li><span class="badge badge-good">GOOD</span> Removing <code>dart:io</code>, <code>supabase</code>, and <code>exceptions.dart</code> imports from the repository file reduces coupling.</li>
+    <li><span class="badge badge-good">GOOD</span> All Postgres error codes covered by <code>ProjectErrorMapper</code> match the original <code>_handleError</code> logic exactly — no regressions in mapping behavior.</li>
+  </ul>
+
+  <!-- Summary Table -->
+  <h2>Issue Summary</h2>
+  <table>
+    <thead>
+      <tr><th>Issue</th><th>Severity</th><th>File</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Stream <code>onError</code> loses all logging</td>
+        <td><span class="badge badge-high">HIGH</span></td>
+        <td><code>project_setting_repository_impl.dart</code></td>
+        <td>Must fix before merge</td>
+      </tr>
+      <tr>
+        <td>Expected errors (notFound, timeout…) are now silent</td>
+        <td><span class="badge badge-medium">MEDIUM</span></td>
+        <td><code>project_setting_repository_impl.dart</code></td>
+        <td>Must fix before merge</td>
+      </tr>
+      <tr>
+        <td>StackTrace not passed to <code>ProjectErrorMapper</code></td>
+        <td><span class="badge badge-low">LOW</span></td>
+        <td><code>project_error_mapper.dart</code></td>
+        <td>Suggestion</td>
+      </tr>
+      <tr>
+        <td>No test coverage for stream error path</td>
+        <td><span class="badge badge-low">LOW</span></td>
+        <td><code>project_setting_repository_impl_test.dart</code></td>
+        <td>Suggestion</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <footer>
+    Generated by Claude Code · PR #319 · ripplearc/construculator-app · 2026-05-29
+  </footer>
+</div>
+</body>
+</html>
