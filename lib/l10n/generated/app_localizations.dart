@@ -1443,6 +1443,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not load suggestions.'**
   String get globalSearchSuggestionsErrorMessage;
+
+  /// Warning toast shown when the user submits an empty or whitespace-only search query
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a search term.'**
+  String get globalSearchEmptyQueryMessage;
 }
 
 class _AppLocalizationsDelegate

@@ -91,11 +91,16 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     GlobalSearchPerformed event,
     Emitter<GlobalSearchState> emit,
   ) async {
-    _currentQuery = event.query;
-    emit(GlobalSearchLoadInProgress(query: event.query));
+    final trimmedQuery = event.query.trim();
+    if (trimmedQuery.isEmpty) {
+      emit(const GlobalSearchEmptyQuery());
+      return;
+    }
+    _currentQuery = trimmedQuery;
+    emit(GlobalSearchLoadInProgress(query: trimmedQuery));
 
     final result = await _repository.search(
-      SearchParams(query: event.query, scope: event.scope),
+      SearchParams(query: trimmedQuery, scope: event.scope),
     );
 
     result.fold((failure) => emit(GlobalSearchLoadFailure(failure: failure)), (
@@ -109,11 +114,11 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       if (hasResults) {
         emit(GlobalSearchLoadSuccess(results: searchResults));
       } else {
-        emit(GlobalSearchLoadEmpty(query: event.query));
+        emit(GlobalSearchLoadEmpty(query: trimmedQuery));
       }
 
-      if (!_recentSearches.contains(event.query)) {
-        _recentSearches = [event.query, ..._recentSearches];
+      if (!_recentSearches.contains(trimmedQuery)) {
+        _recentSearches = [trimmedQuery, ..._recentSearches];
       }
 
       // Non-blocking: persistence runs after results are shown.
@@ -121,7 +126,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       // closed when _onPerformed returns.
       unawaited(
         _repository
-            .saveRecentSearch(event.query, event.scope, hasResults: hasResults)
+            .saveRecentSearch(trimmedQuery, event.scope, hasResults: hasResults)
             .then(
               (saveResult) => saveResult.fold(
                 (_) => _logger.warning(

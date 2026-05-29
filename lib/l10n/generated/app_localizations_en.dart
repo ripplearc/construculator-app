@@ -757,4 +757,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get globalSearchSuggestionsErrorMessage =>
       'Could not load suggestions.';
+
+  @override
+  String get globalSearchEmptyQueryMessage => 'Please enter a search term.';
 }

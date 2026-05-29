@@ -1196,5 +1196,10 @@
   "@globalSearchSuggestionsErrorMessage": {
     "description": "Warning toast shown when loading search suggestions fails",
     "context": "N/A"
+  },
+  "globalSearchEmptyQueryMessage": "Please enter a search term.",
+  "@globalSearchEmptyQueryMessage": {
+    "description": "Warning toast shown when the user submits an empty or whitespace-only search query",
+    "context": "N/A"
   }
 }
