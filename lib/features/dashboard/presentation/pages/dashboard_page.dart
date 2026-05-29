@@ -1,4 +1,5 @@
 import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
+import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
@@ -59,11 +60,24 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     final typography = context.textTheme;
     final colors = context.colorTheme;
+    final l10n = context.l10n;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Construculator'),
+        title: Text(l10n.dashboardTitle),
         centerTitle: true,
         backgroundColor: colors.pageBackground,
+        actions: [
+          CoreIconWidget(
+            icon: CoreIcons.search,
+            semanticLabel: l10n.dashboardSearchSemanticLabel,
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const GlobalSearchPage(),
+              ),
+            ),
+          ),
+          const SizedBox(width: CoreSpacing.space4),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(CoreSpacing.space6),

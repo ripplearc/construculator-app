@@ -710,4 +710,51 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get permissionDenied =>
       'You don\'t have permission to perform this action';
+
+  @override
+  String get globalSearchHint => 'Search for Calculation and cost';
+
+  @override
+  String get globalSearchRecentSearchesTitle => 'Recent searches';
+
+  @override
+  String get globalSearchFilterTags => 'Tags';
+
+  @override
+  String get globalSearchFilterModified => 'Modified';
+
+  @override
+  String get globalSearchFilterType => 'Type';
+
+  @override
+  String get globalSearchEmptyRecentMessage => 'No recent searches available';
+
+  @override
+  String get dashboardTitle => 'Construculator';
+
+  @override
+  String get dashboardSearchSemanticLabel => 'Search';
+
+  @override
+  String get globalSearchBackSemanticLabel => 'Back';
+
+  @override
+  String get globalSearchClearSearchSemanticLabel => 'Clear search';
+
+  @override
+  String globalSearchRecentSearchFillSemanticLabel(String term) {
+    return 'Fill search field with $term';
+  }
+
+  @override
+  String get globalSearchLoadErrorMessage =>
+      'Failed to load recent searches. Please try again.';
+
+  @override
+  String get globalSearchDeleteErrorMessage =>
+      'Failed to remove recent search. Please try again.';
+
+  @override
+  String get globalSearchSuggestionsErrorMessage =>
+      'Could not load suggestions.';
 }

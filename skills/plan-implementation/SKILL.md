@@ -25,12 +25,33 @@ Agent's blueprint phase before coding. Outputs: file paths, class names, depende
 1. **Review `read-ticket` context** (from conversation history)
    - If missing: ask user to run `/read-ticket` or describe what they're building
 
-2. **Apply RULE_2** (naming conventions) → Load `skills/rules/02-naming-conventions.md`
+2. **Gather layer-specific inputs** — ask the user only for what the touched layers actually need; skip anything already clear from the ticket
+
+   **Domain layer (entities, use cases, repository interfaces):**
+   - Entity fields: ask for each field's name, type, and nullability (e.g. `id: String`, `title: String`, `completedAt: DateTime?`)
+   - Any enums or value objects that belong on the entity?
+
+   **Data layer (DataSource, RepositoryImpl, DTO):**
+   - Supabase table name(s) for each entity being fetched/mutated
+   - Column names + types if they differ from entity fields; otherwise confirm they match
+   - Any joins or related table names required for the query?
+
+   **Presentation layer (BLoC, Page):**
+   - Entry point: which screen navigates here, and what arguments does it pass?
+   - Any form inputs or user-submitted data on this screen?
+   - Any non-obvious loading / error / empty state behavior not described in the ticket?
+
+   **Rules:**
+   - Ask all relevant questions in one message grouped by layer — never drip-feed one question at a time
+   - Do not ask for info that is unambiguous from the ticket context
+   - If multiple layers are touched, ask for all their inputs together before proceeding
+
+3. **Apply RULE_2** (naming conventions) → Load `skills/rules/02-naming-conventions.md`
    - Use suffix table + decision tree to name all classes
    - Apply abstraction naming: abstract at UI/domain, explicit at data layer
    - Output: precise class names with responsibilities
 
-3. **Determine file structure** (Flutter conventions)
+4. **Determine file structure** (Flutter conventions)
    ```
    lib/features/{feature}/
      presentation/pages/    → {feature}_page.dart
@@ -41,7 +62,7 @@ Agent's blueprint phase before coding. Outputs: file paths, class names, depende
      data/data_source/      → remote|local_{noun}_data_source.dart
    ```
 
-4. **Check CoreUI availability** (if presentation layer touched) → See RULE_4
+5. **Check CoreUI availability** (if presentation layer touched) → See RULE_4
    - Identify required components from ticket (buttons, inputs, icons, cards, etc.)
    - Check `skills/references/coreui-api.md` (⚠️ may be outdated - use as quick reference only)
    - **Source of truth:** https://github.com/ripplearc/coreui#readme (always check live README)
@@ -51,13 +72,13 @@ Agent's blueprint phase before coding. Outputs: file paths, class names, depende
      3. Build custom component following CoreUI design patterns
    - ❌ Never suggest "use Material temporarily" (violates RULE_4 Critical severity)
 
-5. **Verify dependencies** (no layer violations)
+6. **Verify dependencies** (no layer violations)
    - BLoC depends on UseCase (not Repository/DataSource)
    - UseCase depends on Repository interface (not RepositoryImpl/DataSource)
    - RepositoryImpl depends on DataSource
    - Flag violations if found
 
-6. **Apply RULE_1** (digestible PRs) → Load `skills/rules/01-digestible-pr.md`
+7. **Apply RULE_1** (digestible PRs) → Load `skills/rules/01-digestible-pr.md`
    - **Estimate production LOC** using this heuristic (before code is written):
 
      | Class Type | Typical LOC |
@@ -83,7 +104,7 @@ Agent's blueprint phase before coding. Outputs: file paths, class names, depende
      - By scope: Core feature → Error handling → Polish
    - Output: PR plan with each PR's focus + estimated LOC
 
-7. **Compile plan**
+8. **Compile plan**
    - Classes + file paths
    - CoreUI check results + blockers
    - Dependencies + violations
