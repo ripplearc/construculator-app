@@ -1,28 +1,15 @@
-import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
-import 'package:construculator/app/shell/default_tab_providers.dart';
-import 'package:construculator/app/shell/module_model.dart';
-import 'package:construculator/app/shell/tab_module_manager.dart';
+import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
-import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
-import 'package:construculator/libraries/auth/testing/fake_auth_manager.dart';
-import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
-import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
-import 'package:construculator/libraries/config/testing/fake_app_config.dart';
-import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/auth/data/models/auth_user.dart';
+import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
-import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
-import 'package:construculator/libraries/router/interfaces/app_router.dart';
-import 'package:construculator/libraries/router/testing/fake_router.dart';
-import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -30,63 +17,11 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-class _FakeProjectUiProvider extends ProjectUIProvider {
-  @override
-  PreferredSizeWidget buildProjectHeaderAppbar({
-    required String projectId,
-    VoidCallback? onProjectTap,
-    VoidCallback? onSearchTap,
-    VoidCallback? onNotificationTap,
-    ImageProvider<Object>? avatarImage,
-  }) {
-    return AppBar(title: Text(projectId));
-  }
-}
-
-class _TestEstimationTabModuleProvider implements TabModuleProvider {
-  const _TestEstimationTabModuleProvider();
-
-  @override
-  Future<void> load(AppBootstrap appBootstrap) async {
-    Modular.bindModule(EstimationModule(appBootstrap));
-  }
-}
-
-class _AppShellTestModule extends Module {
-  final FakeAuthManager authManager;
-  final FakeAuthNotifier authNotifier;
-  final FakeCurrentProjectNotifier currentProjectNotifier;
-  final AppBootstrap appBootstrap;
-
-  _AppShellTestModule({
-    required this.authManager,
-    required this.authNotifier,
-    required this.currentProjectNotifier,
-    required this.appBootstrap,
-  });
-
-  @override
-  void binds(Injector i) {
-    i.addLazySingleton<AuthManager>(() => authManager);
-    i.addLazySingleton<AuthNotifier>(() => authNotifier);
-    i.addLazySingleton<AppRouter>(FakeAppRouter.new);
-    i.addLazySingleton<CurrentProjectNotifier>(() => currentProjectNotifier);
-    i.addLazySingleton<ProjectUIProvider>(() => _FakeProjectUiProvider());
-    i.addLazySingleton<TabModuleManager>(
-      () => TabModuleManager(
-        appBootstrap,
-        providers: {
-          for (final tab in ShellTab.values) tab: const NoOpTabModuleProvider(),
-          ShellTab.estimation: const _TestEstimationTabModuleProvider(),
-        },
-      ),
-    );
-    i.add<AppShellBloc>(() => AppShellBloc(moduleLoader: i.get()));
-  }
-}
+import '../../utils/fake_app_bootstrap_factory.dart';
 
 void main() {
   late FakeCurrentProjectNotifier fakeProjectNotifier;
+  late FakeSupabaseWrapper fakeSupabaseWrapper;
 
   setUpAll(() {
     CoreToast.disableTimers();
@@ -97,35 +32,38 @@ void main() {
   });
 
   setUp(() {
-    final clock = FakeClockImpl();
-    final fakeSupabase = FakeSupabaseWrapper(clock: clock);
-    final authNotifier = FakeAuthNotifier();
-    final authRepository = FakeAuthRepository(clock: clock);
-    final authManager = FakeAuthManager(
-      authNotifier: authNotifier,
-      authRepository: authRepository,
-      wrapper: fakeSupabase,
-      clock: clock,
-    );
     fakeProjectNotifier = FakeCurrentProjectNotifier(
       initialProjectId: '950e8400-e29b-41d4-a716-446655440001',
     );
+    final fakeClock = FakeClockImpl();
+    fakeSupabaseWrapper = FakeSupabaseWrapper(clock: fakeClock);
 
-    final appBootstrap = AppBootstrap(
-      config: FakeAppConfig(),
-      envLoader: FakeEnvLoader(),
-      supabaseWrapper: fakeSupabase,
-      sentryWrapper: FakeSentryWrapper(),
+    fakeSupabaseWrapper.setCurrentUser(
+      FakeUser(id: 'fake-id', createdAt: fakeClock.now().toIso8601String()),
     );
+
+    final fakeUser = User(
+      id: '1',
+      credentialId: 'fake-id',
+      email: 'test@example.com',
+      firstName: 'Test',
+      lastName: 'User',
+      professionalRole: 'Engineer',
+      createdAt: fakeClock.now(),
+      updatedAt: fakeClock.now(),
+      userStatus: UserProfileStatus.active,
+      userPreferences: {},
+    );
+
+    fakeSupabaseWrapper.addTableData('users', [fakeUser.toJson()]);
 
     Modular.init(
-      _AppShellTestModule(
-        authManager: authManager,
-        authNotifier: authNotifier,
-        currentProjectNotifier: fakeProjectNotifier,
-        appBootstrap: appBootstrap,
+      ShellModule(
+        FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabaseWrapper),
       ),
     );
+
+    Modular.replaceInstance<CurrentProjectNotifier>(fakeProjectNotifier);
   });
 
   tearDown(() {
@@ -304,16 +242,17 @@ void main() {
   });
 
   group('Cost Estimation Tab', () {
-    testWidgets('shows CostEstimationLandingPage when estimation tab is tapped', (
-      tester,
-    ) async {
-      await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'shows CostEstimationLandingPage when estimation tab is tapped',
+      (tester) async {
+        await tester.pumpWidget(makeApp());
+        await tester.pumpAndSettle();
 
-      await tapTabByLabel(tester, l10n().costEstimation);
+        await tapTabByLabel(tester, l10n().costEstimation);
 
-      expect(find.byType(CostEstimationLandingPage), findsOneWidget);
-    });
+        expect(find.byType(CostEstimationLandingPage), findsOneWidget);
+      },
+    );
   });
 
   group('App Bar', () {
