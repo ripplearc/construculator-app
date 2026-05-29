@@ -46,10 +46,10 @@ class _ProjectDropdownProjectsUpdated extends ProjectDropdownEvent {
 }
 /// Triggers a failure event when project list loading fails.
 class _ProjectDropdownProjectsLoadFailed extends ProjectDropdownEvent {
-  final String message;
+  final Failure failure;
 
-  const _ProjectDropdownProjectsLoadFailed(this.message);
+  const _ProjectDropdownProjectsLoadFailed(this.failure);
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [failure];
 }
