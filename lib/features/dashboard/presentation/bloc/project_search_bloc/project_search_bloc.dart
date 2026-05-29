@@ -7,6 +7,7 @@ import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_search_repository.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -34,6 +35,11 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
   List<String> _cachedRecents = const [];
   List<String> _cachedSuggestions = const [];
 
+  /// Exposed for testing only — resolves when the last save-after-search
+  /// completes, allowing tests to await it instead of using wall-clock waits.
+  @visibleForTesting
+  Future<void>? lastSaveCompleted;
+
   /// Creates a [ProjectSearchBloc] with the given [repository] and [authManager].
   ProjectSearchBloc({
     required ProjectSearchRepository repository,
@@ -55,7 +61,8 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     Emitter<ProjectSearchState> emit,
   ) async {
     if (query.trim().isEmpty) {
-      emit(const ProjectSearchInitial());
+      // Clearing the field restores the history surface rather than blanking it.
+      emit(_initialFromCache());
       return;
     }
     await _executeSearch(query, emit);
@@ -96,23 +103,22 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
       _repository.getProjectSearchSuggestions(userId: userId),
     ]);
 
-    final recents = results[0].fold<List<String>>(
+    // On failure, keep the previously cached value so a transient network
+    // hiccup does not blank the history surface.
+    _cachedRecents = results[0].fold<List<String>>(
       (failure) {
         _logger.warning('Failed to load recent project searches: $failure');
-        return const [];
+        return _cachedRecents;
       },
       (terms) => terms,
     );
-    final suggestions = results[1].fold<List<String>>(
+    _cachedSuggestions = results[1].fold<List<String>>(
       (failure) {
         _logger.warning('Failed to load project search suggestions: $failure');
-        return const [];
+        return _cachedSuggestions;
       },
       (terms) => terms,
     );
-
-    _cachedRecents = recents;
-    _cachedSuggestions = suggestions;
 
     emit(_initialFromCache());
   }
@@ -138,16 +144,21 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
           'Failed to delete recent project search "${event.searchTerm}": $failure',
         );
       },
-      (_) {
-        final normalized = event.searchTerm.toLowerCase().trim();
-        _cachedRecents = _cachedRecents
-            .where((term) => term.toLowerCase().trim() != normalized)
-            .toList(growable: false);
-        if (state is ProjectSearchInitial) {
-          emit(_initialFromCache());
-        }
-      },
+      (_) => _removeDismissedTermAndEmit(event.searchTerm, emit),
     );
+  }
+
+  void _removeDismissedTermAndEmit(
+    String searchTerm,
+    Emitter<ProjectSearchState> emit,
+  ) {
+    final normalized = searchTerm.toLowerCase().trim();
+    _cachedRecents = _cachedRecents
+        .where((term) => term.toLowerCase().trim() != normalized)
+        .toList(growable: false);
+    if (state is ProjectSearchInitial) {
+      emit(_initialFromCache());
+    }
   }
 
   Future<void> _executeSearch(
@@ -182,13 +193,12 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
       },
       (projects) {
         emit(ProjectSearchResultsLoaded(results: projects, query: query));
-        unawaited(
-          _saveSearchToHistory(
-            userId: userId,
-            query: query,
-            hasResults: projects.isNotEmpty,
-          ),
+        lastSaveCompleted = _saveSearchToHistory(
+          userId: userId,
+          query: query,
+          hasResults: projects.isNotEmpty,
         );
+        unawaited(lastSaveCompleted!);
       },
     );
   }
@@ -210,6 +220,7 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
         );
       },
       (_) {
+        // Cache stores terms normalised to lowercase; repository receives the original-case query.
         final normalized = query.toLowerCase().trim();
         if (normalized.isEmpty) return;
         final updated = <String>[

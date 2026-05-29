@@ -101,6 +101,39 @@ void main() {
       );
 
       blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'emits Initial preserving cached recents when query is cleared after history load',
+        setUp: () {
+          fakeSupabase.addTableData(
+            DatabaseConstants.projectSearchHistoryTable,
+            [
+              {
+                DatabaseConstants.userIdColumn: _testUserId,
+                DatabaseConstants.searchTermColumn: 'wall',
+                DatabaseConstants.updatedAtColumn: '2024-06-01T00:00:00.000Z',
+              },
+            ],
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.projectSearchSuggestionsRpcFunction,
+            <dynamic>[],
+          );
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchHistoryRequestedEvent());
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && !s.isLoadingHistory,
+          );
+          bloc.add(const ProjectSearchQueryUpdatedEvent(query: ''));
+        },
+        wait: const Duration(milliseconds: 500),
+        expect: () => [
+          const ProjectSearchInitial(isLoadingHistory: true),
+          const ProjectSearchInitial(recentSearches: ['wall'], suggestions: []),
+        ],
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
         'emits [ProjectSearchLoading, ProjectSearchResultsLoaded] on success after debounce',
         setUp: () {
           fakeSupabase.setRpcResponse(
@@ -411,7 +444,7 @@ void main() {
       );
 
       blocTest<ProjectSearchBloc, ProjectSearchState>(
-        'degrades suggestions to [] when suggestions RPC fails but recents succeed',
+        'keeps stale suggestions cache when suggestions RPC fails but recents succeed',
         setUp: () {
           fakeSupabase.addTableData(
             DatabaseConstants.projectSearchHistoryTable,
@@ -547,9 +580,10 @@ void main() {
           );
         },
         build: () => Modular.get<ProjectSearchBloc>(),
-        act: (bloc) =>
-            bloc.add(const ProjectSearchPerformedEvent(query: 'wall')),
-        wait: const Duration(milliseconds: 50),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchPerformedEvent(query: 'wall'));
+          await bloc.lastSaveCompleted;
+        },
         verify: (_) {
           final upserts = fakeSupabase
               .getMethodCallsFor('upsert')
@@ -578,9 +612,10 @@ void main() {
           );
         },
         build: () => Modular.get<ProjectSearchBloc>(),
-        act: (bloc) =>
-            bloc.add(const ProjectSearchPerformedEvent(query: 'nothing')),
-        wait: const Duration(milliseconds: 50),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchPerformedEvent(query: 'nothing'));
+          await bloc.lastSaveCompleted;
+        },
         verify: (_) {
           final upserts = fakeSupabase
               .getMethodCallsFor('upsert')
@@ -606,7 +641,6 @@ void main() {
         build: () => Modular.get<ProjectSearchBloc>(),
         act: (bloc) =>
             bloc.add(const ProjectSearchPerformedEvent(query: 'wall')),
-        wait: const Duration(milliseconds: 50),
         verify: (_) {
           final upserts = fakeSupabase
               .getMethodCallsFor('upsert')
