@@ -36,11 +36,15 @@ class FakeProjectSettingRepository implements ProjectSettingRepository {
     errorType: ProjectErrorType.unexpectedError,
   );
 
-  late final StreamController<Either<Failure, Project>> _watchController;
+  late StreamController<Either<Failure, Project>> _watchController;
 
   /// Creates a [FakeProjectSettingRepository].
   FakeProjectSettingRepository() {
-    _watchController = StreamController<Either<Failure, Project>>.broadcast(
+    _watchController = _createWatchController();
+  }
+
+  StreamController<Either<Failure, Project>> _createWatchController() {
+    return StreamController<Either<Failure, Project>>.broadcast(
       onListen: () {
         _activeWatchListeners++;
       },
@@ -78,7 +82,8 @@ class FakeProjectSettingRepository implements ProjectSettingRepository {
       return Left(failureToReturn);
     }
 
-    return Right(projectToReturn ?? project);
+    projectToReturn = project;
+    return Right(project);
   }
 
   @override
@@ -89,6 +94,7 @@ class FakeProjectSettingRepository implements ProjectSettingRepository {
       return Left(failureToReturn);
     }
 
+    projectToReturn = null;
     return const Right(null);
   }
 
@@ -165,6 +171,9 @@ class FakeProjectSettingRepository implements ProjectSettingRepository {
   }
 
   /// Resets all flags, data, and recorded calls.
+  ///
+  /// Recreates the watch controller if it was closed by a prior [dispose] call,
+  /// so the fake can model a full repository lifecycle across test scenarios.
   void reset() {
     shouldFailOnGet = false;
     shouldFailOnUpdate = false;
@@ -176,5 +185,9 @@ class FakeProjectSettingRepository implements ProjectSettingRepository {
     projectToReturn = null;
     _methodCalls.clear();
     _isDisposed = false;
+    _activeWatchListeners = 0;
+    if (_watchController.isClosed) {
+      _watchController = _createWatchController();
+    }
   }
 }
