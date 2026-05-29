@@ -43,10 +43,10 @@ class ProjectDropdownLoadSuccess extends ProjectDropdownState {
 
 /// State emitted when loading projects fails.
 class ProjectDropdownLoadFailure extends ProjectDropdownState {
-  final String message;
+  final Failure failure;
 
-  const ProjectDropdownLoadFailure(this.message);
+  const ProjectDropdownLoadFailure(this.failure);
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [failure];
 }

@@ -7,6 +7,7 @@ import 'package:construculator/libraries/project/data/data_source/interfaces/pro
 import 'package:construculator/libraries/project/data/project_error_mapper.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/project/domain/project_error_type.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -49,11 +50,9 @@ class ProjectRepositoryImpl implements ProjectRepository {
         status: ProjectStatus.active,
       );
     } catch (error, stackTrace) {
-      _logger.error(
-        'Error while getting project by id: $id, error: $error',
-        stackTrace.toString(),
-      );
-      throw ProjectErrorMapper.toFailure(error);
+      final failure = ProjectErrorMapper.toFailure(error);
+      _logFailure('getting project by id: $id', failure, stackTrace);
+      throw failure;
     }
   }
 
@@ -81,11 +80,9 @@ class ProjectRepositoryImpl implements ProjectRepository {
 
       return projects;
     } catch (error, stackTrace) {
-      _logger.error(
-        'Error while getting accessible projects: $error',
-        stackTrace.toString(),
-      );
-      throw ProjectErrorMapper.toFailure(error);
+      final failure = ProjectErrorMapper.toFailure(error);
+      _logFailure('getting accessible projects', failure, stackTrace);
+      throw failure;
     }
   }
 
@@ -117,14 +114,9 @@ class ProjectRepositoryImpl implements ProjectRepository {
         .listen(
           (_) => _refreshProjects(),
           onError: (Object error, StackTrace stackTrace) {
-            _logger.error(
-              'Error while watching project changes: $error',
-              stackTrace.toString(),
-            );
-            _projectsController?.addError(
-              ProjectErrorMapper.toFailure(error),
-              stackTrace,
-            );
+            final failure = ProjectErrorMapper.toFailure(error);
+            _logFailure('watching project changes', failure, stackTrace);
+            _projectsController?.addError(failure, stackTrace);
           },
         );
 
@@ -158,14 +150,11 @@ class ProjectRepositoryImpl implements ProjectRepository {
               : <Project>[];
           _emitProjects(projects);
         } catch (error, stackTrace) {
-          _logger.error(
-            'Error while refreshing accessible projects: $error',
-            stackTrace.toString(),
-          );
-          _projectsController?.addError(
-            error is Failure ? error : ProjectErrorMapper.toFailure(error),
-            stackTrace,
-          );
+          final failure = error is ProjectFailure
+              ? error
+              : ProjectErrorMapper.toFailure(error);
+          _logFailure('refreshing accessible projects', failure, stackTrace);
+          _projectsController?.addError(failure, stackTrace);
           break;
         }
       } while (_hasPendingRefresh);
@@ -184,6 +173,25 @@ class ProjectRepositoryImpl implements ProjectRepository {
     _lastEmittedProjects = List<Project>.from(projects);
     if (_projectsController?.isClosed == false) {
       _projectsController?.add(projects);
+    }
+  }
+
+  static const _unexpectedErrorTypes = {
+    ProjectErrorType.unexpectedError,
+    ProjectErrorType.unexpectedDatabaseError,
+    ProjectErrorType.parsingError,
+  };
+
+  void _logFailure(
+    String operation,
+    ProjectFailure failure,
+    StackTrace stackTrace,
+  ) {
+    final message = 'Error while $operation: ${failure.errorType.name}';
+    if (_unexpectedErrorTypes.contains(failure.errorType)) {
+      _logger.error(message, stackTrace.toString());
+    } else {
+      _logger.warning(message, stackTrace.toString());
     }
   }
 
