@@ -10,6 +10,11 @@ import 'package:stack_trace/stack_trace.dart';
 ///
 /// This layer talks directly to Supabase and throws low-level exceptions that
 /// higher layers map into project failures.
+///
+/// **Logging contract**: use `warning()` for expected failures (not-found,
+/// network, timeout). The repository layer owns Sentry-level (`error()`/`omg()`)
+/// logging for unexpected errors. Never call `error()` or `omg()` here to avoid
+/// duplicate Sentry events and quota exhaustion.
 class RemoteProjectSettingDataSource implements ProjectSettingDataSource {
   final SupabaseWrapper _supabaseWrapper;
   static final _logger = AppLogger().tag('RemoteProjectSettingDataSource');

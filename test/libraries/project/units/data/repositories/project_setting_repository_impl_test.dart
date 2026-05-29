@@ -91,11 +91,10 @@ void main() {
       });
 
       test('returns Left(UnexpectedFailure) on unknown error', () async {
-        final fake = FakeProjectSettingDataSource()
-          ..exceptionToThrow = Exception('unknown');
-        final repoWithFake = ProjectSettingRepositoryImpl(dataSource: fake);
+        supabaseWrapper.shouldThrowOnSelect = true;
+        supabaseWrapper.selectExceptionType = SupabaseExceptionType.auth;
 
-        final result = await repoWithFake.getProjectSetting('p-1');
+        final result = await repository.getProjectSetting('p-1');
 
         expect(result.isLeft(), isTrue);
         result.fold((failure) {
@@ -104,14 +103,9 @@ void main() {
       });
 
       test('returns Left(notFoundError) on NotFoundException', () async {
-        final fake = FakeProjectSettingDataSource()
-          ..exceptionToThrow = NotFoundException(
-            Trace.current(),
-            Exception('not found'),
-          );
-        final repoWithFake = ProjectSettingRepositoryImpl(dataSource: fake);
+        supabaseWrapper.shouldReturnNullOnSelect = true;
 
-        final result = await repoWithFake.getProjectSetting('p-1');
+        final result = await repository.getProjectSetting('p-1');
 
         expect(result.isLeft(), isTrue);
         result.fold((failure) {
@@ -145,7 +139,7 @@ void main() {
 
       test('returns Left(connectionError) on NetworkException', () async {
         final fake = FakeProjectSettingDataSource()
-          ..exceptionToThrow = NetworkException(
+          ..fetchExceptionToThrow = NetworkException(
             Trace.current(),
             Exception('network error'),
           );
@@ -216,6 +210,68 @@ void main() {
             expect(
               (failure as ProjectFailure).errorType,
               equals(ProjectErrorType.connectionError),
+            );
+          }, (_) => fail('Expected Left'));
+        },
+      );
+
+      test(
+        'maps PostgrestException unableToConnect to connectionError',
+        () async {
+          supabaseWrapper.shouldThrowOnSelect = true;
+          supabaseWrapper.selectExceptionType = SupabaseExceptionType.postgrest;
+          supabaseWrapper.postgrestErrorCode =
+              PostgresErrorCode.unableToConnect;
+
+          final result = await repository.getProjectSetting('p-1');
+
+          expect(result.isLeft(), isTrue);
+          result.fold((failure) {
+            expect(failure, isA<ProjectFailure>());
+            expect(
+              (failure as ProjectFailure).errorType,
+              equals(ProjectErrorType.connectionError),
+            );
+          }, (_) => fail('Expected Left'));
+        },
+      );
+
+      test(
+        'maps PostgrestException connectionDoesNotExist to connectionError',
+        () async {
+          supabaseWrapper.shouldThrowOnSelect = true;
+          supabaseWrapper.selectExceptionType = SupabaseExceptionType.postgrest;
+          supabaseWrapper.postgrestErrorCode =
+              PostgresErrorCode.connectionDoesNotExist;
+
+          final result = await repository.getProjectSetting('p-1');
+
+          expect(result.isLeft(), isTrue);
+          result.fold((failure) {
+            expect(failure, isA<ProjectFailure>());
+            expect(
+              (failure as ProjectFailure).errorType,
+              equals(ProjectErrorType.connectionError),
+            );
+          }, (_) => fail('Expected Left'));
+        },
+      );
+
+      test(
+        'maps PostgrestException unknown code to unexpectedDatabaseError',
+        () async {
+          supabaseWrapper.shouldThrowOnSelect = true;
+          supabaseWrapper.selectExceptionType = SupabaseExceptionType.postgrest;
+          supabaseWrapper.postgrestErrorCode = PostgresErrorCode.uniqueViolation;
+
+          final result = await repository.getProjectSetting('p-1');
+
+          expect(result.isLeft(), isTrue);
+          result.fold((failure) {
+            expect(failure, isA<ProjectFailure>());
+            expect(
+              (failure as ProjectFailure).errorType,
+              equals(ProjectErrorType.unexpectedDatabaseError),
             );
           }, (_) => fail('Expected Left'));
         },
