@@ -1331,5 +1331,10 @@
   "@peopleInvited": {
     "description": "Label for the members count stat card on the project details screen",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "globalSearchEmptyQueryMessage": "Please enter a search term.",
+  "@globalSearchEmptyQueryMessage": {
+    "description": "Warning toast shown when the user submits an empty or whitespace-only search query",
+    "context": "N/A"
   }
 }

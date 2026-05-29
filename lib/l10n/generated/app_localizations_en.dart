@@ -842,4 +842,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get peopleInvited => 'People invited';
+
+  @override
+  String get globalSearchEmptyQueryMessage => 'Please enter a search term.';
 }
