@@ -71,6 +71,17 @@ void main() {
           );
         },
       );
+
+      test('fetchExceptionToThrow takes precedence over shouldThrowOnGet',
+          () async {
+        fake.shouldThrowOnGet = true;
+        fake.fetchExceptionToThrow = TimeoutException('timed out');
+
+        await expectLater(
+          fake.fetchProjectSetting('p-1'),
+          throwsA(isA<TimeoutException>()),
+        );
+      });
     });
 
     group('updateProject', () {
@@ -85,13 +96,16 @@ void main() {
         expect(calls.first['projectDto'], equals(dto));
       });
 
-      test('returns projectToReturn when set', () async {
-        final updated = _fakeDto(id: 'p-1', projectName: 'Returned Name');
-        fake.projectToReturn = updated;
+      test('always returns the passed dto, overriding pre-set projectToReturn',
+          () async {
+        final preExisting = _fakeDto(id: 'p-1', projectName: 'Old Name');
+        fake.projectToReturn = preExisting;
+        final newDto = _fakeDto(id: 'p-1', projectName: 'New Name');
 
-        final result = await fake.updateProject(_fakeDto(id: 'p-1'));
+        final result = await fake.updateProject(newDto);
 
-        expect(result.projectName, equals('Returned Name'));
+        expect(result.projectName, equals('New Name'));
+        expect(fake.projectToReturn?.projectName, equals('New Name'));
       });
 
       test('returns the passed dto when projectToReturn is null', () async {
@@ -113,6 +127,18 @@ void main() {
           expect(fetched.projectName, equals('Written'));
         },
       );
+
+      test('propagates the updated dto to the watch stream', () async {
+        fake.projectToReturn = _fakeDto(id: 'p-1', projectName: 'Initial');
+        final updated = _fakeDto(id: 'p-1', projectName: 'Updated');
+
+        final future = expectLater(
+          fake.watchProjectChanges('p-1'),
+          emitsThrough(updated),
+        );
+        await fake.updateProject(updated);
+        await future;
+      });
 
       test('throws ServerException when shouldThrowOnUpdate is true', () async {
         fake.shouldThrowOnUpdate = true;
@@ -146,6 +172,30 @@ void main() {
           fake.fetchProjectSetting('p-1'),
           throwsA(isA<ServerException>()),
         );
+      });
+
+      test('emits null to the watch stream before closing it', () async {
+        fake.projectToReturn = _fakeDto(id: 'p-1');
+
+        final future = expectLater(
+          fake.watchProjectChanges('p-1'),
+          emitsThrough(isNull),
+        );
+        await fake.deleteProject('p-1');
+        await future;
+      });
+
+      test('closes the project stream on deletion', () async {
+        fake.projectToReturn = _fakeDto(id: 'p-1');
+        final isDone = Completer<void>();
+
+        fake
+            .watchProjectChanges('p-1')
+            .listen((_) {}, onDone: isDone.complete);
+
+        await fake.deleteProject('p-1');
+
+        await expectLater(isDone.future, completes);
       });
 
       test('throws ServerException when shouldThrowOnDelete is true', () async {
@@ -216,12 +266,11 @@ void main() {
           emits(_fakeDto(id: 'p-1')),
         );
 
-        final countBefore = p2Values.length;
         fake.emitChange('p-1');
         await expectLater(fake.watchProjectChanges('p-1'), emits(anything));
 
-        expect(p1Values.length, greaterThan(countBefore));
-        expect(p2Values.length, equals(countBefore));
+        expect(p1Values.length, greaterThan(1)); // seed + emitChange emission
+        expect(p2Values, hasLength(1)); // only the BehaviorSubject seed, never p1's emit
 
         await s1.cancel();
         await s2.cancel();

@@ -24,9 +24,8 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
 
   /// If non-null, this exception/object will be thrown directly by
   /// [fetchProjectSetting] to allow tests to simulate different failures
-  /// (e.g., [TimeoutException]). This takes precedence over
-  /// [shouldThrowOnGet].
-  Object? exceptionToThrow;
+  /// (e.g., [TimeoutException]). This takes precedence over [shouldThrowOnGet].
+  Object? fetchExceptionToThrow;
 
   /// Controls whether [updateProject] throws a [ServerException].
   bool shouldThrowOnUpdate = false;
@@ -54,7 +53,7 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
   Future<ProjectDto> fetchProjectSetting(String projectId) async {
     _methodCalls.add({'method': 'fetchProjectSetting', 'projectId': projectId});
 
-    final exception = exceptionToThrow;
+    final exception = fetchExceptionToThrow;
     if (exception != null) {
       throw exception;
     }
@@ -77,8 +76,8 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
     return project;
   }
 
-  /// Persists [projectDto] (or [projectToReturn] if set) and updates stored
-  /// state so subsequent reads reflect the mutation.
+  /// Persists [projectDto] and updates stored state so subsequent reads and
+  /// watch streams reflect the mutation.
   @override
   Future<ProjectDto> updateProject(ProjectDto projectDto) async {
     _methodCalls.add({'method': 'updateProject', 'projectDto': projectDto});
@@ -90,13 +89,13 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
       );
     }
 
-    final result = projectToReturn ?? projectDto;
-    projectToReturn = result;
-    return result;
+    projectToReturn = projectDto;
+    _getOrCreateController(projectDto.id).add(projectDto);
+    return projectDto;
   }
 
-  /// Records deletion and clears stored state so subsequent reads and watches
-  /// reflect the removal.
+  /// Records deletion, clears stored state, and closes the project's stream so
+  /// subsequent reads, watches, and stream completions reflect the removal.
   @override
   Future<void> deleteProject(String projectId) async {
     _methodCalls.add({'method': 'deleteProject', 'projectId': projectId});
@@ -109,6 +108,11 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
     }
 
     projectToReturn = null;
+    final controller = _projectControllers.remove(projectId);
+    if (controller != null) {
+      controller.add(null);
+      controller.close();
+    }
   }
 
   /// Returns a per-project stream that immediately emits the current snapshot
@@ -163,7 +167,7 @@ class FakeProjectSettingDataSource implements ProjectSettingDataSource {
     deleteErrorMessage = null;
     projectToReturn = null;
     _methodCalls.clear();
-    exceptionToThrow = null;
+    fetchExceptionToThrow = null;
     for (final controller in _projectControllers.values) {
       controller.close();
     }
