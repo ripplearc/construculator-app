@@ -106,17 +106,17 @@ class EstimationActionsSheet extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _QuickActionButton(
-                      icon: CoreIcons.editDocument,
+                      icon: const _EstimationActionIconEdit(),
                       label: l10n.renameAction,
                       onTap: onRename,
                     ),
                     _QuickActionButton(
-                      icon: CoreIcons.favorite,
+                      icon: const _EstimationActionIconFavorite(),
                       label: l10n.favouriteAction,
                       onTap: onFavourite,
                     ),
                     _QuickActionButton(
-                      icon: CoreIcons.delete,
+                      icon: const _EstimationActionIconDelete(),
                       label: l10n.removeAction,
                       onTap: onRemove,
                     ),
@@ -126,17 +126,17 @@ class EstimationActionsSheet extends StatelessWidget {
                 Column(
                   children: [
                     _ActionListItem(
-                      icon: CoreIcons.copy,
+                      icon: const _EstimationActionIconCopy(),
                       label: l10n.copyEstimationAction,
                       onTap: onCopy,
                     ),
                     _ActionListItem(
-                      icon: CoreIcons.share,
+                      icon: const _EstimationActionIconShare(),
                       label: l10n.shareExportAction,
                       onTap: onShare,
                     ),
                     _ActionListItem(
-                      icon: CoreIcons.calendar,
+                      icon: const _EstimationActionIconCalendar(),
                       label: l10n.logsAction,
                       onTap: onLogs,
                     ),
@@ -144,7 +144,9 @@ class EstimationActionsSheet extends StatelessWidget {
                       valueListenable: lockStatusNotifier,
                       builder: (context, isLocked, _) {
                         return _ActionListItem(
-                          icon: isLocked ? CoreIcons.lock : CoreIcons.unlock,
+                          icon: isLocked
+                              ? const _EstimationActionIconLock()
+                              : const _EstimationActionIconUnlock(),
                           label: l10n.lockEstimationAction,
                           actionWidget: CoreSwitch(
                             value: isLocked,
@@ -167,8 +169,67 @@ class EstimationActionsSheet extends StatelessWidget {
   }
 }
 
+sealed class _EstimationActionIcon {
+  const _EstimationActionIcon();
+}
+
+class _EstimationActionIconEdit extends _EstimationActionIcon {
+  const _EstimationActionIconEdit();
+}
+
+class _EstimationActionIconFavorite extends _EstimationActionIcon {
+  const _EstimationActionIconFavorite();
+}
+
+class _EstimationActionIconDelete extends _EstimationActionIcon {
+  const _EstimationActionIconDelete();
+}
+
+class _EstimationActionIconCopy extends _EstimationActionIcon {
+  const _EstimationActionIconCopy();
+}
+
+class _EstimationActionIconShare extends _EstimationActionIcon {
+  const _EstimationActionIconShare();
+}
+
+class _EstimationActionIconCalendar extends _EstimationActionIcon {
+  const _EstimationActionIconCalendar();
+}
+
+class _EstimationActionIconLock extends _EstimationActionIcon {
+  const _EstimationActionIconLock();
+}
+
+class _EstimationActionIconUnlock extends _EstimationActionIcon {
+  const _EstimationActionIconUnlock();
+}
+
+extension _EstimationActionIconExt on _EstimationActionIcon {
+  CoreIconData get coreIcon {
+    switch (this) {
+      case _EstimationActionIconEdit():
+        return CoreIcons.editDocument;
+      case _EstimationActionIconFavorite():
+        return CoreIcons.favorite;
+      case _EstimationActionIconDelete():
+        return CoreIcons.delete;
+      case _EstimationActionIconCopy():
+        return CoreIcons.copy;
+      case _EstimationActionIconShare():
+        return CoreIcons.share;
+      case _EstimationActionIconCalendar():
+        return CoreIcons.calendar;
+      case _EstimationActionIconLock():
+        return CoreIcons.lock;
+      case _EstimationActionIconUnlock():
+        return CoreIcons.unlock;
+    }
+  }
+}
+
 class _QuickActionButton extends StatelessWidget {
-  final CoreIconData icon;
+  final _EstimationActionIcon icon;
   final String label;
   final VoidCallback? onTap;
 
@@ -198,7 +259,7 @@ class _QuickActionButton extends StatelessWidget {
             ),
             child: Center(
               child: CoreIconWidget(
-                icon: icon,
+                icon: icon.coreIcon,
                 size: 24,
                 color: colorTheme.iconDark,
               ),
@@ -212,7 +273,7 @@ class _QuickActionButton extends StatelessWidget {
 }
 
 class _ActionListItem extends StatelessWidget {
-  final CoreIconData icon;
+  final _EstimationActionIcon icon;
   final String label;
   final VoidCallback? onTap;
   final Widget? actionWidget;
@@ -235,7 +296,11 @@ class _ActionListItem extends StatelessWidget {
         padding: const EdgeInsets.all(CoreSpacing.space3),
         child: Row(
           children: [
-            CoreIconWidget(icon: icon, size: 24, color: colorTheme.iconDark),
+            CoreIconWidget(
+              icon: icon.coreIcon,
+              size: 24,
+              color: colorTheme.iconDark,
+            ),
             const SizedBox(width: CoreSpacing.space2),
             Expanded(
               child: Text(

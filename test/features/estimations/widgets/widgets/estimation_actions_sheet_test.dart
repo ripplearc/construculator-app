@@ -263,5 +263,31 @@ void main() {
       final revertedSwitch = tester.widget<CoreSwitch>(find.byType(CoreSwitch));
       expect(revertedSwitch.value, isFalse);
     });
+
+    group('icon mapping', () {
+      testWidgets('renders the correct CoreIconWidget for every action variant', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(createWidget(isLocked: false));
+
+        for (final expectedIcon in <CoreIconData>[
+          CoreIcons.editDocument,
+          CoreIcons.favorite,
+          CoreIcons.delete,
+          CoreIcons.copy,
+          CoreIcons.share,
+          CoreIcons.calendar,
+          CoreIcons.unlock,
+        ]) {
+          expect(
+            find.byWidgetPredicate(
+              (w) => w is CoreIconWidget && w.icon == expectedIcon,
+            ),
+            findsOneWidget,
+          );
+        }
+      });
+    });
   });
 }
+
