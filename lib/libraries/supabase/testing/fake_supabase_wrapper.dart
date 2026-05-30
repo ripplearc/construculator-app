@@ -220,6 +220,10 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Controls whether stream errors should be emitted
   bool shouldEmitStreamErrors = false;
 
+  /// Used to specify the type of exception emitted when [shouldEmitStreamErrors] is true.
+  /// Defaults to [ServerException] when null.
+  SupabaseExceptionType? streamExceptionType;
+
   /// Controls whether [signInWithPassword] returns a user
   bool shouldReturnUser = false;
 
@@ -1080,12 +1084,14 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       return;
     }
     if (shouldEmitStreamErrors) {
-      controller.addError(
-        ServerException(
-          Trace.current(),
-          Exception('Stream error for table: $table'),
-        ),
-      );
+      try {
+        _throwConfiguredException(
+          streamExceptionType,
+          'Stream error for table: $table',
+        );
+      } catch (e, st) {
+        controller.addError(e, st);
+      }
       return;
     }
     controller.add(_cloneRows(_tables[table] ?? const []));
@@ -1237,6 +1243,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     shouldDelayOperations = false;
     completer = null;
     shouldEmitStreamErrors = false;
+    streamExceptionType = null;
     shouldReturnUser = false;
     shouldThrowOnGetUserProfile = false;
     _nextId = 1;
