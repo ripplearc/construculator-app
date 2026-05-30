@@ -264,4 +264,17 @@ void main() {
       expect(revertedSwitch.value, isFalse);
     });
   });
+
+  group('EstimationActionIcon.coreIcon', () {
+    test('each variant maps to the expected CoreIconData', () {
+      expect(const EstimationActionIconEdit().coreIcon, same(CoreIcons.editDocument));
+      expect(const EstimationActionIconFavorite().coreIcon, same(CoreIcons.favorite));
+      expect(const EstimationActionIconDelete().coreIcon, same(CoreIcons.delete));
+      expect(const EstimationActionIconCopy().coreIcon, same(CoreIcons.copy));
+      expect(const EstimationActionIconShare().coreIcon, same(CoreIcons.share));
+      expect(const EstimationActionIconCalendar().coreIcon, same(CoreIcons.calendar));
+      expect(const EstimationActionIconLock().coreIcon, same(CoreIcons.lock));
+      expect(const EstimationActionIconUnlock().coreIcon, same(CoreIcons.unlock));
+    });
+  });
 }

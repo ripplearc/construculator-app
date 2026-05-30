@@ -171,17 +171,40 @@ sealed class EstimationActionIcon {
   const EstimationActionIcon();
 }
 
-class EstimationActionIconEdit extends EstimationActionIcon { const EstimationActionIconEdit(); }
-class EstimationActionIconFavorite extends EstimationActionIcon { const EstimationActionIconFavorite(); }
-class EstimationActionIconDelete extends EstimationActionIcon { const EstimationActionIconDelete(); }
-class EstimationActionIconCopy extends EstimationActionIcon { const EstimationActionIconCopy(); }
-class EstimationActionIconShare extends EstimationActionIcon { const EstimationActionIconShare(); }
-class EstimationActionIconCalendar extends EstimationActionIcon { const EstimationActionIconCalendar(); }
-class EstimationActionIconLock extends EstimationActionIcon { const EstimationActionIconLock(); }
-class EstimationActionIconUnlock extends EstimationActionIcon { const EstimationActionIconUnlock(); }
+class EstimationActionIconEdit extends EstimationActionIcon {
+  const EstimationActionIconEdit();
+}
 
-extension _EstimationActionIconExt on EstimationActionIcon {
-  get coreIcon {
+class EstimationActionIconFavorite extends EstimationActionIcon {
+  const EstimationActionIconFavorite();
+}
+
+class EstimationActionIconDelete extends EstimationActionIcon {
+  const EstimationActionIconDelete();
+}
+
+class EstimationActionIconCopy extends EstimationActionIcon {
+  const EstimationActionIconCopy();
+}
+
+class EstimationActionIconShare extends EstimationActionIcon {
+  const EstimationActionIconShare();
+}
+
+class EstimationActionIconCalendar extends EstimationActionIcon {
+  const EstimationActionIconCalendar();
+}
+
+class EstimationActionIconLock extends EstimationActionIcon {
+  const EstimationActionIconLock();
+}
+
+class EstimationActionIconUnlock extends EstimationActionIcon {
+  const EstimationActionIconUnlock();
+}
+
+extension EstimationActionIconExt on EstimationActionIcon {
+  CoreIconData get coreIcon {
     switch (this) {
       case EstimationActionIconEdit(): return CoreIcons.editDocument;
       case EstimationActionIconFavorite(): return CoreIcons.favorite;
