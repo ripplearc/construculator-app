@@ -36,19 +36,7 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       return Right(dto.toDomain());
     } catch (error, stackTrace) {
       final failure = ProjectErrorMapper.toFailure(error);
-      if (failure.errorType == ProjectErrorType.unexpectedError) {
-        _logger.error(
-          'Unexpected error while getting project setting for projectId: $projectId',
-          error,
-          stackTrace,
-        );
-      } else {
-        _logger.warning(
-          'Error (${failure.errorType.name}) while getting project setting for projectId: $projectId',
-          error,
-          stackTrace,
-        );
-      }
+      _logFailure(failure, error, stackTrace, 'getting project setting for projectId: $projectId');
       return Left(failure);
     }
   }
@@ -71,19 +59,7 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       return Right(result.toDomain());
     } catch (error, stackTrace) {
       final failure = ProjectErrorMapper.toFailure(error);
-      if (failure.errorType == ProjectErrorType.unexpectedError) {
-        _logger.error(
-          'Unexpected error while updating project with id: ${project.id}',
-          error,
-          stackTrace,
-        );
-      } else {
-        _logger.warning(
-          'Error (${failure.errorType.name}) while updating project with id: ${project.id}',
-          error,
-          stackTrace,
-        );
-      }
+      _logFailure(failure, error, stackTrace, 'updating project with id: ${project.id}');
       return Left(failure);
     }
   }
@@ -105,19 +81,7 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       return const Right(null);
     } catch (error, stackTrace) {
       final failure = ProjectErrorMapper.toFailure(error);
-      if (failure.errorType == ProjectErrorType.unexpectedError) {
-        _logger.error(
-          'Unexpected error while deleting project with id: $projectId',
-          error,
-          stackTrace,
-        );
-      } else {
-        _logger.warning(
-          'Error (${failure.errorType.name}) while deleting project with id: $projectId',
-          error,
-          stackTrace,
-        );
-      }
+      _logFailure(failure, error, stackTrace, 'deleting project with id: $projectId');
       return Left(failure);
     }
   }
@@ -150,19 +114,7 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
           (_) => _refreshProjectSetting(projectId),
           onError: (Object error, StackTrace stackTrace) {
             final failure = ProjectErrorMapper.toFailure(error);
-            if (failure.errorType == ProjectErrorType.unexpectedError) {
-              _logger.error(
-                'Unexpected error watching project setting changes for projectId: $projectId',
-                error,
-                stackTrace,
-              );
-            } else {
-              _logger.warning(
-                'Error (${failure.errorType.name}) watching project setting changes for projectId: $projectId',
-                error,
-                stackTrace,
-              );
-            }
+            _logFailure(failure, error, stackTrace, 'watching project setting changes for projectId: $projectId');
             final controller = _settingControllers[projectId];
             if (controller?.isClosed == false) {
               controller?.addError(error, stackTrace);
@@ -194,6 +146,19 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
     final controller = _settingControllers[projectId];
     if (controller?.isClosed == false) {
       controller?.add(result);
+    }
+  }
+
+  void _logFailure(
+    ProjectFailure failure,
+    Object error,
+    StackTrace stackTrace,
+    String context,
+  ) {
+    if (failure.errorType == ProjectErrorType.unexpectedError) {
+      _logger.error('Unexpected error $context', error, stackTrace);
+    } else {
+      _logger.warning('Error (${failure.errorType.name}) $context', error, stackTrace);
     }
   }
 
