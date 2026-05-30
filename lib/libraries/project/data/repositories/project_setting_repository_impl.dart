@@ -42,6 +42,12 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
           error,
           stackTrace,
         );
+      } else {
+        _logger.warning(
+          'Error (${failure.errorType.name}) while getting project setting for projectId: $projectId',
+          error,
+          stackTrace,
+        );
       }
       return Left(failure);
     }
@@ -71,6 +77,12 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
           error,
           stackTrace,
         );
+      } else {
+        _logger.warning(
+          'Error (${failure.errorType.name}) while updating project with id: ${project.id}',
+          error,
+          stackTrace,
+        );
       }
       return Left(failure);
     }
@@ -96,6 +108,12 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       if (failure.errorType == ProjectErrorType.unexpectedError) {
         _logger.error(
           'Unexpected error while deleting project with id: $projectId',
+          error,
+          stackTrace,
+        );
+      } else {
+        _logger.warning(
+          'Error (${failure.errorType.name}) while deleting project with id: $projectId',
           error,
           stackTrace,
         );
@@ -131,6 +149,20 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
         .listen(
           (_) => _refreshProjectSetting(projectId),
           onError: (Object error, StackTrace stackTrace) {
+            final failure = ProjectErrorMapper.toFailure(error);
+            if (failure.errorType == ProjectErrorType.unexpectedError) {
+              _logger.error(
+                'Unexpected error watching project setting changes for projectId: $projectId',
+                error,
+                stackTrace,
+              );
+            } else {
+              _logger.warning(
+                'Error (${failure.errorType.name}) watching project setting changes for projectId: $projectId',
+                error,
+                stackTrace,
+              );
+            }
             final controller = _settingControllers[projectId];
             if (controller?.isClosed == false) {
               controller?.addError(error, stackTrace);
