@@ -23,14 +23,13 @@ void main() {
     final tDate = DateTime(2025, 1, 1, 8, 0);
     late Project tProject;
 
+    // Modular is initialised once; each test receives a fresh
+    // FakeProjectSettingRepository via replaceInstance so no state bleeds
+    // between tests. Modular.get<ProjectSettingsBloc>() returns a new instance
+    // per call because the binding uses i.add (not addLazySingleton).
     setUpAll(() {
       final bootstrap = FakeAppBootstrapFactory.create();
       Modular.init(_ProjectSettingsBlocTestModule(bootstrap));
-      Modular.replaceInstance<ProjectSettingRepository>(
-        FakeProjectSettingRepository(),
-      );
-      fakeRepository =
-          Modular.get<ProjectSettingRepository>() as FakeProjectSettingRepository;
     });
 
     tearDownAll(() {
@@ -38,7 +37,12 @@ void main() {
     });
 
     setUp(() {
-      fakeRepository.reset();
+      Modular.replaceInstance<ProjectSettingRepository>(
+        FakeProjectSettingRepository(),
+      );
+      fakeRepository =
+          Modular.get<ProjectSettingRepository>() as FakeProjectSettingRepository;
+
       tProject = Project(
         id: testProjectId,
         projectName: testProjectName,
@@ -141,15 +145,10 @@ void main() {
         'emits [Editing] when state is Loaded',
         build: () => Modular.get<ProjectSettingsBloc>(),
         seed: () => ProjectSettingsLoaded(tProject),
-        act: (bloc) =>
-            bloc.add(ProjectSettingsEditingStarted(tProject)),
+        act: (bloc) => bloc.add(ProjectSettingsEditingStarted(tProject)),
         expect: () => [
           isA<ProjectSettingsEditing>()
-              .having(
-                (s) => s.project.id,
-                'project.id',
-                testProjectId,
-              )
+              .having((s) => s.project.id, 'project.id', testProjectId)
               .having(
                 (s) => s.originalProject.id,
                 'originalProject.id',
@@ -201,16 +200,8 @@ void main() {
         expect: () => [
           isA<ProjectSettingsSaving>(),
           isA<ProjectSettingsError>()
-              .having(
-                (s) => s.failure,
-                'failure',
-                isA<ProjectFailure>(),
-              )
-              .having(
-                (s) => s.lastProject,
-                'lastProject',
-                tProject,
-              ),
+              .having((s) => s.failure, 'failure', isA<ProjectFailure>())
+              .having((s) => s.lastProject, 'lastProject', tProject),
         ],
       );
     });
