@@ -7,7 +7,6 @@ import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 
 /// Remote implementation of the project repository.
 class ProjectRepositoryImpl implements ProjectRepository {
@@ -25,10 +24,10 @@ class ProjectRepositoryImpl implements ProjectRepository {
   ProjectRepositoryImpl({
     required ProjectDataSource projectDataSource,
     required ProjectPermissionDataSource permissionDataSource,
-    Clock? clock,
+    required Clock clock,
   }) : _projectDataSource = projectDataSource,
        _permissionDataSource = permissionDataSource,
-       _clock = clock ?? Modular.get<Clock>();
+       _clock = clock;
 
   @override
   Future<Project> getProject(String id) async {
@@ -90,10 +89,11 @@ class ProjectRepositoryImpl implements ProjectRepository {
   @override
   Stream<List<Project>> watchProjects(String userId) {
     _watchUserId = userId;
-    final controller = _projectsController ??= StreamController<List<Project>>.broadcast(
-      onListen: _startWatchingProjectChanges,
-      onCancel: _stopWatchingIfNoListeners,
-    );
+    final controller = _projectsController ??=
+        StreamController<List<Project>>.broadcast(
+          onListen: _startWatchingProjectChanges,
+          onCancel: _stopWatchingIfNoListeners,
+        );
 
     return controller.stream;
   }

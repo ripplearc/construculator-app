@@ -107,6 +107,7 @@ void main() {
                 estimationId: estimationId,
                 projectId: projectId,
                 currentName: initialName,
+                router: Modular.get<AppRouter>(),
               ),
             ),
           );

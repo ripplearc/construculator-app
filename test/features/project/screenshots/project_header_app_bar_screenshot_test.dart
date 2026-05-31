@@ -1,3 +1,4 @@
+import 'package:construculator/features/project/presentation/bloc/get_project_bloc/get_project_bloc.dart';
 import 'package:construculator/features/project/presentation/widgets/project_header_app_bar.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
@@ -66,6 +67,7 @@ void main() {
           home: Scaffold(
             appBar: ProjectHeaderAppBar(
               projectId: projectId,
+              getProjectBloc: Modular.get<GetProjectBloc>(),
               onProjectTap: onProjectTap,
               onSearchTap: onSearchTap,
               onNotificationTap: onNotificationTap,

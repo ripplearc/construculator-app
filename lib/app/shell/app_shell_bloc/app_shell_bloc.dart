@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

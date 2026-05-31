@@ -163,11 +163,14 @@ void main() {
       },
       home: BlocProvider<AppShellBloc>(
         create: (_) => Modular.get<AppShellBloc>(),
-        child: AppShellPage(
-          projectUIProvider: Modular.get<ProjectUIProvider>(),
-          authNotifier: Modular.get<AuthNotifier>(),
-          authManager: Modular.get<AuthManager>(),
-          router: Modular.get<AppRouter>(),
+        child: Builder(
+          builder: (_) => AppShellPage(
+            projectUIProvider: Modular.get<ProjectUIProvider>(),
+            authNotifier: Modular.get<AuthNotifier>(),
+            authManager: Modular.get<AuthManager>(),
+            router: Modular.get<AppRouter>(),
+            recentEstimationsBloc: Modular.get<RecentEstimationsBloc>(),
+          ),
         ),
       ),
     );
@@ -329,17 +332,16 @@ void main() {
   });
 
   group('Cost Estimation Tab', () {
-    testWidgets(
-      'shows CostEstimationLandingPage when estimation tab is tapped',
-      (tester) async {
-        await tester.pumpWidget(makeApp());
-        await tester.pumpAndSettle();
+    testWidgets('shows CostEstimationLandingPage when estimation tab is tapped', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeApp());
+      await tester.pumpAndSettle();
 
-        await tapTabByLabel(tester, l10n().costEstimation);
+      await tapTabByLabel(tester, l10n().costEstimation);
 
-        expect(find.byType(CostEstimationLandingPage), findsOneWidget);
-      },
-    );
+      expect(find.byType(CostEstimationLandingPage), findsOneWidget);
+    });
   });
 
   group('App Bar', () {

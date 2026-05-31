@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
@@ -21,11 +22,15 @@ class DashboardPage extends StatefulWidget {
   /// The router used to navigate to other pages (e.g. login, create account).
   final AppRouter router;
 
+  /// Bloc that streams recent cost estimations into [RecentEstimationsSection].
+  final RecentEstimationsBloc recentEstimationsBloc;
+
   const DashboardPage({
     super.key,
     required this.authNotifier,
     required this.authManager,
     required this.router,
+    required this.recentEstimationsBloc,
   });
 
   @override
@@ -130,7 +135,10 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ),
             const SizedBox(height: CoreSpacing.space8),
-            const RecentEstimationsSection(),
+            RecentEstimationsSection(
+              bloc: widget.recentEstimationsBloc,
+              router: widget.router,
+            ),
             const SizedBox(height: CoreSpacing.space8),
             Center(
               child: CoreButton(

@@ -7,14 +7,23 @@ import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// Displays the recent cost estimations section on the dashboard,
 /// including a horizontally scrollable list of [EstimationCard]s
 /// and navigation to the full estimations list.
 class RecentEstimationsSection extends StatefulWidget {
-  const RecentEstimationsSection({super.key});
+  /// The bloc that manages the state for the recent estimations section.
+  final RecentEstimationsBloc bloc;
+
+  /// The router used for navigation (e.g., to the full estimations list or estimation details).
+  final AppRouter router;
+
+  const RecentEstimationsSection({
+    super.key,
+    required this.bloc,
+    required this.router,
+  });
 
   @override
   State<RecentEstimationsSection> createState() =>
@@ -22,14 +31,10 @@ class RecentEstimationsSection extends StatefulWidget {
 }
 
 class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
-  late RecentEstimationsBloc _bloc;
-  final AppRouter _router = Modular.get<AppRouter>();
-
   @override
   void initState() {
     super.initState();
-    _bloc = Modular.get<RecentEstimationsBloc>();
-    _bloc.add(const RecentEstimationsWatchStarted());
+    widget.bloc.add(const RecentEstimationsWatchStarted());
   }
 
   @override
@@ -69,7 +74,7 @@ class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
         SizedBox(
           height: CoreSpacing.space32 - CoreSpacing.space2,
           child: BlocBuilder<RecentEstimationsBloc, RecentEstimationsState>(
-            bloc: _bloc,
+            bloc: widget.bloc,
             builder: (context, state) {
               if (state is RecentEstimationsLoading &&
                   state.lastKnownEstimations == null) {
@@ -135,7 +140,7 @@ class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
   }
 
   void _openAllEstimations() {
-    final projectId = _bloc.currentProjectId;
+    final projectId = widget.bloc.currentProjectId;
     if (projectId == null || projectId.isEmpty) {
       return;
     }
@@ -146,6 +151,6 @@ class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
   }
 
   void _openEstimationDetails(String estimationId) {
-    _router.pushNamed('$fullEstimationDetailsRoute/$estimationId');
+    widget.router.pushNamed('$fullEstimationDetailsRoute/$estimationId');
   }
 }
