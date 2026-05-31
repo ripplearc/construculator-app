@@ -44,7 +44,7 @@ class RemoteProjectSettingDataSource implements ProjectSettingDataSource {
 
       return ProjectDto.fromJson(row);
     } on NotFoundException {
-      rethrow;
+      rethrow; // Prevents double-logging in the catch below.
     } catch (error, stackTrace) {
       _logger.warning(
         'Error while getting project setting for projectId: $projectId, error: $error',
@@ -66,6 +66,7 @@ class RemoteProjectSettingDataSource implements ProjectSettingDataSource {
 
       // Editable columns are always sent (including nulls) so the edit form
       // can clear an optional field. project_name is NOT NULL, so it is always set.
+      // updated_at is omitted because it is managed server-side by a DB trigger.
       final data = <String, dynamic>{
         DatabaseConstants.projectNameColumn: projectDto.projectName,
         DatabaseConstants.descriptionColumn: projectDto.description,
@@ -102,6 +103,9 @@ class RemoteProjectSettingDataSource implements ProjectSettingDataSource {
 
       // Hard remote delete by id. Offline-queued / soft deletion will be
       // handled by the local data source.
+      // Note: Supabase DELETE is a no-op for non-existent rows — callers that
+      // need to distinguish "deleted" vs "never existed" must check rows-affected
+      // at the repository layer.
       // TODO: https://ripplearc.youtrack.cloud/issue/CA-262
       await _supabaseWrapper.delete(
         table: DatabaseConstants.projectsTable,

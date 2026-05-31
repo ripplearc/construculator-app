@@ -167,6 +167,16 @@ void main() {
           throwsA(isA<ServerException>()),
         );
       });
+
+      test('rethrows generic (non-PostgrestException) error as-is', () async {
+        supabaseWrapper.shouldThrowOnUpdate = true;
+
+        final dto = _projectDto(id: 'project-1', projectName: 'Name');
+        await expectLater(
+          dataSource.updateProject(dto),
+          throwsA(isA<ServerException>()),
+        );
+      });
     });
 
     group('deleteProject', () {
