@@ -94,16 +94,17 @@ void main() {
         expect(calls.first['project'], equals(project));
       });
 
-      test('returns Right(projectToReturn) when set', () async {
-        final returned = _fakeProject(id: 'p-1', projectName: 'Returned');
-        fake.projectToReturn = returned;
+      test('returns Right(passed project) and mutates projectToReturn', () async {
+        fake.projectToReturn = _fakeProject(id: 'p-1', projectName: 'Old');
+        final updated = _fakeProject(id: 'p-1', projectName: 'New');
 
-        final result = await fake.updateProject(_fakeProject(id: 'p-1'));
+        final result = await fake.updateProject(updated);
 
         result.fold(
           (_) => fail('Expected Right'),
-          (project) => expect(project.projectName, equals('Returned')),
+          (project) => expect(project.projectName, equals('New')),
         );
+        expect(fake.projectToReturn?.projectName, equals('New'));
       });
 
       test(
