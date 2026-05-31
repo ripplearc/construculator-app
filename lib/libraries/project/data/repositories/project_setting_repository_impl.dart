@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
-import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_setting_data_source.dart';
 import 'package:construculator/libraries/project/data/models/project_dto.dart';
@@ -16,7 +15,6 @@ import 'package:construculator/libraries/project/domain/repositories/project_set
 class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
   final ProjectSettingDataSource _dataSource;
   final ProjectPermissionDataSource _permissionDataSource;
-  static final _logger = AppLogger().tag('ProjectSettingRepositoryImpl');
 
   final Map<String, StreamController<Either<Failure, Project>>>
   _settingControllers = {};
@@ -34,14 +32,7 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
     try {
       final dto = await _dataSource.fetchProjectSetting(projectId);
       return Right(dto.toDomain());
-    } catch (error, stackTrace) {
-      // Log raw error and stack trace before domain mapping so diagnostics
-      // keep the original exception details instead of only the mapped Failure.
-      _logger.warning(
-        'Error while getting project setting for projectId: $projectId',
-        error,
-        stackTrace,
-      );
+    } catch (error) {
       return Left(_handleError(error));
     }
   }
@@ -62,14 +53,7 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       final dto = _toDtoFromEntity(project);
       final result = await _dataSource.updateProject(dto);
       return Right(result.toDomain());
-    } catch (error, stackTrace) {
-      // Log raw error and stack trace before domain mapping so diagnostics
-      // keep the original exception details instead of only the mapped Failure.
-      _logger.warning(
-        'Error while updating project with id: ${project.id}',
-        error,
-        stackTrace,
-      );
+    } catch (error) {
       return Left(_handleError(error));
     }
   }
@@ -89,14 +73,7 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
     try {
       await _dataSource.deleteProject(projectId);
       return const Right(null);
-    } catch (error, stackTrace) {
-      // Log raw error and stack trace before domain mapping so diagnostics
-      // keep the original exception details instead of only the mapped Failure.
-      _logger.warning(
-        'Error while deleting project with id: $projectId',
-        error,
-        stackTrace,
-      );
+    } catch (error) {
       return Left(_handleError(error));
     }
   }
@@ -128,11 +105,6 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
         .listen(
           (_) => _refreshProjectSetting(projectId),
           onError: (Object error, StackTrace stackTrace) {
-            _logger.warning(
-              'Error while watching project setting changes for projectId: $projectId',
-              error,
-              stackTrace,
-            );
             final controller = _settingControllers[projectId];
             if (controller?.isClosed == false) {
               controller?.addError(error, stackTrace);
