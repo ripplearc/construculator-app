@@ -30,6 +30,13 @@ abstract class ProjectSettingRepository {
   /// [ProjectErrorType.permissionDenied] when the caller lacks the permission.
   Future<Either<Failure, void>> deleteProject(String projectId);
 
+  /// Emits the current project state and re-emits on every remote change.
+  ///
+  /// Emits [Right] with the updated [Project] on each change, or [Left] with
+  /// a [Failure] if a fetch error occurs. Stream errors from the underlying
+  /// data source are forwarded to subscribers.
+  Stream<Either<Failure, Project>> watchProjectSetting(String projectId);
+
   /// Releases subscriptions and stream controllers held by this repository.
   void dispose();
 }

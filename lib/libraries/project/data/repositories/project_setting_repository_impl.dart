@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
@@ -16,6 +18,11 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
   final ProjectPermissionDataSource _permissionDataSource;
   static final _logger = AppLogger().tag('ProjectSettingRepositoryImpl');
 
+  final Map<String, StreamController<Either<Failure, Project>>>
+  _settingControllers = {};
+  final Map<String, StreamSubscription<ProjectDto?>> _changesSubscriptions = {};
+  final Map<String, int> _refreshSequences = {};
+
   ProjectSettingRepositoryImpl({
     required ProjectSettingDataSource dataSource,
     required ProjectPermissionDataSource permissionDataSource,
@@ -28,13 +35,14 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       final dto = await _dataSource.fetchProjectSetting(projectId);
       return Right(dto.toDomain());
     } catch (error, stackTrace) {
-      return Left(
-        _handleError(
-          error,
-          'getting project setting for projectId: $projectId',
-          stackTrace,
-        ),
+      // Log raw error and stack trace before domain mapping so diagnostics
+      // keep the original exception details instead of only the mapped Failure.
+      _logger.warning(
+        'Error while getting project setting for projectId: $projectId',
+        error,
+        stackTrace,
       );
+      return Left(_handleError(error));
     }
   }
 
@@ -55,13 +63,14 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       final result = await _dataSource.updateProject(dto);
       return Right(result.toDomain());
     } catch (error, stackTrace) {
-      return Left(
-        _handleError(
-          error,
-          'updating project with id: ${project.id}',
-          stackTrace,
-        ),
+      // Log raw error and stack trace before domain mapping so diagnostics
+      // keep the original exception details instead of only the mapped Failure.
+      _logger.warning(
+        'Error while updating project with id: ${project.id}',
+        error,
+        stackTrace,
       );
+      return Left(_handleError(error));
     }
   }
 
@@ -81,9 +90,80 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       await _dataSource.deleteProject(projectId);
       return const Right(null);
     } catch (error, stackTrace) {
-      return Left(
-        _handleError(error, 'deleting project with id: $projectId', stackTrace),
+      // Log raw error and stack trace before domain mapping so diagnostics
+      // keep the original exception details instead of only the mapped Failure.
+      _logger.warning(
+        'Error while deleting project with id: $projectId',
+        error,
+        stackTrace,
       );
+      return Left(_handleError(error));
+    }
+  }
+
+  @override
+  Stream<Either<Failure, Project>> watchProjectSetting(String projectId) {
+    final existing = _settingControllers[projectId];
+    if (existing?.isClosed == true) {
+      _settingControllers.remove(projectId);
+    }
+
+    final controller = _settingControllers.putIfAbsent(
+      projectId,
+      () => StreamController<Either<Failure, Project>>.broadcast(
+        onListen: () => _startWatchingSettingChanges(projectId),
+        onCancel: () => _stopWatchingIfNoListeners(projectId),
+      ),
+    );
+    return controller.stream;
+  }
+
+  void _startWatchingSettingChanges(String projectId) {
+    if (_changesSubscriptions.containsKey(projectId)) {
+      return;
+    }
+
+    _changesSubscriptions[projectId] = _dataSource
+        .watchProjectChanges(projectId)
+        .listen(
+          (_) => _refreshProjectSetting(projectId),
+          onError: (Object error, StackTrace stackTrace) {
+            _logger.warning(
+              'Error while watching project setting changes for projectId: $projectId',
+              error,
+              stackTrace,
+            );
+            final controller = _settingControllers[projectId];
+            if (controller?.isClosed == false) {
+              controller?.addError(error, stackTrace);
+            }
+          },
+        );
+
+    _refreshProjectSetting(projectId);
+  }
+
+  void _stopWatchingIfNoListeners(String projectId) {
+    final controller = _settingControllers[projectId];
+    if (controller?.hasListener == true) {
+      return;
+    }
+    _changesSubscriptions.remove(projectId)?.cancel();
+    _settingControllers.remove(projectId);
+    _refreshSequences.remove(projectId);
+  }
+
+  Future<void> _refreshProjectSetting(String projectId) async {
+    final sequence = (_refreshSequences[projectId] ?? 0) + 1;
+    _refreshSequences[projectId] = sequence;
+
+    final result = await getProjectSetting(projectId);
+
+    if (_refreshSequences[projectId] != sequence) return;
+
+    final controller = _settingControllers[projectId];
+    if (controller?.isClosed == false) {
+      controller?.add(result);
     }
   }
 
@@ -102,32 +182,20 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
     );
   }
 
-  static const _unexpectedErrorTypes = {
-    ProjectErrorType.unexpectedError,
-    ProjectErrorType.unexpectedDatabaseError,
-    ProjectErrorType.parsingError,
-  };
-
-  ProjectFailure _handleError(
-    Object error,
-    String operation,
-    StackTrace stackTrace,
-  ) {
-    final failure = ProjectErrorMapper.toFailure(error);
-    if (_unexpectedErrorTypes.contains(failure.errorType)) {
-      _logger.error('Error $operation: $error', error, stackTrace);
-    } else {
-      _logger.warning(
-        'Error $operation: ${failure.errorType.name}',
-        error,
-        stackTrace,
-      );
-    }
-    return failure;
+  ProjectFailure _handleError(Object error) {
+    return ProjectErrorMapper.toFailure(error);
   }
 
   @override
   void dispose() {
-    // No subscriptions or stream controllers to release in this PR's scope.
+    for (final subscription in _changesSubscriptions.values) {
+      subscription.cancel();
+    }
+    _changesSubscriptions.clear();
+    for (final controller in _settingControllers.values) {
+      controller.close();
+    }
+    _settingControllers.clear();
+    _refreshSequences.clear();
   }
 }
