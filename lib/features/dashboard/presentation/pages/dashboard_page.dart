@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
+import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
@@ -9,8 +12,13 @@ import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class DashboardPage extends StatefulWidget {
+  /// Notifies the widget of changes in user authentication or profile state.
   final AuthNotifier authNotifier;
+
+  /// Manages user credentials and profile loading.
   final AuthManager authManager;
+
+  /// The router used to navigate to other pages (e.g. login, create account).
   final AppRouter router;
 
   const DashboardPage({
@@ -26,17 +34,26 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   String userInfo = '...';
+  StreamSubscription<User?>? _profileSubscription;
+
   @override
   void dispose() {
+    _profileSubscription?.cancel();
     super.dispose();
   }
 
   @override
   void initState() {
-    widget.authNotifier.onUserProfileChanged.listen((event) {
+    super.initState();
+    _profileSubscription = widget.authNotifier.onUserProfileChanged.listen((
+      event,
+    ) {
       if (event == null) {
         final cred = widget.authManager.getCurrentCredentials();
-        widget.router.navigate(fullCreateAccountRoute, arguments: cred.data?.email);
+        widget.router.navigate(
+          fullCreateAccountRoute,
+          arguments: cred.data?.email,
+        );
       }
     });
     final cred = widget.authManager.getCurrentCredentials();
@@ -58,7 +75,6 @@ class _DashboardPageState extends State<DashboardPage> {
             CoreToast.showError(context, 'Failed to load profile', 'Close');
           });
     }
-    super.initState();
   }
 
   @override
