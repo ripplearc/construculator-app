@@ -229,7 +229,27 @@ void main() {
       );
 
       blocTest<ProjectSettingsBloc, ProjectSettingsState>(
-        'emits [DeleteInProgress, Error] on delete failure',
+        'does not emit stale stream events after delete success',
+        build: () => Modular.get<ProjectSettingsBloc>(),
+        act: (bloc) async {
+          bloc.add(const ProjectSettingsWatchStarted(testProjectId));
+          await bloc.stream.firstWhere((s) => s is ProjectSettingsLoading);
+          fakeRepository.emitProject(tProject);
+          await bloc.stream.firstWhere((s) => s is ProjectSettingsLoaded);
+          bloc.add(const ProjectSettingsDeleteRequested(testProjectId));
+          await bloc.stream.firstWhere((s) => s is ProjectSettingsInitial);
+          fakeRepository.emitProject(tProject);
+        },
+        expect: () => [
+          const ProjectSettingsLoading(),
+          isA<ProjectSettingsLoaded>(),
+          const ProjectSettingsDeleteInProgress(),
+          const ProjectSettingsInitial(),
+        ],
+      );
+
+      blocTest<ProjectSettingsBloc, ProjectSettingsState>(
+        'emits [DeleteInProgress, Error] with lastProject on delete failure',
         build: () {
           fakeRepository.shouldFailOnDelete = true;
           fakeRepository.failureToReturn = const ProjectFailure(
@@ -242,11 +262,9 @@ void main() {
             bloc.add(const ProjectSettingsDeleteRequested(testProjectId)),
         expect: () => [
           const ProjectSettingsDeleteInProgress(),
-          isA<ProjectSettingsError>().having(
-            (s) => s.failure,
-            'failure',
-            isA<ProjectFailure>(),
-          ),
+          isA<ProjectSettingsError>()
+              .having((s) => s.failure, 'failure', isA<ProjectFailure>())
+              .having((s) => s.lastProject, 'lastProject', tProject),
         ],
       );
     });

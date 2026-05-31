@@ -80,12 +80,23 @@ class ProjectSettingsBloc
     ProjectSettingsDeleteRequested event,
     Emitter<ProjectSettingsState> emit,
   ) async {
+    final currentState = state;
+    final lastProject = currentState is ProjectSettingsLoaded
+        ? currentState.project
+        : null;
+
     emit(const ProjectSettingsDeleteInProgress());
 
     final result = await _repository.deleteProject(event.projectId);
-    result.fold(
-      (failure) => emit(ProjectSettingsError(failure: failure)),
-      (_) => emit(const ProjectSettingsInitial()),
+    await result.fold(
+      (failure) async => emit(
+        ProjectSettingsError(failure: failure, lastProject: lastProject),
+      ),
+      (_) async {
+        await _subscription?.cancel();
+        _subscription = null;
+        emit(const ProjectSettingsInitial());
+      },
     );
   }
 
