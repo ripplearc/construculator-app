@@ -1052,6 +1052,8 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
         );
       case SupabaseExceptionType.socket:
         throw SocketException(message);
+      case SupabaseExceptionType.network:
+        throw NetworkException(Trace.current(), Exception(message));
       case SupabaseExceptionType.timeout:
         throw TimeoutException(message);
       case SupabaseExceptionType.type:
