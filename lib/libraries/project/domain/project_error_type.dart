@@ -1,6 +1,6 @@
 // coverage:ignore-file
 
-/// Error type for project setting operations.
+/// Error type for project operations.
 ///
 /// - [connectionError]: network connectivity issues
 /// - [parsingError]: data parsing or mapping failed

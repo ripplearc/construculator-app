@@ -475,7 +475,6 @@ class _FakeProjectDataSource implements ProjectDataSource {
   String? lastOwnedUserId;
   String? lastSharedUserId;
   Object? getOwnedProjectsError;
-  Object? getSharedProjectsError;
   int getOwnedProjectsCalls = 0;
   Completer<void>? firstGetOwnedProjectsStartedCompleter;
   Completer<void>? nextGetOwnedProjectsCompleter;
@@ -509,12 +508,6 @@ class _FakeProjectDataSource implements ProjectDataSource {
   @override
   Future<List<ProjectDto>> getSharedProjects(String userId) async {
     lastSharedUserId = userId;
-
-    final error = getSharedProjectsError;
-    if (error != null) {
-      throw error;
-    }
-
     return sharedProjects;
   }
 
