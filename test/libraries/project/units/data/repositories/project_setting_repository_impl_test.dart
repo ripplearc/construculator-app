@@ -182,7 +182,8 @@ void main() {
 
       test('maps PostgrestException PGRST116 to notFoundError', () async {
         fakeSupabaseWrapper.shouldThrowOnSelect = true;
-        fakeSupabaseWrapper.selectExceptionType = SupabaseExceptionType.postgrest;
+        fakeSupabaseWrapper.selectExceptionType =
+            SupabaseExceptionType.postgrest;
         fakeSupabaseWrapper.postgrestErrorCode = PostgresErrorCode.noDataFound;
 
         final result = await repository.getProjectSetting('p-1');
@@ -583,6 +584,50 @@ void main() {
 
         await sub1.cancel();
         await sub2.cancel();
+      });
+
+      test('discards out-of-order refresh when a later refresh wins', () async {
+        fakeSupabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+          _fakeProjectRow(id: 'p-1', projectName: 'v1'),
+        ]);
+
+        final emitted = <String>[];
+        final v1Received = Completer<void>();
+        final v3Received = Completer<void>();
+
+        final subscription = repository.watchProjectSetting('p-1').listen((
+          result,
+        ) {
+          result.fold((_) {}, (project) {
+            emitted.add(project.projectName);
+            if (project.projectName == 'v1' && !v1Received.isCompleted) {
+              v1Received.complete();
+            }
+            if (project.projectName == 'v3' && !v3Received.isCompleted) {
+              v3Received.complete();
+            }
+          });
+        });
+
+        await v1Received.future;
+
+        final refreshCompleter = Completer<void>();
+        fakeSupabaseWrapper.shouldDelayOperations = true;
+        fakeSupabaseWrapper.completer = refreshCompleter;
+
+        fakeSupabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+          _fakeProjectRow(id: 'p-1', projectName: 'v2'),
+        ]);
+        fakeSupabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+          _fakeProjectRow(id: 'p-1', projectName: 'v3'),
+        ]);
+
+        refreshCompleter.complete();
+
+        await expectLater(v3Received.future, completes);
+
+        expect(emitted, equals(['v1', 'v3']));
+        await subscription.cancel();
       });
 
       test('cleans up resources on dispose', () async {
