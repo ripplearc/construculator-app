@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:equatable/equatable.dart';
@@ -54,7 +55,9 @@ class ProjectDropdownBloc
         .listen(
           (projects) => add(_ProjectDropdownProjectsUpdated(projects)),
           onError: (Object error, StackTrace stackTrace) {
-            add(_ProjectDropdownProjectsLoadFailed(error.toString()));
+            add(_ProjectDropdownProjectsLoadFailed(
+              error is Failure ? error : UnexpectedFailure(),
+            ));
           },
         );
   }
@@ -97,7 +100,7 @@ class ProjectDropdownBloc
     _ProjectDropdownProjectsLoadFailed event,
     Emitter<ProjectDropdownState> emit,
   ) {
-    emit(ProjectDropdownLoadFailure(event.message));
+    emit(ProjectDropdownLoadFailure(event.failure));
   }
 
   void _onSelected(
