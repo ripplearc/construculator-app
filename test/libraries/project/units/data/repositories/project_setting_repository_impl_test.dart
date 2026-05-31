@@ -1,7 +1,5 @@
 import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/errors/failures.dart';
-import 'package:construculator/libraries/project/data/data_source/interfaces/permission_data_source.dart';
 import 'package:construculator/libraries/project/data/repositories/project_setting_repository_impl.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
@@ -9,7 +7,6 @@ import 'package:construculator/libraries/project/domain/permission_constants.dar
 import 'package:construculator/libraries/project/domain/project_error_type.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_setting_repository.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
-import 'package:construculator/libraries/project/testing/fake_project_setting_data_source.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -17,7 +14,6 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:stack_trace/stack_trace.dart';
 
 import '../../../../../utils/fake_app_bootstrap_factory.dart';
 
@@ -103,7 +99,7 @@ void main() {
         }, (_) => fail('Expected Left'));
       });
 
-      test('returns Left(UnexpectedFailure) on unknown error', () async {
+      test('returns Left(unexpectedError) on unknown error', () async {
         supabaseWrapper.shouldThrowOnSelect = true;
         supabaseWrapper.selectExceptionType = SupabaseExceptionType.auth;
 
@@ -111,7 +107,11 @@ void main() {
 
         expect(result.isLeft(), isTrue);
         result.fold((failure) {
-          expect(failure, isA<UnexpectedFailure>());
+          expect(failure, isA<ProjectFailure>());
+          expect(
+            (failure as ProjectFailure).errorType,
+            equals(ProjectErrorType.unexpectedError),
+          );
         }, (_) => fail('Expected Left'));
       });
 
@@ -149,18 +149,10 @@ void main() {
       });
 
       test('returns Left(connectionError) on NetworkException', () async {
-        final fake = FakeProjectSettingDataSource()
-          ..fetchExceptionToThrow = NetworkException(
-            Trace.current(),
-            Exception('network error'),
-          );
-        // ignore: no_direct_instantiation, reason: FakeProjectSettingDataSource is injected to simulate NetworkException, which cannot be triggered via FakeSupabaseWrapper
-        final repoWithFake = ProjectSettingRepositoryImpl(
-          dataSource: fake,
-          permissionDataSource: Modular.get<ProjectPermissionDataSource>(),
-        );
+        supabaseWrapper.shouldThrowOnSelect = true;
+        supabaseWrapper.selectExceptionType = SupabaseExceptionType.network;
 
-        final result = await repoWithFake.getProjectSetting('p-1');
+        final result = await repository.getProjectSetting('p-1');
 
         expect(result.isLeft(), isTrue);
         result.fold((failure) {

@@ -1,19 +1,14 @@
-import 'dart:async';
-import 'dart:io';
-
 import 'package:construculator/libraries/either/either.dart';
-import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_setting_data_source.dart';
 import 'package:construculator/libraries/project/data/models/project_dto.dart';
+import 'package:construculator/libraries/project/data/project_error_mapper.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/permission_constants.dart';
 import 'package:construculator/libraries/project/domain/project_error_type.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_setting_repository.dart';
-import 'package:construculator/libraries/supabase/data/supabase_types.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 /// Supabase-backed implementation of [ProjectSettingRepository].
 class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
@@ -107,81 +102,32 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
     );
   }
 
-  Failure _handleError(Object error, String operation, StackTrace stackTrace) {
-    if (error is NotFoundException) {
+  static const _unexpectedErrorTypes = {
+    ProjectErrorType.unexpectedError,
+    ProjectErrorType.unexpectedDatabaseError,
+    ProjectErrorType.parsingError,
+  };
+
+  ProjectFailure _handleError(
+    Object error,
+    String operation,
+    StackTrace stackTrace,
+  ) {
+    final failure = ProjectErrorMapper.toFailure(error);
+    if (_unexpectedErrorTypes.contains(failure.errorType)) {
+      _logger.error('Error $operation: $error', error, stackTrace);
+    } else {
       _logger.warning(
-        'Not found $operation: ${error.exception}',
+        'Error $operation: ${failure.errorType.name}',
         error,
         stackTrace,
       );
-      return const ProjectFailure(errorType: ProjectErrorType.notFoundError);
     }
-
-    if (error is ServerException) {
-      _logger.warning(
-        'Server error $operation: ${error.exception}',
-        error,
-        stackTrace,
-      );
-      return const ProjectFailure(
-        errorType: ProjectErrorType.unexpectedDatabaseError,
-      );
-    }
-
-    if (error is TimeoutException) {
-      _logger.warning(
-        'Timeout error $operation: ${error.message}',
-        error,
-        stackTrace,
-      );
-      return const ProjectFailure(errorType: ProjectErrorType.timeoutError);
-    }
-
-    if (error is SocketException || error is NetworkException) {
-      _logger.warning(
-        'Connection error $operation: ${error is SocketException ? (error).message : error.toString()}',
-        error,
-        stackTrace,
-      );
-      return const ProjectFailure(errorType: ProjectErrorType.connectionError);
-    }
-
-    if (error is TypeError) {
-      _logger.warning(
-        'Parsing error $operation: ${error.toString()}',
-        error,
-        stackTrace,
-      );
-      return const ProjectFailure(errorType: ProjectErrorType.parsingError);
-    }
-
-    if (error is supabase.PostgrestException) {
-      _logger.warning(
-        'PostgreSQL error $operation: code=${error.code}, message=${error.message}',
-        error,
-        stackTrace,
-      );
-      final postgresErrorCode = PostgresErrorCode.fromCode(error.code);
-      if (postgresErrorCode == PostgresErrorCode.noDataFound) {
-        return const ProjectFailure(errorType: ProjectErrorType.notFoundError);
-      } else if (postgresErrorCode == PostgresErrorCode.connectionFailure ||
-          postgresErrorCode == PostgresErrorCode.unableToConnect ||
-          postgresErrorCode == PostgresErrorCode.connectionDoesNotExist) {
-        return const ProjectFailure(
-          errorType: ProjectErrorType.connectionError,
-        );
-      }
-      return const ProjectFailure(
-        errorType: ProjectErrorType.unexpectedDatabaseError,
-      );
-    }
-
-    _logger.error('Unexpected error $operation: $error', error, stackTrace);
-    return UnexpectedFailure();
+    return failure;
   }
 
   @override
   void dispose() {
-    // No subscriptions or stream controllers to release in the read-only MVP.
+    // No subscriptions or stream controllers to release in this PR's scope.
   }
 }
