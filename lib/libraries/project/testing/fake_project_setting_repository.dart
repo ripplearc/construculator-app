@@ -8,13 +8,14 @@ import 'package:construculator/libraries/project/domain/repositories/project_set
 
 /// Fake implementation of [ProjectSettingRepository] for testing.
 class FakeProjectSettingRepository implements ProjectSettingRepository {
-  /// Tracks method calls for boundary assertions.
+  // Tracks method calls for boundary assertions.
   final List<Map<String, dynamic>> _methodCalls = [];
 
   int _activeWatchListeners = 0;
   bool _isDisposed = false;
 
-  /// The [Project] returned by [getProjectSetting] and [updateProject].
+  /// The persisted project state. Read by [getProjectSetting], mutated by
+  /// [updateProject], and cleared by [deleteProject].
   Project? projectToReturn;
 
   /// When true, [getProjectSetting] returns a [Left] failure.
