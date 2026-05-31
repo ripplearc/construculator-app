@@ -10,8 +10,13 @@ import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class DashboardPage extends StatefulWidget {
+  /// Notifies the widget of changes in user authentication or profile state.
   final AuthNotifier authNotifier;
+
+  /// Manages user credentials and profile loading.
   final AuthManager authManager;
+
+  /// The router used to navigate to other pages (e.g. login, create account).
   final AppRouter router;
 
   const DashboardPage({
