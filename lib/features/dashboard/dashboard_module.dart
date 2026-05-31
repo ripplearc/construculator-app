@@ -5,9 +5,12 @@ import 'package:construculator/features/dashboard/presentation/bloc/recent_estim
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/router_module.dart';
 import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
 import 'package:construculator/libraries/router/routes/global_search_routes.dart';
@@ -45,8 +48,12 @@ class DashboardModule extends Module {
   void routes(RouteManager r) {
     r.child(
       dashboardRoute,
-      guards: [AuthGuard()],
-      child: (context) => const DashboardPage(),
+      guards: [AuthGuard(() => Modular.get<AuthManager>())],
+      child: (context) => DashboardPage(
+        authNotifier: Modular.get<AuthNotifier>(),
+        authManager: Modular.get<AuthManager>(),
+        router: Modular.get<AppRouter>(),
+      ),
     );
     r.module(globalSearchBaseRoute, module: GlobalSearchModule(appBootstrap));
   }

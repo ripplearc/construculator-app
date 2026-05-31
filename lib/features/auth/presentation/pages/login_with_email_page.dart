@@ -10,12 +10,16 @@ import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class LoginWithEmailPage extends StatefulWidget {
+  final AppRouter router;
   final String email;
-  const LoginWithEmailPage({super.key, required this.email});
+  const LoginWithEmailPage({
+    super.key,
+    required this.router,
+    required this.email,
+  });
 
   @override
   State<LoginWithEmailPage> createState() => _LoginWithEmailPageState();
@@ -26,7 +30,6 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
   bool _canPressContinue = false;
   List<String>? _emailErrorList;
   List<Widget>? _emailErrorWidgetList;
-  final AppRouter _router = Modular.get<AppRouter>();
 
   _getContinueButtonText(LoginWithEmailState state) {
     final l10n = context.l10n;
@@ -129,7 +132,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
                     errorText: l10n.emailNotRegistered,
                     linkText: l10n.register,
                     onPressed: () {
-                      _router.navigate(
+                      widget.router.navigate(
                         fullRegisterRoute,
                         arguments: _emailController.text,
                       );
@@ -155,7 +158,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
             text: l10n.dontHaveAndAccountText,
             actionText: l10n.register,
             onPressed: () {
-              _router.navigate(fullRegisterRoute);
+              widget.router.navigate(fullRegisterRoute);
             },
           ),
         ],
@@ -194,7 +197,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
                   !_canPressContinue ||
                   state is LoginWithEmailAvailabilityLoading,
               onPressed: () {
-                _router.pushNamed(
+                widget.router.pushNamed(
                   fullEnterPasswordRoute,
                   arguments: _emailController.text,
                 );

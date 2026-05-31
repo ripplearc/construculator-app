@@ -5,12 +5,14 @@ import 'package:construculator/features/calculations/presentation/pages/calculat
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// The primary shell page for the application's authenticated interface.
@@ -19,14 +21,35 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// tab navigation using [AppShellBloc]. Module lazy-loading is orchestrated
 /// inside the BLoC, keeping this Page a pure presentation concern.
 class AppShellPage extends StatefulWidget {
-  const AppShellPage({super.key});
+  /// Builds the project header app bar displayed above the tab content.
+  final ProjectUIProvider projectUIProvider;
+
+  // TODO: [CA-708] Remove once DashboardPage reads authNotifier, authManager, and router from the module directly.
+  // https://ripplearc.youtrack.cloud/issue/CA-708
+
+  /// Notifies when the authenticated user's profile changes.
+  final AuthNotifier authNotifier;
+
+  /// Manages authentication state and credentials.
+  final AuthManager authManager;
+
+  /// Handles navigation across the top-level route stack.
+  final AppRouter router;
+
+  const AppShellPage({
+    super.key,
+    required this.projectUIProvider,
+    required this.authNotifier,
+    required this.authManager,
+    required this.router,
+  });
 
   @override
   State<AppShellPage> createState() => _AppShellPageState();
 }
 
 class _AppShellPageState extends State<AppShellPage> {
-  final AppShellBloc _bloc = Modular.get<AppShellBloc>();
+  late AppShellBloc _bloc;
 
   final List<GlobalKey<NavigatorState>> _tabNavigatorKeys = List.generate(
     ShellTab.values.length,
@@ -34,9 +57,9 @@ class _AppShellPageState extends State<AppShellPage> {
   );
 
   @override
-  void dispose() {
-    _bloc.close();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _bloc = context.read<AppShellBloc>();
   }
 
   void _onPopInvoked(bool didPop) {
@@ -66,7 +89,13 @@ class _AppShellPageState extends State<AppShellPage> {
   Widget _buildTabRoot(ShellTab tab) {
     switch (tab) {
       case ShellTab.home:
-        return const DashboardPage();
+        // TODO: [CA-708] Remove authNotifier, authManager, and router from DashboardPage once the page reads them from the module directly.
+        // https://ripplearc.youtrack.cloud/issue/CA-708
+        return DashboardPage(
+          authNotifier: widget.authNotifier,
+          authManager: widget.authManager,
+          router: widget.router,
+        );
       case ShellTab.calculations:
         return const CalculationsPage();
       case ShellTab.estimation:
@@ -105,7 +134,7 @@ class _AppShellPageState extends State<AppShellPage> {
     }
     return PreferredSize(
       preferredSize: const Size.fromHeight(kToolbarHeight),
-      child: Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
+      child: widget.projectUIProvider.buildProjectHeaderAppbar(
         projectId: projectId,
       ),
     );
@@ -114,7 +143,6 @@ class _AppShellPageState extends State<AppShellPage> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AppShellBloc, AppShellState>(
-      bloc: _bloc,
       builder: (context, state) {
         return PopScope(
           canPop: false,

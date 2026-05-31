@@ -1,44 +1,66 @@
+import 'dart:async';
+
 import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
+import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+  /// Notifies the widget of changes in user authentication or profile state.
+  final AuthNotifier authNotifier;
+
+  /// Manages user credentials and profile loading.
+  final AuthManager authManager;
+
+  /// The router used to navigate to other pages (e.g. login, create account).
+  final AppRouter router;
+
+  const DashboardPage({
+    super.key,
+    required this.authNotifier,
+    required this.authManager,
+    required this.router,
+  });
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  final notifier = Modular.get<AuthNotifier>();
-  final authManager = Modular.get<AuthManager>();
   String userInfo = '...';
-  final AppRouter _router = Modular.get<AppRouter>();
+  StreamSubscription<User?>? _profileSubscription;
+
   @override
   void dispose() {
+    _profileSubscription?.cancel();
     super.dispose();
   }
 
   @override
   void initState() {
-    notifier.onUserProfileChanged.listen((event) {
+    super.initState();
+    _profileSubscription = widget.authNotifier.onUserProfileChanged.listen((
+      event,
+    ) {
       if (event == null) {
-        final cred = authManager.getCurrentCredentials();
-        _router.navigate(fullCreateAccountRoute, arguments: cred.data?.email);
+        final cred = widget.authManager.getCurrentCredentials();
+        widget.router.navigate(
+          fullCreateAccountRoute,
+          arguments: cred.data?.email,
+        );
       }
     });
-    final cred = authManager.getCurrentCredentials();
+    final cred = widget.authManager.getCurrentCredentials();
     if (cred.data?.id == null) {
-      _router.navigate(fullLoginRoute);
+      widget.router.navigate(fullLoginRoute);
     } else {
-      authManager
+      widget.authManager
           .getUserProfile(cred.data?.id ?? '')
           .then((result) {
             if (result.isSuccess && result.data != null) {
@@ -53,7 +75,6 @@ class _DashboardPageState extends State<DashboardPage> {
             CoreToast.showError(context, 'Failed to load profile', 'Close');
           });
     }
-    super.initState();
   }
 
   @override
@@ -114,9 +135,8 @@ class _DashboardPageState extends State<DashboardPage> {
             Center(
               child: CoreButton(
                 onPressed: () {
-                  final authManager = Modular.get<AuthManager>();
-                  authManager.logout();
-                  _router.navigate(fullLoginRoute);
+                  widget.authManager.logout();
+                  widget.router.navigate(fullLoginRoute);
                 },
                 label: 'Logout',
                 centerAlign: true,
