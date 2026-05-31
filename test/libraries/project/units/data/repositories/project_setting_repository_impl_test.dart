@@ -20,6 +20,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 
 import '../../../../../utils/fake_app_bootstrap_factory.dart';
 
@@ -124,7 +125,9 @@ void main() {
         }, (_) => fail('Expected Left'));
       });
 
-      test('returns Left(unexpectedError) on unexpected error', () async {
+      test('returns Left(unexpectedError) on unhandled error', () async {
+        // AuthException is not handled by ProjectErrorMapper and falls through
+        // to ProjectErrorType.unexpectedError.
         fakeSupabaseWrapper.shouldThrowOnSelect = true;
         fakeSupabaseWrapper.selectExceptionType = SupabaseExceptionType.auth;
 
@@ -193,7 +196,8 @@ void main() {
 
       test('maps PostgrestException PGRST116 to notFoundError', () async {
         fakeSupabaseWrapper.shouldThrowOnSelect = true;
-        fakeSupabaseWrapper.selectExceptionType = SupabaseExceptionType.postgrest;
+        fakeSupabaseWrapper.selectExceptionType =
+            SupabaseExceptionType.postgrest;
         fakeSupabaseWrapper.postgrestErrorCode = PostgresErrorCode.noDataFound;
 
         final result = await repository.getProjectSetting('p-1');
@@ -493,6 +497,39 @@ void main() {
         expect(failure, isA<ProjectFailure>());
         await subscription.cancel();
       });
+
+      test(
+        'emits stream error and logs at error level for unhandled exception type',
+        () async {
+          fakeSupabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+            _fakeProjectRow(id: 'p-1'),
+          ]);
+
+          final errorCompleter = Completer<Object>();
+          final subscription = repository
+              .watchProjectSetting('p-1')
+              .listen(
+                (_) {},
+                onError: (Object error, StackTrace _) {
+                  if (!errorCompleter.isCompleted) {
+                    errorCompleter.complete(error);
+                  }
+                },
+              );
+
+          await pumpEventQueue();
+
+          fakeSupabaseWrapper.shouldEmitStreamErrors = true;
+          fakeSupabaseWrapper.streamExceptionType = SupabaseExceptionType.auth;
+          fakeSupabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+            _fakeProjectRow(id: 'p-1'),
+          ]);
+
+          final receivedError = await errorCompleter.future;
+          expect(receivedError, isA<AuthException>());
+          await subscription.cancel();
+        },
+      );
 
       test('forwards stream error from data source to subscribers', () async {
         fakeSupabaseWrapper.addTableData(DatabaseConstants.projectsTable, [

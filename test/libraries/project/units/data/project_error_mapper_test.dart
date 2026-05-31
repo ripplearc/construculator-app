@@ -79,6 +79,30 @@ void main() {
       );
     });
 
+    test('maps PostgrestException connection codes to connectionError', () {
+      for (final code in ['08006', '08001', '08003']) {
+        expect(
+          ProjectErrorMapper.toErrorType(
+            supabase.PostgrestException(message: 'connection error', code: code),
+          ),
+          ProjectErrorType.connectionError,
+          reason: 'code $code should map to connectionError',
+        );
+      }
+    });
+
+    test('maps PostgrestException unique violation to unexpectedDatabaseError', () {
+      expect(
+        ProjectErrorMapper.toErrorType(
+          const supabase.PostgrestException(
+            message: 'duplicate key value violates unique constraint',
+            code: '23505',
+          ),
+        ),
+        ProjectErrorType.unexpectedDatabaseError,
+      );
+    });
+
     test('maps permission denied responses to permissionDenied via code 42501',
         () {
       expect(
