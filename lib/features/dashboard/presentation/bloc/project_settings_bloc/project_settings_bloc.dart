@@ -46,22 +46,64 @@ class ProjectSettingsBloc
   void _onEditingStarted(
     ProjectSettingsEditingStarted event,
     Emitter<ProjectSettingsState> emit,
-  ) {}
+  ) {
+    if (state is! ProjectSettingsLoaded) return;
+    emit(
+      ProjectSettingsEditing(
+        project: event.project,
+        originalProject: event.project,
+      ),
+    );
+  }
 
   Future<void> _onUpdateSubmitted(
     ProjectSettingsUpdateSubmitted event,
     Emitter<ProjectSettingsState> emit,
-  ) async {}
+  ) async {
+    final currentState = state;
+    final originalProject = currentState is ProjectSettingsEditing
+        ? currentState.originalProject
+        : event.project;
+
+    emit(ProjectSettingsSaving(event.project));
+
+    final result = await _repository.updateProject(event.project);
+    result.fold(
+      (failure) => emit(
+        ProjectSettingsError(failure: failure, lastProject: originalProject),
+      ),
+      (updated) => emit(ProjectSettingsLoaded(updated)),
+    );
+  }
 
   Future<void> _onDeleteRequested(
     ProjectSettingsDeleteRequested event,
     Emitter<ProjectSettingsState> emit,
-  ) async {}
+  ) async {
+    emit(const ProjectSettingsDeleteInProgress());
+
+    final result = await _repository.deleteProject(event.projectId);
+    result.fold(
+      (failure) => emit(ProjectSettingsError(failure: failure)),
+      (_) => emit(const ProjectSettingsInitial()),
+    );
+  }
 
   void _onStreamUpdated(
     _ProjectSettingsStreamUpdated event,
     Emitter<ProjectSettingsState> emit,
-  ) {}
+  ) {
+    final currentState = state;
+    final lastProject =
+        currentState is ProjectSettingsLoaded ? currentState.project : null;
+
+    event.result.fold(
+      (failure) => emit(
+        ProjectSettingsError(failure: failure, lastProject: lastProject),
+      ),
+      (project) => emit(ProjectSettingsLoaded(project)),
+    );
+  }
 
   @override
   Future<void> close() async {
