@@ -28,19 +28,22 @@ void main() {
       build: () => AppShellBloc(moduleLoader: tabModuleManager),
       act: (b) => b.add(const AppShellInitialized()),
       expect: () => [
-        const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {0}),
+        AppShellState(
+          selectedTabIndex: ShellTab.home.index,
+          loadedTabIndexes: {ShellTab.home.index},
+        ),
       ],
       verify: (_) => expect(tabModuleManager.isLoaded(ShellTab.home), isTrue),
     );
 
     test('events expose value equality through props', () {
       expect(
-        const AppShellTabSelected(2).props,
-        const AppShellTabSelected(2).props,
+        const AppShellTabSelected(ShellTab.estimation).props,
+        const AppShellTabSelected(ShellTab.estimation).props,
       );
       expect(
-        const AppShellTabSelected(2),
-        equals(const AppShellTabSelected(2)),
+        const AppShellTabSelected(ShellTab.estimation),
+        equals(const AppShellTabSelected(ShellTab.estimation)),
       );
     });
 
@@ -65,12 +68,18 @@ void main() {
       'processes AppShellTabSelected then AppShellInitialized: loads the selected tab, then initializes home',
       build: () => bloc,
       act: (bloc) {
-        bloc.add(const AppShellTabSelected(1));
+        bloc.add(const AppShellTabSelected(ShellTab.calculations));
         bloc.add(const AppShellInitialized());
       },
       expect: () => [
-        const AppShellState(selectedTabIndex: 1, loadedTabIndexes: {0, 1}),
-        const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {0}),
+        AppShellState(
+          selectedTabIndex: ShellTab.calculations.index,
+          loadedTabIndexes: {ShellTab.home.index, ShellTab.calculations.index},
+        ),
+        AppShellState(
+          selectedTabIndex: ShellTab.home.index,
+          loadedTabIndexes: {ShellTab.home.index},
+        ),
       ],
       verify: (bloc) {
         expect(tabModuleManager.isLoaded(ShellTab.home), isTrue);
@@ -81,12 +90,22 @@ void main() {
       'updates selected tab and tracks lazy-loaded tabs',
       build: () => bloc,
       act: (bloc) {
-        bloc.add(const AppShellTabSelected(1));
-        bloc.add(const AppShellTabSelected(3));
+        bloc.add(const AppShellTabSelected(ShellTab.calculations));
+        bloc.add(const AppShellTabSelected(ShellTab.members));
       },
       expect: () => [
-        const AppShellState(selectedTabIndex: 1, loadedTabIndexes: {0, 1}),
-        const AppShellState(selectedTabIndex: 3, loadedTabIndexes: {0, 1, 3}),
+        AppShellState(
+          selectedTabIndex: ShellTab.calculations.index,
+          loadedTabIndexes: {ShellTab.home.index, ShellTab.calculations.index},
+        ),
+        AppShellState(
+          selectedTabIndex: ShellTab.members.index,
+          loadedTabIndexes: {
+            ShellTab.home.index,
+            ShellTab.calculations.index,
+            ShellTab.members.index,
+          },
+        ),
       ],
       verify: (bloc) {
         expect(tabModuleManager.isLoaded(ShellTab.home), isTrue);
@@ -99,7 +118,7 @@ void main() {
     blocTest<AppShellBloc, AppShellState>(
       'does not emit when selecting current tab',
       build: () => bloc,
-      act: (bloc) => bloc.add(const AppShellTabSelected(0)),
+      act: (bloc) => bloc.add(const AppShellTabSelected(ShellTab.home)),
       expect: () => <AppShellState>[],
     );
   });

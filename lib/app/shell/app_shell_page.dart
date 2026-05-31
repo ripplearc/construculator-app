@@ -52,7 +52,7 @@ class _AppShellPageState extends State<AppShellPage> {
     }
 
     if (state.selectedTabIndex != 0) {
-      _bloc.add(const AppShellTabSelected(0));
+      _bloc.add(const AppShellTabSelected(ShellTab.home));
       return;
     }
 
@@ -60,7 +60,8 @@ class _AppShellPageState extends State<AppShellPage> {
   }
 
   void _handleTabTap(int index) {
-    _bloc.add(AppShellTabSelected(index));
+    assert(index < ShellTab.values.length, 'Tab index $index out of range');
+    _bloc.add(AppShellTabSelected(ShellTab.values[index]));
   }
 
   Widget _buildTabRoot(ShellTab tab) {
