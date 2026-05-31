@@ -77,7 +77,7 @@ class SearchFailure extends Failure {
   List<Object?> get props => [errorType];
 }
 
-/// Failure thrown when a project setting operation fails.
+/// Failure thrown when a project operation fails.
 class ProjectFailure extends Failure {
   /// The type of project error that occurred.
   final ProjectErrorType errorType;

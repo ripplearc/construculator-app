@@ -79,12 +79,40 @@ void main() {
       );
     });
 
-    test('maps permission denied responses to permissionDenied', () {
+    test('maps permission denied responses to permissionDenied via code 42501',
+        () {
       expect(
         ProjectErrorMapper.toErrorType(
           const supabase.PostgrestException(
-            message: 'permission denied for table projects',
+            message: 'some db error',
             code: '42501',
+          ),
+        ),
+        ProjectErrorType.permissionDenied,
+      );
+    });
+
+    test('maps permission denied responses to permissionDenied via PGRST301',
+        () {
+      expect(
+        ProjectErrorMapper.toErrorType(
+          const supabase.PostgrestException(
+            message: 'JWT expired',
+            code: 'PGRST301',
+          ),
+        ),
+        ProjectErrorType.permissionDenied,
+      );
+    });
+
+    test(
+        'maps permission denied responses to permissionDenied via message text',
+        () {
+      expect(
+        ProjectErrorMapper.toErrorType(
+          const supabase.PostgrestException(
+            message: 'permission denied for schema public',
+            code: '99999',
           ),
         ),
         ProjectErrorType.permissionDenied,
