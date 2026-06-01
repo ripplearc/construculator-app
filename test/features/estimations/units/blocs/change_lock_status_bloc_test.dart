@@ -132,6 +132,33 @@ void main() {
       );
 
       blocTest<ChangeLockStatusBloc, ChangeLockStatusState>(
+        'should emit failure when current project id is empty string',
+        build: () {
+          fakeCurrentProjectNotifier.reset(projectId: '');
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          const ChangeLockStatusRequested(
+            estimationId: testEstimationId,
+            isLocked: true,
+          ),
+        ),
+        expect: () => [
+          isA<ChangeLockStatusFailure>()
+              .having(
+                (s) => s.failure,
+                'failure',
+                isA<EstimationFailure>().having(
+                  (f) => f.errorType,
+                  'errorType',
+                  EstimationErrorType.unexpectedError,
+                ),
+              )
+              .having((s) => s.originalValue, 'originalValue', isFalse),
+        ],
+      );
+
+      blocTest<ChangeLockStatusBloc, ChangeLockStatusState>(
         'should emit in progress then success with locked status when locking succeeds',
         build: () {
           final estimationMap = buildEstimationMap(

@@ -97,7 +97,6 @@ void main() {
   });
 
   setUp(() {
-    fakeCurrentProjectNotifier.setCurrentProjectId(testProjectId);
     fakeProjectRepository.setProjectPermissions(testProjectId, [
       PermissionConstants.getCostEstimations,
       PermissionConstants.addCostEstimation,

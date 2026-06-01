@@ -36,7 +36,7 @@ class ChangeLockStatusBloc
     final projectId = _currentProjectNotifier.currentProjectId;
     final originalValue = !event.isLocked;
 
-    if (projectId == null) {
+    if (projectId == null || projectId.isEmpty) {
       emit(
         ChangeLockStatusFailure(
           failure: const EstimationFailure(
