@@ -33,14 +33,6 @@ If the input context from `plan-implementation` is incomplete or missing, respon
 
 **Purpose:** Top-level screen that provides BLoC and builds UI tree.
 
-**Required imports:**
-```dart
-import 'package:flutter/material.dart';
-import 'package:flutter_modular/flutter_modular.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart'; // RULE_4: CoreUI package
-import 'package:construculator/libraries/extensions/build_context_extensions.dart';
-```
-
 **Access via BuildContext extension:**
 - **Localization (RULE_10):** `context.l10n.keyName` (not `S.of(context)`)
 - **Colors:** `context.colorTheme.primary`, `context.colorTheme.pageBackground`

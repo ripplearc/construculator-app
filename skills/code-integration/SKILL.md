@@ -30,6 +30,8 @@ disable-model-invocation: false
 
 **Input:** Context from `plan-implementation` — SDK name, wrapper interface (if needed), operations needed.
 
+⚠️ **Gate failure:** If the SDK already exists in the codebase, **stop immediately** — do not write any code. Tell the user to use `code-data` instead and point to the existing wrapper (e.g. `SupabaseWrapper`, `AuthManager`).
+
 ## Wrapper Pattern Classes
 
 | Class Type | Naming (RULE_2) | Signature | Responsibilities | Type Boundary |
@@ -37,7 +39,7 @@ disable-model-invocation: false
 | **Wrapper** | `{SDK}Wrapper` | Concrete class with SDK-specific methods | Wraps SDK client; maps SDK types ↔ domain types; handles SDK errors | **Only place SDK types appear** |
 | **Interface** (optional) | `{SDK}WrapperInterface` | Abstract class with domain types only | Domain-facing contract when abstraction needed | Domain sees this |
 | **Failure** | `{SDK}Failure extends Failure` | `{SDK}ErrorType errorType` | SDK-specific error types (timeout, auth, rate limit, etc.) | Domain error type |
-| **Fake** (test) | `Fake{SDK}Client` | `implements sdk.{SDK}Client` | Test double with pre-configured responses/errors (RULE_3) | Test boundary |
+| **Fake** (test) | `Fake{SDK}Client` | `implements sdk.{SDK}Client` | Faithful re-implementation of the SDK client interface; injected in place of the real SDK in tests; exposes configurable fields to control responses and errors per-test (RULE_3) | Test boundary |
 
 **Pattern:** Create wrapper in `lib/libraries/{sdk}/{sdk}_wrapper.dart` that domain code depends on directly (or via optional interface).
 
@@ -49,15 +51,6 @@ disable-model-invocation: false
 | `TimeoutException` | warning | `{SDK}Failure(timeout)` | Expected error |
 | Other | error | `UnexpectedFailure()` | RULE_15: Log once at wrapper boundary |
 
-## Required Imports
-
-```dart
-// Wrapper
-import 'package:{sdk_package}/{sdk_package}.dart' as sdk;
-import 'package:construculator/libraries/logging/app_logger.dart';
-import 'package:construculator/libraries/either/either.dart';
-import 'package:construculator/libraries/errors/failures.dart';
-```
 
 ## Dependency Registration
 
@@ -70,12 +63,14 @@ import 'package:{sdk_package}/{sdk_package}.dart' as sdk;
 class {SDK}Module extends Module {
   @override
   void binds(Injector i) {
-    i.addLazySingleton<sdk.{SDK}Client>(() => sdk.{SDK}Client(apiKey: /* config */));
+    i.addLazySingleton<sdk.{SDK}Client>(() => sdk.{SDK}Client(apiKey: i.get<EnvLoader>().get('{SDK}_API_KEY') ?? ''));
     i.addLazySingleton<{SDK}Wrapper>(() => {SDK}Wrapper(client: i()));
     // Or with interface: i.addLazySingleton<{SDK}WrapperInterface>(() => {SDK}Wrapper(client: i()));
   }
 }
 ```
+
+**Config pattern:** Keys are read from `assets/env/.env.{dev|qa|prod}` via `EnvLoader` (already in DI — inject with `i.get<EnvLoader>()`). Never hardcode credentials. Add the key to all three `.env` files.
 
 Then import in `lib/app/app_module.dart`.
 

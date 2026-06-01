@@ -30,13 +30,6 @@ disable-model-invocation: false
 
 **Purpose:** Fetch data from external source (Supabase); log debug on success; rethrow errors.
 
-**Required imports:**
-```dart
-import 'package:construculator/libraries/logging/app_logger.dart';
-import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
-import 'package:construculator/libraries/supabase/database_constants.dart';
-```
-
 **Logging:**
 - Log debug on success: `_logger.debug('Fetched N items')`
 - **Do NOT log errors** — RepositoryImpl is the error boundary (RULE_15)
@@ -50,11 +43,8 @@ import 'package:construculator/libraries/supabase/database_constants.dart';
 
 **Required imports:**
 ```dart
-import 'dart:async';
-import 'dart:io';
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 ```
 
 **Error mapping (at RepositoryImpl boundary):**
