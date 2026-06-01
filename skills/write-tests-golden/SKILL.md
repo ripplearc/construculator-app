@@ -28,31 +28,41 @@ disable-model-invocation: false
 
 **Basic structure:**
 ```dart
-import 'package:alchemist/alchemist.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
+  final size = const Size(390, 844); // adjust to the widget's expected dimensions
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() async {
+    await loadAppFonts();
+  });
+
   group('{Widget} Screenshot Tests', () {
-    goldenTest(
-      '{Widget} displays correctly',
-      fileName: '{widget}_name',
-      builder: () => GoldenTestGroup(
-        children: [
-          GoldenTestScenario(
-            name: 'default state',
-            child: WidgetToTest(),
-          ),
-          GoldenTestScenario(
-            name: 'loading state',
-            child: WidgetToTest(isLoading: true),
-          ),
-          GoldenTestScenario(
-            name: 'error state',
-            child: WidgetToTest(error: 'Error message'),
-          ),
-        ],
-      ),
-    );
+    Future<void> pump{Widget}({required WidgetTester tester}) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: createTestTheme(),
+          home: Material(child: {WidgetToTest}()),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('renders default state correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+
+      await pump{Widget}(tester: tester);
+
+      await expectLater(
+        find.byType({WidgetToTest}),
+        matchesGoldenFile('goldens/{widget}/${size.width}x${size.height}/{widget}_default.png'),
+      );
+    });
   });
 }
 ```
@@ -68,30 +78,12 @@ void main() {
 | **Long content** | If text/lists can overflow |
 | **Light/Dark themes** | For critical UI components |
 
-## File Organization
-
-```
-test/features/{feature}/screenshots/
-├── {widget}_screenshot_test.dart
-└── goldens/
-    └── {widget}_name/
-        └── 390.0x56.0/
-            ├── {widget}_name_default_state.png
-            ├── {widget}_name_loading_state.png
-            └── {widget}_name_error_state.png
-```
-
-**Golden files are auto-generated.**
+**Golden files are auto-generated** in `test/features/{feature}/screenshots/goldens/`.
 
 ## Running Golden Tests
 
-```bash
-# Generate/update golden files
-flutter test --update-goldens test/features/{feature}/screenshots/
-
-# Verify golden tests
-flutter test test/features/{feature}/screenshots/
-```
+- Generate/update: `flutter test --update-goldens test/features/{feature}/screenshots/`
+- Verify: `flutter test test/features/{feature}/screenshots/`
 
 ## Anti-Patterns
 
@@ -102,24 +94,9 @@ flutter test test/features/{feature}/screenshots/
 | Create redundant scenarios | One scenario per unique visual state |
 | Test non-visual logic | Use unit/widget tests for logic |
 
-## Coverage Notes
-
-- Golden tests **do NOT contribute to code coverage**
-- They catch visual regressions, not logic bugs
-- Use sparingly for layout-sensitive components
-
-## Key Principles
-
-1. **Gated skill** — Only for layout-sensitive UI changes
-2. **Test visual states** — Loading, error, empty, default
-3. **Isolate components** — Test widgets, not full pages
-4. **Descriptive scenarios** — Clear naming for each visual state
-5. **Run with `--update-goldens`** — To generate reference images
-6. **Keep scope tight** — Prefer meaningful visual states over prop combinations or full-page screenshots
-
 ## References
 
 - **Testing Docs:** `docs/Testing/Directories.md` — Screenshot test file structure
 - **Examples:** `test/features/auth/screenshots/`
-- **Alchemist Docs:** For advanced golden test patterns
+- **Font loader:** `test/utils/screenshot/font_loader.dart` — `loadAppFonts()` + `createTestTheme()`
 - **Next:** `write-tests-mutation` skill — Gated skill for logic-heavy changes (3+ branches)

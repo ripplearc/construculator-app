@@ -10,12 +10,14 @@ setUp(() {
   final appBootstrap = FakeAppBootstrapFactory.create(
     supabaseWrapper: fakeSupabase,
   );
-  Modular.init(FeatureTestModule(appBootstrap));
-
+  Modular.init({Feature}Module(appBootstrap)); // REAL module, fake I/O bootstrap
   useCase = Modular.get<{Verb}{Noun}UseCase>(); // REAL UseCase with REAL Repository
 });
 
-tearDown(() => Modular.destroy());
+tearDown(() {
+  fakeSupabase.reset(); // clears shouldThrowOnX, setRpcResponse, etc. between tests
+  Modular.destroy();
+});
 ```
 
 ## BLoC Test
@@ -86,28 +88,37 @@ testWidgets('button tap triggers event', (tester) async {
 
 ## Test Module
 
+Prefer passing the real feature module **directly** to `Modular.init` — no wrapper class needed. Only I/O is faked via the bootstrap.
+
 ```dart
-class FeatureTestModule extends Module {
-  final AppBootstrap appBootstrap;
-  FeatureTestModule(this.appBootstrap);
-
-  @override
-  List<Module> get imports => [
-    RouterTestModule(),            // FakeAppRouter
-    ClockTestModule(),             // FakeClockImpl
-    FeatureModule(appBootstrap),   // REAL implementations
-  ];
-}
-
 setUp(() {
   fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
   final appBootstrap = FakeAppBootstrapFactory.create(
     supabaseWrapper: fakeSupabase,
   );
-  Modular.init(FeatureTestModule(appBootstrap));
+  Modular.init({Feature}Module(appBootstrap)); // REAL module, fake I/O only
 });
 
-tearDown(() => Modular.destroy());
+tearDown(() {
+  fakeSupabase.reset(); // clears shouldThrowOnX, setRpcResponse, etc. between tests
+  Modular.destroy();
+});
+```
+
+Only add an inline wrapper when the test needs extra test-specific modules that the feature module doesn't import (e.g. `RouterTestModule`, `ClockTestModule`):
+
+```dart
+class _FeatureTestModule extends Module {
+  final AppBootstrap appBootstrap;
+  _FeatureTestModule(this.appBootstrap);
+
+  @override
+  List<Module> get imports => [
+    RouterTestModule(),
+    ClockTestModule(),
+    {Feature}Module(appBootstrap),
+  ];
+}
 ```
 
 ## Accessibility Test

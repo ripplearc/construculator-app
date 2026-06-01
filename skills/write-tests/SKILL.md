@@ -59,27 +59,9 @@ Pump the page, interact using `tester.enterText` (find by key, RULE_8) and `test
 
 ## 4. Test Module Setup
 
-`FeatureTestModule` imports `RouterTestModule`, `ClockTestModule`, and the real `FeatureModule(appBootstrap)`. In `setUp`, create `FakeSupabaseWrapper`, build `FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase)`, and call `Modular.init(FeatureTestModule(appBootstrap))`. In `tearDown`, call `Modular.destroy()`.
+Prefer `Modular.init({Feature}Module(appBootstrap))` directly — pass the real feature module with a fake bootstrap built via `FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabase)`. Only wrap in an inline module class when the test needs extra test-specific modules (e.g. `RouterTestModule`, `ClockTestModule`) that the feature module doesn't already import. In `tearDown`, always call `fakeSupabase.reset()` then `Modular.destroy()`.
 
-## 5. Faking Decision Tree
-
-```
-Is it an external I/O service (database, network)?
-├─ YES → Use FakeSupabaseWrapper (or wrapper fake)
-└─ NO → Continue...
-
-Is it a repository from ANOTHER library?
-├─ YES → Use FakeRepository (e.g., FakeAuthRepository)
-└─ NO → Continue...
-
-Is it from SAME feature?
-├─ UseCase → ✅ Real
-├─ BLoC → ✅ Real
-├─ Repository → ✅ Real
-└─ DataSource → ✅ Real
-```
-
-## 6. Anti-Patterns (Avoid)
+## 5. Anti-Patterns (Avoid)
 
 | ❌ Flaky Pattern | ✅ Correct Pattern |
 |-----------------|-------------------|
@@ -95,7 +77,7 @@ Is it from SAME feature?
 
 For async loading states, use `fakeSupabase.shouldDelayOperations = true` + `Completer` — not `Future.delayed`.
 
-## 7. File Structure
+## 6. File Structure
 
 Mirror implementation structure in `test/features/{feature}/`:
 
@@ -117,27 +99,13 @@ test/features/{feature}/
 
 **File naming:** `{source_file}_test.dart`
 
-## 8. Accessibility Testing
+## 7. Accessibility Testing
 
 Write a11y tests for pages/widgets with interactive elements. Use `setupA11yTest(tester)` + `expectMeetsTapTargetAndLabelGuidelinesForEachTheme` from the test harness. Verifies tap targets (48×48 min), semantic labels, and contrast across light/dark themes. File in `test/features/{feature}/accessibility/`. See `docs/Testing/Accessibility-Testing.md` for the full harness.
 
-## 9. Common Patterns
+## 8. Common Patterns
 
-- **Invalid inputs** — Enter empty/null value; assert `l10n.requiredFieldError` or `l10n.genericError` appears.
-- **Error states** — Set `fakeSupabase.shouldThrowOnInsert = true` + `insertExceptionType`; assert error message via `l10n`.
-- **Authentication** — Seed `fakeSupabase.setCurrentUser(FakeUser(...))` in `setUp`.
-- **Loading states** — Set `shouldDelayOperations = true` + `Completer`; assert loading key present; complete; assert success state.
-
-## Key Principles
-
-1. **Use real implementations** — Within same feature, test real UseCases/BLoCs/Repositories/DataSources
-2. **Fake at boundaries** — `FakeSupabaseWrapper` (I/O), `FakeXRepository` (library dependencies)
-3. **Use Modular DI** — Initialize with test modules; get instances from Modular
-4. **Semantic finders** — `byKey`, `text(l10n.xxx)` — never `findsNWidgets` or positional
-5. **No flaky patterns** — `pumpAndSettle()` instead of `Future.delayed(Duration.zero)`
-6. **Test both paths** — Success AND error states
-7. **Use `bloc_test`** — For BLoC state transition testing
-8. **Full object comparisons** — Entities, DTOs, and states use Equatable; assert `expect(result, expected)` and `expect(list, [a, b, c])` directly instead of drilling into individual properties
+See `skills/write-tests/REFERENCE.md` for Dart examples: invalid inputs, error states, authentication, and loading states.
 
 ## References
 
