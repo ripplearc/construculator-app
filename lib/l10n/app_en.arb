@@ -220,6 +220,31 @@
     "description": "Accessibility label for the per-project settings icon button in the projects list",
     "context": "Dashboard projects sheet"
   },
+  "projectsSheetTitle": "Projects",
+  "@projectsSheetTitle": {
+    "description": "Title of the bottom sheet that lists the user's projects",
+    "context": "Dashboard projects sheet"
+  },
+  "searchProjectsHint": "Search projects",
+  "@searchProjectsHint": {
+    "description": "Hint text for the search field used to filter the projects list",
+    "context": "Dashboard projects sheet"
+  },
+  "createProjectButton": "Create a project",
+  "@createProjectButton": {
+    "description": "Label for the button that starts creating a new project",
+    "context": "Dashboard projects sheet"
+  },
+  "projectsEmptyState": "No projects yet.",
+  "@projectsEmptyState": {
+    "description": "Empty state message shown when the user has no projects",
+    "context": "Dashboard projects sheet"
+  },
+  "projectsLoadError": "Failed to load projects.",
+  "@projectsLoadError": {
+    "description": "Error message shown when the projects list cannot be loaded",
+    "context": "Dashboard projects sheet"
+  },
   "heyEnterYourDetailsToRegisterWithUs": "Hey, Enter your details to Register with us",
   "@heyEnterYourDetailsToRegisterWithUs": {
     "description": "Text for hey enter your details to register with us",
