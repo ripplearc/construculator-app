@@ -215,6 +215,11 @@
     "description": "Empty state message shown when there are no recent estimations",
     "context": "Dashboard recent estimations section"
   },
+  "projectSettingsSemanticLabel": "Project settings",
+  "@projectSettingsSemanticLabel": {
+    "description": "Accessibility label for the per-project settings button in the projects list",
+    "context": "Dashboard projects sheet"
+  },
   "heyEnterYourDetailsToRegisterWithUs": "Hey, Enter your details to Register with us",
   "@heyEnterYourDetailsToRegisterWithUs": {
     "description": "Text for hey enter your details to register with us",

@@ -144,6 +144,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recentEstimationsEmptyState => 'No recent estimations found.';
 
   @override
+  String get projectSettingsSemanticLabel => 'Project settings';
+
+  @override
   String get heyEnterYourDetailsToRegisterWithUs =>
       'Hey, Enter your details to Register with us';
 
