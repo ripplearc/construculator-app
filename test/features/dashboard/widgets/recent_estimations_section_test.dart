@@ -34,6 +34,9 @@ void main() {
   late FakeCostEstimationRepository fakeRepository;
 
   late RecentEstimationsBloc bloc;
+  BuildContext? buildContext;
+
+  AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
 
   CostEstimate estimationFromMap(Map<String, dynamic> map) {
     return CostEstimateDto.fromJson(map).toDomain();
@@ -50,7 +53,12 @@ void main() {
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(body: RecentEstimationsSection()),
+      home: Builder(
+        builder: (context) {
+          buildContext = context;
+          return Scaffold(body: RecentEstimationsSection());
+        },
+      ),
     );
   }
 
@@ -105,8 +113,8 @@ void main() {
     await tester.pumpWidget(buildTestApp());
     await tester.pump();
 
-    expect(find.text('Recent cost estimations'), findsOneWidget);
-    expect(find.text('View all'), findsOneWidget);
+    expect(find.text(l10n().recentCostEstimationsTitle), findsOneWidget);
+    expect(find.text(l10n().viewAllButton), findsOneWidget);
   });
 
   testWidgets('shows loading placeholders while estimations are loading', (
@@ -127,7 +135,7 @@ void main() {
 
     await pumpSection(tester);
 
-    expect(find.text('No recent estimations found.'), findsOneWidget);
+    expect(find.text(l10n().recentEstimationsEmptyState), findsOneWidget);
   });
 
   testWidgets('shows error message when estimations fail to load', (
@@ -137,7 +145,7 @@ void main() {
 
     await pumpSection(tester);
 
-    expect(find.text('Failed to load recent estimations.'), findsOneWidget);
+    expect(find.text(l10n().recentEstimationsLoadError), findsOneWidget);
   });
 
   testWidgets('renders estimation cards when data is loaded', (tester) async {
@@ -195,7 +203,7 @@ void main() {
 
     await pumpSection(tester);
 
-    expect(find.text('View all'), findsOneWidget);
+    expect(find.text(l10n().viewAllButton), findsOneWidget);
   });
 
   testWidgets('does not navigate when view all is tapped without a project', (
@@ -208,7 +216,7 @@ void main() {
 
     final navigatorCount = tester.widgetList(find.byType(Navigator)).length;
 
-    await tester.tap(find.text('View all'));
+    await tester.tap(find.text(l10n().viewAllButton));
     await tester.pump();
 
     expect(tester.widgetList(find.byType(Navigator)).length, navigatorCount);
@@ -230,10 +238,9 @@ void main() {
 
     final appShellBloc = Modular.get<AppShellBloc>();
     final tabSelected = appShellBloc.stream
-        .firstWhere((state) => state.selectedTabIndex == ShellTab.estimation.index)
-        .timeout(const Duration(seconds: 5));
+        .firstWhere((state) => state.selectedTabIndex == ShellTab.estimation.index);
 
-    await tester.tap(find.text('View all'));
+    await tester.tap(find.text(l10n().viewAllButton));
     await tester.pump();
     await tester.runAsync(() => tabSelected);
     await tester.pump();
