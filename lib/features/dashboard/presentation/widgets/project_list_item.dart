@@ -7,6 +7,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 const double _kProjectListItemBorderWidth = 1;
 const double _kProjectListItemSelectedBorderWidth = 2;
 const double _kProjectListItemMetaIconSize = CoreSpacing.space4;
+const double _kProjectListItemSettingsHitTarget = CoreSpacing.space12;
 
 /// A card widget that displays a summary of a single [Project] within the
 /// projects bottom sheet, showing the project name and its last-updated
@@ -67,7 +68,6 @@ class ProjectListItem extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: Text(
@@ -80,13 +80,7 @@ class ProjectListItem extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: CoreSpacing.space2),
-                CoreIconWidget(
-                  icon: CoreIcons.settings,
-                  size: _kProjectListItemMetaIconSize,
-                  color: colors.iconGrayMid,
-                  semanticLabel: context.l10n.projectSettingsSemanticLabel,
-                  onTap: onSettingsTap,
-                ),
+                _buildSettingsButton(context),
               ],
             ),
             const SizedBox(height: CoreSpacing.space2),
@@ -114,5 +108,34 @@ class ProjectListItem extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildSettingsButton(BuildContext context) {
+    final colors = context.colorTheme;
+    final hitTarget = SizedBox(
+      width: _kProjectListItemSettingsHitTarget,
+      height: _kProjectListItemSettingsHitTarget,
+      child: GestureDetector(
+        onTap: onSettingsTap,
+        behavior: HitTestBehavior.opaque,
+        child: Center(
+          child: CoreIconWidget(
+            icon: CoreIcons.settings,
+            size: _kProjectListItemMetaIconSize,
+            color: colors.iconGrayMid,
+          ),
+        ),
+      ),
+    );
+
+    if (onSettingsTap != null) {
+      return Semantics(
+        button: true,
+        label: context.l10n.projectSettingsSemanticLabel,
+        child: hitTarget,
+      );
+    }
+
+    return ExcludeSemantics(child: hitTarget);
   }
 }
