@@ -7,24 +7,22 @@ import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 
 void main() {
-  BuildContext? buildContext;
   group('CostEstimationDetailsTabView A11y Tests', () {
+    late AppLocalizations l10n;
+
+    setUpAll(() {
+      l10n = lookupAppLocalizations(const Locale('en'));
+    });
+
     Widget createWidget({ThemeData? theme}) {
       return MaterialApp(
         theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Builder(
-          builder: (context) {
-            buildContext = context;
-            return const Scaffold(body: CostEstimationDetailsTabView());
-          },
-        ),
+        home: const Scaffold(body: CostEstimationDetailsTabView()),
       );
     }
-
-    AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
 
     testWidgets('a11y: tab view passes in both themes', (tester) async {
       await setupA11yTest(tester);
@@ -54,7 +52,7 @@ void main() {
       await tester.pumpWidget(createWidget(theme: createTestTheme()));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text(l10n().laboursTab));
+      await tester.tap(find.text(l10n.laboursTab));
       await tester.pumpAndSettle();
 
       await expectMeetsTapTargetAndLabelGuidelines(
@@ -69,7 +67,7 @@ void main() {
       await tester.pumpWidget(createWidget(theme: createTestTheme()));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text(l10n().equipmentsTab));
+      await tester.tap(find.text(l10n.equipmentsTab));
       await tester.pumpAndSettle();
 
       await expectMeetsTapTargetAndLabelGuidelines(

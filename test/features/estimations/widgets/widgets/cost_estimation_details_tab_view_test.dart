@@ -149,8 +149,6 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.pump();
-
       expect(
         find.byKey(const Key('labours_empty_state')),
         findsOneWidget,

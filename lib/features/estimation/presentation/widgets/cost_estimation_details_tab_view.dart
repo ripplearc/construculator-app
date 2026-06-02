@@ -20,7 +20,6 @@ class _CostEstimationDetailsTabViewState
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
-    final textTheme = context.textTheme;
     final l10n = context.l10n;
 
     return Column(
@@ -40,7 +39,7 @@ class _CostEstimationDetailsTabViewState
                 },
               ),
             ),
-            SizedBox(width: CoreSpacing.space4),
+            const SizedBox(width: CoreSpacing.space4),
             // TODO: [CA-188] [Cost Estimation] Implement Comment Button Logic https://ripplearc.youtrack.cloud/issue/CA-188/Cost-Estimation-Implement-Comment-Button-Logic
             CoreIconWidget(
               key: const Key('comment_icon'),
@@ -60,20 +59,14 @@ class _CostEstimationDetailsTabViewState
               _buildEmptyState(
                 keyPrefix: 'materials_empty_state',
                 message: l10n.noMaterialCostMessage,
-                colorTheme: colorTheme,
-                textTheme: textTheme,
               ),
               _buildEmptyState(
                 keyPrefix: 'labours_empty_state',
                 message: l10n.noLabourCostMessage,
-                colorTheme: colorTheme,
-                textTheme: textTheme,
               ),
               _buildEmptyState(
                 keyPrefix: 'equipments_empty_state',
                 message: l10n.noEquipmentCostMessage,
-                colorTheme: colorTheme,
-                textTheme: textTheme,
               ),
             ],
           ),
@@ -85,9 +78,9 @@ class _CostEstimationDetailsTabViewState
   Widget _buildEmptyState({
     required String keyPrefix,
     required String message,
-    required AppColorsExtension colorTheme,
-    required AppTypographyExtension textTheme,
   }) {
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
     return Center(
       key: Key(keyPrefix),
       child: Padding(

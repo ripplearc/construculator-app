@@ -5,13 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-/// A placeholder page for cost estimation details.
+/// The cost estimation details page.
 ///
-/// This page will be implemented in a future sprint.
+/// Displays a tabbed view of [CostEstimationDetailsTabView] (Materials,
+/// Labours, Equipments) with a custom app bar, FAB for adding material
+/// costs, and a bottom bar with lock and preview actions.
 class CostEstimationDetailsPage extends StatelessWidget {
   final String estimationId;
 
-  const CostEstimationDetailsPage({super.key, required this.estimationId});
+  CostEstimationDetailsPage({super.key, required this.estimationId});
 
   @override
   Widget build(BuildContext context) {

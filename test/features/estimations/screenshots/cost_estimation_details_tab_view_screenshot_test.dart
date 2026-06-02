@@ -6,8 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
-  final size = const Size(390, 844);
-  final ratio = 1.0;
+  const size = Size(390, 844);
   TestWidgetsFlutterBinding.ensureInitialized();
 
   Future<void> pumpTabView({
@@ -41,7 +40,7 @@ void main() {
   group('CostEstimationDetailsTabView Screenshot Tests', () {
     testWidgets('renders materials tab correctly', (tester) async {
       tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
+      tester.view.devicePixelRatio = 1.0;
       await pumpTabView(tester: tester, selectedTab: 0);
 
       await expectLater(
@@ -54,7 +53,7 @@ void main() {
 
     testWidgets('renders labours tab correctly', (tester) async {
       tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
+      tester.view.devicePixelRatio = 1.0;
       await pumpTabView(tester: tester, selectedTab: 1);
 
       await expectLater(
@@ -67,7 +66,7 @@ void main() {
 
     testWidgets('renders equipments tab correctly', (tester) async {
       tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
+      tester.view.devicePixelRatio = 1.0;
       await pumpTabView(tester: tester, selectedTab: 2);
 
       await expectLater(
