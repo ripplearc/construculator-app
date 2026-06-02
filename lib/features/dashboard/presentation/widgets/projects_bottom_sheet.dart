@@ -99,6 +99,7 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
           ),
           const SizedBox(height: CoreSpacing.space4),
           CoreTextField(
+            key: const Key('projects_search_field'),
             controller: _searchController,
             hintText: l10n.searchProjectsHint,
             onChanged: _onSearchChanged,

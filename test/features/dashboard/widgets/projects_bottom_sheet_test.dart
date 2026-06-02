@@ -100,9 +100,7 @@ void main() {
     Modular.destroy();
   });
 
-  testWidgets('renders title, search field, and create button', (
-    tester,
-  ) async {
+  testWidgets('renders title, search field, and create button', (tester) async {
     fakeRepository.setAccessibleProjects([]);
 
     await pumpSheet(tester);
@@ -140,7 +138,10 @@ void main() {
 
     await pumpSheet(tester);
 
-    await tester.enterText(find.byType(TextField), 'material');
+    await tester.enterText(
+      find.byKey(const Key('projects_search_field')),
+      'material',
+    );
     await tester.runAsync(() => Future<void>.delayed(Duration.zero));
     await tester.pump();
 
@@ -199,7 +200,10 @@ void main() {
 
     await pumpSheet(tester);
 
-    await tester.enterText(find.byType(TextField), 'material');
+    await tester.enterText(
+      find.byKey(const Key('projects_search_field')),
+      'material',
+    );
     await tester.pumpAndSettle();
 
     final state = bloc.state;
