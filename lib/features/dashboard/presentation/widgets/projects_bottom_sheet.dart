@@ -36,8 +36,6 @@ class ProjectsBottomSheet extends StatefulWidget {
 class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
   late final ProjectDropdownBloc _bloc;
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-  List<Project> _lastKnownProjects = const [];
 
   @override
   void initState() {
@@ -53,16 +51,7 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
   }
 
   void _onSearchChanged(String query) {
-    setState(() => _searchQuery = query.trim().toLowerCase());
-  }
-
-  List<Project> _filterProjects(List<Project> projects) {
-    if (_searchQuery.isEmpty) {
-      return projects;
-    }
-    return projects
-        .where((p) => p.projectName.toLowerCase().contains(_searchQuery))
-        .toList();
+    _bloc.add(ProjectDropdownSearchChanged(query.trim()));
   }
 
   Future<void> _onRefresh() async {
@@ -135,19 +124,18 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
     }
 
     if (state is ProjectDropdownLoadSuccess) {
-      _lastKnownProjects = state.projects.toList();
       return _buildList(
         context,
-        projects: _filterProjects(state.projects),
+        projects: state.visibleProjects,
         selectedProjectId: state.selectedProject?.id,
       );
     }
 
     if (state is ProjectDropdownLoadFailure) {
-      if (_lastKnownProjects.isNotEmpty) {
+      if (state.cachedProjects.isNotEmpty) {
         return _buildList(
           context,
-          projects: _filterProjects(_lastKnownProjects),
+          projects: state.visibleProjects,
           selectedProjectId: null,
           errorBanner: true,
         );
@@ -244,6 +232,7 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
                 itemBuilder: (context, index) {
                   final project = projects[index];
                   return ProjectListItem(
+                    key: ValueKey<String>(project.id),
                     project: project,
                     isSelected: project.id == selectedProjectId,
                     onTap: () => _onProjectSelected(project),
