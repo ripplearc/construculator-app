@@ -67,31 +67,38 @@ class _StatCard extends StatelessWidget {
           color: colors.pageBackground,
           borderRadius: BorderRadius.circular(CoreSpacing.space3),
           border: Border.all(color: colors.lineLight),
+          boxShadow: CoreShadows.small,
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: typography.bodySmallRegular.copyWith(
-                    color: colors.textBody,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: typography.bodySmallRegular.copyWith(
+                      color: colors.textBody,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                const SizedBox(height: CoreSpacing.space1),
-                Text(
-                  '$count',
-                  style: typography.bodyMediumSemiBold.copyWith(
-                    color: colors.textDark,
+                  const SizedBox(height: CoreSpacing.space1),
+                  Text(
+                    '$count',
+                    style: typography.bodyMediumSemiBold.copyWith(
+                      color: colors.textDark,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-            Icon(
-              Icons.chevron_right,
-              color: colors.iconGrayMid,
+            CoreIconWidget(
+              icon: CoreIcons.arrowRight,
+              color: colors.iconDark,
+              size: CoreIconSize.size24,
             ),
           ],
         ),

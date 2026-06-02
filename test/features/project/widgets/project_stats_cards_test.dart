@@ -127,10 +127,20 @@ void main() {
       expect(find.text('7'), findsOneWidget);
     });
 
-    testWidgets('renders chevron icons on both cards', (tester) async {
+    testWidgets('does not overflow with very large counts', (tester) async {
+      await pumpProjectStatsCards(
+        tester,
+        estimationCount: 999999999999999,
+        memberCount: 999999999999999,
+      );
+
+      expect(find.byType(ProjectStatsCards), findsOneWidget);
+    });
+
+    testWidgets('renders arrow icons on both cards', (tester) async {
       await pumpProjectStatsCards(tester, estimationCount: 1, memberCount: 1);
 
-      expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
+      expect(find.byType(CoreIconWidget), findsNWidgets(2));
     });
   });
 }
