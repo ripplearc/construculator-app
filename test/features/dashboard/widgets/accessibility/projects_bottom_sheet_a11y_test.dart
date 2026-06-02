@@ -23,6 +23,7 @@ void main() {
   late ProjectDropdownBloc bloc;
 
   const String testUserId = 'user-1';
+  final l10n = lookupAppLocalizations(const Locale('en'));
 
   Widget buildTestApp(ThemeData theme) {
     return MaterialApp(
@@ -79,7 +80,7 @@ void main() {
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
         buildTestApp,
-        find.text('Create a project'),
+        find.text(l10n.createProjectButton),
       );
     });
 
@@ -91,7 +92,7 @@ void main() {
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
         buildTestApp,
-        find.text('Projects'),
+        find.text(l10n.projectsSheetTitle),
         checkTapTargetSize: false,
         checkLabeledTapTarget: false,
       );

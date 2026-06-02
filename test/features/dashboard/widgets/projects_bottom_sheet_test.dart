@@ -24,6 +24,7 @@ void main() {
   late ProjectDropdownBloc bloc;
 
   const String testUserId = 'user-1';
+  final l10n = lookupAppLocalizations(const Locale('en'));
 
   Project buildProject({
     required String id,
@@ -106,9 +107,9 @@ void main() {
 
     await pumpSheet(tester);
 
-    expect(find.text('Projects'), findsOneWidget);
-    expect(find.text('Search projects'), findsOneWidget);
-    expect(find.text('Create a project'), findsOneWidget);
+    expect(find.text(l10n.projectsSheetTitle), findsOneWidget);
+    expect(find.text(l10n.searchProjectsHint), findsOneWidget);
+    expect(find.text(l10n.createProjectButton), findsOneWidget);
   });
 
   testWidgets('renders a list item for each project', (tester) async {
@@ -128,7 +129,7 @@ void main() {
 
     await pumpSheet(tester);
 
-    expect(find.text('No projects yet.'), findsOneWidget);
+    expect(find.text(l10n.projectsEmptyState), findsOneWidget);
   });
 
   testWidgets('filters projects by search query', (tester) async {
@@ -140,6 +141,7 @@ void main() {
     await pumpSheet(tester);
 
     await tester.enterText(find.byType(TextField), 'material');
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
     await tester.pump();
 
     expect(find.text('Material of building'), findsOneWidget);
@@ -186,6 +188,26 @@ void main() {
     await tester.pump();
 
     expect(find.text('My project'), findsOneWidget);
-    expect(find.text('Failed to load projects.'), findsOneWidget);
+    expect(find.text(l10n.projectsLoadError), findsOneWidget);
+  });
+
+  testWidgets('search filtering is delegated to the bloc', (tester) async {
+    fakeRepository.setAccessibleProjects([
+      buildProject(id: 'project-1', projectName: 'My project'),
+      buildProject(id: 'project-2', projectName: 'Material of building'),
+    ]);
+
+    await pumpSheet(tester);
+
+    await tester.enterText(find.byType(TextField), 'material');
+    await tester.pumpAndSettle();
+
+    final state = bloc.state;
+    expect(state, isA<ProjectDropdownLoadSuccess>());
+    final loaded = state as ProjectDropdownLoadSuccess;
+    expect(loaded.searchQuery, 'material');
+    expect(loaded.projects.length, 2);
+    expect(loaded.visibleProjects.length, 1);
+    expect(loaded.visibleProjects.first.id, 'project-2');
   });
 }
