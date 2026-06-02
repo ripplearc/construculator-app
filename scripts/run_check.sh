@@ -141,7 +141,7 @@ pre_check() {
       filter_coverage_tracefile "coverage/lcov.info"
 
       local changed_source_files
-      changed_source_files=$(git diff --name-only --diff-filter=A "$base_commit" HEAD -- 'lib/**/*.dart' \
+      changed_source_files=$(git diff --name-only --diff-filter=A "$base_commit" HEAD -- 'lib/*.dart' 'lib/**/*.dart' \
         | grep -v -E '(\.g\.dart$|\.freezed\.dart$|/generated/|/l10n/)' \
         | while IFS= read -r f; do
             head -1 "$f" 2>/dev/null | grep -q '// coverage:ignore-file' || echo "$f"
@@ -207,7 +207,7 @@ pre_check() {
 
   if [[ -z "$changed_tests" ]]; then
     local changed_source_files_all
-    changed_source_files_all=$(git diff --name-only --diff-filter=A "$base_commit" HEAD -- 'lib/**/*.dart' \
+    changed_source_files_all=$(git diff --name-only --diff-filter=A "$base_commit" HEAD -- 'lib/*.dart' 'lib/**/*.dart' \
       | grep -v -E '(\.g\.dart$|\.freezed\.dart$|/generated/|/l10n/)' \
       | while IFS= read -r f; do
           head -1 "$f" 2>/dev/null | grep -q '// coverage:ignore-file' || echo "$f"

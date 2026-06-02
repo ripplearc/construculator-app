@@ -64,7 +64,7 @@ workflows:
           fi
 
           # Identify changed source files (excluding generated code)
-          CHANGED_SOURCE_FILES=$(git diff --name-only --diff-filter=A $BASE_COMMIT HEAD -- 'lib/**/*.dart' \
+          CHANGED_SOURCE_FILES=$(git diff --name-only --diff-filter=A $BASE_COMMIT HEAD -- 'lib/*.dart' 'lib/**/*.dart' \
             | grep -v -E '(\.g\.dart$|\.freezed\.dart$|/generated/|/l10n/)' \
             | while IFS= read -r f; do
                 head -1 "$f" 2>/dev/null | grep -q '// coverage:ignore-file' || echo "$f"
