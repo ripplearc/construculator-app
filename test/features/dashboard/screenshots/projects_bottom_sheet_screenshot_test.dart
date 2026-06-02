@@ -18,7 +18,7 @@ import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
-  final size = const Size(390, 600);
+  final size = const Size(390, 660);
   final ratio = 1.0;
   TestWidgetsFlutterBinding.ensureInitialized();
 

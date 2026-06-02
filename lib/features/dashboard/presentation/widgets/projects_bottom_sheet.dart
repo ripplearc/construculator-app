@@ -10,6 +10,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 const int _kProjectsSkeletonItemCount = 4;
 const double _kProjectsSkeletonItemHeight = CoreSpacing.space20;
 const double _kProjectsListMaxHeight = CoreSpacing.space64 * 2;
+const double _kProjectsSearchIconSize = CoreSpacing.space5;
 
 /// A bottom sheet that lists the user's accessible projects, allowing them to
 /// search, select, and start creating a project.
@@ -97,11 +98,23 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
             ),
           ),
           const SizedBox(height: CoreSpacing.space4),
-          CoreSearchBox(
-            controller: _searchController,
-            hintText: l10n.searchProjectsHint,
-            onChanged: _onSearchChanged,
-            onClear: () => _onSearchChanged(''),
+          Row(
+            children: [
+              CoreIconWidget(
+                icon: CoreIcons.search,
+                size: _kProjectsSearchIconSize,
+                color: colors.iconGrayMid,
+              ),
+              const SizedBox(width: CoreSpacing.space2),
+              Expanded(
+                child: CoreSearchBox(
+                  controller: _searchController,
+                  hintText: l10n.searchProjectsHint,
+                  onChanged: _onSearchChanged,
+                  onClear: () => _onSearchChanged(''),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: CoreSpacing.space4),
           BlocBuilder<ProjectDropdownBloc, ProjectDropdownState>(
