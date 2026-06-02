@@ -236,12 +236,19 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
                 itemCount: projects.length,
                 itemBuilder: (context, index) {
                   final project = projects[index];
-                  return ProjectListItem(
-                    key: ValueKey<String>(project.id),
-                    project: project,
-                    isSelected: project.id == selectedProjectId,
-                    onTap: () => _onProjectSelected(project),
-                    onSettingsTap: () => _onProjectSettings(project),
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      bottom: index == projects.length - 1
+                          ? 0
+                          : CoreSpacing.space3,
+                    ),
+                    child: ProjectListItem(
+                      key: ValueKey<String>(project.id),
+                      project: project,
+                      isSelected: project.id == selectedProjectId,
+                      onTap: () => _onProjectSelected(project),
+                      onSettingsTap: () => _onProjectSettings(project),
+                    ),
                   );
                 },
               ),
