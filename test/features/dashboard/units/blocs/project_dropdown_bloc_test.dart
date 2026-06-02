@@ -495,6 +495,57 @@ void main() {
         ],
       );
     });
+
+    group('ProjectDropdownSearchChanged', () {
+      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+        'filters visibleProjects by query while retaining the full projects list',
+        build: () {
+          seedProjectsTable([
+            buildProjectMap(
+              id: 'project-1',
+              projectName: 'My project',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 2),
+            ),
+            buildProjectMap(
+              id: 'project-2',
+              projectName: 'Material of building',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ]);
+          return Modular.get<ProjectDropdownBloc>();
+        },
+        act: (bloc) async {
+          bloc.add(const ProjectDropdownStarted());
+          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
+          bloc.add(const ProjectDropdownSearchChanged('material'));
+        },
+        skip: 2,
+        expect: () => [
+          isA<ProjectDropdownLoadSuccess>()
+              .having((state) => state.searchQuery, 'searchQuery', 'material')
+              .having((state) => state.projects.length, 'projects.length', 2)
+              .having(
+                (state) => state.visibleProjects.length,
+                'visibleProjects.length',
+                1,
+              )
+              .having(
+                (state) => state.visibleProjects.first.id,
+                'visibleProjects.first.id',
+                'project-2',
+              ),
+        ],
+      );
+
+      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+        'ignores search changes before projects have loaded',
+        build: () => Modular.get<ProjectDropdownBloc>(),
+        act: (bloc) => bloc.add(const ProjectDropdownSearchChanged('query')),
+        expect: () => <ProjectDropdownState>[],
+      );
+    });
   });
 }
 
