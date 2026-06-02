@@ -1,6 +1,7 @@
 import 'package:construculator/features/project/presentation/widgets/project_stats_cards.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -137,10 +138,33 @@ void main() {
       expect(find.byType(ProjectStatsCards), findsOneWidget);
     });
 
-    testWidgets('renders arrow icons on both cards', (tester) async {
-      await pumpProjectStatsCards(tester, estimationCount: 1, memberCount: 1);
+    testWidgets('stat cards have button semantics when tappable', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
 
-      expect(find.byType(CoreIconWidget), findsNWidgets(2));
+      await pumpProjectStatsCards(
+        tester,
+        estimationCount: 34,
+        memberCount: 12,
+        onEstimationsTap: () {},
+        onMembersTap: () {},
+      );
+
+      expect(
+        tester
+            .getSemantics(find.byKey(const Key('project_stats_estimations_card')))
+            .hasFlag(SemanticsFlag.isButton),
+        isTrue,
+      );
+      expect(
+        tester
+            .getSemantics(find.byKey(const Key('project_stats_members_card')))
+            .hasFlag(SemanticsFlag.isButton),
+        isTrue,
+      );
+
+      handle.dispose();
     });
   });
 }
