@@ -86,7 +86,7 @@ void main() {
     String email = testEmail,
   }) async {
     await tester.pumpWidget(
-      makeTestableWidget(child: EnterPasswordPage(email: email, router: Modular.get<AppRouter>())),
+      makeTestableWidget(child: EnterPasswordPage(email: email, router: router)),
     );
     await tester.pumpAndSettle();
   }

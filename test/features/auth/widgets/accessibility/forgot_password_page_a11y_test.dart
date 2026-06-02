@@ -5,6 +5,7 @@ import 'package:construculator/features/auth/presentation/bloc/otp_verification_
 import 'package:construculator/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -35,6 +36,7 @@ class _ForgotPasswordPageA11yTestModule extends Module {
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  late FakeAppRouter router;
   BuildContext? buildContext;
 
   setUpAll(() {
@@ -47,6 +49,7 @@ void main() {
 
     Modular.init(_ForgotPasswordPageA11yTestModule(appBootstrap));
     Modular.replaceInstance<SupabaseWrapper>(fakeSupabase);
+    router = Modular.get<AppRouter>() as FakeAppRouter;
   });
 
   tearDownAll(() {
@@ -87,7 +90,7 @@ void main() {
 
   Future<void> renderPage(WidgetTester tester) async {
     await tester.pumpWidget(
-      makeTestableWidget(child: ForgotPasswordPage(router: Modular.get<AppRouter>())),
+      makeTestableWidget(child: ForgotPasswordPage(router: router)),
     );
     await tester.pumpAndSettle();
   }
@@ -132,7 +135,7 @@ void main() {
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
         (theme) =>
-            makeTestableWidget(theme: theme, child: ForgotPasswordPage(router: Modular.get<AppRouter>())),
+            makeTestableWidget(theme: theme, child: ForgotPasswordPage(router: router)),
         find.text(l10n().continueButton),
         setupAfterPump: (t) async {
           await enterEmail(t, 'reset@example.com');
@@ -153,7 +156,7 @@ void main() {
           tester,
           (theme) => makeTestableWidget(
             theme: theme,
-            child: ForgotPasswordPage(router: Modular.get<AppRouter>()),
+            child: ForgotPasswordPage(router: router),
           ),
           find.text(l10n().emailRequiredError),
         );
@@ -172,7 +175,7 @@ void main() {
           tester,
           (theme) => makeTestableWidget(
             theme: theme,
-            child: ForgotPasswordPage(router: Modular.get<AppRouter>()),
+            child: ForgotPasswordPage(router: router),
           ),
           find.text(l10n().invalidEmailError),
         );
@@ -188,7 +191,7 @@ void main() {
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
         (theme) =>
-            makeTestableWidget(theme: theme, child: ForgotPasswordPage(router: Modular.get<AppRouter>())),
+            makeTestableWidget(theme: theme, child: ForgotPasswordPage(router: router)),
         find.text(l10n().verifyOtpButton),
         setupAfterPump: (t) async {
           await enterEmail(t, 'reset@example.com');
@@ -209,7 +212,7 @@ void main() {
           tester,
           (theme) => makeTestableWidget(
             theme: theme,
-            child: ForgotPasswordPage(router: Modular.get<AppRouter>()),
+            child: ForgotPasswordPage(router: router),
           ),
           find.byKey(const Key('edit_contact_button')),
           setupAfterPump: (t) async {
@@ -237,7 +240,7 @@ void main() {
                 SupabaseAuthErrorCode.invalidCredentials;
             return makeTestableWidget(
               theme: theme,
-              child: ForgotPasswordPage(router: Modular.get<AppRouter>()),
+              child: ForgotPasswordPage(router: router),
             );
           },
           find.byKey(const Key('toast_close_button')),
@@ -272,7 +275,7 @@ void main() {
             fakeSupabase.authErrorCode = SupabaseAuthErrorCode.rateLimited;
             return makeTestableWidget(
               theme: theme,
-              child: ForgotPasswordPage(router: Modular.get<AppRouter>()),
+              child: ForgotPasswordPage(router: router),
             );
           },
           find.byKey(const Key('toast_close_button')),

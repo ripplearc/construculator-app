@@ -5,6 +5,7 @@ import 'package:construculator/features/auth/presentation/bloc/register_with_ema
 import 'package:construculator/features/auth/presentation/pages/register_with_email_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -34,6 +35,7 @@ class _RegisterWithEmailPageA11yTestModule extends Module {
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  late FakeAppRouter router;
   BuildContext? buildContext;
 
   setUpAll(() {
@@ -46,6 +48,7 @@ void main() {
 
     Modular.init(_RegisterWithEmailPageA11yTestModule(appBootstrap));
     Modular.replaceInstance<SupabaseWrapper>(fakeSupabase);
+    router = Modular.get<AppRouter>() as FakeAppRouter;
   });
 
   tearDownAll(() {
@@ -86,7 +89,7 @@ void main() {
 
   Future<void> renderPage(WidgetTester tester, {String email = ''}) async {
     await tester.pumpWidget(
-      makeTestableWidget(child: RegisterWithEmailPage(email: email, router: Modular.get<AppRouter>())),
+      makeTestableWidget(child: RegisterWithEmailPage(email: email, router: router)),
     );
     await tester.pumpAndSettle();
   }
@@ -117,7 +120,7 @@ void main() {
         fakeSupabase.setRpcResponse('check_email_exists', false);
         return makeTestableWidget(
           theme: theme,
-          child: RegisterWithEmailPage(email: 'newuser@example.com', router: Modular.get<AppRouter>()),
+          child: RegisterWithEmailPage(email: 'newuser@example.com', router: router),
         );
       }, find.text(l10n().continueButton));
     });
@@ -133,7 +136,7 @@ void main() {
         tester,
         (theme) => makeTestableWidget(
           theme: theme,
-          child: RegisterWithEmailPage(email: '', router: Modular.get<AppRouter>()),
+          child: RegisterWithEmailPage(email: '', router: router),
         ),
         find.byKey(const Key('auth_footer_link')),
       );
@@ -154,7 +157,7 @@ void main() {
           fakeSupabase.setRpcResponse('check_email_exists', true);
           return makeTestableWidget(
             theme: theme,
-            child: RegisterWithEmailPage(email: 'registered@example.com', router: Modular.get<AppRouter>()),
+            child: RegisterWithEmailPage(email: 'registered@example.com', router: router),
           );
         }, find.byKey(Key(l10n().logginLink)));
       },
@@ -172,7 +175,7 @@ void main() {
           tester,
           (theme) => makeTestableWidget(
             theme: theme,
-            child: RegisterWithEmailPage(email: 'invalid-email', router: Modular.get<AppRouter>()),
+            child: RegisterWithEmailPage(email: 'invalid-email', router: router),
           ),
           find.text(l10n().invalidEmailError),
         );
@@ -194,7 +197,7 @@ void main() {
           fakeSupabase.shouldThrowOnSelect = true;
           return makeTestableWidget(
             theme: theme,
-            child: RegisterWithEmailPage(email: 'error@example.com', router: Modular.get<AppRouter>()),
+            child: RegisterWithEmailPage(email: 'error@example.com', router: router),
           );
         }, find.byKey(const Key('toast_close_button')));
       },

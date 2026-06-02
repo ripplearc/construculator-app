@@ -61,7 +61,6 @@ class AppShellPage extends StatefulWidget {
 
 class _AppShellPageState extends State<AppShellPage> {
   static final _logger = AppLogger().tag('AppShellPage');
-  late AppShellBloc _bloc;
   late final CurrentProjectNotifier _currentProjectNotifier;
   StreamSubscription<String?>? _projectSubscription;
   String? _currentProjectId;
@@ -74,7 +73,6 @@ class _AppShellPageState extends State<AppShellPage> {
   @override
   void initState() {
     super.initState();
-    _bloc = context.read<AppShellBloc>();
     _currentProjectNotifier = Modular.get<CurrentProjectNotifier>();
     _currentProjectId = _currentProjectNotifier.currentProjectId;
     _projectSubscription = _currentProjectNotifier.onCurrentProjectChanged
@@ -88,16 +86,15 @@ class _AppShellPageState extends State<AppShellPage> {
   @override
   void dispose() {
     _projectSubscription?.cancel();
-    // Do not close _currentProjectNotifier or _bloc — both are DI-owned.
-    // Closing a DI-owned BLoC leaves the container holding a closed instance,
-    // causing "cannot add events after close" on re-navigation.
+    // Do not close _currentProjectNotifier — it is DI-owned.
     super.dispose();
   }
 
   void _onPopInvoked(bool didPop) {
     if (didPop) return;
 
-    final state = _bloc.state;
+    final bloc = context.read<AppShellBloc>();
+    final state = bloc.state;
     final currentNavigator =
         _tabNavigatorKeys[state.selectedTabIndex].currentState;
 
@@ -107,7 +104,7 @@ class _AppShellPageState extends State<AppShellPage> {
     }
 
     if (state.selectedTabIndex != 0) {
-      _bloc.add(const AppShellTabSelected(ShellTab.home));
+      bloc.add(const AppShellTabSelected(ShellTab.home));
       return;
     }
 
@@ -116,7 +113,7 @@ class _AppShellPageState extends State<AppShellPage> {
 
   void _handleTabTap(int index) {
     assert(index < ShellTab.values.length, 'Tab index $index out of range');
-    _bloc.add(AppShellTabSelected(ShellTab.values[index]));
+    context.read<AppShellBloc>().add(AppShellTabSelected(ShellTab.values[index]));
   }
 
   Widget _buildTabRoot(ShellTab tab) {

@@ -4,6 +4,7 @@ import 'package:construculator/features/auth/presentation/bloc/create_account_bl
 import 'package:construculator/features/auth/presentation/pages/create_account_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -34,6 +35,7 @@ class _CreateAccountPageA11yTestModule extends Module {
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  late FakeAppRouter router;
   BuildContext? buildContext;
   const testEmail = 'test@example.com';
   const testRole = 'Engineer';
@@ -48,6 +50,7 @@ void main() {
 
     Modular.init(_CreateAccountPageA11yTestModule(appBootstrap));
     Modular.replaceInstance<SupabaseWrapper>(fakeSupabase);
+    router = Modular.get<AppRouter>() as FakeAppRouter;
   });
 
   tearDownAll(() {
@@ -87,7 +90,7 @@ void main() {
     String email = testEmail,
   }) async {
     await tester.pumpWidget(
-      makeTestableWidget(child: CreateAccountPage(email: email, router: Modular.get<AppRouter>())),
+      makeTestableWidget(child: CreateAccountPage(email: email, router: router)),
     );
     await tester.pumpAndSettle();
   }
@@ -171,7 +174,7 @@ void main() {
         tester,
         (theme) => makeTestableWidget(
           theme: theme,
-          child: CreateAccountPage(email: testEmail, router: Modular.get<AppRouter>()),
+          child: CreateAccountPage(email: testEmail, router: router),
         ),
         find.text(buttonLabel),
         setupAfterPump: (t) async {
@@ -195,7 +198,7 @@ void main() {
           tester,
           (theme) => makeTestableWidget(
             theme: theme,
-            child: CreateAccountPage(email: testEmail, router: Modular.get<AppRouter>()),
+            child: CreateAccountPage(email: testEmail, router: router),
           ),
           find.text(termsLink),
         );
@@ -213,7 +216,7 @@ void main() {
         tester,
         (theme) => makeTestableWidget(
           theme: theme,
-          child: CreateAccountPage(email: testEmail, router: Modular.get<AppRouter>()),
+          child: CreateAccountPage(email: testEmail, router: router),
         ),
         find.text(roleLabelText),
       );
@@ -235,7 +238,7 @@ void main() {
                 SupabaseAuthErrorCode.invalidCredentials;
             return makeTestableWidget(
               theme: theme,
-              child: CreateAccountPage(email: testEmail, router: Modular.get<AppRouter>()),
+              child: CreateAccountPage(email: testEmail, router: router),
             );
           },
           find.byKey(const Key('toast_close_button')),
