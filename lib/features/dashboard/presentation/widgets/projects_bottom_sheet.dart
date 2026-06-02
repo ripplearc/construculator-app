@@ -98,23 +98,15 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
             ),
           ),
           const SizedBox(height: CoreSpacing.space4),
-          Row(
-            children: [
-              CoreIconWidget(
-                icon: CoreIcons.search,
-                size: _kProjectsSearchIconSize,
-                color: colors.iconGrayMid,
-              ),
-              const SizedBox(width: CoreSpacing.space2),
-              Expanded(
-                child: CoreSearchBox(
-                  controller: _searchController,
-                  hintText: l10n.searchProjectsHint,
-                  onChanged: _onSearchChanged,
-                  onClear: () => _onSearchChanged(''),
-                ),
-              ),
-            ],
+          CoreTextField(
+            controller: _searchController,
+            hintText: l10n.searchProjectsHint,
+            onChanged: _onSearchChanged,
+            prefix: CoreIconWidget(
+              icon: CoreIcons.search,
+              size: _kProjectsSearchIconSize,
+              color: colors.iconGrayMid,
+            ),
           ),
           const SizedBox(height: CoreSpacing.space4),
           BlocBuilder<ProjectDropdownBloc, ProjectDropdownState>(
