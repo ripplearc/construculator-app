@@ -76,13 +76,15 @@ void main() {
     expect(tapped, isTrue);
   });
 
-  testWidgets('invokes onSettingsTap when the settings icon is tapped', (
+  testWidgets('invokes onSettingsTap without firing the card onTap', (
     tester,
   ) async {
+    var tapped = false;
     var settingsTapped = false;
     await tester.pumpWidget(
       buildTestApp(
         project: buildProject(),
+        onTap: () => tapped = true,
         onSettingsTap: () => settingsTapped = true,
       ),
     );
@@ -92,13 +94,17 @@ void main() {
     await tester.pump();
 
     expect(settingsTapped, isTrue);
+    expect(tapped, isFalse);
   });
 
   double borderWidthOf(WidgetTester tester) {
-    final card = tester.widget<Container>(
-      find.byKey(const Key('project_list_item_card')),
-    );
-    final decoration = card.decoration as BoxDecoration;
+    final decorated = tester
+        .widgetList<Container>(find.byType(Container))
+        .firstWhere((container) {
+          final decoration = container.decoration;
+          return decoration is BoxDecoration && decoration.border is Border;
+        });
+    final decoration = decorated.decoration as BoxDecoration;
     final border = decoration.border as Border;
     return border.top.width;
   }

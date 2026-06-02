@@ -8,8 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
-  final size = const Size(390, 180);
-  final ratio = 1.0;
+  const size = Size(390, 180);
+  const ratio = 1.0;
   TestWidgetsFlutterBinding.ensureInitialized();
 
   Project buildProject({
@@ -26,7 +26,7 @@ void main() {
     );
   }
 
-  setUp(() async {
+  setUpAll(() async {
     await loadAppFontsAll();
   });
 
