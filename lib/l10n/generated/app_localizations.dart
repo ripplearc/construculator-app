@@ -1515,6 +1515,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select project'**
   String get projectSelectorSemanticLabel;
+
+  /// Label for the cost estimations count stat card on the project details screen
+  ///
+  /// In en, this message translates to:
+  /// **'No. of cost estimation'**
+  String get numberOfCostEstimations;
+
+  /// Label for the members count stat card on the project details screen
+  ///
+  /// In en, this message translates to:
+  /// **'People invited'**
+  String get peopleInvited;
 }
 
 class _AppLocalizationsDelegate

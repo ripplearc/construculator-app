@@ -797,4 +797,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get projectSelectorSemanticLabel => 'Select project';
+
+  @override
+  String get numberOfCostEstimations => 'No. of cost estimation';
+
+  @override
+  String get peopleInvited => 'People invited';
 }
