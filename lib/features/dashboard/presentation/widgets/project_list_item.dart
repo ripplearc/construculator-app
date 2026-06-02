@@ -41,70 +41,76 @@ class ProjectListItem extends StatelessWidget {
     final colors = context.colorTheme;
     final typography = context.textTheme;
 
-    final dateFormatter = DateFormat('MMM d, yyyy');
-    final timeFormatter = DateFormat('h:mm a');
-    final formattedDate = dateFormatter.format(project.updatedAt);
-    final formattedTime = timeFormatter.format(project.updatedAt).toLowerCase();
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final formattedDate = DateFormat('MMM d, yyyy', locale)
+        .format(project.updatedAt);
+    final formattedTime = DateFormat('h:mm a', locale)
+        .format(project.updatedAt)
+        .toLowerCase();
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        key: const Key('project_list_item_card'),
-        margin: const EdgeInsets.only(bottom: CoreSpacing.space3),
-        padding: const EdgeInsets.all(CoreSpacing.space4),
-        decoration: BoxDecoration(
-          color: colors.pageBackground,
-          borderRadius: BorderRadius.circular(CoreSpacing.space3),
-          border: Border.all(
-            color: isSelected ? colors.outlineFocus : colors.lineLight,
-            width: isSelected
-                ? _kProjectListItemSelectedBorderWidth
-                : _kProjectListItemBorderWidth,
+    return Semantics(
+      button: true,
+      label: project.projectName,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(CoreSpacing.space4),
+          decoration: BoxDecoration(
+            color: colors.pageBackground,
+            borderRadius: BorderRadius.circular(CoreSpacing.space3),
+            border: Border.all(
+              color: isSelected ? colors.outlineFocus : colors.lineLight,
+              width: isSelected
+                  ? _kProjectListItemSelectedBorderWidth
+                  : _kProjectListItemBorderWidth,
+            ),
+            boxShadow: CoreShadows.small,
           ),
-          boxShadow: CoreShadows.small,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    project.projectName,
-                    style: typography.titleMediumSemiBold.copyWith(
-                      color: colors.textDark,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      project.projectName,
+                      style: typography.titleMediumSemiBold.copyWith(
+                        color: colors.textDark,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                const SizedBox(width: CoreSpacing.space2),
-                _buildSettingsButton(context),
-              ],
-            ),
-            const SizedBox(height: CoreSpacing.space2),
-            Row(
-              children: [
-                CoreIconWidget(
-                  icon: CoreIcons.calendar,
-                  size: _kProjectListItemMetaIconSize,
-                  color: colors.iconGrayMid,
-                ),
-                const SizedBox(width: CoreSpacing.space2),
-                Flexible(
-                  child: Text(
-                    '$formattedDate • $formattedTime',
-                    style: typography.bodySmallRegular.copyWith(
-                      color: colors.textBody,
+                  const SizedBox(width: CoreSpacing.space2),
+                  _buildSettingsButton(context),
+                ],
+              ),
+              const SizedBox(height: CoreSpacing.space2),
+              Row(
+                children: [
+                  ExcludeSemantics(
+                    child: CoreIconWidget(
+                      icon: CoreIcons.calendar,
+                      size: _kProjectListItemMetaIconSize,
+                      color: colors.iconGrayMid,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
-            ),
-          ],
+                  const SizedBox(width: CoreSpacing.space2),
+                  Flexible(
+                    child: Text(
+                      '$formattedDate • $formattedTime',
+                      style: typography.bodySmallRegular.copyWith(
+                        color: colors.textBody,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
