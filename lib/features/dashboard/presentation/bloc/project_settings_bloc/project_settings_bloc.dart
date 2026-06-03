@@ -105,8 +105,11 @@ class ProjectSettingsBloc
     Emitter<ProjectSettingsState> emit,
   ) {
     final currentState = state;
-    final lastProject =
-        currentState is ProjectSettingsLoaded ? currentState.project : null;
+    final lastProject = switch (currentState) {
+      ProjectSettingsLoaded(:final project) => project,
+      ProjectSettingsEditing(:final originalProject) => originalProject,
+      _ => null,
+    };
 
     event.result.fold(
       (failure) => emit(
