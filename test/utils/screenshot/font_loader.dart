@@ -57,7 +57,41 @@ Future<void> loadMaterialIcons() async {
 /// Creates a test theme with Roboto font applied to all typography styles
 ThemeData createTestTheme() {
   final baseTheme = CoreTheme.light();
-  final typography = baseTheme.extension<AppTypographyExtension>()!;
+  var typography = baseTheme.extension<AppTypographyExtension>()!;
+  typography = typography.copyWith(
+    headlineLargeRegular: typography.headlineLargeRegular.copyWith(fontFamily: 'Roboto'),
+      headlineLargeSemiBold: typography.headlineLargeSemiBold.copyWith(fontFamily: 'Roboto'),
+
+      // Headline Medium - 24/32
+      headlineMediumRegular: typography.headlineMediumRegular.copyWith(fontFamily: 'Roboto'),
+      headlineMediumSemiBold: typography.headlineMediumSemiBold.copyWith(fontFamily: 'Roboto'),
+
+      // Title Large - 20/28
+      titleLargeRegular: typography.titleLargeRegular.copyWith(fontFamily: 'Roboto'),
+      titleLargeMedium: typography.titleLargeMedium.copyWith(fontFamily: 'Roboto'),
+      titleLargeSemiBold: typography.titleLargeSemiBold.copyWith(fontFamily: 'Roboto'),
+
+      // Title Medium - 18/26
+      titleMediumRegular: typography.titleMediumRegular.copyWith(fontFamily: 'Roboto'),
+      titleMediumMedium: typography.titleMediumMedium.copyWith(fontFamily: 'Roboto'),
+      titleMediumSemiBold: typography.titleMediumSemiBold.copyWith(fontFamily: 'Roboto'),
+
+      // Body Large - 16/24
+      bodyLargeRegular: typography.bodyLargeRegular.copyWith(fontFamily: 'Roboto'),
+      bodyLargeMedium: typography.bodyLargeMedium.copyWith(fontFamily: 'Roboto'),
+      bodyLargeSemiBold: typography.bodyLargeSemiBold.copyWith(fontFamily: 'Roboto'),
+
+      // Body Medium - 14/20
+      bodyMediumRegular: typography.bodyMediumRegular.copyWith(fontFamily: 'Roboto'),
+      bodyMediumMedium: typography.bodyMediumMedium.copyWith(fontFamily: 'Roboto'),
+      bodyMediumSemiBold: typography.bodyMediumSemiBold.copyWith(fontFamily: 'Roboto'),
+
+      // Body Small - 12/16
+      bodySmallRegular: typography.bodySmallRegular.copyWith(fontFamily: 'Roboto'),
+      bodySmallMedium: typography.bodySmallMedium.copyWith(fontFamily: 'Roboto'),
+      bodySmallSemiBold: typography.bodySmallSemiBold.copyWith(fontFamily: 'Roboto'),
+    
+    );
   final colors = baseTheme.extension<AppColorsExtension>()!;
 
   return ThemeData(

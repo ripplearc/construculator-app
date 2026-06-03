@@ -9,6 +9,8 @@ void main() {
   const size = Size(390, 844);
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  late AppLocalizations l10n;
+
   Future<void> pumpTabView({
     required WidgetTester tester,
     int selectedTab = 0,
@@ -25,15 +27,18 @@ void main() {
     await tester.pumpAndSettle();
 
     if (selectedTab == 1) {
-      await tester.tap(find.text('Labours'));
+      await tester.ensureVisible(find.text(l10n.laboursTab));
+      await tester.tap(find.text(l10n.laboursTab));
       await tester.pumpAndSettle();
     } else if (selectedTab == 2) {
-      await tester.tap(find.text('Equipments'));
+      await tester.ensureVisible(find.text(l10n.equipmentsTab));
+      await tester.tap(find.text(l10n.equipmentsTab));
       await tester.pumpAndSettle();
     }
   }
 
   setUp(() async {
+    l10n = lookupAppLocalizations(const Locale('en'));
     await loadAppFontsAll();
   });
 

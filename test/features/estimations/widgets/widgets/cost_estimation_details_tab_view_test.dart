@@ -150,8 +150,8 @@ void main() {
       );
 
       expect(
-        find.byKey(const Key('labours_empty_state')),
-        findsOneWidget,
+        find.byKey(const Key('materials_empty_state')),
+        findsNothing,
       );
     });
 

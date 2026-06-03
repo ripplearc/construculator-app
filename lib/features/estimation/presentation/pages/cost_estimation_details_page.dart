@@ -12,6 +12,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// costs, and a bottom bar with lock and preview actions.
 class CostEstimationDetailsPage extends StatelessWidget {
   final String estimationId;
+  final _router = Modular.get<AppRouter>();
 
   CostEstimationDetailsPage({super.key, required this.estimationId});
 
@@ -42,10 +43,7 @@ class CostEstimationDetailsPage extends StatelessWidget {
               size: 24,
               visualDensity: VisualDensity.compact,
               semanticLabel: l10n.backLabel,
-              onTap: () {
-                final router = Modular.get<AppRouter>();
-                router.pop();
-              },
+              onTap: _router.pop,
             ),
             // TODO: [CA-154] [Cost Estimation] Implement Rename Estimation Logic https://ripplearc.youtrack.cloud/issue/CA-154/Cost-Estimation-Implement-Rename-Estimation-Logic
             title: Row(

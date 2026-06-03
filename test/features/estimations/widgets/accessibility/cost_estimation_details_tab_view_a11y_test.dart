@@ -67,6 +67,7 @@ void main() {
       await tester.pumpWidget(createWidget(theme: createTestTheme()));
       await tester.pumpAndSettle();
 
+      await tester.ensureVisible(find.text(l10n.equipmentsTab));
       await tester.tap(find.text(l10n.equipmentsTab));
       await tester.pumpAndSettle();
 
