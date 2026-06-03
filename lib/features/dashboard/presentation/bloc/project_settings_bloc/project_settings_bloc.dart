@@ -17,7 +17,6 @@ class ProjectSettingsBloc
   final ProjectSettingRepository _repository;
   StreamSubscription<Either<Failure, Project>>? _subscription;
 
-  /// Defines constructor that takes a [repository] as an injected dependency.
   ProjectSettingsBloc({required ProjectSettingRepository repository})
       : _repository = repository,
         super(const ProjectSettingsInitial()) {
@@ -28,12 +27,12 @@ class ProjectSettingsBloc
     on<_ProjectSettingsStreamUpdated>(_onStreamUpdated);
   }
 
-  void _onWatchStarted(
+  Future<void> _onWatchStarted(
     ProjectSettingsWatchStarted event,
     Emitter<ProjectSettingsState> emit,
-  ) {
+  ) async {
     emit(const ProjectSettingsLoading());
-    _subscription?.cancel();
+    await _subscription?.cancel();
     _subscription = _repository
         .watchProjectSetting(event.projectId)
         .listen(

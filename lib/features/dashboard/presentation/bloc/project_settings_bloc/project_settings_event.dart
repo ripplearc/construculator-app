@@ -2,7 +2,6 @@ part of 'project_settings_bloc.dart';
 
 /// Base event for [ProjectSettingsBloc].
 abstract class ProjectSettingsEvent extends Equatable {
-  /// Defines a constant constructor for project settings event.
   const ProjectSettingsEvent();
 
   @override
@@ -14,7 +13,6 @@ class ProjectSettingsWatchStarted extends ProjectSettingsEvent {
   /// The identifier of the project to watch.
   final String projectId;
 
-  /// Defines a constructor to start watching project settings.
   const ProjectSettingsWatchStarted(this.projectId);
 
   @override
@@ -26,7 +24,6 @@ class ProjectSettingsEditingStarted extends ProjectSettingsEvent {
   /// The project to enter edit mode for.
   final Project project;
 
-  /// Defines a constructor to start editing a project.
   const ProjectSettingsEditingStarted(this.project);
 
   @override
@@ -38,7 +35,6 @@ class ProjectSettingsUpdateSubmitted extends ProjectSettingsEvent {
   /// The project with updated fields to persist.
   final Project project;
 
-  /// Defines a constructor to submit project updates.
   const ProjectSettingsUpdateSubmitted(this.project);
 
   @override
@@ -50,7 +46,6 @@ class ProjectSettingsDeleteRequested extends ProjectSettingsEvent {
   /// The identifier of the project to delete.
   final String projectId;
 
-  /// Defines a constructor to request project deletion.
   const ProjectSettingsDeleteRequested(this.projectId);
 
   @override
