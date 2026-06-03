@@ -9,6 +9,15 @@ const double _kProjectListItemSelectedBorderWidth = 2;
 const double _kProjectListItemMetaIconSize = CoreSpacing.space4;
 const double _kProjectListItemSettingsHitTarget = CoreSpacing.space12;
 
+final _dateFormatCache = <String, DateFormat>{};
+final _timeFormatCache = <String, DateFormat>{};
+
+DateFormat _dateFormat(String locale) =>
+    _dateFormatCache.putIfAbsent(locale, () => DateFormat('MMM d, yyyy', locale));
+
+DateFormat _timeFormat(String locale) =>
+    _timeFormatCache.putIfAbsent(locale, () => DateFormat('h:mm a', locale));
+
 /// A card widget that displays a summary of a single [Project] within the
 /// projects bottom sheet, showing the project name and its last-updated
 /// date and time, plus a per-project settings affordance.
@@ -42,17 +51,15 @@ class ProjectListItem extends StatelessWidget {
     final typography = context.textTheme;
 
     final locale = Localizations.localeOf(context).toLanguageTag();
-    final formattedDate = DateFormat('MMM d, yyyy', locale)
-        .format(project.updatedAt);
-    final formattedTime = DateFormat('h:mm a', locale)
-        .format(project.updatedAt)
-        .toLowerCase();
+    final formattedDate = _dateFormat(locale).format(project.updatedAt);
+    final formattedTime =
+        _timeFormat(locale).format(project.updatedAt).toLowerCase();
 
-    return Semantics(
-      button: true,
-      label: project.projectName,
-      child: GestureDetector(
+    final card = Material(
+      borderRadius: BorderRadius.circular(CoreSpacing.space3),
+      child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(CoreSpacing.space3),
         child: Container(
           padding: const EdgeInsets.all(CoreSpacing.space4),
           decoration: BoxDecoration(
@@ -73,13 +80,15 @@ class ProjectListItem extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      project.projectName,
-                      style: typography.titleMediumSemiBold.copyWith(
-                        color: colors.textDark,
+                    child: ExcludeSemantics(
+                      child: Text(
+                        project.projectName,
+                        style: typography.titleMediumSemiBold.copyWith(
+                          color: colors.textDark,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(width: CoreSpacing.space2),
@@ -114,6 +123,15 @@ class ProjectListItem extends StatelessWidget {
         ),
       ),
     );
+
+    if (onTap != null) {
+      return Semantics(
+        button: true,
+        label: project.projectName,
+        child: card,
+      );
+    }
+    return card;
   }
 
   Widget _buildSettingsButton(BuildContext context) {
