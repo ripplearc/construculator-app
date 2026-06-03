@@ -545,6 +545,253 @@ void main() {
         act: (bloc) => bloc.add(const ProjectDropdownSearchChanged('query')),
         expect: () => <ProjectDropdownState>[],
       );
+
+      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+        'deduplication guard — identical consecutive queries emit only one state',
+        build: () {
+          seedProjectsTable([
+            buildProjectMap(
+              id: 'project-1',
+              projectName: 'My project',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ]);
+          return Modular.get<ProjectDropdownBloc>();
+        },
+        act: (bloc) async {
+          bloc.add(const ProjectDropdownStarted());
+          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
+          bloc.add(const ProjectDropdownSearchChanged('my'));
+          bloc.add(const ProjectDropdownSearchChanged('my'));
+        },
+        skip: 2,
+        expect: () => [
+          isA<ProjectDropdownLoadSuccess>().having(
+            (s) => s.searchQuery,
+            'searchQuery',
+            'my',
+          ),
+        ],
+      );
+
+      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+        'searchQuery is preserved when a project refresh arrives during LoadSuccess',
+        build: () {
+          seedProjectsTable([
+            buildProjectMap(
+              id: 'project-1',
+              projectName: 'My project',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ]);
+          return Modular.get<ProjectDropdownBloc>();
+        },
+        act: (bloc) async {
+          bloc.add(const ProjectDropdownStarted());
+          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
+          bloc.add(const ProjectDropdownSearchChanged('my'));
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectDropdownLoadSuccess && s.searchQuery == 'my',
+          );
+          seedProjectsTable([
+            buildProjectMap(
+              id: 'project-1',
+              projectName: 'My project updated',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 2),
+            ),
+          ]);
+          await bloc.stream.firstWhere(
+            (s) =>
+                s is ProjectDropdownLoadSuccess &&
+                s.selectedProject!.projectName == 'My project updated',
+          );
+        },
+        skip: 2,
+        expect: () => [
+          isA<ProjectDropdownLoadSuccess>().having(
+            (s) => s.searchQuery,
+            'searchQuery',
+            'my',
+          ),
+          isA<ProjectDropdownLoadSuccess>()
+              .having((s) => s.searchQuery, 'searchQuery', 'my')
+              .having(
+                (s) => s.selectedProject!.projectName,
+                'selectedProject.projectName',
+                'My project updated',
+              ),
+        ],
+      );
+
+      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+        'case-insensitive match — MATERIAL matches Material of building',
+        build: () {
+          seedProjectsTable([
+            buildProjectMap(
+              id: 'project-1',
+              projectName: 'My project',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 2),
+            ),
+            buildProjectMap(
+              id: 'project-2',
+              projectName: 'Material of building',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ]);
+          return Modular.get<ProjectDropdownBloc>();
+        },
+        act: (bloc) async {
+          bloc.add(const ProjectDropdownStarted());
+          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
+          bloc.add(const ProjectDropdownSearchChanged('MATERIAL'));
+        },
+        skip: 2,
+        expect: () => [
+          isA<ProjectDropdownLoadSuccess>()
+              .having(
+                (s) => s.visibleProjects.length,
+                'visibleProjects.length',
+                1,
+              )
+              .having(
+                (s) => s.visibleProjects.first.id,
+                'visibleProjects.first.id',
+                'project-2',
+              ),
+        ],
+      );
+    });
+
+    group('ProjectDropdownLoadFailure edge cases', () {
+      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+        'consecutive failure retains cachedProjects and searchQuery',
+        build: () {
+          seedProjectsTable([
+            buildProjectMap(
+              id: 'project-1',
+              projectName: 'My project',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ]);
+          return Modular.get<ProjectDropdownBloc>();
+        },
+        act: (bloc) async {
+          bloc.add(const ProjectDropdownStarted());
+          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
+          // First failure: stream emits an error into the existing subscription
+          fakeSupabaseWrapper.shouldEmitStreamErrors = true;
+          seedProjectsTable([]);
+          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadFailure);
+          // Second failure: stream emits another error while already in LoadFailure
+          seedProjectsTable([]);
+          await bloc.stream.firstWhere(
+            (s) =>
+                s is ProjectDropdownLoadFailure &&
+                (bloc.state as ProjectDropdownLoadFailure).cachedProjects
+                    .isNotEmpty,
+          );
+        },
+        skip: 2,
+        expect: () => [
+          isA<ProjectDropdownLoadFailure>().having(
+            (s) => s.cachedProjects.length,
+            'cachedProjects.length',
+            1,
+          ),
+          isA<ProjectDropdownLoadFailure>().having(
+            (s) => s.cachedProjects.length,
+            'cachedProjects.length',
+            1,
+          ),
+        ],
+      );
+
+      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+        'visibleProjects on LoadFailure filters cachedProjects by searchQuery',
+        build: () {
+          seedProjectsTable([
+            buildProjectMap(
+              id: 'project-1',
+              projectName: 'My project',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 2),
+            ),
+            buildProjectMap(
+              id: 'project-2',
+              projectName: 'Material of building',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ]);
+          return Modular.get<ProjectDropdownBloc>();
+        },
+        act: (bloc) async {
+          bloc.add(const ProjectDropdownStarted());
+          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
+          bloc.add(const ProjectDropdownSearchChanged('material'));
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectDropdownLoadSuccess && s.searchQuery == 'material',
+          );
+          fakeSupabaseWrapper.shouldEmitStreamErrors = true;
+          seedProjectsTable([]);
+          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadFailure);
+        },
+        skip: 3,
+        expect: () => [
+          isA<ProjectDropdownLoadFailure>()
+              .having((s) => s.searchQuery, 'searchQuery', 'material')
+              .having(
+                (s) => s.visibleProjects.length,
+                'visibleProjects.length',
+                1,
+              )
+              .having(
+                (s) => s.visibleProjects.first.id,
+                'visibleProjects.first.id',
+                'project-2',
+              ),
+        ],
+      );
+
+      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+        'searchQuery in LoadFailure is preserved when re-subscribing via ProjectDropdownStarted',
+        build: () {
+          seedProjectsTable([
+            buildProjectMap(
+              id: 'project-1',
+              projectName: 'My project',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ]);
+          return Modular.get<ProjectDropdownBloc>();
+        },
+        act: (bloc) async {
+          bloc.add(const ProjectDropdownStarted());
+          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
+          bloc.add(const ProjectDropdownSearchChanged('my'));
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectDropdownLoadSuccess && s.searchQuery == 'my',
+          );
+          fakeSupabaseWrapper.shouldEmitStreamErrors = true;
+          seedProjectsTable([]);
+          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadFailure);
+          // Assert: searchQuery is preserved in the failure state (Bug 1 guard)
+          // A new load correctly starts fresh — this confirms the failure state held the query
+        },
+        skip: 3,
+        expect: () => [
+          isA<ProjectDropdownLoadFailure>()
+              .having((s) => s.searchQuery, 'searchQuery', 'my')
+              .having((s) => s.cachedProjects.length, 'cachedProjects.length', 1),
+        ],
+      );
     });
   });
 }

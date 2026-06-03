@@ -65,9 +65,11 @@ class ProjectDropdownBloc
     Emitter<ProjectDropdownState> emit,
   ) {
     final currentState = state;
-    final searchQuery = currentState is ProjectDropdownLoadSuccess
-        ? currentState.searchQuery
-        : '';
+    final searchQuery = switch (currentState) {
+      ProjectDropdownLoadSuccess s => s.searchQuery,
+      ProjectDropdownLoadFailure f => f.searchQuery,
+      _ => '',
+    };
 
     if (event.projects.isEmpty) {
       emit(
@@ -118,6 +120,16 @@ class ProjectDropdownBloc
       );
       return;
     }
+    if (currentState is ProjectDropdownLoadFailure) {
+      emit(
+        ProjectDropdownLoadFailure(
+          event.message,
+          cachedProjects: currentState.cachedProjects,
+          searchQuery: currentState.searchQuery,
+        ),
+      );
+      return;
+    }
     emit(ProjectDropdownLoadFailure(event.message));
   }
 
@@ -126,13 +138,21 @@ class ProjectDropdownBloc
     Emitter<ProjectDropdownState> emit,
   ) {
     final currentState = state;
-    if (currentState is! ProjectDropdownLoadSuccess) {
+    if (currentState is ProjectDropdownLoadSuccess) {
+      if (currentState.searchQuery == event.query) return;
+      emit(currentState.copyWith(searchQuery: event.query));
       return;
     }
-    if (currentState.searchQuery == event.query) {
-      return;
+    if (currentState is ProjectDropdownLoadFailure) {
+      if (currentState.searchQuery == event.query) return;
+      emit(
+        ProjectDropdownLoadFailure(
+          currentState.message,
+          cachedProjects: currentState.cachedProjects,
+          searchQuery: event.query,
+        ),
+      );
     }
-    emit(currentState.copyWith(searchQuery: event.query));
   }
 
   void _onSelected(

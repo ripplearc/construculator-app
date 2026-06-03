@@ -217,8 +217,8 @@
   },
   "projectSettingsSemanticLabel": "Project settings",
   "@projectSettingsSemanticLabel": {
-    "description": "Accessibility label for the per-project settings button in the projects list",
-    "context": "Dashboard projects sheet"
+    "description": "Accessibility label for the per-project settings icon button in the projects list",
+    "context": "N/A"
   },
   "heyEnterYourDetailsToRegisterWithUs": "Hey, Enter your details to Register with us",
   "@heyEnterYourDetailsToRegisterWithUs": {
@@ -704,7 +704,7 @@
   "lockLabel": "Lock",
   "@lockLabel": {
     "description": "Label for lock action",
-    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53163&t=72cjZpZMiulKp3Yl-4" 
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53163&t=72cjZpZMiulKp3Yl-4"
   },
   "unlockLabel": "Unlock",
   "@unlockLabel": {
@@ -1046,7 +1046,7 @@
       }
     }
   },
-  "activityEditedFieldValueCurrency": "\u0024{value}",
+  "activityEditedFieldValueCurrency": "${value}",
   "@activityEditedFieldValueCurrency": {
     "description": "Formatted value for currency based edited fields",
     "placeholders": {
@@ -1101,7 +1101,7 @@
   "loadMoreLogsError": "Failed to load more logs",
   "@loadMoreLogsError": {
     "description": "Error message shown when loading more logs fails"
-    },
+  },
   "appTitle": "Construculator",
   "@appTitle": {
     "description": "Application title displayed in app bar",

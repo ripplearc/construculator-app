@@ -2,6 +2,19 @@
 
 part of 'project_dropdown_bloc.dart';
 
+UnmodifiableListView<Project> _filterByQuery(
+  List<Project> projects,
+  String query,
+) {
+  if (query.isEmpty) return UnmodifiableListView(projects);
+  final lower = query.toLowerCase();
+  return UnmodifiableListView(
+    projects
+        .where((p) => p.projectName.toLowerCase().contains(lower))
+        .toList(),
+  );
+}
+
 /// Base class for project dropdown states.
 abstract class ProjectDropdownState extends Equatable {
   const ProjectDropdownState();
@@ -39,17 +52,8 @@ class ProjectDropdownLoadSuccess extends ProjectDropdownState {
 
   /// The projects matching [searchQuery]; equals [projects] when the query is
   /// empty. Filtering lives here so the UI renders a pre-filtered list.
-  UnmodifiableListView<Project> get visibleProjects {
-    if (searchQuery.isEmpty) {
-      return projects;
-    }
-    final query = searchQuery.toLowerCase();
-    return UnmodifiableListView<Project>(
-      projects
-          .where((project) => project.projectName.toLowerCase().contains(query))
-          .toList(),
-    );
-  }
+  UnmodifiableListView<Project> get visibleProjects =>
+      _filterByQuery(projects.toList(), searchQuery);
 
   ProjectDropdownLoadSuccess copyWith({
     Project? selectedProject,
@@ -91,17 +95,8 @@ class ProjectDropdownLoadFailure extends ProjectDropdownState {
 
   /// The cached projects matching [searchQuery]; equals [cachedProjects] when
   /// the query is empty.
-  UnmodifiableListView<Project> get visibleProjects {
-    if (searchQuery.isEmpty) {
-      return cachedProjects;
-    }
-    final query = searchQuery.toLowerCase();
-    return UnmodifiableListView<Project>(
-      cachedProjects
-          .where((project) => project.projectName.toLowerCase().contains(query))
-          .toList(),
-    );
-  }
+  UnmodifiableListView<Project> get visibleProjects =>
+      _filterByQuery(cachedProjects.toList(), searchQuery);
 
   @override
   List<Object?> get props => [message, cachedProjects, searchQuery];
