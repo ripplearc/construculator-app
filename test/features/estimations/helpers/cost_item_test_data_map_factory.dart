@@ -13,19 +13,18 @@ class CostItemTestDataMapFactory {
     String? updatedAt,
     Map<String, dynamic>? calculation,
     double? itemTotalCost,
+    String? currency,
+    String? brand,
   }) {
-    final price = unitPrice ?? 100.0;
-    final qty = quantity ?? 5.0;
-
     return {
       'id': id ?? 'item-material-1',
       'estimate_id': estimateId ?? 'estimate-123',
       'item_name': itemName ?? 'Test Material',
       'description': description ?? 'Test description',
       'item_type': 'material',
-      'unit_price': price,
+      'unit_price': unitPrice ?? 100.0,
       'unit_measurement': unit ?? 'pieces',
-      'quantity': qty,
+      'quantity': quantity ?? 5.0,
       'product_link': productLink,
       'labor_calc_method': null,
       'labor_days': null,
@@ -33,10 +32,12 @@ class CostItemTestDataMapFactory {
       'labor_unit_type': null,
       'labor_unit_value': null,
       'crew_size': null,
-      'calculation': calculation ?? {'unit_price': price, 'quantity': qty},
-      'item_total_cost': itemTotalCost ?? price * qty,
+      'calculation': calculation ?? {'unit_price': 100.0, 'quantity': 5.0},
+      'item_total_cost': itemTotalCost ?? 500.0,
       'created_at': createdAt ?? '2024-01-01T00:00:00.000Z',
       'updated_at': updatedAt ?? '2024-01-01T00:00:00.000Z',
+      'currency': currency ?? 'USD',
+      'brand': brand,
     };
   }
 
@@ -56,6 +57,8 @@ class CostItemTestDataMapFactory {
     String? updatedAt,
     Map<String, dynamic>? calculation,
     double? itemTotalCost,
+    String? currency,
+    String? brand,
   }) {
     return {
       'id': id ?? 'item-labor-1',
@@ -67,7 +70,7 @@ class CostItemTestDataMapFactory {
       'unit_measurement': null,
       'quantity': null,
       'product_link': productLink,
-      'labor_calc_method': laborCalcMethod ?? 'hourly',
+      'labor_calc_method': laborCalcMethod ?? 'per_hour',
       'labor_days': laborDays,
       'labor_hours': laborHours ?? 10.0,
       'labor_unit_type': laborUnitType,
@@ -77,6 +80,8 @@ class CostItemTestDataMapFactory {
       'item_total_cost': itemTotalCost ?? 20.0,
       'created_at': createdAt ?? '2024-01-01T00:00:00.000Z',
       'updated_at': updatedAt ?? '2024-01-01T00:00:00.000Z',
+      'currency': currency ?? 'USD',
+      'brand': brand,
     };
   }
 
@@ -93,6 +98,8 @@ class CostItemTestDataMapFactory {
     String? updatedAt,
     Map<String, dynamic>? calculation,
     double? itemTotalCost,
+    String? currency,
+    String? brand,
   }) {
     final price = unitPrice ?? 200.0;
     final qty = quantity ?? 3.0;
@@ -117,6 +124,8 @@ class CostItemTestDataMapFactory {
       'item_total_cost': itemTotalCost ?? price * qty,
       'created_at': createdAt ?? '2024-01-01T00:00:00.000Z',
       'updated_at': updatedAt ?? '2024-01-01T00:00:00.000Z',
+      'currency': currency ?? 'USD',
+      'brand': brand,
     };
   }
 

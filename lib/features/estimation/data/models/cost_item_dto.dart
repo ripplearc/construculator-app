@@ -43,8 +43,6 @@ class CostItemDto extends Equatable {
   /// Optional description of the cost item.
   final String? description;
 
-  // Material and Equipment specific fields
-
   /// Unit price for material or equipment items.
   final double? unitPrice;
 
@@ -53,8 +51,6 @@ class CostItemDto extends Equatable {
 
   /// Unit of measurement for material or equipment items.
   final String? unitMeasurement;
-
-  // Labor specific fields
 
   /// Labor calculation method: 'per_hour', 'per_day', or 'per_unit'.
   final String? laborCalcMethod;
@@ -74,6 +70,12 @@ class CostItemDto extends Equatable {
   /// Size of the crew for labor items.
   final int? crewSize;
 
+  /// ISO 4217 currency code for this cost item's monetary values.
+  final String currency;
+
+  /// Optional brand or manufacturer name for this cost item.
+  final String? brand;
+
   /// Creates a new [CostItemDto] instance.
   const CostItemDto({
     required this.id,
@@ -84,6 +86,7 @@ class CostItemDto extends Equatable {
     required this.itemTotalCost,
     required this.createdAt,
     required this.updatedAt,
+    required this.currency,
     this.productLink,
     this.description,
     this.unitPrice,
@@ -95,6 +98,7 @@ class CostItemDto extends Equatable {
     this.laborUnitType,
     this.laborUnitValue,
     this.crewSize,
+    this.brand,
   });
 
   /// Creates a [CostItemDto] from a JSON map.
@@ -133,6 +137,8 @@ class CostItemDto extends Equatable {
           ? (json['labor_unit_value'] as num).toDouble()
           : null,
       crewSize: json['crew_size'] as int?,
+      currency: json['currency'] as String,
+      brand: json['brand'] as String?,
     );
   }
 
@@ -160,6 +166,8 @@ class CostItemDto extends Equatable {
     'labor_unit_type': laborUnitType,
     'labor_unit_value': laborUnitValue,
     'crew_size': crewSize,
+    'currency': currency,
+    'brand': brand,
   };
 
   /// Converts this DTO to a domain [CostItem] entity.
@@ -193,8 +201,10 @@ class CostItemDto extends Equatable {
           itemTotalCost: itemTotalCost,
           createdAt: DateTime.parse(createdAt),
           updatedAt: DateTime.parse(updatedAt),
-          unitPrice: Money(amount: unitPrice ?? 0.0, currency: 'USD'),
+          currency: currency,
+          unitPrice: Money(amount: unitPrice ?? 0.0, currency: currency),
           quantity: Quantity(value: quantity ?? 0.0, unit: unit),
+          brand: brand,
           productLink: productLink,
           description: description,
         );
@@ -211,6 +221,7 @@ class CostItemDto extends Equatable {
           itemTotalCost: itemTotalCost,
           createdAt: DateTime.parse(createdAt),
           updatedAt: DateTime.parse(updatedAt),
+          currency: currency,
           laborCalcMethod: method,
           laborValue: LaborValue(
             laborDays: laborDays,
@@ -219,6 +230,7 @@ class CostItemDto extends Equatable {
             laborUnitValue: laborUnitValue,
           ),
           crewSize: crewSize,
+          brand: brand,
           productLink: productLink,
           description: description,
         );
@@ -233,8 +245,10 @@ class CostItemDto extends Equatable {
           itemTotalCost: itemTotalCost,
           createdAt: DateTime.parse(createdAt),
           updatedAt: DateTime.parse(updatedAt),
-          unitPrice: Money(amount: unitPrice ?? 0.0, currency: 'USD'),
+          currency: currency,
+          unitPrice: Money(amount: unitPrice ?? 0.0, currency: currency),
           quantity: Quantity(value: quantity ?? 0.0, unit: unit),
+          brand: brand,
           productLink: productLink,
           description: description,
         );
@@ -255,6 +269,8 @@ class CostItemDto extends Equatable {
       itemTotalCost: item.itemTotalCost,
       createdAt: item.createdAt.toIso8601String(),
       updatedAt: item.updatedAt.toIso8601String(),
+      currency: item.currency,
+      brand: item.brand,
       productLink: item.productLink,
       description: item.description,
       unitPrice: switch (item) {
@@ -274,33 +290,27 @@ class CostItemDto extends Equatable {
       },
       laborCalcMethod: switch (item) {
         LaborCostItem() => item.laborCalcMethod.toJson(),
-        MaterialCostItem() => null,
-        EquipmentCostItem() => null,
+        MaterialCostItem() || EquipmentCostItem() => null,
       },
       laborDays: switch (item) {
         LaborCostItem() => item.laborValue.laborDays,
-        MaterialCostItem() => null,
-        EquipmentCostItem() => null,
+        MaterialCostItem() || EquipmentCostItem() => null,
       },
       laborHours: switch (item) {
         LaborCostItem() => item.laborValue.laborHours,
-        MaterialCostItem() => null,
-        EquipmentCostItem() => null,
+        MaterialCostItem() || EquipmentCostItem() => null,
       },
       laborUnitType: switch (item) {
         LaborCostItem() => item.laborValue.laborUnitType,
-        MaterialCostItem() => null,
-        EquipmentCostItem() => null,
+        MaterialCostItem() || EquipmentCostItem() => null,
       },
       laborUnitValue: switch (item) {
         LaborCostItem() => item.laborValue.laborUnitValue,
-        MaterialCostItem() => null,
-        EquipmentCostItem() => null,
+        MaterialCostItem() || EquipmentCostItem() => null,
       },
       crewSize: switch (item) {
         LaborCostItem() => item.crewSize,
-        MaterialCostItem() => null,
-        EquipmentCostItem() => null,
+        MaterialCostItem() || EquipmentCostItem() => null,
       },
     );
   }
@@ -326,5 +336,7 @@ class CostItemDto extends Equatable {
     laborUnitType,
     laborUnitValue,
     crewSize,
+    currency,
+    brand,
   ];
 }

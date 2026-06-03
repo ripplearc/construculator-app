@@ -31,6 +31,7 @@ void main() {
         itemTotalCost: 5000.0,
         createdAt: '2025-02-25T14:30:00.000Z',
         updatedAt: '2025-02-25T14:30:00.000Z',
+        currency: 'USD',
         unitPrice: 100.0,
         quantity: 50.0,
         unitMeasurement: 'pieces',
@@ -46,6 +47,7 @@ void main() {
         itemTotalCost: 5000.0,
         createdAt: DateTime.parse('2025-02-25T14:30:00.000Z'),
         updatedAt: DateTime.parse('2025-02-25T14:30:00.000Z'),
+        currency: 'USD',
         unitPrice: const Money(amount: 100.0, currency: 'USD'),
         quantity: const Quantity(value: 50.0, unit: Unit.pieces),
         productLink: 'https://example.com/concrete',
@@ -145,6 +147,7 @@ void main() {
         itemTotalCost: 2000.0,
         createdAt: '2025-02-25T15:00:00.000Z',
         updatedAt: '2025-02-25T15:00:00.000Z',
+        currency: 'USD',
         laborCalcMethod: 'per_hour',
         laborDays: 5.0,
         laborHours: 40.0,
@@ -162,6 +165,7 @@ void main() {
         itemTotalCost: 2000.0,
         createdAt: DateTime.parse('2025-02-25T15:00:00.000Z'),
         updatedAt: DateTime.parse('2025-02-25T15:00:00.000Z'),
+        currency: 'USD',
         laborCalcMethod: LaborCalculationMethodType.perHour,
         laborValue: const LaborValue(
           laborDays: 5.0,
@@ -230,6 +234,7 @@ void main() {
         itemTotalCost: 2500.0,
         createdAt: '2025-02-25T16:00:00.000Z',
         updatedAt: '2025-02-25T16:00:00.000Z',
+        currency: 'USD',
         unitPrice: 500.0,
         quantity: 5.0,
         unitMeasurement: 'days',
@@ -245,6 +250,7 @@ void main() {
         itemTotalCost: 2500.0,
         createdAt: DateTime.parse('2025-02-25T16:00:00.000Z'),
         updatedAt: DateTime.parse('2025-02-25T16:00:00.000Z'),
+        currency: 'USD',
         unitPrice: const Money(amount: 500.0, currency: 'USD'),
         quantity: const Quantity(value: 5.0, unit: Unit.days),
         productLink: 'https://example.com/excavator',
@@ -321,6 +327,7 @@ void main() {
             itemTotalCost: 2000.0,
             createdAt: DateTime.parse('2025-02-25T15:00:00.000Z'),
             updatedAt: DateTime.parse('2025-02-25T15:00:00.000Z'),
+            currency: 'USD',
             laborCalcMethod: LaborCalculationMethodType.perHour,
             laborValue: const LaborValue(laborHours: 40.0),
           );
@@ -363,6 +370,7 @@ void main() {
           itemTotalCost: 5000.0,
           createdAt: DateTime.parse('2025-02-25T14:30:00.000Z'),
           updatedAt: DateTime.parse('2025-02-25T14:30:00.000Z'),
+          currency: 'USD',
           unitPrice: const Money(amount: 100.0, currency: 'USD'),
           quantity: const Quantity(value: 50.0, unit: Unit.pieces),
         );
@@ -439,6 +447,13 @@ void main() {
         final entity = dto.toEntity() as LaborCostItem;
 
         expect(entity.laborCalcMethod, LaborCalculationMethodType.perHour);
+      });
+
+      test('throws TypeError when item_total_cost is non-numeric', () {
+        final json = CostItemTestDataMapFactory.createMaterialItemData();
+        json['item_total_cost'] = 'not_a_number';
+
+        expect(() => CostItemDto.fromJson(json), throwsA(isA<TypeError>()));
       });
 
       test('handles empty calculation map', () {
