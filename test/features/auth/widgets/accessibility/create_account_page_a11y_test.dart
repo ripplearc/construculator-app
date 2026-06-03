@@ -50,7 +50,9 @@ void main() {
 
     Modular.init(_CreateAccountPageA11yTestModule(appBootstrap));
     Modular.replaceInstance<SupabaseWrapper>(fakeSupabase);
-    router = Modular.get<AppRouter>() as FakeAppRouter;
+    final appRouter = Modular.get<AppRouter>();
+    expect(appRouter, isA<FakeAppRouter>());
+    router = appRouter as FakeAppRouter;
   });
 
   tearDownAll(() {

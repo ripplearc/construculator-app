@@ -14,6 +14,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   final AppRouter router;
+
   const ForgotPasswordPage({super.key, required this.router});
 
   @override
