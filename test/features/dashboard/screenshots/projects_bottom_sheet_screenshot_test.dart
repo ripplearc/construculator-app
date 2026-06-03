@@ -103,6 +103,7 @@ void main() {
     testWidgets('renders loaded project list', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       fakeRepository.setAccessibleProjects([
         buildProject(id: 'project-1', projectName: 'My project'),
@@ -123,6 +124,7 @@ void main() {
     testWidgets('renders empty state', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       fakeRepository.setAccessibleProjects([]);
 

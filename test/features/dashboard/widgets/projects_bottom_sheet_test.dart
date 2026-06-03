@@ -1,5 +1,6 @@
 import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/project_list_item.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/projects_bottom_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
@@ -142,7 +143,11 @@ void main() {
       find.byKey(const Key('projects_search_field')),
       'material',
     );
-    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.runAsync(() async {
+      await bloc.stream.firstWhere(
+        (s) => s is ProjectDropdownLoadSuccess && s.searchQuery == 'material',
+      );
+    });
     await tester.pump();
 
     expect(find.text('Material of building'), findsOneWidget);
@@ -168,6 +173,18 @@ void main() {
     expect(selected, isNotNull);
     expect(selected, isA<Project>());
     expect((selected as Project).id, 'project-2');
+  });
+
+  testWidgets('shows full error state when initial load fails with no cache', (
+    tester,
+  ) async {
+    fakeRepository.shouldThrowOnWatchProjects = true;
+
+    await pumpSheet(tester);
+
+    expect(find.text(l10n.projectsLoadError), findsOneWidget);
+    expect(find.byType(ProjectListItem), findsNothing);
+    expect(find.text(l10n.projectsEmptyState), findsNothing);
   });
 
   testWidgets('keeps showing cached projects when a reload fails', (

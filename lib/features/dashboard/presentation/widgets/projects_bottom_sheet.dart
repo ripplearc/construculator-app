@@ -57,11 +57,17 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
 
   Future<void> _onRefresh() async {
     _bloc.add(const ProjectDropdownStarted());
-    await _bloc.stream.firstWhere(
-      (state) =>
-          state is ProjectDropdownLoadSuccess ||
-          state is ProjectDropdownLoadFailure,
-    );
+    await _bloc.stream
+        .firstWhere(
+          (state) =>
+              state is ProjectDropdownLoadSuccess ||
+              state is ProjectDropdownLoadFailure,
+        )
+        .timeout(
+          const Duration(seconds: 15),
+          onTimeout: () => _bloc.state,
+        )
+        .catchError((_) => _bloc.state);
   }
 
   void _onProjectSelected(Project project) {
