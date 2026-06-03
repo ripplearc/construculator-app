@@ -98,6 +98,14 @@ class ProjectDropdownLoadFailure extends ProjectDropdownState {
   UnmodifiableListView<Project> get visibleProjects =>
       _filterByQuery(cachedProjects.toList(), searchQuery);
 
+  ProjectDropdownLoadFailure copyWith({String? searchQuery}) {
+    return ProjectDropdownLoadFailure(
+      message,
+      cachedProjects: cachedProjects.toList(),
+      searchQuery: searchQuery ?? this.searchQuery,
+    );
+  }
+
   @override
   List<Object?> get props => [message, cachedProjects, searchQuery];
 }
