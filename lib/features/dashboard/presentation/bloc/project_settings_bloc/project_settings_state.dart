@@ -2,7 +2,6 @@ part of 'project_settings_bloc.dart';
 
 /// Base state for [ProjectSettingsBloc].
 abstract class ProjectSettingsState extends Equatable {
-  /// Defines a constant constructor for project settings state.
   const ProjectSettingsState();
 
   @override
@@ -11,13 +10,11 @@ abstract class ProjectSettingsState extends Equatable {
 
 /// The initial state before any watch has started.
 class ProjectSettingsInitial extends ProjectSettingsState {
-  /// Defines a constant constructor for the initial state.
   const ProjectSettingsInitial();
 }
 
 /// Emitted while the project settings stream is being established.
 class ProjectSettingsLoading extends ProjectSettingsState {
-  /// Defines a constant constructor for the loading state.
   const ProjectSettingsLoading();
 }
 
@@ -26,7 +23,6 @@ class ProjectSettingsLoaded extends ProjectSettingsState {
   /// The currently loaded project.
   final Project project;
 
-  /// Defines a constructor taking [project].
   const ProjectSettingsLoaded(this.project);
 
   @override
@@ -41,7 +37,6 @@ class ProjectSettingsEditing extends ProjectSettingsState {
   /// A snapshot of the project before editing began, used to revert on failure.
   final Project originalProject;
 
-  /// Defines a constructor taking [project] and [originalProject].
   const ProjectSettingsEditing({
     required this.project,
     required this.originalProject,
@@ -64,7 +59,6 @@ class ProjectSettingsSaving extends ProjectSettingsState {
   /// The project being saved.
   final Project project;
 
-  /// Defines a constructor taking [project].
   const ProjectSettingsSaving(this.project);
 
   @override
@@ -73,7 +67,6 @@ class ProjectSettingsSaving extends ProjectSettingsState {
 
 /// Emitted while a delete request is in flight.
 class ProjectSettingsDeleteInProgress extends ProjectSettingsState {
-  /// Defines a constant constructor for the delete-in-progress state.
   const ProjectSettingsDeleteInProgress();
 }
 
@@ -85,7 +78,6 @@ class ProjectSettingsError extends ProjectSettingsState {
   /// The last successfully loaded project, if available, for revert context.
   final Project? lastProject;
 
-  /// Defines a constructor taking [failure] and an optional [lastProject].
   const ProjectSettingsError({required this.failure, this.lastProject});
 
   @override
