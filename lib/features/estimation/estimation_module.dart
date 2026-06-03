@@ -63,9 +63,6 @@ class EstimationModule extends Module {
   ];
 
   @override
-  void exportedBinds(Injector i) {}
-
-  @override
   void binds(Injector i) {
     i.addLazySingleton<CostEstimationLogDataSource>(
       () => RemoteCostEstimationLogDataSource(
@@ -98,8 +95,11 @@ class EstimationModule extends Module {
       ),
     );
     i.add<RenameEstimationBloc>(
-      () =>
-          RenameEstimationBloc(repository: i.get(), projectRepository: i.get()),
+      () => RenameEstimationBloc(
+        repository: i.get(),
+        projectRepository: i.get(),
+        currentProjectNotifier: i.get(),
+      ),
     );
     i.add<CostEstimationLogBloc>(
       () => CostEstimationLogBloc(repository: i.get()),
