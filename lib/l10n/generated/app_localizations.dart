@@ -352,7 +352,7 @@ abstract class AppLocalizations {
   /// **'No recent estimations found.'**
   String get recentEstimationsEmptyState;
 
-  /// Accessibility label for the per-project settings button in the projects list
+  /// Accessibility label for the per-project settings icon button in the projects list
   ///
   /// In en, this message translates to:
   /// **'Project settings'**
