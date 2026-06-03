@@ -218,7 +218,7 @@
   "projectSettingsSemanticLabel": "Project settings",
   "@projectSettingsSemanticLabel": {
     "description": "Accessibility label for the per-project settings icon button in the projects list",
-    "context": "N/A"
+    "context": "Dashboard projects sheet"
   },
   "heyEnterYourDetailsToRegisterWithUs": "Hey, Enter your details to Register with us",
   "@heyEnterYourDetailsToRegisterWithUs": {

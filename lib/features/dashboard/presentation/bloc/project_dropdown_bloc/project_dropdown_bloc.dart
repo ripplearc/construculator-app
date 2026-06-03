@@ -145,13 +145,8 @@ class ProjectDropdownBloc
     }
     if (currentState is ProjectDropdownLoadFailure) {
       if (currentState.searchQuery == event.query) return;
-      emit(
-        ProjectDropdownLoadFailure(
-          currentState.message,
-          cachedProjects: currentState.cachedProjects,
-          searchQuery: event.query,
-        ),
-      );
+      emit(currentState.copyWith(searchQuery: event.query));
+      return;
     }
   }
 
