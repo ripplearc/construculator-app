@@ -14,262 +14,77 @@ Testing - Quality Assurance
 
 ## Description
 
-PRs that introduce or modify complex business logic, mathematical calculations, or data transformations must be validated with mutation testing. This ensures unit tests actually verify correctness, not just code coverage.
+PRs that introduce or modify complex business logic, mathematical calculations, or data transformations are validated with mutation testing — introducing bugs (mutants) and checking whether tests catch them. This validates that tests verify *correctness*, not just line coverage.
 
-**Core Principle:** Mutation testing finds gaps in your test suite by introducing bugs (mutants) and checking if tests catch them.
+**Core Principle:** mutation testing finds gaps in your tests that code coverage cannot detect.
 
 ## Applicability
 
-**This is a GATED practice.** Only apply to:
-- Files with complex business logic (3+ conditional branches)
-- Mathematical calculations or algorithms
+**GATED.** Apply only to:
+- Files with 3+ conditional branches
+- Mathematical calculations / algorithms
 - Data transformation logic (pagination, filtering, sorting)
-- Critical decision paths (authentication, authorization, payment)
+- Critical decision paths (auth, authorization, payment)
 
-**DO NOT apply to:**
-- Simple CRUD operations
-- UI/presentation code (use widget tests instead)
-- Generated code
+**Do NOT apply to:** simple CRUD, UI/presentation, generated code.
 
-**Typical targets:**
-- `lib/features/**/domain/usecases/*.dart`
-- `lib/features/**/domain/services/*.dart`
-- `lib/features/**/data/repositories/*_impl.dart`
-- `lib/features/**/data/data_source/*.dart` (if contains logic)
+**Typical targets:** `lib/features/**/domain/usecases/*.dart`, `lib/features/**/domain/services/*.dart`, `lib/features/**/data/repositories/*_impl.dart`, `lib/features/**/data/data_source/*.dart` (if it contains logic).
 
 ---
 
 ## For Coding Agents (Prescriptive)
 
-### Decision Gate: Should I Run Mutation Testing?
+### Decision Gate
 
 ```
-Does the class contain logic-heavy code?
+Does the file contain logic-heavy code?
 
-├─ Complex conditionals (3+ branches)?
-│  └─ YES → Run mutation testing
-│
-├─ Mathematical calculations?
-│  └─ YES → Run mutation testing
-│
-├─ Data transformation logic?
-│  └─ YES → Run mutation testing
-│
-├─ Critical decision paths?
-│  └─ YES → Run mutation testing
-│
-└─ Simple CRUD or UI code?
-   └─ NO → Skip mutation testing
+├─ Complex conditionals (3+ branches)?  → Run mutation testing
+├─ Mathematical calculations?           → Run mutation testing
+├─ Data transformation logic?           → Run mutation testing
+├─ Critical decision paths?             → Run mutation testing
+└─ Simple CRUD / UI code?               → Skip
 ```
 
-### What is Mutation Testing?
+### What Mutation Testing Does
 
-**Concept:** Mutation testing modifies your code (introduces "mutants") and checks if your tests catch the bugs.
+The tool changes one operator/branch/return at a time (a "mutant") and re-runs tests. If tests still pass, the mutant **survived** → there's a gap. If tests fail, the mutant was **killed** → tests cover that behavior. Equivalent mutants (no behavior change, e.g. `&&` → `&` with no short-circuit difference) cannot be killed and are excluded.
 
-**Example:**
+### Score Thresholds
 
-```dart
-// Original code
-if (amount > 0) {
-  processPayment(amount);
-}
+- **Critical paths** (auth, authorization, payment, financial calculations, security-relevant validation): **≥ 85%**.
+- **Non-critical logic** (display formatting, UI-side sorting/filtering, secondary features): **≥ 70%** acceptable.
+- **< 60% on any logic-heavy file:** insufficient — add tests for surviving mutants and re-run.
 
-// Mutant 1: Changed > to >=
-if (amount >= 0) {  // 🧬 Mutant
-  processPayment(amount);
-}
+### Mutation Categories to Hand-Author
 
-// Mutant 2: Changed > to <
-if (amount < 0) {  // 🧬 Mutant
-  processPayment(amount);
-}
+The repo runs `mutation_test` with `--no-builtin`, so all mutations are explicit `<regex pattern="…" id="…"><mutation text="…"/></regex>` rules in the XML config — not auto-generated. Cover at least these categories per file:
 
-// Mutant 3: Removed condition
-processPayment(amount);  // 🧬 Mutant
-
-// If your tests pass with any of these mutants,
-// it means you have a gap in your test coverage!
-```
-
-### When to Use
-
-**✅ Run mutation testing for:**
-
-- **Complex conditionals:**
-  ```dart
-  if (user.isAdmin && project.isActive || user.isOwner) {
-    // Logic with multiple conditions
-  }
-  ```
-
-- **Mathematical operations:**
-  ```dart
-  double calculateDiscount(double price, int loyaltyPoints) {
-    final baseDiscount = price * 0.1;
-    final bonusDiscount = loyaltyPoints > 1000 ? price * 0.05 : 0;
-    return baseDiscount + bonusDiscount;
-  }
-  ```
-
-- **Data transformations:**
-  ```dart
-  List<Estimation> paginateEstimations(List<Estimation> all, int page, int pageSize) {
-    final start = page * pageSize;
-    final end = min(start + pageSize, all.length);
-    return all.sublist(start, end);
-  }
-  ```
-
-**❌ Skip mutation testing for:**
-
-- Simple getters/setters
-- UI widgets
-- Data models (freezed classes)
-- Simple CRUD without logic
-
-### How to Run Mutation Testing
-
-**Step 1: Install mutant (mutation testing tool)**
-
-```yaml
-# pubspec.yaml
-dev_dependencies:
-  mutant: ^latest_version
-  # See: https://pub.dev/packages/mutant
-```
-
-**Step 2: Run mutation tests on specific file**
-
-```bash
-# Target specific logic-heavy file
-dart run mutant \
-  --file lib/features/estimation/domain/usecases/calculate_total_usecase.dart \
-  --test-file test/features/estimation/domain/usecases/calculate_total_usecase_test.dart
-```
-
-**Step 3: Analyze results**
-
-```
-Mutation Score: 85% (17/20 mutants killed)
-
-Surviving Mutants:
-- Line 42: Changed > to >= (SURVIVED)
-- Line 58: Removed null check (SURVIVED)
-- Line 71: Changed + to - (SURVIVED)
-```
-
-**Step 4: Add tests for surviving mutants**
-
-```dart
-// Surviving mutant: Changed > to >=
-// This means we're missing a boundary test!
-
-// Add test
-test('should not process payment when amount is exactly zero', () async {
-  final result = await useCase.execute(amount: 0.0);
-
-  expect(result.isLeft(), true);  // Should fail, not process
-  // ✅ Now mutant is killed
-});
-```
-
-### Target: 80% Mutation Score
-
-**Acceptable mutation score: ≥80%**
-
-- 80-100%: Excellent coverage ✅
-- 60-79%: Acceptable for non-critical logic ⚠️
-- <60%: Insufficient, add more tests ❌
-
-**Note:** 100% is ideal but not always necessary. Some mutants are equivalent (don't change behavior).
-
-### Common Mutation Types
-
-| Mutation Type | Example | What it Tests |
-|---------------|---------|---------------|
-| **Conditional Boundary** | `>` → `>=` | Boundary conditions |
-| **Negation** | `if (x)` → `if (!x)` | Boolean logic |
+| Category | Example rule (regex → mutation) | What it Tests |
+|---|---|---|
+| **Conditional boundary** | `>` → `>=` | Boundary conditions |
+| **Negation** | `if (x)` → `if (!x)`, `isEmpty` → `isNotEmpty` | Boolean logic |
 | **Arithmetic** | `+` → `-`, `*` → `/` | Calculations |
-| **Return Value** | `return x` → `return null` | Null handling |
-| **Constant** | `0.1` → `0.0` | Magic numbers |
-| **Statement Deletion** | Remove line | Statement necessity |
+| **Return value** | `return Right(x)` → `return Left(UnexpectedFailure())` | Failure / success paths |
+| **Constant** | `0.0` → `10.0`, `MarkupType.overall` → `MarkupType.perAssembly` | Magic values / enum cases |
+| **Skip statement / null-replace** | `value = compute();` → `value = null;` | Statement necessity |
 
-### Writing Tests to Kill Mutants
+See `test/features/estimations/mutations/add_cost_estimation_usecase.xml` for a worked example (23 rules covering all six categories).
 
-**Strategy 1: Test Boundary Conditions**
+### Canonical Test Pattern — Boundary Mutants
 
-```dart
-// Code with boundary
-if (age >= 18) {
-  grantAccess();
-}
-
-// Tests to kill boundary mutants
-test('should grant access when age is exactly 18', () { });  // Boundary
-test('should deny access when age is 17', () { });  // Just below
-test('should grant access when age is 19', () { });  // Just above
-```
-
-**Strategy 2: Test All Branches**
+When the survived mutant is a boundary change (`>` → `>=`), add a boundary-equality test:
 
 ```dart
-// Code with multiple branches
-if (status == 'active') {
-  return ActiveState();
-} else if (status == 'pending') {
-  return PendingState();
-} else {
-  return InactiveState();
-}
+// Source
+if (age >= 18) grantAccess();
 
-// Tests to kill branch mutants
-test('should return ActiveState when status is active', () { });
-test('should return PendingState when status is pending', () { });
-test('should return InactiveState when status is neither', () { });
+// Tests that kill the boundary mutant
+test('grants access at the boundary (age == 18)', () { /* … */ });
+test('denies access just below the boundary (age == 17)', () { /* … */ });
 ```
 
-**Strategy 3: Test Calculations**
-
-```dart
-// Code with calculation
-double calculateTax(double price) {
-  return price * 0.08;
-}
-
-// Tests to kill arithmetic mutants
-test('should calculate 8% tax correctly', () {
-  expect(calculateTax(100.0), 8.0);  // Kills * → /, * → +, etc.
-});
-test('should return 0 for 0 price', () {
-  expect(calculateTax(0.0), 0.0);  // Kills constant mutations
-});
-```
-
-### Interpreting Results
-
-**Mutant Killed ✅:**
-```
-✓ Mutant: Changed > to >= on line 42
-  Test: should not process zero amount
-  Status: KILLED
-```
-→ Good! Your test caught the bug.
-
-**Mutant Survived ❌:**
-```
-✗ Mutant: Changed > to >= on line 42
-  Test: (no test failed)
-  Status: SURVIVED
-```
-→ Gap in tests! Add test for boundary condition.
-
-**Equivalent Mutant ⚠️:**
-```
-~ Mutant: Changed && to &
-  Note: Logically equivalent (no short-circuit difference)
-  Status: EQUIVALENT
-```
-→ Can't be killed (doesn't change behavior). Mark as equivalent.
+The same shape applies to arithmetic mutants (assert exact result for non-zero and zero inputs) and branch mutants (one test per branch).
 
 ---
 
@@ -277,99 +92,47 @@ test('should return 0 for 0 price', () {
 
 ### Detection Patterns
 
-**Pattern 1: Logic-Heavy Files Without Mutation Testing**
-
-Identify files with complex logic:
-
-```bash
-# Find files with multiple conditionals
-grep -rn "if.*&&\|if.*||" lib/features/**/domain/ | wc -l
-
-# Find files with calculations
-grep -rn "[+\-*/]" lib/features/**/domain/usecases/ lib/features/**/data/repositories/
-```
-
-**If file has 3+ conditional branches** → Should have mutation test results
-
-**Pattern 2: Low Mutation Score in PR**
-
-Check if mutation score is mentioned:
-- Look for mutation test output in PR description or comments
-- Check for `mutation_score:` annotation
-
-**If mutation score <80%** → Major violation
-
-**Pattern 3: Surviving Mutants in Critical Paths**
-
-Critical paths:
-- Authentication/authorization logic
-- Payment/financial calculations
-- Data validation logic
-- Access control checks
-
-**If critical path has surviving mutants** → Critical violation
+| Pattern | Grep / Indicator | Severity |
+|---|---|---|
+| Logic-heavy file with no mutation run | `grep -rn "if.*&&\\|if.*\\|\\|" lib/features/**/domain/ \| wc -l` (3+ in one file) and no mutation report | Major |
+| Mutation score below threshold (85% critical / 70% non-critical) | mutation-test-report or PR description | Critical (<60%) / Major (60% – threshold) |
+| Surviving mutant in auth / payment / authorization | identify file + line in mutation report | Critical |
 
 ### Review Questions
 
-1. **Does this PR modify logic-heavy code?**
-   - If YES → Check for mutation test results
-
-2. **What is the mutation score?**
-   - <60%: Critical
-   - 60-79%: Major
-   - ≥80%: Good ✅
-
-3. **Are there surviving mutants?**
-   - Check which mutants survived
-   - Are they in critical code paths?
-
-4. **Were new tests added to kill mutants?**
-   - Look for test additions addressing gaps
+1. Does this PR modify logic-heavy code? → if yes, expect mutation results.
+2. What's the mutation score? → <60% Critical, 60% – threshold Major, ≥ threshold pass (threshold is 85% for critical paths, 70% otherwise).
+3. Are surviving mutants in critical paths? → Critical.
+4. Were new tests added to kill the surviving mutants? → expect tests for each.
 
 ### Common Violations
 
 | ❌ Violation | ✅ Fix | Severity |
-|-------------|--------|----------|
+|---|---|---|
 | Complex logic added, no mutation testing | Run mutation tests, report score | Major |
-| Mutation score <80% | Add tests for surviving mutants | Critical |
-| Surviving mutant in auth logic | Add test for that specific condition | Critical |
-| No mutation testing in PR with calculations | Run mutation tests on calculation logic | Major |
+| Mutation score below threshold (85% critical / 70% non-critical) | Add tests for surviving mutants | Critical |
+| Surviving mutant in auth / payment logic | Add test for that specific condition | Critical |
+| No mutation testing in PR with calculations | Run mutation tests on the calculation logic | Major |
 
 ---
 
-## Summary: How to Apply
+## Summary
 
-**For Developers:**
+**Dev workflow:** identify logic-heavy files → run mutation tests on them → kill surviving mutants → include score in PR description.
 
-1. **Before PR:** Identify logic-heavy files you changed
-2. **Run mutation tests:** Target those specific files
-3. **Analyze results:** Note mutation score and surviving mutants
-4. **Add tests:** Write tests to kill surviving mutants
-5. **Document in PR:** Include mutation score in PR description
-
-**For Reviewers:**
-
-1. **Identify logic changes:** Look for complex conditionals, calculations
-2. **Request mutation testing:** If logic-heavy and not tested
-3. **Check score:** Ensure ≥80% mutation score
-4. **Review surviving mutants:** Ensure none in critical paths
+**Reviewer workflow:** spot logic changes → require mutation score → enforce thresholds (85% critical paths, 70% non-critical) → no surviving mutants in critical paths.
 
 ## References
 
-- [Mutation Testing Introduction](https://en.wikipedia.org/wiki/Mutation_testing)
-- [Stryker Mutator](https://stryker-mutator.io/) - Popular mutation testing framework
-- [Dart Mutant Package](https://pub.dev/packages/mutant)
+- [Mutation Testing (Wikipedia)](https://en.wikipedia.org/wiki/Mutation_testing)
+- [Dart `mutation_test` package](https://pub.dev/packages/mutation_test) — declared as `dev_dependency` in `pubspec.yaml`
+- CI runner: `scripts/run_check.sh` (`run_mutation_tests`, line 202) and `docs/Testing/CI-Scripts.md`
 - Review Script Lines: 484-496 in `scripts/review_pr.sh`
+
+**Related:** if you also need to *run* the tool (commands, config XML, output interpretation), the `write-tests-mutation` skill is the operational runbook.
 
 ## Notes
 
-**Mutation Testing vs Code Coverage:**
+**Mutation testing vs code coverage:** coverage asks "did this line run?"; mutation asks "do tests verify this line is correct?". 100% coverage with weak assertions still passes survived mutants.
 
-- **Code Coverage:** Did tests execute this line? (quantity)
-- **Mutation Testing:** Do tests verify this line is correct? (quality)
-
-You can have 100% code coverage but still have bugs that tests don't catch. Mutation testing finds those gaps.
-
-**Best Practice:** Run mutation testing during PR review for logic-heavy changes, not on every commit (it's slow).
-
-**Time Consideration:** Mutation testing is computationally expensive. Run it only on changed files, not entire codebase.
+**Cost:** mutation testing is slow — run on changed files only, in PR review (not every commit).

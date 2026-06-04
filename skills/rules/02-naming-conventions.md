@@ -7,38 +7,37 @@ RULE_2
 Architecture & Design
 
 ## Severity Levels
-- **Critical:** Using forbidden suffixes (`Helper`, `Util`, `Manager` without Service)
+- **Critical:** Forbidden suffixes (`Helper`, `Util`, `Manager` alone)
 - **Major:** Wrong suffix for layer (e.g., `Service` in data layer, missing `Local/Remote` prefix on DataSource)
-- **Minor:** Name doesn't follow verb-noun pattern for UseCase
-- **Suggestion:** Name could be more descriptive or follow abstraction principle better
+- **Minor:** UseCase doesn't follow verb-noun pattern
+- **Suggestion:** Name could be more descriptive
 
 ## Description
 
-Class naming must follow two principles:
-1. **Suffix Conventions:** Use correct suffixes that indicate responsibility and layer
-2. **Abstraction Levels:** Name precision inversely proportional to abstraction level
-   - High level (UI/Domain): Abstract names (e.g., `getEstimations`)
-   - Low level (Data/Repository): Concrete, explicit names (e.g., `fetchInitialProjectEstimations`)
+Class naming follows two principles:
+
+1. **Suffix conventions** — suffixes indicate responsibility and layer.
+2. **Abstraction levels** — name precision is **inversely** proportional to abstraction level. High level (UI/Domain) uses abstract names (`getEstimations`); low level (Data) uses concrete, explicit names (`fetchInitialEstimationsByProjectId`).
 
 ## Applicability
 
-Applies to all production code in `lib/` directory across all architecture layers.
+All production code in `lib/` across all architecture layers.
 
 ---
 
 ## Part 1: Class Suffix Conventions
 
-### Quick Reference Table
+### Quick Reference
 
 | Suffix | Pattern | Purpose | Layer | Example |
 |--------|---------|---------|-------|---------|
 | **UseCase** | `VerbNounUseCase` | Single business operation | Domain | `GetUserEstimationsUseCase` |
-| **Service** | `NounService` | Complex domain logic, multiple operations | Domain | `AuthenticationService` |
+| **Service** | `NounService` | Coordinates multiple operations | Domain | `AuthenticationService` |
 | **Repository** | `NounRepository` | Data access abstraction (interface) | Domain | `EstimationRepository` |
 | **RepositoryImpl** | `NounRepositoryImpl` | Repository implementation | Data | `EstimationRepositoryImpl` |
-| **DataSource** | `(Local\|Remote)NounDataSource` | Raw data handling (API, DB, cache) | Data | `RemoteEstimationDataSource` |
+| **DataSource** | `(Local\|Remote)NounDataSource` | Raw data (API, DB, cache) | Data | `RemoteEstimationDataSource` |
 | **BLoC** | `NounBloc` + `NounEvent` + `NounState` | UI state coordination | Presentation | `AuthBloc`, `AuthEvent`, `AuthState` |
-| **Formatter** | `NounFormatter` | Data formatting/transformation | Helper | `CurrencyFormatter`, `DateFormatter` |
+| **Formatter** | `NounFormatter` | Data formatting | Helper | `CurrencyFormatter` |
 | **Validator** | `NounValidator` | Input validation | Helper | `EmailValidator` |
 | **Parser** | `NounParser` | String/data parsing | Helper | `JsonParser` |
 | **Mapper** | `NounMapper` | Object-to-object mapping | Helper | `UserDtoMapper` |
@@ -46,188 +45,97 @@ Applies to all production code in `lib/` directory across all architecture layer
 
 ### 🚫 Forbidden Suffixes
 
-- ❌ **`Helper`** - Too generic, doesn't indicate responsibility
-- ❌ **`Util`** or **`Utils`** - Too generic, doesn't indicate responsibility
-- ❌ **`Manager`** alone - Use `Service` instead (unless managing stateful resources)
+- ❌ `Helper` — too generic; pick a specific role (Formatter / Validator / Mapper / …).
+- ❌ `Util` / `Utils` — same problem.
+- ❌ `Manager` alone — use `Service` (unless it manages a stateful resource like a `ConnectionManager`).
 
----
-
-## For Coding Agents (Prescriptive)
-
-### Decision Tree: What Should I Name This Class?
+### Decision Tree
 
 ```
 What is the class responsibility?
 
-├─ Single business operation?
-│  └─ YES → UseCase
-│     └─ Pattern: VerbNounUseCase
-│     └─ Example: GetUserProfileUseCase, CreateProjectUseCase
-│
-├─ Multiple coordinated business operations?
-│  └─ YES → Service
-│     └─ Pattern: NounService
-│     └─ Example: AuthenticationService, ValidationService
-│
-├─ Abstracts data access?
-│  └─ YES → Repository (interface) + RepositoryImpl (implementation)
-│     └─ Pattern: NounRepository, NounRepositoryImpl
-│     └─ Example: UserRepository, UserRepositoryImpl
-│
-├─ Handles raw data (API/DB/Cache)?
-│  └─ YES → DataSource
-│     └─ Pattern: (Local|Remote)NounDataSource
-│     └─ Example: RemoteUserDataSource, LocalEstimationDataSource
-│
-├─ Manages UI state?
-│  └─ YES → BLoC
-│     └─ Pattern: NounBloc + NounEvent + NounState
-│     └─ Example: AuthBloc, AuthEvent, AuthState
-│
-└─ Transforms/validates/parses data?
-   └─ YES → Specific Helper
-      ├─ Formats data? → NounFormatter
-      ├─ Validates input? → NounValidator
-      ├─ Parses strings? → NounParser
-      ├─ Maps objects? → NounMapper
-      └─ Converts types? → NounConverter
+├─ Single business operation?           → UseCase           (VerbNounUseCase)
+├─ Multiple coordinated operations?     → Service           (NounService)
+├─ Abstracts data access?               → Repository + RepositoryImpl
+├─ Handles raw data (API/DB/Cache)?     → DataSource        ((Local|Remote)NounDataSource)
+├─ Manages UI state?                    → BLoC + Event + State
+└─ Transforms/validates/parses?         → Formatter / Validator / Parser / Mapper / Converter
 ```
 
-### When Naming Classes
-
-**Step 1: Identify the layer**
-- Presentation: `lib/features/**/presentation/`
-- Domain: `lib/features/**/domain/`
-- Data: `lib/features/**/data/`
-
-**Step 2: Identify the responsibility**
-- Use the decision tree above
-
-**Step 3: Apply naming pattern**
-- Follow the table above
-
-**Step 4: Apply abstraction principle** (see Part 2 below)
-
-### Examples - What to Create
-
-| Scenario | Layer | Correct Name | Wrong Name ❌ |
-|----------|-------|--------------|---------------|
-| Fetch user profile from API | Domain | `GetUserProfileUseCase` | `UserService`, `ProfileFetcher`, `UserHelper` |
-| Handle authentication flow | Domain | `AuthenticationService` | `AuthUseCase`, `LoginHelper` |
-| Abstract cost estimation data | Domain | `EstimationRepository` (interface) | `EstimationService`, `EstimationHelper` |
-| Call Supabase API | Data | `RemoteEstimationDataSource` | `EstimationApiService`, `SupabaseHelper`, `EstimationDataSource` |
-| Cache user data locally | Data | `LocalUserDataSource` | `UserCache`, `UserCacheHelper` |
-| Format currency for display | Helper | `CurrencyFormatter` | `CurrencyHelper`, `CurrencyUtil` |
-| Validate email format | Helper | `EmailValidator` | `ValidationHelper`, `EmailUtil` |
-| Coordinate login UI state | Presentation | `AuthBloc` + `AuthEvent` + `AuthState` | `LoginManager`, `AuthHelper` |
+Layer is determined by directory: `presentation/` / `domain/` / `data/`. Apply the suffix table once layer + responsibility are decided.
 
 ---
 
 ## Part 2: Abstraction-Level Naming
 
-### Core Principle
-
-**Naming precision is inversely proportional to abstraction level.**
-
-- **High Level (UI/Domain):** Focus on *what* → Abstract, business-oriented names
-- **Low Level (Data/Repository):** Focus on *how* and *scope* → Concrete, explicit names
-
-### The Abstraction Scale
+**Core principle:** name precision is inversely proportional to abstraction level.
 
 ```
-HIGH ABSTRACTION (Abstract Names)
+HIGH ABSTRACTION (abstract names)
 ↑
-│  UI/Domain Layer
-│  └─ getEstimations
-│  └─ fetchUser
-│  └─ saveProject
-│
-│  Repository Interface
-│  └─ getEstimationsByProjectId
-│  └─ fetchUserById
-│  └─ saveProjectWithMetadata
-│
-│  Repository Implementation
-│  └─ fetchInitialEstimationsByProjectId
-│  └─ fetchUserFromCacheOrNetwork
-│  └─ saveProjectAndCreateDefaultEstimation
-│
-↓  DataSource Layer
-LOW ABSTRACTION (Explicit Names)
+│  UI / Domain                  → getEstimations, fetchUser, saveProject
+│  Repository interface         → getEstimationsByProjectId, fetchUserById
+│  Repository implementation    → fetchInitialEstimationsByProjectId, fetchUserFromCacheOrNetwork
+│  DataSource                   → fetchInitialEstimationsByProjectId (explicit op + scope + lookup key)
+↓
+LOW ABSTRACTION (explicit names)
 ```
 
-### Examples by Layer
-
-#### ✅ Good: Abstract names at high levels, explicit at low levels
+### Canonical Pair
 
 ```dart
-// UI/Domain - Abstract (focuses on "what")
+// ❌ Bad — high level too explicit, low level too vague
+class FetchInitialEstimationsFromSupabaseUseCase { } // exposes SDK
+abstract class EstimationDataSource {
+  Future<List<EstimationDto>> getEstimations(String id);  // hides pagination/reset semantics
+}
+
+// ✅ Good — abstract at high level, explicit at low level
 class GetEstimationsUseCase {
-  Stream<List<Estimation>> execute(String projectId) {
-    return repository.getEstimations(projectId);
-  }
+  Stream<List<Estimation>> execute(String projectId) => repository.getEstimations(projectId);
 }
-
-// Data - Explicit (specifies "how" and "scope")
-class RemoteEstimationDataSource {
-  Future<List<EstimationDto>> fetchInitialEstimationsByProjectId(String id) {
-    // fetch = network, Initial = resets pagination, ByProjectId = lookup key
-  }
+abstract class EstimationDataSource {
+  Future<List<EstimationDto>> fetchInitialEstimationsByProjectId(String id);
+  // fetch = network · Initial = resets pagination · ByProjectId = lookup key
 }
 ```
 
-#### ❌ Bad: Wrong abstraction level
+### Data-Layer Naming Requirements
 
-```dart
-// High level too explicit
-class FetchInitialEstimationsFromSupabaseUseCase { } // ❌ Exposes implementation
-class GetEstimationsUseCase { } // ✅
+✅ **Explicit names must encode:**
+- **Operation type:** `fetch` (network), `load` (cache), `find` (search), `ensure` (get-or-create).
+- **Scope/intent:** `Initial` (resets pagination), `Next` (paginates), `ByProjectId` (lookup key).
+- **Side effects:** if the method creates/resets state, make it explicit.
 
-// Low level too vague
-class RemoteEstimationDataSource {
-  Future<List<EstimationDto>> getEstimations(String id); // ❌ Hides complexity
-  Future<List<EstimationDto>> fetchInitialEstimationsByProjectId(String id); // ✅
-}
-```
-
-### Key Requirements for Data Layer
-
-✅ **Explicit names must include:**
-- **Operation type:** `fetch` (network), `load` (cache), `find` (search), `ensure` (get-or-create)
-- **Scope/Intent:** `Initial` (reset pagination), `Next` (pagination), `ByProjectId` (lookup key)
-- **Side effects:** If method has side effects (create, reset), make it explicit
-
-❌ **Avoid hiding logic behind generic names:**
-- Never hide initialization or state-reset logic behind generic `get` names in Data Layer
-- Never hide "get-or-create" behavior behind `get` or `find`
+❌ **Avoid:** hiding init / state-reset / get-or-create behind a bare `get…` in the data layer.
 
 ---
 
 ## For Review Agents (Detective)
 
-### Detection Patterns
+### Check For
 
-**Check for:**
-1. **Forbidden suffixes:** `Helper`, `Util`, `Utils`, `Manager` (without Service)
-2. **Wrong suffix for layer:** UseCases not in domain/usecases/, DataSources not in data/data_source/, etc.
-3. **Missing DataSource prefix:** DataSources must start with `Local` or `Remote`
-4. **UseCase naming:** Must follow `VerbNounUseCase` pattern
-5. **Vague Data layer names:** Methods using generic `get` without scope, not indicating operation type (`fetch`/`load`/`find`), hiding side effects
+1. Forbidden suffixes: `Helper`, `Util`, `Utils`, bare `Manager`.
+2. Wrong suffix for layer (UseCase outside `domain/usecases/`, DataSource outside `data/data_source/`, etc.).
+3. DataSource missing `Local` / `Remote` prefix.
+4. UseCase not in `VerbNounUseCase` form.
+5. Vague data-layer methods: generic `get…` without operation type or scope; hidden side effects.
 
 ### Common Violations
 
 | ❌ Violation | ✅ Fix | Severity | Layer |
-|-------------|--------|----------|-------|
+|---|---|---|---|
 | `class AuthHelper` | `class AuthenticationService` | Critical | Domain |
-| `class DataUtil` | `class DataFormatter` | Critical | Helper |
+| `class DataUtil` | `class CurrencyFormatter` (or specific role) | Critical | Helper |
 | `class UserUseCase` | `class GetUserUseCase` | Major | Domain |
 | `class ApiDataSource` | `class RemoteUserDataSource` | Major | Data |
-| `class EstimationDataSource` | `class RemoteEstimationDataSource` or `LocalEstimationDataSource` | Major | Data |
-| `getEstimations(id)` in DataSource | `fetchInitialEstimationsByProjectId(id)` | Major | Data |
-| `loadUser(id)` without specifying source | `loadUserFromCache(id)` or `fetchUserFromNetwork(id)` | Minor | Data |
+| `class EstimationDataSource` (no prefix) | `class RemoteEstimationDataSource` / `class LocalEstimationDataSource` | Major | Data |
+| `getEstimations(id)` on a DataSource | `fetchInitialEstimationsByProjectId(id)` | Major | Data |
+| `loadUser(id)` (source unspecified) | `loadUserFromCache(id)` or `fetchUserFromNetwork(id)` | Minor | Data |
 
 ---
 
 ## References
+
 - [RULE_2 Gist: Class Naming Convention](https://gist.github.com/ripplearcgit/89f05e4f83e087f63148bbbb1d99a178)
-- Related: RULE_5 (UI/Business Separation) - ensures classes in right layer
+- Related: RULE_5 (UI/Business Separation) — places classes in the right layer.

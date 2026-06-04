@@ -9,180 +9,136 @@ Testing Strategy
 ## Severity Levels
 - **Critical:** Using mocks or stubs (forbidden in this codebase)
 - **Major:** Faking business logic components instead of using real implementations
-- **Minor:** Test structure could be improved to test real integration
-- **Suggestion:** Consider using Test Double pattern for better integration testing
+- **Minor:** Test structure could exercise more real integration
+- **Suggestion:** Consider Test Double pattern for better integration testing
 
 ## Description
 
-Test real integration between components. Only fake external dependencies (database, network, 3rd party libraries). Never fake your own business logic.
+Test real integration between components. Only fake external dependencies (database, network, 3rd-party libraries). Never fake your own business logic.
 
-**Core Principle:** Test Double pattern ensures tests verify real component interaction and real business logic, catching integration bugs that unit tests with mocks would miss.
+**Core Principle:** Test Double pattern ensures tests verify real component interaction and real business logic, catching integration bugs that mocked unit tests would miss.
 
 ## Applicability
 
-Applies to all tests in `test/` directory, particularly unit tests for BLoCs, Services, UseCases, and Repositories.
+All tests in `test/`, particularly unit tests for BLoCs, Services, UseCases, and Repositories.
 
 ---
 
 ## For Coding Agents (Prescriptive)
 
-### The Test Double Pattern
+### The Pattern
 
-**When testing Class A that depends on Class B:**
+When testing class A that depends on class B:
 
-```
-✅ CORRECT (Test Double Pattern):
-┌─────────────────────────────────────┐
-│          Test Suite                  │
-│                                      │
-│  ┌──────────┐      ┌──────────┐    │
-│  │ Real A   │─────▶│  Real B  │    │
-│  └──────────┘      └──────────┘    │
-│                          │          │
-│                          ▼          │
-│                    ┌──────────┐    │
-│                    │  Fake    │    │
-│                    │ External │    │
-│                    │   Dep    │    │
-│                    └──────────┘    │
-└─────────────────────────────────────┘
+| Class under test | Inner project dependencies | External dependencies |
+|---|---|---|
+| BLoC / UseCase / Service / Repository | **Real** implementation | **Fake** (Supabase, HTTP, Clock, …) |
 
-❌ WRONG (Fake Everything):
-┌─────────────────────────────────────┐
-│          Test Suite                  │
-│                                      │
-│  ┌──────────┐      ┌──────────┐    │
-│  │ Real A   │─────▶│  Fake B  │    │
-│  └──────────┘      └──────────┘    │
-│                                      │
-│  (Not testing real integration!)    │
-└─────────────────────────────────────┘
-```
+The chain is wired up with real implementations; only the outermost boundary (the SDK / network / DB / clock) is replaced with a hand-written fake.
 
-### Decision Tree: Should I Fake This?
+### Decision Tree
 
 ```
 Is this dependency MY code (in this codebase)?
-  ├─ YES → Use REAL implementation
-  │        └─ Examples: BLoC → Real UseCase, UseCase → Real Service
+  ├─ YES
+  │   ├─ Same feature?             → Use REAL implementation
+  │   │    (BLoC → real UseCase → real Service → real RepositoryImpl → real DataSource)
+  │   │
+  │   └─ From another library/feature? → Use FAKE repository for isolation
+  │        (prevents cascading test failures when the library changes)
   │
-  └─ NO → Is it an external dependency?
-         └─ YES → Use FAKE implementation
-                  └─ Examples: Supabase, Database, File System, HTTP client
+  └─ NO  → External dependency
+           → Use FAKE wrapper  (FakeSupabaseWrapper, FakeClock, HTTP fake, …)
 ```
 
-### What to Fake (External Boundaries Only)
+### What to Fake — and What Not to Fake
 
-✅ **Always Fake:**
-- Database (Supabase, local DB)
-- Network (HTTP clients, API calls)
-- File system
-- Device sensors
-- Time/Clock
-- Random generators
-- 3rd party SDKs
+✅ **Always fake** — external boundaries via wrappers: `FakeSupabaseWrapper`, HTTP fakes, `FakeClock`, random generators, 3rd-party SDKs.
 
-❌ **Never Fake:**
-- Your UseCases
-- Your Services
-- Your Repositories (the interface)
-- Your BLoCs
-- Your domain logic
-- Your mappers/formatters
+✅ **Fake repository when** it belongs to another library/feature (e.g., `FakeProjectRepository` in estimation tests) — prevents coupling across features.
 
-### How to Write Tests
+❌ **Never fake** — your own same-feature code: UseCases, Services, RepositoryImpls, DataSources, BLoCs, domain logic, mappers/formatters.
 
-#### ✅ Correct: Chain real components, fake only external dependencies
+### Canonical Integration Test
+
+The project fakes at the **wrapper level**: `FakeSupabaseWrapper` replaces all Supabase I/O while the entire real chain above it (DataSource → RepositoryImpl → UseCase → BLoC) runs as-is. Wire the module with the fake wrapper and get real objects from DI:
 
 ```dart
 void main() {
-  late AuthBloc bloc;
-  late FakeAuthDataSource fakeDataSource;
+  late FakeSupabaseWrapper fakeSupabase;
+  late OtpVerificationBloc bloc;
 
-  setUp(() {
-    fakeDataSource = FakeAuthDataSource(); // Fake external (Supabase)
-    final authRepository = AuthRepositoryImpl(remoteDataSource: fakeDataSource); // Real
-    final authService = AuthenticationService(repository: authRepository); // Real
-    bloc = AuthBloc(authService: authService); // Real
+  setUpAll(() {
+    fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl()); // ✅ fake at I/O boundary
+    Modular.init(AuthTestModule(AppBootstrap(supabaseWrapper: fakeSupabase)));
+    bloc = Modular.get<OtpVerificationBloc>();                  // ✅ real chain from DI
   });
 
-  test('should emit authenticated state when login succeeds', () {
-    fakeDataSource.mockLoginSuccess(userId: '123');
-    bloc.add(LoginRequested(email: 'test@example.com', password: 'pass123'));
-    expect(bloc.stream, emitsInOrder([AuthLoading(), AuthAuthenticated(userId: '123')]));
+  tearDown(() {
+    fakeSupabase.reset();
+    Modular.destroy();
   });
-}
-```
 
-#### ❌ Wrong: Mocking internal business logic
-
-```dart
-void main() {
-  late MockAuthService mockAuthService; // ❌ Don't mock your own code
-
-  test('should emit authenticated state', () {
-    when(mockAuthService.login(any, any)).thenReturn(...); // ❌ Doesn't test real logic
-    // Test passes even if AuthService implementation is broken!
-  });
+  blocTest<OtpVerificationBloc, OtpVerificationState>(
+    'emits [Loading, Success] when OTP is correct',
+    build: () {
+      fakeSupabase.shouldThrowOnVerifyOtp = false; // ✅ configure via fake wrapper
+      return bloc;
+    },
+    act: (bloc) => bloc.add(OtpVerificationSubmitted(contact: 'test@example.com', otp: '123456')),
+    expect: () => [OtpVerificationLoading(), OtpVerificationSuccess(email: 'test@example.com')],
+  );
 }
 ```
 
 ### Implementing Fakes
 
-**Create fakes for external dependencies:**
+**At the I/O boundary** — the project maintains `FakeSupabaseWrapper` as the single re-usable fake for all Supabase operations. Tests inject it via `AppBootstrap`. See `docs/Testing/Fakes.md` for full usage.
+
+**For library repository dependencies** — when your feature depends on a repository from *another* library/feature, create a fake repository implementing the interface. Expose setup methods and call counters; keep the implementation minimal:
 
 ```dart
-// Fake Supabase DataSource
-class FakeAuthDataSource implements RemoteAuthDataSource {
-  User? _mockUser;
-  Exception? _mockException;
+class FakeProjectRepository implements ProjectRepository {
+  Project? _project;
+  int getProjectByIdCallCount = 0;
 
-  void mockLoginSuccess({required String userId}) {
-    _mockUser = User(id: userId);
-    _mockException = null;
-  }
-
-  void mockLoginFailure(Exception exception) {
-    _mockUser = null;
-    _mockException = exception;
-  }
+  void setProject(Project project) => _project = project;
+  void reset() { _project = null; getProjectByIdCallCount = 0; }
 
   @override
-  Future<Either<Failure, User>> login(String email, String password) async {
-    if (_mockException != null) {
-      return Left(ServerFailure(message: _mockException.toString()));
-    }
-    if (_mockUser != null) {
-      return Right(_mockUser!);
-    }
-    return Left(ServerFailure(message: 'Unknown error'));
+  Future<Either<Failure, Project>> getProjectById(String id) async {
+    getProjectByIdCallCount++;
+    return _project != null ? Right(_project!) : Left(NotFoundFailure());
   }
 }
 ```
+
+See `docs/Testing/Fakes.md` for the full decision matrix and `FakeSupabaseWrapper` API.
 
 ---
 
 ## For Review Agents (Detective)
 
-### Detection Patterns
+### Detection
 
-**Check for:**
-1. **Forbidden mocks/stubs:** `Mock<`, `when(`, `verify(`, `@GenerateMocks` (Critical)
-2. **Faking business logic:** Mock UseCases, Services, Repositories, BLoCs (Major)
-3. **Missing integration:** Tests only exercising one layer in isolation (Major)
+1. Forbidden tooling: `Mock<…>`, `when(…)`, `verify(…)`, `@GenerateMocks`, imports of `mockito`. **Critical.**
+2. Faking business logic: `MockAuthService`, `MockUseCase`, `MockRepository`, `MockBloc`. **Major.**
+3. Test exercises a single layer in isolation while the rest is mocked. **Major.**
 
 ### Common Violations
 
 | ❌ Violation | ✅ Fix | Severity |
-|-------------|--------|----------|
-| `MockAuthService` in BLoC test | Use real `AuthService` + fake `AuthDataSource` | Major |
-| `when(useCase.execute()).thenReturn(...)` | Use real `UseCase` + fake external dependencies | Major |
+|---|---|---|
+| `MockAuthService` in a BLoC test | Use real `AuthService` wired via `FakeSupabaseWrapper` | Major |
+| `when(useCase.execute()).thenReturn(...)` | Use real `UseCase` + `FakeSupabaseWrapper` at I/O boundary | Major |
 | `verify(repository.save(any))` | Assert on observable outputs, not method calls | Major |
-| `MockEstimationRepository` | Use real `EstimationRepositoryImpl` + fake `DataSource` | Major |
-| Using `mockito` package | Use hand-written fakes for external dependencies | Critical |
+| `MockEstimationRepository` | Use real `EstimationRepositoryImpl` + `FakeSupabaseWrapper`; or `FakeEstimationRepository` only if it's a cross-library dependency | Major |
+| Using `mockito` package | Use `FakeSupabaseWrapper` or hand-written fake repositories | Critical |
 
 ---
 
 ## References
+
 - [Test Double Pattern Gist](https://gist.github.com/ripplearcgit/89687b7414f62a8c042b16b52e9ceb0b)
 - Related: RULE_8 (Widget Test Finders), RULE_9 (Unit Test Behavior)
+- Existing fakes: `test/utils/fake_app_bootstrap_factory.dart`, `test/utils/a11y/` (helpers).
