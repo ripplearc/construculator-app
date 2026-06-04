@@ -44,7 +44,8 @@ void main() {
       final bloc = Modular.get<GetProjectBloc>();
 
       expect(notifier, isA<CurrentProjectNotifierImpl>());
-      expect((notifier as CurrentProjectNotifierImpl).currentProjectId, isNull);
+      // ProjectLibraryModule seeds currentProjectId with a default UUID on init.
+      expect(notifier.currentProjectId, isNotNull);
       expect(useCase, isA<GetProjectHeaderUseCase>());
       expect(bloc, isA<GetProjectBloc>());
 
