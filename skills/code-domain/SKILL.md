@@ -36,18 +36,6 @@ Prefer `Equatable` for all entities to enable value equality without boilerplate
 - ✅ Extend `Equatable` and override `props`
 - ❌ Don't manually override `==` and `hashCode`
 
-## Enums
-
-Document each enum case with dartdoc comments explaining business meaning.
-
-
-## Required Imports
-
-```dart
-import 'package:construculator/libraries/either/either.dart';
-import 'package:construculator/libraries/errors/failures.dart';
-```
-
 ## Dependency Registration
 
 Add to `lib/features/{feature}/{feature}_module.dart`:
@@ -80,7 +68,7 @@ void _registerDependencies(Injector i) {
 ### 🔴 Non-Negotiable (Must Follow)
 1. **Pure business logic** — No UI, no data source knowledge
 2. **No layer violations** — Domain MUST NOT import Flutter, data layer, or presentation layer (see RULE_5)
-3. **Either, never throw** — Always return `Either<Failure, T>`, never throw exceptions
+3. **Either, never throw** — Always return `Either<Failure, T>`, never throw exceptions. Use `package:construculator/libraries/either/either.dart` for `Either` and `package:construculator/libraries/errors/failures.dart` for `Failure` — **do NOT import `dartz`**. Before writing interface signatures, identify all failure cases: search `lib/features/{feature}/domain/` for an existing `{Feature}Failure` — reuse it if found, otherwise note that `code-data` must create it.
 
 ### 🟡 Core Patterns (Always Apply)
 4. **UseCases orchestrate** — Delegate to repositories; don't implement business rules

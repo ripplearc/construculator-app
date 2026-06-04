@@ -31,93 +31,31 @@ If the input context from `plan-implementation` is incomplete or missing, respon
 
 ## 2. Page Pattern
 
-**Purpose:** Top-level screen that provides BLoC and builds UI tree.
+Top-level screen; provides BLoC; builds UI tree. Pages are **passive** — they display state, they don't decide what it means.
 
-**Access via BuildContext extension:**
-- **Localization (RULE_10):** `context.l10n.keyName` (not `S.of(context)`)
-- **Colors:** `context.colorTheme.primary`, `context.colorTheme.pageBackground`
-- **Typography:** `context.textTheme.bodyMediumRegular`, `context.textTheme.titleLargeBold`
+**BuildContext extensions** (always use these — never hardcode):
+- Localization (RULE_10): `context.l10n.keyName` (not `S.of(context)`)
+- Colors: `context.colorTheme.primary` / `.pageBackground`
+- Typography: `context.textTheme.bodyMediumRegular` / `.titleLargeBold`
 
-**UI Rules:**
-- **RULE_4:** Use CoreUI components ONLY — never `Material` widgets directly
-- **RULE_10:** All text via `context.l10n.keyName` — no hardcoded strings
-- Pages are **passive** — they display state from BLoC; they don't decide what state means
-
-**BLoC access (preferred):** Prefer resolving BLoCs via `BuildContext` instead of `Modular.get`. This keeps wiring explicit and works well with `BlocProvider`.
-
-Two recommended approaches:
-
-1. Inline usage for simple callbacks:
-
-```dart
-onTabSelected: (index) => context.read<AppShellBloc>().add(AppShellTabSelected(index)),
-```
-
-2. Field resolution in `didChangeDependencies` (preferred when a `BlocProvider` is above the Page):
-
-Resolve the BLoC in `didChangeDependencies` (not in `build`) to avoid repeated lookups and to satisfy lints that forbid resolving dependencies during build.
-
-If your app does not provide the BLoC via `BlocProvider`, fall back to module
-registration and resolve as a class field:
-  `final _bloc = Modular.get<FeatureBloc>();`
-Never call `Modular.get` inside `build()` — violates `forbid_modular_get_outside_module`.
-
-**Routing (three-tier model):**
-- **Tab switching** (within shell): Dispatch BLoC events (e.g. `context.read<AppShellBloc>().add(AppShellTabSelected(index))`) — handled by the shell's BLoC; widgets do not have to call `Navigator.push/pop` to switch tabs
-- **Full-screen navigation** (above shell): `Modular.get<AppRouter>().push(...)` / `.pop()` — replaces entire shell
-- **In-tab drill-downs** (within tab): `Navigator.of(context).push(...)` / `.pop()` — preserves tab state and other tabs
-  ⚠️ Never use AppRouter for tab-switching or in-tab navigation — it resets tab state and navigators.
+**BLoC access:** Prefer `context.read<FeatureBloc>()` (inline callbacks) or resolve as a field in `didChangeDependencies` when a `BlocProvider` is above the Page. Fall back to `final _bloc = Modular.get<FeatureBloc>();` as a class field only if no `BlocProvider` exists. **Never call `Modular.get` inside `build()`** — violates `forbid_modular_get_outside_module`.
 
 ## 3. BLoC Pattern
 
-**Purpose:** Coordinate UI state; handle events; emit states. BLoC is NOT a business rule engine.
+Coordinate UI state; handle events; emit states. BLoC is **not** a business rule engine.
 
-**Structure:**
-```
-bloc/{feature}_bloc/
-├── {feature}_bloc.dart       # BLoC class with event handlers
-├── {feature}_event.dart       # Sealed event classes
-└── {feature}_state.dart       # Sealed state classes
-```
-
-**State Management Rules:**
-- **RULE_12:** State derivation happens HERE, not in widgets (e.g., `total`, `isValid`, `filteredItems`)
-- **RULE_5:** BLoC orchestrates UseCases; doesn't implement business logic
-- Events: User actions (`SubmitPressed`, `FieldChanged`) or lifecycle (`PageLoaded`)
-- States: UI representations (`Loading`, `Success`, `Error`)
-- Use `emit()` to transition states
-
-**Error handling:** Catch UseCase failures; emit error states with user-friendly messages (via RULE_10 localization).
+- **RULE_12:** State derivation lives here, not in widgets (`total`, `isValid`, `filteredItems`).
+- **RULE_5:** BLoC orchestrates UseCases; never implements business logic.
+- Events = user actions (`SubmitPressed`) or lifecycle (`PageLoaded`); States = UI representations (`Loading`, `Success`, `Error`). Transition with `emit()`.
+- **Error handling:** Catch UseCase failures; emit error states with localized messages (RULE_10).
 
 ## 4. Widget Pattern
 
-**Purpose:** Reusable UI components; receive data via constructor; no state management.
-
-**Widget Rules:**
-- **RULE_4:** CoreUI components only (from `ripplearc_coreui` package)
-- **RULE_10:** Localized text via `context.l10n.keyName`
-- **RULE_5:** Zero logic — widgets are **dumb presenters**
-- Use `context.colorTheme` for colors, `context.textTheme` for typography
-- Prefer `const` constructors for performance
-- Extract complex UI trees into named widgets for readability
-
-**Forbidden in widgets:**
-- Business validation (`if (id != null) { bloc.add(...) }`)
-- State derivation (`total = items.fold(...)`)
-- Cross-field coordination
-- Direct UseCase calls
-- Hardcoded colors/text (use `context.colorTheme`, `context.l10n`)
+Reusable UI components; data via constructor; no state management. Widgets are **dumb presenters** (RULE_5) — zero business logic, no state derivation, no UseCase calls. Use CoreUI only (RULE_4), `context.l10n` for text (RULE_10), `context.colorTheme` / `context.textTheme` for styling. Prefer `const` constructors.
 
 ## 5. Dependency Registration
 
-Add to `lib/features/{feature}/{feature}_module.dart`:
-
-```dart
-void _registerDependencies(Injector i) {
-  // BLoCs (transient — new instance per request)
-  i.add<{Feature}Bloc>(() => {Feature}Bloc(useCase: i()));
-}
-```
+In `{feature}_module.dart`, register BLoCs as transient: `i.add<{Feature}Bloc>(() => {Feature}Bloc(useCase: i()));`. See `code-domain` skill for canonical module pattern.
 
 ## 6. Layer Boundaries (RULE_5)
 
@@ -152,6 +90,7 @@ void _registerDependencies(Injector i) {
    - Tab switching (within shell): `context.read<AppShellBloc>().add(AppShellTabSelected(index))`
    - Full-screen (above shell): `_router.push(...)` — resolve as `final _router = Modular.get<AppRouter>();` class field
    - In-tab drill-downs: `Navigator.of(context).push(...)` / `.pop()` — never AppRouter here
+   - ⚠️ **Never use AppRouter for tab-switching or in-tab navigation** — it resets tab state and navigators.
 7. **Testable widgets** — Widgets are dumb presenters; prefer `const` constructors and constructor-based inputs
 
 ## References
