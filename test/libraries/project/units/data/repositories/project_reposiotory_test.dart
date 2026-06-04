@@ -9,7 +9,9 @@ import 'package:construculator/libraries/project/data/repositories/project_repos
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
@@ -24,12 +26,16 @@ void main() {
     late FakeClockImpl clock;
     late _FakeProjectDataSource projectDataSource;
     late ProjectRepositoryImpl repository;
+    late FakeCurrentProjectNotifier fakeNotifier;
 
     setUp(() {
       clock = FakeClockImpl(DateTime(2025, 10, 1, 10, 30));
       Modular.init(_ProjectRepositoryTestModule(clock: clock));
       projectDataSource = Modular.get<_FakeProjectDataSource>();
       repository = Modular.get<ProjectRepositoryImpl>();
+      // Resolve the same notifier instance that was injected into the repository.
+      fakeNotifier =
+          Modular.get<CurrentProjectNotifier>() as FakeCurrentProjectNotifier;
     });
 
     tearDown(() {
@@ -245,29 +251,52 @@ void main() {
         },
       );
 
-      test('propagates error from watchProjectChanges stream', () async {
-        const userId = 'user-123';
+      test(
+        'does not propagate Realtime error — last known project list remains',
+        () async {
+          const userId = 'user-123';
+          projectDataSource.ownedProjects = [
+            _createProjectDto(
+              id: 'project-1',
+              projectName: 'My project',
+              creatorUserId: 'user-123',
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ];
 
-        final firstEmission = Completer<void>();
-        final errorReceived = Completer<void>();
-        final subscription = repository
-            .watchProjects(userId)
-            .listen(
-              (_) {
-                if (!firstEmission.isCompleted) firstEmission.complete();
-              },
-              onError: (error, _) {
-                expect(error, isA<Exception>());
-                if (!errorReceived.isCompleted) errorReceived.complete();
-              },
-            );
-        await firstEmission.future;
+          final emittedBatches = <List<Project>>[];
+          bool errorReceived = false;
+          final firstEmission = Completer<void>();
+          // Gate used to detect any unexpected emission after the error.
+          final unexpectedEmission = Completer<void>();
 
-        projectDataSource.emitError(Exception('realtime failure'));
+          final subscription = repository
+              .watchProjects(userId)
+              .listen(
+                (batch) {
+                  emittedBatches.add(batch);
+                  if (!firstEmission.isCompleted) {
+                    firstEmission.complete();
+                  } else if (!unexpectedEmission.isCompleted) {
+                    unexpectedEmission.complete();
+                  }
+                },
+                onError: (_, __) => errorReceived = true,
+              );
+          await firstEmission.future;
 
-        await errorReceived.future;
-        await subscription.cancel();
-      });
+          projectDataSource.emitError(Exception('realtime failure'));
+
+          // Yield to the event loop to let any error propagation occur, then
+          // assert without a wall-clock delay.
+          await Future<void>.value();
+
+          expect(errorReceived, isFalse);
+          expect(unexpectedEmission.isCompleted, isFalse);
+          expect(emittedBatches.last.length, 1);
+          await subscription.cancel();
+        },
+      );
 
       test(
         'queues a follow-up refresh when changes arrive mid-refresh',
@@ -337,6 +366,77 @@ void main() {
           );
         },
       );
+    });
+
+    group('findCurrentProjectForUser', () {
+      test('returns null when no project id is set in notifier', () async {
+        projectDataSource.ownedProjects = [
+          _createProjectDto(
+            id: 'proj-1',
+            projectName: 'My project',
+            creatorUserId: 'user-1',
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+        ];
+
+        final result = await repository.findCurrentProjectForUser('user-1');
+
+        expect(result, isNull);
+      });
+
+      test('returns matching project when id is set and project is accessible',
+          () async {
+        projectDataSource.ownedProjects = [
+          _createProjectDto(
+            id: 'proj-1',
+            projectName: 'My project',
+            creatorUserId: 'user-1',
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+        ];
+        fakeNotifier.setCurrentProjectId('proj-1');
+
+        final result = await repository.findCurrentProjectForUser('user-1');
+
+        expect(result, isNotNull);
+        expect(result!.id, 'proj-1');
+        expect(result.projectName, 'My project');
+        expect(result.creatorUserId, 'user-1');
+      });
+
+      test('returns null when selected project id is not in accessible list',
+          () async {
+        projectDataSource.ownedProjects = [
+          _createProjectDto(
+            id: 'proj-1',
+            projectName: 'My project',
+            creatorUserId: 'user-1',
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+        ];
+        fakeNotifier.setCurrentProjectId('proj-999');
+
+        final result = await repository.findCurrentProjectForUser('user-1');
+
+        expect(result, isNull);
+      });
+
+      test('returns null when userId is empty', () async {
+        fakeNotifier.setCurrentProjectId('proj-1');
+
+        final result = await repository.findCurrentProjectForUser('');
+
+        expect(result, isNull);
+      });
+
+      test('returns null and logs warning when data source throws', () async {
+        fakeNotifier.setCurrentProjectId('proj-1');
+        projectDataSource.shouldThrowOnGetProjects = true;
+
+        final result = await repository.findCurrentProjectForUser('user-1');
+
+        expect(result, isNull);
+      });
     });
   });
 
@@ -465,6 +565,7 @@ class _FakeProjectDataSource implements ProjectDataSource {
   String? lastOwnedUserId;
   String? lastSharedUserId;
   int getOwnedProjectsCalls = 0;
+  bool shouldThrowOnGetProjects = false;
   Completer<void>? firstGetOwnedProjectsStartedCompleter;
   Completer<void>? nextGetOwnedProjectsCompleter;
   final StreamController<void> _changesController =
@@ -474,6 +575,10 @@ class _FakeProjectDataSource implements ProjectDataSource {
   Future<List<ProjectDto>> getOwnedProjects(String userId) async {
     lastOwnedUserId = userId;
     getOwnedProjectsCalls++;
+
+    if (shouldThrowOnGetProjects) {
+      throw Exception('data source error');
+    }
 
     final snapshot = List<ProjectDto>.from(ownedProjects);
     if (firstGetOwnedProjectsStartedCompleter?.isCompleted == false) {
@@ -528,11 +633,13 @@ class _ProjectRepositoryTestModule extends Module {
         supabaseWrapper: FakeSupabaseWrapper(clock: clock),
       ),
     );
+    i.addInstance<CurrentProjectNotifier>(FakeCurrentProjectNotifier());
     i.addLazySingleton<ProjectRepositoryImpl>(
       () => ProjectRepositoryImpl(
         projectDataSource: i.get<ProjectDataSource>(),
         clock: clock,
         permissionDataSource: i.get<ProjectPermissionDataSource>(),
+        currentProjectNotifier: i.get<CurrentProjectNotifier>(),
       ),
     );
   }

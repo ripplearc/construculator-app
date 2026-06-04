@@ -57,4 +57,14 @@ abstract class ProjectRepository {
   /// [projectId] The UUID of the project
   /// [permissionKey] The permission key to check (e.g., 'edit_cost_estimation')
   bool hasProjectPermission(String projectId, String permissionKey);
+
+  /// Returns the currently selected project for [userId], or `null` if:
+  /// - [userId] is empty
+  /// - no project is currently selected
+  /// - the selected project is no longer in the accessible list
+  ///
+  /// Note: this performs a full fetch via [getProjects]. If call frequency
+  /// increases beyond single on-demand usage, introduce a caching strategy in
+  /// a dedicated follow-up story.
+  Future<Project?> findCurrentProjectForUser(String userId);
 }
