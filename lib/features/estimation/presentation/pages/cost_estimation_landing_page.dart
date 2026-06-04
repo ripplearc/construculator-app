@@ -83,10 +83,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
     final l10n = context.l10n;
 
     bloc.add(
-      AddCostEstimationSubmitted(
-        estimationName: l10n.untitledEstimation,
-        projectId: widget.projectId,
-      ),
+      AddCostEstimationSubmitted(estimationName: l10n.untitledEstimation),
     );
   }
 
@@ -215,10 +212,7 @@ class _CostEstimationLandingPageState extends State<CostEstimationLandingPage> {
           onConfirm: () {
             _router.pop();
             deleteCostEstimationBloc.add(
-              DeleteCostEstimationRequested(
-                estimationId: estimation.id,
-                projectId: widget.projectId,
-              ),
+              DeleteCostEstimationRequested(estimationId: estimation.id),
             );
           },
           onCancel: () {

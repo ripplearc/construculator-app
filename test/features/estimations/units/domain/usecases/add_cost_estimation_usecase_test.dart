@@ -7,6 +7,8 @@ import 'package:construculator/libraries/estimation/domain/entities/enums.dart';
 import 'package:construculator/libraries/estimation/domain/entities/lock_status_entity.dart';
 import 'package:construculator/libraries/estimation/domain/entities/markup_configuration_entity.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -23,6 +25,7 @@ void main() {
     late AddCostEstimationUseCase useCase;
     late FakeSupabaseWrapper fakeSupabaseWrapper;
     late FakeClockImpl fakeClock;
+    late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
 
     const testProjectId = 'test-project-123';
     const testEstimationName = 'Test Estimation';
@@ -81,6 +84,17 @@ void main() {
       }, (estimation) => fail('Expected failure but got success'));
     }
 
+    void expectUnexpectedError(Either<Failure, CostEstimate> result) {
+      expect(result.isLeft(), true);
+      result.fold((failure) {
+        expect(failure, isA<EstimationFailure>());
+        expect(
+          (failure as EstimationFailure).errorType,
+          EstimationErrorType.unexpectedError,
+        );
+      }, (estimation) => fail('Expected failure but got success'));
+    }
+
     setUpAll(() {
       fakeClock = FakeClockImpl();
 
@@ -94,6 +108,13 @@ void main() {
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
 
+      fakeCurrentProjectNotifier = FakeCurrentProjectNotifier(
+        initialProjectId: testProjectId,
+      );
+      Modular.replaceInstance<CurrentProjectNotifier>(
+        fakeCurrentProjectNotifier,
+      );
+
       useCase = Modular.get<AddCostEstimationUseCase>();
     });
 
@@ -103,6 +124,7 @@ void main() {
 
     setUp(() {
       fakeSupabaseWrapper.reset();
+      fakeCurrentProjectNotifier.reset(projectId: testProjectId);
     });
 
     test(
@@ -112,10 +134,7 @@ void main() {
         seedUserProfile();
         createEstimation();
 
-        final result = await useCase(
-          estimationName: testEstimationName,
-          projectId: testProjectId,
-        );
+        final result = await useCase(estimationName: testEstimationName);
 
         expect(result.isRight(), true);
         result.fold(
@@ -145,16 +164,33 @@ void main() {
       },
     );
 
+    test('returns unexpected error when project ID is null', () async {
+      setCurrentUser();
+      seedUserProfile();
+      fakeCurrentProjectNotifier.reset(projectId: null);
+
+      final result = await useCase(estimationName: testEstimationName);
+
+      expectUnexpectedError(result);
+    });
+
+    test('returns unexpected error when project ID is empty', () async {
+      setCurrentUser();
+      seedUserProfile();
+      fakeCurrentProjectNotifier.reset(projectId: '');
+
+      final result = await useCase(estimationName: testEstimationName);
+
+      expectUnexpectedError(result);
+    });
+
     test(
       'returns authentication error when user credentials are null',
       () async {
         fakeSupabaseWrapper.setCurrentUser(null);
         seedUserProfile();
 
-        final result = await useCase(
-          estimationName: testEstimationName,
-          projectId: testProjectId,
-        );
+        final result = await useCase(estimationName: testEstimationName);
 
         expectAuthenticationError(result);
       },
@@ -164,10 +200,7 @@ void main() {
       fakeSupabaseWrapper.shouldThrowOnSelect = true;
       setCurrentUser();
 
-      final result = await useCase(
-        estimationName: testEstimationName,
-        projectId: testProjectId,
-      );
+      final result = await useCase(estimationName: testEstimationName);
 
       expectAuthenticationError(result);
     });
@@ -175,10 +208,7 @@ void main() {
     test('returns authentication error when user profile is null', () async {
       setCurrentUser();
 
-      final result = await useCase(
-        estimationName: testEstimationName,
-        projectId: testProjectId,
-      );
+      final result = await useCase(estimationName: testEstimationName);
 
       expectAuthenticationError(result);
     });
@@ -189,10 +219,7 @@ void main() {
         setCurrentUser();
         fakeSupabaseWrapper.shouldThrowOnSelect = true;
 
-        final result = await useCase(
-          estimationName: testEstimationName,
-          projectId: testProjectId,
-        );
+        final result = await useCase(estimationName: testEstimationName);
 
         expectAuthenticationError(result);
       },
@@ -202,10 +229,7 @@ void main() {
       seedUserProfile(userId: '');
       setCurrentUser();
 
-      final result = await useCase(
-        estimationName: testEstimationName,
-        projectId: testProjectId,
-      );
+      final result = await useCase(estimationName: testEstimationName);
 
       expectAuthenticationError(result);
     });
@@ -218,10 +242,7 @@ void main() {
       fakeSupabaseWrapper.shouldThrowOnInsert = true;
       fakeSupabaseWrapper.insertExceptionType = SupabaseExceptionType.socket;
 
-      final result = await useCase(
-        estimationName: testEstimationName,
-        projectId: testProjectId,
-      );
+      final result = await useCase(estimationName: testEstimationName);
 
       expect(result.isLeft(), true);
       result.fold((failure) {

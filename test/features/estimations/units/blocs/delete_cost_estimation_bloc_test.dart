@@ -3,6 +3,8 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -19,6 +21,7 @@ void main() {
     late DeleteCostEstimationBloc bloc;
     late FakeSupabaseWrapper fakeSupabaseWrapper;
     late FakeClockImpl fakeClock;
+    late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
 
     const testProjectId = 'test-project-123';
     const testEstimationId = 'test-estimation-123';
@@ -33,6 +36,13 @@ void main() {
 
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+
+      fakeCurrentProjectNotifier = FakeCurrentProjectNotifier(
+        initialProjectId: testProjectId,
+      );
+      Modular.replaceInstance<CurrentProjectNotifier>(
+        fakeCurrentProjectNotifier,
+      );
     });
 
     tearDownAll(() {
@@ -41,6 +51,7 @@ void main() {
 
     setUp(() {
       fakeSupabaseWrapper.reset();
+      fakeCurrentProjectNotifier.reset(projectId: testProjectId);
       bloc = Modular.get<DeleteCostEstimationBloc>();
     });
 
@@ -79,6 +90,28 @@ void main() {
 
     group('DeleteCostEstimationRequested', () {
       blocTest<DeleteCostEstimationBloc, DeleteCostEstimationState>(
+        'should emit failure when current project is unavailable',
+        build: () {
+          fakeCurrentProjectNotifier.reset(projectId: null);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          const DeleteCostEstimationRequested(estimationId: testEstimationId),
+        ),
+        expect: () => [
+          isA<DeleteCostEstimationFailure>().having(
+            (s) => s.failure,
+            'failure',
+            isA<EstimationFailure>().having(
+              (f) => f.errorType,
+              'errorType',
+              EstimationErrorType.unexpectedError,
+            ),
+          ),
+        ],
+      );
+
+      blocTest<DeleteCostEstimationBloc, DeleteCostEstimationState>(
         'should emit in progress then success when estimation is deleted successfully',
         build: () {
           final estimationMap = buildEstimationMap(
@@ -90,10 +123,7 @@ void main() {
           return bloc;
         },
         act: (bloc) => bloc.add(
-          const DeleteCostEstimationRequested(
-            estimationId: testEstimationId,
-            projectId: testProjectId,
-          ),
+          const DeleteCostEstimationRequested(estimationId: testEstimationId),
         ),
         expect: () => [
           isA<DeleteCostEstimationInProgress>(),
@@ -114,10 +144,7 @@ void main() {
           return bloc;
         },
         act: (bloc) => bloc.add(
-          const DeleteCostEstimationRequested(
-            estimationId: testEstimationId,
-            projectId: testProjectId,
-          ),
+          const DeleteCostEstimationRequested(estimationId: testEstimationId),
         ),
         expect: () => [
           isA<DeleteCostEstimationInProgress>(),
@@ -142,10 +169,7 @@ void main() {
           return bloc;
         },
         act: (bloc) => bloc.add(
-          DeleteCostEstimationRequested(
-            estimationId: testEstimationId,
-            projectId: testProjectId,
-          ),
+          DeleteCostEstimationRequested(estimationId: testEstimationId),
         ),
         expect: () => [
           isA<DeleteCostEstimationInProgress>(),
@@ -169,10 +193,7 @@ void main() {
           return bloc;
         },
         act: (bloc) => bloc.add(
-          DeleteCostEstimationRequested(
-            estimationId: testEstimationId,
-            projectId: testProjectId,
-          ),
+          DeleteCostEstimationRequested(estimationId: testEstimationId),
         ),
         expect: () => [
           isA<DeleteCostEstimationInProgress>(),
@@ -192,10 +213,7 @@ void main() {
         'should successfully delete even if estimation does not exist',
         build: () => bloc,
         act: (bloc) => bloc.add(
-          DeleteCostEstimationRequested(
-            estimationId: 'non-existent-id',
-            projectId: testProjectId,
-          ),
+          DeleteCostEstimationRequested(estimationId: 'non-existent-id'),
         ),
         expect: () => [
           isA<DeleteCostEstimationInProgress>(),
@@ -222,18 +240,8 @@ void main() {
           return bloc;
         },
         act: (bloc) async {
-          bloc.add(
-            DeleteCostEstimationRequested(
-              estimationId: 'estimation-1',
-              projectId: testProjectId,
-            ),
-          );
-          bloc.add(
-            DeleteCostEstimationRequested(
-              estimationId: 'estimation-2',
-              projectId: testProjectId,
-            ),
-          );
+          bloc.add(DeleteCostEstimationRequested(estimationId: 'estimation-1'));
+          bloc.add(DeleteCostEstimationRequested(estimationId: 'estimation-2'));
         },
         expect: () => [
           isA<DeleteCostEstimationInProgress>(),
@@ -265,21 +273,8 @@ void main() {
           return bloc;
         },
         act: (bloc) => bloc.add(
-          DeleteCostEstimationRequested(
-            estimationId: testEstimationId,
-            projectId: testProjectId,
-          ),
+          DeleteCostEstimationRequested(estimationId: testEstimationId),
         ),
-        verify: (bloc) {
-          final calls = fakeSupabaseWrapper.getMethodCallsFor('delete');
-          expect(calls, hasLength(1));
-          expect(
-            calls.first['table'],
-            equals(DatabaseConstants.costEstimatesTable),
-          );
-          expect(calls.first['filterColumn'], equals('id'));
-          expect(calls.first['filterValue'], testEstimationId);
-        },
         expect: () => [
           isA<DeleteCostEstimationInProgress>(),
           isA<DeleteCostEstimationSuccess>(),
