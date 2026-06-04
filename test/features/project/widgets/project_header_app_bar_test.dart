@@ -5,6 +5,8 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +18,7 @@ import '../../../utils/fake_app_bootstrap_factory.dart';
 
 void main() {
   late FakeProjectRepository fakeProjectRepository;
+  late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
   late Clock clock;
   BuildContext? buildContext;
 
@@ -23,13 +26,22 @@ void main() {
     final appBootstrap = FakeAppBootstrapFactory.create();
     Modular.init(ProjectModule(appBootstrap));
     Modular.replaceInstance<ProjectRepository>(FakeProjectRepository());
+    Modular.replaceInstance<CurrentProjectNotifier>(
+      FakeCurrentProjectNotifier(),
+    );
     fakeProjectRepository =
         Modular.get<ProjectRepository>() as FakeProjectRepository;
+    fakeCurrentProjectNotifier =
+        Modular.get<CurrentProjectNotifier>() as FakeCurrentProjectNotifier;
     clock = Modular.get<Clock>();
   });
 
   tearDownAll(() {
     Modular.destroy();
+  });
+
+  setUp(() {
+    fakeCurrentProjectNotifier.reset();
   });
 
   group('ProjectHeaderAppBar', () {
@@ -53,6 +65,7 @@ void main() {
 
       fakeProjectRepository.addProject(projectId, project);
       fakeProjectRepository.shouldThrowOnGetProject = shouldThrowOnGetProject;
+      fakeCurrentProjectNotifier.setCurrentProjectId(projectId);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -65,8 +78,6 @@ void main() {
               buildContext = context;
               return Scaffold(
                 appBar: ProjectHeaderAppBar(
-                  projectId: projectId,
-                  getProjectBloc: Modular.get<GetProjectBloc>(),
                   onProjectTap: onProjectTap,
                   onSearchTap: onSearchTap,
                   onNotificationTap: onNotificationTap,
@@ -319,5 +330,49 @@ void main() {
       expect(find.text(l10n().projectLoadError), findsOneWidget);
       expect(find.byType(CoreLoadingIndicator), findsNothing);
     });
+
+    testWidgets(
+      'updates project name when CurrentProjectNotifier emits new id',
+      (WidgetTester tester) async {
+        const projectIdA = 'project-a';
+        const projectNameA = 'Project Alpha';
+        const projectIdB = 'project-b';
+        const projectNameB = 'Project Beta';
+
+        final projectA = Project(
+          id: projectIdA,
+          projectName: projectNameA,
+          creatorUserId: 'user-id',
+          createdAt: clock.now(),
+          updatedAt: clock.now(),
+          status: ProjectStatus.active,
+        );
+        final projectB = Project(
+          id: projectIdB,
+          projectName: projectNameB,
+          creatorUserId: 'user-id',
+          createdAt: clock.now(),
+          updatedAt: clock.now(),
+          status: ProjectStatus.active,
+        );
+
+        fakeProjectRepository.addProject(projectIdA, projectA);
+        fakeProjectRepository.addProject(projectIdB, projectB);
+
+        await pumpProjectHeaderAppBar(
+          tester,
+          projectId: projectIdA,
+          projectName: projectNameA,
+        );
+        await tester.pumpAndSettle();
+        expect(find.text(projectNameA), findsOneWidget);
+
+        fakeCurrentProjectNotifier.setCurrentProjectId(projectIdB);
+        await tester.pumpAndSettle();
+
+        expect(find.text(projectNameB), findsOneWidget);
+        expect(find.text(projectNameA), findsNothing);
+      },
+    );
   });
 }

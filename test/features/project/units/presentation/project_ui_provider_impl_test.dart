@@ -39,24 +39,20 @@ void main() {
 
     group('buildProjectHeaderAppbar', () {
       test('should return ProjectHeaderAppBar', () {
-        final projectAppbarHeader = provider.buildProjectHeaderAppbar(
-          projectId: '',
-        );
+        final projectAppbarHeader = provider.buildProjectHeaderAppbar();
 
         expect(projectAppbarHeader, isA<ProjectHeaderAppBar>());
       });
 
-      test('should pass correct arguments to ProjectHeaderAppBar', () {
+      test('should pass correct callbacks to ProjectHeaderAppBar', () {
         final projectAppbarHeader =
             provider.buildProjectHeaderAppbar(
-                  projectId: 'my-project-123',
                   onProjectTap: () {},
                   onSearchTap: () {},
                   onNotificationTap: () {},
                 )
                 as ProjectHeaderAppBar;
 
-        expect(projectAppbarHeader.projectId, equals('my-project-123'));
         expect(projectAppbarHeader.onProjectTap, isNotNull);
         expect(projectAppbarHeader.onSearchTap, isNotNull);
         expect(projectAppbarHeader.onNotificationTap, isNotNull);
@@ -72,9 +68,7 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              appBar: provider.buildProjectHeaderAppbar(
-                projectId: 'my-project-123',
-              ),
+              appBar: provider.buildProjectHeaderAppbar(),
               body: const SizedBox.shrink(),
             ),
           ),

@@ -11,14 +11,11 @@ class ProjectUIProviderImpl extends ProjectUIProvider {
 
   @override
   PreferredSizeWidget buildProjectHeaderAppbar({
-    required String projectId,
     VoidCallback? onProjectTap,
     VoidCallback? onSearchTap,
     VoidCallback? onNotificationTap,
   }) {
     return ProjectHeaderAppBar(
-      projectId: projectId,
-      getProjectBloc: getProjectBlocBuilder(),
       onProjectTap: onProjectTap,
       onSearchTap: onSearchTap,
       onNotificationTap: onNotificationTap,

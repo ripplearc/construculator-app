@@ -82,11 +82,7 @@ class _AppShellPageState extends State<AppShellPage> {
     _currentProjectNotifier = Modular.get<CurrentProjectNotifier>();
     _currentProjectId = _currentProjectNotifier.currentProjectId;
     _projectSubscription = _currentProjectNotifier.onCurrentProjectChanged
-        .listen((id) {
-          if (mounted && _currentProjectId != id) {
-            setState(() => _currentProjectId = id);
-          }
-        });
+        .listen((id) => setState(() => _currentProjectId = id));
   }
 
   @override
@@ -163,8 +159,8 @@ class _AppShellPageState extends State<AppShellPage> {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
-    final projectId = _currentProjectId ?? '';
-    if (projectId.isEmpty) {
+    final projectId = _currentProjectId;
+    if (projectId == null || projectId.isEmpty) {
       final coreColors = Theme.of(context).coreColors;
       return PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
@@ -197,7 +193,6 @@ class _AppShellPageState extends State<AppShellPage> {
     }
 
     return widget.projectUIProvider.buildProjectHeaderAppbar(
-      projectId: projectId,
       onProjectTap: () => ProjectsBottomSheet.show(context),
       onSearchTap: () => _navigateToSearch(),
     );

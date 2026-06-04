@@ -5,6 +5,8 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter/material.dart';
@@ -21,14 +23,20 @@ void main() {
   final testName = 'project_header_app_bar';
   TestWidgetsFlutterBinding.ensureInitialized();
   late FakeProjectRepository fakeProjectRepository;
+  late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
   late Clock clock;
 
   setUpAll(() async {
     final appBootstrap = FakeAppBootstrapFactory.create();
     Modular.init(ProjectModule(appBootstrap));
     Modular.replaceInstance<ProjectRepository>(FakeProjectRepository());
+    Modular.replaceInstance<CurrentProjectNotifier>(
+      FakeCurrentProjectNotifier(),
+    );
     fakeProjectRepository =
         Modular.get<ProjectRepository>() as FakeProjectRepository;
+    fakeCurrentProjectNotifier =
+        Modular.get<CurrentProjectNotifier>() as FakeCurrentProjectNotifier;
     clock = Modular.get<Clock>();
     await loadAppFontsAll();
   });
@@ -40,6 +48,7 @@ void main() {
 
   setUp(() {
     fakeProjectRepository.clearAllData();
+    fakeCurrentProjectNotifier.reset();
   });
 
   group('ProjectHeaderAppBar Screenshot Tests', () {
@@ -61,6 +70,7 @@ void main() {
       );
 
       fakeProjectRepository.addProject(projectId, project);
+      fakeCurrentProjectNotifier.setCurrentProjectId(projectId);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -70,8 +80,6 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             appBar: ProjectHeaderAppBar(
-              projectId: projectId,
-              getProjectBloc: Modular.get<GetProjectBloc>(),
               onProjectTap: onProjectTap,
               onSearchTap: onSearchTap,
               onNotificationTap: onNotificationTap,

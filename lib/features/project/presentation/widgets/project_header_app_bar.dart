@@ -1,34 +1,65 @@
+import 'dart:async';
+
 import 'package:construculator/features/project/presentation/bloc/get_project_bloc/get_project_bloc.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-class ProjectHeaderAppBar extends StatelessWidget
-    implements PreferredSizeWidget {
-  final String projectId;
-
-  /// The bloc used to fetch and stream the project details shown in the header.
-  final GetProjectBloc getProjectBloc;
-
+class ProjectHeaderAppBar extends StatefulWidget implements PreferredSizeWidget {
   final VoidCallback? onProjectTap;
   final VoidCallback? onSearchTap;
   final VoidCallback? onNotificationTap;
 
   const ProjectHeaderAppBar({
     super.key,
-    required this.projectId,
-    required this.getProjectBloc,
     this.onProjectTap,
     this.onSearchTap,
     this.onNotificationTap,
   });
 
   @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
+  State<ProjectHeaderAppBar> createState() => _ProjectHeaderAppBarState();
+}
+
+class _ProjectHeaderAppBarState extends State<ProjectHeaderAppBar> {
+  late final GetProjectBloc _bloc;
+  late final CurrentProjectNotifier _notifier;
+  StreamSubscription<String?>? _subscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _bloc = Modular.get<GetProjectBloc>();
+    _notifier = Modular.get<CurrentProjectNotifier>();
+
+    final initialId = _notifier.currentProjectId;
+    if (initialId != null && initialId.isNotEmpty) {
+      _bloc.add(GetProjectByIdLoadRequested(initialId));
+    }
+
+    _subscription = _notifier.onCurrentProjectChanged.listen((projectId) {
+      if (projectId != null && projectId.isNotEmpty) {
+        _bloc.add(GetProjectByIdLoadRequested(projectId));
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final appColorTheme = context.colorTheme;
     return BlocProvider.value(
-      value: getProjectBloc..add(GetProjectByIdLoadRequested(projectId)),
+      value: _bloc,
       child: Builder(
         builder: (context) {
           return PhysicalModel(
@@ -47,49 +78,33 @@ class ProjectHeaderAppBar extends StatelessWidget
                 elevation: 0,
                 scrolledUnderElevation: 0,
                 titleSpacing: 0,
-                title: Semantics(
-                  button: onProjectTap != null,
-                  label: onProjectTap != null
-                      ? context.l10n.projectSelectorSemanticLabel
-                      : null,
-                  child: InkWell(
-                    onTap: onProjectTap,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(minHeight: 48),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(child: _buildProjectName()),
-                          const SizedBox(width: 4),
-                          CoreIconWidget(
-                            icon: CoreIcons.arrowDown,
-                            color: appColorTheme.iconGrayMid,
-                            size: 24,
-                          ),
-                        ],
+                title: InkWell(
+                  onTap: widget.onProjectTap,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(child: _buildProjectName()),
+                      const SizedBox(width: 4),
+                      CoreIconWidget(
+                        icon: CoreIcons.arrowDown,
+                        color: appColorTheme.iconGrayMid,
+                        size: 24,
                       ),
-                    ),
+                    ],
                   ),
                 ),
                 actions: [
-                  Semantics(
-                    label: context.l10n.dashboardSearchSemanticLabel,
-                    button: onSearchTap != null,
-                    onTap: onSearchTap,
-                    child: ExcludeSemantics(
-                      child: CoreIconWidget(
-                        key: const Key('project_header_search_button'),
-                        icon: CoreIcons.search,
-                        size: 24,
-                        padding: const EdgeInsets.all(CoreSpacing.space3),
-                        onTap: onSearchTap,
-                        color: appColorTheme.iconDark,
-                      ),
-                    ),
+                  CoreIconWidget(
+                    key: const Key('project_header_search_button'),
+                    icon: CoreIcons.search,
+                    size: 24,
+                    padding: const EdgeInsets.all(CoreSpacing.space3),
+                    onTap: widget.onSearchTap,
+                    color: appColorTheme.iconDark,
                   ),
                   CoreIconWidget(
                     key: const Key('project_header_notification_button'),
-                    onTap: onNotificationTap,
+                    onTap: widget.onNotificationTap,
                     icon: CoreIcons.notification,
                     size: 24,
                     padding: const EdgeInsets.all(CoreSpacing.space3),
@@ -156,7 +171,4 @@ class ProjectHeaderAppBar extends StatelessWidget
       },
     );
   }
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }
