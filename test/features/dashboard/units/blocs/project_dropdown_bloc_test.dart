@@ -20,18 +20,28 @@ void main() {
   group('ProjectDropdownBloc', () {
     late FakeSupabaseWrapper fakeSupabaseWrapper;
     late FakeCurrentProjectNotifier fakeNotifier;
-    final clock = FakeClockImpl(DateTime(2025, 1, 1, 8, 0));
+    late FakeClockImpl clock;
     const String testUserId = 'user-1';
 
-    setUp(() {
+    setUpAll(() {
+      clock = FakeClockImpl(DateTime(2025, 1, 1, 8, 0));
       final bootstrap = FakeAppBootstrapFactory.create(
         supabaseWrapper: FakeSupabaseWrapper(clock: clock),
       );
       Modular.init(_ProjectDropdownBlocTestModule(bootstrap));
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
-      fakeNotifier = FakeCurrentProjectNotifier();
-      Modular.replaceInstance<CurrentProjectNotifier>(fakeNotifier);
+      fakeNotifier =
+          Modular.get<CurrentProjectNotifier>() as FakeCurrentProjectNotifier;
+    });
+
+    tearDownAll(() {
+      Modular.dispose();
+    });
+
+    setUp(() {
+      fakeSupabaseWrapper.reset();
+      fakeNotifier.reset();
       fakeSupabaseWrapper.setCurrentUser(
         FakeUser(
           id: testUserId,
@@ -41,10 +51,6 @@ void main() {
           userMetadata: const {},
         ),
       );
-    });
-
-    tearDown(() {
-      Modular.destroy();
     });
 
     Map<String, dynamic> buildProjectMap({
@@ -1009,7 +1015,7 @@ void main() {
       );
 
       blocTest<ProjectDropdownBloc, ProjectDropdownState>(
-        'does not re-notify CurrentProjectNotifier when stream re-emits the same project',
+        'does not re-notify CurrentProjectNotifier when stream re-emits with same selected project id',
         build: () {
           seedProjectsTable([
             buildProjectMap(
@@ -1024,24 +1030,26 @@ void main() {
         act: (bloc) async {
           bloc.add(const ProjectDropdownStarted());
           await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
-          // Simulate a Supabase reconnect / keep-alive re-emission of same data.
-          // The dedup guard in _onProjectsUpdated skips the notifier and BLoC
-          // deduplicates the identical state, so no new stream event is emitted.
+          // Simulate a Supabase re-emission with the same project id but a new
+          // updatedAt so the repository emits a new event (reconnect scenario).
+          // The dedup guard in _onProjectsUpdated skips the notifier since the
+          // selected project id hasn't changed.
           seedProjectsTable([
             buildProjectMap(
               id: 'project-1',
-              projectName: 'P1',
+              projectName: 'P1 Updated',
               creatorUserId: testUserId,
-              updatedAt: DateTime(2025, 1, 1),
+              updatedAt: DateTime(2025, 1, 12),
             ),
           ]);
-          // pumpEventQueue is used here instead of firstWhere because the BLoC's
-          // Equatable-based deduplication means no new state is emitted when the
-          // same projects list is re-emitted; there is no state to wait on.
-          await pumpEventQueue();
+          await bloc.stream.firstWhere(
+            (s) =>
+                s is ProjectDropdownLoadSuccess &&
+                s.selectedProject!.projectName == 'P1 Updated',
+          );
         },
         verify: (_) {
-          // Guard prevents duplicate notifications on stream re-emission.
+          // Guard prevents re-notification when the selected project id hasn't changed.
           expect(fakeNotifier.projectIdChangedEvents, ['project-1']);
         },
       );
@@ -1056,4 +1064,9 @@ class _ProjectDropdownBlocTestModule extends Module {
 
   @override
   List<Module> get imports => [ClockTestModule(), DashboardModule(bootstrap)];
+
+  @override
+  void binds(Injector i) {
+    i.addSingleton<CurrentProjectNotifier>(FakeCurrentProjectNotifier.new);
+  }
 }

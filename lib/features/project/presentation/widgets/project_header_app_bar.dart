@@ -44,29 +44,45 @@ class ProjectHeaderAppBar extends StatelessWidget
                 elevation: 0,
                 scrolledUnderElevation: 0,
                 titleSpacing: 0,
-                title: InkWell(
-                  onTap: onProjectTap,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(child: _buildProjectName()),
-                      const SizedBox(width: 4),
-                      CoreIconWidget(
-                        icon: CoreIcons.arrowDown,
-                        color: appColorTheme.iconGrayMid,
-                        size: 24,
+                title: Semantics(
+                  button: onProjectTap != null,
+                  label: onProjectTap != null
+                      ? context.l10n.projectSelectorSemanticLabel
+                      : null,
+                  child: InkWell(
+                    onTap: onProjectTap,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 48),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(child: _buildProjectName()),
+                          const SizedBox(width: 4),
+                          CoreIconWidget(
+                            icon: CoreIcons.arrowDown,
+                            color: appColorTheme.iconGrayMid,
+                            size: 24,
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
                 actions: [
-                  CoreIconWidget(
-                    key: const Key('project_header_search_button'),
-                    icon: CoreIcons.search,
-                    size: 24,
-                    padding: const EdgeInsets.all(CoreSpacing.space3),
+                  Semantics(
+                    label: context.l10n.dashboardSearchSemanticLabel,
+                    button: onSearchTap != null,
                     onTap: onSearchTap,
-                    color: appColorTheme.iconDark,
+                    child: ExcludeSemantics(
+                      child: CoreIconWidget(
+                        key: const Key('project_header_search_button'),
+                        icon: CoreIcons.search,
+                        size: 24,
+                        padding: const EdgeInsets.all(CoreSpacing.space3),
+                        onTap: onSearchTap,
+                        color: appColorTheme.iconDark,
+                      ),
+                    ),
                   ),
                   CoreIconWidget(
                     key: const Key('project_header_notification_button'),

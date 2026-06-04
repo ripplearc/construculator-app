@@ -220,31 +220,6 @@
     "description": "Accessibility label for the per-project settings icon button in the projects list",
     "context": "Dashboard projects sheet"
   },
-  "projectsSheetTitle": "Projects",
-  "@projectsSheetTitle": {
-    "description": "Title of the bottom sheet that lists the user's projects",
-    "context": "Dashboard projects sheet"
-  },
-  "searchProjectsHint": "Search projects",
-  "@searchProjectsHint": {
-    "description": "Hint text for the search field used to filter the projects list",
-    "context": "Dashboard projects sheet"
-  },
-  "createProjectButton": "Create a project",
-  "@createProjectButton": {
-    "description": "Label for the button that starts creating a new project",
-    "context": "Dashboard projects sheet"
-  },
-  "projectsEmptyState": "No projects yet.",
-  "@projectsEmptyState": {
-    "description": "Empty state message shown when the user has no projects",
-    "context": "Dashboard projects sheet"
-  },
-  "projectsLoadError": "Failed to load projects.",
-  "@projectsLoadError": {
-    "description": "Error message shown when the projects list cannot be loaded",
-    "context": "Dashboard projects sheet"
-  },
   "heyEnterYourDetailsToRegisterWithUs": "Hey, Enter your details to Register with us",
   "@heyEnterYourDetailsToRegisterWithUs": {
     "description": "Text for hey enter your details to register with us",
@@ -1226,35 +1201,5 @@
   "@globalSearchSuggestionsErrorMessage": {
     "description": "Warning toast shown when loading search suggestions fails",
     "context": "N/A"
-  },
-  "dashboardWelcomeMessage": "Welcome back, {name}",
-  "@dashboardWelcomeMessage": {
-    "description": "Greeting shown at the top of the dashboard with the user's full name",
-    "context": "N/A",
-    "placeholders": {
-      "name": {
-        "type": "String",
-        "example": "John Doe!"
-      }
-    }
-  },
-  "dashboardLoggedInSubtitle": "You are now logged in to your account",
-  "@dashboardLoggedInSubtitle": {
-    "description": "Subtitle shown below the welcome greeting on the dashboard",
-    "context": "N/A"
-  },
-  "searchResultsMostRelevant": "Most relevant",
-  "@searchResultsMostRelevant": {
-    "description": "Section header shown above the search results list"
-  },
-  "searchResultsEmpty": "No results for \"{query}\"",
-  "@searchResultsEmpty": {
-    "description": "Empty state message shown when a search returns no results",
-    "placeholders": {
-      "query": {
-        "type": "String",
-        "example": "Wall cost"
-      }
-    }
   }
 }
