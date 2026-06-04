@@ -1,8 +1,5 @@
-import 'dart:async';
-
 import 'package:construculator/features/project/presentation/bloc/get_project_bloc/get_project_bloc.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -28,30 +25,17 @@ class ProjectHeaderAppBar extends StatefulWidget implements PreferredSizeWidget 
 
 class _ProjectHeaderAppBarState extends State<ProjectHeaderAppBar> {
   late final GetProjectBloc _bloc;
-  late final CurrentProjectNotifier _notifier;
-  StreamSubscription<String?>? _subscription;
 
   @override
   void initState() {
     super.initState();
     _bloc = Modular.get<GetProjectBloc>();
-    _notifier = Modular.get<CurrentProjectNotifier>();
-
-    final initialId = _notifier.currentProjectId;
-    if (initialId != null && initialId.isNotEmpty) {
-      _bloc.add(GetProjectByIdLoadRequested(initialId));
-    }
-
-    _subscription = _notifier.onCurrentProjectChanged.listen((projectId) {
-      if (projectId != null && projectId.isNotEmpty) {
-        _bloc.add(GetProjectByIdLoadRequested(projectId));
-      }
-    });
+    _bloc.add(const GetProjectWatchStarted());
   }
 
   @override
   void dispose() {
-    _subscription?.cancel();
+    _bloc.close();
     super.dispose();
   }
 

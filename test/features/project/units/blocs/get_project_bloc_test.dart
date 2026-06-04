@@ -8,6 +8,8 @@ import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -52,6 +54,7 @@ void main() {
   group('GetProjectBloc Tests', () {
     late GetProjectBloc bloc;
     late FakeProjectRepository fakeProjectRepository;
+    late FakeCurrentProjectNotifier fakeCurrentProjectNotifier;
 
     setUpAll(() {
       clock = FakeClockImpl();
@@ -61,8 +64,13 @@ void main() {
       Modular.init(ProjectModule(appBootstrap));
       Modular.replaceInstance<ProjectRepository>(FakeProjectRepository());
       Modular.replaceInstance<AuthRepository>(FakeAuthRepository(clock: clock));
+      Modular.replaceInstance<CurrentProjectNotifier>(
+        FakeCurrentProjectNotifier(),
+      );
       fakeProjectRepository =
           Modular.get<ProjectRepository>() as FakeProjectRepository;
+      fakeCurrentProjectNotifier =
+          Modular.get<CurrentProjectNotifier>() as FakeCurrentProjectNotifier;
     });
 
     tearDownAll(() {
@@ -70,12 +78,94 @@ void main() {
     });
 
     setUp(() {
+      fakeCurrentProjectNotifier.reset();
       bloc = Modular.get<GetProjectBloc>();
     });
 
     tearDown(() {
       fakeProjectRepository.reset();
       bloc.close();
+    });
+
+    group('GetProjectWatchStarted', () {
+      blocTest<GetProjectBloc, GetProjectState>(
+        'loads the current project from notifier on start',
+        build: () {
+          fakeProjectRepository.addProject(
+            testProjectId,
+            createTestProject(),
+          );
+          fakeCurrentProjectNotifier.reset(projectId: testProjectId);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(const GetProjectWatchStarted()),
+        expect: () => [
+          GetProjectByIdLoading(),
+          isA<GetProjectByIdLoadSuccess>()
+              .having(
+                (s) => s.project.id,
+                'project.id',
+                testProjectId,
+              )
+              .having(
+                (s) => s.project.projectName,
+                'project.projectName',
+                testProjectName,
+              ),
+        ],
+      );
+
+      blocTest<GetProjectBloc, GetProjectState>(
+        'emits nothing when there is no current project',
+        build: () => bloc,
+        act: (bloc) => bloc.add(const GetProjectWatchStarted()),
+        expect: () => [],
+      );
+
+      blocTest<GetProjectBloc, GetProjectState>(
+        'loads new project when notifier emits a project change',
+        build: () {
+          const projectIdB = 'project-b';
+          fakeProjectRepository.addProject(
+            testProjectId,
+            createTestProject(),
+          );
+          fakeProjectRepository.addProject(
+            projectIdB,
+            createTestProject(
+              id: projectIdB,
+              projectName: 'Project B',
+            ),
+          );
+          fakeCurrentProjectNotifier.reset(projectId: testProjectId);
+          return bloc;
+        },
+        act: (bloc) {
+          bloc.add(const GetProjectWatchStarted());
+          return expectLater(
+            bloc.stream,
+            emitsThrough(
+              isA<GetProjectByIdLoadSuccess>()
+                  .having((s) => s.project.id, 'project.id', testProjectId),
+            ),
+          ).then((_) {
+            fakeCurrentProjectNotifier.setCurrentProjectId('project-b');
+          });
+        },
+        expect: () => [
+          GetProjectByIdLoading(),
+          isA<GetProjectByIdLoadSuccess>()
+              .having((s) => s.project.id, 'project.id', testProjectId),
+          GetProjectByIdLoading(),
+          isA<GetProjectByIdLoadSuccess>()
+              .having((s) => s.project.id, 'project.id', 'project-b')
+              .having(
+                (s) => s.project.projectName,
+                'project.projectName',
+                'Project B',
+              ),
+        ],
+      );
     });
 
     group('GetProjectByIdLoadRequested', () {

@@ -82,7 +82,11 @@ class _AppShellPageState extends State<AppShellPage> {
     _currentProjectNotifier = Modular.get<CurrentProjectNotifier>();
     _currentProjectId = _currentProjectNotifier.currentProjectId;
     _projectSubscription = _currentProjectNotifier.onCurrentProjectChanged
-        .listen((id) => setState(() => _currentProjectId = id));
+        .listen((id) {
+      if (id != _currentProjectId) {
+        setState(() => _currentProjectId = id);
+      }
+    });
   }
 
   @override
