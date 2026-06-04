@@ -4,23 +4,37 @@ import 'dart:collection';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'project_dropdown_event.dart';
 part 'project_dropdown_state.dart';
 
+/// BLoC that manages the project dropdown list and the currently selected project.
+///
+/// When a project is selected via [ProjectDropdownSelected], the BLoC updates
+/// [CurrentProjectNotifier] so that project-dependent consumers (e.g.
+/// [RecentEstimationsBloc]) refresh automatically.
 class ProjectDropdownBloc
     extends Bloc<ProjectDropdownEvent, ProjectDropdownState> {
   final ProjectRepository _projectRepository;
   final AuthManager _authManager;
+  final CurrentProjectNotifier _currentProjectNotifier;
   StreamSubscription<List<Project>>? _projectsSubscription;
 
+  /// Creates a [ProjectDropdownBloc].
+  ///
+  /// [projectRepository] provides the project list stream.
+  /// [authManager] supplies the authenticated user identity.
+  /// [currentProjectNotifier] is updated whenever the selected project changes.
   ProjectDropdownBloc({
     required ProjectRepository projectRepository,
     required AuthManager authManager,
+    required CurrentProjectNotifier currentProjectNotifier,
   }) : _projectRepository = projectRepository,
        _authManager = authManager,
+       _currentProjectNotifier = currentProjectNotifier,
        super(const ProjectDropdownInitial()) {
     on<ProjectDropdownStarted>(_onStarted);
     on<ProjectDropdownSelected>(_onSelected);
@@ -32,6 +46,7 @@ class ProjectDropdownBloc
   @override
   Future<void> close() {
     _projectsSubscription?.cancel();
+    // Do not close _currentProjectNotifier — it is DI-owned.
     return super.close();
   }
 
@@ -103,6 +118,12 @@ class ProjectDropdownBloc
         searchQuery: searchQuery,
       ),
     );
+
+    // Notifier is updated after emit — consistent with _onSelected —
+    // so listeners reading the BLoC state see the already-committed state.
+    if (_currentProjectNotifier.currentProjectId != selectedProject.id) {
+      _currentProjectNotifier.setCurrentProjectId(selectedProject.id);
+    }
   }
 
   void _onProjectsLoadFailed(
@@ -180,5 +201,8 @@ class ProjectDropdownBloc
     }
 
     emit(currentState.copyWith(selectedProject: selectedProject));
+    // Notifier is updated after emit — consistent with _onProjectsUpdated —
+    // so listeners reading the BLoC state see the committed state.
+    _currentProjectNotifier.setCurrentProjectId(selectedProject.id);
   }
 }
