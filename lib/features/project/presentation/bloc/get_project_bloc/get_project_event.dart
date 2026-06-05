@@ -6,7 +6,7 @@ sealed class GetProjectEvent extends Equatable {
   const GetProjectEvent();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 /// Starts observing [CurrentProjectNotifier] and loads the current project.
@@ -51,8 +51,5 @@ class _GetProjectCurrentProjectChanged extends GetProjectEvent {
   final String? projectId;
 
   @override
-  List<Object> get props {
-    final id = projectId;
-    return id != null ? [id] : [];
-  }
+  List<Object?> get props => [projectId];
 }

@@ -5,7 +5,7 @@ sealed class AppShellEvent extends Equatable {
   const AppShellEvent();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 /// Event triggered once when the shell first mounts, to load the initial tab module.
@@ -31,8 +31,5 @@ class _AppShellCurrentProjectChanged extends AppShellEvent {
   const _AppShellCurrentProjectChanged(this.projectId);
 
   @override
-  List<Object> get props {
-    final id = projectId;
-    return [if (id != null) id];
-  }
+  List<Object?> get props => [projectId];
 }

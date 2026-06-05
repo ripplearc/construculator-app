@@ -67,6 +67,7 @@ class AppShellBloc extends Bloc<AppShellEvent, AppShellState> {
     _AppShellCurrentProjectChanged event,
     Emitter<AppShellState> emit,
   ) {
+    if (event.projectId == state.currentProjectId) return;
     emit(state.copyWith(currentProjectId: event.projectId));
   }
 

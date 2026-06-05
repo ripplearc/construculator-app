@@ -123,6 +123,40 @@ void main() {
       );
 
       blocTest<GetProjectBloc, GetProjectState>(
+        'subscribes to notifier only once when dispatched twice',
+        build: () {
+          const projectIdB = 'project-b';
+          fakeProjectRepository.addProject(
+            testProjectId,
+            createTestProject(),
+          );
+          fakeProjectRepository.addProject(
+            projectIdB,
+            createTestProject(id: projectIdB, projectName: 'Project B'),
+          );
+          fakeCurrentProjectNotifier.reset(projectId: testProjectId);
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(const GetProjectWatchStarted());
+          bloc.add(const GetProjectWatchStarted());
+          await expectLater(
+            bloc.stream,
+            emitsThrough(isA<GetProjectByIdLoadSuccess>()),
+          );
+          fakeCurrentProjectNotifier.setCurrentProjectId('project-b');
+        },
+        expect: () => [
+          GetProjectByIdLoading(),
+          isA<GetProjectByIdLoadSuccess>()
+              .having((s) => s.project.id, 'project.id', testProjectId),
+          GetProjectByIdLoading(),
+          isA<GetProjectByIdLoadSuccess>()
+              .having((s) => s.project.id, 'project.id', 'project-b'),
+        ],
+      );
+
+      blocTest<GetProjectBloc, GetProjectState>(
         'loads new project when notifier emits a project change',
         build: () {
           const projectIdB = 'project-b';
