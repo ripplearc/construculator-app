@@ -23,3 +23,16 @@ class AppShellTabSelected extends AppShellEvent {
   @override
   List<Object> get props => [tab];
 }
+
+/// Internal event fired when [CurrentProjectNotifier] emits a new project ID.
+class _AppShellCurrentProjectChanged extends AppShellEvent {
+  final String? projectId;
+
+  const _AppShellCurrentProjectChanged(this.projectId);
+
+  @override
+  List<Object> get props {
+    final id = projectId;
+    return [if (id != null) id];
+  }
+}

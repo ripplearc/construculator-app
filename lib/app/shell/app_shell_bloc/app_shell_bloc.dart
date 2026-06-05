@@ -1,34 +1,40 @@
 import 'dart:async';
 
 import 'package:construculator/app/shell/tab_module_manager.dart';
-import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'app_shell_event.dart';
 part 'app_shell_state.dart';
 
-/// BLoC responsible for managing tab selection and lazy-load state in the app shell.
+/// BLoC responsible for managing tab selection, lazy-load state, and the
+/// currently active project in the app shell.
 ///
 /// Owns the side effect of lazily loading feature modules via [TabModuleManager]
 /// so that the Page layer remains a pure presentation concern.
 class AppShellBloc extends Bloc<AppShellEvent, AppShellState> {
   final TabModuleManager _moduleLoader;
-  final ProjectDropdownBloc Function() _projectDropdownBlocFactory;
+  final CurrentProjectNotifier _currentProjectNotifier;
+  StreamSubscription<String?>? _projectSubscription;
 
-  /// Creates an [AppShellBloc].
-  ///
-  /// [moduleLoader] orchestrates lazy loading of feature modules per tab.
-  /// [projectDropdownBlocFactory] is called after the home module loads to
-  /// seed [CurrentProjectNotifier] before the app bar renders.
   AppShellBloc({
     required TabModuleManager moduleLoader,
-    required ProjectDropdownBloc Function() projectDropdownBlocFactory,
+    required CurrentProjectNotifier currentProjectNotifier,
   }) : _moduleLoader = moduleLoader,
-       _projectDropdownBlocFactory = projectDropdownBlocFactory,
-       super(const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {})) {
+       _currentProjectNotifier = currentProjectNotifier,
+       super(
+         AppShellState(
+           selectedTabIndex: 0,
+           loadedTabIndexes: const {},
+           currentProjectId: currentProjectNotifier.currentProjectId,
+         ),
+       ) {
     on<AppShellInitialized>(_onInitialized);
     on<AppShellTabSelected>(_onTabSelected);
+    on<_AppShellCurrentProjectChanged>(_onCurrentProjectChanged);
+    _projectSubscription = _currentProjectNotifier.onCurrentProjectChanged
+        .listen((id) => add(_AppShellCurrentProjectChanged(id)));
     add(const AppShellInitialized());
   }
 
@@ -38,7 +44,6 @@ class AppShellBloc extends Bloc<AppShellEvent, AppShellState> {
   ) async {
     await _moduleLoader.ensureTabModuleLoaded(ShellTab.home);
     emit(state.copyWith(loadedTabIndexes: {0}, selectedTabIndex: 0));
-    _projectDropdownBlocFactory().add(const ProjectDropdownStarted());
   }
 
   Future<void> _onTabSelected(
@@ -56,5 +61,18 @@ class AppShellBloc extends Bloc<AppShellEvent, AppShellState> {
         loadedTabIndexes: {...state.loadedTabIndexes, tabIndex},
       ),
     );
+  }
+
+  void _onCurrentProjectChanged(
+    _AppShellCurrentProjectChanged event,
+    Emitter<AppShellState> emit,
+  ) {
+    emit(state.copyWith(currentProjectId: event.projectId));
+  }
+
+  @override
+  Future<void> close() {
+    _projectSubscription?.cancel();
+    return super.close();
   }
 }
