@@ -26,7 +26,7 @@
 
 Construculator is a mobile application designed for construction professionals to:
 - Create quick cost estimates (materials, labor, equipment)
-- Collaborate with team members on cost estimation.
+- Collaborate with team members on cost estimation
 - Track calculations and project data
 - Export estimates to cloud storage (Google Drive, OneDrive, Dropbox)
 
@@ -159,6 +159,7 @@ SUPABASE_URL=http://localhost:54321
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 DEBUG_MODE=true
 ANALYTICS_ENABLED=false
+SENTRY_DSN=
 ```
 
 **Environment Variable Details:**
@@ -172,6 +173,7 @@ ANALYTICS_ENABLED=false
 | `SUPABASE_ANON_KEY` | Supabase anonymous key | Copy the ` Publishable key` from `supabase start` output |
 | `DEBUG_MODE` | Enable debug logging | `true` for development, `false` for production |
 | `ANALYTICS_ENABLED` | Enable analytics | `false` for local development |
+| `SENTRY_DSN` | Sentry error tracking DSN | Leave empty for local dev |
 
 #### Important: Emulator Network Configuration
 
@@ -221,9 +223,9 @@ fvm flutter run --flavor fishfood -t lib/main.dart
 ```
 
 **Available Flavors:**
-- `dogfood` - Internal testing environment
-- `fishfood` - QA (Quality Assurance) environment
-- `prod` - Production environment
+- `dogfood` - Internal testing environment (uses `.env.dev`)
+- `fishfood` - QA (Quality Assurance) environment (uses `.env.qa`)
+- `prod` - Production environment (uses `.env.prod`)
 
 
 ### 6. Verify Setup
@@ -284,7 +286,8 @@ fvm flutter test [PATH-TO-SCREENSHOTS] --update-goldens
 
 ### Coverage Requirements
 
-- **Target:** 94% code coverage (enforced by CI)
+- **Target:** 95% code coverage on the full codebase (enforced by `--comp` / CI comprehensive-check)
+- **Delta coverage** (changed files only) is measured by `--pre` but does not have a hard threshold — open the HTML report to review
 - **Exclusions:** Generated files (`*.g.dart`, `*.freezed.dart`, `l10n/**`)
 - **Tool:** lcov
 
@@ -294,7 +297,8 @@ fvm flutter test [PATH-TO-SCREENSHOTS] --update-goldens
 fvm flutter test --coverage
 
 # Remove generated files from coverage
-lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info
+lcov --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' \
+  -o coverage/lcov.info --ignore-errors unused
 
 # Generate HTML coverage report
 genhtml coverage/lcov.info -o coverage/html
@@ -308,7 +312,7 @@ xdg-open coverage/html/index.html
 start coverage/html/index.html
 ```
 
-**Or we can see the coverage report after running script/run_check.sh :**
+**Or after running `scripts/run_check.sh`** (`--pre` or `--comp` already generates `coverage/lcov.info`):
 
 ```bash
 genhtml coverage/lcov.info -o coverage/html
@@ -337,7 +341,7 @@ start coverage/html/index.html
    ```bash
    docker container ps
    ```
-   Look for `construculator-app-flutter-1` or similar ID.
+   The container name will be `<your-directory-name>-flutter-1` (e.g. `construculator-app-flutter-1` if the repo is cloned into a directory named `construculator-app`). Use `docker container ps` to find the exact name.
 
 3. **Open shell in container:**
    ```bash
@@ -398,6 +402,9 @@ Comprehensive quality assurance script that runs analysis, tests, and builds. Sc
 
 # Mutation tests only
 ./scripts/run_check.sh --mutations
+
+# Set the base branch for diff and rebase checks (default: main)
+./scripts/run_check.sh --pre --target develop
 ```
 
 **What Each Mode Does:**
@@ -408,7 +415,7 @@ Comprehensive quality assurance script that runs analysis, tests, and builds. Sc
   - Validates no `[skip ci]` in commit messages
   - Analyzes changed Dart files only
   - Runs tests for changed files
-  - Enforces 95% code coverage
+  - Runs coverage on changed source files and generates an HTML report (does not fail on low coverage — open the report to review)
   - Excludes generated files from coverage
 - **Time:** ~5-10 minutes
 
@@ -422,6 +429,10 @@ Comprehensive quality assurance script that runs analysis, tests, and builds. Sc
   - Mutation testing (if configs changed)
 - **Time:** ~5-15 minutes
 - **Artifacts:** APK, coverage reports, mutation reports
+
+#### Both (`--all`)
+- **Purpose:** Runs `--pre` immediately followed by `--comp`
+- **Use when:** You want a single command to cover both fast and full validation locally
 
 #### Mutation Tests (`--mutations`)
 - **Purpose:** Validate test effectiveness
@@ -441,11 +452,11 @@ The script requires:
 **Coverage Configuration:**
 
 ```bash
-# Set custom coverage target (default: 95%)
+# Set custom coverage target for --comp (default: 95%)
+# Note: --pre does not enforce a coverage threshold
 export ARC_CODE_COVERAGE_TARGET=90
 
-# Run pre-check with custom target
-./scripts/run_check.sh --pre
+./scripts/run_check.sh --comp
 ```
 
 ### review_pr.sh
@@ -494,7 +505,7 @@ The project uses **CodeMagic** for continuous integration and deployment.
 **Checks:**
 - Block `[skip ci]` commits
 - Analyze changed Dart files
-- Run changed tests with 95% coverage
+- Run changed tests with coverage (generates HTML report; no coverage threshold enforced)
 - Fast feedback (~5-10 min)
 
 **Notifications:** Email + Slack (#build-notifications)
@@ -535,7 +546,7 @@ To manually trigger CI checks on a PR, add a comment with:
 #runcheck
 ```
 
-This will trigger all workflows (pre-check, comprehensive-check, ios-debug-build).
+This will trigger the `comprehensive-check`, `pre-check` and `ios-debug-build` workflows.
 
 ---
 
@@ -549,7 +560,7 @@ This will trigger all workflows (pre-check, comprehensive-check, ios-debug-build
 1. Use Docker container to generate platform-consistent screenshots:
    ```bash
    docker-compose up -d
-   docker exec -it construculator-app-flutter-1 bash
+   docker exec -it <your-directory-name>-flutter-1 bash
    flutter test test/features/**/screenshots --update-goldens
    exit
    ```
@@ -569,7 +580,7 @@ This will trigger all workflows (pre-check, comprehensive-check, ios-debug-build
    open coverage/html/index.html
    ```
 2. Add tests for uncovered code
-3. Rerun: `./scripts/run_check.sh --pre`
+3. Rerun: `./scripts/run_check.sh --comp`
 
 **Alternative (Must get the approval of the code owner):** If coverage is temporarily low and intentional:
 - Add `#DeltaCoverageLow` or `DCL` to commit message
