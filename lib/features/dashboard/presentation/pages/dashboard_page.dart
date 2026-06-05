@@ -1,5 +1,4 @@
 import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
-import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
@@ -59,71 +58,50 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     final typography = context.textTheme;
-    final colors = context.colorTheme;
-    final l10n = context.l10n;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.dashboardTitle),
-        centerTitle: true,
-        backgroundColor: colors.pageBackground,
-        actions: [
-          CoreIconWidget(
-            icon: CoreIcons.search,
-            semanticLabel: l10n.dashboardSearchSemanticLabel,
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const GlobalSearchPage(),
-              ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(CoreSpacing.space6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Column(
+              children: [
+                Icon(
+                  Icons.dashboard,
+                  size: CoreSpacing.space16,
+                  color: Theme.of(context).primaryColor,
+                ),
+                const SizedBox(height: CoreSpacing.space6),
+                Text(
+                  'Welcome back, $userInfo',
+                  textAlign: TextAlign.center,
+                  style: typography.headlineMediumSemiBold,
+                ),
+                const SizedBox(height: CoreSpacing.space2),
+                Text(
+                  'You are now logged in to your account',
+                  textAlign: TextAlign.center,
+                  style: typography.bodyLargeRegular,
+                ),
+                const SizedBox(height: CoreSpacing.space8),
+              ],
             ),
           ),
-          const SizedBox(width: CoreSpacing.space4),
+          const SizedBox(height: CoreSpacing.space8),
+          const RecentEstimationsSection(),
+          const SizedBox(height: CoreSpacing.space8),
+          Center(
+            child: CoreButton(
+              onPressed: () {
+                final authManager = Modular.get<AuthManager>();
+                authManager.logout();
+                _router.navigate(fullLoginRoute);
+              },
+              label: 'Logout',
+              centerAlign: true,
+            ),
+          ),
         ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(CoreSpacing.space6),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.dashboard,
-                    size: CoreSpacing.space16,
-                    color: Theme.of(context).primaryColor,
-                  ),
-                  const SizedBox(height: CoreSpacing.space6),
-                  Text(
-                    'Welcome back, $userInfo',
-                    textAlign: TextAlign.center,
-                    style: typography.headlineMediumSemiBold,
-                  ),
-                  const SizedBox(height: CoreSpacing.space2),
-                  Text(
-                    'You are now logged in to your account',
-                    textAlign: TextAlign.center,
-                    style: typography.bodyLargeRegular,
-                  ),
-                  const SizedBox(height: CoreSpacing.space8),
-                ],
-              ),
-            ),
-            const SizedBox(height: CoreSpacing.space8),
-            const RecentEstimationsSection(),
-            const SizedBox(height: CoreSpacing.space8),
-            Center(
-              child: CoreButton(
-                onPressed: () {
-                  final authManager = Modular.get<AuthManager>();
-                  authManager.logout();
-                  _router.navigate(fullLoginRoute);
-                },
-                label: 'Logout',
-                centerAlign: true,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
