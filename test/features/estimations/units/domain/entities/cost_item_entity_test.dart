@@ -3,10 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('CostItemType enum', () {
-    test('toJson returns correct string values', () {
-      expect(CostItemType.material.toJson(), 'material');
-      expect(CostItemType.labor.toJson(), 'labor');
-      expect(CostItemType.equipment.toJson(), 'equipment');
+    test('name returns correct string values', () {
+      expect(CostItemType.material.name, 'material');
+      expect(CostItemType.labor.name, 'labor');
+      expect(CostItemType.equipment.name, 'equipment');
     });
 
     test('fromJson creates correct enum from string', () {
@@ -25,23 +25,29 @@ void main() {
       expect(CostItemType.fromJson('invalid'), CostItemType.material);
       expect(CostItemType.fromJson(''), CostItemType.material);
     });
+
+    test('round-trip serialization preserves all values', () {
+      for (final type in CostItemType.values) {
+        expect(CostItemType.fromJson(type.name), type);
+      }
+    });
   });
 
   group('Unit enum', () {
-    test('toJson returns correct string values', () {
-      expect(Unit.pieces.toJson(), 'pieces');
-      expect(Unit.meters.toJson(), 'meters');
-      expect(Unit.squareMeters.toJson(), 'squareMeters');
-      expect(Unit.cubicMeters.toJson(), 'cubicMeters');
-      expect(Unit.kilograms.toJson(), 'kilograms');
-      expect(Unit.tons.toJson(), 'tons');
-      expect(Unit.liters.toJson(), 'liters');
-      expect(Unit.hours.toJson(), 'hours');
-      expect(Unit.days.toJson(), 'days');
-      expect(Unit.boxes.toJson(), 'boxes');
-      expect(Unit.bags.toJson(), 'bags');
-      expect(Unit.rolls.toJson(), 'rolls');
-      expect(Unit.sheets.toJson(), 'sheets');
+    test('name returns correct string values', () {
+      expect(Unit.pieces.name, 'pieces');
+      expect(Unit.meters.name, 'meters');
+      expect(Unit.squareMeters.name, 'squareMeters');
+      expect(Unit.cubicMeters.name, 'cubicMeters');
+      expect(Unit.kilograms.name, 'kilograms');
+      expect(Unit.tons.name, 'tons');
+      expect(Unit.liters.name, 'liters');
+      expect(Unit.hours.name, 'hours');
+      expect(Unit.days.name, 'days');
+      expect(Unit.boxes.name, 'boxes');
+      expect(Unit.bags.name, 'bags');
+      expect(Unit.rolls.name, 'rolls');
+      expect(Unit.sheets.name, 'sheets');
     });
 
     test('fromJson creates correct enum from string', () {
@@ -60,6 +66,12 @@ void main() {
     test('fromJson returns pieces for invalid value', () {
       expect(Unit.fromJson('invalid'), Unit.pieces);
       expect(Unit.fromJson(''), Unit.pieces);
+    });
+
+    test('round-trip serialization preserves all values', () {
+      for (final unit in Unit.values) {
+        expect(Unit.fromJson(unit.name), unit);
+      }
     });
   });
 
@@ -115,6 +127,12 @@ void main() {
         LaborCalculationMethodType.fromJson('daily'),
         LaborCalculationMethodType.perHour,
       );
+    });
+
+    test('round-trip serialization preserves all values', () {
+      for (final method in LaborCalculationMethodType.values) {
+        expect(LaborCalculationMethodType.fromJson(method.toJson()), method);
+      }
     });
   });
 
@@ -256,8 +274,8 @@ void main() {
       );
 
       final updated = laborValue.copyWith(
-        laborDays: clearField(),
-        laborUnitType: clearField(),
+        laborDays: clearField,
+        laborUnitType: clearField,
       );
 
       expect(updated.laborDays, isNull);
@@ -343,8 +361,8 @@ void main() {
 
     test('copyWith can clear nullable fields using clearField', () {
       final updated = testItem.copyWith(
-        productLink: clearField(),
-        description: clearField(),
+        productLink: clearField,
+        description: clearField,
       );
 
       expect(updated.productLink, isNull);
@@ -455,9 +473,9 @@ void main() {
 
     test('copyWith can clear nullable fields using clearField', () {
       final updated = testItem.copyWith(
-        crewSize: clearField(),
-        productLink: clearField(),
-        description: clearField(),
+        crewSize: clearField,
+        productLink: clearField,
+        description: clearField,
       );
 
       expect(updated.crewSize, isNull);
@@ -563,8 +581,8 @@ void main() {
 
     test('copyWith can clear nullable fields using clearField', () {
       final updated = testItem.copyWith(
-        productLink: clearField(),
-        description: clearField(),
+        productLink: clearField,
+        description: clearField,
       );
 
       expect(updated.productLink, isNull);

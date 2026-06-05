@@ -1,25 +1,18 @@
 import 'package:equatable/equatable.dart';
 
-/// Sentinel value used in copyWith methods to explicitly clear nullable fields.
-///
-/// Usage:
-/// ```dart
-/// item.copyWith(productLink: clearField())
-/// ```
-/// This will set productLink to null, as opposed to omitting the parameter
-/// which preserves the current value.
-const _ClearField _clearField = _ClearField();
-
-/// Sentinel class for clearing nullable fields in copyWith methods.
+// Sentinel class for clearing nullable fields in copyWith methods.
 class _ClearField {
   const _ClearField();
 }
 
-/// Helper function to create a clear field sentinel.
+/// Sentinel value to explicitly clear a nullable field in [copyWith].
 ///
-/// Returns a special sentinel value that can be passed to copyWith methods
-/// to explicitly set nullable fields to null.
-Object clearField() => _clearField;
+/// Pass this constant to set a nullable field to null instead of omitting
+/// the parameter (which preserves the current value):
+/// ```dart
+/// item.copyWith(productLink: clearField) // sets productLink to null
+/// ```
+const Object clearField = _ClearField();
 
 /// Type of cost item stored in an estimation.
 enum CostItemType {
@@ -31,8 +24,6 @@ enum CostItemType {
 
   /// Equipment or rented assets priced by unit and quantity.
   equipment;
-
-  String toJson() => name;
 
   /// Deserializes a [CostItemType] from JSON string.
   ///
@@ -92,8 +83,6 @@ enum Unit {
   /// Sheet-based material counted as sheets.
   sheets;
 
-  String toJson() => name;
-
   /// Deserializes a [Unit] from JSON string.
   ///
   /// Falls back to [Unit.pieces] for unknown values to ensure forward
@@ -128,6 +117,12 @@ enum LaborCalculationMethodType {
   String toJson() => value;
 
   /// Deserializes a [LaborCalculationMethodType] from JSON string.
+  ///
+  /// Uses exact, case-sensitive matching against the snake_case [value]
+  /// property (e.g., `"per_hour"`). This is intentional: the backend contract
+  /// guarantees lowercase snake_case values for labor methods, unlike
+  /// [CostItemType] and [Unit] which match against the Dart enum name and
+  /// accept mixed-case input.
   ///
   /// Falls back to [LaborCalculationMethodType.perHour] for unknown values to
   /// ensure forward compatibility with new calculation methods added in future
@@ -231,15 +226,15 @@ class LaborValue extends Equatable {
 
   /// Creates a copy of this [LaborValue] with the given fields replaced.
   ///
-  /// To explicitly clear a nullable field, pass [clearField()] as the value.
+  /// To explicitly clear a nullable field, pass [clearField] as the value.
   /// Omitting a parameter preserves the current value.
   ///
   /// Example:
   /// ```dart
   /// final updated = value.copyWith(
-  ///   laborDays: 5.0,           // Update to 5.0
-  ///   laborHours: clearField(), // Clear to null
-  /// );                          // laborUnitType unchanged
+  ///   laborDays: 5.0,          // Update to 5.0
+  ///   laborHours: clearField,  // Clear to null
+  /// );                         // laborUnitType unchanged
   /// ```
   LaborValue copyWith({
     Object? laborDays,
@@ -248,16 +243,16 @@ class LaborValue extends Equatable {
     Object? laborUnitValue,
   }) {
     return LaborValue(
-      laborDays: laborDays == _clearField
+      laborDays: laborDays == clearField
           ? null
           : (laborDays as double?) ?? this.laborDays,
-      laborHours: laborHours == _clearField
+      laborHours: laborHours == clearField
           ? null
           : (laborHours as double?) ?? this.laborHours,
-      laborUnitType: laborUnitType == _clearField
+      laborUnitType: laborUnitType == clearField
           ? null
           : (laborUnitType as String?) ?? this.laborUnitType,
-      laborUnitValue: laborUnitValue == _clearField
+      laborUnitValue: laborUnitValue == clearField
           ? null
           : (laborUnitValue as double?) ?? this.laborUnitValue,
     );
@@ -266,9 +261,16 @@ class LaborValue extends Equatable {
 
 /// Sealed class representing a cost item in an estimation
 sealed class CostItem extends Equatable {
+  /// Unique identifier for this cost item.
   final String id;
+
+  /// The estimation this cost item belongs to.
   final String estimateId;
+
+  /// Display name of this cost item.
   final String itemName;
+
+  /// The type category of this cost item.
   final CostItemType itemType;
 
   /// Breakdown of cost calculation components as key-value pairs.
@@ -290,8 +292,13 @@ sealed class CostItem extends Equatable {
   /// Consumer code should handle missing keys gracefully.
   final Map<String, double> calculation;
 
+  /// The total computed cost for this item in [currency].
   final double itemTotalCost;
+
+  /// Timestamp when this cost item was created.
   final DateTime createdAt;
+
+  /// Timestamp when this cost item was last updated.
   final DateTime updatedAt;
 
   /// ISO 4217 currency code for this cost item's monetary values.
@@ -300,7 +307,10 @@ sealed class CostItem extends Equatable {
   /// Optional brand or manufacturer name for this cost item.
   final String? brand;
 
+  /// Optional URL linking to the product or resource for this item.
   final String? productLink;
+
+  /// Optional freeform notes or description for this item.
   final String? description;
 
   const CostItem({
@@ -348,7 +358,10 @@ sealed class CostItem extends Equatable {
 /// This separation allows the domain model to evolve independently for each
 /// concept and prevents accidental conflation of semantically different items.
 class MaterialCostItem extends CostItem {
+  /// Price per single unit of this material.
   final Money unitPrice;
+
+  /// Total quantity of this material with its unit of measurement.
   final Quantity quantity;
 
   const MaterialCostItem({
@@ -372,14 +385,14 @@ class MaterialCostItem extends CostItem {
 
   /// Creates a copy of this [MaterialCostItem] with the given fields replaced.
   ///
-  /// To explicitly clear a nullable field, pass [clearField()] as the value.
+  /// To explicitly clear a nullable field, pass [clearField] as the value.
   /// Omitting a parameter preserves the current value.
   ///
   /// Example:
   /// ```dart
   /// final updated = item.copyWith(
   ///   itemName: 'New Name',
-  ///   productLink: clearField(), // Clear to null
+  ///   productLink: clearField, // Clear to null
   /// );
   /// ```
   MaterialCostItem copyWith({
@@ -408,11 +421,11 @@ class MaterialCostItem extends CostItem {
       currency: currency ?? this.currency,
       unitPrice: unitPrice ?? this.unitPrice,
       quantity: quantity ?? this.quantity,
-      brand: brand == _clearField ? null : (brand as String?) ?? this.brand,
-      productLink: productLink == _clearField
+      brand: brand == clearField ? null : (brand as String?) ?? this.brand,
+      productLink: productLink == clearField
           ? null
           : (productLink as String?) ?? this.productLink,
-      description: description == _clearField
+      description: description == clearField
           ? null
           : (description as String?) ?? this.description,
     );
@@ -421,8 +434,14 @@ class MaterialCostItem extends CostItem {
 
 /// Labor cost item with calculation method and labor values
 class LaborCostItem extends CostItem {
+  /// Pricing strategy used to calculate this labor cost (hourly, daily, or per-unit).
   final LaborCalculationMethodType laborCalcMethod;
+
+  /// Computed or input values backing the calculation; populated fields depend
+  /// on [laborCalcMethod]. See [LaborValue] for details.
   final LaborValue laborValue;
+
+  /// Optional number of workers assigned to this labor item.
   final int? crewSize;
 
   const LaborCostItem({
@@ -452,15 +471,15 @@ class LaborCostItem extends CostItem {
 
   /// Creates a copy of this [LaborCostItem] with the given fields replaced.
   ///
-  /// To explicitly clear a nullable field, pass [clearField()] as the value.
+  /// To explicitly clear a nullable field, pass [clearField] as the value.
   /// Omitting a parameter preserves the current value.
   ///
   /// Example:
   /// ```dart
   /// final updated = item.copyWith(
   ///   itemName: 'New Name',
-  ///   crewSize: clearField(),    // Clear to null
-  ///   productLink: clearField(), // Clear to null
+  ///   crewSize: clearField,   // Clear to null
+  ///   productLink: clearField, // Clear to null
   /// );
   /// ```
   LaborCostItem copyWith({
@@ -491,12 +510,12 @@ class LaborCostItem extends CostItem {
       laborCalcMethod: laborCalcMethod ?? this.laborCalcMethod,
       laborValue: laborValue ?? this.laborValue,
       crewSize:
-          crewSize == _clearField ? null : (crewSize as int?) ?? this.crewSize,
-      brand: brand == _clearField ? null : (brand as String?) ?? this.brand,
-      productLink: productLink == _clearField
+          crewSize == clearField ? null : (crewSize as int?) ?? this.crewSize,
+      brand: brand == clearField ? null : (brand as String?) ?? this.brand,
+      productLink: productLink == clearField
           ? null
           : (productLink as String?) ?? this.productLink,
-      description: description == _clearField
+      description: description == clearField
           ? null
           : (description as String?) ?? this.description,
     );
@@ -516,7 +535,10 @@ class LaborCostItem extends CostItem {
 /// This separation allows the domain model to evolve independently for each
 /// concept and prevents accidental conflation of semantically different items.
 class EquipmentCostItem extends CostItem {
+  /// Price per single unit of this equipment.
   final Money unitPrice;
+
+  /// Total quantity of this equipment with its unit of measurement.
   final Quantity quantity;
 
   const EquipmentCostItem({
@@ -540,14 +562,14 @@ class EquipmentCostItem extends CostItem {
 
   /// Creates a copy of this [EquipmentCostItem] with the given fields replaced.
   ///
-  /// To explicitly clear a nullable field, pass [clearField()] as the value.
+  /// To explicitly clear a nullable field, pass [clearField] as the value.
   /// Omitting a parameter preserves the current value.
   ///
   /// Example:
   /// ```dart
   /// final updated = item.copyWith(
   ///   itemName: 'New Name',
-  ///   productLink: clearField(), // Clear to null
+  ///   productLink: clearField, // Clear to null
   /// );
   /// ```
   EquipmentCostItem copyWith({
@@ -576,11 +598,11 @@ class EquipmentCostItem extends CostItem {
       currency: currency ?? this.currency,
       unitPrice: unitPrice ?? this.unitPrice,
       quantity: quantity ?? this.quantity,
-      brand: brand == _clearField ? null : (brand as String?) ?? this.brand,
-      productLink: productLink == _clearField
+      brand: brand == clearField ? null : (brand as String?) ?? this.brand,
+      productLink: productLink == clearField
           ? null
           : (productLink as String?) ?? this.productLink,
-      description: description == _clearField
+      description: description == clearField
           ? null
           : (description as String?) ?? this.description,
     );
