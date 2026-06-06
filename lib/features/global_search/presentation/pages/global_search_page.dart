@@ -32,16 +32,12 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
 
   void _onItemTap(BuildContext context, String term) {
     _searchController.text = term;
-    BlocProvider.of<GlobalSearchBloc>(
-      context,
-    ).add(GlobalSearchPerformed(query: term));
+    BlocProvider.of<GlobalSearchBloc>(context).add(GlobalSearchPerformed(query: term));
   }
 
   void _onTrailingTap(BuildContext context, String term) {
     _searchController.text = term;
-    BlocProvider.of<GlobalSearchBloc>(
-      context,
-    ).add(GlobalSearchQueryUpdated(query: term));
+    BlocProvider.of<GlobalSearchBloc>(context).add(GlobalSearchQueryUpdated(query: term));
   }
 
   Widget _buildBackButton(BuildContext context) {
@@ -118,12 +114,10 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
                     hintText: l10n.globalSearchHint,
                     clearSemanticLabel:
                         l10n.globalSearchClearSearchSemanticLabel,
-                    onChanged: (query) => BlocProvider.of<GlobalSearchBloc>(
-                      innerContext,
-                    ).add(GlobalSearchQueryUpdated(query: query)),
-                    onSearch: () => BlocProvider.of<GlobalSearchBloc>(
-                      innerContext,
-                    ).add(GlobalSearchPerformed(query: _searchController.text)),
+                    onChanged: (query) => BlocProvider.of<GlobalSearchBloc>(innerContext)
+                        .add(GlobalSearchQueryUpdated(query: query)),
+                    onSearch: () => BlocProvider.of<GlobalSearchBloc>(innerContext)
+                        .add(GlobalSearchPerformed(query: _searchController.text)),
                   ),
                 ),
               ],
