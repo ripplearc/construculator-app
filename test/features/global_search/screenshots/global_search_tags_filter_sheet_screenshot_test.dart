@@ -2,14 +2,14 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
+import 'package:construculator/features/global_search/presentation/widgets/global_search_tags_filter_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
-import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
-import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -17,22 +17,10 @@ import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/screenshot/await_images_extension.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
-const String _testUserId = 'user-screenshot-test';
-const String _testUserEmail = 'screenshot@test.com';
-
-Map<String, dynamic> _fakeHistoryRow(String term) => {
-  DatabaseConstants.idColumn: term,
-  DatabaseConstants.userIdColumn: _testUserId,
-  DatabaseConstants.searchTermColumn: term,
-  DatabaseConstants.scopeColumn: 'dashboard',
-  DatabaseConstants.searchCountColumn: 1,
-  DatabaseConstants.createdAtColumn: '2024-01-01T00:00:00.000Z',
-};
-
-class _GlobalSearchPageScreenshotModule extends Module {
+class _TagsFilterSheetScreenshotModule extends Module {
   final AppBootstrap appBootstrap;
 
-  _GlobalSearchPageScreenshotModule(this.appBootstrap);
+  _TagsFilterSheetScreenshotModule(this.appBootstrap);
 
   @override
   List<Module> get imports => [
@@ -44,7 +32,7 @@ class _GlobalSearchPageScreenshotModule extends Module {
 void main() {
   const size = Size(390, 844);
   const ratio = 1.0;
-  const testName = 'global_search_page';
+  const testName = 'global_search_tags_filter_sheet';
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late FakeSupabaseWrapper fakeSupabase;
@@ -54,7 +42,7 @@ void main() {
     final bootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
     );
-    Modular.init(_GlobalSearchPageScreenshotModule(bootstrap));
+    Modular.init(_TagsFilterSheetScreenshotModule(bootstrap));
     final supabase = Modular.get<SupabaseWrapper>();
     expect(supabase, isA<FakeSupabaseWrapper>());
     fakeSupabase = supabase as FakeSupabaseWrapper;
@@ -68,7 +56,10 @@ void main() {
     fakeSupabase.reset();
   });
 
-  Future<void> pumpGlobalSearchPage({required WidgetTester tester}) async {
+  Future<void> pumpPageAndOpenTagsSheet({
+    required WidgetTester tester,
+    Set<String> activeTagsBeforeOpen = const {},
+  }) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: createTestTheme(),
@@ -80,95 +71,89 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.awaitImages();
+
+    if (activeTagsBeforeOpen.isNotEmpty) {
+      // GlobalSearchPage creates the BlocProvider internally, so we look up
+      // the BLoC from a descendant element that sits below it.
+      final element = tester.element(
+        find.descendant(
+          of: find.byType(GlobalSearchPage),
+          matching: find.byType(BlocConsumer<GlobalSearchBloc, GlobalSearchState>),
+        ),
+      );
+      final bloc = BlocProvider.of<GlobalSearchBloc>(element);
+      bloc.add(
+        GlobalSearchTagFiltersApplied(
+          tags: Set.unmodifiable(activeTagsBeforeOpen),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    final chipKey = activeTagsBeforeOpen.isEmpty
+        ? const Key('global_search_tags_filter_chip')
+        : const Key('global_search_tags_filter_chip_active');
+    await tester.tap(find.byKey(chipKey));
+    await tester.pumpAndSettle();
+    await tester.awaitImages();
   }
 
-  group('GlobalSearchPage Screenshot Tests', () {
-    testWidgets('renders default state correctly', (tester) async {
+  group('GlobalSearchTagsFilterSheet Screenshot Tests', () {
+    testWidgets('renders default state with no tags selected', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      await pumpGlobalSearchPage(tester: tester);
+      await pumpPageAndOpenTagsSheet(tester: tester);
 
       await expectLater(
-        find.byType(GlobalSearchPage),
+        find.byType(MaterialApp),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_default.png',
         ),
       );
     });
 
-    testWidgets(
-      'renders with search text and clear button visible correctly',
-      (tester) async {
-        tester.view.physicalSize = size;
-        tester.view.devicePixelRatio = ratio;
-        addTearDown(tester.view.reset);
-
-        await pumpGlobalSearchPage(tester: tester);
-
-        final textFieldFinder = find.descendant(
-          of: find.byType(GlobalSearchPage),
-          matching: find.byType(TextFormField),
-        );
-        await tester.enterText(textFieldFinder, 'concrete');
-        await tester.pumpAndSettle();
-        expect(find.text('concrete'), findsOneWidget);
-
-        await expectLater(
-          find.byType(GlobalSearchPage),
-          matchesGoldenFile(
-            'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_text.png',
-          ),
-        );
-      },
-    );
-
-    testWidgets('renders with recent searches correctly', (tester) async {
+    testWidgets('renders with pre-selected tags checked', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      fakeSupabase.setCurrentUser(
-        FakeUser(
-          id: _testUserId,
-          email: _testUserEmail,
-          createdAt: '2024-01-01T00:00:00.000Z',
-        ),
+      await pumpPageAndOpenTagsSheet(
+        tester: tester,
+        activeTagsBeforeOpen: const {'Roofing', 'Wall'},
       );
-      fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
-        _fakeHistoryRow('Material of building'),
-        _fakeHistoryRow('MD bungalow'),
-      ]);
-
-      await pumpGlobalSearchPage(tester: tester);
 
       await expectLater(
-        find.byType(GlobalSearchPage),
+        find.byType(MaterialApp),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_recent_searches.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_selected_tags.png',
         ),
       );
     });
 
-    testWidgets('renders with active tag filter chips correctly', (
+    testWidgets('renders with search query filtering the tag list', (
       tester,
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      await pumpGlobalSearchPage(tester: tester);
+      await pumpPageAndOpenTagsSheet(tester: tester);
 
-      Modular.get<GlobalSearchBloc>().add(
-        const GlobalSearchTagFiltersApplied(tags: {'Roofing', 'Wall'}),
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(GlobalSearchTagsFilterSheet),
+          matching: find.byType(TextFormField),
+        ),
+        'ing',
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await expectLater(
-        find.byType(GlobalSearchPage),
+        find.byType(MaterialApp),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_active_tags.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_query.png',
         ),
       );
     });
