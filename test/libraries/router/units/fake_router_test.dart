@@ -53,4 +53,18 @@ void main() {
       expect(router.navigationHistory[0].arguments, {'page': 'main'});
     });
   });
+
+  group('RouteCall', () {
+    test('two calls with same route and arguments are equal', () {
+      const a = RouteCall('/home', null);
+      const b = RouteCall('/home', null);
+      expect(a, equals(b));
+    });
+
+    test('two calls with different routes are not equal', () {
+      const a = RouteCall('/home', null);
+      const b = RouteCall('/profile', null);
+      expect(a, isNot(equals(b)));
+    });
+  });
 }
