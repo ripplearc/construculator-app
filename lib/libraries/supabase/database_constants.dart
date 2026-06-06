@@ -1,3 +1,4 @@
+// coverage:ignore-file
 /// Centralized database table and column name constants.
 ///
 /// This file contains all database table names and column names used across

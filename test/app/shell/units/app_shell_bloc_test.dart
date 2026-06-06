@@ -43,6 +43,8 @@ void main() {
         const AppShellTabSelected(2),
         equals(const AppShellTabSelected(2)),
       );
+      expect(const AppShellInitialized().props, isEmpty);
+      expect(const AppShellInitialized(), equals(const AppShellInitialized()));
     });
 
     test('state copyWith preserves values when parameters are omitted', () {
