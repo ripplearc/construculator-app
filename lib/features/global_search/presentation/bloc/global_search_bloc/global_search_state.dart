@@ -31,29 +31,36 @@ class GlobalSearchReady extends GlobalSearchState {
   /// Whether a suggestions fetch is currently in flight.
   final bool suggestionsLoading;
 
+  /// Tags currently applied as filters. Empty means no tag filter is active.
+  final Set<String> selectedTags;
+
   const GlobalSearchReady({
     this.recentSearches = const [],
     this.query = '',
     this.suggestions = const [],
     this.suggestionsLoading = false,
+    this.selectedTags = const {},
   });
 
+  /// Returns a copy of this state with the given fields replaced.
   GlobalSearchReady copyWith({
     List<String>? recentSearches,
     String? query,
     List<String>? suggestions,
     bool? suggestionsLoading,
+    Set<String>? selectedTags,
   }) {
     return GlobalSearchReady(
       recentSearches: recentSearches ?? this.recentSearches,
       query: query ?? this.query,
       suggestions: suggestions ?? this.suggestions,
       suggestionsLoading: suggestionsLoading ?? this.suggestionsLoading,
+      selectedTags: selectedTags ?? this.selectedTags,
     );
   }
 
   @override
-  List<Object?> get props => [recentSearches, query, suggestions, suggestionsLoading];
+  List<Object?> get props => [recentSearches, query, suggestions, suggestionsLoading, selectedTags];
 }
 
 /// Emitted while a search request is in flight.
