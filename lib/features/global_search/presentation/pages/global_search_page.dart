@@ -2,6 +2,7 @@ import 'package:construculator/features/global_search/presentation/bloc/global_s
 import 'package:construculator/features/global_search/presentation/widgets/date_filter_chip.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_empty_recent_widget.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_recent_searches_list.dart';
+import 'package:construculator/features/global_search/presentation/widgets/global_search_suggestions_list.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_tags_filter_sheet.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -179,7 +180,24 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
       _lastReady = state;
     }
     final effectiveReady = state is GlobalSearchReady ? state : _lastReady;
-    if (effectiveReady != null && effectiveReady.recentSearches.isNotEmpty) {
+    if (effectiveReady == null) {
+      return const GlobalSearchEmptyRecentWidget();
+    }
+    if (effectiveReady.query.isNotEmpty) {
+      if (effectiveReady.suggestionsLoading) {
+        return const Center(child: CoreLoadingIndicator());
+      }
+      if (effectiveReady.suggestions.isNotEmpty) {
+        return GlobalSearchSuggestionsList(
+          suggestions: effectiveReady.suggestions,
+          query: effectiveReady.query,
+          onItemTap: (term) => _onItemTap(context, term),
+          onTrailingTap: (term) => _onTrailingTap(context, term),
+        );
+      }
+      return const SizedBox.shrink();
+    }
+    if (effectiveReady.recentSearches.isNotEmpty) {
       return GlobalSearchRecentSearchesList(
         recentSearches: effectiveReady.recentSearches,
         onItemTap: (term) => _onItemTap(context, term),
@@ -189,10 +207,34 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
     return const GlobalSearchEmptyRecentWidget();
   }
 
+  Widget _buildSectionTitle(BuildContext context, GlobalSearchState state) {
+    final l10n = context.l10n;
+    final typography = context.textTheme;
+    final effectiveReady = state is GlobalSearchReady ? state : _lastReady;
+    final query = effectiveReady?.query ?? '';
+    final hasQuery = query.isNotEmpty;
+    final hasSuggestions = effectiveReady?.suggestions.isNotEmpty ?? false;
+    final loading = effectiveReady?.suggestionsLoading ?? false;
+    if (hasQuery && !hasSuggestions && !loading) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: CoreSpacing.space4,
+        vertical: CoreSpacing.space3,
+      ),
+      child: Text(
+        hasQuery
+            ? l10n.globalSearchSuggestionsTitle
+            : l10n.globalSearchRecentSearchesTitle,
+        style: typography.bodyLargeSemiBold,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colorTheme;
-    final typography = context.textTheme;
     final l10n = context.l10n;
 
     return BlocProvider(
@@ -279,15 +321,8 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
                   },
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: CoreSpacing.space4,
-                  vertical: CoreSpacing.space3,
-                ),
-                child: Text(
-                  l10n.globalSearchRecentSearchesTitle,
-                  style: typography.bodyLargeSemiBold,
-                ),
+              BlocBuilder<GlobalSearchBloc, GlobalSearchState>(
+                builder: (context, state) => _buildSectionTitle(context, state),
               ),
               Expanded(
                 child: BlocConsumer<GlobalSearchBloc, GlobalSearchState>(
