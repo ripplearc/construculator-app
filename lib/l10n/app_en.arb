@@ -1201,5 +1201,40 @@
   "@globalSearchEmptyQueryMessage": {
     "description": "Warning toast shown when the user submits an empty or whitespace-only search query",
     "context": "N/A"
+  },
+  "globalSearchFilterTagsSemanticLabel": "Filter by tags",
+  "@globalSearchFilterTagsSemanticLabel": {
+    "description": "Accessibility label for the Tags filter chip on the global search screen",
+    "context": "N/A"
+  },
+  "globalSearchClearTagFilterSemanticLabel": "Clear tag filter {tag}",
+  "@globalSearchClearTagFilterSemanticLabel": {
+    "description": "Accessibility label for the × button that removes a single active tag filter chip",
+    "context": "N/A",
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  },
+  "globalSearchTagsSheetTitle": "Tags",
+  "@globalSearchTagsSheetTitle": {
+    "description": "Title of the Tags filter bottom sheet",
+    "context": "N/A"
+  },
+  "globalSearchTagsSheetSearchHint": "Search by tag name",
+  "@globalSearchTagsSheetSearchHint": {
+    "description": "Placeholder text in the search field inside the Tags filter bottom sheet",
+    "context": "N/A"
+  },
+  "globalSearchTagsSheetClearAll": "Clear all",
+  "@globalSearchTagsSheetClearAll": {
+    "description": "Label for the Clear all button in the Tags filter bottom sheet",
+    "context": "N/A"
+  },
+  "globalSearchTagsSheetApply": "Apply",
+  "@globalSearchTagsSheetApply": {
+    "description": "Label for the Apply button in the Tags filter bottom sheet",
+    "context": "N/A"
   }
 }

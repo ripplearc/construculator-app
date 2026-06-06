@@ -510,6 +510,49 @@ void main() {
           );
         },
       );
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'forwards the alphabetically first selected tag to the RPC when multiple tags are active',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {'projects': [], 'estimations': [], 'members': []},
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          // Apply two tags; 'Roofing' sorts before 'Wall' alphabetically.
+          bloc.add(
+            const GlobalSearchTagFiltersApplied(tags: {'Wall', 'Roofing'}),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchPerformed(query: 'steel'));
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'tags applied',
+            containsAll(['Wall', 'Roofing']),
+          ),
+          const GlobalSearchLoadInProgress(query: 'steel'),
+          isA<GlobalSearchLoadEmpty>(),
+        ],
+        verify: (_) {
+          final rpcCalls = fakeSupabase.getMethodCallsFor('rpc');
+          final rpcParams = rpcCalls.first['params'] as Map<String, dynamic>;
+          expect(
+            rpcParams['filter_by_tag'],
+            equals('Roofing'),
+            reason: 'must forward the alphabetically first tag, not an arbitrary Set element',
+          );
+        },
+      );
     });
 
     group('GlobalSearchQueryUpdated', () {
@@ -729,6 +772,172 @@ void main() {
             (s) => s.failure,
             'failure',
             SearchFailure(errorType: SearchErrorType.connectionError),
+          ),
+        ],
+      );
+    });
+
+    group('GlobalSearchTagFiltersApplied', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchReady with selectedTags when tags are applied',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(
+          const GlobalSearchTagFiltersApplied(tags: {'Roofing', 'Wall'}),
+        ),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'selectedTags',
+            containsAll(['Roofing', 'Wall']),
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchReady with empty selectedTags when empty set is applied',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(
+          const GlobalSearchTagFiltersApplied(tags: {}),
+        ),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'selectedTags',
+            isEmpty,
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'preserves query and recentSearches when applying tags',
+        setUp: () {
+          fakeSupabase.setCurrentUser(null);
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.first;
+          bloc.add(
+            const GlobalSearchTagFiltersApplied(tags: {'Flooring'}),
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having((s) => s.query, 'query', isEmpty),
+          isA<GlobalSearchReady>()
+              .having((s) => s.selectedTags, 'selectedTags', contains('Flooring'))
+              .having((s) => s.query, 'query preserved', isEmpty),
+        ],
+      );
+    });
+
+    group('GlobalSearchTagFilterCleared', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchReady with tag removed from selectedTags',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            const GlobalSearchTagFiltersApplied(tags: {'Roofing', 'Wall'}),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchTagFilterCleared(tag: 'Roofing'));
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'two tags selected',
+            containsAll(['Roofing', 'Wall']),
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedTags,
+                'Roofing removed',
+                isNot(contains('Roofing')),
+              )
+              .having(
+                (s) => s.selectedTags,
+                'Wall remains',
+                contains('Wall'),
+              ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchReady with empty selectedTags when last tag is cleared',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            const GlobalSearchTagFiltersApplied(tags: {'Flooring'}),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchTagFilterCleared(tag: 'Flooring'));
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'one tag selected',
+            contains('Flooring'),
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'selectedTags empty after last cleared',
+            isEmpty,
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'preserves query and recentSearches when clearing a tag',
+        setUp: () {
+          fakeSupabase.setCurrentUser(null);
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.first;
+          bloc.add(
+            const GlobalSearchTagFiltersApplied(tags: {'Carpeting'}),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchTagFilterCleared(tag: 'Carpeting'));
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having((s) => s.query, 'initial query', isEmpty),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'tag applied',
+            contains('Carpeting'),
+          ),
+          isA<GlobalSearchReady>()
+              .having((s) => s.selectedTags, 'tag cleared', isEmpty)
+              .having((s) => s.query, 'query preserved', isEmpty),
+        ],
+      );
+    });
+
+    group('GlobalSearchStarted resets selectedTags', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'clears selectedTags when GlobalSearchStarted is dispatched after tags were applied',
+        setUp: () {
+          fakeSupabase.setCurrentUser(null);
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            const GlobalSearchTagFiltersApplied(tags: {'Roofing'}),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchStarted());
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'tags applied',
+            contains('Roofing'),
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'tags reset on restart',
+            isEmpty,
           ),
         ],
       );
