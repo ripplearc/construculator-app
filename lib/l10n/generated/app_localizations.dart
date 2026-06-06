@@ -1521,6 +1521,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please enter a search term.'**
   String get globalSearchEmptyQueryMessage;
+
+  /// Accessibility label for the Tags filter chip on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by tags'**
+  String get globalSearchFilterTagsSemanticLabel;
+
+  /// Accessibility label for the × button that removes a single active tag filter chip
+  ///
+  /// In en, this message translates to:
+  /// **'Clear tag filter {tag}'**
+  String globalSearchClearTagFilterSemanticLabel(String tag);
+
+  /// Title of the Tags filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get globalSearchTagsSheetTitle;
+
+  /// Placeholder text in the search field inside the Tags filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Search by tag name'**
+  String get globalSearchTagsSheetSearchHint;
+
+  /// Label for the Clear all button in the Tags filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get globalSearchTagsSheetClearAll;
+
+  /// Label for the Apply button in the Tags filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get globalSearchTagsSheetApply;
 }
 
 class _AppLocalizationsDelegate

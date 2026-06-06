@@ -72,3 +72,30 @@ class GlobalSearchRecentRemoved extends GlobalSearchEvent {
 class GlobalSearchSuggestionsRequested extends GlobalSearchEvent {
   const GlobalSearchSuggestionsRequested();
 }
+
+/// Applies (or replaces) the active tag filter set.
+///
+/// Dispatched when the user taps Apply in the Tags filter sheet.
+/// An empty [tags] set clears the tag filter entirely.
+class GlobalSearchTagFiltersApplied extends GlobalSearchEvent {
+  /// The set of tags to apply as active filters.
+  final Set<String> tags;
+
+  const GlobalSearchTagFiltersApplied({required this.tags});
+
+  @override
+  List<Object?> get props => [tags];
+}
+
+/// Clears a single tag from the active tag filter set.
+///
+/// Dispatched when the user taps the × icon on an individual active tag chip.
+class GlobalSearchTagFilterCleared extends GlobalSearchEvent {
+  /// The tag value to remove from the active filter set.
+  final String tag;
+
+  const GlobalSearchTagFilterCleared({required this.tag});
+
+  @override
+  List<Object?> get props => [tag];
+}

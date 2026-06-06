@@ -800,4 +800,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get globalSearchEmptyQueryMessage => 'Please enter a search term.';
+
+  @override
+  String get globalSearchFilterTagsSemanticLabel => 'Filter by tags';
+
+  @override
+  String globalSearchClearTagFilterSemanticLabel(String tag) {
+    return 'Clear tag filter $tag';
+  }
+
+  @override
+  String get globalSearchTagsSheetTitle => 'Tags';
+
+  @override
+  String get globalSearchTagsSheetSearchHint => 'Search by tag name';
+
+  @override
+  String get globalSearchTagsSheetClearAll => 'Clear all';
+
+  @override
+  String get globalSearchTagsSheetApply => 'Apply';
 }

@@ -35,6 +35,8 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
 
   String _currentQuery = '';
 
+  Set<String> _selectedTags = const {};
+
   GlobalSearchBloc({required GlobalSearchRepository repository})
     : _repository = repository,
       super(const GlobalSearchInitial()) {
@@ -48,6 +50,8 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     on<GlobalSearchPerformed>(_onPerformed);
     on<GlobalSearchRecentRemoved>(_onRecentRemoved);
     on<GlobalSearchSuggestionsRequested>(_onSuggestionsRequested);
+    on<GlobalSearchTagFiltersApplied>(_onTagFiltersApplied);
+    on<GlobalSearchTagFilterCleared>(_onTagFilterCleared);
   }
 
   Future<void> _onStarted(
@@ -61,12 +65,14 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       _recentSearches = recentSearches;
       _suggestions = const [];
       _currentQuery = '';
+      _selectedTags = const {};
       emit(
         GlobalSearchReady(
           recentSearches: recentSearches,
           query: '',
           suggestions: const [],
           suggestionsLoading: false,
+          selectedTags: _selectedTags,
         ),
       );
     });
@@ -83,6 +89,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
         query: event.query,
         suggestions: _suggestions,
         suggestionsLoading: false,
+        selectedTags: _selectedTags,
       ),
     );
   }
@@ -100,7 +107,15 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     emit(GlobalSearchLoadInProgress(query: trimmedQuery));
 
     final result = await _repository.search(
-      SearchParams(query: trimmedQuery, scope: event.scope),
+      SearchParams(
+        query: trimmedQuery,
+        scope: event.scope,
+        // SearchParams accepts a single tag; sort for deterministic selection
+        // until CA-638 extends the API to support multi-tag filtering.
+        filterByTag: _selectedTags.isEmpty
+            ? null
+            : (_selectedTags.toList()..sort()).first,
+      ),
     );
 
     result.fold((failure) => emit(GlobalSearchLoadFailure(failure: failure)), (
@@ -159,6 +174,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
             query: _currentQuery,
             suggestions: _suggestions,
             suggestionsLoading: false,
+            selectedTags: _selectedTags,
           ),
         );
       },
@@ -175,6 +191,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
         query: _currentQuery,
         suggestions: _suggestions,
         suggestionsLoading: true,
+        selectedTags: _selectedTags,
       ),
     );
 
@@ -190,9 +207,44 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
             query: _currentQuery,
             suggestions: suggestions,
             suggestionsLoading: false,
+            selectedTags: _selectedTags,
           ),
         );
       },
+    );
+  }
+
+  void _onTagFiltersApplied(
+    GlobalSearchTagFiltersApplied event,
+    Emitter<GlobalSearchState> emit,
+  ) {
+    _selectedTags = Set.unmodifiable(event.tags);
+    emit(
+      GlobalSearchReady(
+        recentSearches: _recentSearches,
+        query: _currentQuery,
+        suggestions: _suggestions,
+        suggestionsLoading: false,
+        selectedTags: _selectedTags,
+      ),
+    );
+  }
+
+  void _onTagFilterCleared(
+    GlobalSearchTagFilterCleared event,
+    Emitter<GlobalSearchState> emit,
+  ) {
+    _selectedTags = Set.unmodifiable(
+      _selectedTags.where((t) => t != event.tag),
+    );
+    emit(
+      GlobalSearchReady(
+        recentSearches: _recentSearches,
+        query: _currentQuery,
+        suggestions: _suggestions,
+        suggestionsLoading: false,
+        selectedTags: _selectedTags,
+      ),
     );
   }
 }
