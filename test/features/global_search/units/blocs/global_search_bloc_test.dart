@@ -249,20 +249,21 @@ void main() {
         build: () => Modular.get<GlobalSearchBloc>(),
         act: (bloc) async {
           bloc.add(const GlobalSearchQueryUpdated(query: 'stale-query'));
-          // Await the debounced GlobalSearchReady emission before re-opening
-          // the screen, so the state sequence is deterministic.
-          await bloc.stream.first;
+          await bloc.stream.firstWhere((s) =>
+              s is GlobalSearchReady &&
+              s.query == 'stale-query' &&
+              !s.suggestionsLoading);
           bloc.add(const GlobalSearchStarted());
         },
         wait: const Duration(milliseconds: 310),
         expect: () => [
-          const GlobalSearchReady(recentSearches: [], query: 'stale-query'),
           isA<GlobalSearchReady>().having(
             (s) => s.query,
             'query is reset to empty on fresh start',
             isEmpty,
           ),
         ],
+        skip: 2,
       );
     });
 
@@ -678,18 +679,41 @@ void main() {
 
     group('GlobalSearchQueryUpdated', () {
       blocTest<GlobalSearchBloc, GlobalSearchState>(
-        'emits GlobalSearchReady with updated query and empty recentSearches',
+        'fetches suggestions on first non-empty query and emits filtered list',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.searchSuggestionsRpcFunction,
+            ['foundation', 'foundation repair', 'concrete'],
+          );
+        },
         build: () => Modular.get<GlobalSearchBloc>(),
         act: (bloc) =>
             bloc.add(const GlobalSearchQueryUpdated(query: 'foundation')),
         wait: const Duration(milliseconds: 310),
         expect: () => [
-          const GlobalSearchReady(recentSearches: [], query: 'foundation'),
+          isA<GlobalSearchReady>()
+              .having((s) => s.query, 'query', 'foundation')
+              .having((s) => s.suggestionsLoading, 'loading', isTrue),
+          isA<GlobalSearchReady>()
+              .having((s) => s.query, 'query', 'foundation')
+              .having((s) => s.suggestionsLoading, 'loading', isFalse)
+              .having(
+                (s) => s.suggestions,
+                'suggestions',
+                ['foundation', 'foundation repair'],
+              ),
         ],
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
-        'emits GlobalSearchReady with empty query when query is cleared',
+        'emits empty suggestions list when query is cleared',
         build: () => Modular.get<GlobalSearchBloc>(),
         act: (bloc) => bloc.add(const GlobalSearchQueryUpdated(query: '')),
         wait: const Duration(milliseconds: 310),
@@ -697,15 +721,78 @@ void main() {
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
-        'does not make any Supabase calls when query is updated',
-        build: () => Modular.get<GlobalSearchBloc>(),
-        act: (bloc) =>
-            bloc.add(const GlobalSearchQueryUpdated(query: 'concrete')),
-        wait: const Duration(milliseconds: 310),
-        verify: (_) {
-          expect(fakeSupabase.getMethodCallsFor('rpc'), isEmpty);
-          expect(fakeSupabase.getMethodCallsFor('selectMatch'), isEmpty);
+        'reuses cached raw suggestions on subsequent query updates with no extra RPC',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.searchSuggestionsRpcFunction,
+            ['Carpentry', 'Carparking', 'Plumbing', 'Concrete'],
+          );
         },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchQueryUpdated(query: 'Car'));
+          await bloc.stream.firstWhere((s) =>
+              s is GlobalSearchReady && !s.suggestionsLoading);
+          bloc.add(const GlobalSearchQueryUpdated(query: 'Con'));
+        },
+        wait: const Duration(milliseconds: 700),
+        verify: (_) {
+          final rpcCalls = fakeSupabase
+              .getMethodCallsFor('rpc')
+              .where(
+                (call) =>
+                    call['functionName'] ==
+                    DatabaseConstants.searchSuggestionsRpcFunction,
+              );
+          expect(rpcCalls, hasLength(1));
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'caps the filtered suggestions list at 5 items',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.searchSuggestionsRpcFunction,
+            [
+              'C1',
+              'C2',
+              'C3',
+              'C4',
+              'C5',
+              'C6',
+              'C7',
+            ],
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchQueryUpdated(query: 'C')),
+        wait: const Duration(milliseconds: 310),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.suggestionsLoading,
+            'loading',
+            isTrue,
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.suggestions,
+            'suggestions capped at 5',
+            ['C1', 'C2', 'C3', 'C4', 'C5'],
+          ),
+        ],
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
@@ -721,6 +808,10 @@ void main() {
           fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
             _fakeSearchHistoryData(userId: _testUserId, searchTerm: 'steel'),
           ]);
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.searchSuggestionsRpcFunction,
+            <String>[],
+          );
         },
         build: () => Modular.get<GlobalSearchBloc>(),
         act: (bloc) async {
@@ -733,7 +824,7 @@ void main() {
           });
           bloc.add(const GlobalSearchQueryUpdated(query: 'concrete'));
         },
-        wait: const Duration(milliseconds: 310),
+        wait: const Duration(milliseconds: 700),
         expect: () => [
           isA<GlobalSearchReady>().having(
             (s) => s.recentSearches,
@@ -742,9 +833,17 @@ void main() {
           ),
           isA<GlobalSearchReady>()
               .having((s) => s.query, 'query after QueryUpdated', 'concrete')
+              .having((s) => s.suggestionsLoading, 'loading', isTrue)
               .having(
                 (s) => s.recentSearches,
-                'recentSearches preserved after QueryUpdated',
+                'recentSearches preserved during fetch',
+                contains('steel'),
+              ),
+          isA<GlobalSearchReady>()
+              .having((s) => s.suggestionsLoading, 'loading', isFalse)
+              .having(
+                (s) => s.recentSearches,
+                'recentSearches preserved after fetch',
                 contains('steel'),
               ),
         ],
@@ -753,7 +852,7 @@ void main() {
 
     group('GlobalSearchSuggestionsRequested', () {
       blocTest<GlobalSearchBloc, GlobalSearchState>(
-        'emits [GlobalSearchReady loading, GlobalSearchReady with suggestions] when RPC succeeds',
+        'emits empty suggestions list when no query is set',
         setUp: () {
           fakeSupabase.setCurrentUser(
             FakeUser(
@@ -776,11 +875,7 @@ void main() {
             isTrue,
           ),
           isA<GlobalSearchReady>()
-              .having(
-                (s) => s.suggestions,
-                'suggestions',
-                containsAll(['foundation', 'concrete mix', 'steel frame']),
-              )
+              .having((s) => s.suggestions, 'suggestions', isEmpty)
               .having(
                 (s) => s.suggestionsLoading,
                 'suggestionsLoading',
