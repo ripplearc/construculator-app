@@ -1257,6 +1257,21 @@
     "description": "Label for the Type filter chip on the global search screen",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
   },
+  "globalSearchSuggestionsTitle": "Search suggestions",
+  "@globalSearchSuggestionsTitle": {
+    "description": "Section title shown above the suggestions list on the global search screen when the user has typed a query",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "globalSearchSuggestionFillSemanticLabel": "Fill search field with {term}",
+  "@globalSearchSuggestionFillSemanticLabel": {
+    "description": "Accessibility label for the trailing icon on a suggestion row — fills the search field with the suggested term",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design",
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
   "globalSearchEmptyRecentMessage": "No recent searches available",
   "@globalSearchEmptyRecentMessage": {
     "description": "Message shown when there are no recent searches on the global search screen",

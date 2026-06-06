@@ -1576,6 +1576,18 @@ abstract class AppLocalizations {
   /// **'Failed to remove recent search. Please try again.'**
   String get globalSearchDeleteErrorMessage;
 
+  /// Section title shown above the suggestions list when the user has typed a query
+  ///
+  /// In en, this message translates to:
+  /// **'Search suggestions'**
+  String get globalSearchSuggestionsTitle;
+
+  /// Accessibility label for the trailing icon on a suggestion row
+  ///
+  /// In en, this message translates to:
+  /// **'Fill search field with {term}'**
+  String globalSearchSuggestionFillSemanticLabel(String term);
+
   /// Warning toast shown when loading search suggestions fails
   ///
   /// In en, this message translates to:

@@ -827,6 +827,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Failed to remove recent search. Please try again.';
 
   @override
+  String get globalSearchSuggestionsTitle => 'Search suggestions';
+
+  @override
+  String globalSearchSuggestionFillSemanticLabel(String term) {
+    return 'Fill search field with $term';
+  }
+
+  @override
   String get globalSearchSuggestionsErrorMessage =>
       'Could not load suggestions.';
 
