@@ -91,10 +91,8 @@ void main() {
     });
 
     testWidgets('asserts when recentSearches is empty', (tester) async {
-      expect(
-        () => tester.pumpWidget(makeTestableWidget(recentSearches: const [])),
-        throwsAssertionError,
-      );
+      await tester.pumpWidget(makeTestableWidget(recentSearches: const []));
+      expect(tester.takeException(), isA<AssertionError>());
     });
   });
 }

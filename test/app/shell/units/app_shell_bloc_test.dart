@@ -25,6 +25,7 @@ void main() {
   group('AppShellBloc', () {
     blocTest<AppShellBloc, AppShellState>(
       'emits home tab loaded after AppShellInitialized',
+      // ignore: no_direct_instantiation
       build: () => AppShellBloc(moduleLoader: tabModuleManager),
       act: (b) => b.add(const AppShellInitialized()),
       expect: () => [
@@ -42,6 +43,8 @@ void main() {
         const AppShellTabSelected(2),
         equals(const AppShellTabSelected(2)),
       );
+      expect(const AppShellInitialized().props, isEmpty);
+      expect(const AppShellInitialized(), equals(const AppShellInitialized()));
     });
 
     test('state copyWith preserves values when parameters are omitted', () {

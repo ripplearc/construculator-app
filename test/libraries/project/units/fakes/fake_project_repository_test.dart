@@ -288,6 +288,159 @@ void main() {
     });
   });
 
+  group('Project List Retrieval', () {
+    test('getProjects should return accessible projects', () async {
+      final project1 = createFakeProject(id: 'p1');
+      final project2 = createFakeProject(id: 'p2');
+      fakeRepository.addProject('p1', project1);
+      fakeRepository.addProject('p2', project2);
+
+      final results = await fakeRepository.getProjects('user-1');
+
+      expect(results, hasLength(2));
+      expect(results.map((p) => p.id), containsAll(['p1', 'p2']));
+    });
+
+    test('getProjects should track method calls with userId', () async {
+      await fakeRepository.getProjects('user-abc');
+
+      final calls = fakeRepository.getMethodCallsFor('getProjects');
+      expect(calls, hasLength(1));
+      expect(calls.first['userId'], equals('user-abc'));
+    });
+
+    test('getProjects should throw ServerException when configured', () async {
+      fakeRepository.shouldThrowOnGetProjects = true;
+      fakeRepository.getProjectsErrorMessage = 'List failed';
+
+      expect(
+        () => fakeRepository.getProjects('user-1'),
+        throwsA(isA<ServerException>()),
+      );
+    });
+
+    test('getProjects should throw TimeoutException when configured', () async {
+      fakeRepository.shouldThrowOnGetProjects = true;
+      fakeRepository.getProjectsExceptionType = SupabaseExceptionType.timeout;
+
+      expect(
+        () => fakeRepository.getProjects('user-1'),
+        throwsA(isA<TimeoutException>()),
+      );
+    });
+
+    test('setAccessibleProjects replaces the project list', () async {
+      fakeRepository.addProject('old', createFakeProject(id: 'old'));
+
+      fakeRepository.setAccessibleProjects([
+        createFakeProject(id: 'new-1'),
+        createFakeProject(id: 'new-2'),
+      ]);
+
+      final results = await fakeRepository.getProjects('user-1');
+      expect(results.map((p) => p.id), containsAll(['new-1', 'new-2']));
+      expect(results.any((p) => p.id == 'old'), isFalse);
+    });
+  });
+
+  group('watchProjects', () {
+    test('emits initial project list', () async {
+      final project = createFakeProject(id: 'watch-1');
+      fakeRepository.addProject('watch-1', project);
+
+      await expectLater(
+        fakeRepository.watchProjects('user-1').first,
+        completion(contains(project)),
+      );
+    });
+
+    test('tracks method calls with userId', () async {
+      await fakeRepository.watchProjects('user-abc').first;
+
+      final calls = fakeRepository.getMethodCallsFor('watchProjects');
+      expect(calls, hasLength(1));
+      expect(calls.first['userId'], equals('user-abc'));
+    });
+
+    test('emits error when configured', () {
+      fakeRepository.shouldThrowOnWatchProjects = true;
+      fakeRepository.watchProjectsErrorMessage = 'Watch failed';
+
+      expect(
+        fakeRepository.watchProjects('user-1'),
+        emitsError(isA<ServerException>()),
+      );
+    });
+
+    test('emitProjectsUpdate does not throw', () {
+      expect(() => fakeRepository.emitProjectsUpdate(), returnsNormally);
+    });
+
+    test('emitProjectsError does not throw', () {
+      expect(
+        () => fakeRepository.emitProjectsError(Exception('stream error')),
+        returnsNormally,
+      );
+    });
+  });
+
+  group('Project Permissions', () {
+    test('getProjectPermissions returns empty list by default', () {
+      final perms = fakeRepository.getProjectPermissions('project-1');
+      expect(perms, isEmpty);
+    });
+
+    test('setProjectPermissions and getProjectPermissions', () {
+      fakeRepository.setProjectPermissions('project-1', ['read', 'write']);
+
+      final perms = fakeRepository.getProjectPermissions('project-1');
+      expect(perms, containsAll(['read', 'write']));
+    });
+
+    test('hasProjectPermission returns true when permission exists', () {
+      fakeRepository.setProjectPermissions('project-1', ['admin']);
+
+      expect(fakeRepository.hasProjectPermission('project-1', 'admin'), isTrue);
+    });
+
+    test('hasProjectPermission returns false when permission absent', () {
+      fakeRepository.setProjectPermissions('project-1', ['read']);
+
+      expect(fakeRepository.hasProjectPermission('project-1', 'write'), isFalse);
+    });
+
+    test('hasProjectPermission returns false for unknown project', () {
+      expect(fakeRepository.hasProjectPermission('unknown', 'read'), isFalse);
+    });
+
+    test('clearProjectPermissions removes permissions for a project', () {
+      fakeRepository.setProjectPermissions('project-1', ['read']);
+      fakeRepository.clearProjectPermissions('project-1');
+
+      expect(fakeRepository.getProjectPermissions('project-1'), isEmpty);
+    });
+
+    test('permission method calls are tracked', () {
+      fakeRepository.setProjectPermissions('project-1', ['read']);
+      fakeRepository.getProjectPermissions('project-1');
+      fakeRepository.hasProjectPermission('project-1', 'read');
+
+      expect(fakeRepository.getMethodCallsFor('getProjectPermissions'), hasLength(1));
+      expect(fakeRepository.getMethodCallsFor('hasProjectPermission'), hasLength(1));
+    });
+  });
+
+  group('Lifecycle', () {
+    test('dispose closes the stream controller', () {
+      fakeRepository.dispose();
+
+      expect(
+        () => fakeRepository.emitProjectsUpdate(),
+        returnsNormally,
+      );
+    });
+  });
+
   group('Repository Reset', () {
     test('reset should clear all configurations and data', () async {
       final testProject = createFakeProject(id: 'test-id');
