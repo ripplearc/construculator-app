@@ -77,22 +77,6 @@ filter_coverage_tracefile() {
     --ignore-errors unused
 }
 
-build_extract_patterns_from_tracefile() {
-  local tracefile="$1"
-  local changed_files="$2"
-
-  local covered_sources
-  covered_sources=$(grep '^SF:' "$tracefile" | cut -d: -f2- || true)
-
-  local file
-  while IFS= read -r file; do
-    [[ -z "$file" ]] && continue
-    if printf '%s\n' "$covered_sources" | grep -Fxq "$file" || printf '%s\n' "$covered_sources" | grep -Fxq "$PWD/$file"; then
-      printf '*/%s\n' "$file"
-    fi
-  done <<< "$changed_files"
-}
-
 pre_check() {
   echo "🚀 Running Pre-check..."
 
@@ -157,15 +141,38 @@ pre_check() {
       filter_coverage_tracefile "coverage/lcov.info"
 
       local changed_source_files
-      changed_source_files=$(git diff --name-only --diff-filter=d "$base_commit" HEAD -- 'lib/**/*.dart' | grep -v -E '(\.g\.dart$|\.freezed\.dart$|/generated/|/l10n/)' || true)
+      changed_source_files=$(git diff --name-only --diff-filter=A "$base_commit" HEAD -- 'lib/*.dart' 'lib/**/*.dart' \
+        | grep -v -E '(\.g\.dart$|\.freezed\.dart$|/generated/|/l10n/)' \
+        | while IFS= read -r f; do
+            head -1 "$f" 2>/dev/null | grep -q '// coverage:ignore-file' || echo "$f"
+          done || true)
 
       if [[ -z "$changed_source_files" ]]; then
         echo "✅ No changed source files in lib/. Skipping coverage threshold check for --pre."
       else
+        local covered_sources
+        covered_sources=$(grep '^SF:' "coverage/lcov.info" | cut -d: -f2- || true)
+
         local extract_patterns=()
+        local missing_files=()
+
         while IFS= read -r file; do
-          [[ -n "$file" ]] && extract_patterns+=("$file")
-        done < <(build_extract_patterns_from_tracefile "coverage/lcov.info" "$changed_source_files")
+          [[ -z "$file" ]] && continue
+          if printf '%s\n' "$covered_sources" | grep -Fxq "$file" || printf '%s\n' "$covered_sources" | grep -Fxq "$PWD/$file"; then
+            extract_patterns+=("*/$file")
+          else
+            missing_files+=("$file")
+          fi
+        done <<< "$changed_source_files"
+
+        if [[ ${#missing_files[@]} -gt 0 ]]; then
+          echo "❌ The following changed source files have zero coverage and are absent from lcov.info:"
+          for missing in "${missing_files[@]}"; do
+            echo "  - $missing"
+          done
+          echo "Every new or modified lib/**/*.dart file must be exercised by at least one test."
+          exit 1
+        fi
 
         if [[ ${#extract_patterns[@]} -eq 0 ]]; then
           echo "✅ No changed source files with coverage records. Skipping coverage threshold check."
@@ -195,6 +202,41 @@ pre_check() {
     else
       echo "❌ Coverage file missing"
       exit 1
+    fi
+  fi
+
+  if [[ -z "$changed_tests" ]]; then
+    local changed_source_files_all
+    changed_source_files_all=$(git diff --name-only --diff-filter=A "$base_commit" HEAD -- 'lib/*.dart' 'lib/**/*.dart' \
+      | grep -v -E '(\.g\.dart$|\.freezed\.dart$|/generated/|/l10n/)' \
+      | while IFS= read -r f; do
+          head -1 "$f" 2>/dev/null | grep -q '// coverage:ignore-file' || echo "$f"
+        done || true)
+
+    if [[ -n "$changed_source_files_all" ]]; then
+      local covered_all=""
+      if [[ -s "coverage/lcov.info" ]]; then
+        covered_all=$(grep '^SF:' "coverage/lcov.info" | cut -d: -f2- || true)
+      fi
+
+      local uncovered_files=()
+      while IFS= read -r file; do
+        [[ -z "$file" ]] && continue
+        if [[ -z "$covered_all" ]] || \
+           { ! printf '%s\n' "$covered_all" | grep -Fxq "$file" && \
+             ! printf '%s\n' "$covered_all" | grep -Fxq "$PWD/$file"; }; then
+          uncovered_files+=("$file")
+        fi
+      done <<< "$changed_source_files_all"
+
+      if [[ ${#uncovered_files[@]} -gt 0 ]]; then
+        echo "❌ The following changed source files have zero coverage (not found in any tracefile):"
+        for f in "${uncovered_files[@]}"; do
+          echo "  - $f"
+        done
+        echo "Every new or modified lib/**/*.dart file must be exercised by at least one test."
+        exit 1
+      fi
     fi
   fi
 }
