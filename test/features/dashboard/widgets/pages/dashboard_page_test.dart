@@ -1,4 +1,3 @@
-import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -21,6 +20,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+import '../../../../utils/dashboard_shell_test_module.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 
@@ -50,7 +50,7 @@ void main() {
     final bootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
-    Modular.init(DashboardModule(bootstrap));
+    Modular.init(DashboardShellTestModule(bootstrap));
 
     Modular.replaceInstance<AuthNotifierController>(authNotifier);
     Modular.replaceInstance<AuthNotifier>(authNotifier);
