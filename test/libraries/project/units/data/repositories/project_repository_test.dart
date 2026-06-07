@@ -176,20 +176,10 @@ void main() {
 
     group('watchProjects', () {
       test('emits empty list when userId is empty', () async {
-        final emittedBatches = <List<Project>>[];
-        final emissionReceived = Completer<void>();
-        final subscription = repository.watchProjects('').listen((batch) {
-          emittedBatches.add(batch);
-          if (!emissionReceived.isCompleted) {
-            emissionReceived.complete();
-          }
-        });
-
-        await emissionReceived.future;
-        await subscription.cancel();
-
-        expect(emittedBatches, hasLength(1));
-        expect(emittedBatches.single, isEmpty);
+        await expectLater(
+          repository.watchProjects(''),
+          emits(isEmpty),
+        );
       });
 
       test(
@@ -220,22 +210,19 @@ void main() {
             },
           ]);
 
-          final emittedBatches = <List<Project>>[];
-          final firstEmissionReceived = Completer<void>();
-          final secondEmissionReceived = Completer<void>();
-          var emissionCount = 0;
-          final subscription = repository.watchProjects(userId).listen((batch) {
-            emittedBatches.add(batch);
-            emissionCount++;
-            if (emissionCount == 1) {
-              firstEmissionReceived.complete();
-            } else if (emissionCount >= 2 &&
-                !secondEmissionReceived.isCompleted) {
-              secondEmissionReceived.complete();
-            }
-          });
+          final firstEmission = Completer<List<Project>>();
+          final subscription = repository.watchProjects(userId).listen(
+            (projects) {
+              if (!firstEmission.isCompleted) firstEmission.complete(projects);
+            },
+          );
 
-          await firstEmissionReceived.future;
+          final initial = await firstEmission.future;
+          expect(initial.length, 2);
+          expect(
+            initial.firstWhere((p) => p.id == 'shared-project').projectName,
+            'Shared V1',
+          );
 
           supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
             _projectRow(
@@ -252,18 +239,20 @@ void main() {
             ),
           ]);
 
-          await secondEmissionReceived.future;
+          await expectLater(
+            repository.watchProjects(userId),
+            emitsThrough(
+              isA<List<Project>>().having(
+                (projects) => projects
+                    .firstWhere((p) => p.id == 'shared-project')
+                    .projectName,
+                'shared projectName',
+                'Shared V2',
+              ),
+            ),
+          );
 
           await subscription.cancel();
-
-          expect(emittedBatches.length, greaterThanOrEqualTo(2));
-          expect(emittedBatches.first.length, 2);
-          expect(
-            emittedBatches.last
-                .firstWhere((project) => project.id == 'shared-project')
-                .projectName,
-            'Shared V2',
-          );
         },
       );
 
@@ -271,31 +260,27 @@ void main() {
         const userId = 'user-123';
 
         final firstEmission = Completer<void>();
-        final errorReceived = Completer<void>();
-        final subscription = repository
-            .watchProjects(userId)
-            .listen(
-              (_) {
-                if (!firstEmission.isCompleted) firstEmission.complete();
-              },
-              onError: (Object error, _) {
-                expect(error, isA<Exception>());
-                if (!errorReceived.isCompleted) errorReceived.complete();
-              },
-            );
+        final subscription = repository.watchProjects(userId).listen(
+          (_) { if (!firstEmission.isCompleted) firstEmission.complete(); },
+          onError: (Object _, StackTrace __) {},
+        );
 
         await firstEmission.future;
 
         supabaseWrapper.shouldEmitStreamErrors = true;
         supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
-           _projectRow(
-              id: 'owned-project',
-              projectName: 'Owned',
-              creatorUserId: 'user-123',
-            ),
+          _projectRow(
+            id: 'owned-project',
+            projectName: 'Owned',
+            creatorUserId: 'user-123',
+          ),
         ]);
 
-        await errorReceived.future;
+        await expectLater(
+          repository.watchProjects(userId),
+          emitsError(isA<Exception>()),
+        );
+
         await subscription.cancel();
       });
 
