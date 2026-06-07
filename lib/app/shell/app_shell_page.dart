@@ -4,6 +4,7 @@ import 'package:construculator/app/shell/widgets/tab_navigator.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
@@ -99,6 +100,18 @@ class _AppShellPageState extends State<AppShellPage> {
             centerTitle: true,
             titleSpacing: 0,
             title: Text(context.l10n.appTitle),
+            actions: [
+              CoreIconWidget(
+                icon: CoreIcons.search,
+                semanticLabel: context.l10n.dashboardSearchSemanticLabel,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const GlobalSearchPage(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: CoreSpacing.space4),
+            ],
           ),
         ),
       );

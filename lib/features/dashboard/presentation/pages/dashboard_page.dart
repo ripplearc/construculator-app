@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
@@ -20,14 +22,17 @@ class _DashboardPageState extends State<DashboardPage> {
   final authManager = Modular.get<AuthManager>();
   String userInfo = '...';
   final AppRouter _router = Modular.get<AppRouter>();
+  StreamSubscription<dynamic>? _profileSubscription;
+
   @override
   void dispose() {
+    _profileSubscription?.cancel();
     super.dispose();
   }
 
   @override
   void initState() {
-    notifier.onUserProfileChanged.listen((event) {
+    _profileSubscription = notifier.onUserProfileChanged.listen((event) {
       if (event == null) {
         final cred = authManager.getCurrentCredentials();
         _router.navigate(fullCreateAccountRoute, arguments: cred.data?.email);
@@ -58,6 +63,7 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     final typography = context.textTheme;
+    final l10n = context.l10n;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(CoreSpacing.space6),
       child: Column(
@@ -73,13 +79,13 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
                 const SizedBox(height: CoreSpacing.space6),
                 Text(
-                  'Welcome back, $userInfo',
+                  l10n.dashboardWelcomeMessage(userInfo),
                   textAlign: TextAlign.center,
                   style: typography.headlineMediumSemiBold,
                 ),
                 const SizedBox(height: CoreSpacing.space2),
                 Text(
-                  'You are now logged in to your account',
+                  l10n.dashboardLoggedInSubtitle,
                   textAlign: TextAlign.center,
                   style: typography.bodyLargeRegular,
                 ),
@@ -93,7 +99,6 @@ class _DashboardPageState extends State<DashboardPage> {
           Center(
             child: CoreButton(
               onPressed: () {
-                final authManager = Modular.get<AuthManager>();
                 authManager.logout();
                 _router.navigate(fullLoginRoute);
               },

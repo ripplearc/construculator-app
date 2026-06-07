@@ -757,4 +757,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get globalSearchSuggestionsErrorMessage =>
       'Could not load suggestions.';
+
+  @override
+  String dashboardWelcomeMessage(String name) {
+    return 'Welcome back, $name';
+  }
+
+  @override
+  String get dashboardLoggedInSubtitle =>
+      'You are now logged in to your account';
 }
