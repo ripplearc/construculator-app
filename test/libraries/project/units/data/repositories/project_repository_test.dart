@@ -6,7 +6,6 @@ import 'package:construculator/libraries/project/domain/entities/project_entity.
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
-import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -21,19 +20,18 @@ void main() {
   late AppBootstrap bootstrap;
   late ProjectRepository repository;
 
-  setUp(() {
+  setUpAll(() {
     clock = FakeClockImpl(DateTime(2025, 10, 1, 10, 30));
-    bootstrap = FakeAppBootstrapFactory.create(
-      supabaseWrapper: FakeSupabaseWrapper(clock: clock),
-    );
+  });
+
+  setUp(() {
+    supabaseWrapper = FakeSupabaseWrapper(clock: clock);
+    bootstrap = FakeAppBootstrapFactory.create(supabaseWrapper: supabaseWrapper);
     Modular.init(_TestModule(bootstrap, clock));
-    supabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
-    supabaseWrapper.reset();
     repository = Modular.get<ProjectRepository>();
   });
 
   tearDown(() {
-    supabaseWrapper.reset();
     Modular.destroy();
   });
 
