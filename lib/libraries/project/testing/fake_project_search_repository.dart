@@ -13,13 +13,48 @@ class FakeProjectSearchRepository implements ProjectSearchRepository {
 
   final List<Project> _searchResults = [];
 
+  /// Recent search terms returned by [getRecentProjectSearches] on success.
+  final List<String> _recentSearches = [];
+
+  /// Suggestion terms returned by [getProjectSearchSuggestions] on success.
+  final List<String> _suggestions = [];
+
   /// Controls whether [searchProjects] throws an exception.
   bool shouldThrowOnSearchProjects = false;
 
   /// Used to specify the type of exception thrown by [searchProjects].
   SupabaseExceptionType? searchProjectsExceptionType;
 
-  /// Used to specify the Postgres error code thrown by [searchProjects].
+  /// Controls whether [saveRecentProjectSearch] throws an exception.
+  bool shouldThrowOnSaveRecent = false;
+
+  /// Used to specify the type of exception thrown by
+  /// [saveRecentProjectSearch].
+  SupabaseExceptionType? saveRecentExceptionType;
+
+  /// Controls whether [getRecentProjectSearches] throws an exception.
+  bool shouldThrowOnGetRecent = false;
+
+  /// Used to specify the type of exception thrown by
+  /// [getRecentProjectSearches].
+  SupabaseExceptionType? getRecentExceptionType;
+
+  /// Controls whether [deleteRecentProjectSearch] throws an exception.
+  bool shouldThrowOnDeleteRecent = false;
+
+  /// Used to specify the type of exception thrown by
+  /// [deleteRecentProjectSearch].
+  SupabaseExceptionType? deleteRecentExceptionType;
+
+  /// Controls whether [getProjectSearchSuggestions] throws an exception.
+  bool shouldThrowOnGetSuggestions = false;
+
+  /// Used to specify the type of exception thrown by
+  /// [getProjectSearchSuggestions].
+  SupabaseExceptionType? getSuggestionsExceptionType;
+
+  /// Used to specify the Postgres error code shared across all configured
+  /// PostgrestException paths.
   PostgresErrorCode? postgrestErrorCode;
 
   /// Controls whether operations should be delayed.
@@ -57,14 +92,116 @@ class FakeProjectSearchRepository implements ProjectSearchRepository {
     }
 
     if (shouldThrowOnSearchProjects) {
-      return Left(_failureForConfiguredException());
+      return Left(_failureForConfiguredException(searchProjectsExceptionType));
     }
 
     return Right(List<Project>.from(_searchResults));
   }
 
-  Failure _failureForConfiguredException() {
-    switch (searchProjectsExceptionType) {
+  @override
+  Future<Either<Failure, void>> saveRecentProjectSearch({
+    required String userId,
+    required String searchTerm,
+    bool hasResults = false,
+  }) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    _methodCalls.add({
+      'method': 'saveRecentProjectSearch',
+      'userId': userId,
+      'searchTerm': searchTerm,
+      'hasResults': hasResults,
+    });
+
+    if (userId.trim().isEmpty || searchTerm.trim().isEmpty) {
+      return Right(null);
+    }
+
+    if (shouldThrowOnSaveRecent) {
+      return Left(_failureForConfiguredException(saveRecentExceptionType));
+    }
+
+    return Right(null);
+  }
+
+  @override
+  Future<Either<Failure, List<String>>> getRecentProjectSearches({
+    required String userId,
+  }) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    _methodCalls.add({
+      'method': 'getRecentProjectSearches',
+      'userId': userId,
+    });
+
+    if (userId.trim().isEmpty) {
+      return Right([]);
+    }
+
+    if (shouldThrowOnGetRecent) {
+      return Left(_failureForConfiguredException(getRecentExceptionType));
+    }
+
+    return Right(List<String>.from(_recentSearches));
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteRecentProjectSearch({
+    required String userId,
+    required String searchTerm,
+  }) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    _methodCalls.add({
+      'method': 'deleteRecentProjectSearch',
+      'userId': userId,
+      'searchTerm': searchTerm,
+    });
+
+    if (userId.trim().isEmpty || searchTerm.trim().isEmpty) {
+      return Right(null);
+    }
+
+    if (shouldThrowOnDeleteRecent) {
+      return Left(_failureForConfiguredException(deleteRecentExceptionType));
+    }
+
+    return Right(null);
+  }
+
+  @override
+  Future<Either<Failure, List<String>>> getProjectSearchSuggestions({
+    required String userId,
+  }) async {
+    if (shouldDelayOperations) {
+      await completer?.future;
+    }
+
+    _methodCalls.add({
+      'method': 'getProjectSearchSuggestions',
+      'userId': userId,
+    });
+
+    if (userId.trim().isEmpty) {
+      return Right([]);
+    }
+
+    if (shouldThrowOnGetSuggestions) {
+      return Left(_failureForConfiguredException(getSuggestionsExceptionType));
+    }
+
+    return Right(List<String>.from(_suggestions));
+  }
+
+  Failure _failureForConfiguredException(SupabaseExceptionType? type) {
+    switch (type) {
       case SupabaseExceptionType.timeout:
         return SearchFailure(errorType: SearchErrorType.timeoutError);
       case SupabaseExceptionType.socket:
@@ -93,6 +230,20 @@ class FakeProjectSearchRepository implements ProjectSearchRepository {
       ..addAll(projects);
   }
 
+  /// Sets the terms returned by [getRecentProjectSearches] on success.
+  void setRecentSearches(List<String> terms) {
+    _recentSearches
+      ..clear()
+      ..addAll(terms);
+  }
+
+  /// Sets the terms returned by [getProjectSearchSuggestions] on success.
+  void setSuggestions(List<String> terms) {
+    _suggestions
+      ..clear()
+      ..addAll(terms);
+  }
+
   /// Returns a list of all method calls.
   List<Map<String, dynamic>> getMethodCalls() => List.from(_methodCalls);
 
@@ -114,10 +265,20 @@ class FakeProjectSearchRepository implements ProjectSearchRepository {
   void reset() {
     shouldThrowOnSearchProjects = false;
     searchProjectsExceptionType = null;
+    shouldThrowOnSaveRecent = false;
+    saveRecentExceptionType = null;
+    shouldThrowOnGetRecent = false;
+    getRecentExceptionType = null;
+    shouldThrowOnDeleteRecent = false;
+    deleteRecentExceptionType = null;
+    shouldThrowOnGetSuggestions = false;
+    getSuggestionsExceptionType = null;
     postgrestErrorCode = null;
     shouldDelayOperations = false;
     completer = null;
     _searchResults.clear();
+    _recentSearches.clear();
+    _suggestions.clear();
     _methodCalls.clear();
   }
 }
