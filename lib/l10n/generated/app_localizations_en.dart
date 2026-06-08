@@ -766,4 +766,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dashboardLoggedInSubtitle =>
       'You are now logged in to your account';
+
+  @override
+  String get searchResultsMostRelevant => 'Most relevant';
+
+  @override
+  String searchResultsEmpty(String query) {
+    return 'No results for \"$query\"';
+  }
 }
