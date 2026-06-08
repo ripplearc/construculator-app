@@ -17,9 +17,24 @@ class DatabaseConstants {
   static const String projectMembersTable = 'project_members';
   static const String searchHistoryTable = 'search_history';
 
+  /// Table storing per-user project search history. Fully isolated from
+  /// [searchHistoryTable] (which serves Global Search) — neither feature reads
+  /// from nor writes to the other's table.
+  static const String projectSearchHistoryTable = 'project_search_history';
+
   // RPC function names
   static const String globalSearchRpcFunction = 'global_search';
   static const String searchSuggestionsRpcFunction = 'get_search_suggestions';
+
+  /// RPC returning up to 10 personalized project-search suggestion terms for
+  /// the authenticated user. Backend enforces `user_id == auth.uid()` and
+  /// raises `42501` on mismatch.
+  static const String projectSearchSuggestionsRpcFunction =
+      'get_project_search_suggestions';
+
+  /// Parameter name for the `user_id` argument of
+  /// [projectSearchSuggestionsRpcFunction].
+  static const String projectSearchSuggestionsUserIdParam = 'user_id';
 
   // RPC param values
   /// The scope value passed to the [globalSearchRpcFunction] RPC to restrict
@@ -62,6 +77,17 @@ class DatabaseConstants {
   /// Used with [SupabaseWrapper.upsert] onConflict parameter.
   static const String searchHistoryUpsertConflictColumns =
       '$userIdColumn,$searchTermColumn,$scopeColumn';
+
+  /// Unique constraint columns for [projectSearchHistoryTable] upsert.
+  /// Used with [SupabaseWrapper.upsert] onConflict parameter.
+  static const String projectSearchHistoryUpsertConflictColumns =
+      '$userIdColumn,$searchTermColumn';
+
+  /// Maximum number of recent project-search entries returned by
+  /// [ProjectSearchDataSource.getRecentProjectSearches]. Caps the in-memory
+  /// result size; row-count bounding at the DB level is delegated to a future
+  /// `limit` parameter on [SupabaseWrapper.selectMatch].
+  static const int recentProjectSearchesMaxResults = 50;
 
   // User profile columns (id field uses the shared idColumn above)
   static const String credentialIdColumn = 'credential_id';
