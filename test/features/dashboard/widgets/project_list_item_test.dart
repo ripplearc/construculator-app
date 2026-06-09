@@ -99,9 +99,14 @@ void main() {
 
   double borderWidthOf(WidgetTester tester) {
     final decorated = tester
-        .widgetList<Container>(find.byType(Container))
-        .firstWhere((container) {
-          final decoration = container.decoration;
+        .widgetList<Ink>(
+          find.descendant(
+            of: find.byType(ProjectListItem),
+            matching: find.byType(Ink),
+          ),
+        )
+        .firstWhere((ink) {
+          final decoration = ink.decoration;
           return decoration is BoxDecoration && decoration.border is Border;
         });
     final decoration = decorated.decoration as BoxDecoration;

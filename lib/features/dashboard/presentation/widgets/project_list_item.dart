@@ -60,7 +60,7 @@ class ProjectListItem extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(CoreSpacing.space3),
-        child: Container(
+        child: Ink(
           padding: const EdgeInsets.all(CoreSpacing.space4),
           decoration: BoxDecoration(
             color: colors.pageBackground,
