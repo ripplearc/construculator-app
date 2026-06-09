@@ -1,6 +1,6 @@
 import 'package:construculator/features/global_search/data/models/pagination_params_dto.dart';
 import 'package:construculator/features/global_search/data/models/search_params_dto.dart';
-import 'package:construculator/features/global_search/data/models/search_scope.dart';
+import 'package:construculator/libraries/global_search/data/search_scope_dto.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:construculator/features/global_search/data/data_source/interfaces/global_search_data_source.dart';
 import 'package:construculator/features/global_search/data/models/pagination_params_dto.dart';
 import 'package:construculator/features/global_search/data/models/search_params_dto.dart';
-import 'package:construculator/features/global_search/data/models/search_scope.dart';
+import 'package:construculator/libraries/global_search/data/search_scope_dto.dart';
 import 'package:construculator/features/global_search/domain/entities/search_params_entity.dart';
 import 'package:construculator/features/global_search/domain/entities/search_results.dart';
 import 'package:construculator/features/global_search/domain/entities/search_scope_entity.dart';

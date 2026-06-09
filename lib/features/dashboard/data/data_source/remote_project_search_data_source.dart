@@ -1,4 +1,5 @@
 import 'package:construculator/features/dashboard/data/data_source/interfaces/project_search_data_source.dart';
+import 'package:construculator/libraries/global_search/data/search_scope_dto.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/project/data/models/project_dto.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -23,7 +24,7 @@ class RemoteProjectSearchDataSource implements ProjectSearchDataSource {
         DatabaseConstants.globalSearchRpcFunction,
         params: {
           'query': query,
-          'scope': 'dashboard',
+          'scope': SearchScopeDto.dashboard.name,
           'offset': 0,
           'limit': 20,
           'filter_by_tag': null,
