@@ -9,13 +9,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 part 'dashboard_event.dart';
 part 'dashboard_state.dart';
 
-/// Manages the overall dashboard loading state.
-///
-/// Owns the current-project fetch and wires up project-switch reactivity via
-/// [CurrentProjectNotifier]. Dedicated blocs own sub-sections:
-///   - [RecentEstimationsBloc]: recent estimations (streaming)
-///   - TODO: future RecentCalculationsBloc for calculations
-///   - TODO: [CA-247] GetProjectFavoritesUseCase for favorites
 class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   final ProjectRepository _projectRepository;
   final CurrentProjectNotifier _currentProjectNotifier;

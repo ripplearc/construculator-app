@@ -31,12 +31,6 @@ class DashboardLoaded extends DashboardState {
 
   const DashboardLoaded({required this.currentProject});
 
-  DashboardLoaded copyWith({Project? currentProject}) {
-    return DashboardLoaded(
-      currentProject: currentProject ?? this.currentProject,
-    );
-  }
-
   @override
   List<Object?> get props => [currentProject];
 }

@@ -10,8 +10,7 @@ abstract class DashboardEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Triggers initial dashboard load — fetches the current project and wires
-/// up the project-change subscription.
+/// Triggers initial dashboard load.
 class DashboardLoadedEvent extends DashboardEvent {
   const DashboardLoadedEvent();
 }
@@ -27,9 +26,6 @@ class RecentCalculationsLoadedEvent extends DashboardEvent {
 }
 
 /// Requests a reload of recent estimations for the current project.
-///
-/// Note: recent estimations are reactively managed by [RecentEstimationsBloc].
-/// This event is a no-op in [DashboardBloc].
 class RecentEstimationsLoadedEvent extends DashboardEvent {
   const RecentEstimationsLoadedEvent();
 }
