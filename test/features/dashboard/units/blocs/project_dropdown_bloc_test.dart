@@ -1023,7 +1023,9 @@ void main() {
         act: (bloc) async {
           bloc.add(const ProjectDropdownStarted());
           await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
-          // Simulate a Supabase reconnect / keep-alive re-emission of same data
+          // Simulate a Supabase reconnect / keep-alive re-emission of same data.
+          // The dedup guard in _onProjectsUpdated skips the notifier and BLoC
+          // deduplicates the identical state, so no new stream event is emitted.
           seedProjectsTable([
             buildProjectMap(
               id: 'project-1',
@@ -1032,11 +1034,7 @@ void main() {
               updatedAt: DateTime(2025, 1, 1),
             ),
           ]);
-          await bloc.stream.firstWhere(
-            (s) =>
-                s is ProjectDropdownLoadSuccess &&
-                s.selectedProject!.projectName == 'P1',
-          );
+          await pumpEventQueue(); // flush microtasks so the event is processed
         },
         verify: (_) {
           // Guard prevents duplicate notifications on stream re-emission.
