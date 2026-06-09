@@ -873,7 +873,7 @@ void main() {
       );
 
       blocTest<ProjectDropdownBloc, ProjectDropdownState>(
-        'searchQuery in LoadFailure is carried into next LoadSuccess on re-subscribe',
+        'searchQuery resets to empty string on re-subscribe after LoadFailure',
         build: () {
           seedProjectsTable([
             buildProjectMap(
@@ -915,11 +915,9 @@ void main() {
             'my',
           ),
           const ProjectDropdownLoadInProgress(),
-          isA<ProjectDropdownLoadSuccess>().having(
-            (s) => s.projects.length,
-            'projects.length',
-            1,
-          ),
+          isA<ProjectDropdownLoadSuccess>()
+              .having((s) => s.projects.length, 'projects.length', 1)
+              .having((s) => s.searchQuery, 'searchQuery', ''),
         ],
       );
     });
