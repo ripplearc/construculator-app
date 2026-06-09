@@ -1,7 +1,8 @@
 import 'dart:async';
 
+import 'package:construculator/features/dashboard/domain/usecases/get_project_usecase.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
-import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,14 +11,14 @@ part 'dashboard_event.dart';
 part 'dashboard_state.dart';
 
 class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
-  final ProjectRepository _projectRepository;
+  final GetProjectUseCase _getProjectUseCase;
   final CurrentProjectNotifier _currentProjectNotifier;
   StreamSubscription<String?>? _projectSubscription;
 
   DashboardBloc({
-    required ProjectRepository projectRepository,
+    required GetProjectUseCase getProjectUseCase,
     required CurrentProjectNotifier currentProjectNotifier,
-  })  : _projectRepository = projectRepository,
+  })  : _getProjectUseCase = getProjectUseCase,
         _currentProjectNotifier = currentProjectNotifier,
         super(const DashboardInitial()) {
     on<DashboardLoadedEvent>(_onDashboardLoaded);
@@ -81,17 +82,16 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
 
     final projectId = _currentProjectNotifier.currentProjectId;
     if (projectId == null || projectId.isEmpty) {
-      emit(const DashboardError('No active project selected.'));
+      emit(DashboardError(UnexpectedFailure()));
       return;
     }
 
-    try {
-      final project = await _projectRepository.getProject(projectId);
-      // TODO: [CA-247] Fetch and include ProjectFavorites in DashboardLoaded.
-      emit(DashboardLoaded(currentProject: project));
-    } catch (e) {
-      emit(DashboardError(e.toString()));
-    }
+    final result = await _getProjectUseCase(projectId);
+    // TODO: [CA-247] Fetch and include ProjectFavorites in DashboardLoaded.
+    result.fold(
+      (failure) => emit(DashboardError(failure)),
+      (project) => emit(DashboardLoaded(currentProject: project)),
+    );
   }
 
   @override

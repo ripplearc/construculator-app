@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/dashboard_bloc/dashboard_bloc.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
@@ -75,7 +76,11 @@ void main() {
         act: (bloc) => bloc.add(const DashboardLoadedEvent()),
         expect: () => [
           const DashboardLoading(),
-          const DashboardError('No active project selected.'),
+          isA<DashboardError>().having(
+            (s) => s.failure,
+            'failure',
+            isA<UnexpectedFailure>(),
+          ),
         ],
       );
 
@@ -88,7 +93,11 @@ void main() {
         act: (bloc) => bloc.add(const DashboardLoadedEvent()),
         expect: () => [
           const DashboardLoading(),
-          const DashboardError('No active project selected.'),
+          isA<DashboardError>().having(
+            (s) => s.failure,
+            'failure',
+            isA<UnexpectedFailure>(),
+          ),
         ],
       );
 
@@ -102,9 +111,9 @@ void main() {
         expect: () => [
           const DashboardLoading(),
           isA<DashboardError>().having(
-            (s) => s.message,
-            'message',
-            isNotEmpty,
+            (s) => s.failure,
+            'failure',
+            isA<Failure>(),
           ),
         ],
       );
@@ -130,7 +139,11 @@ void main() {
         act: (bloc) => bloc.add(const DashboardRefreshedEvent()),
         expect: () => [
           const DashboardLoading(),
-          const DashboardError('No active project selected.'),
+          isA<DashboardError>().having(
+            (s) => s.failure,
+            'failure',
+            isA<UnexpectedFailure>(),
+          ),
         ],
       );
     });

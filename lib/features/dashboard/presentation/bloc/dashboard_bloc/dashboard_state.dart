@@ -37,11 +37,10 @@ class DashboardLoaded extends DashboardState {
 
 /// Emitted when any dashboard load operation fails.
 class DashboardError extends DashboardState {
-  /// Human-readable description of the failure.
-  final String message;
+  final Failure failure;
 
-  const DashboardError(this.message);
+  const DashboardError(this.failure);
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [failure];
 }
