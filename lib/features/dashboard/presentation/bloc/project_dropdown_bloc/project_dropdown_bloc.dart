@@ -203,6 +203,8 @@ class ProjectDropdownBloc
     emit(currentState.copyWith(selectedProject: selectedProject));
     // Notifier is updated after emit — consistent with _onProjectsUpdated —
     // so listeners reading the BLoC state see the committed state.
-    _currentProjectNotifier.setCurrentProjectId(selectedProject.id);
+    if (_currentProjectNotifier.currentProjectId != selectedProject.id) {
+      _currentProjectNotifier.setCurrentProjectId(selectedProject.id);
+    }
   }
 }
