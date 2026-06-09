@@ -76,13 +76,11 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
   }
 
   void _onCreateProject() {
-    // TODO: Wire to the create-project flow once it exists.
-    // https://ripplearc.youtrack.cloud/issue/CA-116
+    // TODO: [CA-116] Wire to the create-project flow once it exists. https://ripplearc.youtrack.cloud/issue/CA-116
   }
 
   void _onProjectSettings(Project project) {
-    // TODO: Navigate to project settings once the route exists.
-    // https://ripplearc.youtrack.cloud/issue/CA-116
+    // TODO: [CA-116] Navigate to project settings once the route exists. https://ripplearc.youtrack.cloud/issue/CA-116
   }
 
   @override
@@ -213,9 +211,6 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
     required String? selectedProjectId,
     bool errorBanner = false,
   }) {
-    final colors = context.colorTheme;
-    final typography = context.textTheme;
-
     return ConstrainedBox(
       constraints: const BoxConstraints(maxHeight: _kProjectsListMaxHeight),
       child: RefreshIndicator(
@@ -230,8 +225,8 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
                   padding: const EdgeInsets.only(bottom: CoreSpacing.space3),
                   child: Text(
                     context.l10n.projectsLoadError,
-                    style: typography.bodySmallRegular.copyWith(
-                      color: colors.statusError,
+                    style: context.textTheme.bodySmallRegular.copyWith(
+                      color: context.colorTheme.statusError,
                     ),
                   ),
                 ),

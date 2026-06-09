@@ -143,12 +143,7 @@ void main() {
       find.byKey(const Key('projects_search_field')),
       'material',
     );
-    await tester.runAsync(() async {
-      await bloc.stream.firstWhere(
-        (s) => s is ProjectDropdownLoadSuccess && s.searchQuery == 'material',
-      );
-    });
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.text('Material of building'), findsOneWidget);
     expect(find.text('My project'), findsNothing);
@@ -198,12 +193,7 @@ void main() {
     expect(find.text('My project'), findsOneWidget);
 
     fakeRepository.emitProjectsError(Exception('network down'));
-    await tester.runAsync(() async {
-      await bloc.stream.firstWhere(
-        (state) => state is ProjectDropdownLoadFailure,
-      );
-    });
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.text('My project'), findsOneWidget);
     expect(find.text(l10n.projectsLoadError), findsOneWidget);
