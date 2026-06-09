@@ -42,16 +42,16 @@ void main() {
       );
     });
 
-    group('searchProjects', () {
+    group('fetchProjectsBySearchQuery', () {
       test('returns empty list without calling RPC when query is empty', () async {
-        final result = await dataSource.searchProjects('');
+        final result = await dataSource.fetchProjectsBySearchQuery('');
 
         expect(result, isEmpty);
         expect(supabaseWrapper.getMethodCallsFor('rpc'), isEmpty);
       });
 
       test('returns empty list without calling RPC when query is whitespace', () async {
-        final result = await dataSource.searchProjects('   ');
+        final result = await dataSource.fetchProjectsBySearchQuery('   ');
 
         expect(result, isEmpty);
         expect(supabaseWrapper.getMethodCallsFor('rpc'), isEmpty);
@@ -70,7 +70,7 @@ void main() {
           },
         );
 
-        final result = await dataSource.searchProjects('alpha');
+        final result = await dataSource.fetchProjectsBySearchQuery('alpha');
 
         expect(result, hasLength(2));
         expect(result.first.id, equals('p-1'));
@@ -84,7 +84,7 @@ void main() {
           <String, dynamic>{},
         );
 
-        final result = await dataSource.searchProjects('anything');
+        final result = await dataSource.fetchProjectsBySearchQuery('anything');
 
         expect(result, isEmpty);
       });
@@ -95,7 +95,7 @@ void main() {
           {'projects': [], 'estimations': [], 'members': []},
         );
 
-        await dataSource.searchProjects('foundation');
+        await dataSource.fetchProjectsBySearchQuery('foundation');
 
         final calls = supabaseWrapper.getMethodCallsFor('rpc');
         expect(calls, hasLength(1));
@@ -116,7 +116,7 @@ void main() {
         supabaseWrapper.rpcExceptionType = SupabaseExceptionType.postgrest;
 
         await expectLater(
-          () => dataSource.searchProjects('test'),
+          () => dataSource.fetchProjectsBySearchQuery('test'),
           throwsA(isA<supabase.PostgrestException>()),
         );
       });
@@ -126,7 +126,7 @@ void main() {
         supabaseWrapper.rpcExceptionType = SupabaseExceptionType.socket;
 
         await expectLater(
-          () => dataSource.searchProjects('test'),
+          () => dataSource.fetchProjectsBySearchQuery('test'),
           throwsA(isA<SocketException>()),
         );
       });
@@ -136,7 +136,7 @@ void main() {
         supabaseWrapper.rpcExceptionType = SupabaseExceptionType.timeout;
 
         await expectLater(
-          () => dataSource.searchProjects('test'),
+          () => dataSource.fetchProjectsBySearchQuery('test'),
           throwsA(isA<Exception>()),
         );
       });

@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:construculator/features/dashboard/data/data_source/interfaces/project_search_data_source.dart';
 import 'package:construculator/libraries/global_search/data/search_scope_dto.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
@@ -14,11 +17,11 @@ class RemoteProjectSearchDataSource implements ProjectSearchDataSource {
   }) : _supabaseWrapper = supabaseWrapper;
 
   @override
-  Future<List<ProjectDto>> searchProjects(String query) async {
+  Future<List<ProjectDto>> fetchProjectsBySearchQuery(String query) async {
     if (query.trim().isEmpty) return [];
 
     try {
-      _logger.debug('Searching projects for query: $query');
+      _logger.debug('Fetching projects for query: $query');
 
       final response = await _supabaseWrapper.rpc<Map<String, dynamic>>(
         DatabaseConstants.globalSearchRpcFunction,
@@ -38,9 +41,19 @@ class RemoteProjectSearchDataSource implements ProjectSearchDataSource {
           .whereType<Map<String, dynamic>>()
           .map(ProjectDto.fromJson)
           .toList();
+    } on SocketException catch (error) {
+      _logger.warning(
+        'Network error fetching projects for query: $query, error: $error',
+      );
+      rethrow;
+    } on TimeoutException catch (error) {
+      _logger.warning(
+        'Timeout fetching projects for query: $query, error: $error',
+      );
+      rethrow;
     } catch (error, stackTrace) {
       _logger.error(
-        'Error searching projects for query: $query, error: $error',
+        'Unexpected error fetching projects for query: $query, error: $error',
         stackTrace.toString(),
       );
       rethrow;
