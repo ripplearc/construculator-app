@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:construculator/features/dashboard/domain/usecases/get_project_usecase.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,20 +11,18 @@ part 'dashboard_event.dart';
 part 'dashboard_state.dart';
 
 class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
-  final GetProjectUseCase _getProjectUseCase;
+  final ProjectRepository _projectRepository;
   final CurrentProjectNotifier _currentProjectNotifier;
   StreamSubscription<String?>? _projectSubscription;
 
   DashboardBloc({
-    required GetProjectUseCase getProjectUseCase,
+    required ProjectRepository projectRepository,
     required CurrentProjectNotifier currentProjectNotifier,
-  })  : _getProjectUseCase = getProjectUseCase,
+  })  : _projectRepository = projectRepository,
         _currentProjectNotifier = currentProjectNotifier,
         super(const DashboardInitial()) {
     on<DashboardLoadedEvent>(_onDashboardLoaded);
     on<DashboardRefreshedEvent>(_onDashboardRefreshed);
-    on<RecentCalculationsLoadedEvent>(_onRecentCalculationsLoaded);
-    on<RecentEstimationsLoadedEvent>(_onRecentEstimationsLoaded);
     on<FavoritesLoadedEvent>(_onFavoritesLoaded);
     on<_DashboardProjectChanged>(_onProjectChanged);
   }
@@ -41,22 +39,6 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     Emitter<DashboardState> emit,
   ) async {
     await _loadDashboard(emit);
-  }
-
-  Future<void> _onRecentCalculationsLoaded(
-    RecentCalculationsLoadedEvent event,
-    Emitter<DashboardState> emit,
-  ) async {
-    // TODO: future ticket — wire GetRecentCalculationsUseCase here once
-    // the Calculations library module and its use case are implemented.
-  }
-
-  Future<void> _onRecentEstimationsLoaded(
-    RecentEstimationsLoadedEvent event,
-    Emitter<DashboardState> emit,
-  ) async {
-    // Recent estimations are handled reactively by RecentEstimationsBloc.
-    // No action needed in DashboardBloc.
   }
 
   Future<void> _onFavoritesLoaded(
@@ -86,12 +68,13 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       return;
     }
 
-    final result = await _getProjectUseCase(projectId);
-    // TODO: [CA-247] Fetch and include ProjectFavorites in DashboardLoaded.
-    result.fold(
-      (failure) => emit(DashboardError(failure)),
-      (project) => emit(DashboardLoaded(currentProject: project)),
-    );
+    try {
+      final project = await _projectRepository.getProject(projectId);
+      // TODO: [CA-247] Fetch and include ProjectFavorites in DashboardLoaded.
+      emit(DashboardLoaded(currentProject: project));
+    } catch (_) {
+      emit(DashboardError(UnexpectedFailure()));
+    }
   }
 
   @override

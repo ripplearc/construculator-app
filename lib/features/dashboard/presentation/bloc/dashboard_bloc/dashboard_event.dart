@@ -20,16 +20,6 @@ class DashboardRefreshedEvent extends DashboardEvent {
   const DashboardRefreshedEvent();
 }
 
-/// Requests a reload of recent calculations for the current project.
-class RecentCalculationsLoadedEvent extends DashboardEvent {
-  const RecentCalculationsLoadedEvent();
-}
-
-/// Requests a reload of recent estimations for the current project.
-class RecentEstimationsLoadedEvent extends DashboardEvent {
-  const RecentEstimationsLoadedEvent();
-}
-
 /// Requests a reload of the user's favorites for the current project.
 class FavoritesLoadedEvent extends DashboardEvent {
   const FavoritesLoadedEvent();

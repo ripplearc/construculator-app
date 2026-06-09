@@ -113,7 +113,7 @@ void main() {
           isA<DashboardError>().having(
             (s) => s.failure,
             'failure',
-            isA<Failure>(),
+            isA<UnexpectedFailure>(),
           ),
         ],
       );
@@ -148,23 +148,9 @@ void main() {
       );
     });
 
-    group('stub events emit no state changes', () {
+    group('FavoritesLoadedEvent', () {
       blocTest<DashboardBloc, DashboardState>(
-        'RecentCalculationsLoadedEvent is a no-op',
-        build: () => Modular.get<DashboardBloc>(),
-        act: (bloc) => bloc.add(const RecentCalculationsLoadedEvent()),
-        expect: () => [],
-      );
-
-      blocTest<DashboardBloc, DashboardState>(
-        'RecentEstimationsLoadedEvent is a no-op',
-        build: () => Modular.get<DashboardBloc>(),
-        act: (bloc) => bloc.add(const RecentEstimationsLoadedEvent()),
-        expect: () => [],
-      );
-
-      blocTest<DashboardBloc, DashboardState>(
-        'FavoritesLoadedEvent is a no-op until CA-247',
+        'is a no-op until CA-247',
         build: () => Modular.get<DashboardBloc>(),
         act: (bloc) => bloc.add(const FavoritesLoadedEvent()),
         expect: () => [],
