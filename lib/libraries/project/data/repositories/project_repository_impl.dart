@@ -6,6 +6,7 @@ import 'package:construculator/libraries/project/data/data_source/interfaces/pro
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -13,6 +14,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 class ProjectRepositoryImpl implements ProjectRepository {
   final ProjectDataSource _projectDataSource;
   final ProjectPermissionDataSource _permissionDataSource;
+  final CurrentProjectNotifier _currentProjectNotifier;
   final Clock _clock;
   static final _logger = AppLogger().tag('ProjectRepositoryImpl');
   StreamController<List<Project>>? _projectsController;
@@ -22,12 +24,19 @@ class ProjectRepositoryImpl implements ProjectRepository {
   bool _isRefreshing = false;
   bool _hasPendingRefresh = false;
 
+  /// Creates a [ProjectRepositoryImpl].
+  ///
+  /// [projectDataSource] provides remote project data.
+  /// [permissionDataSource] provides JWT-based permission checks.
+  /// [currentProjectNotifier] is read in [findCurrentProjectForUser] to resolve the selected project id.
   ProjectRepositoryImpl({
     required ProjectDataSource projectDataSource,
     required ProjectPermissionDataSource permissionDataSource,
+    required CurrentProjectNotifier currentProjectNotifier,
     Clock? clock,
   }) : _projectDataSource = projectDataSource,
        _permissionDataSource = permissionDataSource,
+       _currentProjectNotifier = currentProjectNotifier,
        _clock = clock ?? Modular.get<Clock>();
 
   @override
@@ -114,11 +123,14 @@ class ProjectRepositoryImpl implements ProjectRepository {
         .listen(
           (_) => _refreshProjects(),
           onError: (Object error, StackTrace stackTrace) {
-            _logger.error(
-              'Error while watching project changes: $error',
+            // Degrade gracefully: log at warning level and do not propagate to
+            // _projectsController. The initial REST fetch already emitted the
+            // project list successfully; a Realtime failure (e.g. WebSocket 403)
+            // should not replace the loaded state with an error.
+            _logger.warning(
+              'Realtime subscription error — live updates unavailable: $error',
               stackTrace.toString(),
             );
-            _projectsController?.addError(error, stackTrace);
           },
         );
 
@@ -175,6 +187,26 @@ class ProjectRepositoryImpl implements ProjectRepository {
     _lastEmittedProjects = List<Project>.from(projects);
     if (_projectsController?.isClosed == false) {
       _projectsController?.add(projects);
+    }
+  }
+
+  @override
+  Future<Project?> findCurrentProjectForUser(String userId) async {
+    if (userId.isEmpty) return null;
+    final projectId = _currentProjectNotifier.currentProjectId;
+    if (projectId == null || projectId.isEmpty) return null;
+    try {
+      final projects = await getProjects(userId);
+      for (final project in projects) {
+        if (project.id == projectId) return project;
+      }
+      return null;
+    } catch (error, stackTrace) {
+      _logger.warning(
+        'Could not resolve current project for user $userId: $error',
+        stackTrace.toString(),
+      );
+      return null;
     }
   }
 

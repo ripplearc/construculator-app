@@ -1479,30 +1479,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not load suggestions.'**
   String get globalSearchSuggestionsErrorMessage;
-
-  /// Greeting shown at the top of the dashboard with the user's full name
-  ///
-  /// In en, this message translates to:
-  /// **'Welcome back, {name}'**
-  String dashboardWelcomeMessage(String name);
-
-  /// Subtitle shown below the welcome greeting on the dashboard
-  ///
-  /// In en, this message translates to:
-  /// **'You are now logged in to your account'**
-  String get dashboardLoggedInSubtitle;
-
-  /// Section header shown above the search results list
-  ///
-  /// In en, this message translates to:
-  /// **'Most relevant'**
-  String get searchResultsMostRelevant;
-
-  /// Empty state message shown when a search returns no results
-  ///
-  /// In en, this message translates to:
-  /// **'No results for \"{query}\"'**
-  String searchResultsEmpty(String query);
 }
 
 class _AppLocalizationsDelegate

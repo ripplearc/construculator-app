@@ -1226,35 +1226,5 @@
   "@globalSearchSuggestionsErrorMessage": {
     "description": "Warning toast shown when loading search suggestions fails",
     "context": "N/A"
-  },
-  "dashboardWelcomeMessage": "Welcome back, {name}",
-  "@dashboardWelcomeMessage": {
-    "description": "Greeting shown at the top of the dashboard with the user's full name",
-    "context": "N/A",
-    "placeholders": {
-      "name": {
-        "type": "String",
-        "example": "John Doe!"
-      }
-    }
-  },
-  "dashboardLoggedInSubtitle": "You are now logged in to your account",
-  "@dashboardLoggedInSubtitle": {
-    "description": "Subtitle shown below the welcome greeting on the dashboard",
-    "context": "N/A"
-  },
-  "searchResultsMostRelevant": "Most relevant",
-  "@searchResultsMostRelevant": {
-    "description": "Section header shown above the search results list"
-  },
-  "searchResultsEmpty": "No results for \"{query}\"",
-  "@searchResultsEmpty": {
-    "description": "Empty state message shown when a search returns no results",
-    "placeholders": {
-      "query": {
-        "type": "String",
-        "example": "Wall cost"
-      }
-    }
   }
 }

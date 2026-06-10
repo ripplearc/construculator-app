@@ -51,6 +51,7 @@ void _registerDependencies(Injector i) {
     () => ProjectRepositoryImpl(
       projectDataSource: Modular.get<ProjectDataSource>(),
       permissionDataSource: Modular.get<ProjectPermissionDataSource>(),
+      currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
     ),
     config: BindConfig(onDispose: (repository) => repository.dispose()),
   );

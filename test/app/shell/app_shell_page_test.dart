@@ -3,11 +3,13 @@ import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
+import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -32,9 +34,7 @@ void main() {
   });
 
   setUp(() {
-    fakeProjectNotifier = FakeCurrentProjectNotifier(
-      initialProjectId: '950e8400-e29b-41d4-a716-446655440001',
-    );
+    fakeProjectNotifier = FakeCurrentProjectNotifier();
     final fakeClock = FakeClockImpl();
     fakeSupabaseWrapper = FakeSupabaseWrapper(clock: fakeClock);
 
@@ -64,6 +64,7 @@ void main() {
     );
 
     Modular.replaceInstance<CurrentProjectNotifier>(fakeProjectNotifier);
+    Modular.replaceInstance<ProjectUIProvider>(_FakeProjectUIProvider());
   });
 
   tearDown(() {
@@ -256,11 +257,84 @@ void main() {
   });
 
   group('App Bar', () {
-    testWidgets('shows default app bar title', (tester) async {
+    testWidgets('shows static app title when no project is selected', (
+      tester,
+    ) async {
       await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text(l10n().appTitle), findsAtLeastNWidgets(1));
     });
+
+    testWidgets('hides static app title when a project id is set', (
+      tester,
+    ) async {
+      fakeProjectNotifier.setCurrentProjectId(
+        '950e8400-e29b-41d4-a716-446655440001',
+      );
+      await tester.pumpWidget(makeApp());
+      await tester.pump();
+
+      expect(find.text(l10n().appTitle), findsNothing);
+    });
+
+    testWidgets(
+      'switches to project app bar when project id is emitted via stream',
+      (tester) async {
+        await tester.pumpWidget(makeApp());
+        await tester.pump();
+        expect(find.text(l10n().appTitle), findsAtLeastNWidgets(1));
+
+        fakeProjectNotifier.setCurrentProjectId(
+          '950e8400-e29b-41d4-a716-446655440001',
+        );
+        await tester.pump();
+
+        expect(find.text(l10n().appTitle), findsNothing);
+        expect(
+          find.byKey(
+            const Key(
+              'project_app_bar_950e8400-e29b-41d4-a716-446655440001',
+            ),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('tapping search opens GlobalSearchPage', (tester) async {
+      fakeProjectNotifier.setCurrentProjectId(
+        '950e8400-e29b-41d4-a716-446655440001',
+      );
+      final fakeProvider = _FakeProjectUIProvider();
+      Modular.replaceInstance<ProjectUIProvider>(fakeProvider);
+
+      await tester.pumpWidget(makeApp());
+      await tester.pump();
+
+      fakeProvider.capturedOnSearchTap?.call();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GlobalSearchPage), findsOneWidget);
+    });
   });
+}
+
+// TODO: [CA-724] Migrate to lib/libraries/project/testing/fake_project_ui_provider.dart
+class _FakeProjectUIProvider extends ProjectUIProvider {
+  VoidCallback? capturedOnSearchTap;
+
+  @override
+  PreferredSizeWidget buildProjectHeaderAppbar({
+    required String projectId,
+    VoidCallback? onProjectTap,
+    VoidCallback? onSearchTap,
+    VoidCallback? onNotificationTap,
+  }) {
+    capturedOnSearchTap = onSearchTap;
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(kToolbarHeight),
+      child: AppBar(key: Key('project_app_bar_$projectId')),
+    );
+  }
 }
