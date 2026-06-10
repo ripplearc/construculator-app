@@ -24,48 +24,18 @@ disable-model-invocation: false
 
 ## Golden Test Pattern
 
-**File location:** `test/features/{feature}/screenshots/{widget}_screenshot_test.dart`
+**File:** `test/features/{feature}/screenshots/{widget}_screenshot_test.dart`
 
-**Basic structure:**
+In `setUp`, call `await loadAppFonts()` (from `test/utils/screenshot/font_loader.dart`). Pump the widget inside a `MaterialApp(theme: createTestTheme(), home: Material(child: ...))`. Set `tester.view.physicalSize` and `devicePixelRatio = 1.0` before pumping, `pumpAndSettle()` after, then assert:
+
 ```dart
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
-import '../../../utils/screenshot/font_loader.dart';
-
-void main() {
-  final size = const Size(390, 844); // adjust to the widget's expected dimensions
-  TestWidgetsFlutterBinding.ensureInitialized();
-
-  setUp(() async {
-    await loadAppFonts();
-  });
-
-  group('{Widget} Screenshot Tests', () {
-    Future<void> pump{Widget}({required WidgetTester tester}) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          home: Material(child: {WidgetToTest}()),
-        ),
-      );
-      await tester.pumpAndSettle();
-    }
-
-    testWidgets('renders default state correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1.0;
-
-      await pump{Widget}(tester: tester);
-
-      await expectLater(
-        find.byType({WidgetToTest}),
-        matchesGoldenFile('goldens/{widget}/${size.width}x${size.height}/{widget}_default.png'),
-      );
-    });
-  });
-}
+await expectLater(
+  find.byType({WidgetToTest}),
+  matchesGoldenFile('goldens/{widget}/${size.width}x${size.height}/{widget}_default.png'),
+);
 ```
+
+See `test/features/auth/screenshots/` for a complete example.
 
 ## Key Scenarios to Test
 
@@ -82,8 +52,7 @@ void main() {
 
 ## Running Golden Tests
 
-- Generate/update: `flutter test --update-goldens test/features/{feature}/screenshots/`
-- Verify: `flutter test test/features/{feature}/screenshots/`
+Use `flutter test --update-goldens <path>` to generate/update, plain `flutter test <path>` to verify.
 
 ## Anti-Patterns
 

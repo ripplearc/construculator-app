@@ -28,24 +28,11 @@ disable-model-invocation: false
 
 ## 2. RemoteDataSource Pattern
 
-**Purpose:** Fetch data from external source (Supabase); log debug on success; rethrow errors.
-
-**Logging:**
-- Log debug on success: `_logger.debug('Fetched N items')`
-- **Do NOT log errors** — RepositoryImpl is the error boundary (RULE_15)
-
-**Error handling:**
-- **Always rethrow** — Let RepositoryImpl handle error mapping and logging
+Fetch from external source. Log `_logger.debug('Fetched N items')` on success; **always rethrow on error** — RepositoryImpl is the error boundary (RULE_15); do NOT log errors here.
 
 ## 3. RepositoryImpl Pattern
 
-**Purpose:** Implement domain repository interface; delegate to DataSource; map exceptions to Failures.
-
-**Required imports:**
-```dart
-import 'package:construculator/libraries/either/either.dart';
-import 'package:construculator/libraries/errors/failures.dart';
-```
+Implement domain repository interface; delegate to DataSource; map exceptions to Failures.
 
 **Error mapping (at RepositoryImpl boundary):**
 
@@ -61,9 +48,13 @@ import 'package:construculator/libraries/errors/failures.dart';
 - **Warning level:** Expected errors; no Sentry event
 - **Error level:** Critical/unexpected errors; sends Sentry event
 
-**Pattern:** Wrap datasource call in try-catch; return `Either<Failure, T>` (never throw).
+**Failure identification (before writing try-catch):**
+1. List every failure case the repository method can produce (network, not-found, auth, validation, etc.)
+2. Search `lib/features/{feature}/domain/` for an existing `{Feature}Failure` class — if it covers the case, **reuse it**
+3. If no matching Failure exists, create `lib/features/{feature}/domain/failures/{feature}_failure.dart` with the new cases
+4. Never invent a Failure inline — it must live in its own file and be importable by domain and data layers
 
-**AppLogger signature:** `_logger.error('message', error, stackTrace)` or `_logger.warning('message', error, stackTrace)`
+**Pattern:** Wrap datasource call in try-catch; return `Either<Failure, T>` (never throw).
 
 ## 4. DTO Pattern
 
@@ -76,14 +67,7 @@ import 'package:construculator/libraries/errors/failures.dart';
 
 ## 5. Dependency Registration
 
-Add to `lib/features/{feature}/{feature}_module.dart`:
-
-```dart
-void _registerDependencies(Injector i) {
-  i.addLazySingleton<{Noun}DataSource>(() => Remote{Noun}DataSource(supabaseWrapper: i()));
-  i.addLazySingleton<{Noun}Repository>(() => {Noun}RepositoryImpl(dataSource: i()));
-}
-```
+In `{feature}_module.dart`, register DataSource as `addLazySingleton` (inject `SupabaseWrapper`) and RepositoryImpl as `addLazySingleton` (inject DataSource). See `code-domain` skill for the canonical `_registerDependencies` shape.
 
 ## 6. Layer Boundaries (RULE_5)
 
@@ -108,7 +92,7 @@ void _registerDependencies(Injector i) {
 2. **Error boundary** — RemoteDataSource rethrows without logging; RepositoryImpl is the error boundary where exceptions become Failures
 3. **DTO ↔ Entity** — DTOs for JSON; Entities for domain; validate/handle invalid JSON
 4. **RULE_15: Log once** — At RepositoryImpl boundary only (don't re-log as errors propagate)
-5. **Never throw from repository** — Always `Either<Failure, T>`
+5. **Never throw from repository** — Always `Either<Failure, T>`. Use `package:construculator/libraries/either/either.dart` for `Either` and `package:construculator/libraries/errors/failures.dart` for `Failure` — **do NOT import `dartz`**.
 
 ## References
 

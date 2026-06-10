@@ -20,17 +20,11 @@ disable-model-invocation: false
 
 ## Gate Check
 
-| ✅ Use This Skill | ❌ Use `code-data` Instead |
-|------------------|---------------------------|
-| NEW payment provider (Stripe, PayPal) | Existing Supabase (use `SupabaseWrapper`) |
-| NEW analytics SDK (Mixpanel, Amplitude) | Existing auth (use `AuthManager`) |
-| NEW cloud service (AWS S3, Firebase Storage) | Regular data sources |
-| NEW push notification provider | |
-| NEW OAuth provider | |
+- ✅ Use this skill for NEW SDKs/services not yet in the codebase (payment, analytics, cloud storage, push, OAuth).
+- ❌ Use `code-data` for existing integrations (`SupabaseWrapper`, `AuthManager`) or regular data sources.
+- ⚠️ **Gate failure:** If the SDK already exists, **stop immediately** — point the user to `code-data` and the existing wrapper.
 
 **Input:** Context from `plan-implementation` — SDK name, wrapper interface (if needed), operations needed.
-
-⚠️ **Gate failure:** If the SDK already exists in the codebase, **stop immediately** — do not write any code. Tell the user to use `code-data` instead and point to the existing wrapper (e.g. `SupabaseWrapper`, `AuthManager`).
 
 ## Wrapper Pattern Classes
 
@@ -54,25 +48,9 @@ disable-model-invocation: false
 
 ## Dependency Registration
 
-Create `lib/libraries/{sdk}/_{sdk}_module.dart`:
-
-```dart
-import 'package:flutter_modular/flutter_modular.dart';
-import 'package:{sdk_package}/{sdk_package}.dart' as sdk;
-
-class {SDK}Module extends Module {
-  @override
-  void binds(Injector i) {
-    i.addLazySingleton<sdk.{SDK}Client>(() => sdk.{SDK}Client(apiKey: i.get<EnvLoader>().get('{SDK}_API_KEY') ?? ''));
-    i.addLazySingleton<{SDK}Wrapper>(() => {SDK}Wrapper(client: i()));
-    // Or with interface: i.addLazySingleton<{SDK}WrapperInterface>(() => {SDK}Wrapper(client: i()));
-  }
-}
-```
+Create `lib/libraries/{sdk}/_{sdk}_module.dart` extending `Module`. In `binds(Injector i)`, register the SDK client (`sdk.{SDK}Client` with API key from `EnvLoader`) and the wrapper (`{SDK}Wrapper`) as `addLazySingleton`. Use a `{SDK}WrapperInterface` binding if domain depends on an interface. Import the module in `lib/app/app_module.dart`.
 
 **Config pattern:** Keys are read from `assets/env/.env.{dev|qa|prod}` via `EnvLoader` (already in DI — inject with `i.get<EnvLoader>()`). Never hardcode credentials. Add the key to all three `.env` files.
-
-Then import in `lib/app/app_module.dart`.
 
 ## Output Files
 
@@ -88,7 +66,7 @@ Then import in `lib/app/app_module.dart`.
 
 1. **Domain isolation** — Wrapper is boundary; domain never imports SDK directly
 2. **Wrapper is type translation layer** — SDK types → Domain types
-3. **Error translation** — SDK exceptions → Domain Failures at wrapper boundary
+3. **Error translation** — SDK exceptions → Domain Failures at wrapper boundary. `{SDK}Failure extends Failure` and `UnexpectedFailure` both come from `package:construculator/libraries/errors/failures.dart`
 4. **Testability** — Fake SDK client (RULE_3), test wrapper mapping logic
 
 ## References
@@ -99,6 +77,4 @@ Then import in `lib/app/app_module.dart`.
 - **Clean Architecture:** Domain depends on wrappers, not SDKs
 - **Example:** `lib/libraries/supabase/supabase_wrapper.dart`
 - `write-tests` skill — Wrapper tests with fake SDK clients
-
-⚠️ **Use sparingly** — Most data access uses existing wrappers (`SupabaseWrapper`, `AuthManager`). Only for external services or SDKs that are not previously implemented or integrated in the codebase.
 
