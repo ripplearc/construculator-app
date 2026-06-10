@@ -1035,7 +1035,10 @@ void main() {
               updatedAt: DateTime(2025, 1, 1),
             ),
           ]);
-          await pumpEventQueue(); // flush microtasks so the event is processed
+          // pumpEventQueue is used here instead of firstWhere because the BLoC's
+          // Equatable-based deduplication means no new state is emitted when the
+          // same projects list is re-emitted; there is no state to wait on.
+          await pumpEventQueue();
         },
         verify: (_) {
           // Guard prevents duplicate notifications on stream re-emission.
@@ -1049,7 +1052,6 @@ void main() {
 class _ProjectDropdownBlocTestModule extends Module {
   final AppBootstrap bootstrap;
 
-  /// Creates the test module for [ProjectDropdownBloc] integration tests.
   _ProjectDropdownBlocTestModule(this.bootstrap);
 
   @override
