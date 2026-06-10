@@ -33,11 +33,24 @@ class NotificationIcon extends StatelessWidget {
             top: CoreSpacing.space1,
             child: Container(
               key: const Key('notification_badge'),
-              width: CoreSpacing.space2,
-              height: CoreSpacing.space2,
+              constraints: const BoxConstraints(
+                minWidth: CoreSpacing.space4,
+                minHeight: CoreSpacing.space4,
+              ),
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(
+                horizontal: CoreSpacing.space1,
+              ),
               decoration: BoxDecoration(
                 color: colors.statusError,
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(CoreSpacing.space2),
+              ),
+              child: Text(
+                unreadCount > 99 ? '99+' : '$unreadCount',
+                style: context.textTheme.bodySmallSemiBold.copyWith(
+                  color: colors.textInverse,
+                  height: 1,
+                ),
               ),
             ),
           ),

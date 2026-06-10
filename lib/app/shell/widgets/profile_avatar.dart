@@ -23,16 +23,13 @@ class ProfileAvatar extends StatelessWidget {
     return GestureDetector(
       key: const Key('profile_avatar_button'),
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(CoreSpacing.space3),
-        child: Semantics(
-          label: context.l10n.profileSemanticLabel,
-          child: CoreAvatar(
-            radius: 20,
-            backgroundColor: colors.backgroundGrayMid,
-            image: hasImage ? NetworkImage(url) : null,
-            child: hasImage ? null : CoreLetterAvatar(name: name),
-          ),
+      child: Semantics(
+        label: context.l10n.profileSemanticLabel,
+        child: CoreAvatar(
+          radius: 20,
+          backgroundColor: colors.backgroundGrayMid,
+          image: hasImage ? NetworkImage(url) : null,
+          child: hasImage ? null : CoreLetterAvatar(name: name),
         ),
       ),
     );

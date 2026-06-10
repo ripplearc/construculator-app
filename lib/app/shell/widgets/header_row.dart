@@ -39,63 +39,86 @@ class HeaderRow extends StatelessWidget implements PreferredSizeWidget {
           color: colors.pageBackground,
         ),
         height: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
+        padding: const EdgeInsets.only(
+          left: CoreSpacing.space1,
+          right: CoreSpacing.space4,
+        ),
         child: AppBar(
           backgroundColor: colors.pageBackground,
           elevation: 0,
           scrolledUnderElevation: 0,
           titleSpacing: 0,
-          title: InkWell(
-            onTap: onProjectTap,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Text(
-                    context.l10n.appTitle,
-                    style: typography.titleMediumSemiBold.copyWith(
-                      color: colors.textHeadline,
+          toolbarHeight: CoreSpacing.space16,
+          automaticallyImplyLeading: false,
+          title: Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: onProjectTap,
+                  child: SizedBox(
+                    height: CoreSpacing.space12,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: CoreSpacing.space3,
+                      ),
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              context.l10n.appTitle,
+                              style: typography.titleMediumSemiBold.copyWith(
+                                color: colors.textHeadline,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                          const SizedBox(width: CoreSpacing.space1),
+                          CoreIconWidget(
+                            icon: CoreIcons.arrowDropDown,
+                            color: colors.iconGrayMid,
+                            size: CoreIconSize.size24,
+                          ),
+                        ],
+                      ),
                     ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
                   ),
                 ),
-                const SizedBox(width: CoreSpacing.space1),
-                CoreIconWidget(
-                  icon: CoreIcons.arrowDown,
-                  color: colors.iconGrayMid,
-                  size: CoreIconSize.size24,
-                ),
-              ],
-            ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CoreIconWidget(
+                    key: const Key('header_row_search_button'),
+                    icon: CoreIcons.search,
+                    size: CoreIconSize.size24,
+                    padding: const EdgeInsets.all(CoreSpacing.space3),
+                    onTap: onSearchTap,
+                    color: colors.iconDark,
+                    semanticLabel: context.l10n.dashboardSearchSemanticLabel,
+                  ),
+                  const SizedBox(width: CoreSpacing.space2),
+                  NotificationIcon(
+                    key: const Key('header_row_notification_icon'),
+                    unreadCount: unreadNotificationCount,
+                    onTap: onNotificationTap,
+                  ),
+                  const SizedBox(width: CoreSpacing.space2),
+                  ProfileAvatar(
+                    key: const Key('header_row_profile_avatar'),
+                    name: userName,
+                    imageUrl: avatarImageUrl,
+                    onTap: onProfileTap,
+                  ),
+                ],
+              ),
+            ],
           ),
-          actions: [
-            CoreIconWidget(
-              key: const Key('header_row_search_button'),
-              icon: CoreIcons.search,
-              size: CoreIconSize.size24,
-              padding: const EdgeInsets.all(CoreSpacing.space3),
-              onTap: onSearchTap,
-              color: colors.iconDark,
-              semanticLabel: context.l10n.dashboardSearchSemanticLabel,
-            ),
-            NotificationIcon(
-              key: const Key('header_row_notification_icon'),
-              unreadCount: unreadNotificationCount,
-              onTap: onNotificationTap,
-            ),
-            ProfileAvatar(
-              key: const Key('header_row_profile_avatar'),
-              name: userName,
-              imageUrl: avatarImageUrl,
-              onTap: onProfileTap,
-            ),
-          ],
         ),
       ),
     );
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const Size.fromHeight(CoreSpacing.space16);
 }
