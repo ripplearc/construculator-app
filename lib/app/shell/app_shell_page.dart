@@ -10,6 +10,7 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:flutter/material.dart';
@@ -35,6 +36,7 @@ class AppShellPage extends StatefulWidget {
 }
 
 class _AppShellPageState extends State<AppShellPage> {
+  static final _logger = AppLogger().tag('AppShellPage');
   final AppShellBloc _bloc = Modular.get<AppShellBloc>();
   late final CurrentProjectNotifier _currentProjectNotifier;
   StreamSubscription<String?>? _projectSubscription;
@@ -105,6 +107,27 @@ class _AppShellPageState extends State<AppShellPage> {
     }
   }
 
+  void _navigateToSearch(BuildContext context) {
+    if (!mounted) return;
+    try {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const GlobalSearchPage()),
+      );
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Failed to navigate to GlobalSearchPage: $error',
+        stackTrace.toString(),
+      );
+      if (mounted) {
+        CoreToast.showError(
+          context,
+          context.l10n.searchNavigationError,
+          context.l10n.closeButton,
+        );
+      }
+    }
+  }
+
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     final projectId = _currentProjectId ?? '';
     if (projectId.isEmpty) {
@@ -146,8 +169,7 @@ class _AppShellPageState extends State<AppShellPage> {
     return Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
       projectId: projectId,
       onProjectTap: () => ProjectsBottomSheet.show(context),
-      onSearchTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => const GlobalSearchPage()),
+      onSearchTap: () => _navigateToSearch(context),
       ),
     );
   }

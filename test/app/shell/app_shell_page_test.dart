@@ -3,6 +3,7 @@ import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
+import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
@@ -300,11 +301,29 @@ void main() {
         );
       },
     );
+
+    testWidgets('tapping search opens GlobalSearchPage', (tester) async {
+      fakeProjectNotifier.setCurrentProjectId(
+        '950e8400-e29b-41d4-a716-446655440001',
+      );
+      final fakeProvider = _FakeProjectUIProvider();
+      Modular.replaceInstance<ProjectUIProvider>(fakeProvider);
+
+      await tester.pumpWidget(makeApp());
+      await tester.pump();
+
+      fakeProvider.capturedOnSearchTap?.call();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GlobalSearchPage), findsOneWidget);
+    });
   });
 }
 
 // TODO: [CA-724] Migrate to lib/libraries/project/testing/fake_project_ui_provider.dart
 class _FakeProjectUIProvider extends ProjectUIProvider {
+  VoidCallback? capturedOnSearchTap;
+
   @override
   PreferredSizeWidget buildProjectHeaderAppbar({
     required String projectId,
@@ -312,6 +331,7 @@ class _FakeProjectUIProvider extends ProjectUIProvider {
     VoidCallback? onSearchTap,
     VoidCallback? onNotificationTap,
   }) {
+    capturedOnSearchTap = onSearchTap;
     return PreferredSize(
       preferredSize: const Size.fromHeight(kToolbarHeight),
       child: AppBar(key: Key('project_app_bar_$projectId')),
