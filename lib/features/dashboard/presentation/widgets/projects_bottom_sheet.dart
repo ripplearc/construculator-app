@@ -42,7 +42,9 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
   void initState() {
     super.initState();
     _bloc = Modular.get<ProjectDropdownBloc>();
-    _bloc.add(const ProjectDropdownStarted());
+    if (_bloc.state is! ProjectDropdownLoadSuccess) {
+      _bloc.add(const ProjectDropdownStarted());
+    }
   }
 
   @override
