@@ -10,6 +10,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 part 'dashboard_event.dart';
 part 'dashboard_state.dart';
 
+/// Manages loading the current project and reacting to project switches,
+/// emitting [DashboardLoading] → [DashboardLoaded] | [DashboardError].
 class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   final ProjectRepository _projectRepository;
   final CurrentProjectNotifier _currentProjectNotifier;

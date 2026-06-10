@@ -37,6 +37,7 @@ class DashboardLoaded extends DashboardState {
 
 /// Emitted when any dashboard load operation fails.
 class DashboardError extends DashboardState {
+  /// The failure that caused the dashboard load to fail.
   final Failure failure;
 
   const DashboardError(this.failure);
