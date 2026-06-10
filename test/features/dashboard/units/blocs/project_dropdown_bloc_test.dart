@@ -693,6 +693,7 @@ void main() {
           await bloc.stream.firstWhere(
             (s) => s is ProjectDropdownLoadFailure && s.cachedProjects.isNotEmpty,
           );
+          fakeSupabaseWrapper.shouldEmitStreamErrors = false;
         },
         skip: 2,
         expect: () => [
