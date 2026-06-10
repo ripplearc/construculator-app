@@ -64,7 +64,7 @@ class HeaderRow extends StatelessWidget implements PreferredSizeWidget {
                 CoreIconWidget(
                   icon: CoreIcons.arrowDown,
                   color: colors.iconGrayMid,
-                  size: 24,
+                  size: CoreIconSize.size24,
                 ),
               ],
             ),
@@ -73,7 +73,7 @@ class HeaderRow extends StatelessWidget implements PreferredSizeWidget {
             CoreIconWidget(
               key: const Key('header_row_search_button'),
               icon: CoreIcons.search,
-              size: 24,
+              size: CoreIconSize.size24,
               padding: const EdgeInsets.all(CoreSpacing.space3),
               onTap: onSearchTap,
               color: colors.iconDark,

@@ -21,7 +21,7 @@ class NotificationIcon extends StatelessWidget {
         CoreIconWidget(
           key: const Key('notification_icon_button'),
           icon: CoreIcons.notification,
-          size: 24,
+          size: CoreIconSize.size24,
           color: colors.iconDark,
           padding: const EdgeInsets.all(CoreSpacing.space3),
           semanticLabel: context.l10n.notificationSemanticLabel,
