@@ -1,11 +1,13 @@
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/module_model.dart';
+import 'package:construculator/app/shell/widgets/header_row.dart';
 import 'package:construculator/app/shell/widgets/tab_navigator.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
@@ -110,6 +112,61 @@ class _AppShellPageState extends State<AppShellPage> {
     }
   }
 
+  PreferredSizeWidget _buildAppBar(BuildContext context, AppShellState state) {
+    // TODO: [CA-621] Wire ProjectDropdownBloc result into app bar via CurrentProjectNotifier.
+    // https://ripplearc.youtrack.cloud/issue/CA-621
+    const projectId = '';
+    final coreColors = Theme.of(context).coreColors;
+    if (projectId.isEmpty) {
+      if (state.selectedTabIndex == ShellTab.home.index) {
+        return HeaderRow(
+          onSearchTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const GlobalSearchPage(),
+            ),
+          ),
+          // TODO: [CA-622] Wire NotificationBloc when NotificationModule is ready.
+          // https://ripplearc.youtrack.cloud/issue/CA-622
+          // TODO: [CA-623] Wire ProfileBloc when ProfileModule is ready.
+          // https://ripplearc.youtrack.cloud/issue/CA-623
+        );
+      }
+      return PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: Container(
+          decoration: BoxDecoration(
+            color: coreColors.pageBackground,
+            boxShadow: CoreShadows.medium,
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: CoreSpacing.space4,
+            vertical: CoreSpacing.space2,
+          ),
+          child: AppBar(
+            backgroundColor: coreColors.pageBackground,
+            elevation: 0,
+            centerTitle: true,
+            titleSpacing: 0,
+            title: Text(context.l10n.appTitle),
+            actions: [
+              CoreIconWidget(
+                icon: CoreIcons.search,
+                semanticLabel: context.l10n.dashboardSearchSemanticLabel,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const GlobalSearchPage(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: CoreSpacing.space4),
+            ],
+          ),
+        ),
+      );
+    }
+    return widget.projectUIProvider.buildProjectHeaderAppbar();
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<ProjectDropdownBloc, ProjectDropdownState>(
@@ -129,7 +186,7 @@ class _AppShellPageState extends State<AppShellPage> {
           canPop: false,
           onPopInvokedWithResult: (didPop, _) => _onPopInvoked(didPop),
           child: Scaffold(
-            appBar: widget.projectUIProvider.buildProjectHeaderAppbar(),
+            appBar: _buildAppBar(context, state),
             body: Stack(
               children: List.generate(ShellTab.values.length, (index) {
                 final tab = ShellTab.values[index];
