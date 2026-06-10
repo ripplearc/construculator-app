@@ -37,11 +37,11 @@ class ShellModule extends Module {
           estimationBaseRoute,
           module: EstimationRoutesModule(appBootstrap),
         ),
-        ModuleRoute(
-          globalSearchBaseRoute,
-          module: GlobalSearchModule(appBootstrap),
-        ),
       ],
     );
+    // Registered as a sibling of the shell route (not a child) so that
+    // pushing it renders a full-screen page; the shell has no RouterOutlet,
+    // so child routes of '/' would never be displayed.
+    r.module(globalSearchBaseRoute, module: GlobalSearchModule(appBootstrap));
   }
 }

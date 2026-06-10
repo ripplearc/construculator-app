@@ -3,7 +3,6 @@ import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
-import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
@@ -11,6 +10,9 @@ import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/routes/global_search_routes.dart';
+import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -302,12 +304,16 @@ void main() {
       },
     );
 
-    testWidgets('tapping search opens GlobalSearchPage', (tester) async {
+    testWidgets('tapping search pushes the global search route', (
+      tester,
+    ) async {
       fakeProjectNotifier.setCurrentProjectId(
         '950e8400-e29b-41d4-a716-446655440001',
       );
       final fakeProvider = _FakeProjectUIProvider();
       Modular.replaceInstance<ProjectUIProvider>(fakeProvider);
+      final fakeRouter = FakeAppRouter();
+      Modular.replaceInstance<AppRouter>(fakeRouter);
 
       await tester.pumpWidget(makeApp());
       await tester.pump();
@@ -315,7 +321,9 @@ void main() {
       fakeProvider.capturedOnSearchTap?.call();
       await tester.pumpAndSettle();
 
-      expect(find.byType(GlobalSearchPage), findsOneWidget);
+      expect(fakeRouter.navigationHistory, [
+        const RouteCall(fullGlobalSearchRoute, null),
+      ]);
     });
   });
 }

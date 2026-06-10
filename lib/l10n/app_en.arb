@@ -1226,5 +1226,40 @@
   "@globalSearchSuggestionsErrorMessage": {
     "description": "Warning toast shown when loading search suggestions fails",
     "context": "N/A"
+  },
+  "searchNavigationError": "Failed to open search. Please try again.",
+  "@searchNavigationError": {
+    "description": "Error toast shown when navigation to the search screen fails",
+    "context": "N/A"
+  },
+  "closeButton": "Close",
+  "@closeButton": {
+    "description": "Label for close/dismiss action buttons and toasts",
+    "context": "N/A"
+  },
+  "searchResultsMostRelevant": "Most relevant",
+  "@searchResultsMostRelevant": {
+    "description": "Section header shown above the list of most relevant search results",
+    "context": "N/A"
+  },
+  "searchResultsEmpty": "No results found for \"{query}\"",
+  "@searchResultsEmpty": {
+    "description": "Message shown when a search returns no results",
+    "context": "N/A",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardLoadProfileError": "Failed to load profile. Please try again.",
+  "@dashboardLoadProfileError": {
+    "description": "Error toast shown when loading the user profile on the dashboard fails",
+    "context": "N/A"
+  },
+  "projectSelectorSemanticLabel": "Select project",
+  "@projectSelectorSemanticLabel": {
+    "description": "Accessibility label for the project selector button in the project header app bar",
+    "context": "N/A"
   }
 }

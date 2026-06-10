@@ -1479,6 +1479,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not load suggestions.'**
   String get globalSearchSuggestionsErrorMessage;
+
+  /// Error toast shown when navigation to the search screen fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to open search. Please try again.'**
+  String get searchNavigationError;
+
+  /// Label for close/dismiss action buttons and toasts
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get closeButton;
+
+  /// Section header shown above the list of most relevant search results
+  ///
+  /// In en, this message translates to:
+  /// **'Most relevant'**
+  String get searchResultsMostRelevant;
+
+  /// Message shown when a search returns no results
+  ///
+  /// In en, this message translates to:
+  /// **'No results found for \"{query}\"'**
+  String searchResultsEmpty(String query);
+
+  /// Error toast shown when loading the user profile on the dashboard fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load profile. Please try again.'**
+  String get dashboardLoadProfileError;
+
+  /// Accessibility label for the project selector button in the project header app bar
+  ///
+  /// In en, this message translates to:
+  /// **'Select project'**
+  String get projectSelectorSemanticLabel;
 }
 
 class _AppLocalizationsDelegate

@@ -7,12 +7,13 @@ import 'package:construculator/features/calculations/presentation/pages/calculat
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/projects_bottom_sheet.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
-import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/routes/global_search_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -107,12 +108,10 @@ class _AppShellPageState extends State<AppShellPage> {
     }
   }
 
-  void _navigateToSearch(BuildContext context) {
+  Future<void> _navigateToSearch() async {
     if (!mounted) return;
     try {
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => const GlobalSearchPage()),
-      );
+      await Modular.get<AppRouter>().pushNamed(fullGlobalSearchRoute);
     } catch (error, stackTrace) {
       _logger.error(
         'Failed to navigate to GlobalSearchPage: $error',
@@ -153,11 +152,7 @@ class _AppShellPageState extends State<AppShellPage> {
               CoreIconWidget(
                 icon: CoreIcons.search,
                 semanticLabel: context.l10n.dashboardSearchSemanticLabel,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const GlobalSearchPage(),
-                  ),
-                ),
+                onTap: () => _navigateToSearch(),
               ),
               const SizedBox(width: CoreSpacing.space4),
             ],
@@ -169,8 +164,7 @@ class _AppShellPageState extends State<AppShellPage> {
     return Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
       projectId: projectId,
       onProjectTap: () => ProjectsBottomSheet.show(context),
-      onSearchTap: () => _navigateToSearch(context),
-      ),
+      onSearchTap: () => _navigateToSearch(),
     );
   }
 

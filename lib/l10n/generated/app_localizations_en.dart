@@ -775,4 +775,26 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get globalSearchSuggestionsErrorMessage =>
       'Could not load suggestions.';
+
+  @override
+  String get searchNavigationError =>
+      'Failed to open search. Please try again.';
+
+  @override
+  String get closeButton => 'Close';
+
+  @override
+  String get searchResultsMostRelevant => 'Most relevant';
+
+  @override
+  String searchResultsEmpty(String query) {
+    return 'No results found for \"$query\"';
+  }
+
+  @override
+  String get dashboardLoadProfileError =>
+      'Failed to load profile. Please try again.';
+
+  @override
+  String get projectSelectorSemanticLabel => 'Select project';
 }
