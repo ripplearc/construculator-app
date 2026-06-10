@@ -303,6 +303,7 @@ void main() {
   });
 }
 
+// TODO: [CA-724] Migrate to lib/libraries/project/testing/fake_project_ui_provider.dart
 class _FakeProjectUIProvider extends ProjectUIProvider {
   @override
   PreferredSizeWidget buildProjectHeaderAppbar({
