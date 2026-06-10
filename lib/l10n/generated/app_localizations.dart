@@ -358,6 +358,36 @@ abstract class AppLocalizations {
   /// **'Project settings'**
   String get projectSettingsSemanticLabel;
 
+  /// Title of the bottom sheet that lists the user's projects
+  ///
+  /// In en, this message translates to:
+  /// **'Projects'**
+  String get projectsSheetTitle;
+
+  /// Hint text for the search field used to filter the projects list
+  ///
+  /// In en, this message translates to:
+  /// **'Search projects'**
+  String get searchProjectsHint;
+
+  /// Label for the button that starts creating a new project
+  ///
+  /// In en, this message translates to:
+  /// **'Create a project'**
+  String get createProjectButton;
+
+  /// Empty state message shown when the user has no projects
+  ///
+  /// In en, this message translates to:
+  /// **'No projects yet.'**
+  String get projectsEmptyState;
+
+  /// Error message shown when the projects list cannot be loaded
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load projects.'**
+  String get projectsLoadError;
+
   /// Text for hey enter your details to register with us
   ///
   /// In en, this message translates to:

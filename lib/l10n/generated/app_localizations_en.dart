@@ -147,6 +147,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get projectSettingsSemanticLabel => 'Project settings';
 
   @override
+  String get projectsSheetTitle => 'Projects';
+
+  @override
+  String get searchProjectsHint => 'Search projects';
+
+  @override
+  String get createProjectButton => 'Create a project';
+
+  @override
+  String get projectsEmptyState => 'No projects yet.';
+
+  @override
+  String get projectsLoadError => 'Failed to load projects.';
+
+  @override
   String get heyEnterYourDetailsToRegisterWithUs =>
       'Hey, Enter your details to Register with us';
 
