@@ -217,7 +217,32 @@
   },
   "projectSettingsSemanticLabel": "Project settings",
   "@projectSettingsSemanticLabel": {
-    "description": "Accessibility label for the per-project settings button in the projects list",
+    "description": "Accessibility label for the per-project settings icon button in the projects list",
+    "context": "Dashboard projects sheet"
+  },
+  "projectsSheetTitle": "Projects",
+  "@projectsSheetTitle": {
+    "description": "Title of the bottom sheet that lists the user's projects",
+    "context": "Dashboard projects sheet"
+  },
+  "searchProjectsHint": "Search projects",
+  "@searchProjectsHint": {
+    "description": "Hint text for the search field used to filter the projects list",
+    "context": "Dashboard projects sheet"
+  },
+  "createProjectButton": "Create a project",
+  "@createProjectButton": {
+    "description": "Label for the button that starts creating a new project",
+    "context": "Dashboard projects sheet"
+  },
+  "projectsEmptyState": "No projects yet.",
+  "@projectsEmptyState": {
+    "description": "Empty state message shown when the user has no projects",
+    "context": "Dashboard projects sheet"
+  },
+  "projectsLoadError": "Failed to load projects.",
+  "@projectsLoadError": {
+    "description": "Error message shown when the projects list cannot be loaded",
     "context": "Dashboard projects sheet"
   },
   "heyEnterYourDetailsToRegisterWithUs": "Hey, Enter your details to Register with us",
@@ -704,7 +729,7 @@
   "lockLabel": "Lock",
   "@lockLabel": {
     "description": "Label for lock action",
-    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53163&t=72cjZpZMiulKp3Yl-4" 
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53163&t=72cjZpZMiulKp3Yl-4"
   },
   "unlockLabel": "Unlock",
   "@unlockLabel": {
@@ -1046,7 +1071,7 @@
       }
     }
   },
-  "activityEditedFieldValueCurrency": "\u0024{value}",
+  "activityEditedFieldValueCurrency": "${value}",
   "@activityEditedFieldValueCurrency": {
     "description": "Formatted value for currency based edited fields",
     "placeholders": {
@@ -1101,7 +1126,7 @@
   "loadMoreLogsError": "Failed to load more logs",
   "@loadMoreLogsError": {
     "description": "Error message shown when loading more logs fails"
-    },
+  },
   "appTitle": "Construculator",
   "@appTitle": {
     "description": "Application title displayed in app bar",
