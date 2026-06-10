@@ -33,7 +33,6 @@ void main() {
       Modular.init(_ProjectRepositoryTestModule(clock: clock));
       projectDataSource = Modular.get<_FakeProjectDataSource>();
       repository = Modular.get<ProjectRepositoryImpl>();
-      // Resolve the same notifier instance that was injected into the repository.
       fakeNotifier =
           Modular.get<CurrentProjectNotifier>() as FakeCurrentProjectNotifier;
     });
@@ -267,7 +266,6 @@ void main() {
           final emittedBatches = <List<Project>>[];
           bool errorReceived = false;
           final firstEmission = Completer<void>();
-          // Gate used to detect any unexpected emission after the error.
           final unexpectedEmission = Completer<void>();
 
           final subscription = repository
@@ -286,10 +284,6 @@ void main() {
           await firstEmission.future;
 
           projectDataSource.emitError(Exception('realtime failure'));
-
-          // Yield to the event loop to let any error propagation occur, then
-          // assert without a wall-clock delay.
-          await Future<void>.value();
 
           expect(errorReceived, isFalse);
           expect(unexpectedEmission.isCompleted, isFalse);

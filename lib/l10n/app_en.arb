@@ -220,31 +220,6 @@
     "description": "Accessibility label for the per-project settings icon button in the projects list",
     "context": "Dashboard projects sheet"
   },
-  "projectsSheetTitle": "Projects",
-  "@projectsSheetTitle": {
-    "description": "Title of the bottom sheet that lists the user's projects",
-    "context": "Dashboard projects sheet"
-  },
-  "searchProjectsHint": "Search projects",
-  "@searchProjectsHint": {
-    "description": "Hint text for the search field used to filter the projects list",
-    "context": "Dashboard projects sheet"
-  },
-  "createProjectButton": "Create a project",
-  "@createProjectButton": {
-    "description": "Label for the button that starts creating a new project",
-    "context": "Dashboard projects sheet"
-  },
-  "projectsEmptyState": "No projects yet.",
-  "@projectsEmptyState": {
-    "description": "Empty state message shown when the user has no projects",
-    "context": "Dashboard projects sheet"
-  },
-  "projectsLoadError": "Failed to load projects.",
-  "@projectsLoadError": {
-    "description": "Error message shown when the projects list cannot be loaded",
-    "context": "Dashboard projects sheet"
-  },
   "heyEnterYourDetailsToRegisterWithUs": "Hey, Enter your details to Register with us",
   "@heyEnterYourDetailsToRegisterWithUs": {
     "description": "Text for hey enter your details to register with us",
@@ -1226,5 +1201,71 @@
   "@globalSearchSuggestionsErrorMessage": {
     "description": "Warning toast shown when loading search suggestions fails",
     "context": "N/A"
-  }
+},
+  "dashboardWelcomeMessage": "Welcome back, {name}",
+  "@dashboardWelcomeMessage": {
+    "description": "Personalised greeting on the dashboard page",
+    "context": "N/A",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardLoggedInSubtitle": "You are now logged in to your account",
+  "@dashboardLoggedInSubtitle": {
+    "description": "Subtitle shown below the welcome greeting on the dashboard page",
+    "context": "N/A"
+  },
+  "logoutButton": "Logout",
+  "@logoutButton": {
+    "description": "Label for the logout button",
+    "context": "N/A"
+  },
+  "projectSelectorSemanticLabel": "Select project",
+  "@projectSelectorSemanticLabel": {
+    "description": "Accessibility label for the project name tap target in the app bar",
+    "context": "N/A"
+  },
+  "dashboardLoadProfileError": "Failed to load profile",
+  "@dashboardLoadProfileError": {
+    "description": "Error toast shown when the user profile fetch fails on the dashboard",
+    "context": "N/A"
+  },
+  "closeButton": "Close",
+  "@closeButton": {
+    "description": "Label for dismiss/close action buttons in toasts and dialogs",
+    "context": "N/A"
+  },
+  "searchNavigationError": "Unable to open search. Please try again.",
+  "@searchNavigationError": {
+    "description": "Error toast shown when navigating to the global search page fails",
+    "context": "N/A"
+  },
+  "projectsSheetTitle": "Projects",
+  "@projectsSheetTitle": {
+    "description": "Title of the projects bottom sheet",
+    "context": "N/A"
+  },
+  "searchProjectsHint": "Search projects",
+  "@searchProjectsHint": {
+    "description": "Hint text for the project search field in the projects bottom sheet",
+    "context": "N/A"
+  },
+  "createProjectButton": "Create project",
+  "@createProjectButton": {
+    "description": "Label for the create project button in the projects bottom sheet",
+    "context": "N/A"
+  },
+  "projectsEmptyState": "No projects found",
+  "@projectsEmptyState": {
+    "description": "Empty state message shown when no projects are available in the projects bottom sheet",
+    "context": "N/A"
+  },
+  "projectsLoadError": "Failed to load projects",
+  "@projectsLoadError": {
+    "description": "Error message shown when projects fail to load in the projects bottom sheet",
+    "context": "N/A"
 }
+}
+

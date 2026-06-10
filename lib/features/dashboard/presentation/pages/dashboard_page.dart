@@ -1,5 +1,7 @@
+import 'dart:async';
+
 import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
-import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
+import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
@@ -17,68 +19,63 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  final notifier = Modular.get<AuthNotifier>();
-  final authManager = Modular.get<AuthManager>();
-  String userInfo = '...';
-  final AppRouter _router = Modular.get<AppRouter>();
-  @override
-  void dispose() {
-    super.dispose();
-  }
+  late final AuthNotifier _authNotifier;
+  late final AuthManager _authManager;
+  late final AppRouter _router;
+  StreamSubscription<User?>? _authSubscription;
+  String _userInfo = '...';
 
   @override
   void initState() {
-    notifier.onUserProfileChanged.listen((event) {
+    super.initState();
+    _authNotifier = Modular.get<AuthNotifier>();
+    _authManager = Modular.get<AuthManager>();
+    _router = Modular.get<AppRouter>();
+
+    _authSubscription = _authNotifier.onUserProfileChanged.listen((event) {
+      if (!mounted) return;
       if (event == null) {
-        final cred = authManager.getCurrentCredentials();
+        final cred = _authManager.getCurrentCredentials();
         _router.navigate(fullCreateAccountRoute, arguments: cred.data?.email);
       }
     });
-    final cred = authManager.getCurrentCredentials();
+
+    final cred = _authManager.getCurrentCredentials();
     if (cred.data?.id == null) {
       _router.navigate(fullLoginRoute);
     } else {
-      authManager
+      _authManager
           .getUserProfile(cred.data?.id ?? '')
           .then((result) {
             if (result.isSuccess && result.data != null) {
               setState(() {
-                userInfo =
+                _userInfo =
                     '${result.data?.firstName} ${result.data?.lastName}!';
               });
             }
           })
           .catchError((error) {
             if (!mounted) return;
-            CoreToast.showError(context, 'Failed to load profile', 'Close');
+            CoreToast.showError(
+              context,
+              context.l10n.dashboardLoadProfileError,
+              context.l10n.closeButton,
+            );
           });
     }
-    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final typography = context.textTheme;
-    final colors = context.colorTheme;
     final l10n = context.l10n;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.dashboardTitle),
-        centerTitle: true,
-        backgroundColor: colors.pageBackground,
-        actions: [
-          CoreIconWidget(
-            icon: CoreIcons.search,
-            semanticLabel: l10n.dashboardSearchSemanticLabel,
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const GlobalSearchPage(),
-              ),
-            ),
-          ),
-          const SizedBox(width: CoreSpacing.space4),
-        ],
-      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(CoreSpacing.space6),
         child: Column(
@@ -94,13 +91,13 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                   const SizedBox(height: CoreSpacing.space6),
                   Text(
-                    'Welcome back, $userInfo',
+                    l10n.dashboardWelcomeMessage(_userInfo),
                     textAlign: TextAlign.center,
                     style: typography.headlineMediumSemiBold,
                   ),
                   const SizedBox(height: CoreSpacing.space2),
                   Text(
-                    'You are now logged in to your account',
+                    l10n.dashboardLoggedInSubtitle,
                     textAlign: TextAlign.center,
                     style: typography.bodyLargeRegular,
                   ),
@@ -114,11 +111,10 @@ class _DashboardPageState extends State<DashboardPage> {
             Center(
               child: CoreButton(
                 onPressed: () {
-                  final authManager = Modular.get<AuthManager>();
-                  authManager.logout();
+                  _authManager.logout();
                   _router.navigate(fullLoginRoute);
                 },
-                label: 'Logout',
+                label: l10n.logoutButton,
                 centerAlign: true,
               ),
             ),

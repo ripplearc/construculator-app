@@ -25,7 +25,7 @@ void main() {
   group('AppShellBloc', () {
     blocTest<AppShellBloc, AppShellState>(
       'emits home tab loaded after AppShellInitialized',
-      build: () => AppShellBloc(moduleLoader: tabModuleManager),
+      build: () => bloc,
       act: (b) => b.add(const AppShellInitialized()),
       expect: () => [
         const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {0}),
