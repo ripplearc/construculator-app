@@ -27,6 +27,9 @@ class FakeProjectRepository implements ProjectRepository {
   // Tracks permissions by project ID for testing
   final Map<String, List<String>> _projectPermissions = {};
 
+  /// The project id that [findCurrentProjectForUser] treats as currently selected.
+  String? currentProjectId;
+
   /// Controls whether [getProject] throws an exception
   bool shouldThrowOnGetProject = false;
 
@@ -235,6 +238,7 @@ class FakeProjectRepository implements ProjectRepository {
 
   /// Resets all fake configurations, clears data
   void reset() {
+    currentProjectId = null;
     shouldThrowOnGetProject = false;
     shouldThrowOnGetProjects = false;
     shouldThrowOnWatchProjects = false;
@@ -275,6 +279,18 @@ class FakeProjectRepository implements ProjectRepository {
       'permissionKey': permissionKey,
     });
     return _projectPermissions[projectId]?.contains(permissionKey) ?? false;
+  }
+
+  @override
+  Future<Project?> findCurrentProjectForUser(String userId) async {
+    _methodCalls.add({'method': 'findCurrentProjectForUser', 'userId': userId});
+    if (userId.isEmpty) return null;
+    final id = currentProjectId;
+    if (id == null || id.isEmpty) return null;
+    for (final project in _accessibleProjects) {
+      if (project.id == id) return project;
+    }
+    return null;
   }
 
   /// Sets permissions for a specific project (for testing)
