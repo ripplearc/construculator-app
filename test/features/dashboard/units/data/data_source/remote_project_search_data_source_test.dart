@@ -137,7 +137,7 @@ void main() {
 
         await expectLater(
           () => dataSource.fetchProjectsBySearchQuery('test'),
-          throwsA(isA<Exception>()),
+          throwsA(isA<TimeoutException>()),
         );
       });
     });

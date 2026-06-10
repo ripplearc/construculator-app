@@ -8,6 +8,8 @@ import 'package:construculator/libraries/project/data/models/project_dto.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 
+/// Remote implementation of [ProjectSearchDataSource] that delegates
+/// to the [global_search] Supabase RPC, scoped to the dashboard domain.
 class RemoteProjectSearchDataSource implements ProjectSearchDataSource {
   final SupabaseWrapper _supabaseWrapper;
   static final _logger = AppLogger().tag('RemoteProjectSearchDataSource');
