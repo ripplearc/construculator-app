@@ -358,36 +358,6 @@ abstract class AppLocalizations {
   /// **'Project settings'**
   String get projectSettingsSemanticLabel;
 
-  /// Title of the bottom sheet that lists the user's projects
-  ///
-  /// In en, this message translates to:
-  /// **'Projects'**
-  String get projectsSheetTitle;
-
-  /// Hint text for the search field used to filter the projects list
-  ///
-  /// In en, this message translates to:
-  /// **'Search projects'**
-  String get searchProjectsHint;
-
-  /// Label for the button that starts creating a new project
-  ///
-  /// In en, this message translates to:
-  /// **'Create a project'**
-  String get createProjectButton;
-
-  /// Empty state message shown when the user has no projects
-  ///
-  /// In en, this message translates to:
-  /// **'No projects yet.'**
-  String get projectsEmptyState;
-
-  /// Error message shown when the projects list cannot be loaded
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to load projects.'**
-  String get projectsLoadError;
-
   /// Text for hey enter your details to register with us
   ///
   /// In en, this message translates to:
@@ -1479,30 +1449,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not load suggestions.'**
   String get globalSearchSuggestionsErrorMessage;
-
-  /// Greeting shown at the top of the dashboard with the user's full name
-  ///
-  /// In en, this message translates to:
-  /// **'Welcome back, {name}'**
-  String dashboardWelcomeMessage(String name);
-
-  /// Subtitle shown below the welcome greeting on the dashboard
-  ///
-  /// In en, this message translates to:
-  /// **'You are now logged in to your account'**
-  String get dashboardLoggedInSubtitle;
-
-  /// Section header shown above the search results list
-  ///
-  /// In en, this message translates to:
-  /// **'Most relevant'**
-  String get searchResultsMostRelevant;
-
-  /// Empty state message shown when a search returns no results
-  ///
-  /// In en, this message translates to:
-  /// **'No results for \"{query}\"'**
-  String searchResultsEmpty(String query);
 }
 
 class _AppLocalizationsDelegate
