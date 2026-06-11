@@ -1,5 +1,4 @@
 import 'package:bloc_test/bloc_test.dart';
-import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
@@ -9,7 +8,6 @@ import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
-import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,11 +26,11 @@ void main() {
       final bootstrap = FakeAppBootstrapFactory.create(
         supabaseWrapper: FakeSupabaseWrapper(clock: clock),
       );
-      Modular.init(_ProjectDropdownBlocTestModule(bootstrap));
+      Modular.init(DashboardModule(bootstrap));
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
-      fakeNotifier =
-          Modular.get<CurrentProjectNotifier>() as FakeCurrentProjectNotifier;
+      fakeNotifier = FakeCurrentProjectNotifier();
+      Modular.replaceInstance<CurrentProjectNotifier>(fakeNotifier);
     });
 
     tearDownAll(() {
@@ -690,16 +688,17 @@ void main() {
         act: (bloc) async {
           bloc.add(const ProjectDropdownStarted());
           await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
-          // First failure: stream emits an error into the existing subscription
-          fakeSupabaseWrapper.shouldEmitStreamErrors = true;
+          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
+          fakeSupabaseWrapper.selectMultipleErrorMessage = 'first failure';
           seedProjectsTable([]);
           await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadFailure);
-          // Second failure: stream emits another error while already in LoadFailure
+          fakeSupabaseWrapper.selectMultipleErrorMessage = 'second failure';
           seedProjectsTable([]);
           await bloc.stream.firstWhere(
             (s) => s is ProjectDropdownLoadFailure && s.cachedProjects.isNotEmpty,
           );
-          fakeSupabaseWrapper.shouldEmitStreamErrors = false;
+          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = false;
+          fakeSupabaseWrapper.selectMultipleErrorMessage = null;
         },
         skip: 2,
         expect: () => [
@@ -742,7 +741,7 @@ void main() {
           await bloc.stream.firstWhere(
             (s) => s is ProjectDropdownLoadSuccess && s.searchQuery == 'material',
           );
-          fakeSupabaseWrapper.shouldEmitStreamErrors = true;
+          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
           seedProjectsTable([]);
           await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadFailure);
         },
@@ -783,7 +782,7 @@ void main() {
           await bloc.stream.firstWhere(
             (s) => s is ProjectDropdownLoadSuccess && s.searchQuery == 'my',
           );
-          fakeSupabaseWrapper.shouldEmitStreamErrors = true;
+          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
           seedProjectsTable([]);
           await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadFailure);
         },
@@ -817,7 +816,7 @@ void main() {
         act: (bloc) async {
           bloc.add(const ProjectDropdownStarted());
           await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
-          fakeSupabaseWrapper.shouldEmitStreamErrors = true;
+          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
           seedProjectsTable([]);
           await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadFailure);
           bloc.add(const ProjectDropdownSearchChanged('material'));
@@ -899,10 +898,10 @@ void main() {
           await bloc.stream.firstWhere(
             (s) => s is ProjectDropdownLoadSuccess && s.searchQuery == 'my',
           );
-          fakeSupabaseWrapper.shouldEmitStreamErrors = true;
+          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
           seedProjectsTable([]);
           await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadFailure);
-          fakeSupabaseWrapper.shouldEmitStreamErrors = false;
+          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = false;
           seedProjectsTable([
             buildProjectMap(
               id: 'project-1',
@@ -1057,16 +1056,3 @@ void main() {
   });
 }
 
-class _ProjectDropdownBlocTestModule extends Module {
-  final AppBootstrap bootstrap;
-
-  _ProjectDropdownBlocTestModule(this.bootstrap);
-
-  @override
-  List<Module> get imports => [ClockTestModule(), DashboardModule(bootstrap)];
-
-  @override
-  void binds(Injector i) {
-    i.addSingleton<CurrentProjectNotifier>(FakeCurrentProjectNotifier.new);
-  }
-}

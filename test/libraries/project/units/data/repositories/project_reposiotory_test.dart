@@ -247,29 +247,54 @@ void main() {
         },
       );
 
-      test('propagates error from watchProjectChanges stream', () async {
-        const userId = 'user-123';
+      test(
+        'does not propagate realtime watch errors and keeps the stream alive',
+        () async {
+          const userId = 'user-123';
 
-        final firstEmission = Completer<void>();
-        final errorReceived = Completer<void>();
-        final subscription = repository
-            .watchProjects(userId)
-            .listen(
-              (_) {
-                if (!firstEmission.isCompleted) firstEmission.complete();
-              },
-              onError: (error, _) {
-                expect(error, isA<Exception>());
-                if (!errorReceived.isCompleted) errorReceived.complete();
-              },
-            );
-        await firstEmission.future;
+          projectDataSource.ownedProjects = [
+            _createProjectDto(
+              id: 'owned-project',
+              projectName: 'Owned V1',
+              creatorUserId: 'user-123',
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ];
 
-        projectDataSource.emitError(Exception('realtime failure'));
+          final firstEmission = Completer<void>();
+          final secondEmission = Completer<void>();
+          Object? receivedError;
+          final subscription = repository
+              .watchProjects(userId)
+              .listen(
+                (_) {
+                  if (!firstEmission.isCompleted) {
+                    firstEmission.complete();
+                  } else if (!secondEmission.isCompleted) {
+                    secondEmission.complete();
+                  }
+                },
+                onError: (Object error, _) => receivedError = error,
+              );
+          await firstEmission.future;
 
-        await errorReceived.future;
-        await subscription.cancel();
-      });
+          projectDataSource.emitError(Exception('realtime failure'));
+
+          projectDataSource.ownedProjects = [
+            _createProjectDto(
+              id: 'owned-project',
+              projectName: 'Owned V2',
+              creatorUserId: 'user-123',
+              updatedAt: DateTime(2025, 1, 2),
+            ),
+          ];
+          projectDataSource.emitProjectChange();
+
+          await secondEmission.future;
+          expect(receivedError, isNull);
+          await subscription.cancel();
+        },
+      );
 
       test(
         'queues a follow-up refresh when changes arrive mid-refresh',

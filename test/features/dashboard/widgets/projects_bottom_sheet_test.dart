@@ -82,7 +82,18 @@ void main() {
       find.byKey(const Key('projects_search_field')),
       'material',
     );
-    await tester.pumpAndSettle();
+    await tester.runAsync(() async {
+      final current = harness.bloc.state;
+      final alreadyFiltered =
+          current is ProjectDropdownLoadSuccess &&
+          current.searchQuery == 'material';
+      if (!alreadyFiltered) {
+        await harness.bloc.stream.firstWhere(
+          (s) => s is ProjectDropdownLoadSuccess && s.searchQuery == 'material',
+        );
+      }
+    });
+    await tester.pump();
 
     expect(find.text('Material of building'), findsOneWidget);
     expect(find.text('My project'), findsNothing);
@@ -131,8 +142,13 @@ void main() {
     await harness.pumpSheet(tester);
     expect(find.text('My project'), findsOneWidget);
 
-    harness.fakeRepository.emitProjectsError(Exception('network down'));
-    await tester.pumpAndSettle();
+    await tester.runAsync(() async {
+      harness.fakeRepository.emitProjectsError(Exception('network down'));
+      await harness.bloc.stream.firstWhere(
+        (s) => s is ProjectDropdownLoadFailure,
+      );
+    });
+    await tester.pump();
 
     expect(find.text('My project'), findsOneWidget);
     expect(find.text(l10n.projectsLoadError), findsOneWidget);
