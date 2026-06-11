@@ -18,95 +18,101 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  final notifier = Modular.get<AuthNotifier>();
-  final authManager = Modular.get<AuthManager>();
-  String userInfo = '...';
+  final _notifier = Modular.get<AuthNotifier>();
+  final _authManager = Modular.get<AuthManager>();
+  String _userInfo = '...';
   final AppRouter _router = Modular.get<AppRouter>();
-  StreamSubscription<dynamic>? _profileSubscription;
-
-  @override
-  void dispose() {
-    _profileSubscription?.cancel();
-    super.dispose();
-  }
+  StreamSubscription<dynamic>? _authSubscription;
 
   @override
   void initState() {
-    _profileSubscription = notifier.onUserProfileChanged.listen((event) {
+    super.initState();
+    _authSubscription = _notifier.onUserProfileChanged.listen((event) {
       if (event == null) {
-        final cred = authManager.getCurrentCredentials();
+        final cred = _authManager.getCurrentCredentials();
         _router.navigate(fullCreateAccountRoute, arguments: cred.data?.email);
       }
     });
-    final cred = authManager.getCurrentCredentials();
+
+    final cred = _authManager.getCurrentCredentials();
     if (cred.data?.id == null) {
       _router.navigate(fullLoginRoute);
     } else {
-      authManager
+      _authManager
           .getUserProfile(cred.data?.id ?? '')
           .then((result) {
             if (result.isSuccess && result.data != null) {
               setState(() {
-                userInfo =
+                _userInfo =
                     '${result.data?.firstName} ${result.data?.lastName}!';
               });
             }
           })
           .catchError((error) {
             if (!mounted) return;
-            CoreToast.showError(context, 'Failed to load profile', 'Close');
+            CoreToast.showError(
+              context,
+              context.l10n.dashboardLoadProfileError,
+              context.l10n.closeButton,
+            );
           });
     }
-    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final typography = context.textTheme;
-    final l10n = context.l10n;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(CoreSpacing.space6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Column(
-              children: [
-                Icon(
-                  Icons.dashboard,
-                  size: CoreSpacing.space16,
-                  color: Theme.of(context).primaryColor,
-                ),
-                const SizedBox(height: CoreSpacing.space6),
-                Text(
-                  l10n.dashboardWelcomeMessage(userInfo),
-                  textAlign: TextAlign.center,
-                  style: typography.headlineMediumSemiBold,
-                ),
-                const SizedBox(height: CoreSpacing.space2),
-                Text(
-                  l10n.dashboardLoggedInSubtitle,
-                  textAlign: TextAlign.center,
-                  style: typography.bodyLargeRegular,
-                ),
-                const SizedBox(height: CoreSpacing.space8),
-              ],
+    return Scaffold(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(CoreSpacing.space6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.dashboard,
+                    size: CoreSpacing.space16,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                  const SizedBox(height: CoreSpacing.space6),
+                  Text(
+                    'Welcome back, $_userInfo',
+                    textAlign: TextAlign.center,
+                    style: typography.headlineMediumSemiBold,
+                  ),
+                  const SizedBox(height: CoreSpacing.space2),
+                  Text(
+                    'You are now logged in to your account',
+                    textAlign: TextAlign.center,
+                    style: typography.bodyLargeRegular,
+                  ),
+                  const SizedBox(height: CoreSpacing.space8),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: CoreSpacing.space8),
-          const RecentEstimationsSection(),
-          const SizedBox(height: CoreSpacing.space8),
-          Center(
-            child: CoreButton(
-              onPressed: () {
-                authManager.logout();
-                _router.navigate(fullLoginRoute);
-              },
-              label: 'Logout',
-              centerAlign: true,
+            const SizedBox(height: CoreSpacing.space8),
+            const RecentEstimationsSection(),
+            const SizedBox(height: CoreSpacing.space8),
+            Center(
+              child: CoreButton(
+                onPressed: () {
+                  _authManager.logout();
+                  _router.navigate(fullLoginRoute);
+                },
+                label: 'Logout',
+                centerAlign: true,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

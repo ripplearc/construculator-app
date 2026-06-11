@@ -25,6 +25,16 @@ class ProjectDropdownSelected extends ProjectDropdownEvent {
   List<Object?> get props => [projectId];
 }
 
+/// Updates the search query used to filter the loaded project list.
+class ProjectDropdownSearchChanged extends ProjectDropdownEvent {
+  final String query;
+
+  const ProjectDropdownSearchChanged(this.query);
+
+  @override
+  List<Object?> get props => [query];
+}
+
 /// Triggers an update event when the project list is updated.
 class _ProjectDropdownProjectsUpdated extends ProjectDropdownEvent {
   final List<Project> projects;

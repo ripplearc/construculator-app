@@ -2,7 +2,7 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/project/presentation/project_ui_provider_impl.dart';
 import 'package:construculator/features/project/presentation/widgets/project_header_app_bar.dart';
 import 'package:construculator/features/project/project_module.dart';
-
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:flutter/material.dart';
@@ -68,6 +68,9 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             theme: CoreTheme.light(),
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               appBar: provider.buildProjectHeaderAppbar(
                 projectId: 'my-project-123',

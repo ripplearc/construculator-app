@@ -144,6 +144,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recentEstimationsEmptyState => 'No recent estimations found.';
 
   @override
+  String get projectSettingsSemanticLabel => 'Project settings';
+
+  @override
+  String get projectsSheetTitle => 'Projects';
+
+  @override
+  String get searchProjectsHint => 'Search projects';
+
+  @override
+  String get createProjectButton => 'Create a project';
+
+  @override
+  String get projectsEmptyState => 'No projects yet.';
+
+  @override
+  String get projectsLoadError => 'Failed to load projects.';
+
+  @override
   String get heyEnterYourDetailsToRegisterWithUs =>
       'Hey, Enter your details to Register with us';
 
@@ -759,19 +777,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not load suggestions.';
 
   @override
-  String dashboardWelcomeMessage(String name) {
-    return 'Welcome back, $name';
-  }
+  String get searchNavigationError =>
+      'Failed to open search. Please try again.';
 
   @override
-  String get dashboardLoggedInSubtitle =>
-      'You are now logged in to your account';
+  String get closeButton => 'Close';
 
   @override
   String get searchResultsMostRelevant => 'Most relevant';
 
   @override
   String searchResultsEmpty(String query) {
-    return 'No results for \"$query\"';
+    return 'No results found for \"$query\"';
   }
+
+  @override
+  String get dashboardLoadProfileError =>
+      'Failed to load profile. Please try again.';
+
+  @override
+  String get projectSelectorSemanticLabel => 'Select project';
 }

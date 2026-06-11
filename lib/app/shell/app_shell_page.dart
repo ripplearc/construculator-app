@@ -1,13 +1,19 @@
+import 'dart:async';
+
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/app/shell/widgets/tab_navigator.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/projects_bottom_sheet.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
-import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/routes/global_search_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,6 +25,10 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// This widget provides the bottom navigation bar and manages the state of
 /// tab navigation using [AppShellBloc]. Module lazy-loading is orchestrated
 /// inside the BLoC, keeping this Page a pure presentation concern.
+///
+/// The app bar is driven by [CurrentProjectNotifier]: when a project is
+/// selected it renders [ProjectHeaderAppBar]; otherwise it shows the static
+/// app title.
 class AppShellPage extends StatefulWidget {
   const AppShellPage({super.key});
 
@@ -27,7 +37,11 @@ class AppShellPage extends StatefulWidget {
 }
 
 class _AppShellPageState extends State<AppShellPage> {
+  static final _logger = AppLogger().tag('AppShellPage');
   final AppShellBloc _bloc = Modular.get<AppShellBloc>();
+  late final CurrentProjectNotifier _currentProjectNotifier;
+  StreamSubscription<String?>? _projectSubscription;
+  String? _currentProjectId;
 
   final List<GlobalKey<NavigatorState>> _tabNavigatorKeys = List.generate(
     ShellTab.values.length,
@@ -35,8 +49,24 @@ class _AppShellPageState extends State<AppShellPage> {
   );
 
   @override
+  void initState() {
+    super.initState();
+    _currentProjectNotifier = Modular.get<CurrentProjectNotifier>();
+    _currentProjectId = _currentProjectNotifier.currentProjectId;
+    _projectSubscription = _currentProjectNotifier.onCurrentProjectChanged
+        .listen((id) {
+          if (mounted && _currentProjectId != id) {
+            setState(() => _currentProjectId = id);
+          }
+        });
+  }
+
+  @override
   void dispose() {
-    _bloc.close();
+    _projectSubscription?.cancel();
+    // Do not close _currentProjectNotifier or _bloc — both are DI-owned.
+    // Closing a DI-owned BLoC leaves the container holding a closed instance,
+    // causing "cannot add events after close" on re-navigation.
     super.dispose();
   }
 
@@ -78,12 +108,29 @@ class _AppShellPageState extends State<AppShellPage> {
     }
   }
 
+  Future<void> _navigateToSearch() async {
+    if (!mounted) return;
+    try {
+      await Modular.get<AppRouter>().pushNamed(fullGlobalSearchRoute);
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Failed to navigate to GlobalSearchPage: $error',
+        stackTrace.toString(),
+      );
+      if (mounted) {
+        CoreToast.showError(
+          context,
+          context.l10n.searchNavigationError,
+          context.l10n.closeButton,
+        );
+      }
+    }
+  }
+
   PreferredSizeWidget _buildAppBar(BuildContext context) {
-    // TODO: [CA-621] Wire ProjectDropdownBloc result into app bar via CurrentProjectNotifier.
-    // https://ripplearc.youtrack.cloud/issue/CA-621
-    const projectId = '';
-    final coreColors = Theme.of(context).coreColors;
+    final projectId = _currentProjectId ?? '';
     if (projectId.isEmpty) {
+      final coreColors = Theme.of(context).coreColors;
       return PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: Container(
@@ -105,11 +152,7 @@ class _AppShellPageState extends State<AppShellPage> {
               CoreIconWidget(
                 icon: CoreIcons.search,
                 semanticLabel: context.l10n.dashboardSearchSemanticLabel,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const GlobalSearchPage(),
-                  ),
-                ),
+                onTap: () => _navigateToSearch(),
               ),
               const SizedBox(width: CoreSpacing.space4),
             ],
@@ -117,11 +160,11 @@ class _AppShellPageState extends State<AppShellPage> {
         ),
       );
     }
-    return PreferredSize(
-      preferredSize: const Size.fromHeight(kToolbarHeight),
-      child: Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
-        projectId: projectId,
-      ),
+
+    return Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(
+      projectId: projectId,
+      onProjectTap: () => ProjectsBottomSheet.show(context),
+      onSearchTap: () => _navigateToSearch(),
     );
   }
 

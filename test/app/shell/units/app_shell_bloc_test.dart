@@ -23,19 +23,18 @@ void main() {
   });
 
   group('AppShellBloc', () {
-    blocTest<AppShellBloc, AppShellState>(
-      'emits home tab loaded after AppShellInitialized',
-      // ignore: no_direct_instantiation
-      build: () => AppShellBloc(moduleLoader: tabModuleManager),
-      act: (b) => b.add(const AppShellInitialized()),
-      expect: () => [
-        AppShellState(
-          selectedTabIndex: ShellTab.home.index,
-          loadedTabIndexes: {ShellTab.home.index},
-        ),
-      ],
-      verify: (_) => expect(tabModuleManager.isLoaded(ShellTab.home), isTrue),
-    );
+    test('loads home tab via the self-dispatched AppShellInitialized', () async {
+      final expected = AppShellState(
+        selectedTabIndex: ShellTab.home.index,
+        loadedTabIndexes: {ShellTab.home.index},
+      );
+      if (bloc.state != expected) {
+        await bloc.stream.firstWhere((s) => s == expected);
+      }
+
+      expect(bloc.state, expected);
+      expect(tabModuleManager.isLoaded(ShellTab.home), isTrue);
+    });
 
     test('events expose value equality through props', () {
       expect(

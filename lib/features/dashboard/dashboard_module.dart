@@ -25,7 +25,11 @@ class DashboardModule extends Module {
   @override
   void binds(Injector i) {
     i.add<ProjectDropdownBloc>(
-      () => ProjectDropdownBloc(projectRepository: i(), authManager: i()),
+      () => ProjectDropdownBloc(
+        projectRepository: i(),
+        authManager: i(),
+        currentProjectNotifier: i(),
+      ),
     );
     i.add<WatchRecentEstimationsUseCase>(
       () => WatchRecentEstimationsUseCase(i(), i()),

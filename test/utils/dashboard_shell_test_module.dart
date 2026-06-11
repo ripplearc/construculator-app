@@ -3,6 +3,7 @@ import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/default_tab_providers.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 /// Minimal Modular module for widget tests that need [DashboardModule] and
@@ -25,6 +26,11 @@ class DashboardShellTestModule extends Module {
         },
       ),
     );
-    i.addLazySingleton<AppShellBloc>(() => AppShellBloc(moduleLoader: i.get()));
+    i.addLazySingleton<AppShellBloc>(
+      () => AppShellBloc(
+        moduleLoader: i.get(),
+        projectDropdownBlocFactory: () => i.get<ProjectDropdownBloc>(),
+      ),
+    );
   }
 }

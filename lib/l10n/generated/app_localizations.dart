@@ -352,6 +352,42 @@ abstract class AppLocalizations {
   /// **'No recent estimations found.'**
   String get recentEstimationsEmptyState;
 
+  /// Accessibility label for the per-project settings icon button in the projects list
+  ///
+  /// In en, this message translates to:
+  /// **'Project settings'**
+  String get projectSettingsSemanticLabel;
+
+  /// Title of the bottom sheet that lists the user's projects
+  ///
+  /// In en, this message translates to:
+  /// **'Projects'**
+  String get projectsSheetTitle;
+
+  /// Hint text for the search field used to filter the projects list
+  ///
+  /// In en, this message translates to:
+  /// **'Search projects'**
+  String get searchProjectsHint;
+
+  /// Label for the button that starts creating a new project
+  ///
+  /// In en, this message translates to:
+  /// **'Create a project'**
+  String get createProjectButton;
+
+  /// Empty state message shown when the user has no projects
+  ///
+  /// In en, this message translates to:
+  /// **'No projects yet.'**
+  String get projectsEmptyState;
+
+  /// Error message shown when the projects list cannot be loaded
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load projects.'**
+  String get projectsLoadError;
+
   /// Text for hey enter your details to register with us
   ///
   /// In en, this message translates to:
@@ -1444,29 +1480,41 @@ abstract class AppLocalizations {
   /// **'Could not load suggestions.'**
   String get globalSearchSuggestionsErrorMessage;
 
-  /// Greeting shown at the top of the dashboard with the user's full name
+  /// Error toast shown when navigation to the search screen fails
   ///
   /// In en, this message translates to:
-  /// **'Welcome back, {name}'**
-  String dashboardWelcomeMessage(String name);
+  /// **'Failed to open search. Please try again.'**
+  String get searchNavigationError;
 
-  /// Subtitle shown below the welcome greeting on the dashboard
+  /// Label for close/dismiss action buttons and toasts
   ///
   /// In en, this message translates to:
-  /// **'You are now logged in to your account'**
-  String get dashboardLoggedInSubtitle;
+  /// **'Close'**
+  String get closeButton;
 
-  /// Section header shown above the search results list
+  /// Section header shown above the list of most relevant search results
   ///
   /// In en, this message translates to:
   /// **'Most relevant'**
   String get searchResultsMostRelevant;
 
-  /// Empty state message shown when a search returns no results
+  /// Message shown when a search returns no results
   ///
   /// In en, this message translates to:
-  /// **'No results for \"{query}\"'**
+  /// **'No results found for \"{query}\"'**
   String searchResultsEmpty(String query);
+
+  /// Error toast shown when loading the user profile on the dashboard fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load profile. Please try again.'**
+  String get dashboardLoadProfileError;
+
+  /// Accessibility label for the project selector button in the project header app bar
+  ///
+  /// In en, this message translates to:
+  /// **'Select project'**
+  String get projectSelectorSemanticLabel;
 }
 
 class _AppLocalizationsDelegate
