@@ -17,6 +17,7 @@ class DatabaseConstants {
   static const String projectsTable = 'projects';
   static const String projectMembersTable = 'project_members';
   static const String searchHistoryTable = 'search_history';
+  static const String tagsTable = 'tags';
 
   // RPC function names
   static const String globalSearchRpcFunction = 'global_search';
@@ -37,6 +38,7 @@ class DatabaseConstants {
 
   // Column names
   static const String idColumn = 'id';
+  static const String nameColumn = 'name';
   static const String projectIdColumn = 'project_id';
   static const String userIdColumn = 'user_id';
   static const String creatorUserIdColumn = 'creator_user_id';
