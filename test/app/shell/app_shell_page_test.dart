@@ -318,7 +318,11 @@ void main() {
       await tester.pumpWidget(makeApp());
       await tester.pump();
 
-      fakeProvider.capturedOnSearchTap?.call();
+      final onSearchTap = fakeProvider.capturedOnSearchTap;
+      if (onSearchTap == null) {
+        fail('onSearchTap was not captured by the fake provider');
+      }
+      onSearchTap();
       await tester.pumpAndSettle();
 
       expect(fakeRouter.navigationHistory, [
