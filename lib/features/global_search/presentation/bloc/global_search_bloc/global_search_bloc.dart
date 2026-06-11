@@ -5,6 +5,7 @@ import 'package:construculator/features/global_search/domain/entities/search_sco
 import 'package:construculator/features/global_search/domain/repositories/global_search_repository.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/tag/domain/repositories/tag_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rxdart/rxdart.dart';
@@ -28,6 +29,7 @@ EventTransformer<E> _debounce<E>(Duration duration) =>
 class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   static final _logger = AppLogger().tag('GlobalSearchBloc');
   final GlobalSearchRepository _repository;
+  final TagRepository _tagRepository;
 
   List<String> _recentSearches = const [];
 
@@ -37,9 +39,21 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
 
   Set<String> _selectedTags = const {};
 
-  GlobalSearchBloc({required GlobalSearchRepository repository})
-    : _repository = repository,
-      super(const GlobalSearchInitial()) {
+  /// Full list of available tag names fetched from [TagRepository].
+  List<String> _availableTags = const [];
+
+  /// Whether [_availableTags] has been fetched at least once, so subsequent
+  /// sheet openings reuse the cached list instead of refetching.
+  bool _availableTagsFetched = false;
+
+  String _tagSearchQuery = '';
+
+  GlobalSearchBloc({
+    required GlobalSearchRepository repository,
+    required TagRepository tagRepository,
+  }) : _repository = repository,
+       _tagRepository = tagRepository,
+       super(const GlobalSearchInitial()) {
     on<GlobalSearchStarted>(_onStarted);
     on<GlobalSearchQueryUpdated>(
       _onQueryUpdated,
@@ -52,6 +66,70 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     on<GlobalSearchSuggestionsRequested>(_onSuggestionsRequested);
     on<GlobalSearchTagFiltersApplied>(_onTagFiltersApplied);
     on<GlobalSearchTagFilterCleared>(_onTagFilterCleared);
+    on<GlobalSearchAvailableTagsRequested>(_onAvailableTagsRequested);
+    // Intentionally not debounced: tag filtering is in-memory (no network
+    // call), so instant per-keystroke feedback is cheap and preferable.
+    on<GlobalSearchTagSearchQueryUpdated>(_onTagSearchQueryUpdated);
+  }
+
+  /// Returns [_availableTags] filtered by the current tag search query.
+  List<String> _filterAvailableTags() {
+    if (_tagSearchQuery.isEmpty) return _availableTags;
+    final lower = _tagSearchQuery.toLowerCase();
+    return _availableTags
+        .where((tag) => tag.toLowerCase().contains(lower))
+        .toList();
+  }
+
+  /// Builds a [GlobalSearchReady] from the current internal fields.
+  GlobalSearchReady _readyState({
+    bool suggestionsLoading = false,
+    bool availableTagsLoading = false,
+  }) {
+    return GlobalSearchReady(
+      recentSearches: _recentSearches,
+      query: _currentQuery,
+      suggestions: _suggestions,
+      suggestionsLoading: suggestionsLoading,
+      selectedTags: _selectedTags,
+      availableTags: _filterAvailableTags(),
+      availableTagsLoading: availableTagsLoading,
+    );
+  }
+
+  Future<void> _onAvailableTagsRequested(
+    GlobalSearchAvailableTagsRequested event,
+    Emitter<GlobalSearchState> emit,
+  ) async {
+    _tagSearchQuery = '';
+    if (_availableTagsFetched) {
+      emit(_readyState());
+      return;
+    }
+
+    emit(_readyState(availableTagsLoading: true));
+
+    final result = await _tagRepository.getTags();
+
+    result.fold(
+      (failure) {
+        emit(GlobalSearchTagsLoadFailure(failure: failure));
+        emit(_readyState());
+      },
+      (tags) {
+        _availableTags = List.unmodifiable(tags.map((tag) => tag.name));
+        _availableTagsFetched = true;
+        emit(_readyState());
+      },
+    );
+  }
+
+  void _onTagSearchQueryUpdated(
+    GlobalSearchTagSearchQueryUpdated event,
+    Emitter<GlobalSearchState> emit,
+  ) {
+    _tagSearchQuery = event.query.trim();
+    emit(_readyState());
   }
 
   Future<void> _onStarted(
@@ -66,15 +144,8 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       _suggestions = const [];
       _currentQuery = '';
       _selectedTags = const {};
-      emit(
-        GlobalSearchReady(
-          recentSearches: recentSearches,
-          query: '',
-          suggestions: const [],
-          suggestionsLoading: false,
-          selectedTags: _selectedTags,
-        ),
-      );
+      _tagSearchQuery = '';
+      emit(_readyState());
     });
   }
 
@@ -83,15 +154,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     Emitter<GlobalSearchState> emit,
   ) {
     _currentQuery = event.query;
-    emit(
-      GlobalSearchReady(
-        recentSearches: _recentSearches,
-        query: event.query,
-        suggestions: _suggestions,
-        suggestionsLoading: false,
-        selectedTags: _selectedTags,
-      ),
-    );
+    emit(_readyState());
   }
 
   Future<void> _onPerformed(
@@ -168,15 +231,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       (_) {
         _recentSearches = List<String>.from(_recentSearches)
           ..removeWhere((term) => term == event.searchTerm);
-        emit(
-          GlobalSearchReady(
-            recentSearches: _recentSearches,
-            query: _currentQuery,
-            suggestions: _suggestions,
-            suggestionsLoading: false,
-            selectedTags: _selectedTags,
-          ),
-        );
+        emit(_readyState());
       },
     );
   }
@@ -185,15 +240,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     GlobalSearchSuggestionsRequested event,
     Emitter<GlobalSearchState> emit,
   ) async {
-    emit(
-      GlobalSearchReady(
-        recentSearches: _recentSearches,
-        query: _currentQuery,
-        suggestions: _suggestions,
-        suggestionsLoading: true,
-        selectedTags: _selectedTags,
-      ),
-    );
+    emit(_readyState(suggestionsLoading: true));
 
     final result = await _repository.getSearchSuggestions();
 
@@ -201,15 +248,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       (failure) => emit(GlobalSearchSuggestionsLoadFailure(failure: failure)),
       (suggestions) {
         _suggestions = suggestions;
-        emit(
-          GlobalSearchReady(
-            recentSearches: _recentSearches,
-            query: _currentQuery,
-            suggestions: suggestions,
-            suggestionsLoading: false,
-            selectedTags: _selectedTags,
-          ),
-        );
+        emit(_readyState());
       },
     );
   }
@@ -219,15 +258,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     Emitter<GlobalSearchState> emit,
   ) {
     _selectedTags = Set.unmodifiable(event.tags);
-    emit(
-      GlobalSearchReady(
-        recentSearches: _recentSearches,
-        query: _currentQuery,
-        suggestions: _suggestions,
-        suggestionsLoading: false,
-        selectedTags: _selectedTags,
-      ),
-    );
+    emit(_readyState());
   }
 
   void _onTagFilterCleared(
@@ -237,14 +268,6 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     _selectedTags = Set.unmodifiable(
       _selectedTags.where((t) => t != event.tag),
     );
-    emit(
-      GlobalSearchReady(
-        recentSearches: _recentSearches,
-        query: _currentQuery,
-        suggestions: _suggestions,
-        suggestionsLoading: false,
-        selectedTags: _selectedTags,
-      ),
-    );
+    emit(_readyState());
   }
 }

@@ -99,3 +99,24 @@ class GlobalSearchTagFilterCleared extends GlobalSearchEvent {
   @override
   List<Object?> get props => [tag];
 }
+
+/// Requests the list of available tags for the Tags filter sheet.
+///
+/// Dispatched when the user opens the Tags filter sheet. The BLoC fetches
+/// tags from [TagRepository] on the first request and serves the cached
+/// list on subsequent requests.
+class GlobalSearchAvailableTagsRequested extends GlobalSearchEvent {
+  const GlobalSearchAvailableTagsRequested();
+}
+
+/// Updates the search query used to filter the available tags list
+/// inside the Tags filter sheet.
+class GlobalSearchTagSearchQueryUpdated extends GlobalSearchEvent {
+  /// The current value of the tag search input field.
+  final String query;
+
+  const GlobalSearchTagSearchQueryUpdated({required this.query});
+
+  @override
+  List<Object?> get props => [query];
+}

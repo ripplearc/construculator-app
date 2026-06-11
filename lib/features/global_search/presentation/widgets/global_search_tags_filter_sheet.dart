@@ -5,24 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-// Representative tag list shown until a dedicated tags data source is wired.
-// TODO: [CA-638] Replace with tags fetched from repository once the data source exists.
-const List<String> _kDefaultTags = [
-  'Roofing',
-  'Carpeting',
-  'Flooring',
-  'Wall',
-  'Bed room wall',
-  'Plumbing',
-  'Electrical',
-  'Painting',
-];
-
 /// A modal bottom sheet for selecting tag filters in the global search screen.
 ///
-/// Maintains a local copy of the selected tags until the user taps Apply,
-/// at which point it dispatches [GlobalSearchTagFiltersApplied] and pops itself.
-/// Tapping Clear all deselects all tags without dismissing the sheet.
+/// The available tags and search filtering are owned by [GlobalSearchBloc]:
+/// the sheet dispatches [GlobalSearchTagSearchQueryUpdated] as the user types
+/// and renders [GlobalSearchReady.availableTags]. Tag selection is kept local
+/// until the user taps Apply, at which point the sheet dispatches
+/// [GlobalSearchTagFiltersApplied] and pops itself. Tapping Clear all
+/// deselects all tags without dismissing the sheet.
 class GlobalSearchTagsFilterSheet extends StatefulWidget {
   /// The tags already selected when the sheet opens.
   final Set<String> initialSelectedTags;
@@ -41,20 +31,11 @@ class GlobalSearchTagsFilterSheet extends StatefulWidget {
 class _GlobalSearchTagsFilterSheetState
     extends State<GlobalSearchTagsFilterSheet> {
   late Set<String> _localSelected;
-  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _localSelected = Set.of(widget.initialSelectedTags);
-  }
-
-  List<String> get _filteredTags {
-    if (_searchQuery.isEmpty) return _kDefaultTags;
-    final lower = _searchQuery.toLowerCase();
-    return _kDefaultTags
-        .where((t) => t.toLowerCase().contains(lower))
-        .toList();
   }
 
   void _onApply(BuildContext context) {
@@ -74,8 +55,8 @@ class _GlobalSearchTagsFilterSheetState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildTitle(typography, l10n),
-        _buildSearchField(l10n),
-        _buildTagList(typography),
+        _buildSearchField(context, l10n),
+        _buildTagList(typography, l10n),
         _buildActionButtons(context, l10n),
       ],
     );
@@ -94,7 +75,7 @@ class _GlobalSearchTagsFilterSheetState
     );
   }
 
-  Widget _buildSearchField(AppLocalizations l10n) {
+  Widget _buildSearchField(BuildContext context, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: CoreSpacing.space4,
@@ -102,7 +83,9 @@ class _GlobalSearchTagsFilterSheetState
       ),
       child: CoreTextField(
         hintText: l10n.globalSearchTagsSheetSearchHint,
-        onChanged: (value) => setState(() => _searchQuery = value),
+        onChanged: (value) => BlocProvider.of<GlobalSearchBloc>(
+          context,
+        ).add(GlobalSearchTagSearchQueryUpdated(query: value)),
         prefix: const CoreIconWidget(
           icon: CoreIcons.search,
           size: CoreSpacing.space5,
@@ -111,30 +94,63 @@ class _GlobalSearchTagsFilterSheetState
     );
   }
 
-  Widget _buildTagList(AppTypographyExtension typography) {
-    final tags = _filteredTags;
+  Widget _buildTagList(
+    AppTypographyExtension typography,
+    AppLocalizations l10n,
+  ) {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxHeight: 300),
-      child: ListView.builder(
-        shrinkWrap: true,
-        itemCount: tags.length,
-        itemBuilder: (_, index) {
-          final tag = tags[index];
-          final isSelected = _localSelected.contains(tag);
-          return CheckboxListTile(
-            key: Key('tag_filter_item_$tag'),
-            value: isSelected,
-            title: Text(tag, style: typography.bodyLargeRegular),
-            // Ignore the nullable bool parameter — use the pre-captured
-            // isSelected to avoid null-unwrapping and keep the toggle readable.
-            onChanged: (_) => setState(() {
-              if (isSelected) {
-                _localSelected = Set.of(_localSelected)..remove(tag);
-              } else {
-                _localSelected = Set.of(_localSelected)..add(tag);
-              }
-            }),
-            controlAffinity: ListTileControlAffinity.leading,
+      child: BlocBuilder<GlobalSearchBloc, GlobalSearchState>(
+        buildWhen: (prev, curr) => curr is GlobalSearchReady,
+        builder: (context, state) {
+          if (state is! GlobalSearchReady) {
+            return const SizedBox.shrink();
+          }
+          if (state.availableTagsLoading) {
+            return const Padding(
+              padding: EdgeInsets.all(CoreSpacing.space6),
+              child: Center(
+                child: CoreLoadingIndicator(
+                  key: Key('tags_filter_loading_indicator'),
+                ),
+              ),
+            );
+          }
+          final tags = state.availableTags;
+          if (tags.isEmpty) {
+            return Padding(
+              padding: const EdgeInsets.all(CoreSpacing.space6),
+              child: Center(
+                child: Text(
+                  l10n.globalSearchTagsSheetEmpty,
+                  key: const Key('tags_filter_empty_label'),
+                  style: typography.bodyMediumRegular,
+                ),
+              ),
+            );
+          }
+          return ListView.builder(
+            shrinkWrap: true,
+            itemCount: tags.length,
+            itemBuilder: (_, index) {
+              final tag = tags[index];
+              final isSelected = _localSelected.contains(tag);
+              return CheckboxListTile(
+                key: Key('tag_filter_item_$tag'),
+                value: isSelected,
+                title: Text(tag, style: typography.bodyLargeRegular),
+                // Ignore the nullable bool parameter; use the pre-captured
+                // isSelected to avoid null-unwrapping and keep the toggle readable.
+                onChanged: (_) => setState(() {
+                  if (isSelected) {
+                    _localSelected = Set.of(_localSelected)..remove(tag);
+                  } else {
+                    _localSelected = Set.of(_localSelected)..add(tag);
+                  }
+                }),
+                controlAffinity: ListTileControlAffinity.leading,
+              );
+            },
           );
         },
       ),

@@ -34,12 +34,21 @@ class GlobalSearchReady extends GlobalSearchState {
   /// Tags currently applied as filters. Empty means no tag filter is active.
   final Set<String> selectedTags;
 
+  /// Available tag names to display in the Tags filter sheet, already
+  /// filtered by the current tag search query.
+  final List<String> availableTags;
+
+  /// Whether the available tags fetch is currently in flight.
+  final bool availableTagsLoading;
+
   const GlobalSearchReady({
     this.recentSearches = const [],
     this.query = '',
     this.suggestions = const [],
     this.suggestionsLoading = false,
     this.selectedTags = const {},
+    this.availableTags = const [],
+    this.availableTagsLoading = false,
   });
 
   /// Returns a copy of this state with the given fields replaced.
@@ -49,6 +58,8 @@ class GlobalSearchReady extends GlobalSearchState {
     List<String>? suggestions,
     bool? suggestionsLoading,
     Set<String>? selectedTags,
+    List<String>? availableTags,
+    bool? availableTagsLoading,
   }) {
     return GlobalSearchReady(
       recentSearches: recentSearches ?? this.recentSearches,
@@ -56,11 +67,21 @@ class GlobalSearchReady extends GlobalSearchState {
       suggestions: suggestions ?? this.suggestions,
       suggestionsLoading: suggestionsLoading ?? this.suggestionsLoading,
       selectedTags: selectedTags ?? this.selectedTags,
+      availableTags: availableTags ?? this.availableTags,
+      availableTagsLoading: availableTagsLoading ?? this.availableTagsLoading,
     );
   }
 
   @override
-  List<Object?> get props => [recentSearches, query, suggestions, suggestionsLoading, selectedTags];
+  List<Object?> get props => [
+    recentSearches,
+    query,
+    suggestions,
+    suggestionsLoading,
+    selectedTags,
+    availableTags,
+    availableTagsLoading,
+  ];
 }
 
 /// Emitted while a search request is in flight.
@@ -134,6 +155,18 @@ class GlobalSearchRecentDeleteFailure extends GlobalSearchState {
   final Failure failure;
 
   const GlobalSearchRecentDeleteFailure({required this.failure});
+
+  @override
+  List<Object?> get props => [failure];
+}
+
+/// Emitted when loading the available tags for the filter sheet fails.
+class GlobalSearchTagsLoadFailure extends GlobalSearchState {
+  /// The failure describing why the tags fetch failed.
+  final Failure failure;
+
+  /// Creates a [GlobalSearchTagsLoadFailure].
+  const GlobalSearchTagsLoadFailure({required this.failure});
 
   @override
   List<Object?> get props => [failure];

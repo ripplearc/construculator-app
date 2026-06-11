@@ -975,5 +975,182 @@ void main() {
         ],
       );
     });
+
+    group('GlobalSearchAvailableTagsRequested', () {
+      void seedTags(List<String> names) {
+        fakeSupabase.addTableData(
+          DatabaseConstants.tagsTable,
+          names
+              .map(
+                (name) => <String, dynamic>{
+                  DatabaseConstants.idColumn: 'tag-$name',
+                  DatabaseConstants.nameColumn: name,
+                },
+              )
+              .toList(),
+        );
+      }
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits loading then tags sorted alphabetically on success',
+        setUp: () => seedTags(['Wall', 'Carpeting', 'Roofing']),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchAvailableTagsRequested()),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTagsLoading,
+            'availableTagsLoading',
+            isTrue,
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableTags,
+                'availableTags',
+                ['Carpeting', 'Roofing', 'Wall'],
+              )
+              .having(
+                (s) => s.availableTagsLoading,
+                'availableTagsLoading',
+                isFalse,
+              ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'reuses cached tags without refetching on subsequent requests',
+        setUp: () => seedTags(['Roofing']),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableTagsLoading,
+          );
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+        },
+        verify: (_) {
+          final selectCalls = fakeSupabase
+              .getMethodCallsFor('selectMatch')
+              .where(
+                (call) => call['table'] == DatabaseConstants.tagsTable,
+              );
+          expect(selectCalls.length, 1);
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchTagsLoadFailure then recovers to Ready on error',
+        setUp: () {
+          fakeSupabase.shouldThrowOnSelectMatch = true;
+          fakeSupabase.selectMatchExceptionType =
+              SupabaseExceptionType.postgrest;
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchAvailableTagsRequested()),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTagsLoading,
+            'availableTagsLoading',
+            isTrue,
+          ),
+          isA<GlobalSearchTagsLoadFailure>().having(
+            (s) => s.failure,
+            'failure',
+            isA<SearchFailure>(),
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTags,
+            'availableTags stay empty',
+            isEmpty,
+          ),
+        ],
+      );
+    });
+
+    group('GlobalSearchTagSearchQueryUpdated', () {
+      void seedTags(List<String> names) {
+        fakeSupabase.addTableData(
+          DatabaseConstants.tagsTable,
+          names
+              .map(
+                (name) => <String, dynamic>{
+                  DatabaseConstants.idColumn: 'tag-$name',
+                  DatabaseConstants.nameColumn: name,
+                },
+              )
+              .toList(),
+        );
+      }
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'filters available tags case-insensitively by substring',
+        setUp: () => seedTags(['Roofing', 'Carpeting', 'Wall', 'Painting']),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableTagsLoading,
+          );
+          bloc.add(const GlobalSearchTagSearchQueryUpdated(query: 'ING'));
+        },
+        skip: 2,
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTags,
+            'filtered tags',
+            ['Carpeting', 'Painting', 'Roofing'],
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'restores the full list when the query is cleared',
+        setUp: () => seedTags(['Roofing', 'Wall']),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableTagsLoading,
+          );
+          bloc.add(const GlobalSearchTagSearchQueryUpdated(query: 'roof'));
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchTagSearchQueryUpdated(query: ''));
+        },
+        skip: 3,
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTags,
+            'full list restored',
+            ['Roofing', 'Wall'],
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'resets the tag search query when the sheet is reopened',
+        setUp: () => seedTags(['Roofing', 'Wall']),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableTagsLoading,
+          );
+          bloc.add(const GlobalSearchTagSearchQueryUpdated(query: 'roof'));
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+        },
+        skip: 3,
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTags,
+            'query reset restores full list',
+            ['Roofing', 'Wall'],
+          ),
+        ],
+      );
+    });
   });
 }
