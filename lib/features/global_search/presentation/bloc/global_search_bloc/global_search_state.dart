@@ -123,6 +123,9 @@ class GlobalSearchSuggestionsLoadFailure extends GlobalSearchState {
 class GlobalSearchEmptyQuery extends GlobalSearchState {
   /// Creates a [GlobalSearchEmptyQuery] state.
   const GlobalSearchEmptyQuery();
+
+  @override
+  List<Object?> get props => const [];
 }
 
 /// Emitted when removing a recent search term from history fails.
