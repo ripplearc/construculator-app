@@ -173,5 +173,20 @@ void main() {
       },
     );
 
+    testWidgets(
+      'meets a11y guidelines for Tags filter chip in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme),
+          find.byKey(const Key('global_search_tags_filter_chip')),
+          checkTapTargetSize: true,
+          checkLabeledTapTarget: true,
+        );
+      },
+    );
+
   });
 }
