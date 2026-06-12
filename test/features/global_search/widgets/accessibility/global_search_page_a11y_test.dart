@@ -188,5 +188,8 @@ void main() {
       },
     );
 
+    // TODO: [CA-727] Add a11y coverage (tap-target size + semantic label) for
+    // the active tag dismiss chips ('active_tag_chip_$tag').
+    // https://ripplearc.youtrack.cloud/issue/CA-727
   });
 }
