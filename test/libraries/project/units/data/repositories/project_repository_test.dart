@@ -256,33 +256,52 @@ void main() {
         },
       );
 
-      test('propagates error from watchProjectChanges stream', () async {
-        const userId = 'user-123';
+      test(
+        'swallows realtime stream errors and keeps serving project updates',
+        () async {
+          const userId = 'user-123';
 
-        final firstEmission = Completer<void>();
-        final subscription = repository.watchProjects(userId).listen(
-          (_) { if (!firstEmission.isCompleted) firstEmission.complete(); },
-          onError: (Object _, StackTrace __) {},
-        );
+          final emissions = <List<Project>>[];
+          final streamErrors = <Object>[];
+          final subscription = repository
+              .watchProjects(userId)
+              .listen(emissions.add, onError: streamErrors.add);
 
-        await firstEmission.future;
+          await pumpEventQueue();
+          expect(emissions, hasLength(1));
 
-        supabaseWrapper.shouldEmitStreamErrors = true;
-        supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
-          _projectRow(
-            id: 'owned-project',
-            projectName: 'Owned',
-            creatorUserId: 'user-123',
-          ),
-        ]);
+          supabaseWrapper.shouldEmitStreamErrors = true;
+          supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+            _projectRow(
+              id: 'owned-project',
+              projectName: 'Owned',
+              creatorUserId: 'user-123',
+            ),
+          ]);
+          await pumpEventQueue();
 
-        await expectLater(
-          repository.watchProjects(userId),
-          emitsError(isA<Exception>()),
-        );
+          expect(streamErrors, isEmpty);
 
-        await subscription.cancel();
-      });
+          supabaseWrapper.shouldEmitStreamErrors = false;
+          supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+            _projectRow(
+              id: 'owned-project',
+              projectName: 'Owned V2',
+              creatorUserId: 'user-123',
+            ),
+          ]);
+          await pumpEventQueue();
+
+          expect(
+            emissions.last
+                .firstWhere((p) => p.id == 'owned-project')
+                .projectName,
+            'Owned V2',
+          );
+
+          await subscription.cancel();
+        },
+      );
 
       test(
         'queues a follow-up refresh when changes arrive mid-refresh',
@@ -302,25 +321,11 @@ void main() {
           supabaseWrapper.shouldDelayOperations = true;
           supabaseWrapper.completer = firstRefreshCompleter;
 
-          final expectation = expectLater(
-            repository.watchProjects(userId),
-            emitsInOrder([
-              isA<List<Project>>().having(
-                (projects) => projects.firstWhere((p) => p.id == 'owned-project').projectName,
-                'projectName',
-                'Owned V1',
-              ),
-              emitsThrough(
-                isA<List<Project>>().having(
-                  (projects) => projects.firstWhere((p) => p.id == 'owned-project').projectName,
-                  'projectName',
-                  'Owned V2',
-                ),
-              ),
-            ]),
-          );
+          final emissions = <List<Project>>[];
+          final subscription = repository
+              .watchProjects(userId)
+              .listen(emissions.add);
 
-          // While first refresh is in-flight, update data and emit a second tick.
           supabaseWrapper.shouldDelayOperations = false;
           supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
             _projectRow(
@@ -332,8 +337,18 @@ void main() {
           ]);
 
           firstRefreshCompleter.complete();
+          await pumpEventQueue();
 
-          await expectation;
+          expect(
+            emissions.map(
+              (projects) => projects
+                  .firstWhere((p) => p.id == 'owned-project')
+                  .projectName,
+            ),
+            ['Owned V1', 'Owned V2'],
+          );
+
+          await subscription.cancel();
         },
       );
     });
