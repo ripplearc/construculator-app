@@ -224,6 +224,7 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
                 ),
                 child: BlocBuilder<GlobalSearchBloc, GlobalSearchState>(
                   buildWhen: (prev, curr) {
+                    // Reference equality is sufficient: each emit creates a new Set.unmodifiable.
                     final p = prev is GlobalSearchReady
                         ? prev.selectedTags
                         : null;

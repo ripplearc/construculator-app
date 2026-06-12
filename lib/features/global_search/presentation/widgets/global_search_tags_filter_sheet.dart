@@ -125,6 +125,8 @@ class _GlobalSearchTagsFilterSheetState
             key: Key('tag_filter_item_$tag'),
             value: isSelected,
             title: Text(tag, style: typography.bodyLargeRegular),
+            // Ignore the nullable bool parameter — use the pre-captured
+            // isSelected to avoid null-unwrapping and keep the toggle readable.
             onChanged: (_) => setState(() {
               if (isSelected) {
                 _localSelected = Set.of(_localSelected)..remove(tag);
