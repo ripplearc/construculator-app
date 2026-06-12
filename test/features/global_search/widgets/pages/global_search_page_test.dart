@@ -21,6 +21,11 @@ import '../../../../utils/screenshot/font_loader.dart';
 const String _testUserId = 'user-page-test';
 const String _testUserEmail = 'page@test.com';
 
+/// CoreToast displays for 3 seconds by default (the package does not export
+/// the duration as a constant); pump just past it to flush the auto-dismiss
+/// timer before the test ends.
+const Duration _kToastDismissDuration = Duration(seconds: 4);
+
 Map<String, dynamic> _fakeHistoryRow(String term) => {
   DatabaseConstants.idColumn: term,
   DatabaseConstants.userIdColumn: _testUserId,
@@ -204,13 +209,16 @@ void main() {
         of: find.text(l10n().globalSearchHint),
         matching: find.byType(TextFormField),
       );
-      await tester.showKeyboard(searchField);
+      // Explicitly enter an empty string rather than relying on the field's
+      // default state, so the test's intent survives setup changes.
+      await tester.enterText(searchField, '');
+      await tester.pump(const Duration(milliseconds: 400));
       await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pump();
 
       expect(find.text(l10n().globalSearchEmptyQueryMessage), findsOneWidget);
 
-      await tester.pump(const Duration(seconds: 10));
+      await tester.pump(_kToastDismissDuration);
     });
 
     testWidgets(
@@ -229,7 +237,7 @@ void main() {
 
         expect(find.text(l10n().globalSearchEmptyQueryMessage), findsOneWidget);
 
-        await tester.pump(const Duration(seconds: 10));
+        await tester.pump(_kToastDismissDuration);
       },
     );
   });

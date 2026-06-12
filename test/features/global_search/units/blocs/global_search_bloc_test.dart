@@ -294,6 +294,39 @@ void main() {
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'preserves the previous query when an empty query is submitted',
+        setUp: () {
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {'projects': [], 'estimations': [], 'members': []},
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          // Establish a valid current query first.
+          bloc.add(const GlobalSearchPerformed(query: 'foundation'));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadEmpty);
+          // Submit an invalid query; the early-return guard must fire before
+          // the bloc's current query is mutated.
+          bloc.add(const GlobalSearchPerformed(query: '   '));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchEmptyQuery);
+          // GlobalSearchTagFiltersApplied echoes the bloc's current query in
+          // GlobalSearchReady, exposing any mutation from the empty submission.
+          bloc.add(const GlobalSearchTagFiltersApplied(tags: {'Roofing'}));
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'foundation'),
+          const GlobalSearchLoadEmpty(query: 'foundation'),
+          const GlobalSearchEmptyQuery(),
+          isA<GlobalSearchReady>().having(
+            (s) => s.query,
+            'query unchanged by the empty submission',
+            'foundation',
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
         'trims surrounding whitespace before searching and reports trimmed query',
         setUp: () {
           fakeSupabase.setRpcResponse(
