@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
@@ -19,6 +17,38 @@ void main() {
     tearDown(() {
       fake.reset();
       fake.dispose();
+    });
+
+    group('createProject', () {
+      test('returns Right(project) by default', () async {
+        final project = _fakeProject(id: 'p-1', projectName: 'New Project');
+
+        final result = await fake.createProject(project);
+
+        expect(result.isRight(), isTrue);
+        result.fold(
+          (_) => fail('Expected Right'),
+          (p) => expect(p.projectName, equals('New Project')),
+        );
+      });
+
+      test('records method call with project', () async {
+        final project = _fakeProject(id: 'p-1');
+
+        await fake.createProject(project);
+
+        final calls = fake.getMethodCallsFor('createProject');
+        expect(calls, hasLength(1));
+        expect(calls.first['project'], equals(project));
+      });
+
+      test('returns Left when shouldFailOnCreate is true', () async {
+        fake.shouldFailOnCreate = true;
+
+        final result = await fake.createProject(_fakeProject(id: 'p-1'));
+
+        expect(result.isLeft(), isTrue);
+      });
     });
 
     group('getProjectSetting', () {
@@ -154,116 +184,21 @@ void main() {
       });
     });
 
-    group('watchProjectSetting', () {
-      test('records method call with projectId', () {
-        fake.watchProjectSetting('p-1').listen((_) {});
-
-        final calls = fake.getMethodCallsFor('watchProjectSetting');
-        expect(calls, hasLength(1));
-        expect(calls.first['projectId'], equals('p-1'));
-      });
-
-      test('emits Right(project) after emitProject', () async {
-        final emittedCompleter = Completer<Project>();
-        final subscription = fake.watchProjectSetting('p-1').listen((result) {
-          result.fold((_) {}, (project) {
-            if (!emittedCompleter.isCompleted) {
-              emittedCompleter.complete(project);
-            }
-          });
-        });
-
-        final project = _fakeProject(id: 'p-1', projectName: 'Emitted');
-        fake.emitProject(project);
-
-        final received = await emittedCompleter.future;
-        expect(received.projectName, equals('Emitted'));
-        await subscription.cancel();
-      });
-
-      test('emits Left after emitFailure', () async {
-        final failureCompleter = Completer<Failure>();
-        final subscription = fake.watchProjectSetting('p-1').listen((result) {
-          result.fold((failure) {
-            if (!failureCompleter.isCompleted)
-              failureCompleter.complete(failure);
-          }, (_) {});
-        });
-
-        fake.emitFailure(
-          const ProjectFailure(errorType: ProjectErrorType.notFoundError),
-        );
-
-        final received = await failureCompleter.future;
-        expect(received, isA<ProjectFailure>());
-        await subscription.cancel();
-      });
-
-      test('forwards error on emitStreamError', () async {
-        final errorCompleter = Completer<Object>();
-        final subscription = fake
-            .watchProjectSetting('p-1')
-            .listen(
-              (_) {},
-              onError: (Object error, StackTrace _) {
-                if (!errorCompleter.isCompleted) errorCompleter.complete(error);
-              },
-            );
-
-        fake.emitStreamError(Exception('test error'));
-
-        final received = await errorCompleter.future;
-        expect(received, isA<Exception>());
-        await subscription.cancel();
-      });
-
-      test(
-        'returns stream with single Left when shouldFailOnWatch is true',
-        () async {
-          fake.shouldFailOnWatch = true;
-
-          final result = await fake.watchProjectSetting('p-1').first;
-
-          expect(result.isLeft(), isTrue);
-        },
-      );
-
-      test('ignores emits after dispose', () {
-        fake.watchProjectSetting('p-1').listen((_) {});
-        fake.dispose();
-
-        expect(
-          () => fake.emitProject(_fakeProject(id: 'p-1')),
-          returnsNormally,
-        );
-        expect(
-          () => fake.emitFailure(
-            const ProjectFailure(errorType: ProjectErrorType.connectionError),
-          ),
-          returnsNormally,
-        );
-        expect(
-          () => fake.emitStreamError(Exception('disposed stream')),
-          returnsNormally,
-        );
-      });
-    });
-
     group('reset', () {
       test('clears all flags, data, and method calls', () async {
+        fake.shouldFailOnCreate = true;
         fake.shouldFailOnGet = true;
         fake.shouldFailOnUpdate = true;
         fake.shouldFailOnDelete = true;
-        fake.shouldFailOnWatch = true;
         fake.projectToReturn = _fakeProject(id: 'p-1');
         await fake.deleteProject('p-1');
 
         fake.reset();
 
+        expect(fake.shouldFailOnCreate, isFalse);
         expect(fake.shouldFailOnGet, isFalse);
         expect(fake.shouldFailOnUpdate, isFalse);
         expect(fake.shouldFailOnDelete, isFalse);
-        expect(fake.shouldFailOnWatch, isFalse);
         expect(fake.projectToReturn, isNull);
         expect(fake.getMethodCalls(), isEmpty);
       });
