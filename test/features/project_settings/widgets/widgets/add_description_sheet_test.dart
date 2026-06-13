@@ -140,22 +140,24 @@ void main() {
         expect(addedDescription, equals('My description'));
       });
 
-      testWidgets('calls onDirtyChanged(true) on first keystroke', (tester) async {
-        bool? dirtyValue;
+      testWidgets('shows no error on first keystroke before limit is reached', (
+        tester,
+      ) async {
         await tester.pumpWidget(
-          wrap(
-            AddDescriptionSheet(
-              onAdd: (_) {},
-            ),
-          ),
+          wrap(AddDescriptionSheet(onAdd: (_) {})),
         );
         await tester.pumpAndSettle();
 
-        final descriptionField = tester.widget<ProjectDescriptionTextField>(
+        await tester.enterText(
           find.byType(ProjectDescriptionTextField),
+          'Hello',
         );
-        descriptionField.onDirtyChanged?.call(false);
-        expect(dirtyValue, isNull);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('Description must be 100 characters or less'),
+          findsNothing,
+        );
       });
     });
   });
