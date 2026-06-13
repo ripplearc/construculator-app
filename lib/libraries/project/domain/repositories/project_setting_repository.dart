@@ -10,6 +10,12 @@ import 'package:construculator/libraries/project/domain/permission_constants.dar
 ///
 /// Details: https://ripplearc.youtrack.cloud/issue/CA-250
 abstract class ProjectSettingRepository {
+  /// Creates a new project from [project] and returns the persisted state.
+  ///
+  /// Returns [Right] with the created [Project] on success, or [Left] with a
+  /// [Failure] if a data error occurs.
+  Future<Either<Failure, Project>> createProject(Project project);
+
   /// Returns the current state of the project identified by [projectId].
   ///
   /// Returns [Right] with the [Project] on success, or [Left] with a

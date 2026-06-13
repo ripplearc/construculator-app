@@ -345,6 +345,51 @@ void main() {
       );
     });
 
+    group('createProject', () {
+      test('returns Right(project) on success', () async {
+        final project = Project(
+          id: 'p-1',
+          projectName: 'New Project',
+          creatorUserId: 'user-1',
+          createdAt: DateTime(2025, 1, 1),
+          updatedAt: DateTime(2025, 1, 1),
+          status: ProjectStatus.active,
+        );
+
+        final result = await repository.createProject(project);
+
+        expect(result.isRight(), isTrue);
+        result.fold((_) => fail('Expected Right'), (p) {
+          expect(p.projectName, equals('New Project'));
+          expect(p.creatorUserId, equals('user-1'));
+        });
+      });
+
+      test('returns Left(unexpectedDatabaseError) on ServerException', () async {
+        supabaseWrapper.shouldThrowOnInsert = true;
+
+        final project = Project(
+          id: 'p-1',
+          projectName: 'New Project',
+          creatorUserId: 'user-1',
+          createdAt: DateTime(2025, 1, 1),
+          updatedAt: DateTime(2025, 1, 1),
+          status: ProjectStatus.active,
+        );
+
+        final result = await repository.createProject(project);
+
+        expect(result.isLeft(), isTrue);
+        result.fold((failure) {
+          expect(failure, isA<ProjectFailure>());
+          expect(
+            (failure as ProjectFailure).errorType,
+            equals(ProjectErrorType.unexpectedDatabaseError),
+          );
+        }, (_) => fail('Expected Left'));
+      });
+    });
+
     group('deleteProject', () {
       test('returns Left(permissionDenied) when permission missing', () async {
         final result = await repository.deleteProject('p-1');

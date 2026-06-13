@@ -23,6 +23,23 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
        _permissionDataSource = permissionDataSource;
 
   @override
+  Future<Either<Failure, Project>> createProject(Project project) async {
+    try {
+      final dto = _toDtoFromEntity(project);
+      final result = await _dataSource.createProject(dto);
+      return Right(result.toDomain());
+    } catch (error, stackTrace) {
+      return Left(
+        _handleError(
+          error,
+          'creating project with name: ${project.projectName}',
+          stackTrace,
+        ),
+      );
+    }
+  }
+
+  @override
   Future<Either<Failure, Project>> getProjectSetting(String projectId) async {
     try {
       final dto = await _dataSource.fetchProjectSetting(projectId);
