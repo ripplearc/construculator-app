@@ -6,6 +6,11 @@ import 'package:construculator/libraries/project/data/models/project_dto.dart';
 /// Methods throw on failure — callers are responsible for converting exceptions
 /// to domain [Failure] objects.
 abstract class ProjectSettingDataSource {
+  /// Creates a new project from [projectDto] and returns the persisted row.
+  ///
+  /// Throws on network or database errors.
+  Future<ProjectDto> createProject(ProjectDto projectDto);
+
   /// Fetches the current state of a single project by its [projectId].
   ///
   /// Throws if the project does not exist or if a network error occurs.
@@ -21,10 +26,4 @@ abstract class ProjectSettingDataSource {
   ///
   /// Throws on network or database errors.
   Future<void> deleteProject(String projectId);
-
-  /// Emits the latest project snapshot whenever the project row identified by
-  /// [projectId] changes in remote storage.
-  ///
-  /// Errors from the underlying stream are forwarded to subscribers.
-  Stream<ProjectDto?> watchProjectChanges(String projectId);
 }

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/project/data/data_source/remote_project_setting_data_source.dart';
 import 'package:construculator/libraries/project/data/models/project_dto.dart';
@@ -214,84 +212,46 @@ void main() {
       });
     });
 
-    group('watchProjectChanges', () {
-      test('emits when project row changes', () async {
-        supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
-          _projectRow(id: 'project-1', projectName: 'Initial'),
-        ]);
-
-        final emissions = <ProjectDto?>[];
-        final emissionCompleter = Completer<void>();
-        var emissionCount = 0;
-        final subscription = dataSource.watchProjectChanges('project-1').listen(
-          (projectDto) {
-            emissions.add(projectDto);
-            emissionCount++;
-            if (emissionCount >= 2 && !emissionCompleter.isCompleted) {
-              emissionCompleter.complete();
-            }
-          },
-        );
-        addTearDown(subscription.cancel);
-
-        await pumpEventQueue();
-
-        supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
-          _projectRow(id: 'project-1', projectName: 'Updated'),
-        ]);
-
-        await expectLater(emissionCompleter.future, completes);
-        expect(emissions.first?.projectName, equals('Initial'));
-        expect(emissions.last?.projectName, equals('Updated'));
-      });
-
-      test('emits null when the project row is deleted', () async {
-        supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
-          _projectRow(id: 'project-1', projectName: 'Existing'),
-        ]);
-
-        final emissions = <ProjectDto?>[];
-        final deletionCompleter = Completer<void>();
-        final subscription = dataSource.watchProjectChanges('project-1').listen(
-          (projectDto) {
-            emissions.add(projectDto);
-            if (projectDto == null && !deletionCompleter.isCompleted) {
-              deletionCompleter.complete();
-            }
-          },
-        );
-        addTearDown(subscription.cancel);
-
-        await pumpEventQueue();
-
+    group('createProject', () {
+      test('returns ProjectDto with persisted fields on success', () async {
         supabaseWrapper.addTableData(DatabaseConstants.projectsTable, []);
 
-        await expectLater(deletionCompleter.future, completes);
-        expect(emissions.first?.projectName, equals('Existing'));
-        expect(emissions.last, isNull);
+        final dto = _projectDto(
+          id: 'project-1',
+          projectName: 'New Project',
+          description: 'A description',
+        );
+        final result = await dataSource.createProject(dto);
+
+        expect(result.projectName, equals('New Project'));
+        expect(result.description, equals('A description'));
+
+        final insertCalls = supabaseWrapper.getMethodCallsFor('insert');
+        expect(insertCalls, hasLength(1));
+        expect(
+          insertCalls.first['table'],
+          equals(DatabaseConstants.projectsTable),
+        );
+        final data = insertCalls.first['data'] as Map<String, dynamic>;
+        expect(
+          data[DatabaseConstants.projectNameColumn],
+          equals('New Project'),
+        );
+        expect(
+          data[DatabaseConstants.descriptionColumn],
+          equals('A description'),
+        );
       });
 
-      test('forwards stream errors to subscribers', () async {
-        final errorCompleter = Completer<Object>();
-        final subscription = dataSource
-            .watchProjectChanges('project-1')
-            .listen(
-              (_) {},
-              onError: (Object error, StackTrace _) {
-                if (!errorCompleter.isCompleted) errorCompleter.complete(error);
-              },
-            );
-        addTearDown(subscription.cancel);
+      test('rethrows exception when supabaseWrapper.insert throws', () async {
+        supabaseWrapper.shouldThrowOnInsert = true;
+        supabaseWrapper.insertExceptionType = SupabaseExceptionType.postgrest;
 
-        await pumpEventQueue();
-
-        supabaseWrapper.shouldEmitStreamErrors = true;
-        supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
-          _projectRow(id: 'project-1', projectName: 'Trigger'),
-        ]);
-
-        final receivedError = await errorCompleter.future;
-        expect(receivedError, isA<ServerException>());
+        final dto = _projectDto(id: 'project-1', projectName: 'New Project');
+        await expectLater(
+          dataSource.createProject(dto),
+          throwsA(isA<supabase.PostgrestException>()),
+        );
       });
     });
   });

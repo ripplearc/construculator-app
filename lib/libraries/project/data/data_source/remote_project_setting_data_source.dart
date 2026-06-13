@@ -19,6 +19,41 @@ class RemoteProjectSettingDataSource implements ProjectSettingDataSource {
     required SupabaseWrapper supabaseWrapper,
   }) : _supabaseWrapper = supabaseWrapper;
 
+  /// Creates a new project row from [projectDto] and returns the persisted row.
+  ///
+  /// Throws on network or database errors.
+  @override
+  Future<ProjectDto> createProject(ProjectDto projectDto) async {
+    try {
+      _logger.debug('Creating project with name: ${projectDto.projectName}');
+
+      final data = <String, dynamic>{
+        DatabaseConstants.projectNameColumn: projectDto.projectName,
+        DatabaseConstants.descriptionColumn: projectDto.description,
+        DatabaseConstants.creatorUserIdColumn: projectDto.creatorUserId,
+        DatabaseConstants.owningCompanyIdColumn: projectDto.owningCompanyId,
+        DatabaseConstants.exportFolderLinkColumn: projectDto.exportFolderLink,
+        DatabaseConstants.exportStorageProviderColumn:
+            projectDto.exportStorageProvider,
+        DatabaseConstants.statusColumn: projectDto.status.name,
+      };
+
+      final result = await _supabaseWrapper.insert(
+        table: DatabaseConstants.projectsTable,
+        data: data,
+      );
+
+      return ProjectDto.fromJson(result);
+    } catch (error, stackTrace) {
+      _logger.warning(
+        'Error while creating project: $error',
+        error,
+        stackTrace,
+      );
+      rethrow;
+    }
+  }
+
   /// Fetches a single project setting row by [projectId].
   ///
   /// Throws [NotFoundException] when the project does not exist and rethrows
@@ -122,27 +157,4 @@ class RemoteProjectSettingDataSource implements ProjectSettingDataSource {
     }
   }
 
-  /// Streams the latest project setting snapshot whenever the project row changes.
-  ///
-  /// Emits `null` when the project is deleted or temporarily missing and
-  /// forwards stream errors to subscribers.
-  @override
-  Stream<ProjectDto?> watchProjectChanges(String projectId) {
-    return _supabaseWrapper
-        .watchTableFiltered(
-          table: DatabaseConstants.projectsTable,
-          primaryKey: const [DatabaseConstants.idColumn],
-          filterColumn: DatabaseConstants.idColumn,
-          filterValue: projectId,
-        )
-        .map((rows) => rows.isEmpty ? null : ProjectDto.fromJson(rows.first))
-        .handleError((Object error, StackTrace stackTrace) {
-          _logger.warning(
-            'Error while watching project changes for projectId: $projectId, error: $error',
-            error,
-            stackTrace,
-          );
-          Error.throwWithStackTrace(error, stackTrace);
-        });
-  }
 }
