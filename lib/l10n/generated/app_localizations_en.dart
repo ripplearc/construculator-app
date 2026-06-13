@@ -871,4 +871,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get globalSearchTagsLoadErrorMessage => 'Could not load tags.';
+
+  @override
+  String get projectNameLabel => 'Project name*';
+
+  @override
+  String get projectNameHintText => 'Enter project name';
+
+  @override
+  String get projectNameRequiredError => 'Project name is required';
+
+  @override
+  String get projectNameTooLongError =>
+      'Project name must be 100 characters or less';
 }

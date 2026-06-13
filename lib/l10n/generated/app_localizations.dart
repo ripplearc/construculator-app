@@ -1653,6 +1653,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not load tags.'**
   String get globalSearchTagsLoadErrorMessage;
+
+  /// Label for the project name text field
+  ///
+  /// In en, this message translates to:
+  /// **'Project name*'**
+  String get projectNameLabel;
+
+  /// Hint text shown inside the project name text field
+  ///
+  /// In en, this message translates to:
+  /// **'Enter project name'**
+  String get projectNameHintText;
+
+  /// Error shown when the project name field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Project name is required'**
+  String get projectNameRequiredError;
+
+  /// Error shown when the project name exceeds 100 characters
+  ///
+  /// In en, this message translates to:
+  /// **'Project name must be 100 characters or less'**
+  String get projectNameTooLongError;
 }
 
 class _AppLocalizationsDelegate
