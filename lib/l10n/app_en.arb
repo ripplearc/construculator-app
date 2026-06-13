@@ -1226,5 +1226,41 @@
         "example": "Wall cost"
       }
     }
+  },
+  "projectNameLabel": "Project name*",
+  "@projectNameLabel": {
+    "description": "Label for the project name text field"
+  },
+  "projectNameHintText": "Enter project name",
+  "@projectNameHintText": {
+    "description": "Hint text shown inside the project name text field"
+  },
+  "projectNameRequiredError": "Project name is required",
+  "@projectNameRequiredError": {
+    "description": "Error shown when the project name field is empty"
+  },
+  "projectNameTooLongError": "Project name must be 100 characters or less",
+  "@projectNameTooLongError": {
+    "description": "Error shown when the project name exceeds 100 characters"
+  },
+  "projectDescriptionLabel": "Project description",
+  "@projectDescriptionLabel": {
+    "description": "Label for the project description text area"
+  },
+  "projectDescriptionHintText": "Project description",
+  "@projectDescriptionHintText": {
+    "description": "Hint text shown inside the project description text area"
+  },
+  "projectDescriptionTooLongError": "Description must be 100 characters or less",
+  "@projectDescriptionTooLongError": {
+    "description": "Error shown when the project description exceeds 100 characters"
+  },
+  "addProjectDescriptionTitle": "Add project description",
+  "@addProjectDescriptionTitle": {
+    "description": "Title of the bottom sheet for adding a project description"
+  },
+  "addDescriptionButton": "Add",
+  "@addDescriptionButton": {
+    "description": "Label for the Add button in the project description bottom sheet"
   }
 }

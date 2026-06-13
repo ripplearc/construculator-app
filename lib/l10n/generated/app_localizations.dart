@@ -1467,6 +1467,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No results for \"{query}\"'**
   String searchResultsEmpty(String query);
+
+  /// Label for the project name text field
+  ///
+  /// In en, this message translates to:
+  /// **'Project name*'**
+  String get projectNameLabel;
+
+  /// Hint text shown inside the project name text field
+  ///
+  /// In en, this message translates to:
+  /// **'Enter project name'**
+  String get projectNameHintText;
+
+  /// Error shown when the project name field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Project name is required'**
+  String get projectNameRequiredError;
+
+  /// Error shown when the project name exceeds 100 characters
+  ///
+  /// In en, this message translates to:
+  /// **'Project name must be 100 characters or less'**
+  String get projectNameTooLongError;
+
+  /// Label for the project description text area
+  ///
+  /// In en, this message translates to:
+  /// **'Project description'**
+  String get projectDescriptionLabel;
+
+  /// Hint text shown inside the project description text area
+  ///
+  /// In en, this message translates to:
+  /// **'Project description'**
+  String get projectDescriptionHintText;
+
+  /// Error shown when the project description exceeds 100 characters
+  ///
+  /// In en, this message translates to:
+  /// **'Description must be 100 characters or less'**
+  String get projectDescriptionTooLongError;
+
+  /// Title of the bottom sheet for adding a project description
+  ///
+  /// In en, this message translates to:
+  /// **'Add project description'**
+  String get addProjectDescriptionTitle;
+
+  /// Label for the Add button in the project description bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get addDescriptionButton;
 }
 
 class _AppLocalizationsDelegate

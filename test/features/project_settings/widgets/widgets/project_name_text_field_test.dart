@@ -1,0 +1,180 @@
+import 'package:construculator/features/project_settings/presentation/widgets/project_name_text_field.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+
+import '../../../../utils/screenshot/font_loader.dart';
+
+void main() {
+  late TextEditingController controller;
+
+  setUp(() {
+    controller = TextEditingController();
+  });
+
+  tearDown(() {
+    controller.dispose();
+  });
+
+  Widget wrap(Widget child) => MaterialApp(
+        theme: createTestTheme(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: Padding(padding: const EdgeInsets.all(16), child: child),
+          ),
+        ),
+      );
+
+  group('ProjectNameTextField', () {
+    group('Rendering', () {
+      testWidgets('renders label and hint text', (tester) async {
+        await tester.pumpWidget(wrap(ProjectNameTextField(controller: controller)));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Project name*'), findsOneWidget);
+        expect(find.text('Enter project name'), findsOneWidget);
+      });
+
+      testWidgets('shows no error before first interaction', (tester) async {
+        await tester.pumpWidget(wrap(ProjectNameTextField(controller: controller)));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Project name is required'), findsNothing);
+        expect(find.text('Project name must be 100 characters or less'), findsNothing);
+      });
+    });
+
+    group('Validation', () {
+      testWidgets('shows required error when field is empty after first interaction', (
+        tester,
+      ) async {
+        await tester.pumpWidget(wrap(ProjectNameTextField(controller: controller)));
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byType(ProjectNameTextField), 'a');
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(ProjectNameTextField), '');
+        await tester.pumpAndSettle();
+
+        expect(find.text('Project name is required'), findsOneWidget);
+      });
+
+      testWidgets('shows required error when field contains only whitespace', (
+        tester,
+      ) async {
+        await tester.pumpWidget(wrap(ProjectNameTextField(controller: controller)));
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byType(ProjectNameTextField), '   ');
+        await tester.pumpAndSettle();
+
+        expect(find.text('Project name is required'), findsOneWidget);
+      });
+
+      testWidgets('shows no error for valid non-empty name', (tester) async {
+        await tester.pumpWidget(wrap(ProjectNameTextField(controller: controller)));
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byType(ProjectNameTextField), 'My Project');
+        await tester.pumpAndSettle();
+
+        expect(find.text('Project name is required'), findsNothing);
+        expect(find.text('Project name must be 100 characters or less'), findsNothing);
+      });
+
+      testWidgets('shows too-long error when name exceeds 100 characters', (
+        tester,
+      ) async {
+        await tester.pumpWidget(wrap(ProjectNameTextField(controller: controller)));
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.byType(ProjectNameTextField),
+          'A' * 101,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Project name must be 100 characters or less'), findsOneWidget);
+      });
+
+      testWidgets('accepts name with exactly 100 characters', (tester) async {
+        await tester.pumpWidget(wrap(ProjectNameTextField(controller: controller)));
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.byType(ProjectNameTextField),
+          'A' * 100,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Project name must be 100 characters or less'), findsNothing);
+      });
+    });
+
+    group('Callbacks', () {
+      testWidgets('calls onDirtyChanged(true) on first keystroke', (tester) async {
+        bool? dirtyValue;
+        await tester.pumpWidget(
+          wrap(
+            ProjectNameTextField(
+              controller: controller,
+              onDirtyChanged: (isDirty) => dirtyValue = isDirty,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(dirtyValue, isNull);
+
+        await tester.enterText(find.byType(ProjectNameTextField), 'a');
+        await tester.pumpAndSettle();
+
+        expect(dirtyValue, isTrue);
+      });
+
+      testWidgets('calls onValidationChanged with false for empty name after interaction', (
+        tester,
+      ) async {
+        bool? validValue;
+        await tester.pumpWidget(
+          wrap(
+            ProjectNameTextField(
+              controller: controller,
+              onValidationChanged: (isValid) => validValue = isValid,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byType(ProjectNameTextField), 'a');
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(ProjectNameTextField), '');
+        await tester.pumpAndSettle();
+
+        expect(validValue, isFalse);
+      });
+
+      testWidgets('calls onValidationChanged with true for valid name', (tester) async {
+        bool? validValue;
+        await tester.pumpWidget(
+          wrap(
+            ProjectNameTextField(
+              controller: controller,
+              onValidationChanged: (isValid) => validValue = isValid,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byType(ProjectNameTextField), 'My Project');
+        await tester.pumpAndSettle();
+
+        expect(validValue, isTrue);
+      });
+    });
+  });
+}

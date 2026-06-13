@@ -774,4 +774,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String searchResultsEmpty(String query) {
     return 'No results for \"$query\"';
   }
+
+  @override
+  String get projectNameLabel => 'Project name*';
+
+  @override
+  String get projectNameHintText => 'Enter project name';
+
+  @override
+  String get projectNameRequiredError => 'Project name is required';
+
+  @override
+  String get projectNameTooLongError =>
+      'Project name must be 100 characters or less';
+
+  @override
+  String get projectDescriptionLabel => 'Project description';
+
+  @override
+  String get projectDescriptionHintText => 'Project description';
+
+  @override
+  String get projectDescriptionTooLongError =>
+      'Description must be 100 characters or less';
+
+  @override
+  String get addProjectDescriptionTitle => 'Add project description';
+
+  @override
+  String get addDescriptionButton => 'Add';
 }
