@@ -1254,13 +1254,5 @@
   "projectDescriptionTooLongError": "Description must be 100 characters or less",
   "@projectDescriptionTooLongError": {
     "description": "Error shown when the project description exceeds 100 characters"
-  },
-  "addProjectDescriptionTitle": "Add project description",
-  "@addProjectDescriptionTitle": {
-    "description": "Title of the bottom sheet for adding a project description"
-  },
-  "addDescriptionButton": "Add",
-  "@addDescriptionButton": {
-    "description": "Label for the Add button in the project description bottom sheet"
   }
 }

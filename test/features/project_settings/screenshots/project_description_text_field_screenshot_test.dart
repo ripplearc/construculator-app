@@ -1,4 +1,3 @@
-import 'package:construculator/features/project_settings/presentation/widgets/add_description_sheet.dart';
 import 'package:construculator/features/project_settings/presentation/widgets/project_description_text_field.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
-  const size = Size(390, 420);
+  const size = Size(390, 160);
   const ratio = 1.0;
 
   setUpAll(() async {
@@ -19,22 +18,34 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Material(child: SingleChildScrollView(child: child)),
+        home: Material(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Align(alignment: Alignment.topCenter, child: child),
+            ),
+          ),
+        ),
       );
 
-  group('AddDescriptionSheet screenshot tests', () {
+  group('ProjectDescriptionTextField screenshot tests', () {
     testWidgets('empty state', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(wrap(AddDescriptionSheet(onAdd: (_) {})));
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        wrap(ProjectDescriptionTextField(controller: controller)),
+      );
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(AddDescriptionSheet),
+        find.byType(ProjectDescriptionTextField),
         matchesGoldenFile(
-          'goldens/add_description_sheet/${size.width}x${size.height}/add_description_sheet_empty.png',
+          'goldens/project_description_text_field/${size.width}x${size.height}/project_description_text_field_empty.png',
         ),
       );
     });
@@ -44,30 +55,33 @@ void main() {
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.resetPhysicalSize);
 
+      final controller = TextEditingController(text: 'A two-storey building');
+      addTearDown(controller.dispose);
+
       await tester.pumpWidget(
-        wrap(
-          AddDescriptionSheet(
-            initialDescription: 'Lorem ipsum dolor sit amet, consectetur',
-            onAdd: (_) {},
-          ),
-        ),
+        wrap(ProjectDescriptionTextField(controller: controller)),
       );
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(AddDescriptionSheet),
+        find.byType(ProjectDescriptionTextField),
         matchesGoldenFile(
-          'goldens/add_description_sheet/${size.width}x${size.height}/add_description_sheet_with_value.png',
+          'goldens/project_description_text_field/${size.width}x${size.height}/project_description_text_field_with_value.png',
         ),
       );
     });
 
-    testWidgets('error state when over limit', (tester) async {
+    testWidgets('too-long error state', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(wrap(AddDescriptionSheet(onAdd: (_) {})));
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        wrap(ProjectDescriptionTextField(controller: controller)),
+      );
       await tester.pumpAndSettle();
 
       await tester.enterText(
@@ -77,9 +91,9 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(AddDescriptionSheet),
+        find.byType(ProjectDescriptionTextField),
         matchesGoldenFile(
-          'goldens/add_description_sheet/${size.width}x${size.height}/add_description_sheet_error.png',
+          'goldens/project_description_text_field/${size.width}x${size.height}/project_description_text_field_error_too_long.png',
         ),
       );
     });

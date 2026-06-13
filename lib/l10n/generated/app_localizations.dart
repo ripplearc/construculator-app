@@ -1509,18 +1509,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Description must be 100 characters or less'**
   String get projectDescriptionTooLongError;
-
-  /// Title of the bottom sheet for adding a project description
-  ///
-  /// In en, this message translates to:
-  /// **'Add project description'**
-  String get addProjectDescriptionTitle;
-
-  /// Label for the Add button in the project description bottom sheet
-  ///
-  /// In en, this message translates to:
-  /// **'Add'**
-  String get addDescriptionButton;
 }
 
 class _AppLocalizationsDelegate

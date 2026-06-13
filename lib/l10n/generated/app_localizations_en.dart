@@ -797,10 +797,4 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get projectDescriptionTooLongError =>
       'Description must be 100 characters or less';
-
-  @override
-  String get addProjectDescriptionTitle => 'Add project description';
-
-  @override
-  String get addDescriptionButton => 'Add';
 }
