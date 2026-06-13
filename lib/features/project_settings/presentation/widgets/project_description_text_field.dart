@@ -1,3 +1,4 @@
+import 'package:construculator/features/project_settings/presentation/widgets/validation_error_widget.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -70,12 +71,8 @@ class _ProjectDescriptionTextFieldState
       errors.add(l10n.projectDescriptionTooLongError);
     }
 
-    final wasValid = _errors.isEmpty;
-    final isNowValid = errors.isEmpty;
     setState(() => _errors = errors);
-    if (wasValid != isNowValid) {
-      widget.onValidationChanged?.call(isNowValid);
-    }
+    widget.onValidationChanged?.call(errors.isEmpty);
   }
 
   @override
@@ -122,6 +119,12 @@ class _ProjectDescriptionTextFieldState
               vertical: CoreSpacing.space3,
               horizontal: CoreSpacing.space4,
             ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(CoreSpacing.space1),
+              borderSide: BorderSide(
+                color: hasError ? colorTheme.statusError : colorTheme.lineDarkOutline,
+              ),
+            ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(CoreSpacing.space1),
               borderSide: BorderSide(
@@ -144,14 +147,7 @@ class _ProjectDescriptionTextFieldState
         Row(
           children: [
             if (hasError)
-              Expanded(
-                child: Text(
-                  _errors.first,
-                  style: textTheme.bodySmallRegular.copyWith(
-                    color: colorTheme.textError,
-                  ),
-                ),
-              )
+              Expanded(child: ValidationErrorWidget(message: _errors.first))
             else
               const Spacer(),
             Text(
