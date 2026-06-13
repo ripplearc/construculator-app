@@ -63,12 +63,91 @@ class _ProjectNameTextFieldState extends State<ProjectNameTextField> {
 
   @override
   Widget build(BuildContext context) {
-    return CoreTextField(
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    final l10n = context.l10n;
+    final hasError = _isDirty && _errors.isNotEmpty;
+
+    return TextFormField(
       controller: widget.controller,
-      label: context.l10n.projectNameLabel,
-      hintText: context.l10n.projectNameHintText,
       enabled: widget.enabled,
-      errorTextList: _isDirty && _errors.isNotEmpty ? _errors : null,
+      style: textTheme.bodyLargeRegular.copyWith(
+        color: widget.enabled ? colorTheme.textDark : colorTheme.textDisable,
+      ),
+      decoration: InputDecoration(
+        labelText: l10n.projectNameLabel,
+        labelStyle: textTheme.bodyLargeRegular.copyWith(
+          color: widget.enabled ? colorTheme.textHeadline : colorTheme.textDisable,
+        ),
+        floatingLabelStyle: textTheme.bodyLargeRegular.copyWith(
+          color: hasError
+              ? colorTheme.textError
+              : (widget.enabled ? colorTheme.textDark : colorTheme.textDisable),
+        ),
+        hintText: l10n.projectNameHintText,
+        hintStyle: textTheme.bodyLargeRegular.copyWith(
+          color: colorTheme.textBody,
+        ),
+        filled: true,
+        fillColor: widget.enabled
+            ? colorTheme.pageBackground
+            : colorTheme.backgroundGrayMid,
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: CoreSpacing.space3,
+          horizontal: CoreSpacing.space4,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(CoreSpacing.space1),
+          borderSide: BorderSide(color: colorTheme.lineDarkOutline),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(CoreSpacing.space1),
+          borderSide: BorderSide(color: colorTheme.lineDarkOutline),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(CoreSpacing.space1),
+          borderSide: BorderSide(color: colorTheme.textDark),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(CoreSpacing.space1),
+          borderSide: BorderSide(color: colorTheme.statusError),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(CoreSpacing.space1),
+          borderSide: BorderSide(color: colorTheme.statusError),
+        ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(CoreSpacing.space1),
+          borderSide: BorderSide(color: colorTheme.lineMid),
+        ),
+        error: hasError
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: _errors
+                    .map(
+                      (e) => Row(
+                        children: [
+                          CoreIconWidget(
+                            icon: CoreIcons.error,
+                            size: 16,
+                            color: colorTheme.iconRed,
+                          ),
+                          const SizedBox(width: CoreSpacing.space1),
+                          Expanded(
+                            child: Text(
+                              e,
+                              style: textTheme.bodySmallRegular.copyWith(
+                                color: colorTheme.textError,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                    .toList(),
+              )
+            : null,
+      ),
     );
   }
 }

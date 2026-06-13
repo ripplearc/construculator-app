@@ -89,11 +89,11 @@ class _ProjectDescriptionTextFieldState
             floatingLabelStyle: textTheme.bodyLargeRegular.copyWith(
               color: hasError
                   ? colorTheme.textError
-                  : (widget.enabled ? colorTheme.outlineFocus : colorTheme.textDisable),
+                  : (widget.enabled ? colorTheme.textDark : colorTheme.textDisable),
             ),
             hintText: l10n.projectDescriptionHintText,
             hintStyle: textTheme.bodyLargeRegular.copyWith(
-              color: colorTheme.textDisable,
+              color: colorTheme.textBody,
             ),
             alignLabelWithHint: true,
             filled: true,
