@@ -87,12 +87,15 @@ class _ProjectDescriptionTextFieldState
               color: widget.enabled ? colorTheme.textHeadline : colorTheme.textDisable,
             ),
             floatingLabelStyle: textTheme.bodyLargeRegular.copyWith(
-              color: widget.enabled ? colorTheme.outlineFocus : colorTheme.textDisable,
+              color: hasError
+                  ? colorTheme.textError
+                  : (widget.enabled ? colorTheme.outlineFocus : colorTheme.textDisable),
             ),
             hintText: l10n.projectDescriptionHintText,
             hintStyle: textTheme.bodyLargeRegular.copyWith(
               color: colorTheme.textDisable,
             ),
+            alignLabelWithHint: true,
             filled: true,
             fillColor: widget.enabled
                 ? colorTheme.pageBackground
@@ -103,43 +106,49 @@ class _ProjectDescriptionTextFieldState
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(CoreSpacing.space1),
-              borderSide: BorderSide(color: colorTheme.lineDarkOutline),
+              borderSide: BorderSide(
+                color: hasError ? colorTheme.statusError : colorTheme.lineDarkOutline,
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(CoreSpacing.space1),
-              borderSide: BorderSide(color: colorTheme.lineDarkOutline),
+              borderSide: BorderSide(
+                color: hasError ? colorTheme.statusError : colorTheme.lineDarkOutline,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(CoreSpacing.space1),
-              borderSide: BorderSide(color: colorTheme.textDark),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(CoreSpacing.space1),
-              borderSide: BorderSide(color: colorTheme.statusError),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(CoreSpacing.space1),
-              borderSide: BorderSide(color: colorTheme.statusError),
+              borderSide: BorderSide(
+                color: hasError ? colorTheme.statusError : colorTheme.textDark,
+              ),
             ),
             disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(CoreSpacing.space1),
               borderSide: BorderSide(color: colorTheme.lineMid),
             ),
-            errorText: hasError ? _errors.first : null,
-            errorStyle: textTheme.bodySmallRegular.copyWith(
-              color: colorTheme.textError,
-            ),
           ),
         ),
-        SizedBox(height: CoreSpacing.space1),
-        Align(
-          alignment: Alignment.centerRight,
-          child: Text(
-            '$charCount/${ProjectDescriptionTextField.maxLength}',
-            style: textTheme.bodySmallRegular.copyWith(
-              color: hasError ? colorTheme.textError : colorTheme.textBody,
+        const SizedBox(height: CoreSpacing.space1),
+        Row(
+          children: [
+            if (hasError)
+              Expanded(
+                child: Text(
+                  _errors.first,
+                  style: textTheme.bodySmallRegular.copyWith(
+                    color: colorTheme.textError,
+                  ),
+                ),
+              )
+            else
+              const Spacer(),
+            Text(
+              '$charCount/${ProjectDescriptionTextField.maxLength}',
+              style: textTheme.bodySmallRegular.copyWith(
+                color: hasError ? colorTheme.textError : colorTheme.textBody,
+              ),
             ),
-          ),
+          ],
         ),
       ],
     );
