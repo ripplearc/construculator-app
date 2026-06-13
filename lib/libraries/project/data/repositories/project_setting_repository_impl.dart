@@ -1,7 +1,6 @@
-import 'dart:async';
-
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_setting_data_source.dart';
 import 'package:construculator/libraries/project/data/models/project_dto.dart';
@@ -15,11 +14,7 @@ import 'package:construculator/libraries/project/domain/repositories/project_set
 class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
   final ProjectSettingDataSource _dataSource;
   final ProjectPermissionDataSource _permissionDataSource;
-
-  final Map<String, StreamController<Either<Failure, Project>>>
-  _settingControllers = {};
-  final Map<String, StreamSubscription<ProjectDto?>> _changesSubscriptions = {};
-  final Map<String, int> _refreshSequences = {};
+  static final _logger = AppLogger().tag('ProjectSettingRepositoryImpl');
 
   ProjectSettingRepositoryImpl({
     required ProjectSettingDataSource dataSource,
@@ -49,8 +44,14 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
     try {
       final dto = await _dataSource.fetchProjectSetting(projectId);
       return Right(dto.toDomain());
-    } catch (error) {
-      return Left(_handleError(error));
+    } catch (error, stackTrace) {
+      return Left(
+        _handleError(
+          error,
+          'getting project setting for projectId: $projectId',
+          stackTrace,
+        ),
+      );
     }
   }
 
@@ -70,8 +71,14 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
       final dto = _toDtoFromEntity(project);
       final result = await _dataSource.updateProject(dto);
       return Right(result.toDomain());
-    } catch (error) {
-      return Left(_handleError(error));
+    } catch (error, stackTrace) {
+      return Left(
+        _handleError(
+          error,
+          'updating project with id: ${project.id}',
+          stackTrace,
+        ),
+      );
     }
   }
 
@@ -90,69 +97,10 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
     try {
       await _dataSource.deleteProject(projectId);
       return const Right(null);
-    } catch (error) {
-      return Left(_handleError(error));
-    }
-  }
-
-  @override
-  Stream<Either<Failure, Project>> watchProjectSetting(String projectId) {
-    final existing = _settingControllers[projectId];
-    if (existing?.isClosed == true) {
-      _settingControllers.remove(projectId);
-    }
-
-    final controller = _settingControllers.putIfAbsent(
-      projectId,
-      () => StreamController<Either<Failure, Project>>.broadcast(
-        onListen: () => _startWatchingSettingChanges(projectId),
-        onCancel: () => _stopWatchingIfNoListeners(projectId),
-      ),
-    );
-    return controller.stream;
-  }
-
-  void _startWatchingSettingChanges(String projectId) {
-    if (_changesSubscriptions.containsKey(projectId)) {
-      return;
-    }
-
-    _changesSubscriptions[projectId] = _dataSource
-        .watchProjectChanges(projectId)
-        .listen(
-          (_) => _refreshProjectSetting(projectId),
-          onError: (Object error, StackTrace stackTrace) {
-            final controller = _settingControllers[projectId];
-            if (controller?.isClosed == false) {
-              controller?.addError(error, stackTrace);
-            }
-          },
-        );
-
-    _refreshProjectSetting(projectId);
-  }
-
-  void _stopWatchingIfNoListeners(String projectId) {
-    final controller = _settingControllers[projectId];
-    if (controller?.hasListener == true) {
-      return;
-    }
-    _changesSubscriptions.remove(projectId)?.cancel();
-    _settingControllers.remove(projectId);
-    _refreshSequences.remove(projectId);
-  }
-
-  Future<void> _refreshProjectSetting(String projectId) async {
-    final sequence = (_refreshSequences[projectId] ?? 0) + 1;
-    _refreshSequences[projectId] = sequence;
-
-    final result = await getProjectSetting(projectId);
-
-    if (_refreshSequences[projectId] != sequence) return;
-
-    final controller = _settingControllers[projectId];
-    if (controller?.isClosed == false) {
-      controller?.add(result);
+    } catch (error, stackTrace) {
+      return Left(
+        _handleError(error, 'deleting project with id: $projectId', stackTrace),
+      );
     }
   }
 
@@ -171,20 +119,32 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
     );
   }
 
-  ProjectFailure _handleError(Object error) {
-    return ProjectErrorMapper.toFailure(error);
+  static const _unexpectedErrorTypes = {
+    ProjectErrorType.unexpectedError,
+    ProjectErrorType.unexpectedDatabaseError,
+    ProjectErrorType.parsingError,
+  };
+
+  ProjectFailure _handleError(
+    Object error,
+    String operation,
+    StackTrace stackTrace,
+  ) {
+    final failure = ProjectErrorMapper.toFailure(error);
+    if (_unexpectedErrorTypes.contains(failure.errorType)) {
+      _logger.error('Error $operation: $error', error, stackTrace);
+    } else {
+      _logger.warning(
+        'Error $operation: ${failure.errorType.name}',
+        error,
+        stackTrace,
+      );
+    }
+    return failure;
   }
 
   @override
   void dispose() {
-    for (final subscription in _changesSubscriptions.values) {
-      subscription.cancel();
-    }
-    _changesSubscriptions.clear();
-    for (final controller in _settingControllers.values) {
-      controller.close();
-    }
-    _settingControllers.clear();
-    _refreshSequences.clear();
+    // No subscriptions or stream controllers to release in this PR's scope.
   }
 }
