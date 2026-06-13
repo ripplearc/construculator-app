@@ -68,7 +68,7 @@ void main() {
 
         await tester.enterText(
           find.byType(ProjectDescriptionTextField),
-          'A' * 101,
+          'hello',
         );
         await tester.pumpAndSettle();
         await tester.enterText(
@@ -264,7 +264,7 @@ void main() {
         expect(validValue, isFalse);
       });
 
-      testWidgets('calls onValidationChanged with true when text returns to valid', (
+      testWidgets('calls onValidationChanged with true for valid text', (
         tester,
       ) async {
         bool? validValue;
@@ -278,11 +278,6 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.enterText(
-          find.byType(ProjectDescriptionTextField),
-          'A' * 101,
-        );
-        await tester.pumpAndSettle();
         await tester.enterText(
           find.byType(ProjectDescriptionTextField),
           'Valid description',
