@@ -146,7 +146,9 @@ class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
       return;
     }
 
-    _appShellBloc.add(const AppShellTabSelected(ShellTab.estimation));
+    BlocProvider.of<AppShellBloc>(context).add(
+      const AppShellTabSelected(ShellTab.estimation),
+    );
   }
 
   void _openEstimationDetails(String estimationId) {
