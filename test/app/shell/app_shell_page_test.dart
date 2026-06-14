@@ -27,19 +27,6 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-class _FakeProjectUiProvider extends ProjectUIProvider {
-  @override
-  PreferredSizeWidget buildProjectHeaderAppbar({
-    required String projectId,
-    VoidCallback? onProjectTap,
-    VoidCallback? onSearchTap,
-    VoidCallback? onNotificationTap,
-    ImageProvider<Object>? avatarImage,
-  }) {
-    return AppBar(title: Text(projectId));
-  }
-}
-
 void main() {
   late FakeAuthManager authManager;
   late FakeAuthNotifier authNotifier;
@@ -84,7 +71,10 @@ void main() {
 
   BuildContext? buildContext;
 
-  Widget makeApp() {
+  Widget makeApp({
+    ProjectUIProvider? projectUIProvider,
+    AppRouter? router,
+  }) {
     return MaterialApp(
       theme: CoreTheme.light(),
       locale: const Locale('en'),
@@ -97,10 +87,10 @@ void main() {
       home: BlocProvider<AppShellBloc>(
         create: (_) => Modular.get<AppShellBloc>(),
         child: AppShellPage(
-          projectUIProvider: _FakeProjectUiProvider(),
+          projectUIProvider: projectUIProvider ?? _FakeProjectUIProvider(),
           authNotifier: authNotifier,
           authManager: authManager,
-          router: FakeAppRouter(),
+          router: router ?? FakeAppRouter(),
         ),
       ),
     );
@@ -328,12 +318,16 @@ void main() {
         '950e8400-e29b-41d4-a716-446655440001',
       );
       final fakeProvider = _FakeProjectUIProvider();
-      Modular.replaceInstance<ProjectUIProvider>(fakeProvider);
       final fakeRouter = FakeAppRouter();
-      Modular.replaceInstance<AppRouter>(fakeRouter);
 
-      await tester.pumpWidget(makeApp());
+      await tester.pumpWidget(
+        makeApp(projectUIProvider: fakeProvider, router: fakeRouter),
+      );
       await tester.pump();
+
+      // Clear any initialization navigation (e.g. DashboardPage routing to login
+      // or create-account when no authenticated user is set up in this test).
+      fakeRouter.reset();
 
       final onSearchTap = fakeProvider.capturedOnSearchTap;
       if (onSearchTap == null) {
