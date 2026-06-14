@@ -7,8 +7,8 @@ import 'package:construculator/features/estimation/estimation_routes_module.dart
 import 'package:construculator/features/global_search/global_search_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
-import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
+import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/router/routes/global_search_routes.dart';

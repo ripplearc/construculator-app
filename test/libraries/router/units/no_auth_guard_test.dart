@@ -65,19 +65,19 @@ void main() {
   group('NoAuthGuard', () {
     test('redirectTo is shellRoute', () {
       Modular.init(_NoAuthGuardTestModule(isAuthenticated: false));
-      final guard = NoAuthGuard();
+      final guard = NoAuthGuard(() => Modular.get<AuthManager>());
       expect(guard.redirectTo, equals(shellRoute));
     });
 
     test('canActivate returns true when user is not authenticated', () async {
       Modular.init(_NoAuthGuardTestModule(isAuthenticated: false));
-      final guard = NoAuthGuard();
+      final guard = NoAuthGuard(() => Modular.get<AuthManager>());
       expect(await guard.canActivate('/', route), isTrue);
     });
 
     test('canActivate returns false when user is authenticated', () async {
       Modular.init(_NoAuthGuardTestModule(isAuthenticated: true));
-      final guard = NoAuthGuard();
+      final guard = NoAuthGuard(() => Modular.get<AuthManager>());
       expect(await guard.canActivate('/', route), isFalse);
     });
   });

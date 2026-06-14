@@ -93,7 +93,7 @@ class _AppShellPageState extends State<AppShellPage> {
   void _onPopInvoked(bool didPop) {
     if (didPop) return;
 
-    final bloc = context.read<AppShellBloc>();
+    final bloc = BlocProvider.of<AppShellBloc>(context);
     final state = bloc.state;
     final currentNavigator =
         _tabNavigatorKeys[state.selectedTabIndex].currentState;
@@ -113,7 +113,7 @@ class _AppShellPageState extends State<AppShellPage> {
 
   void _handleTabTap(int index) {
     assert(index < ShellTab.values.length, 'Tab index $index out of range');
-    context.read<AppShellBloc>().add(AppShellTabSelected(ShellTab.values[index]));
+    BlocProvider.of<AppShellBloc>(context).add(AppShellTabSelected(ShellTab.values[index]));
   }
 
   Widget _buildTabRoot(ShellTab tab) {
