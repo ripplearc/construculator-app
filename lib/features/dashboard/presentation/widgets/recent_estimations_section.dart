@@ -20,10 +20,14 @@ class RecentEstimationsSection extends StatefulWidget {
   /// The router used for navigation (e.g., to the full estimations list or estimation details).
   final AppRouter router;
 
+  /// The shell bloc used to switch to the estimation tab when "view all" is tapped.
+  final AppShellBloc appShellBloc;
+
   const RecentEstimationsSection({
     super.key,
     required this.bloc,
     required this.router,
+    required this.appShellBloc,
   });
 
   @override
@@ -146,9 +150,7 @@ class _RecentEstimationsSectionState extends State<RecentEstimationsSection> {
       return;
     }
 
-    BlocProvider.of<AppShellBloc>(context).add(
-      const AppShellTabSelected(ShellTab.estimation),
-    );
+    widget.appShellBloc.add(const AppShellTabSelected(ShellTab.estimation));
   }
 
   void _openEstimationDetails(String estimationId) {

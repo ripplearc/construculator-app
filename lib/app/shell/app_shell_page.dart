@@ -132,6 +132,7 @@ class _AppShellPageState extends State<AppShellPage> {
           authManager: widget.authManager,
           router: widget.router,
           recentEstimationsBloc: widget.recentEstimationsBloc,
+          appShellBloc: BlocProvider.of<AppShellBloc>(context),
         );
       case ShellTab.calculations:
         return const CalculationsPage();
