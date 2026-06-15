@@ -1,3 +1,5 @@
+// coverage:ignore-file
+
 import 'package:construculator/libraries/project/data/models/project_dto.dart';
 
 /// Data source contract for dashboard project search.

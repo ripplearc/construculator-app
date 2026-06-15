@@ -4,8 +4,8 @@ import 'package:construculator/features/global_search/data/data_source/interface
 import 'package:construculator/features/global_search/data/data_source/remote_global_search_data_source.dart';
 import 'package:construculator/features/global_search/data/models/pagination_params_dto.dart';
 import 'package:construculator/features/global_search/data/models/search_params_dto.dart';
-import 'package:construculator/libraries/global_search/data/search_scope_dto.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
+import 'package:construculator/libraries/global_search/data/search_scope_dto.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
