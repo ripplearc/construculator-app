@@ -39,11 +39,11 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
 
   Set<String> _selectedTags = const {};
 
-  /// Full list of available tag names fetched from [TagRepository].
+  // Full list of available tag names fetched from TagRepository.
   List<String> _availableTags = const [];
 
-  /// Whether [_availableTags] has been fetched at least once, so subsequent
-  /// sheet openings reuse the cached list instead of refetching.
+  // Whether _availableTags has been fetched at least once, so subsequent
+  // sheet openings reuse the cached list instead of refetching.
   bool _availableTagsFetched = false;
 
   String _tagSearchQuery = '';
@@ -72,7 +72,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     on<GlobalSearchTagSearchQueryUpdated>(_onTagSearchQueryUpdated);
   }
 
-  /// Returns [_availableTags] filtered by the current tag search query.
+  // Returns _availableTags filtered by the current tag search query.
   List<String> _filterAvailableTags() {
     if (_tagSearchQuery.isEmpty) return _availableTags;
     final lower = _tagSearchQuery.toLowerCase();
@@ -81,7 +81,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
         .toList();
   }
 
-  /// Builds a [GlobalSearchReady] from the current internal fields.
+  // Builds a GlobalSearchReady from the current internal fields.
   GlobalSearchReady _readyState({
     bool suggestionsLoading = false,
     bool availableTagsLoading = false,

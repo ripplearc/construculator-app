@@ -95,6 +95,20 @@ void main() {
       fakeSupabase.reset();
     });
 
+    void seedTags(List<String> names) {
+      fakeSupabase.addTableData(
+        DatabaseConstants.tagsTable,
+        names
+            .map(
+              (name) => <String, dynamic>{
+                DatabaseConstants.idColumn: 'tag-$name',
+                DatabaseConstants.nameColumn: name,
+              },
+            )
+            .toList(),
+      );
+    }
+
     test(
       'initial state is GlobalSearchInitial (cold start, no history yet)',
       () {
@@ -977,20 +991,6 @@ void main() {
     });
 
     group('GlobalSearchAvailableTagsRequested', () {
-      void seedTags(List<String> names) {
-        fakeSupabase.addTableData(
-          DatabaseConstants.tagsTable,
-          names
-              .map(
-                (name) => <String, dynamic>{
-                  DatabaseConstants.idColumn: 'tag-$name',
-                  DatabaseConstants.nameColumn: name,
-                },
-              )
-              .toList(),
-        );
-      }
-
       blocTest<GlobalSearchBloc, GlobalSearchState>(
         'emits loading then tags sorted alphabetically on success',
         setUp: () => seedTags(['Wall', 'Carpeting', 'Roofing']),
@@ -1068,20 +1068,6 @@ void main() {
     });
 
     group('GlobalSearchTagSearchQueryUpdated', () {
-      void seedTags(List<String> names) {
-        fakeSupabase.addTableData(
-          DatabaseConstants.tagsTable,
-          names
-              .map(
-                (name) => <String, dynamic>{
-                  DatabaseConstants.idColumn: 'tag-$name',
-                  DatabaseConstants.nameColumn: name,
-                },
-              )
-              .toList(),
-        );
-      }
-
       blocTest<GlobalSearchBloc, GlobalSearchState>(
         'filters available tags case-insensitively by substring',
         setUp: () => seedTags(['Roofing', 'Carpeting', 'Wall', 'Painting']),
