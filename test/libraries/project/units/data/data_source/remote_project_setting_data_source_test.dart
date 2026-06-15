@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/errors/exceptions.dart';
+import 'package:construculator/libraries/project/data/data_source/interfaces/project_setting_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/remote_project_setting_data_source.dart';
 import 'package:construculator/libraries/project/data/models/project_dto.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
@@ -13,7 +14,7 @@ void main() {
   group('RemoteProjectSettingDataSource', () {
     late FakeClockImpl clock;
     late FakeSupabaseWrapper supabaseWrapper;
-    late RemoteProjectSettingDataSource dataSource;
+    late ProjectSettingDataSource dataSource;
 
     setUp(() {
       clock = FakeClockImpl(DateTime(2025, 1, 1, 8, 0));
