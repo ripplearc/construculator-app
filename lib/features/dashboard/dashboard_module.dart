@@ -1,5 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/dashboard/domain/usecases/watch_recent_estimations_usecase.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/dashboard_bloc/dashboard_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
@@ -37,6 +38,12 @@ class DashboardModule extends Module {
     i.add<RecentEstimationsBloc>(
       () => RecentEstimationsBloc(
         watchRecentEstimationsUseCase: i(),
+        currentProjectNotifier: i(),
+      ),
+    );
+    i.add<DashboardBloc>(
+      () => DashboardBloc(
+        projectRepository: i(),
         currentProjectNotifier: i(),
       ),
     );
