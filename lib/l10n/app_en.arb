@@ -1261,5 +1261,15 @@
   "@projectSelectorSemanticLabel": {
     "description": "Accessibility label for the project selector button in the project header app bar",
     "context": "N/A"
+  },
+  "numberOfCostEstimations": "No. of cost estimation",
+  "@numberOfCostEstimations": {
+    "description": "Label for the cost estimations count stat card on the project details screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "peopleInvited": "People invited",
+  "@peopleInvited": {
+    "description": "Label for the members count stat card on the project details screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
   }
 }
