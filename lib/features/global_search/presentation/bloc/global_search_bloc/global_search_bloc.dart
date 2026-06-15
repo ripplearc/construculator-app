@@ -3,8 +3,10 @@ import 'package:construculator/features/global_search/domain/entities/search_par
 import 'package:construculator/features/global_search/domain/entities/search_results.dart';
 import 'package:construculator/features/global_search/domain/entities/search_scope_entity.dart';
 import 'package:construculator/features/global_search/domain/repositories/global_search_repository.dart';
+import 'package:construculator/libraries/auth/domain/entities/user_profile_entity.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/owner/domain/repositories/owner_repository.dart';
 import 'package:construculator/libraries/tag/domain/repositories/tag_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -30,6 +32,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   static final _logger = AppLogger().tag('GlobalSearchBloc');
   final GlobalSearchRepository _repository;
   final TagRepository _tagRepository;
+  final OwnerRepository _ownerRepository;
 
   List<String> _recentSearches = const [];
 
@@ -48,11 +51,24 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
 
   String _tagSearchQuery = '';
 
+  Set<String> _selectedOwnerIds = const {};
+
+  // Full list of available owners fetched from OwnerRepository.
+  List<UserProfile> _availableOwners = const [];
+
+  // Whether _availableOwners has been fetched at least once, so subsequent
+  // sheet openings reuse the cached list instead of refetching.
+  bool _availableOwnersFetched = false;
+
+  String _ownerSearchQuery = '';
+
   GlobalSearchBloc({
     required GlobalSearchRepository repository,
     required TagRepository tagRepository,
+    required OwnerRepository ownerRepository,
   }) : _repository = repository,
        _tagRepository = tagRepository,
+       _ownerRepository = ownerRepository,
        super(const GlobalSearchInitial()) {
     on<GlobalSearchStarted>(_onStarted);
     on<GlobalSearchQueryUpdated>(
@@ -70,6 +86,12 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     // Intentionally not debounced: tag filtering is in-memory (no network
     // call), so instant per-keystroke feedback is cheap and preferable.
     on<GlobalSearchTagSearchQueryUpdated>(_onTagSearchQueryUpdated);
+    on<GlobalSearchOwnerFiltersApplied>(_onOwnerFiltersApplied);
+    on<GlobalSearchOwnerFilterCleared>(_onOwnerFilterCleared);
+    on<GlobalSearchAvailableOwnersRequested>(_onAvailableOwnersRequested);
+    // Intentionally not debounced: owner filtering is in-memory (no network
+    // call), so instant per-keystroke feedback is cheap and preferable.
+    on<GlobalSearchOwnerSearchQueryUpdated>(_onOwnerSearchQueryUpdated);
   }
 
   // Returns _availableTags filtered by the current tag search query.
@@ -81,10 +103,21 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
         .toList();
   }
 
+  // Returns _availableOwners filtered by the current owner search query,
+  // matching against the owner's full name.
+  List<UserProfile> _filterAvailableOwners() {
+    if (_ownerSearchQuery.isEmpty) return _availableOwners;
+    final lower = _ownerSearchQuery.toLowerCase();
+    return _availableOwners
+        .where((owner) => owner.fullName.toLowerCase().contains(lower))
+        .toList();
+  }
+
   // Builds a GlobalSearchReady from the current internal fields.
   GlobalSearchReady _readyState({
     bool suggestionsLoading = false,
     bool availableTagsLoading = false,
+    bool availableOwnersLoading = false,
   }) {
     return GlobalSearchReady(
       recentSearches: _recentSearches,
@@ -94,6 +127,9 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       selectedTags: _selectedTags,
       availableTags: _filterAvailableTags(),
       availableTagsLoading: availableTagsLoading,
+      selectedOwnerIds: _selectedOwnerIds,
+      availableOwners: _filterAvailableOwners(),
+      availableOwnersLoading: availableOwnersLoading,
     );
   }
 
@@ -145,6 +181,8 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       _currentQuery = '';
       _selectedTags = const {};
       _tagSearchQuery = '';
+      _selectedOwnerIds = const {};
+      _ownerSearchQuery = '';
       emit(_readyState());
     });
   }
@@ -178,6 +216,11 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
         filterByTag: _selectedTags.isEmpty
             ? null
             : (_selectedTags.toList()..sort()).first,
+        // SearchParams accepts a single owner; sort for deterministic
+        // selection until the API supports multi-owner filtering.
+        filterByOwner: _selectedOwnerIds.isEmpty
+            ? null
+            : (_selectedOwnerIds.toList()..sort()).first,
       ),
     );
 
@@ -267,6 +310,59 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   ) {
     _selectedTags = Set.unmodifiable(
       _selectedTags.where((t) => t != event.tag),
+    );
+    emit(_readyState());
+  }
+
+  Future<void> _onAvailableOwnersRequested(
+    GlobalSearchAvailableOwnersRequested event,
+    Emitter<GlobalSearchState> emit,
+  ) async {
+    _ownerSearchQuery = '';
+    if (_availableOwnersFetched) {
+      emit(_readyState());
+      return;
+    }
+
+    emit(_readyState(availableOwnersLoading: true));
+
+    final result = await _ownerRepository.getOwners();
+
+    result.fold(
+      (failure) {
+        emit(GlobalSearchOwnersLoadFailure(failure: failure));
+        emit(_readyState());
+      },
+      (owners) {
+        _availableOwners = List.unmodifiable(owners);
+        _availableOwnersFetched = true;
+        emit(_readyState());
+      },
+    );
+  }
+
+  void _onOwnerSearchQueryUpdated(
+    GlobalSearchOwnerSearchQueryUpdated event,
+    Emitter<GlobalSearchState> emit,
+  ) {
+    _ownerSearchQuery = event.query.trim();
+    emit(_readyState());
+  }
+
+  void _onOwnerFiltersApplied(
+    GlobalSearchOwnerFiltersApplied event,
+    Emitter<GlobalSearchState> emit,
+  ) {
+    _selectedOwnerIds = Set.unmodifiable(event.ownerIds);
+    emit(_readyState());
+  }
+
+  void _onOwnerFilterCleared(
+    GlobalSearchOwnerFilterCleared event,
+    Emitter<GlobalSearchState> emit,
+  ) {
+    _selectedOwnerIds = Set.unmodifiable(
+      _selectedOwnerIds.where((id) => id != event.ownerId),
     );
     emit(_readyState());
   }

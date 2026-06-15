@@ -41,6 +41,17 @@ class GlobalSearchReady extends GlobalSearchState {
   /// Whether the available tags fetch is currently in flight.
   final bool availableTagsLoading;
 
+  /// Owner ids currently applied as filters. Empty means no owner filter
+  /// is active.
+  final Set<String> selectedOwnerIds;
+
+  /// Available owners to display in the Owner filter sheet, already filtered
+  /// by the current owner search query.
+  final List<UserProfile> availableOwners;
+
+  /// Whether the available owners fetch is currently in flight.
+  final bool availableOwnersLoading;
+
   const GlobalSearchReady({
     this.recentSearches = const [],
     this.query = '',
@@ -49,6 +60,9 @@ class GlobalSearchReady extends GlobalSearchState {
     this.selectedTags = const {},
     this.availableTags = const [],
     this.availableTagsLoading = false,
+    this.selectedOwnerIds = const {},
+    this.availableOwners = const [],
+    this.availableOwnersLoading = false,
   });
 
   /// Returns a copy of this state with the given fields replaced.
@@ -60,6 +74,9 @@ class GlobalSearchReady extends GlobalSearchState {
     Set<String>? selectedTags,
     List<String>? availableTags,
     bool? availableTagsLoading,
+    Set<String>? selectedOwnerIds,
+    List<UserProfile>? availableOwners,
+    bool? availableOwnersLoading,
   }) {
     return GlobalSearchReady(
       recentSearches: recentSearches ?? this.recentSearches,
@@ -69,6 +86,10 @@ class GlobalSearchReady extends GlobalSearchState {
       selectedTags: selectedTags ?? this.selectedTags,
       availableTags: availableTags ?? this.availableTags,
       availableTagsLoading: availableTagsLoading ?? this.availableTagsLoading,
+      selectedOwnerIds: selectedOwnerIds ?? this.selectedOwnerIds,
+      availableOwners: availableOwners ?? this.availableOwners,
+      availableOwnersLoading:
+          availableOwnersLoading ?? this.availableOwnersLoading,
     );
   }
 
@@ -81,6 +102,9 @@ class GlobalSearchReady extends GlobalSearchState {
     selectedTags,
     availableTags,
     availableTagsLoading,
+    selectedOwnerIds,
+    availableOwners,
+    availableOwnersLoading,
   ];
 }
 
@@ -167,6 +191,18 @@ class GlobalSearchTagsLoadFailure extends GlobalSearchState {
 
   /// Creates a [GlobalSearchTagsLoadFailure].
   const GlobalSearchTagsLoadFailure({required this.failure});
+
+  @override
+  List<Object?> get props => [failure];
+}
+
+/// Emitted when loading the available owners for the filter sheet fails.
+class GlobalSearchOwnersLoadFailure extends GlobalSearchState {
+  /// The failure describing why the owners fetch failed.
+  final Failure failure;
+
+  /// Creates a [GlobalSearchOwnersLoadFailure].
+  const GlobalSearchOwnersLoadFailure({required this.failure});
 
   @override
   List<Object?> get props => [failure];
