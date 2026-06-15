@@ -1,3 +1,4 @@
+// coverage:ignore-file
 import 'package:construculator/libraries/project/data/models/project_dto.dart';
 
 /// Provides raw data access for project setting mutations and single-project reads.
