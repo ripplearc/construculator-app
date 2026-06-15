@@ -1,5 +1,4 @@
 import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:construculator/libraries/tag/data/data_source/interfaces/tag_data_source.dart';
 import 'package:construculator/libraries/tag/data/data_source/remote_tag_data_source.dart';
@@ -19,15 +18,13 @@ class TagLibraryModule extends Module {
   List<Module> get imports => [SupabaseModule(appBootstrap)];
 
   @override
-  void exportedBinds(Injector i) => _registerDependencies(i);
-}
+  void exportedBinds(Injector i) {
+    i.addLazySingleton<TagDataSource>(
+      () => RemoteTagDataSource(supabaseWrapper: i.get()),
+    );
 
-void _registerDependencies(Injector i) {
-  i.addLazySingleton<TagDataSource>(
-    () => RemoteTagDataSource(supabaseWrapper: Modular.get<SupabaseWrapper>()),
-  );
-
-  i.addLazySingleton<TagRepository>(
-    () => TagRepositoryImpl(dataSource: Modular.get<TagDataSource>()),
-  );
+    i.addLazySingleton<TagRepository>(
+      () => TagRepositoryImpl(dataSource: i.get()),
+    );
+  }
 }

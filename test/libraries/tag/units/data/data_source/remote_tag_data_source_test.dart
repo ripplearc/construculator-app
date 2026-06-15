@@ -66,7 +66,7 @@ void main() {
       supabaseWrapper.shouldThrowOnSelectMatch = true;
       supabaseWrapper.selectMatchExceptionType = SupabaseExceptionType.postgrest;
 
-      expect(
+      await expectLater(
         () => dataSource.getTags(),
         throwsA(isA<supabase.PostgrestException>()),
       );

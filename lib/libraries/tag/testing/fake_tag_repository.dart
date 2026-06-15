@@ -5,10 +5,10 @@ import 'package:construculator/libraries/tag/domain/repositories/tag_repository.
 
 /// Fake implementation of [TagRepository] for testing.
 class FakeTagRepository implements TagRepository {
-  /// Tracks method calls for assertions.
+  // Tracks method calls for assertions.
   final List<Map<String, dynamic>> _methodCalls = [];
 
-  /// Tags returned by [getTags].
+  // Tags returned by getTags.
   final List<Tag> _tags = [];
 
   /// Controls whether [getTags] returns a [Failure].
