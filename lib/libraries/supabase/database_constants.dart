@@ -23,6 +23,13 @@ class DatabaseConstants {
   static const String globalSearchRpcFunction = 'global_search';
   static const String searchSuggestionsRpcFunction = 'get_search_suggestions';
 
+  /// The RPC that returns the project owners the caller can filter by.
+  ///
+  /// The backend scopes the result to owners (project creators) of projects
+  /// the authenticated caller can access; identity is derived from the
+  /// Supabase auth session JWT, so no explicit user id param is required.
+  static const String projectOwnersRpcFunction = 'get_project_owners';
+
   // RPC param values
   /// The scope value passed to the [globalSearchRpcFunction] RPC to restrict
   /// results to the dashboard context (projects, estimations, members).
