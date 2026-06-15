@@ -6,9 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
-  final size = const Size(390, 90);
-  final ratio = 1.0;
-  final testName = 'project_stats_cards';
+  const size = Size(390, 90);
+  const ratio = 1.0;
+  const testName = 'project_stats_cards';
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() async {

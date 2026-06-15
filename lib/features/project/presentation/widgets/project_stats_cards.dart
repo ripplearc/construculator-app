@@ -2,10 +2,22 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+/// Displays a row of stat cards summarising key project metrics.
+///
+/// Renders two tappable cards side-by-side — one for cost estimations and one
+/// for project members. Purely presentational; all data and tap callbacks are
+/// passed in by the caller.
 class ProjectStatsCards extends StatelessWidget {
+  /// The number of cost estimations associated with the project.
   final int estimationCount;
+
+  /// The number of members invited to the project.
   final int memberCount;
+
+  /// Called when the estimations card is tapped; null makes the card non-interactive.
   final VoidCallback? onEstimationsTap;
+
+  /// Called when the members card is tapped; null makes the card non-interactive.
   final VoidCallback? onMembersTap;
 
   const ProjectStatsCards({
