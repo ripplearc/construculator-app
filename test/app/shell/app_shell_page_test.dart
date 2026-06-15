@@ -1,40 +1,28 @@
-import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
 import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
-import 'package:construculator/features/dashboard/domain/usecases/watch_recent_estimations_usecase.dart';
-import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
-import 'package:construculator/libraries/auth/testing/fake_auth_manager.dart';
-import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
-import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
-import 'package:construculator/libraries/config/testing/fake_app_config.dart';
-import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
-import 'package:construculator/libraries/estimation/testing/fake_cost_estimation_repository.dart';
+import 'package:construculator/libraries/auth/data/models/auth_user.dart';
+import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
-import 'package:construculator/libraries/router/interfaces/app_router.dart';
-import 'package:construculator/libraries/router/routes/global_search_routes.dart';
-import 'package:construculator/libraries/router/testing/fake_router.dart';
-import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+import '../../utils/fake_app_bootstrap_factory.dart';
+
 void main() {
-  late FakeAuthManager authManager;
-  late FakeAuthNotifier authNotifier;
   late FakeCurrentProjectNotifier fakeProjectNotifier;
-  late RecentEstimationsBloc recentEstimationsBloc;
+  late FakeSupabaseWrapper fakeSupabaseWrapper;
 
   setUpAll(() {
     CoreToast.disableTimers();
@@ -45,49 +33,46 @@ void main() {
   });
 
   setUp(() {
-    final clock = FakeClockImpl();
-    final fakeSupabase = FakeSupabaseWrapper(clock: clock);
-    authNotifier = FakeAuthNotifier();
-    authManager = FakeAuthManager(
-      authNotifier: authNotifier,
-      authRepository: FakeAuthRepository(clock: clock),
-      wrapper: fakeSupabase,
-      clock: clock,
-    );
     fakeProjectNotifier = FakeCurrentProjectNotifier();
-    recentEstimationsBloc = RecentEstimationsBloc(
-      watchRecentEstimationsUseCase: WatchRecentEstimationsUseCase(
-        FakeCostEstimationRepository(),
-        fakeProjectNotifier,
-      ),
-      currentProjectNotifier: fakeProjectNotifier,
+    final fakeClock = FakeClockImpl();
+    fakeSupabaseWrapper = FakeSupabaseWrapper(clock: fakeClock);
+
+    fakeSupabaseWrapper.setCurrentUser(
+      FakeUser(id: 'fake-id', createdAt: fakeClock.now().toIso8601String()),
     );
+
+    final fakeUser = User(
+      id: '1',
+      credentialId: 'fake-id',
+      email: 'test@example.com',
+      firstName: 'Test',
+      lastName: 'User',
+      professionalRole: 'Engineer',
+      createdAt: fakeClock.now(),
+      updatedAt: fakeClock.now(),
+      userStatus: UserProfileStatus.active,
+      userPreferences: {},
+    );
+
+    fakeSupabaseWrapper.addTableData('users', [fakeUser.toJson()]);
 
     Modular.init(
       ShellModule(
-        AppBootstrap(
-          config: FakeAppConfig(),
-          envLoader: FakeEnvLoader(),
-          supabaseWrapper: fakeSupabase,
-          sentryWrapper: FakeSentryWrapper(),
-        ),
+        FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabaseWrapper),
       ),
     );
-    fakeProjectNotifier = FakeCurrentProjectNotifier();
+
     Modular.replaceInstance<CurrentProjectNotifier>(fakeProjectNotifier);
+    Modular.replaceInstance<ProjectUIProvider>(_FakeProjectUIProvider());
   });
 
   tearDown(() {
-    recentEstimationsBloc.close();
     Modular.destroy();
   });
 
   BuildContext? buildContext;
 
-  Widget makeApp({
-    ProjectUIProvider? projectUIProvider,
-    AppRouter? router,
-  }) {
+  Widget makeApp() {
     return MaterialApp(
       theme: CoreTheme.light(),
       locale: const Locale('en'),
@@ -97,16 +82,7 @@ void main() {
         buildContext = context;
         return child!;
       },
-      home: BlocProvider<AppShellBloc>(
-        create: (_) => Modular.get<AppShellBloc>(),
-        child: AppShellPage(
-          projectUIProvider: projectUIProvider ?? _FakeProjectUIProvider(),
-          authNotifier: authNotifier,
-          authManager: authManager,
-          router: router ?? FakeAppRouter(),
-          recentEstimationsBloc: recentEstimationsBloc,
-        ),
-      ),
+      home: const AppShellPage(),
     );
   }
 
@@ -266,16 +242,17 @@ void main() {
   });
 
   group('Cost Estimation Tab', () {
-    testWidgets('shows CostEstimationLandingPage when estimation tab is tapped', (
-      tester,
-    ) async {
-      await tester.pumpWidget(makeApp());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'shows CostEstimationLandingPage when estimation tab is tapped',
+      (tester) async {
+        await tester.pumpWidget(makeApp());
+        await tester.pumpAndSettle();
 
-      await tapTabByLabel(tester, l10n().costEstimation);
+        await tapTabByLabel(tester, l10n().costEstimation);
 
-      expect(find.byType(CostEstimationLandingPage), findsOneWidget);
-    });
+        expect(find.byType(CostEstimationLandingPage), findsOneWidget);
+      },
+    );
   });
 
   group('App Bar', () {
@@ -313,64 +290,30 @@ void main() {
         await tester.pump();
 
         expect(find.text(l10n().appTitle), findsNothing);
-        expect(
-          find.byKey(
-            const Key(
-              'project_app_bar_950e8400-e29b-41d4-a716-446655440001',
-            ),
-          ),
-          findsOneWidget,
-        );
+        expect(find.byType(_FakeProjectAppBar), findsOneWidget);
       },
     );
-
-    testWidgets('tapping search pushes the global search route', (
-      tester,
-    ) async {
-      fakeProjectNotifier.setCurrentProjectId(
-        '950e8400-e29b-41d4-a716-446655440001',
-      );
-      final fakeProvider = _FakeProjectUIProvider();
-      final fakeRouter = FakeAppRouter();
-
-      await tester.pumpWidget(
-        makeApp(projectUIProvider: fakeProvider, router: fakeRouter),
-      );
-      await tester.pump();
-
-      // Clear any initialization navigation (e.g. DashboardPage routing to login
-      // or create-account when no authenticated user is set up in this test).
-      fakeRouter.reset();
-
-      final onSearchTap = fakeProvider.capturedOnSearchTap;
-      if (onSearchTap == null) {
-        fail('onSearchTap was not captured by the fake provider');
-      }
-      onSearchTap();
-      await tester.pumpAndSettle();
-
-      expect(fakeRouter.navigationHistory, [
-        const RouteCall(fullGlobalSearchRoute, null),
-      ]);
-    });
   });
 }
 
 // TODO: [CA-724] Migrate to lib/libraries/project/testing/fake_project_ui_provider.dart
 class _FakeProjectUIProvider extends ProjectUIProvider {
-  VoidCallback? capturedOnSearchTap;
-
   @override
   PreferredSizeWidget buildProjectHeaderAppbar({
-    required String projectId,
     VoidCallback? onProjectTap,
     VoidCallback? onSearchTap,
     VoidCallback? onNotificationTap,
   }) {
-    capturedOnSearchTap = onSearchTap;
-    return PreferredSize(
-      preferredSize: const Size.fromHeight(kToolbarHeight),
-      child: AppBar(key: Key('project_app_bar_$projectId')),
+    return const PreferredSize(
+      preferredSize: Size.fromHeight(kToolbarHeight),
+      child: _FakeProjectAppBar(),
     );
   }
+}
+
+class _FakeProjectAppBar extends StatelessWidget {
+  const _FakeProjectAppBar();
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
