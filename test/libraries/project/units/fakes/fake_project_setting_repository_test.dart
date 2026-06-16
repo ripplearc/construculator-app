@@ -191,6 +191,9 @@ void main() {
         fake.shouldFailOnUpdate = true;
         fake.shouldFailOnDelete = true;
         fake.projectToReturn = _fakeProject(id: 'p-1');
+        fake.failureToReturn = const ProjectFailure(
+          errorType: ProjectErrorType.connectionError,
+        );
         await fake.deleteProject('p-1');
 
         fake.reset();
@@ -201,6 +204,12 @@ void main() {
         expect(fake.shouldFailOnDelete, isFalse);
         expect(fake.projectToReturn, isNull);
         expect(fake.getMethodCalls(), isEmpty);
+        expect(
+          fake.failureToReturn,
+          equals(
+            const ProjectFailure(errorType: ProjectErrorType.unexpectedError),
+          ),
+        );
       });
     });
   });

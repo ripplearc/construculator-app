@@ -5,6 +5,7 @@ import 'package:construculator/libraries/project/testing/fake_project_setting_re
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
+/// Modular test module that binds project-library fakes for unit tests.
 class ProjectTestModule extends Module {
   @override
   List<Module> get imports => [ClockTestModule()];
