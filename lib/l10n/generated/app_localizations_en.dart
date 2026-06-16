@@ -730,6 +730,45 @@ class AppLocalizationsEn extends AppLocalizations {
       'You don\'t have permission to perform this action';
 
   @override
+  String get materialsTab => 'Materials';
+
+  @override
+  String get laboursTab => 'Labours';
+
+  @override
+  String get equipmentsTab => 'Equipments';
+
+  @override
+  String get noMaterialCostMessage =>
+      'No material cost added. For adding cost please click on add button';
+
+  @override
+  String get noLabourCostMessage =>
+      'No labour cost added. For adding cost please click on add button';
+
+  @override
+  String get noEquipmentCostMessage =>
+      'No equipment cost added. For adding cost please click on add button';
+
+  @override
+  String get addMaterialCostButton => 'Add material cost';
+
+  @override
+  String get previewButton => 'Preview';
+
+  @override
+  String get backLabel => 'Back';
+
+  @override
+  String get editEstimationNameLabel => 'Edit estimation name';
+
+  @override
+  String get moreOptionsLabel => 'More options';
+
+  @override
+  String get commentLabel => 'Comment';
+
+  @override
   String get globalSearchHint => 'Search for Calculation and cost';
 
   @override
