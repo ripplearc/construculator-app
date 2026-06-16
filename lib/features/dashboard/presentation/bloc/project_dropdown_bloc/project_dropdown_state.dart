@@ -76,36 +76,21 @@ class ProjectDropdownLoadSuccess extends ProjectDropdownState {
 /// by [searchQuery]) so the UI can keep showing them as a fallback without
 /// holding its own copy of BLoC state.
 class ProjectDropdownLoadFailure extends ProjectDropdownState {
-  /// Human-readable failure message.
-  final String message;
-
-  /// The last known projects, retained so the UI can fall back to them.
+  final Failure failure;
   final UnmodifiableListView<Project> cachedProjects;
-
-  /// The search query that was active when the failure occurred.
   final String searchQuery;
 
-  ProjectDropdownLoadFailure(
-    this.message, {
+  ProjectDropdownLoadFailure({
+    required this.failure,
     List<Project> cachedProjects = const [],
     this.searchQuery = '',
   }) : cachedProjects = UnmodifiableListView<Project>(
          List<Project>.from(cachedProjects),
        );
 
-  /// The cached projects matching [searchQuery]; equals [cachedProjects] when
-  /// the query is empty.
   UnmodifiableListView<Project> get visibleProjects =>
       _filterByQuery(cachedProjects.toList(), searchQuery);
 
-  ProjectDropdownLoadFailure copyWith({String? searchQuery}) {
-    return ProjectDropdownLoadFailure(
-      message,
-      cachedProjects: cachedProjects.toList(),
-      searchQuery: searchQuery ?? this.searchQuery,
-    );
-  }
-
   @override
-  List<Object?> get props => [message, cachedProjects, searchQuery];
+  List<Object?> get props => [failure, cachedProjects, searchQuery];
 }

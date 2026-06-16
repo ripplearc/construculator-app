@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
@@ -70,7 +71,9 @@ class ProjectDropdownBloc
         .listen(
           (projects) => add(_ProjectDropdownProjectsUpdated(projects)),
           onError: (Object error, StackTrace stackTrace) {
-            add(_ProjectDropdownProjectsLoadFailed(error.toString()));
+            add(_ProjectDropdownProjectsLoadFailed(
+              error is Failure ? error : UnexpectedFailure(),
+            ));
           },
         );
   }
@@ -82,7 +85,6 @@ class ProjectDropdownBloc
     final currentState = state;
     final searchQuery = switch (currentState) {
       ProjectDropdownLoadSuccess s => s.searchQuery,
-      ProjectDropdownLoadFailure f => f.searchQuery,
       _ => '',
     };
 
@@ -131,27 +133,15 @@ class ProjectDropdownBloc
     Emitter<ProjectDropdownState> emit,
   ) {
     final currentState = state;
-    if (currentState is ProjectDropdownLoadSuccess) {
-      emit(
-        ProjectDropdownLoadFailure(
-          event.message,
-          cachedProjects: currentState.projects,
-          searchQuery: currentState.searchQuery,
-        ),
-      );
-      return;
-    }
-    if (currentState is ProjectDropdownLoadFailure) {
-      emit(
-        ProjectDropdownLoadFailure(
-          event.message,
-          cachedProjects: currentState.cachedProjects,
-          searchQuery: currentState.searchQuery,
-        ),
-      );
-      return;
-    }
-    emit(ProjectDropdownLoadFailure(event.message));
+    emit(ProjectDropdownLoadFailure(
+      failure: event.failure,
+      cachedProjects: currentState is ProjectDropdownLoadSuccess
+          ? currentState.projects.toList()
+          : [],
+      searchQuery: currentState is ProjectDropdownLoadSuccess
+          ? currentState.searchQuery
+          : '',
+    ));
   }
 
   void _onSearchChanged(
@@ -160,11 +150,6 @@ class ProjectDropdownBloc
   ) {
     final currentState = state;
     if (currentState is ProjectDropdownLoadSuccess) {
-      if (currentState.searchQuery == event.query) return;
-      emit(currentState.copyWith(searchQuery: event.query));
-      return;
-    }
-    if (currentState is ProjectDropdownLoadFailure) {
       if (currentState.searchQuery == event.query) return;
       emit(currentState.copyWith(searchQuery: event.query));
       return;
