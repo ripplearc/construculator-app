@@ -81,9 +81,11 @@ class ProjectSettingsBloc
     Emitter<ProjectSettingsState> emit,
   ) async {
     final currentState = state;
-    final lastProject = currentState is ProjectSettingsLoaded
-        ? currentState.project
-        : null;
+    final lastProject = switch (currentState) {
+      ProjectSettingsLoaded(:final project) => project,
+      ProjectSettingsEditing(:final originalProject) => originalProject,
+      _ => null,
+    };
 
     emit(const ProjectSettingsDeleteInProgress());
 

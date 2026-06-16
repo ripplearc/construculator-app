@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
@@ -8,6 +10,33 @@ import 'package:construculator/libraries/project/domain/repositories/project_set
 class FakeProjectSettingRepository implements ProjectSettingRepository {
   // Tracks method calls for boundary assertions.
   final List<Map<String, dynamic>> _methodCalls = [];
+
+  final _watchController =
+      StreamController<Either<Failure, Project>>.broadcast();
+  Completer<void> _firstListenerCompleter = Completer();
+
+  /// Completes once [watchProjectSetting] receives its first listener.
+  Future<void> get firstListenerReady => _firstListenerCompleter.future;
+
+  @override
+  Stream<Either<Failure, Project>> watchProjectSetting(String projectId) {
+    if (!_firstListenerCompleter.isCompleted) {
+      _firstListenerCompleter.complete();
+    }
+    return _watchController.stream;
+  }
+
+  /// Pushes a [Right] project event into the watch stream.
+  void emitProject(Project project) =>
+      _watchController.add(Right(project));
+
+  /// Pushes a [Left] failure event into the watch stream.
+  void emitFailure(Failure failure) =>
+      _watchController.add(Left(failure));
+
+  /// Pushes an error event into the watch stream.
+  void emitStreamError(Object error) =>
+      _watchController.addError(error);
 
   /// The persisted project state. Read by [getProjectSetting], mutated by
   /// [updateProject], and cleared by [deleteProject].
@@ -93,7 +122,7 @@ class FakeProjectSettingRepository implements ProjectSettingRepository {
     return _methodCalls.where((call) => call['method'] == methodName).toList();
   }
 
-  /// Resets all flags, data, and recorded calls.
+  /// Resets all flags, data, recorded calls, and the stream sync point.
   void reset() {
     shouldFailOnCreate = false;
     shouldFailOnGet = false;
@@ -104,8 +133,11 @@ class FakeProjectSettingRepository implements ProjectSettingRepository {
     );
     projectToReturn = null;
     _methodCalls.clear();
+    _firstListenerCompleter = Completer();
   }
 
   @override
-  void dispose() {}
+  void dispose() {
+    _watchController.close();
+  }
 }

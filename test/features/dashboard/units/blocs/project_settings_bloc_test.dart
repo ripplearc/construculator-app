@@ -281,6 +281,29 @@ void main() {
               .having((s) => s.lastProject, 'lastProject', tProject),
         ],
       );
+
+      blocTest<ProjectSettingsBloc, ProjectSettingsState>(
+        'emits [DeleteInProgress, Error] with lastProject when deleting from Editing state',
+        build: () {
+          fakeRepository.shouldFailOnDelete = true;
+          fakeRepository.failureToReturn = const ProjectFailure(
+            errorType: ProjectErrorType.permissionDenied,
+          );
+          return Modular.get<ProjectSettingsBloc>();
+        },
+        seed: () => ProjectSettingsEditing(
+          project: tProject,
+          originalProject: tProject,
+        ),
+        act: (bloc) =>
+            bloc.add(const ProjectSettingsDeleteRequested(testProjectId)),
+        expect: () => [
+          const ProjectSettingsDeleteInProgress(),
+          isA<ProjectSettingsError>()
+              .having((s) => s.failure, 'failure', isA<ProjectFailure>())
+              .having((s) => s.lastProject, 'lastProject', tProject),
+        ],
+      );
     });
   });
 }
