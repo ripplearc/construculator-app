@@ -8,13 +8,17 @@ import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:construculator/libraries/router/routes/shell_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class EnterPasswordPage extends StatefulWidget {
+  final AppRouter router;
   final String email;
 
-  const EnterPasswordPage({super.key, required this.email});
+  const EnterPasswordPage({
+    super.key,
+    required this.router,
+    required this.email,
+  });
 
   @override
   State<EnterPasswordPage> createState() => _EnterPasswordPageState();
@@ -25,7 +29,6 @@ class _EnterPasswordPageState extends State<EnterPasswordPage> {
   bool _isPasswordVisible = false;
   bool _canPressContinue = false;
   List<String>? _passwordErrorList;
-  final AppRouter _router = Modular.get<AppRouter>();
 
   void _togglePasswordVisibility() {
     setState(() {
@@ -94,7 +97,7 @@ class _EnterPasswordPageState extends State<EnterPasswordPage> {
               context,
               message: l10n.loginSuccessMessage,
               onPressed: () {
-                _router.navigate(shellRoute);
+                widget.router.navigate(shellRoute);
               },
               buttonLabel: l10n.continueButton,
             );
@@ -110,7 +113,7 @@ class _EnterPasswordPageState extends State<EnterPasswordPage> {
                   title: l10n.enterPasswordTitle,
                   description: l10n.enterPasswordDescription,
                   contact: widget.email,
-                  onContactPressed: () => _router.pop(),
+                  onContactPressed: () => widget.router.pop(),
                 ),
                 const SizedBox(height: 24),
                 CoreTextField(
@@ -138,7 +141,7 @@ class _EnterPasswordPageState extends State<EnterPasswordPage> {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () {
-                      _router.pushNamed(fullForgotPasswordRoute);
+                      widget.router.pushNamed(fullForgotPasswordRoute);
                     },
                     child: Text(
                       l10n.forgotPasswordTitle,

@@ -3,6 +3,7 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/estimation_routes_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/project/domain/permission_constants.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
@@ -46,7 +47,7 @@ class _CostEstimationLandingPageA11yTestModule extends Module {
     r.module(estimationBaseRoute, module: EstimationRoutesModule(appBootstrap));
     r.child(
       '/test-landing',
-      guards: [AuthGuard()],
+      guards: [AuthGuard(() => Modular.get<AuthManager>())],
       child: (context) {
         return EstimationModule.landingPage();
       },

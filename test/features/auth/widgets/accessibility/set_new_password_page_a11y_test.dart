@@ -3,7 +3,8 @@ import 'package:construculator/features/auth/auth_module.dart';
 import 'package:construculator/features/auth/presentation/bloc/set_new_password_bloc/set_new_password_bloc.dart';
 import 'package:construculator/features/auth/presentation/pages/set_new_password_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
-
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -34,6 +35,7 @@ class _SetNewPasswordPageA11yTestModule extends Module {
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  late FakeAppRouter router;
   BuildContext? buildContext;
 
   FakeUser createFakeUser(String email) {
@@ -54,6 +56,9 @@ void main() {
 
     Modular.init(_SetNewPasswordPageA11yTestModule(appBootstrap));
     Modular.replaceInstance<SupabaseWrapper>(fakeSupabase);
+    final appRouter = Modular.get<AppRouter>();
+    expect(appRouter, isA<FakeAppRouter>());
+    router = appRouter as FakeAppRouter;
   });
 
   tearDownAll(() {
@@ -87,7 +92,7 @@ void main() {
 
   Future<void> renderPage(WidgetTester tester, {String email = ''}) async {
     await tester.pumpWidget(
-      makeTestableWidget(child: SetNewPasswordPage(email: email)),
+      makeTestableWidget(child: SetNewPasswordPage(email: email, router: router)),
     );
     await tester.pumpAndSettle();
   }
@@ -133,7 +138,7 @@ void main() {
             fakeSupabase.setCurrentUser(createFakeUser(email));
             return makeTestableWidget(
               theme: theme,
-              child: SetNewPasswordPage(email: email),
+              child: SetNewPasswordPage(email: email, router: router),
             );
           },
           find.text(l10n().setPasswordButton),
@@ -156,7 +161,7 @@ void main() {
         tester,
         (theme) => makeTestableWidget(
           theme: theme,
-          child: SetNewPasswordPage(email: ''),
+          child: SetNewPasswordPage(email: '', router: router),
         ),
         find.text(l10n().newPasswordLabel),
       );
@@ -172,7 +177,7 @@ void main() {
           tester,
           (theme) => makeTestableWidget(
             theme: theme,
-            child: SetNewPasswordPage(email: ''),
+            child: SetNewPasswordPage(email: '', router: router),
           ),
           find.text(l10n().confirmPasswordLabel),
         );
@@ -191,7 +196,7 @@ void main() {
           tester,
           (theme) => makeTestableWidget(
             theme: theme,
-            child: SetNewPasswordPage(email: ''),
+            child: SetNewPasswordPage(email: '', router: router),
           ),
           find.text(l10n().passwordTooShortError),
         );
@@ -211,7 +216,7 @@ void main() {
           tester,
           (theme) => makeTestableWidget(
             theme: theme,
-            child: SetNewPasswordPage(email: ''),
+            child: SetNewPasswordPage(email: '', router: router),
           ),
           find.text(l10n().passwordsDoNotMatchError),
         );
@@ -231,7 +236,7 @@ void main() {
             fakeSupabase.shouldThrowOnUpdate = true;
             return makeTestableWidget(
               theme: theme,
-              child: SetNewPasswordPage(email: ''),
+              child: SetNewPasswordPage(email: '', router: router),
             );
           },
           find.byKey(const Key('toast_close_button')),

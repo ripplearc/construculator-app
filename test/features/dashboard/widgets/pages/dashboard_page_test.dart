@@ -73,7 +73,11 @@ void main() {
       theme: createTestTheme(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: const DashboardPage(),
+      home: DashboardPage(
+        authNotifier: authNotifier,
+        authManager: authManager,
+        router: router,
+      ),
     );
   }
 
