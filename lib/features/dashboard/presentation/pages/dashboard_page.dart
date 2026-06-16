@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
@@ -19,11 +21,19 @@ class DashboardPage extends StatefulWidget {
   /// The router used to navigate to other pages (e.g. login, create account).
   final AppRouter router;
 
+  /// Bloc that streams recent cost estimations into [RecentEstimationsSection].
+  final RecentEstimationsBloc recentEstimationsBloc;
+
+  /// The shell bloc used to switch tabs from within the dashboard.
+  final AppShellBloc appShellBloc;
+
   const DashboardPage({
     super.key,
     required this.authNotifier,
     required this.authManager,
     required this.router,
+    required this.recentEstimationsBloc,
+    required this.appShellBloc,
   });
 
   @override
@@ -114,7 +124,11 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ),
             const SizedBox(height: CoreSpacing.space8),
-            const RecentEstimationsSection(),
+            RecentEstimationsSection(
+              bloc: widget.recentEstimationsBloc,
+              router: widget.router,
+              appShellBloc: widget.appShellBloc,
+            ),
             const SizedBox(height: CoreSpacing.space8),
             Center(
               child: CoreButton(

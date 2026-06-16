@@ -1,4 +1,5 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/features/dashboard/domain/usecases/watch_recent_estimations_usecase.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/dashboard_bloc/dashboard_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
@@ -61,6 +62,8 @@ class DashboardModule extends Module {
         authNotifier: Modular.get<AuthNotifier>(),
         authManager: Modular.get<AuthManager>(),
         router: Modular.get<AppRouter>(),
+        recentEstimationsBloc: Modular.get<RecentEstimationsBloc>(),
+        appShellBloc: Modular.get<AppShellBloc>(),
       ),
     );
   }

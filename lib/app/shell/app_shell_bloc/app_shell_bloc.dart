@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:equatable/equatable.dart';

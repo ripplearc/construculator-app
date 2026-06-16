@@ -3,6 +3,7 @@ import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/estimation/estimation_routes_module.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
@@ -12,6 +13,7 @@ import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/router/routes/global_search_routes.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -38,13 +40,16 @@ class ShellModule extends Module {
       guards: [AuthGuard(() => Modular.get<AuthManager>())],
       child: (_) => BlocProvider<AppShellBloc>(
         create: (_) => Modular.get<AppShellBloc>(),
-        // TODO: [CA-708] Remove authNotifier, authManager, and router from AppShellPage once DashboardPage reads them from the module directly.
-        // https://ripplearc.youtrack.cloud/issue/CA-708
-        child: AppShellPage(
-          projectUIProvider: Modular.get<ProjectUIProvider>(),
-          authNotifier: Modular.get<AuthNotifier>(),
-          authManager: Modular.get<AuthManager>(),
-          router: Modular.get<AppRouter>(),
+        child: Builder(
+          // TODO: [CA-708] Remove authNotifier, authManager, router, and recentEstimationsBloc from AppShellPage once DashboardPage reads them from the module directly.
+          // https://ripplearc.youtrack.cloud/issue/CA-708
+          builder: (_) => AppShellPage(
+            projectUIProvider: Modular.get<ProjectUIProvider>(),
+            authNotifier: Modular.get<AuthNotifier>(),
+            authManager: Modular.get<AuthManager>(),
+            router: Modular.get<AppRouter>(),
+            recentEstimationsBloc: Modular.get<RecentEstimationsBloc>(),
+          ),
         ),
       ),
       children: [

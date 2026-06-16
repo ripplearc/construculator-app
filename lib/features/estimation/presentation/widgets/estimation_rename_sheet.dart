@@ -3,7 +3,6 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class EstimationRenameSheet extends StatefulWidget {
@@ -11,10 +10,14 @@ class EstimationRenameSheet extends StatefulWidget {
     super.key,
     required this.estimationId,
     required this.currentName,
+    required this.router,
   });
 
   final String estimationId;
   final String currentName;
+
+  /// Handles navigation after a successful rename (pops the sheet).
+  final AppRouter router;
 
   @override
   State<EstimationRenameSheet> createState() => _EstimationRenameSheetState();
@@ -61,8 +64,7 @@ class _EstimationRenameSheetState extends State<EstimationRenameSheet> {
     return BlocListener<RenameEstimationBloc, RenameEstimationState>(
       listener: (context, state) {
         if (state is RenameEstimationSuccess) {
-          final router = Modular.get<AppRouter>();
-          router.pop();
+          widget.router.pop();
         }
       },
       child: Container(

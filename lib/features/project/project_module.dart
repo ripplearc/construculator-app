@@ -27,7 +27,11 @@ class ProjectModule extends Module {
 }
 
 void _registerDependencies(Injector i) {
-  i.addLazySingleton<ProjectUIProvider>(() => ProjectUIProviderImpl());
+  i.addLazySingleton<ProjectUIProvider>(
+    () => ProjectUIProviderImpl(
+      getProjectBlocBuilder: () => i.get<GetProjectBloc>(),
+    ),
+  );
 
   i.addLazySingleton<GetProjectHeaderUseCase>(
     () => GetProjectHeaderUseCase(i(), i()),

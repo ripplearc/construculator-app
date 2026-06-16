@@ -45,7 +45,10 @@ void main() {
 
     setUp(() {
       testDate = clock.now();
-      testEstimation = CostEstimate.defaultEstimate();
+      testEstimation = CostEstimate.defaultEstimate(
+        createdAt: testDate,
+        updatedAt: testDate,
+      );
     });
 
     tearDownAll(() {

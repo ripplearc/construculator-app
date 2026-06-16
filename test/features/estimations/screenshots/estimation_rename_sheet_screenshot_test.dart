@@ -4,6 +4,7 @@ import 'package:construculator/features/estimation/presentation/widgets/estimati
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
+import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -51,6 +52,7 @@ void main() {
               child: EstimationRenameSheet(
                 estimationId: estimationId,
                 currentName: initialName,
+                router: FakeAppRouter(),
               ),
             ),
           ),

@@ -56,7 +56,13 @@ void main() {
       home: Builder(
         builder: (context) {
           buildContext = context;
-          return Scaffold(body: RecentEstimationsSection());
+          return Scaffold(
+            body: RecentEstimationsSection(
+              bloc: bloc,
+              router: router,
+              appShellBloc: Modular.get<AppShellBloc>(),
+            ),
+          );
         },
       ),
     );

@@ -4,6 +4,7 @@ import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/app/shell/widgets/tab_navigator.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/projects_bottom_sheet.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
@@ -35,7 +36,7 @@ class AppShellPage extends StatefulWidget {
   /// Builds the project header app bar displayed above the tab content.
   final ProjectUIProvider projectUIProvider;
 
-  // TODO: [CA-708] Remove once DashboardPage reads authNotifier, authManager, and router from the module directly.
+  // TODO: [CA-708] Remove once DashboardPage reads authNotifier, authManager, router, and recentEstimationsBloc from the module directly.
   // https://ripplearc.youtrack.cloud/issue/CA-708
 
   /// Notifies when the authenticated user's profile changes.
@@ -47,12 +48,17 @@ class AppShellPage extends StatefulWidget {
   /// Handles navigation across the top-level route stack.
   final AppRouter router;
 
+  /// Bloc that streams recent cost estimations into the home tab's
+  /// [DashboardPage].
+  final RecentEstimationsBloc recentEstimationsBloc;
+
   const AppShellPage({
     super.key,
     required this.projectUIProvider,
     required this.authNotifier,
     required this.authManager,
     required this.router,
+    required this.recentEstimationsBloc,
   });
 
   @override
@@ -119,12 +125,14 @@ class _AppShellPageState extends State<AppShellPage> {
   Widget _buildTabRoot(ShellTab tab) {
     switch (tab) {
       case ShellTab.home:
-        // TODO: [CA-708] Remove authNotifier, authManager, and router from DashboardPage once the page reads them from the module directly.
+        // TODO: [CA-708] Remove authNotifier, authManager, router, and recentEstimationsBloc from DashboardPage once the page reads them from the module directly.
         // https://ripplearc.youtrack.cloud/issue/CA-708
         return DashboardPage(
           authNotifier: widget.authNotifier,
           authManager: widget.authManager,
           router: widget.router,
+          recentEstimationsBloc: widget.recentEstimationsBloc,
+          appShellBloc: BlocProvider.of<AppShellBloc>(context),
         );
       case ShellTab.calculations:
         return const CalculationsPage();
