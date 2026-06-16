@@ -85,7 +85,6 @@ class ProjectDropdownBloc
     final currentState = state;
     final searchQuery = switch (currentState) {
       ProjectDropdownLoadSuccess s => s.searchQuery,
-      ProjectDropdownLoadFailure f => f.searchQuery,
       _ => '',
     };
 

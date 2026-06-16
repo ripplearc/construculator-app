@@ -10,7 +10,9 @@ import 'package:construculator/libraries/project/data/repositories/project_repos
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
+import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
@@ -544,11 +546,15 @@ class _ProjectRepositoryTestModule extends Module {
         supabaseWrapper: FakeSupabaseWrapper(clock: clock),
       ),
     );
+    i.addLazySingleton<CurrentProjectNotifier>(
+      () => FakeCurrentProjectNotifier(),
+    );
     i.addLazySingleton<ProjectRepositoryImpl>(
       () => ProjectRepositoryImpl(
         projectDataSource: i.get<ProjectDataSource>(),
         clock: clock,
         permissionDataSource: i.get<ProjectPermissionDataSource>(),
+        currentProjectNotifier: i.get<CurrentProjectNotifier>(),
       ),
     );
   }
