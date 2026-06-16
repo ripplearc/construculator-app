@@ -77,9 +77,20 @@ class ProjectDropdownLoadSuccess extends ProjectDropdownState {
 /// holding its own copy of BLoC state.
 class ProjectDropdownLoadFailure extends ProjectDropdownState {
   final Failure failure;
+  final UnmodifiableListView<Project> cachedProjects;
+  final String searchQuery;
 
-  const ProjectDropdownLoadFailure(this.failure);
+  ProjectDropdownLoadFailure({
+    required this.failure,
+    List<Project> cachedProjects = const [],
+    this.searchQuery = '',
+  }) : cachedProjects = UnmodifiableListView<Project>(
+         List<Project>.from(cachedProjects),
+       );
+
+  UnmodifiableListView<Project> get visibleProjects =>
+      _filterByQuery(cachedProjects.toList(), searchQuery);
 
   @override
-  List<Object?> get props => [failure];
+  List<Object?> get props => [failure, cachedProjects, searchQuery];
 }

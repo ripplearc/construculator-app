@@ -132,7 +132,16 @@ class ProjectDropdownBloc
     _ProjectDropdownProjectsLoadFailed event,
     Emitter<ProjectDropdownState> emit,
   ) {
-    emit(ProjectDropdownLoadFailure(event.failure));
+    final currentState = state;
+    emit(ProjectDropdownLoadFailure(
+      failure: event.failure,
+      cachedProjects: currentState is ProjectDropdownLoadSuccess
+          ? currentState.projects.toList()
+          : [],
+      searchQuery: currentState is ProjectDropdownLoadSuccess
+          ? currentState.searchQuery
+          : '',
+    ));
   }
 
   void _onSearchChanged(
