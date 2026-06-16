@@ -134,7 +134,7 @@ void main() {
         final result = await fake.updateProject(newDto);
 
         expect(result.projectName, equals('New Name'));
-        expect(fake.projectToReturn?.projectName, equals('New Name'));
+        expect(fake.projectToReturn!.projectName, equals('New Name'));
       });
 
       test('returns the passed dto when projectToReturn is null', () async {
