@@ -218,6 +218,7 @@ class _EmailInputRow extends StatelessWidget {
         vertical: CoreSpacing.space2,
       ),
       decoration: BoxDecoration(
+        color: colors.pageBackground,
         border: Border.all(color: colors.lineLight),
         borderRadius: BorderRadius.circular(CoreSpacing.space2),
       ),
@@ -325,14 +326,15 @@ class _ContributorBadge extends StatelessWidget {
     final typography = context.textTheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: CoreSpacing.space2,
-        vertical: CoreSpacing.space2,
+      padding: const EdgeInsets.only(
+        top: CoreSpacing.space1,
+        bottom: CoreSpacing.space1,
+        left: CoreSpacing.space2,
+        right: CoreSpacing.space1,
       ),
       decoration: BoxDecoration(
+        color: colors.backgroundGrayLight,
         borderRadius: BorderRadius.circular(CoreSpacing.space1),
-        boxShadow: CoreShadows.extraSmall,
-        color: colors.textInverse,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -345,7 +347,7 @@ class _ContributorBadge extends StatelessWidget {
           ),
           const SizedBox(width: CoreSpacing.space1),
           CoreIconWidget(
-            icon: CoreIcons.arrowDown,
+            icon: CoreIcons.arrowDropDown,
             color: colors.textDark,
             size: CoreIconSize.size16,
           ),
