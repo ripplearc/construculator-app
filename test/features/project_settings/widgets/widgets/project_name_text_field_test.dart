@@ -9,6 +9,10 @@ import '../../../../utils/screenshot/font_loader.dart';
 void main() {
   late TextEditingController controller;
 
+  setUpAll(() async {
+    await loadAppFontsAll();
+  });
+
   setUp(() {
     controller = TextEditingController();
   });
@@ -45,6 +49,16 @@ void main() {
 
         expect(find.text('Project name is required'), findsNothing);
         expect(find.text('Project name must be 100 characters or less'), findsNothing);
+      });
+
+      testWidgets('is not interactable when disabled', (tester) async {
+        await tester.pumpWidget(
+          wrap(ProjectNameTextField(controller: controller, enabled: false)),
+        );
+        await tester.pumpAndSettle();
+
+        final textField = tester.widget<TextFormField>(find.byType(TextFormField));
+        expect(textField.enabled, isFalse);
       });
     });
 
@@ -136,6 +150,28 @@ void main() {
         expect(dirtyValue, isTrue);
       });
 
+      testWidgets('calls onDirtyChanged only once across multiple keystrokes', (
+        tester,
+      ) async {
+        int callCount = 0;
+        await tester.pumpWidget(
+          wrap(
+            ProjectNameTextField(
+              controller: controller,
+              onDirtyChanged: (_) => callCount++,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byType(ProjectNameTextField), 'a');
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(ProjectNameTextField), 'ab');
+        await tester.pumpAndSettle();
+
+        expect(callCount, 1);
+      });
+
       testWidgets('calls onValidationChanged with false for empty name after interaction', (
         tester,
       ) async {
@@ -171,6 +207,26 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.enterText(find.byType(ProjectNameTextField), 'My Project');
+        await tester.pumpAndSettle();
+
+        expect(validValue, isTrue);
+      });
+
+      testWidgets('fires onValidationChanged on mount when controller is pre-populated', (
+        tester,
+      ) async {
+        final prefilledController = TextEditingController(text: 'Existing Project');
+        addTearDown(prefilledController.dispose);
+
+        bool? validValue;
+        await tester.pumpWidget(
+          wrap(
+            ProjectNameTextField(
+              controller: prefilledController,
+              onValidationChanged: (isValid) => validValue = isValid,
+            ),
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(validValue, isTrue);

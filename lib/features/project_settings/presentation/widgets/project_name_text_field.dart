@@ -2,6 +2,7 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+/// A text field for entering and validating a project name.
 class ProjectNameTextField extends StatefulWidget {
   const ProjectNameTextField({
     super.key,
@@ -11,11 +12,19 @@ class ProjectNameTextField extends StatefulWidget {
     this.enabled = true,
   });
 
+  /// Controls the text being edited.
   final TextEditingController controller;
+
+  /// Called whenever the validity of the current text changes.
   final void Function(bool isValid)? onValidationChanged;
+
+  /// Called once when the field is first edited; never called again.
   final void Function(bool isDirty)? onDirtyChanged;
+
+  /// Whether the field accepts user input.
   final bool enabled;
 
+  /// Maximum allowed character count for a project name.
   static const int maxLength = 100;
 
   @override
@@ -30,6 +39,9 @@ class _ProjectNameTextFieldState extends State<ProjectNameTextField> {
   void initState() {
     super.initState();
     widget.controller.addListener(_onTextChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _validate();
+    });
   }
 
   @override
@@ -39,11 +51,10 @@ class _ProjectNameTextFieldState extends State<ProjectNameTextField> {
   }
 
   void _onTextChanged() {
-    if (!_isDirty) {
-      setState(() => _isDirty = true);
-      widget.onDirtyChanged?.call(true);
-    }
+    final wasDirty = _isDirty;
+    if (!wasDirty) _isDirty = true;
     _validate();
+    if (!wasDirty) widget.onDirtyChanged?.call(true);
   }
 
   void _validate() {
@@ -67,6 +78,7 @@ class _ProjectNameTextFieldState extends State<ProjectNameTextField> {
     final textTheme = context.textTheme;
     final l10n = context.l10n;
     final hasError = _isDirty && _errors.isNotEmpty;
+    final borderRadius = BorderRadius.circular(CoreSpacing.space1);
 
     return TextFormField(
       controller: widget.controller,
@@ -97,27 +109,27 @@ class _ProjectNameTextFieldState extends State<ProjectNameTextField> {
           horizontal: CoreSpacing.space4,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(CoreSpacing.space1),
+          borderRadius: borderRadius,
           borderSide: BorderSide(color: colorTheme.lineDarkOutline),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(CoreSpacing.space1),
+          borderRadius: borderRadius,
           borderSide: BorderSide(color: colorTheme.lineDarkOutline),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(CoreSpacing.space1),
+          borderRadius: borderRadius,
           borderSide: BorderSide(color: colorTheme.textDark),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(CoreSpacing.space1),
+          borderRadius: borderRadius,
           borderSide: BorderSide(color: colorTheme.statusError),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(CoreSpacing.space1),
+          borderRadius: borderRadius,
           borderSide: BorderSide(color: colorTheme.statusError),
         ),
         disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(CoreSpacing.space1),
+          borderRadius: borderRadius,
           borderSide: BorderSide(color: colorTheme.lineMid),
         ),
         error: hasError

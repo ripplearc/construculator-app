@@ -33,6 +33,7 @@ void main() {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
       final controller = TextEditingController();
       addTearDown(controller.dispose);
@@ -52,6 +53,7 @@ void main() {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
       final controller = TextEditingController(text: 'HD building');
       addTearDown(controller.dispose);
@@ -71,6 +73,7 @@ void main() {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
       final controller = TextEditingController();
       addTearDown(controller.dispose);
@@ -95,6 +98,7 @@ void main() {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
       final controller = TextEditingController();
       addTearDown(controller.dispose);
@@ -109,6 +113,28 @@ void main() {
         find.byType(ProjectNameTextField),
         matchesGoldenFile(
           'goldens/project_name_text_field/${size.width}x${size.height}/project_name_text_field_error_too_long.png',
+        ),
+      );
+    });
+
+    testWidgets('disabled state', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final controller = TextEditingController(text: 'HD building');
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        wrap(ProjectNameTextField(controller: controller, enabled: false)),
+      );
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(ProjectNameTextField),
+        matchesGoldenFile(
+          'goldens/project_name_text_field/${size.width}x${size.height}/project_name_text_field_disabled.png',
         ),
       );
     });
