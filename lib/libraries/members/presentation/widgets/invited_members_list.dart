@@ -96,6 +96,7 @@ class _MemberTile extends StatelessWidget {
           if (onRemove != null)
             IconButton(
               key: Key('remove_member_$email'),
+              tooltip: context.l10n.removeAction,
               icon: CoreIconWidget(
                 icon: CoreIcons.close,
                 color: colors.iconGrayMid,

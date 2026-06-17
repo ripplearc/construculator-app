@@ -238,7 +238,7 @@ class _EmailInputRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: CoreSpacing.space3),
-          _ContributorBadge(),
+          const _ContributorBadge(),
         ],
       ),
     );
@@ -276,13 +276,17 @@ class _EmailChip extends StatelessWidget {
             ),
           ),
           const SizedBox(width: CoreSpacing.space2),
-          GestureDetector(
-            key: Key('remove_chip_$email'),
-            onTap: onRemove,
-            child: CoreIconWidget(
-              icon: CoreIcons.close,
-              color: colors.iconGrayMid,
-              size: CoreIconSize.size20,
+          Semantics(
+            label: context.l10n.removeAction,
+            button: true,
+            child: GestureDetector(
+              key: Key('remove_chip_$email'),
+              onTap: onRemove,
+              child: CoreIconWidget(
+                icon: CoreIcons.close,
+                color: colors.iconGrayMid,
+                size: CoreIconSize.size20,
+              ),
             ),
           ),
         ],
