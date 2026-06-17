@@ -218,7 +218,7 @@ class _EmailInputRow extends StatelessWidget {
         vertical: CoreSpacing.space2,
       ),
       decoration: BoxDecoration(
-        color: colors.pageBackground,
+        color: colors.textInverse,
         border: Border.all(color: colors.lineLight),
         borderRadius: BorderRadius.circular(CoreSpacing.space2),
       ),
