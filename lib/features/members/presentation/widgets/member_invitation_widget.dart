@@ -103,6 +103,7 @@ class _MemberInvitationWidgetState extends State<MemberInvitationWidget> {
                     emails: _emails,
                     onRemove: _onRemove,
                     onSubmit: _onAdd,
+                    hasError: _errorText != null,
                   ),
                   if (_errorText case final error?) ...[
                     const SizedBox(height: CoreSpacing.space1),
@@ -199,12 +200,14 @@ class _EmailInputRow extends StatelessWidget {
   final List<String> emails;
   final void Function(String email) onRemove;
   final VoidCallback onSubmit;
+  final bool hasError;
 
   const _EmailInputRow({
     required this.controller,
     required this.emails,
     required this.onRemove,
     required this.onSubmit,
+    required this.hasError,
   });
 
   @override
@@ -219,7 +222,9 @@ class _EmailInputRow extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: colors.textInverse,
-        border: Border.all(color: colors.lineLight),
+        border: Border.all(
+          color: hasError ? colors.statusError : colors.lineDarkOutline,
+        ),
         borderRadius: BorderRadius.circular(CoreSpacing.space2),
       ),
       child: Row(

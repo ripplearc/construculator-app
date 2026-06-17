@@ -76,6 +76,49 @@ void main() {
       );
     });
 
+    testWidgets('renders with multiple email chips', (tester) async {
+      const multiSize = Size(390, 340);
+      tester.view.physicalSize = multiSize;
+      tester.view.devicePixelRatio = ratio;
+
+      final widget = MemberInvitationWidget(
+        title: 'Invite people for Material of building',
+        subtitle: 'You can invite other people by email',
+        onInvite: (_) {},
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: createTestTheme(),
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            backgroundColor: const Color(0xFF003A54),
+            body: Align(
+              alignment: Alignment.bottomCenter,
+              child: widget,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      for (final email in ['alice@example.com', 'bob@example.com', 'carol@example.com']) {
+        await tester.enterText(
+          find.byKey(const Key('member_invitation_email_input')),
+          email,
+        );
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pumpAndSettle();
+      }
+
+      await expectLater(
+        find.byType(MemberInvitationWidget),
+        matchesGoldenFile('$goldenDir/${multiSize.width}x${multiSize.height}/member_invitation_multiple_chips.png'),
+      );
+    });
+
     testWidgets('renders error state for invalid email', (tester) async {
       await pumpWidget(
         tester,
