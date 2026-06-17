@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- REMOTE COST ITEM DATA SOURCE MUTATION TESTING -->
+    <!-- Targets: Remote data source implementation for cost items -->
+    <!-- Methods tested: fetchCostItemsByEstimateId, createCostItem -->
+
+    <files>
+        <file>lib/features/estimation/data/data_source/remote_cost_item_data_source.dart</file>
+    </files>
+
+    <exclude>
+        <!-- Exclude logging statements -->
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+
+        <!-- Exclude override annotations -->
+        <regex pattern="@override" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- RULE 1: In `fetchCostItemsByEstimateId`, use wrong table name -->
+        <regex pattern="(table:\s*DatabaseConstants\.costItemsTable,\s*filters:\s*filters,)" id="cost_item.fetch.wrong_table">
+            <mutation text="table: 'wrong_table', filters: filters,"/>
+        </regex>
+
+        <!-- RULE 2: In `fetchCostItemsByEstimateId`, invert sort order -->
+        <regex pattern="(ascending:\s*true,\s*\);)" id="cost_item.fetch.invert_order">
+            <mutation text="ascending: false, );"/>
+        </regex>
+
+        <!-- RULE 3: In `fetchCostItemsByEstimateId`, use wrong orderBy column -->
+        <regex pattern="(orderBy:\s*DatabaseConstants\.createdAtColumn,)" id="cost_item.fetch.wrong_order_column">
+            <mutation text="orderBy: DatabaseConstants.estimateIdColumn,"/>
+        </regex>
+
+        <!-- RULE 4: In `fetchCostItemsByEstimateId`, return empty list instead of mapping -->
+        <regex pattern="(return response\.map\(\(item\) =&gt; CostItemDto\.fromJson\(item\)\)\.toList\(\);)" id="cost_item.fetch.return_empty">
+            <mutation text="return [];"/>
+        </regex>
+
+        <!-- RULE 5: In `fetchCostItemsByEstimateId`, skip adding estimateId to filters -->
+        <regex pattern="(DatabaseConstants\.estimateIdColumn:\s*estimateId,)" id="cost_item.fetch.missing_estimate_filter">
+            <mutation text="DatabaseConstants.idColumn: '',"/>
+        </regex>
+
+        <!-- RULE 6: In `fetchCostItemsByEstimateId`, always add itemType even when null -->
+        <regex pattern="(if \(itemType != null\) \{\s*filters\[DatabaseConstants\.itemTypeColumn\] = itemType;\s*\})" id="cost_item.fetch.always_add_type">
+            <mutation text="filters[DatabaseConstants.itemTypeColumn] = itemType;"/>
+        </regex>
+
+        <!-- RULE 7: In `fetchCostItemsByEstimateId`, never add itemType to filters -->
+        <regex pattern="(if \(itemType != null\) \{\s*filters\[DatabaseConstants\.itemTypeColumn\] = itemType;\s*\})" id="cost_item.fetch.never_add_type">
+            <mutation text="// Skip itemType filter"/>
+        </regex>
+
+        <!-- RULE 8: In `fetchCostItemsByEstimateId`, use wrong column for itemType filter -->
+        <regex pattern="(filters\[DatabaseConstants\.itemTypeColumn\] = itemType;)" id="cost_item.fetch.wrong_type_column">
+            <mutation text="filters[DatabaseConstants.estimateIdColumn] = itemType;"/>
+        </regex>
+
+        <!-- RULE 9: In `fetchCostItemsByEstimateId`, return empty list when response is not empty -->
+        <regex pattern="(if \(response\.isEmpty\) \{[\s\S]*?return \[\];[\s\S]*?\})" id="cost_item.fetch.invert_empty_check">
+            <mutation text="if (response.isNotEmpty) { _logger.warning( 'No cost items found for estimate: $estimateId' '${itemType != null ? ' with type: $itemType' : ''}', ); return []; }"/>
+        </regex>
+
+        <!-- RULE 10: In `createCostItem`, use wrong table name -->
+        <regex pattern="(table:\s*DatabaseConstants\.costItemsTable,\s*data:\s*item\.toJson\(\),)" id="cost_item.create.wrong_table">
+            <mutation text="table: 'wrong_table', data: item.toJson(),"/>
+        </regex>
+
+        <!-- RULE 11: In `createCostItem`, use empty data -->
+        <regex pattern="(data:\s*item\.toJson\(\),)" id="cost_item.create.empty_data">
+            <mutation text="data: {},"/>
+        </regex>
+
+        <!-- RULE 12: In `createCostItem`, return null instead of mapping response -->
+        <regex pattern="(return CostItemDto\.fromJson\(response\);)" id="cost_item.create.return_null">
+            <mutation text="return CostItemDto.fromJson({});"/>
+        </regex>
+
+        <!-- RULE 13: In `fetchCostItemsByEstimateId`, use empty filters -->
+        <regex pattern="(final filters = &lt;String, dynamic&gt;\{\s*DatabaseConstants\.estimateIdColumn:\s*estimateId,\s*\};)" id="cost_item.fetch.empty_filters">
+            <mutation text="final filters = &lt;String, dynamic&gt;{};"/>
+        </regex>
+
+        <!-- RULE 14: In `fetchCostItemsByEstimateId`, use wrong filter value for estimateId -->
+        <regex pattern="(DatabaseConstants\.estimateIdColumn:\s*estimateId,)" id="cost_item.fetch.wrong_estimate_value">
+            <mutation text="DatabaseConstants.estimateIdColumn: '',"/>
+        </regex>
+
+        <!-- RULE 15: In `fetchCostItemsByEstimateId`, map with wrong DTO -->
+        <regex pattern="(response\.map\(\(item\) =&gt; CostItemDto\.fromJson\(item\)\)\.toList\(\))" id="cost_item.fetch.wrong_dto_mapping">
+            <mutation text="response.map((item) =&gt; CostItemDto.fromJson({})).toList()"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="cost_item_data_source" expected-return="0">flutter test test/features/estimations/units/data/data_source/remote_cost_item_data_source_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
