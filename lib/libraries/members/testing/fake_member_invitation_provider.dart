@@ -28,17 +28,10 @@ class FakeMemberInvitationProvider implements MemberInvitationProvider {
   }
 
   /// Builds and returns an [InvitedMembersList] with the given [members].
-  ///
-  /// The optional [onRemove] callback is invoked with the member's email when
-  /// the user taps the remove icon on a tile.
   @override
   Widget buildInvitedMembersList({
     required List<InvitedMember> members,
-    void Function(String email)? onRemove,
   }) {
-    return InvitedMembersList(
-      members: members,
-      onRemove: onRemove,
-    );
+    return InvitedMembersList(members: members);
   }
 }

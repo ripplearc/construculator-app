@@ -29,11 +29,7 @@ class MemberInvitationProviderImpl implements MemberInvitationProvider {
   @override
   Widget buildInvitedMembersList({
     required List<InvitedMember> members,
-    void Function(String email)? onRemove,
   }) {
-    return InvitedMembersList(
-      members: members,
-      onRemove: onRemove,
-    );
+    return InvitedMembersList(members: members);
   }
 }
