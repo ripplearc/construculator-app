@@ -147,24 +147,45 @@ class _Header extends StatelessWidget {
         ),
         boxShadow: CoreShadows.small,
       ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: CoreSpacing.space4,
-        vertical: CoreSpacing.space3,
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: typography.titleMediumSemiBold.copyWith(
-              color: colors.textHeadline,
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space3),
+              child: Container(
+                width: CoreSpacing.space8,
+                height: CoreSpacing.space1,
+                decoration: BoxDecoration(
+                  color: colors.lineDarkOutline,
+                  borderRadius: BorderRadius.circular(100),
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: CoreSpacing.space1),
-          Text(
-            subtitle,
-            style: typography.bodyMediumRegular.copyWith(
-              color: colors.textBody,
+          Padding(
+            padding: const EdgeInsets.only(
+              left: CoreSpacing.space4,
+              right: CoreSpacing.space4,
+              bottom: CoreSpacing.space3,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: typography.titleMediumSemiBold.copyWith(
+                    color: colors.textHeadline,
+                  ),
+                ),
+                const SizedBox(height: CoreSpacing.space1),
+                Text(
+                  subtitle,
+                  style: typography.bodyMediumRegular.copyWith(
+                    color: colors.textBody,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
