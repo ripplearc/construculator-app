@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/members/domain/invited_member.dart';
 import 'package:flutter/widgets.dart';
 
 /// Provides member invitation UI components to any consumer.
@@ -21,11 +22,13 @@ abstract class MemberInvitationProvider {
   /// Builds the list of already-invited members.
   ///
   /// Parameters:
-  /// - [emails]: Emails to display as invited member tiles.
-  /// - [onRemove]: Called with the email to remove when the user taps the
+  /// - [members]: Members to display as tiles. Each tile shows the member's
+  ///   [InvitedMember.name] if available, otherwise falls back to
+  ///   [InvitedMember.email].
+  /// - [onRemove]: Called with the member's email when the user taps the
   ///   remove icon on a tile. Null makes tiles non-removable.
   Widget buildInvitedMembersList({
-    required List<String> emails,
+    required List<InvitedMember> members,
     void Function(String email)? onRemove,
   });
 }

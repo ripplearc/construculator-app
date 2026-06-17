@@ -1,4 +1,5 @@
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/members/domain/invited_member.dart';
 import 'package:construculator/libraries/members/presentation/widgets/invited_members_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,7 +8,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 void main() {
   Future<void> pumpWidget(
     WidgetTester tester, {
-    required List<String> emails,
+    required List<InvitedMember> members,
     void Function(String)? onRemove,
   }) async {
     await tester.pumpWidget(
@@ -18,7 +19,7 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: InvitedMembersList(
-            emails: emails,
+            members: members,
             onRemove: onRemove,
           ),
         ),
@@ -28,28 +29,33 @@ void main() {
   }
 
   group('InvitedMembersList', () {
-    testWidgets('renders a tile for each email with avatar initial', (
+    testWidgets('renders a tile for each member showing name when available', (
       tester,
     ) async {
       await pumpWidget(
         tester,
-        emails: ['alice@example.com', 'bob@example.com'],
+        members: [
+          const InvitedMember(email: 'alice@example.com', name: 'Alice Example'),
+          const InvitedMember(email: 'bob@example.com'),
+        ],
       );
 
       expect(find.byKey(const Key('invited_member_alice@example.com')), findsOneWidget);
       expect(find.byKey(const Key('invited_member_bob@example.com')), findsOneWidget);
+      expect(find.text('Alice Example'), findsOneWidget);
+      expect(find.text('bob@example.com'), findsOneWidget);
       expect(find.text('A'), findsOneWidget);
       expect(find.text('B'), findsOneWidget);
     });
 
-    testWidgets('calls onRemove with correct email when remove icon tapped', (
+    testWidgets('calls onRemove with member email when remove icon tapped', (
       tester,
     ) async {
       String? removed;
 
       await pumpWidget(
         tester,
-        emails: ['alice@example.com'],
+        members: [const InvitedMember(email: 'alice@example.com', name: 'Alice')],
         onRemove: (email) => removed = email,
       );
 
@@ -64,7 +70,7 @@ void main() {
     ) async {
       await pumpWidget(
         tester,
-        emails: ['alice@example.com'],
+        members: [const InvitedMember(email: 'alice@example.com')],
         onRemove: null,
       );
 

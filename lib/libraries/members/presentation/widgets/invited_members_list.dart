@@ -1,19 +1,20 @@
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/members/domain/invited_member.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// Displays a list of invited member tiles.
 ///
-/// Each tile shows an avatar (first letter of the email), the email address,
-/// a Contributor role badge with a dropdown indicator, and an optional remove
-/// button.
+/// Each tile shows an avatar (first letter of the member's name or email),
+/// the member's name (or email when no name is available), a Contributor role
+/// badge with a dropdown indicator, and an optional remove button.
 class InvitedMembersList extends StatelessWidget {
-  final List<String> emails;
+  final List<InvitedMember> members;
   final void Function(String email)? onRemove;
 
   const InvitedMembersList({
     super.key,
-    required this.emails,
+    required this.members,
     this.onRemove,
   });
 
@@ -24,13 +25,13 @@ class InvitedMembersList extends StatelessWidget {
       key: const Key('invited_members_list'),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: emails.length,
+      itemCount: members.length,
       itemBuilder: (context, index) {
-        final email = emails[index];
+        final member = members[index];
         return _MemberTile(
-          key: Key('invited_member_$email'),
-          email: email,
-          onRemove: remove != null ? () => remove(email) : null,
+          key: Key('invited_member_${member.email}'),
+          member: member,
+          onRemove: remove != null ? () => remove(member.email) : null,
         );
       },
     );
@@ -38,12 +39,12 @@ class InvitedMembersList extends StatelessWidget {
 }
 
 class _MemberTile extends StatelessWidget {
-  final String email;
+  final InvitedMember member;
   final VoidCallback? onRemove;
 
   const _MemberTile({
     super.key,
-    required this.email,
+    required this.member,
     this.onRemove,
   });
 
@@ -51,12 +52,14 @@ class _MemberTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colorTheme;
     final typography = context.textTheme;
-    final initial = email.isNotEmpty ? email[0].toUpperCase() : '?';
+    final display = member.name ?? member.email;
+    final initial = display.isNotEmpty ? display[0].toUpperCase() : '?';
 
     return Container(
       height: CoreSpacing.space16,
       padding: const EdgeInsets.all(CoreSpacing.space4),
       decoration: BoxDecoration(
+        color: colors.textInverse,
         borderRadius: BorderRadius.circular(CoreSpacing.space1),
         boxShadow: CoreShadows.small,
       ),
@@ -78,7 +81,7 @@ class _MemberTile extends StatelessWidget {
           const SizedBox(width: CoreSpacing.space2),
           Expanded(
             child: Text(
-              email,
+              display,
               style: typography.bodyLargeMedium.copyWith(color: colors.textDark),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -87,7 +90,7 @@ class _MemberTile extends StatelessWidget {
           const _ContributorBadge(),
           if (onRemove != null)
             IconButton(
-              key: Key('remove_member_$email'),
+              key: Key('remove_member_${member.email}'),
               tooltip: context.l10n.removeAction,
               icon: CoreIconWidget(
                 icon: CoreIcons.close,

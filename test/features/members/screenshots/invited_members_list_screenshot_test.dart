@@ -1,4 +1,5 @@
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/members/domain/invited_member.dart';
 import 'package:construculator/libraries/members/presentation/widgets/invited_members_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -39,7 +40,10 @@ void main() {
       await pumpWidget(
         tester,
         InvitedMembersList(
-          emails: ['alice@example.com', 'bob@example.com'],
+          members: const [
+            InvitedMember(email: 'alice@example.com', name: 'Alice Example'),
+            InvitedMember(email: 'bob@example.com', name: 'Bob Example'),
+          ],
           onRemove: (_) {},
         ),
       );
