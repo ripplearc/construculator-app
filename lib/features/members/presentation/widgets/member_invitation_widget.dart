@@ -74,54 +74,54 @@ class _MemberInvitationWidgetState extends State<MemberInvitationWidget> {
     final colors = context.colorTheme;
     final typography = context.textTheme;
 
-    return Container(
+    return ClipRRect(
       key: const Key('member_invitation_widget'),
-      decoration: BoxDecoration(
-        color: colors.pageBackground,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(CoreSpacing.space7),
-          topRight: Radius.circular(CoreSpacing.space7),
-        ),
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(CoreSpacing.space7),
+        topRight: Radius.circular(CoreSpacing.space7),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _Header(
-            title: widget.title,
-            subtitle: widget.subtitle,
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: CoreSpacing.space4,
-              vertical: CoreSpacing.space3,
+      child: Container(
+        color: colors.pageBackground,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _Header(
+              title: widget.title,
+              subtitle: widget.subtitle,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _EmailInputRow(
-                  controller: _controller,
-                  emails: _emails,
-                  onRemove: _onRemove,
-                  onSubmit: _onAdd,
-                ),
-                if (_errorText case final error?) ...[
-                  const SizedBox(height: CoreSpacing.space1),
-                  Text(
-                    error,
-                    style: typography.bodySmallRegular.copyWith(
-                      color: colors.textError,
-                    ),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: CoreSpacing.space4,
+                vertical: CoreSpacing.space3,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _EmailInputRow(
+                    controller: _controller,
+                    emails: _emails,
+                    onRemove: _onRemove,
+                    onSubmit: _onAdd,
                   ),
+                  if (_errorText case final error?) ...[
+                    const SizedBox(height: CoreSpacing.space1),
+                    Text(
+                      error,
+                      style: typography.bodySmallRegular.copyWith(
+                        color: colors.textError,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          _InviteButtonRow(
-            isDisabled: _emails.isEmpty,
-            onPressed: _onInvite,
-          ),
-        ],
+            _InviteButtonRow(
+              isDisabled: _emails.isEmpty,
+              onPressed: _onInvite,
+            ),
+          ],
+        ),
       ),
     );
   }

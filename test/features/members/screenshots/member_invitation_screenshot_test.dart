@@ -25,7 +25,11 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
-          body: widget,
+          backgroundColor: const Color(0xFF003A54),
+          body: Align(
+            alignment: Alignment.bottomCenter,
+            child: widget,
+          ),
         ),
       ),
     );
