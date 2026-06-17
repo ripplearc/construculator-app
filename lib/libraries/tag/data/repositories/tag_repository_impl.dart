@@ -47,7 +47,7 @@ class TagRepositoryImpl implements TagRepository {
     if (error is TypeError) {
       _logger.error(
         'Parsing error $operation: ${error.toString()}',
-        'returning parsing failure',
+        error,
       );
       return SearchFailure(errorType: SearchErrorType.parsingError);
     }
