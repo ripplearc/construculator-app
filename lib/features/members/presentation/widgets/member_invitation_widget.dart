@@ -228,40 +228,45 @@ class _EmailInputRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(CoreSpacing.space2),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: Wrap(
-              spacing: CoreSpacing.space2,
-              runSpacing: CoreSpacing.space1,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                for (final email in emails)
-                  _EmailChip(
-                    email: email,
-                    onRemove: () => onRemove(email),
-                  ),
-                IntrinsicWidth(
-                  child: TextField(
-                    key: const Key('member_invitation_email_input'),
-                    controller: controller,
-                    style: typography.bodyLargeRegular.copyWith(
-                      color: colors.textDark,
-                    ),
-                    decoration: InputDecoration.collapsed(
-                      hintText: emails.isEmpty
-                          ? context.l10n.assignByEmailHint
-                          : null,
-                      hintStyle: typography.bodyLargeRegular.copyWith(
-                        color: colors.textBody,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: CoreSpacing.space20),
+              child: SingleChildScrollView(
+                child: Wrap(
+                  spacing: CoreSpacing.space2,
+                  runSpacing: CoreSpacing.space1,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    for (final email in emails)
+                      _EmailChip(
+                        email: email,
+                        onRemove: () => onRemove(email),
+                      ),
+                    IntrinsicWidth(
+                      child: TextField(
+                        key: const Key('member_invitation_email_input'),
+                        controller: controller,
+                        style: typography.bodyLargeRegular.copyWith(
+                          color: colors.textDark,
+                        ),
+                        decoration: InputDecoration.collapsed(
+                          hintText: emails.isEmpty
+                              ? context.l10n.assignByEmailHint
+                              : null,
+                          hintStyle: typography.bodyLargeRegular.copyWith(
+                            color: colors.textBody,
+                          ),
+                        ),
+                        onSubmitted: (_) => onSubmit(),
+                        textInputAction: TextInputAction.done,
+                        keyboardType: TextInputType.emailAddress,
                       ),
                     ),
-                    onSubmitted: (_) => onSubmit(),
-                    textInputAction: TextInputAction.done,
-                    keyboardType: TextInputType.emailAddress,
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
           const SizedBox(width: CoreSpacing.space3),
