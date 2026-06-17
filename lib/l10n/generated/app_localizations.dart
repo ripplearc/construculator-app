@@ -376,6 +376,18 @@ abstract class AppLocalizations {
   /// **'Create a project'**
   String get createProjectButton;
 
+  /// Success message shown after a new project has been created
+  ///
+  /// In en, this message translates to:
+  /// **'You have successfully created a new project'**
+  String get projectCreationSuccessMessage;
+
+  /// Label for the button that navigates back to the calculation view after project creation
+  ///
+  /// In en, this message translates to:
+  /// **'Back to calculation'**
+  String get backToCalculationButton;
+
   /// Empty state message shown when the user has no projects
   ///
   /// In en, this message translates to:

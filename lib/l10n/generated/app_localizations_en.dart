@@ -156,6 +156,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createProjectButton => 'Create a project';
 
   @override
+  String get projectCreationSuccessMessage =>
+      'You have successfully created a new project';
+
+  @override
+  String get backToCalculationButton => 'Back to calculation';
+
+  @override
   String get projectsEmptyState => 'No projects yet.';
 
   @override

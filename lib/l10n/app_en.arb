@@ -235,6 +235,16 @@
     "description": "Label for the button that starts creating a new project",
     "context": "Dashboard projects sheet"
   },
+  "projectCreationSuccessMessage": "You have successfully created a new project",
+  "@projectCreationSuccessMessage": {
+    "description": "Success message shown after a new project has been created",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "backToCalculationButton": "Back to calculation",
+  "@backToCalculationButton": {
+    "description": "Label for the button that navigates back to the calculation view after project creation",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
   "projectsEmptyState": "No projects yet.",
   "@projectsEmptyState": {
     "description": "Empty state message shown when the user has no projects",
