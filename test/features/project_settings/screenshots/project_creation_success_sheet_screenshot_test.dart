@@ -3,15 +3,16 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../utils/screenshot/await_images_extension.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
-  final size = const Size(390, 300);
+  final size = const Size(390, 320);
   const ratio = 1.0;
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() async {
-    await loadAppFonts();
+  setUpAll(() async {
+    await loadAppFontsAll();
   });
 
   group('ProjectCreationSuccessSheetContent Screenshot Tests', () {
@@ -30,6 +31,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      await tester.awaitImages();
     }
 
     testWidgets('renders success sheet correctly', (tester) async {
