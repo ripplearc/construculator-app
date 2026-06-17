@@ -19,16 +19,13 @@ abstract class MemberInvitationProvider {
     void Function(List<String> emails)? onInvite,
   });
 
-  /// Builds the list of already-invited members.
+  /// Builds the read-only list of already-invited members.
   ///
   /// Parameters:
   /// - [members]: Members to display as tiles. Each tile shows the member's
   ///   [InvitedMember.name] if available, otherwise falls back to
   ///   [InvitedMember.email].
-  /// - [onRemove]: Called with the member's email when the user taps the
-  ///   remove icon on a tile. Null makes tiles non-removable.
   Widget buildInvitedMembersList({
     required List<InvitedMember> members,
-    void Function(String email)? onRemove,
   });
 }

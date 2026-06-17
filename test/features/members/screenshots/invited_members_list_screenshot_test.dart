@@ -39,12 +39,11 @@ void main() {
     testWidgets('renders list with two invited members', (tester) async {
       await pumpWidget(
         tester,
-        InvitedMembersList(
-          members: const [
+        const InvitedMembersList(
+          members: [
             InvitedMember(email: 'alice@example.com', name: 'Alice Example'),
             InvitedMember(email: 'bob@example.com', name: 'Bob Example'),
           ],
-          onRemove: (_) {},
         ),
       );
 

@@ -9,7 +9,6 @@ void main() {
   Future<void> pumpWidget(
     WidgetTester tester, {
     required List<InvitedMember> members,
-    void Function(String)? onRemove,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -18,10 +17,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
-          body: InvitedMembersList(
-            members: members,
-            onRemove: onRemove,
-          ),
+          body: InvitedMembersList(members: members),
         ),
       ),
     );
@@ -48,33 +44,25 @@ void main() {
       expect(find.text('B'), findsOneWidget);
     });
 
-    testWidgets('calls onRemove with member email when remove icon tapped', (
+    testWidgets('falls back to email initial when name is not provided', (
       tester,
     ) async {
-      String? removed;
+      await pumpWidget(
+        tester,
+        members: [const InvitedMember(email: 'charlie@example.com')],
+      );
 
+      expect(find.text('charlie@example.com'), findsOneWidget);
+      expect(find.text('C'), findsOneWidget);
+    });
+
+    testWidgets('renders Contributor badge for each tile', (tester) async {
       await pumpWidget(
         tester,
         members: [const InvitedMember(email: 'alice@example.com', name: 'Alice')],
-        onRemove: (email) => removed = email,
       );
 
-      await tester.tap(find.byKey(const Key('remove_member_alice@example.com')));
-      await tester.pump();
-
-      expect(removed, 'alice@example.com');
-    });
-
-    testWidgets('does not show remove button when onRemove is null', (
-      tester,
-    ) async {
-      await pumpWidget(
-        tester,
-        members: [const InvitedMember(email: 'alice@example.com')],
-        onRemove: null,
-      );
-
-      expect(find.byKey(const Key('remove_member_alice@example.com')), findsNothing);
+      expect(find.text('Contributor'), findsOneWidget);
     });
   });
 }
