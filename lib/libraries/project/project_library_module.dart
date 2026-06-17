@@ -7,7 +7,9 @@ import 'package:construculator/libraries/project/data/data_source/local_jwt_proj
 import 'package:construculator/libraries/project/data/data_source/remote_project_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/remote_project_search_data_source.dart';
 import 'package:construculator/libraries/project/data/repositories/project_repository_impl.dart';
+import 'package:construculator/libraries/project/data/repositories/project_search_repository_impl.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_search_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
@@ -59,6 +61,12 @@ void _registerDependencies(Injector i) {
   i.addLazySingleton<ProjectSearchDataSource>(
     () => RemoteProjectSearchDataSource(
       supabaseWrapper: Modular.get<SupabaseWrapper>(),
+    ),
+  );
+
+  i.addLazySingleton<ProjectSearchRepository>(
+    () => ProjectSearchRepositoryImpl(
+      dataSource: Modular.get<ProjectSearchDataSource>(),
     ),
   );
 }
