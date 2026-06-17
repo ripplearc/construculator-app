@@ -5,7 +5,8 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// Displays a list of invited member tiles.
 ///
 /// Each tile shows an avatar (first letter of the email), the email address,
-/// a static "Contributor" role badge, and an optional remove button.
+/// a Contributor role badge with a dropdown indicator, and an optional remove
+/// button.
 class InvitedMembersList extends StatelessWidget {
   final List<String> emails;
   final void Function(String email)? onRemove;
@@ -53,16 +54,17 @@ class _MemberTile extends StatelessWidget {
     final initial = email.isNotEmpty ? email[0].toUpperCase() : '?';
 
     return Container(
-      height: 76,
+      height: CoreSpacing.space16,
       padding: const EdgeInsets.all(CoreSpacing.space4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(CoreSpacing.space1),
+        boxShadow: CoreShadows.small,
       ),
       child: Row(
         children: [
           Container(
-            width: CoreSpacing.space10,
-            height: CoreSpacing.space10,
+            width: CoreSpacing.space8,
+            height: CoreSpacing.space8,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: colors.backgroundGrayMid,
@@ -73,26 +75,16 @@ class _MemberTile extends StatelessWidget {
               style: typography.bodyLargeMedium.copyWith(color: colors.textDark),
             ),
           ),
-          const SizedBox(width: CoreSpacing.space3),
+          const SizedBox(width: CoreSpacing.space2),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  email,
-                  style: typography.bodyLargeMedium.copyWith(color: colors.textDark),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: CoreSpacing.space1),
-                Text(
-                  context.l10n.contributorRole,
-                  style: typography.bodySmallRegular.copyWith(color: colors.textBody),
-                ),
-              ],
+            child: Text(
+              email,
+              style: typography.bodyLargeMedium.copyWith(color: colors.textDark),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
+          const _ContributorBadge(),
           if (onRemove != null)
             IconButton(
               key: Key('remove_member_$email'),
@@ -104,6 +96,44 @@ class _MemberTile extends StatelessWidget {
               ),
               onPressed: onRemove,
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ContributorBadge extends StatelessWidget {
+  const _ContributorBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colorTheme;
+    final typography = context.textTheme;
+
+    return Container(
+      padding: const EdgeInsets.only(
+        top: CoreSpacing.space1,
+        bottom: CoreSpacing.space1,
+        left: CoreSpacing.space2,
+        right: CoreSpacing.space1,
+      ),
+      decoration: BoxDecoration(
+        color: colors.backgroundGrayLight,
+        borderRadius: BorderRadius.circular(CoreSpacing.space1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            context.l10n.contributorRole,
+            style: typography.bodyMediumRegular.copyWith(color: colors.textDark),
+          ),
+          const SizedBox(width: CoreSpacing.space1),
+          CoreIconWidget(
+            icon: CoreIcons.arrowDown,
+            color: colors.textDark,
+            size: CoreIconSize.size16,
+          ),
         ],
       ),
     );
