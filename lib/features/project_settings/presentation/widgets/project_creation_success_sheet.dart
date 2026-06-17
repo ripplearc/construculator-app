@@ -8,17 +8,11 @@ class ProjectCreationSuccessSheet {
     required VoidCallback onBackToCalculation,
     required VoidCallback onContinue,
   }) {
-    showModalBottomSheet(
+    CoreQuickSheet.show(
       context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      enableDrag: false,
       isDismissible: false,
-      backgroundColor: context.colorTheme.pageBackground,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => ProjectCreationSuccessSheetContent(
+      enableDrag: false,
+      child: ProjectCreationSuccessSheetContent(
         onBackToCalculation: onBackToCalculation,
         onContinue: onContinue,
       ),
@@ -67,8 +61,6 @@ class ProjectCreationSuccessSheetContent extends StatelessWidget {
                   label: l10n.backToCalculationButton,
                   onPressed: onBackToCalculation,
                   variant: CoreButtonVariant.secondary,
-                  icon: const CoreIconWidget(icon: CoreIcons.arrowLeft),
-                  centerAlign: true,
                 ),
               ),
               const SizedBox(width: CoreSpacing.space3),
@@ -78,7 +70,6 @@ class ProjectCreationSuccessSheetContent extends StatelessWidget {
                   label: l10n.continueButton,
                   onPressed: onContinue,
                   variant: CoreButtonVariant.primary,
-                  centerAlign: true,
                 ),
               ),
             ],
