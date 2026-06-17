@@ -61,8 +61,8 @@ class _MemberTile extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: CoreSpacing.space10,
+            height: CoreSpacing.space10,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: colors.backgroundGrayMid,
