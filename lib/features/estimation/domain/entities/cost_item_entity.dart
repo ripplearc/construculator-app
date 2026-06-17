@@ -40,6 +40,9 @@ enum CostItemType {
       orElse: () => CostItemType.material,
     );
   }
+
+  /// Serializes this [CostItemType] to its JSON string representation.
+  String toJson() => name;
 }
 
 /// Units supported for material and equipment quantities.
@@ -98,6 +101,9 @@ enum Unit {
       orElse: () => Unit.pieces,
     );
   }
+
+  /// Serializes this [Unit] to its JSON string representation.
+  String toJson() => name;
 }
 
 /// Labor pricing strategies supported by the estimation model.
