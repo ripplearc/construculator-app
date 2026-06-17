@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/members/domain/invited_member.dart';
 import 'package:construculator/libraries/members/domain/member_invitation_provider.dart';
 import 'package:construculator/libraries/members/presentation/widgets/invited_members_list.dart';
 import 'package:construculator/libraries/members/presentation/widgets/member_invitation_widget.dart';
@@ -26,17 +27,17 @@ class FakeMemberInvitationProvider implements MemberInvitationProvider {
     );
   }
 
-  /// Builds and returns an [InvitedMembersList] with the given [emails].
+  /// Builds and returns an [InvitedMembersList] with the given [members].
   ///
-  /// The optional [onRemove] callback is invoked when the user taps the
-  /// remove icon on a tile.
+  /// The optional [onRemove] callback is invoked with the member's email when
+  /// the user taps the remove icon on a tile.
   @override
   Widget buildInvitedMembersList({
-    required List<String> emails,
+    required List<InvitedMember> members,
     void Function(String email)? onRemove,
   }) {
     return InvitedMembersList(
-      emails: emails,
+      members: members,
       onRemove: onRemove,
     );
   }

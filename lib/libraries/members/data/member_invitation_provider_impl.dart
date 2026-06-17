@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/members/domain/invited_member.dart';
 import 'package:construculator/libraries/members/domain/member_invitation_provider.dart';
 import 'package:construculator/libraries/members/presentation/widgets/invited_members_list.dart';
 import 'package:construculator/libraries/members/presentation/widgets/member_invitation_widget.dart';
@@ -27,11 +28,11 @@ class MemberInvitationProviderImpl implements MemberInvitationProvider {
 
   @override
   Widget buildInvitedMembersList({
-    required List<String> emails,
+    required List<InvitedMember> members,
     void Function(String email)? onRemove,
   }) {
     return InvitedMembersList(
-      emails: emails,
+      members: members,
       onRemove: onRemove,
     );
   }
