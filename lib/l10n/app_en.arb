@@ -623,6 +623,26 @@
   "@members": {
     "description": "Label for members tab or header"
   },
+  "invitePeopleTitle": "Invite people for Material of building",
+  "@invitePeopleTitle": {
+    "description": "Title for the member invitation widget"
+  },
+  "invitePeopleSubtitle": "You can invite other people by email",
+  "@invitePeopleSubtitle": {
+    "description": "Subtitle for the member invitation widget"
+  },
+  "assignByEmailHint": "Assign by email",
+  "@assignByEmailHint": {
+    "description": "Hint text for the email input in the invitation widget"
+  },
+  "inviteButton": "Invite",
+  "@inviteButton": {
+    "description": "Label for the Invite action button in the member invitation widget"
+  },
+  "contributorRole": "Contributor",
+  "@contributorRole": {
+    "description": "Static role label shown in the invitation widget"
+  },
   "costEstimationEmptyMessage": "No estimation added. To add an estimation please click on add button",
   "@costEstimationEmptyMessage": {
     "description": "Empty state message shown when no cost estimations exist",
