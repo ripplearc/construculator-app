@@ -43,7 +43,7 @@ custom_lint:
 
   no_direct_instantiation:
     ignored_base_classes:
-        - 'State'
+      - "State"
     # Matches are global by class-name prefix, not scoped to any one file:
     # allowlisting a vendor type here (e.g. PostHogConfig, Posthog,
     # SentryFlutterOptions) lets ANY file construct it directly. The lint
@@ -51,23 +51,22 @@ custom_lint:
     # PosthogWrapperImpl) does so — that boundary is a code-review
     # convention, not a guarantee from this rule.
     ast_type_prefixes:
-        - 'Fake'
-        - '_Fake'
-        - 'AppBootstrap'
-        - 'AppLogger'
-        - 'Map'
-        - 'CancelableOperation'
-        - 'AppLocalizationsEn'
-        - 'Breadcrumb'
-        - 'SentryFlutterOptions'
-        - 'SentryId'
-        - 'LogEvent'
-        - 'AppLogFilter'
-        - 'SentryUser'
-        - 'CrudEntry'
-        - 'PowerSyncCredentials'
-        - 'Posthog'
-        - 'PostHogConfig'
+      - "Fake"
+      - "_Fake"
+      - "AppBootstrap"
+      - "AppLogger"
+      - "Map"
+      - "CancelableOperation"
+      - "AppLocalizationsEn"
+      - "Breadcrumb"
+      - "SentryFlutterOptions"
+      - "SentryId"
+      - "LogEvent"
+      - "AppLogFilter"
+      - "SentryUser"
+      - "CrudEntry"
+      - "PowerSyncCredentials"
+      - "Posthog"
 
 linter:
   # The lint rules applied to this project can be customized in the
