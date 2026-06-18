@@ -15,21 +15,21 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
   final EnvLoader _envLoader;
   static final _logger = AppLogger().tag('SupabasePowerSyncConnector');
 
+  /// Creates a connector for syncing PowerSync with Supabase.
   SupabasePowerSyncConnector({
     required SupabaseWrapper supabaseWrapper,
     required EnvLoader envLoader,
-  })  : _supabaseWrapper = supabaseWrapper,
-        _envLoader = envLoader;
+  }) : _supabaseWrapper = supabaseWrapper,
+       _envLoader = envLoader;
 
+  /// Fetches the current PowerSync credentials from Supabase.
   @override
   Future<PowerSyncCredentials?> fetchCredentials() async {
     _logger.debug('Fetching PowerSync credentials');
 
     final powerSyncUrl = _envLoader.get('POWERSYNC_URL');
     if (powerSyncUrl == null || powerSyncUrl.isEmpty) {
-      _logger.error(
-        'POWERSYNC_URL environment variable is not set',
-      );
+      _logger.error('POWERSYNC_URL environment variable is not set');
       return null;
     }
 
@@ -59,6 +59,7 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
     );
   }
 
+  /// Uploads queued local mutations to Supabase.
   @override
   Future<void> uploadData(PowerSyncDatabase database) async {
     final transaction = await database.getNextCrudTransaction();
@@ -82,6 +83,9 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
     }
   }
 
+  // Applies a single local CRUD operation to the corresponding Supabase table,
+  // mapping the PowerSync UpdateType to an upsert, update, or delete. Throws a
+  // StateError if opData is missing for a put or patch.
   Future<void> _processOperation(CrudEntry operation) async {
     _logger.debug(
       'Processing ${operation.op} operation on table ${operation.table}',
@@ -122,6 +126,10 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
     }
   }
 
+  // Handles a failed upload transaction. A permanent RLS denial (Postgres code
+  // 42501) is non-retryable, so the transaction is completed to unblock the
+  // upload queue. Any other error is treated as transient and rethrown so
+  // PowerSync retries the transaction automatically.
   Future<void> _handleUploadError(
     Object error,
     CrudTransaction transaction,

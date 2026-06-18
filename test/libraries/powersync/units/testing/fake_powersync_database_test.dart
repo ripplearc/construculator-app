@@ -10,6 +10,55 @@ void main() {
       fakeDatabase = FakePowerSyncDatabase();
     });
 
+    group('connect', () {
+      test('records call count and the connector passed', () async {
+        final connector = _FakeConnector();
+
+        await fakeDatabase.connect(connector: connector);
+
+        expect(fakeDatabase.connectCallCount, 1);
+        expect(fakeDatabase.lastConnector, same(connector));
+      });
+
+      test('throws the configured connectError', () async {
+        final error = Exception('connect failed');
+        fakeDatabase.connectError = error;
+
+        expect(
+          () => fakeDatabase.connect(connector: _FakeConnector()),
+          throwsA(same(error)),
+        );
+      });
+
+      test('still records the call even when it throws', () async {
+        fakeDatabase.connectError = Exception('connect failed');
+
+        await expectLater(
+          fakeDatabase.connect(connector: _FakeConnector()),
+          throwsException,
+        );
+
+        expect(fakeDatabase.connectCallCount, 1);
+      });
+    });
+
+    group('disconnect', () {
+      test('records call count', () async {
+        await fakeDatabase.disconnect();
+        await fakeDatabase.disconnect();
+
+        expect(fakeDatabase.disconnectCallCount, 2);
+      });
+    });
+
+    group('disconnectAndClear', () {
+      test('records call count', () async {
+        await fakeDatabase.disconnectAndClear();
+
+        expect(fakeDatabase.disconnectAndClearCallCount, 1);
+      });
+    });
+
     group('getNextCrudTransaction', () {
       test('returns null when no transaction is queued', () async {
         final transaction = await fakeDatabase.getNextCrudTransaction();
@@ -84,4 +133,13 @@ void main() {
       expect(FakeCrudTransaction([]).transactionId, isNull);
     });
   });
+}
+
+/// Minimal connector used only to assert it is passed through to [connect].
+class _FakeConnector extends PowerSyncBackendConnector {
+  @override
+  Future<PowerSyncCredentials?> fetchCredentials() async => null;
+
+  @override
+  Future<void> uploadData(PowerSyncDatabase database) async {}
 }

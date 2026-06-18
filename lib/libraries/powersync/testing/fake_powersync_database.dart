@@ -10,9 +10,51 @@ import 'package:powersync/powersync.dart';
 class FakePowerSyncDatabase implements PowerSyncDatabase {
   CrudTransaction? _nextTransaction;
 
+  /// Number of times [connect] has been called.
+  int connectCallCount = 0;
+
+  /// The connector passed to the most recent [connect] call, or null if
+  /// [connect] has not been called.
+  PowerSyncBackendConnector? lastConnector;
+
+  /// Number of times [disconnect] has been called.
+  int disconnectCallCount = 0;
+
+  /// Number of times [disconnectAndClear] has been called.
+  int disconnectAndClearCallCount = 0;
+
+  /// When set, the next [connect] call throws this error, allowing tests to
+  /// exercise connection-failure handling.
+  Object? connectError;
+
   /// Queues [transaction] to be returned by the next [getNextCrudTransaction] call.
   void setNextTransaction(CrudTransaction? transaction) {
     _nextTransaction = transaction;
+  }
+
+  @override
+  Future<void> connect({
+    required PowerSyncBackendConnector connector,
+    SyncOptions? options,
+    Duration? crudThrottleTime,
+    Map<String, dynamic>? params,
+  }) async {
+    connectCallCount++;
+    lastConnector = connector;
+    final error = connectError;
+    if (error != null) {
+      throw error;
+    }
+  }
+
+  @override
+  Future<void> disconnect() async {
+    disconnectCallCount++;
+  }
+
+  @override
+  Future<void> disconnectAndClear({bool clearLocal = true}) async {
+    disconnectAndClearCallCount++;
   }
 
   /// Returns the queued transaction (set via [setNextTransaction]) and clears
