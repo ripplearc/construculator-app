@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- PROJECT SETTING REPOSITORY IMPLEMENTATION MUTATION TESTING -->
+    <!-- Targets: error-mapping logic (exception types → domain failures)  -->
+    <!--          and permission guard logic in updateProject / deleteProject -->
+
+    <files>
+        <file>lib/libraries/project/data/repositories/project_setting_repository_impl.dart</file>
+    </files>
+
+    <exclude>
+        <!-- Exclude logging statements from custom rules -->
+        <regex pattern="_logger\.(debug|info|warning|error|omg)\s*\(" dotAll="false"/>
+
+        <!-- Exclude the block-start + logger pattern that builtin.function.removeVoidCall1
+             matches (opening brace followed by a _logger call). Removing a logger call
+             is an equivalent mutant for return-value tests; testing log emission requires
+             a mock logger and is out of scope for this mapping-logic suite. -->
+        <regex pattern="\{[^}]*_logger\.(debug|info|warning|error|omg)" dotAll="true"/>
+
+        <!-- Exclude the block-end + logger pattern for builtin.function.removeVoidCall2
+             (closing brace or semicolon preceding a standalone _logger call). -->
+        <regex pattern="[};]\s*_logger\.(debug|info|warning|error|omg)" dotAll="true"/>
+
+        <!-- Exclude try-catch boilerplate -->
+        <regex pattern="try\s*\{" dotAll="false"/>
+        <regex pattern="catch\s*\(" dotAll="false"/>
+
+        <!-- Exclude override annotations -->
+        <regex pattern="@override" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- ── Error mapper delegation ──────────────────────────────────────── -->
+
+        <!-- RULE 1: Drop the ProjectErrorMapper delegation → all errors return a hardcoded failure.
+             Killed by all exception-mapping tests (notFound, timeout, connection, parsingError, etc.) -->
+        <literal text="ProjectErrorMapper.toFailure(error)" id="repo.map.delegate_to_mapper">
+            <mutation text="const ProjectFailure(errorType: ProjectErrorType.unexpectedError)"/>
+        </literal>
+
+        <!-- ── Permission guards ────────────────────────────────────────────── -->
+
+        <!-- RULE 2: Invert the permission guard → operations proceed without permission / block with it.
+             Killed by: returns Left(permissionDenied) when permission missing (both updateProject and deleteProject) -->
+        <literal text="!hasPermission" id="repo.permission.guard_negation">
+            <mutation text="hasPermission"/>
+        </literal>
+
+        <!-- RULE 3: Swap editProject permission key → update always reports permissionDenied.
+             Killed by: returns Right(project) when permission present and update succeeds -->
+        <literal text="PermissionConstants.editProject" id="repo.permission.edit_project">
+            <mutation text="PermissionConstants.deleteProject"/>
+        </literal>
+
+        <!-- RULE 4: Swap deleteProject permission key → delete always reports permissionDenied.
+             Killed by: returns Right(null) when permission present and delete succeeds -->
+        <literal text="PermissionConstants.deleteProject" id="repo.permission.delete_project">
+            <mutation text="PermissionConstants.editProject"/>
+        </literal>
+
+        <!-- NOTE: Error-path rules for method-specific branches inside updateProject/deleteProject
+             are not present. Any future error handling added directly in those methods
+             (beyond the shared _handleError delegation) would need its own rules here. -->
+    </rules>
+
+    <commands>
+        <command group="project_setting_repository" expected-return="0">flutter test test/libraries/project/units/data/repositories/project_setting_repository_impl_test.dart</command>
+    </commands>
+
+   <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
