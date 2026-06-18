@@ -2,8 +2,6 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
-import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
-import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -12,12 +10,9 @@ import '../../../utils/fake_app_bootstrap_factory.dart';
 void main() {
   late AppShellBloc bloc;
   late TabModuleManager tabModuleManager;
-  late FakeCurrentProjectNotifier fakeProjectNotifier;
 
   setUp(() {
-    fakeProjectNotifier = FakeCurrentProjectNotifier();
     Modular.init(ShellModule(FakeAppBootstrapFactory.create()));
-    Modular.replaceInstance<CurrentProjectNotifier>(fakeProjectNotifier);
     tabModuleManager = Modular.get<TabModuleManager>();
     bloc = Modular.get<AppShellBloc>();
   });
@@ -61,46 +56,8 @@ void main() {
 
       expect(copiedState.selectedTabIndex, 1);
       expect(copiedState.loadedTabIndexes, {0, 1});
-      expect(copiedState.props, [1, {0, 1}, null]);
+      expect(copiedState.props, [1, {0, 1}]);
       expect(copiedState, equals(state));
-    });
-
-    test('state copyWith can update and clear currentProjectId', () {
-      const state = AppShellState(
-        selectedTabIndex: 0,
-        loadedTabIndexes: {0},
-      );
-
-      final withProject = state.copyWith(currentProjectId: 'proj-1');
-      expect(withProject.currentProjectId, 'proj-1');
-
-      final cleared = withProject.copyWith(currentProjectId: null);
-      expect(cleared.currentProjectId, isNull);
-    });
-
-    blocTest<AppShellBloc, AppShellState>(
-      'reflects currentProjectId from notifier in initial state',
-      setUp: () => Modular.replaceInstance<CurrentProjectNotifier>(
-        FakeCurrentProjectNotifier(initialProjectId: 'proj-123'),
-      ),
-      build: () => Modular.get<AppShellBloc>(),
-      act: (_) {},
-      verify: (b) => expect(b.state.currentProjectId, 'proj-123'),
-    );
-
-    test('updates currentProjectId when notifier emits a new project', () async {
-      fakeProjectNotifier.setCurrentProjectId('proj-abc');
-
-      await expectLater(
-        bloc.stream,
-        emitsThrough(
-          isA<AppShellState>().having(
-            (s) => s.currentProjectId,
-            'currentProjectId',
-            'proj-abc',
-          ),
-        ),
-      );
     });
 
     blocTest<AppShellBloc, AppShellState>(

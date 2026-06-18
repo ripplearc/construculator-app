@@ -7,7 +7,6 @@ import 'package:construculator/features/estimation/estimation_routes_module.dart
 import 'package:construculator/features/global_search/global_search_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
-import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -24,10 +23,7 @@ class ShellModule extends Module {
   void binds(Injector i) {
     i.addSingleton<TabModuleManager>(() => TabModuleManager(appBootstrap));
     i.add<AppShellBloc>(
-      () => AppShellBloc(
-        moduleLoader: i.get(),
-        currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
-      ),
+      () => AppShellBloc(moduleLoader: i.get()),
     );
   }
 
