@@ -2,6 +2,7 @@ import 'package:construculator/features/project/presentation/bloc/get_project_bl
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class ProjectHeaderAppBar extends StatefulWidget implements PreferredSizeWidget {
@@ -44,8 +45,27 @@ class _ProjectHeaderAppBarState extends State<ProjectHeaderAppBar> {
     final appColorTheme = context.colorTheme;
     return BlocProvider.value(
       value: _bloc,
-      child: Builder(
-        builder: (context) {
+      child: BlocBuilder<GetProjectBloc, GetProjectState>(
+        builder: (context, state) {
+          if (state is GetProjectInitial) {
+            return Container(
+              decoration: BoxDecoration(
+                color: appColorTheme.pageBackground,
+                boxShadow: CoreShadows.medium,
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: CoreSpacing.space4,
+                vertical: CoreSpacing.space2,
+              ),
+              child: AppBar(
+                backgroundColor: appColorTheme.pageBackground,
+                elevation: 0,
+                centerTitle: true,
+                titleSpacing: 0,
+                title: Text(context.l10n.appTitle),
+              ),
+            );
+          }
           return PhysicalModel(
             color: appColorTheme.pageBackground,
             elevation: 0,

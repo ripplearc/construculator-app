@@ -2,11 +2,15 @@ import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/app/shell/widgets/tab_navigator.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -66,8 +70,16 @@ class _AppShellPageState extends State<AppShellPage> {
 
   Widget _buildTabRoot(ShellTab tab) {
     switch (tab) {
+      // TODO: [CA-708] Remove once DashboardPage reads these from the module directly.
+      // https://ripplearc.youtrack.cloud/issue/CA-708
       case ShellTab.home:
-        return const DashboardPage();
+        return DashboardPage(
+          authNotifier: Modular.get<AuthNotifier>(),
+          authManager: Modular.get<AuthManager>(),
+          router: Modular.get<AppRouter>(),
+          recentEstimationsBloc: Modular.get<RecentEstimationsBloc>(),
+          appShellBloc: _bloc,
+        );
       case ShellTab.calculations:
         return const CalculationsPage();
       case ShellTab.estimation:
@@ -75,34 +87,6 @@ class _AppShellPageState extends State<AppShellPage> {
       case ShellTab.members:
         return const MembersPage();
     }
-  }
-
-  PreferredSizeWidget _buildAppBar(BuildContext context, AppShellState state) {
-    final projectId = state.currentProjectId;
-    if (projectId == null || projectId.isEmpty) {
-      final coreColors = Theme.of(context).coreColors;
-      return PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: Container(
-          decoration: BoxDecoration(
-            color: coreColors.pageBackground,
-            boxShadow: CoreShadows.medium,
-          ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: CoreSpacing.space4,
-            vertical: CoreSpacing.space2,
-          ),
-          child: AppBar(
-            backgroundColor: coreColors.pageBackground,
-            elevation: 0,
-            centerTitle: true,
-            titleSpacing: 0,
-            title: Text(context.l10n.appTitle),
-          ),
-        ),
-      );
-    }
-    return Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar();
   }
 
   @override
@@ -114,7 +98,7 @@ class _AppShellPageState extends State<AppShellPage> {
           canPop: false,
           onPopInvokedWithResult: (didPop, _) => _onPopInvoked(didPop),
           child: Scaffold(
-            appBar: _buildAppBar(context, state),
+            appBar: Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(),
             body: Stack(
               children: List.generate(ShellTab.values.length, (index) {
                 final tab = ShellTab.values[index];

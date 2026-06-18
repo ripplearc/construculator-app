@@ -256,43 +256,12 @@ void main() {
   });
 
   group('App Bar', () {
-    testWidgets('shows static app title when no project is selected', (
-      tester,
-    ) async {
+    testWidgets('renders project UI provider app bar', (tester) async {
       await tester.pumpWidget(makeApp());
       await tester.pump();
 
-      expect(find.text(l10n().appTitle), findsAtLeastNWidgets(1));
+      expect(find.byType(_FakeProjectAppBar), findsOneWidget);
     });
-
-    testWidgets('hides static app title when a project id is set', (
-      tester,
-    ) async {
-      fakeProjectNotifier.setCurrentProjectId(
-        '950e8400-e29b-41d4-a716-446655440001',
-      );
-      await tester.pumpWidget(makeApp());
-      await tester.pump();
-
-      expect(find.text(l10n().appTitle), findsNothing);
-    });
-
-    testWidgets(
-      'switches to project app bar when project id is emitted via stream',
-      (tester) async {
-        await tester.pumpWidget(makeApp());
-        await tester.pump();
-        expect(find.text(l10n().appTitle), findsAtLeastNWidgets(1));
-
-        fakeProjectNotifier.setCurrentProjectId(
-          '950e8400-e29b-41d4-a716-446655440001',
-        );
-        await tester.pump();
-
-        expect(find.text(l10n().appTitle), findsNothing);
-        expect(find.byType(_FakeProjectAppBar), findsOneWidget);
-      },
-    );
   });
 }
 

@@ -45,6 +45,30 @@ void main() {
   });
 
   group('ProjectHeaderAppBar', () {
+    Future<void> pumpNoProject(WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: CoreTheme.light(),
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              buildContext = context;
+              return const Scaffold(appBar: ProjectHeaderAppBar());
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('shows app title when no project is selected', (tester) async {
+      await pumpNoProject(tester);
+      expect(find.text(AppLocalizations.of(buildContext!)!.appTitle), findsOneWidget);
+      expect(find.byType(CoreLoadingIndicator), findsNothing);
+    });
+
     Future<void> pumpProjectHeaderAppBar(
       WidgetTester tester, {
       required String projectId,
