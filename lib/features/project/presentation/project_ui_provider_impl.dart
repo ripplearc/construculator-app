@@ -16,6 +16,7 @@ class ProjectUIProviderImpl extends ProjectUIProvider {
     VoidCallback? onNotificationTap,
   }) {
     return ProjectHeaderAppBar(
+      getProjectBlocFactory: getProjectBlocBuilder,
       onProjectTap: onProjectTap,
       onSearchTap: onSearchTap,
       onNotificationTap: onNotificationTap,

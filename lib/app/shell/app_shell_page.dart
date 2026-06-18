@@ -14,7 +14,6 @@ import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// The primary shell page for the application's authenticated interface.
@@ -23,15 +22,31 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// tab navigation using [AppShellBloc]. Module lazy-loading is orchestrated
 /// inside the BLoC, keeping this Page a pure presentation concern.
 class AppShellPage extends StatefulWidget {
-  const AppShellPage({super.key});
+  final AppShellBloc appShellBloc;
+  final ProjectUIProvider projectUIProvider;
+
+  // TODO: [CA-708] Remove once DashboardPage reads these from the module directly.
+  // https://ripplearc.youtrack.cloud/issue/CA-708
+  final AuthNotifier authNotifier;
+  final AuthManager authManager;
+  final AppRouter router;
+  final RecentEstimationsBloc recentEstimationsBloc;
+
+  const AppShellPage({
+    super.key,
+    required this.appShellBloc,
+    required this.projectUIProvider,
+    required this.authNotifier,
+    required this.authManager,
+    required this.router,
+    required this.recentEstimationsBloc,
+  });
 
   @override
   State<AppShellPage> createState() => _AppShellPageState();
 }
 
 class _AppShellPageState extends State<AppShellPage> {
-  final AppShellBloc _bloc = Modular.get<AppShellBloc>();
-
   final List<GlobalKey<NavigatorState>> _tabNavigatorKeys = List.generate(
     ShellTab.values.length,
     (_) => GlobalKey<NavigatorState>(),
@@ -39,14 +54,14 @@ class _AppShellPageState extends State<AppShellPage> {
 
   @override
   void dispose() {
-    _bloc.close();
+    widget.appShellBloc.close();
     super.dispose();
   }
 
   void _onPopInvoked(bool didPop) {
     if (didPop) return;
 
-    final state = _bloc.state;
+    final state = widget.appShellBloc.state;
     final currentNavigator =
         _tabNavigatorKeys[state.selectedTabIndex].currentState;
 
@@ -56,7 +71,7 @@ class _AppShellPageState extends State<AppShellPage> {
     }
 
     if (state.selectedTabIndex != 0) {
-      _bloc.add(const AppShellTabSelected(ShellTab.home));
+      widget.appShellBloc.add(const AppShellTabSelected(ShellTab.home));
       return;
     }
 
@@ -65,7 +80,7 @@ class _AppShellPageState extends State<AppShellPage> {
 
   void _handleTabTap(int index) {
     assert(index < ShellTab.values.length, 'Tab index $index out of range');
-    _bloc.add(AppShellTabSelected(ShellTab.values[index]));
+    widget.appShellBloc.add(AppShellTabSelected(ShellTab.values[index]));
   }
 
   Widget _buildTabRoot(ShellTab tab) {
@@ -74,11 +89,11 @@ class _AppShellPageState extends State<AppShellPage> {
       // https://ripplearc.youtrack.cloud/issue/CA-708
       case ShellTab.home:
         return DashboardPage(
-          authNotifier: Modular.get<AuthNotifier>(),
-          authManager: Modular.get<AuthManager>(),
-          router: Modular.get<AppRouter>(),
-          recentEstimationsBloc: Modular.get<RecentEstimationsBloc>(),
-          appShellBloc: _bloc,
+          authNotifier: widget.authNotifier,
+          authManager: widget.authManager,
+          router: widget.router,
+          recentEstimationsBloc: widget.recentEstimationsBloc,
+          appShellBloc: widget.appShellBloc,
         );
       case ShellTab.calculations:
         return const CalculationsPage();
@@ -92,13 +107,13 @@ class _AppShellPageState extends State<AppShellPage> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AppShellBloc, AppShellState>(
-      bloc: _bloc,
+      bloc: widget.appShellBloc,
       builder: (context, state) {
         return PopScope(
           canPop: false,
           onPopInvokedWithResult: (didPop, _) => _onPopInvoked(didPop),
           child: Scaffold(
-            appBar: Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar(),
+            appBar: widget.projectUIProvider.buildProjectHeaderAppbar(),
             body: Stack(
               children: List.generate(ShellTab.values.length, (index) {
                 final tab = ShellTab.values[index];

@@ -1,15 +1,21 @@
+import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
 import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
+import 'package:construculator/features/dashboard/dashboard_module.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -56,11 +62,14 @@ void main() {
 
     fakeSupabaseWrapper.addTableData('users', [fakeUser.toJson()]);
 
-    Modular.init(
-      ShellModule(
-        FakeAppBootstrapFactory.create(supabaseWrapper: fakeSupabaseWrapper),
-      ),
+    final appBootstrap = FakeAppBootstrapFactory.create(
+      supabaseWrapper: fakeSupabaseWrapper,
     );
+
+    Modular.init(ShellModule(appBootstrap));
+    // Pre-bind DashboardModule so AuthNotifier, AuthManager, AppRouter, and
+    // RecentEstimationsBloc are resolvable when AppShellPage is constructed.
+    Modular.bindModule(DashboardModule(appBootstrap));
 
     Modular.replaceInstance<CurrentProjectNotifier>(fakeProjectNotifier);
     Modular.replaceInstance<ProjectUIProvider>(_FakeProjectUIProvider());
@@ -82,7 +91,14 @@ void main() {
         buildContext = context;
         return child!;
       },
-      home: const AppShellPage(),
+      home: AppShellPage(
+        appShellBloc: Modular.get<AppShellBloc>(),
+        projectUIProvider: Modular.get<ProjectUIProvider>(),
+        authNotifier: Modular.get<AuthNotifier>(),
+        authManager: Modular.get<AuthManager>(),
+        router: Modular.get<AppRouter>(),
+        recentEstimationsBloc: Modular.get<RecentEstimationsBloc>(),
+      ),
     );
   }
 

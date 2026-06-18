@@ -2,16 +2,17 @@ import 'package:construculator/features/project/presentation/bloc/get_project_bl
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class ProjectHeaderAppBar extends StatefulWidget implements PreferredSizeWidget {
+  final GetProjectBloc Function() getProjectBlocFactory;
   final VoidCallback? onProjectTap;
   final VoidCallback? onSearchTap;
   final VoidCallback? onNotificationTap;
 
   const ProjectHeaderAppBar({
     super.key,
+    required this.getProjectBlocFactory,
     this.onProjectTap,
     this.onSearchTap,
     this.onNotificationTap,
@@ -30,7 +31,7 @@ class _ProjectHeaderAppBarState extends State<ProjectHeaderAppBar> {
   @override
   void initState() {
     super.initState();
-    _bloc = Modular.get<GetProjectBloc>();
+    _bloc = widget.getProjectBlocFactory();
     _bloc.add(const GetProjectWatchStarted());
   }
 

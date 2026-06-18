@@ -55,7 +55,11 @@ void main() {
           home: Builder(
             builder: (context) {
               buildContext = context;
-              return const Scaffold(appBar: ProjectHeaderAppBar());
+              return Scaffold(
+                appBar: ProjectHeaderAppBar(
+                  getProjectBlocFactory: () => Modular.get<GetProjectBloc>(),
+                ),
+              );
             },
           ),
         ),
@@ -102,6 +106,7 @@ void main() {
               buildContext = context;
               return Scaffold(
                 appBar: ProjectHeaderAppBar(
+                  getProjectBlocFactory: () => Modular.get<GetProjectBloc>(),
                   onProjectTap: onProjectTap,
                   onSearchTap: onSearchTap,
                   onNotificationTap: onNotificationTap,

@@ -80,6 +80,7 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             appBar: ProjectHeaderAppBar(
+              getProjectBlocFactory: () => Modular.get<GetProjectBloc>(),
               onProjectTap: onProjectTap,
               onSearchTap: onSearchTap,
               onNotificationTap: onNotificationTap,
