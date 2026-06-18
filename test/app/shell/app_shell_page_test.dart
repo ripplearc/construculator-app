@@ -78,6 +78,7 @@ void main() {
     );
 
     Modular.init(ShellModule(appBootstrap));
+    addTearDown(Modular.destroy);
     // Pre-bind DashboardModule so AuthNotifier, AuthManager, AppRouter, and
     // RecentEstimationsBloc are resolvable when AppShellPage is constructed.
     Modular.bindModule(DashboardModule(appBootstrap));

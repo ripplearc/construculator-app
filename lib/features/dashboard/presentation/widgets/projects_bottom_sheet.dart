@@ -4,7 +4,6 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 const int _kProjectsSkeletonItemCount = 4;
@@ -19,14 +18,16 @@ const double _kProjectsSearchIconSize = CoreSpacing.space5;
 /// [ProjectDropdownSelected] and dismisses the sheet. Loading, error (with a
 /// cached fallback), and empty states are all rendered inline.
 class ProjectsBottomSheet extends StatefulWidget {
-  const ProjectsBottomSheet({super.key});
+  final ProjectDropdownBloc bloc;
+
+  const ProjectsBottomSheet({super.key, required this.bloc});
 
   /// Shows the projects bottom sheet using [CoreQuickSheet].
-  static Future<void> show(BuildContext context) {
+  static Future<void> show(BuildContext context, ProjectDropdownBloc bloc) {
     return CoreQuickSheet.show<void>(
       context: context,
       useSafeArea: true,
-      child: const ProjectsBottomSheet(),
+      child: ProjectsBottomSheet(bloc: bloc),
     );
   }
 
@@ -41,7 +42,7 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
   @override
   void initState() {
     super.initState();
-    _bloc = Modular.get<ProjectDropdownBloc>();
+    _bloc = widget.bloc;
     if (_bloc.state is! ProjectDropdownLoadSuccess) {
       _bloc.add(const ProjectDropdownStarted());
     }

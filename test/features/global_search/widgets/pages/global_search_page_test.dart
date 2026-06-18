@@ -1,5 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
+import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_empty_recent_widget.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_recent_searches_list.dart';
@@ -109,7 +110,12 @@ void main() {
 
   Future<void> renderPage(WidgetTester tester) async {
     await tester.pumpWidget(
-      makeTestableWidget(child: const GlobalSearchPage()),
+      makeTestableWidget(
+        child: GlobalSearchPage(
+          router: router,
+          blocFactory: () => Modular.get<GlobalSearchBloc>(),
+        ),
+      ),
     );
     await tester.pumpAndSettle();
   }

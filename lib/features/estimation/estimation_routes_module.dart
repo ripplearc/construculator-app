@@ -4,6 +4,7 @@ import 'package:construculator/features/estimation/presentation/pages/cost_estim
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -36,7 +37,10 @@ class EstimationRoutesModule extends Module {
           );
         }
 
-        return CostEstimationDetailsPage(estimationId: estimationId);
+        return CostEstimationDetailsPage(
+          estimationId: estimationId,
+          router: Modular.get<AppRouter>(),
+        );
       },
     );
   }
