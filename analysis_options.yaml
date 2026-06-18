@@ -43,24 +43,25 @@ custom_lint:
 
   no_direct_instantiation:
     ignored_base_classes:
-        - 'State'
+      - "State"
     ast_type_prefixes:
-        - 'Fake'
-        - '_Fake'
-        - 'AppBootstrap'
-        - 'AppLogger'
-        - 'Map'
-        - 'CancelableOperation'
-        - 'AppLocalizationsEn'
-        - 'Breadcrumb'
-        - 'SentryFlutterOptions'
-        - 'SentryId'
-        - 'LogEvent'
-        - 'AppLogFilter'
-        - 'SentryUser'
-        - 'CrudEntry'
-        - 'PowerSyncCredentials'
-        - 'Posthog'
+      - "Fake"
+      - "_Fake"
+      - "AppBootstrap"
+      - "AppLogger"
+      - "Map"
+      - "CancelableOperation"
+      - "AppLocalizationsEn"
+      - "Breadcrumb"
+      - "SentryFlutterOptions"
+      - "SentryId"
+      - "LogEvent"
+      - "AppLogFilter"
+      - "SentryUser"
+      - "CrudEntry"
+      - "PowerSyncCredentials"
+      - "Posthog"
+      - "PowerSyncDatabase"
 
 linter:
   # The lint rules applied to this project can be customized in the
