@@ -32,6 +32,18 @@ class FakePowerSyncDatabase implements PowerSyncDatabase {
     _nextTransaction = transaction;
   }
 
+  /// Clears all recorded call counts, the captured connector, the configured
+  /// [connectError], and any queued transaction, returning the fake to its
+  /// initial state so it can be reused across tests.
+  void reset() {
+    connectCallCount = 0;
+    lastConnector = null;
+    disconnectCallCount = 0;
+    disconnectAndClearCallCount = 0;
+    connectError = null;
+    _nextTransaction = null;
+  }
+
   @override
   Future<void> connect({
     required PowerSyncBackendConnector connector,

@@ -32,6 +32,8 @@ dependencies:
   intl: 0.20.2
   sentry_flutter: ^9.15.0
   powersync: 1.17.0
+  path_provider: ^2.1.5
+  path: ^1.9.0
 
 dev_dependencies:
   flutter_test:
