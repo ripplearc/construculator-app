@@ -227,6 +227,52 @@ void main() {
         await subscription.cancel();
       },
     );
+
+    group('getProject', () {
+      test('returns ProjectDto when project exists', () async {
+        supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+          _projectRow(
+            id: 'project-1',
+            projectName: 'My Project',
+            creatorUserId: 'user-1',
+          ),
+        ]);
+
+        final result = await dataSource.getProject('project-1');
+
+        expect(result.id, equals('project-1'));
+        expect(result.projectName, equals('My Project'));
+      });
+
+      test('throws NotFoundException when project does not exist', () async {
+        await expectLater(
+          dataSource.getProject('non-existent'),
+          throwsA(isA<NotFoundException>()),
+        );
+      });
+
+      test(
+        'throws NotFoundException when selectSingle returns null',
+        () async {
+          supabaseWrapper.shouldReturnNullOnSelect = true;
+
+          await expectLater(
+            dataSource.getProject('project-1'),
+            throwsA(isA<NotFoundException>()),
+          );
+        },
+      );
+
+      test('rethrows PostgrestException from supabaseWrapper', () async {
+        supabaseWrapper.shouldThrowOnSelect = true;
+        supabaseWrapper.selectExceptionType = SupabaseExceptionType.postgrest;
+
+        await expectLater(
+          dataSource.getProject('project-1'),
+          throwsA(isA<supabase.PostgrestException>()),
+        );
+      });
+    });
   });
 }
 

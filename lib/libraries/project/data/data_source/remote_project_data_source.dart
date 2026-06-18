@@ -1,9 +1,11 @@
+import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_data_source.dart';
 import 'package:construculator/libraries/project/data/models/project_dto.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:stack_trace/stack_trace.dart';
 
 class RemoteProjectDataSource implements ProjectDataSource {
   final SupabaseWrapper _supabaseWrapper;
@@ -64,6 +66,37 @@ class RemoteProjectDataSource implements ProjectDataSource {
     } catch (error, stackTrace) {
       _logger.error(
         'Error while getting shared projects for userId: $userId, error: $error',
+        stackTrace.toString(),
+      );
+      rethrow;
+    }
+  }
+
+  @override
+  Future<ProjectDto> getProject(String projectId) async {
+    try {
+      _logger.debug('Getting project for projectId: $projectId');
+
+      final row = await _supabaseWrapper.selectSingle(
+        table: DatabaseConstants.projectsTable,
+        filterColumn: DatabaseConstants.idColumn,
+        filterValue: projectId,
+      );
+
+      if (row == null) {
+        _logger.warning('Project not found for projectId: $projectId');
+        throw NotFoundException(
+          Trace.current(),
+          Exception('Project not found for id: $projectId'),
+        );
+      }
+
+      return ProjectDto.fromJson(row);
+    } on NotFoundException {
+      rethrow;
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Error while getting project for projectId: $projectId, error: $error',
         stackTrace.toString(),
       );
       rethrow;

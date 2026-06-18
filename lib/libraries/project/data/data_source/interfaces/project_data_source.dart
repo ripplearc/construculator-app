@@ -10,4 +10,9 @@ abstract class ProjectDataSource {
 
   /// Emits whenever project accessibility data changes for [userId].
   Stream<void> watchProjectChanges(String userId);
+
+  /// Fetches a single project by its [projectId].
+  ///
+  /// Throws [NotFoundException] if no project exists with that id.
+  Future<ProjectDto> getProject(String projectId);
 }
