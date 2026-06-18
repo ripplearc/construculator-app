@@ -10,10 +10,6 @@ import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.da
 /// returns user-profile-shaped rows for the owners (project creators) the
 /// authenticated caller can access. The caller identity is derived from the
 /// Supabase auth session JWT, so no explicit user id param is forwarded.
-///
-/// Exceptions are propagated unchanged; error mapping and logging are the
-/// repository's responsibility, so this data source does not log failures
-/// (avoids duplicate Sentry events across layers).
 class RemoteOwnerDataSource implements OwnerDataSource {
   final SupabaseWrapper _supabaseWrapper;
   static final _logger = AppLogger().tag('RemoteOwnerDataSource');
@@ -26,13 +22,21 @@ class RemoteOwnerDataSource implements OwnerDataSource {
   Future<List<UserProfileDto>> fetchOwners() async {
     _logger.debug('Fetching project owners');
 
-    final rows = await _supabaseWrapper.rpc<List<dynamic>>(
-      DatabaseConstants.projectOwnersRpcFunction,
-    );
+    try {
+      final rows = await _supabaseWrapper.rpc<List<dynamic>>(
+        DatabaseConstants.projectOwnersRpcFunction,
+      );
 
-    return rows
-        .whereType<Map<String, dynamic>>()
-        .map(UserProfileDto.fromJson)
-        .toList();
+      return rows
+          .whereType<Map<String, dynamic>>()
+          .map(UserProfileDto.fromJson)
+          .toList();
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Error while fetching project owners, error: $error',
+        stackTrace.toString(),
+      );
+      rethrow;
+    }
   }
 }
