@@ -17,8 +17,6 @@ import 'package:construculator/libraries/project/domain/repositories/project_set
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
-import 'package:construculator/libraries/time/clock_module.dart';
-import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class ProjectLibraryModule extends Module {
@@ -26,7 +24,7 @@ class ProjectLibraryModule extends Module {
   ProjectLibraryModule(this.appBootstrap);
 
   @override
-  List<Module> get imports => [ClockModule(), SupabaseModule(appBootstrap)];
+  List<Module> get imports => [SupabaseModule(appBootstrap)];
 
   @override
   void routes(RouteManager r) {}
@@ -52,12 +50,18 @@ void _registerDependencies(Injector i) {
     ),
   );
 
+  i.addLazySingleton<ProjectSettingDataSource>(
+    () => RemoteProjectSettingDataSource(
+      supabaseWrapper: Modular.get<SupabaseWrapper>(),
+    ),
+  );
+
   i.addLazySingleton<ProjectRepository>(
     () => ProjectRepositoryImpl(
       projectDataSource: Modular.get<ProjectDataSource>(),
+      projectSettingDataSource: Modular.get<ProjectSettingDataSource>(),
       permissionDataSource: Modular.get<ProjectPermissionDataSource>(),
       currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
-      clock: Modular.get<Clock>(),
     ),
     config: BindConfig(onDispose: (repository) => repository.dispose()),
   );

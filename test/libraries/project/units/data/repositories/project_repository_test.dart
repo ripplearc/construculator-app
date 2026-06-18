@@ -1,24 +1,29 @@
 import 'dart:async';
 
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_data_source.dart';
+import 'package:construculator/libraries/project/data/data_source/interfaces/project_setting_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/local_jwt_project_permission_data_source.dart';
 import 'package:construculator/libraries/project/data/models/project_dto.dart';
 import 'package:construculator/libraries/project/data/repositories/project_repository_impl.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/project/domain/project_error_type.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_project_setting_data_source.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:stack_trace/stack_trace.dart';
 
 import '../../../../../utils/fake_app_bootstrap_factory.dart';
 
@@ -26,79 +31,99 @@ void main() {
   group('ProjectRepositoryImpl', () {
     late FakeClockImpl clock;
     late _FakeProjectDataSource projectDataSource;
+    late FakeProjectSettingDataSource projectSettingDataSource;
     late ProjectRepositoryImpl repository;
 
     setUp(() {
       clock = FakeClockImpl(DateTime(2025, 10, 1, 10, 30));
       Modular.init(_ProjectRepositoryTestModule(clock: clock));
       projectDataSource = Modular.get<_FakeProjectDataSource>();
+      projectSettingDataSource = Modular.get<FakeProjectSettingDataSource>();
       repository = Modular.get<ProjectRepositoryImpl>();
     });
 
     tearDown(() {
       projectDataSource.dispose();
+      projectSettingDataSource.reset();
       Modular.destroy();
     });
 
     group('getProject', () {
-      test('should return dummy project data with correct structure', () async {
-        // Arrange
-        const projectId = 'test-project-123';
+      test('returns mapped domain project from data source', () async {
+        projectSettingDataSource.projectToReturn = ProjectDto(
+          id: 'project-abc',
+          projectName: 'Real Project',
+          creatorUserId: 'user-001',
+          createdAt: DateTime(2025, 3, 1),
+          updatedAt: DateTime(2025, 3, 2),
+          status: ProjectStatus.active,
+        );
 
-        // Act
-        final result = await repository.getProject(projectId);
+        final result = await repository.getProject('project-abc');
 
-        // Assert
         expect(result, isA<Project>());
-        expect(result.id, equals(projectId));
-        expect(result.projectName, equals('Sample Construction Project'));
-        expect(
-          result.description,
-          equals('A sample construction project for testing purposes'),
-        );
-        expect(result.creatorUserId, equals('user_123'));
-        expect(result.owningCompanyId, equals('company_456'));
-        expect(
-          result.exportFolderLink,
-          equals('https://drive.google.com/sample-folder'),
-        );
-        expect(
-          result.exportStorageProvider,
-          equals(StorageProvider.googleDrive),
-        );
+        expect(result.id, equals('project-abc'));
+        expect(result.projectName, equals('Real Project'));
+        expect(result.creatorUserId, equals('user-001'));
         expect(result.status, equals(ProjectStatus.active));
-        expect(result.createdAt, equals(DateTime(2025, 10, 1, 10, 30)));
-        expect(result.updatedAt, equals(DateTime(2025, 10, 1, 10, 30)));
       });
 
       test(
-        'should return project with same dummy data regardless of input id',
+        'throws ProjectFailure with notFoundError when data source throws NotFoundException',
         () async {
-          // Arrange
-          const projectId1 = 'different-id-1';
-          const projectId2 = 'different-id-2';
-
-          // Act
-          final result1 = await repository.getProject(projectId1);
-          final result2 = await repository.getProject(projectId2);
-
-          // Assert
-          expect(result1.id, equals(projectId1));
-          expect(result2.id, equals(projectId2));
-
-          // All other fields should be identical dummy data
-          expect(result1.projectName, equals(result2.projectName));
-          expect(result1.description, equals(result2.description));
-          expect(result1.creatorUserId, equals(result2.creatorUserId));
-          expect(result1.owningCompanyId, equals(result2.owningCompanyId));
-          expect(result1.exportFolderLink, equals(result2.exportFolderLink));
-          expect(
-            result1.exportStorageProvider,
-            equals(result2.exportStorageProvider),
+          projectSettingDataSource.fetchExceptionToThrow = NotFoundException(
+            Trace.current(),
+            Exception('Project not found'),
           );
-          expect(result1.status, equals(result2.status));
-          expect(result1.createdAt, equals(result2.createdAt));
-          expect(result1.updatedAt, equals(result2.updatedAt));
+
+          await expectLater(
+            repository.getProject('missing-project'),
+            throwsA(
+              isA<ProjectFailure>().having(
+                (f) => f.errorType,
+                'errorType',
+                ProjectErrorType.notFoundError,
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'throws ProjectFailure with timeoutError when data source throws TimeoutException',
+        () async {
+          projectSettingDataSource.fetchExceptionToThrow = TimeoutException(
+            'timed out',
+          );
+
+          await expectLater(
+            repository.getProject('any-id'),
+            throwsA(
+              isA<ProjectFailure>().having(
+                (f) => f.errorType,
+                'errorType',
+                ProjectErrorType.timeoutError,
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'throws ProjectFailure with unexpectedDatabaseError when data source throws ServerException',
+        () async {
+          projectSettingDataSource.shouldThrowOnGet = true;
+
+          await expectLater(
+            repository.getProject('any-id'),
+            throwsA(
+              isA<ProjectFailure>().having(
+                (f) => f.errorType,
+                'errorType',
+                ProjectErrorType.unexpectedDatabaseError,
+              ),
+            ),
+          );
         },
       );
     });
@@ -541,6 +566,12 @@ class _ProjectRepositoryTestModule extends Module {
     i.addLazySingleton<ProjectDataSource>(
       () => i.get<_FakeProjectDataSource>(),
     );
+    i.addLazySingleton<FakeProjectSettingDataSource>(
+      () => FakeProjectSettingDataSource(),
+    );
+    i.addLazySingleton<ProjectSettingDataSource>(
+      () => i.get<FakeProjectSettingDataSource>(),
+    );
     i.addLazySingleton<ProjectPermissionDataSource>(
       () => LocalJwtProjectPermissionDataSource(
         supabaseWrapper: FakeSupabaseWrapper(clock: clock),
@@ -552,7 +583,7 @@ class _ProjectRepositoryTestModule extends Module {
     i.addLazySingleton<ProjectRepositoryImpl>(
       () => ProjectRepositoryImpl(
         projectDataSource: i.get<ProjectDataSource>(),
-        clock: clock,
+        projectSettingDataSource: i.get<ProjectSettingDataSource>(),
         permissionDataSource: i.get<ProjectPermissionDataSource>(),
         currentProjectNotifier: i.get<CurrentProjectNotifier>(),
       ),
