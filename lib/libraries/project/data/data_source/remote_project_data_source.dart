@@ -95,9 +95,10 @@ class RemoteProjectDataSource implements ProjectDataSource {
     } on NotFoundException {
       rethrow;
     } catch (error, stackTrace) {
-      _logger.error(
+      _logger.warning(
         'Error while getting project for projectId: $projectId, error: $error',
-        stackTrace.toString(),
+        error,
+        stackTrace,
       );
       rethrow;
     }
