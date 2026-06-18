@@ -4,19 +4,20 @@ import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_data_source.dart';
-import 'package:construculator/libraries/project/data/data_source/interfaces/project_setting_data_source.dart';
 import 'package:construculator/libraries/project/data/project_error_mapper.dart';
+import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/project_error_type.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 
 /// Remote implementation of the project repository.
 class ProjectRepositoryImpl implements ProjectRepository {
   final ProjectDataSource _projectDataSource;
-  final ProjectSettingDataSource _projectSettingDataSource;
   final ProjectPermissionDataSource _permissionDataSource;
   final CurrentProjectNotifier _currentProjectNotifier;
+  final Clock _clock;
   static final _logger = AppLogger().tag('ProjectRepositoryImpl');
   StreamController<List<Project>>? _projectsController;
   StreamSubscription<void>? _projectChangesSubscription;
@@ -27,26 +28,35 @@ class ProjectRepositoryImpl implements ProjectRepository {
 
   /// Creates a [ProjectRepositoryImpl].
   ///
-  /// [projectDataSource] provides remote project list and watch operations.
-  /// [projectSettingDataSource] provides single-project fetch and mutation operations.
+  /// [projectDataSource] provides remote project data.
   /// [permissionDataSource] provides JWT-based permission checks.
   /// [currentProjectNotifier] is read in [findCurrentProjectForUser] to resolve the selected project id.
   ProjectRepositoryImpl({
     required ProjectDataSource projectDataSource,
-    required ProjectSettingDataSource projectSettingDataSource,
     required ProjectPermissionDataSource permissionDataSource,
     required CurrentProjectNotifier currentProjectNotifier,
+    required Clock clock,
   }) : _projectDataSource = projectDataSource,
-       _projectSettingDataSource = projectSettingDataSource,
        _permissionDataSource = permissionDataSource,
-       _currentProjectNotifier = currentProjectNotifier;
+       _currentProjectNotifier = currentProjectNotifier,
+       _clock = clock;
 
   @override
   Future<Project> getProject(String id) async {
     try {
-      // TODO: Add local cache lookup once ProjectLocalDataSource is implemented (out of scope for CA-225)
-      final dto = await _projectSettingDataSource.fetchProjectSetting(id);
-      return dto.toDomain();
+      // TODO: https://ripplearc.youtrack.cloud/issue/CA-162/Dashboard-Create-Project-Repository
+      return Project(
+        id: id,
+        projectName: 'Sample Construction Project',
+        description: 'A sample construction project for testing purposes',
+        creatorUserId: 'user_123',
+        owningCompanyId: 'company_456',
+        exportFolderLink: 'https://drive.google.com/sample-folder',
+        exportStorageProvider: StorageProvider.googleDrive,
+        createdAt: _clock.now(),
+        updatedAt: _clock.now(),
+        status: ProjectStatus.active,
+      );
     } catch (error, stackTrace) {
       final failure = ProjectErrorMapper.toFailure(error);
       _logFailure('getting project by id: $id', failure, stackTrace);

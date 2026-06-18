@@ -3,11 +3,9 @@ import 'package:construculator/libraries/project/data/current_project_notifier_i
 import 'package:construculator/libraries/project/data/data_source/interfaces/permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_search_data_source.dart';
-import 'package:construculator/libraries/project/data/data_source/interfaces/project_setting_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/local_jwt_project_permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/remote_project_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/remote_project_search_data_source.dart';
-import 'package:construculator/libraries/project/data/data_source/remote_project_setting_data_source.dart';
 import 'package:construculator/libraries/project/data/repositories/project_repository_impl.dart';
 import 'package:construculator/libraries/project/data/repositories/project_search_repository_impl.dart';
 import 'package:construculator/libraries/project/data/repositories/project_setting_repository_impl.dart';
@@ -17,6 +15,8 @@ import 'package:construculator/libraries/project/domain/repositories/project_set
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
+import 'package:construculator/libraries/time/clock_module.dart';
+import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class ProjectLibraryModule extends Module {
@@ -24,7 +24,7 @@ class ProjectLibraryModule extends Module {
   ProjectLibraryModule(this.appBootstrap);
 
   @override
-  List<Module> get imports => [SupabaseModule(appBootstrap)];
+  List<Module> get imports => [ClockModule(), SupabaseModule(appBootstrap)];
 
   @override
   void routes(RouteManager r) {}
@@ -50,18 +50,12 @@ void _registerDependencies(Injector i) {
     ),
   );
 
-  i.addLazySingleton<ProjectSettingDataSource>(
-    () => RemoteProjectSettingDataSource(
-      supabaseWrapper: Modular.get<SupabaseWrapper>(),
-    ),
-  );
-
   i.addLazySingleton<ProjectRepository>(
     () => ProjectRepositoryImpl(
       projectDataSource: Modular.get<ProjectDataSource>(),
-      projectSettingDataSource: Modular.get<ProjectSettingDataSource>(),
       permissionDataSource: Modular.get<ProjectPermissionDataSource>(),
       currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
+      clock: Modular.get<Clock>(),
     ),
     config: BindConfig(onDispose: (repository) => repository.dispose()),
   );
