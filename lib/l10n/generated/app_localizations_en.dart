@@ -1072,4 +1072,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createProjectScreenTitle => 'Create a project';
+
+  @override
+  String get projectDetailsNavigationError =>
+      'Unable to open project details. Please try again.';
 }

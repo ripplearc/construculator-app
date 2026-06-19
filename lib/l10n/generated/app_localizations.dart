@@ -2025,6 +2025,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create a project'**
   String get createProjectScreenTitle;
+
+  /// Error toast shown when navigation to the project details screen fails
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to open project details. Please try again.'**
+  String get projectDetailsNavigationError;
 }
 
 class _AppLocalizationsDelegate

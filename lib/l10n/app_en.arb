@@ -1690,6 +1690,11 @@
   "@createProjectScreenTitle": {
     "description": "Title for the project creation screen app bar",
     "context": "Project creation screen"
+  },
+  "projectDetailsNavigationError": "Unable to open project details. Please try again.",
+  "@projectDetailsNavigationError": {
+    "description": "Error toast shown when navigation to the project details screen fails",
+    "context": "Dashboard projects sheet"
   }
 }
 

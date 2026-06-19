@@ -1,4 +1,5 @@
 import 'package:construculator/features/dashboard/presentation/widgets/highlighted_project_item.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/view_project_details_button.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +8,6 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 const double _kProjectListItemBorderWidth = 1;
 const double _kProjectListItemMetaIconSize = CoreSpacing.space4;
-const double _kProjectListItemSettingsHitTarget = CoreSpacing.space12;
 
 final _dateFormatCache = <String, DateFormat>{};
 final _timeFormatCache = <String, DateFormat>{};
@@ -35,7 +35,7 @@ class ProjectListItem extends StatelessWidget {
   final VoidCallback? onTap;
 
   /// Called when the per-project settings affordance is tapped.
-  final VoidCallback? onSettingsTap;
+  final Future<void> Function()? onSettingsTap;
 
   const ProjectListItem({
     super.key,
@@ -98,7 +98,7 @@ class ProjectListItem extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: CoreSpacing.space2),
-                  _buildSettingsButton(context),
+                  ViewProjectDetailsButton(onPressed: onSettingsTap),
                 ],
               ),
               const SizedBox(height: CoreSpacing.space2),
@@ -138,34 +138,5 @@ class ProjectListItem extends StatelessWidget {
       );
     }
     return card;
-  }
-
-  Widget _buildSettingsButton(BuildContext context) {
-    final colors = context.colorTheme;
-    final hitTarget = SizedBox(
-      width: _kProjectListItemSettingsHitTarget,
-      height: _kProjectListItemSettingsHitTarget,
-      child: GestureDetector(
-        onTap: onSettingsTap,
-        behavior: HitTestBehavior.opaque,
-        child: Center(
-          child: CoreIconWidget(
-            icon: CoreIcons.settings,
-            size: _kProjectListItemMetaIconSize,
-            color: colors.iconGrayMid,
-          ),
-        ),
-      ),
-    );
-
-    if (onSettingsTap != null) {
-      return Semantics(
-        button: true,
-        label: context.l10n.projectSettingsSemanticLabel,
-        child: hitTarget,
-      );
-    }
-
-    return ExcludeSemantics(child: hitTarget);
   }
 }

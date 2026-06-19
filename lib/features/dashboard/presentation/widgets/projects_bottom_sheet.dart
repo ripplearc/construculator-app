@@ -102,8 +102,18 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
     Modular.to.pushNamed(createProjectRoute);
   }
 
-  void _onProjectSettings(Project project) {
-    // TODO: [CA-116] Navigate to project settings once the route exists. https://ripplearc.youtrack.cloud/issue/CA-116
+  Future<void> _onProjectSettings(Project project) async {
+    try {
+      await Modular.to.pushNamed(fullViewProjectRoute, arguments: project.id);
+    } catch (_) {
+      if (mounted) {
+        CoreToast.showError(
+          context,
+          context.l10n.projectDetailsNavigationError,
+          context.l10n.closeLabel,
+        );
+      }
+    }
   }
 
   @override
