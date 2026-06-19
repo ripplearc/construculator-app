@@ -9,7 +9,9 @@ const double _kVisualSize = CoreSpacing.space10;
 // 8 px padding inside the 40 × 40 visual gives a 24 × 24 icon content area.
 const double _kPadding = CoreSpacing.space2;
 const double _kIconSize = CoreSpacing.space6;
-const double _kLoadingStrokeWidth = 2;
+
+const Key _kSettingsIconKey = Key('view_project_details_icon');
+const Key _kLoadingIndicatorKey = Key('view_project_details_loading');
 
 /// A 40 × 40 button that shows a settings icon and navigates to the project
 /// details screen. Manages its own loading state while the async [onPressed]
@@ -57,15 +59,12 @@ class _ViewProjectDetailsButtonState extends State<ViewProjectDetailsButton> {
             child: Padding(
               padding: const EdgeInsets.all(_kPadding),
               child: _isLoading
-                  ? SizedBox(
-                      width: _kIconSize,
-                      height: _kIconSize,
-                      child: CircularProgressIndicator(
-                        strokeWidth: _kLoadingStrokeWidth,
-                        color: colors.iconGrayMid,
-                      ),
+                  ? CoreLoadingIndicator(
+                      key: _kLoadingIndicatorKey,
+                      size: _kIconSize,
                     )
                   : CoreIconWidget(
+                      key: _kSettingsIconKey,
                       icon: CoreIcons.settings,
                       size: _kIconSize,
                       color: colors.iconGrayMid,
