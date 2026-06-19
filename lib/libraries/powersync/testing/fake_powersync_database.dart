@@ -2,7 +2,13 @@
 
 import 'package:powersync/powersync.dart';
 
-/// Fake [PowerSyncDatabase] for testing.
+/// Fake [PowerSyncDatabase] for tests of [PowerSyncBackendConnector]
+/// implementations, which receive a real `PowerSyncDatabase` from the PowerSync
+/// runtime (e.g. `connector.uploadData(database)`).
+///
+/// Feature, repository, and data-source tests should use
+/// `FakePowerSyncDatabaseWrapper` instead — it fakes the narrow
+/// `PowerSyncDatabaseWrapper` seam rather than this full native API.
 ///
 /// Call [setNextTransaction] to control what [getNextCrudTransaction] returns.
 /// Each call to [getNextCrudTransaction] consumes and clears the queued
