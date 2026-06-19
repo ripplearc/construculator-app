@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 
 // TODO: [DASH-029] Implement project details content.
@@ -7,7 +8,7 @@ class ProjectDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Project Details')),
+      appBar: AppBar(title: Text(context.l10n.projectDetailScreenTitle)),
       body: const SizedBox.shrink(),
     );
   }

@@ -960,4 +960,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get projectDetailsNavigationError =>
       'Unable to open project details. Please try again.';
+
+  @override
+  String get projectDetailScreenTitle => 'Project Details';
 }

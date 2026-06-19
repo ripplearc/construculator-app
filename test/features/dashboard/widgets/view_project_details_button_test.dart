@@ -31,11 +31,14 @@ void main() {
     await tester.pumpWidget(buildTestApp(onPressed: () async {}));
     await tester.pump();
 
-    expect(find.byType(CoreIconWidget), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byKey(const Key('view_project_details_icon')), findsOneWidget);
+    expect(
+      find.byKey(const Key('view_project_details_loading')),
+      findsNothing,
+    );
   });
 
-  testWidgets('shows CircularProgressIndicator while onPressed is in flight', (
+  testWidgets('shows loading indicator while onPressed is in flight', (
     tester,
   ) async {
     final completer = Completer<void>();
@@ -47,14 +50,20 @@ void main() {
     await tester.tap(find.byType(ViewProjectDetailsButton));
     await tester.pump();
 
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(find.byType(CoreIconWidget), findsNothing);
+    expect(
+      find.byKey(const Key('view_project_details_loading')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('view_project_details_icon')), findsNothing);
 
     completer.complete();
     await tester.pump();
 
-    expect(find.byType(CircularProgressIndicator), findsNothing);
-    expect(find.byType(CoreIconWidget), findsOneWidget);
+    expect(
+      find.byKey(const Key('view_project_details_loading')),
+      findsNothing,
+    );
+    expect(find.byKey(const Key('view_project_details_icon')), findsOneWidget);
   });
 
   testWidgets('calls onPressed exactly once when tapped', (tester) async {
