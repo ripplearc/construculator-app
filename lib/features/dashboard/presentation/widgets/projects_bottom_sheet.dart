@@ -2,6 +2,7 @@ import 'package:construculator/features/dashboard/presentation/bloc/project_drop
 import 'package:construculator/features/dashboard/presentation/widgets/project_list_item.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/router/routes/project_settings_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -83,8 +84,18 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
     // TODO: [CA-116] Wire to the create-project flow once it exists. https://ripplearc.youtrack.cloud/issue/CA-116
   }
 
-  void _onProjectSettings(Project project) {
-    // TODO: [CA-116] Navigate to project settings once the route exists. https://ripplearc.youtrack.cloud/issue/CA-116
+  Future<void> _onProjectSettings(Project project) async {
+    try {
+      await Modular.to.pushNamed(fullViewProjectRoute, arguments: project.id);
+    } catch (_) {
+      if (mounted) {
+        CoreToast.showError(
+          context,
+          context.l10n.projectDetailsNavigationError,
+          context.l10n.closeLabel,
+        );
+      }
+    }
   }
 
   @override

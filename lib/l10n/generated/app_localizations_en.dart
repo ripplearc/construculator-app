@@ -956,4 +956,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dateRangeSheetCancel => 'Cancel';
+
+  @override
+  String get projectDetailsNavigationError =>
+      'Unable to open project details. Please try again.';
 }
