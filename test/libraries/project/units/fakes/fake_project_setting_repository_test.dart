@@ -134,7 +134,7 @@ void main() {
           (_) => fail('Expected Right'),
           (project) => expect(project.projectName, equals('New')),
         );
-        expect(fake.projectToReturn?.projectName, equals('New'));
+        expect(fake.projectToReturn!.projectName, equals('New'));
       });
 
       test(
