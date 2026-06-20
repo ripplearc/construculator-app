@@ -72,6 +72,11 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
   /// (set back to `null`) or [reset] is called.
   Object? syncStreamError;
 
+  /// Optional gate that delays [syncStream] completion until completed by the
+  /// test. Useful for exercising cancellation races while activation is still
+  /// in flight.
+  Completer<void>? syncStreamActivationGate;
+
   /// Scripts [rows] as the result of [getAll] for [sql].
   void stubGetAll(String sql, List<Map<String, dynamic>> rows) {
     _getAllResults[sql] = rows;
@@ -165,6 +170,7 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
     if (error != null) {
       throw error;
     }
+    await syncStreamActivationGate?.future;
     return _FakeSyncStreamHandle(() => syncStreamUnsubscribes.add(name));
   }
 
@@ -184,6 +190,7 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
     executeError = null;
     writeTransactionError = null;
     syncStreamError = null;
+    syncStreamActivationGate = null;
     _closeWatchControllers();
   }
 

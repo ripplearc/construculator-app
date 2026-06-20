@@ -308,5 +308,43 @@ void main() {
 
       expect(convertedDto, equals(originalDto));
     });
+
+    group('fromRow (SQLite encoding)', () {
+      Map<String, dynamic> sqliteRow({int isLocked = 0}) {
+        return Map<String, dynamic>.from(
+          EstimationTestDataMapFactory.createFakeEstimationData(),
+        )..['is_locked'] = isLocked;
+      }
+
+      test('decodes is_locked integer 1 to a true bool', () {
+        final dto = CostEstimateDto.fromRow(sqliteRow(isLocked: 1));
+
+        expect(dto.isLocked, isTrue);
+      });
+
+      test('decodes is_locked integer 0 to a false bool', () {
+        final dto = CostEstimateDto.fromRow(sqliteRow(isLocked: 0));
+
+        expect(dto.isLocked, isFalse);
+      });
+
+      test('defaults missing is_locked to false', () {
+        final row = Map<String, dynamic>.from(
+          EstimationTestDataMapFactory.createFakeEstimationData(),
+        )..remove('is_locked');
+
+        final dto = CostEstimateDto.fromRow(row);
+
+        expect(dto.isLocked, isFalse);
+      });
+
+      test('maps the remaining columns identically to fromJson', () {
+        final row = sqliteRow(isLocked: 1);
+
+        final expected = CostEstimateDto.fromJson({...row, 'is_locked': true});
+
+        expect(CostEstimateDto.fromRow(row), equals(expected));
+      });
+    });
   });
 }
