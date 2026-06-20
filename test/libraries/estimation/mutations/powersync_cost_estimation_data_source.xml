@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- POWERSYNC COST ESTIMATION DATA SOURCE MUTATION TESTING -->
+    <!-- Targets: reactive read data source (watch + snapshot) over local SQLite -->
+
+    <files>
+        <file>lib/libraries/estimation/data/data_source/powersync_cost_estimation_data_source_impl.dart</file>
+    </files>
+
+    <exclude>
+        <!-- Exclude logging statements -->
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+
+        <!-- Exclude try-catch structure -->
+        <regex pattern="try\s*{" dotAll="false"/>
+        <regex pattern="catch\s*\(" dotAll="false"/>
+
+        <!-- Exclude override annotations -->
+        <regex pattern="@override" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- RULE 1: In _buildSelectSql, pick the wrong ORDER BY column for sortBy -->
+        <regex pattern="sortBy == EstimationSortOption\.updatedAt\s*\?\s*'updated_at'\s*:\s*'created_at'" dotAll="true" id="ds.sort.wrong_order_column">
+            <mutation text="sortBy == EstimationSortOption.updatedAt ? 'created_at' : 'updated_at'"/>
+        </regex>
+
+        <!-- RULE 2: In _buildSelectSql, invert the sort direction -->
+        <regex pattern="ascending \? 'ASC' : 'DESC'" dotAll="true" id="ds.sort.invert_direction">
+            <mutation text="ascending ? 'DESC' : 'ASC'"/>
+        </regex>
+
+        <!-- RULE 3: In _buildSelectSql, invert the LIMIT clause inclusion -->
+        <regex pattern="limited \? ' LIMIT \?' : ''" dotAll="true" id="ds.sort.invert_limit_clause">
+            <mutation text="limited ? '' : ' LIMIT ?'"/>
+        </regex>
+
+        <!-- RULE 4: In _selectParameters, invert the limit-binding guard -->
+        <regex pattern="if \(limit != null\) limit" dotAll="true" id="ds.params.invert_limit_guard">
+            <mutation text="if (limit == null) limit"/>
+        </regex>
+
+        <!-- RULE 5: In watchEstimations, drop the row->DTO mapping -->
+        <regex pattern="\.map\(\(rows\) =&gt; rows\.map\(CostEstimateDto\.fromRow\)\.toList\(\)\)" dotAll="true" id="ds.watch.skip_row_mapping">
+            <mutation text=".map((rows) =&gt; &lt;CostEstimateDto&gt;[])"/>
+        </regex>
+
+        <!-- RULE 6: In getEstimations, drop the row->DTO mapping -->
+        <regex pattern="return rows\.map\(CostEstimateDto\.fromRow\)\.toList\(\);" dotAll="true" id="ds.snapshot.skip_row_mapping">
+            <mutation text="return &lt;CostEstimateDto&gt;[];"/>
+        </regex>
+
+        <!-- RULE 7: In watchEstimations onCancel, fail to release the sync stream -->
+        <regex pattern="currentHandle\?\.unsubscribe\(\);" dotAll="true" id="ds.watch.skip_stream_release">
+            <mutation text="// currentHandle?.unsubscribe();"/>
+        </regex>
+
+        <!-- RULE 8: In watchEstimations, swallow the sync-stream activation error -->
+        <regex pattern="controller\.addError\(error, stackTrace\);" dotAll="true" id="ds.watch.swallow_activation_error">
+            <mutation text="// controller.addError(error, stackTrace);"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="powersync_cost_estimation_data_source" expected-return="0">flutter test test/libraries/estimation/units/data/data_source/powersync_cost_estimation_data_source_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
