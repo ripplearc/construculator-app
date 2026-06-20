@@ -1,8 +1,11 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/estimation/data/data_source/interfaces/cost_estimation_data_source.dart';
+import 'package:construculator/libraries/estimation/data/data_source/interfaces/powersync_cost_estimation_data_source.dart';
+import 'package:construculator/libraries/estimation/data/data_source/powersync_cost_estimation_data_source_impl.dart';
 import 'package:construculator/libraries/estimation/data/data_source/remote_cost_estimation_data_source.dart';
 import 'package:construculator/libraries/estimation/data/repositories/cost_estimation_repository_impl.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
+import 'package:construculator/libraries/powersync/powersync_module.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -17,12 +20,19 @@ class EstimationLibraryModule extends Module {
   EstimationLibraryModule(this.appBootstrap);
 
   @override
-  List<Module> get imports => [SupabaseModule(appBootstrap)];
+  List<Module> get imports => [
+    SupabaseModule(appBootstrap),
+    PowerSyncModule(appBootstrap),
+  ];
 
   @override
   void exportedBinds(Injector i) {
     i.addLazySingleton<CostEstimationDataSource>(
       () => RemoteCostEstimationDataSource(supabaseWrapper: i.get()),
+    );
+
+    i.addLazySingleton<PowerSyncCostEstimationDataSource>(
+      () => PowerSyncCostEstimationDataSourceImpl(wrapper: i.get()),
     );
 
     i.addLazySingleton<CostEstimationRepository>(
