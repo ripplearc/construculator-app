@@ -1,7 +1,7 @@
 # RULE 14: Accessibility (A11y) Testing
 
-## Rule ID
-RULE_14
+## Name
+Accessibility
 
 ## Category
 Testing - Accessibility

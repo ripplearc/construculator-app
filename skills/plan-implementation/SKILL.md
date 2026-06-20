@@ -2,7 +2,7 @@
 name: plan-implementation
 description: |
   Stage 2: Implementation Planning - Decide what to create before writing code.
-  Applies RULE_1 (digestible PRs), RULE_2 (naming), checks CoreUI availability.
+  Applies the Digestible PR and Naming & Abstraction rules; checks CoreUI availability.
 
   Trigger: "plan implementation" (implementation planning intent), "plan this feature" (ticket-to-file planning intent), "what files do we need for implementation"
 
@@ -46,7 +46,7 @@ Agent's blueprint phase before coding. Outputs: file paths, class names, depende
    - Do not ask for info that is unambiguous from the ticket context
    - If multiple layers are touched, ask for all their inputs together before proceeding
 
-3. **Apply RULE_2** (naming conventions) → Load `skills/rules/02-naming-conventions.md`
+3. **Apply Naming & Abstraction** (naming conventions) → Load `skills/rules/02-naming-conventions.md`
    - Use suffix table + decision tree to name all classes
    - Apply abstraction naming: abstract at UI/domain, explicit at data layer
    - Output: precise class names with responsibilities
@@ -62,15 +62,15 @@ Agent's blueprint phase before coding. Outputs: file paths, class names, depende
      data/data_source/      → remote|local_{noun}_data_source.dart
    ```
 
-5. **Check CoreUI availability** (if presentation layer touched) → See RULE_4
+5. **Check CoreUI availability** (if presentation layer touched) → See CoreUI Components
    - Identify required components from ticket (buttons, inputs, icons, cards, etc.)
    - Check `skills/references/coreui-api.md` (⚠️ may be outdated - use as quick reference only)
    - **Source of truth:** https://github.com/ripplearc/coreui#readme (always check live README)
-   - If component missing: flag as blocker with RULE_4-compliant options only:
+   - If component missing: flag as blocker with CoreUI-compliant options only:
      1. Use existing CoreUI component with custom layout
      2. Request CoreUI team to add it
      3. Build custom component following CoreUI design patterns
-   - ❌ Never suggest "use Material temporarily" (violates RULE_4 Critical severity)
+   - ❌ Never suggest "use Material temporarily" (violates CoreUI Components Critical severity)
 
 6. **Verify dependencies** (no layer violations)
    - BLoC depends on UseCase (not Repository/DataSource)
@@ -78,7 +78,7 @@ Agent's blueprint phase before coding. Outputs: file paths, class names, depende
    - RepositoryImpl depends on DataSource
    - Flag violations if found
 
-7. **Apply RULE_1** (digestible PRs) → Load `skills/rules/01-digestible-pr.md`
+7. **Apply Digestible PR** (digestible PRs) → Load `skills/rules/01-digestible-pr.md`
    - **Estimate production LOC** using this heuristic (before code is written):
 
      | Class Type | Typical LOC |
@@ -117,7 +117,7 @@ Agent's blueprint phase before coding. Outputs: file paths, class names, depende
 ```markdown
 # Plan: CA-123 - Add estimation screen
 
-## Classes (RULE_2 applied)
+## Classes (Naming & Abstraction applied)
 - EstimationPage (lib/features/estimation/presentation/pages/estimation_page.dart)
 - EstimationBloc/Event/State (lib/features/estimation/presentation/bloc/...)
 - GetEstimationsUseCase (lib/features/estimation/domain/usecases/get_estimations_usecase.dart)
@@ -125,9 +125,9 @@ Agent's blueprint phase before coding. Outputs: file paths, class names, depende
 - EstimationRepositoryImpl (lib/features/estimation/data/repositories/...)
 - RemoteEstimationDataSource (lib/features/estimation/data/data_source/...)
 
-## CoreUI Check (RULE_4)
+## CoreUI Check
 ✅ CoreButton, CoreTextField, CoreLoadingIndicator
-❌ CoreCard (BLOCKER) → Options per RULE_4:
+❌ CoreCard (BLOCKER) → Options per CoreUI Components:
   1. Use existing CoreUI component with custom layout
   2. Request CoreUI team to add CoreCard
   3. Build custom CoreCard following CoreUI patterns
@@ -137,7 +137,7 @@ Agent's blueprint phase before coding. Outputs: file paths, class names, depende
 - GetEstimationsUseCase → EstimationRepository ✅
 - EstimationRepositoryImpl → RemoteEstimationDataSource ✅
 
-## PR Strategy (RULE_1)
+## PR Strategy (Digestible PR)
 Estimated: ~420 LOC production code → Split into 2 PRs
 
 PR1 (Domain + Data): ~150 LOC
@@ -155,9 +155,9 @@ PR2 (Presentation): ~270 LOC
 
 ## References
 
-- **RULE_1:** `skills/rules/01-digestible-pr.md` (PR size + split strategies)
-- **RULE_2:** `skills/rules/02-naming-conventions.md` (suffix + abstraction naming)
-- **RULE_4:** `skills/rules/04-coreui-components.md` (CoreUI usage + missing component handling)
+- **Digestible PR:** `skills/rules/01-digestible-pr.md` (PR size + split strategies)
+- **Naming & Abstraction:** `skills/rules/02-naming-conventions.md` (suffix + abstraction naming)
+- **CoreUI Components:** `skills/rules/04-coreui-components.md` (CoreUI usage + missing component handling)
 - **CoreUI API:** `skills/references/coreui-api.md` (quick reference - may be outdated)
 - **CoreUI Source of Truth:** https://github.com/ripplearc/coreui#readme (always check live)
 - **Next skills:** `code-presentation/`, `code-domain/`, `code-data/` (planned — coming in next PR)

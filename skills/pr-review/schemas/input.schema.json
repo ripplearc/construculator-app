@@ -18,29 +18,29 @@
       "items": {
         "type": "string",
         "enum": [
-          "RULE_1",
-          "RULE_2",
-          "RULE_3",
-          "RULE_4",
-          "RULE_5",
-          "RULE_6",
-          "RULE_7",
-          "RULE_8",
-          "RULE_9",
-          "RULE_10",
-          "RULE_13",
-          "RULE_14",
-          "RULE_15"
+          "Digestible PR",
+          "Naming & Abstraction",
+          "Test Double Pattern",
+          "CoreUI Components",
+          "UI / Business Separation",
+          "Stream Lifecycle",
+          "Self-Documenting Code",
+          "Widget Test Finders",
+          "Unit Test Behavior",
+          "Localization",
+          "Mutation Testing",
+          "Accessibility",
+          "Sentry Logging"
         ]
       },
-      "description": "Optional subset of rules to apply. Any active rule ID is valid; RULE_11 and RULE_12 are deprecated (covered by RULE_2 and RULE_5). When omitted, all applicable rules auto-run.",
+      "description": "Optional subset of rules to apply, by name. Any active rule name is valid; \"Abstraction Naming\" and \"State Derivation\" are deprecated (covered by \"Naming & Abstraction\" and \"UI / Business Separation\"). When omitted, all applicable rules auto-run.",
       "default": null
     },
     "output_format": {
       "type": "string",
       "enum": ["json", "markdown", "both"],
       "description": "Preferred output format (json for agent automation, markdown for humans)",
-      "default": "json"
+      "default": "markdown"
     },
     "max_file_size_kb": {
       "type": "number",
@@ -48,6 +48,11 @@
       "maximum": 1000,
       "description": "Skip files larger than this size",
       "default": 100
+    },
+    "output_dir": {
+      "type": "string",
+      "description": "Output directory for the .md review file (repo-root-relative)",
+      "default": "reviews/"
     }
   },
   "additionalProperties": false

@@ -2,8 +2,8 @@
 name: pr-review
 description: |
   Modular PR review for Flutter/Dart changes. Auto-detects which rules apply to
-  each changed file, applies the full rule set in skills/rules/ (RULE_1–RULE_15),
-  and returns a copy-paste-ready markdown PR description + review table.
+  each changed file, applies the full rule set in skills/rules/ (referenced by
+  name), and returns a copy-paste-ready markdown PR description + review table.
 
   Use when a user asks to review a PR, review a branch, compare branches, or
   check naming, CoreUI, testing, streams, localization, accessibility, logging,
@@ -27,24 +27,25 @@ The full rule set lives in `skills/rules/`. Each rule file owns its detection
 patterns (its `Detective` section), severity levels, and fix guidance — load a
 rule only when it's routed to a changed file.
 
-| Rule | Title | Applies to |
-|------|-------|-----------|
-| RULE_1 | Digestible PR | Production-code diff size (PR-level) |
-| RULE_2 | Naming & Abstraction | `lib/**/*.dart` |
-| RULE_3 | Test Double Pattern | `test/**/*.dart` |
-| RULE_4 | CoreUI Components | `**/presentation/`, `lib/app/` |
-| RULE_5 | UI / Business Separation | `**/presentation/`, `lib/app/` |
-| RULE_6 | Stream Lifecycle | Stream-owning `lib/**` (Repo/DataSource/BLoC/Service) |
-| RULE_7 | Self-Documenting Code | `lib/**/*.dart` |
-| RULE_8 | Widget Test Finders | `test/**/widgets/`, `testWidgets(` |
-| RULE_9 | Unit Test Behavior | `test/features/**` unit tests |
-| RULE_10 | Localization | `**/presentation/`, `lib/app/` |
-| RULE_13 | Mutation Testing | **Gated:** logic-heavy domain/data files |
-| RULE_14 | Accessibility | **Gated:** user-facing UI + `*_a11y_test.dart` |
-| RULE_15 | Sentry Logging | `lib/**` using `AppLogger` |
+| Rule | Applies to |
+|------|-----------|
+| Digestible PR | Production-code diff size (PR-level) |
+| Naming & Abstraction | `lib/**/*.dart` |
+| Test Double Pattern | `test/**/*.dart` |
+| CoreUI Components | `**/presentation/`, `lib/app/` |
+| UI / Business Separation | `**/presentation/`, `lib/app/` |
+| Stream Lifecycle | Stream-owning `lib/**` (Repo/DataSource/BLoC/Service) |
+| Self-Documenting Code | `lib/**/*.dart` |
+| Widget Test Finders | `test/**/widgets/`, `testWidgets(` |
+| Unit Test Behavior | `test/features/**` unit tests |
+| Localization | `**/presentation/`, `lib/app/` |
+| Mutation Testing | **Gated:** logic-heavy domain/data files |
+| Accessibility | **Gated:** user-facing UI + `*_a11y_test.dart` |
+| Sentry Logging | `lib/**` using `AppLogger` |
 
-`RULE_11`→`RULE_2` and `RULE_12`→`RULE_5` are deprecated; if a user passes them,
-map transparently and note it in `rules_skipped`.
+`Abstraction Naming`→`Naming & Abstraction` and `State Derivation`→`UI /
+Business Separation` are deprecated; if a user passes them, map transparently and
+note it in `rules_skipped`.
 
 ## Input
 
@@ -52,7 +53,7 @@ map transparently and note it in `rules_skipped`.
 |-------|----------|---------|-------|
 | `pr_branch` | yes | — | branch with changes |
 | `base_branch` | no | `main` | target branch |
-| `rules` | no | all | force a subset, e.g. `["RULE_2","RULE_6"]` |
+| `rules` | no | all | force a subset by name, e.g. `["Naming & Abstraction","Stream Lifecycle"]` |
 | `output_format` | no | `markdown` | `markdown` \| `json` \| `both` |
 | `output_dir` | no | `reviews/` | directory (repo-root-relative) the `.md` review file is written to |
 | `max_file_size_kb` | no | `100` | skip larger files (1–1000) |
@@ -70,15 +71,16 @@ On missing/invalid input, return an error object (see [Errors](#errors)).
    buckets come from `scripts/filter_files.sh`; content-derived buckets
    (`stream_owning`, `logic_heavy`, `logger_using`) are confirmed by grepping the
    file (e.g. `grep -lE "StreamController|\.listen\(" …`, `grep -l "AppLogger" …`).
-   RULE_1 always runs once over the production-code diff size.
+   `Digestible PR` always runs once over the production-code diff size.
 
-3. **Gate** RULE_13 and RULE_14:
-   - RULE_13 only if a logic-heavy file (3+ branches / math / data transforms)
-     changed — else skip: `"No logic-heavy code changed"`.
-   - RULE_14 only if an interactive presentation file changed; then require a
-     matching `*_a11y_test.dart` update and flag if missing — else skip:
+3. **Gate** `Mutation Testing` and `Accessibility`:
+   - `Mutation Testing` only if a logic-heavy file (3+ branches / math / data
+     transforms) changed — else skip: `"No logic-heavy code changed"`.
+   - `Accessibility` only if an interactive presentation file changed; then require
+     a matching `*_a11y_test.dart` update and flag if missing — else skip:
      `"No user-facing UI changed"`.
-   If the user passed `rules`, apply only those (after the 11→2 / 12→5 mapping);
+   If the user passed `rules`, apply only those (after the `Abstraction Naming`→
+   `Naming & Abstraction` / `State Derivation`→`UI / Business Separation` mapping);
    record the rest in `rules_skipped` with reason `"User specified rules: [...]"`.
 
 4. **Apply** each routed rule: `cat` its module from `skills/rules/`, read the
@@ -119,7 +121,7 @@ JSON, then `---`, then the markdown. With `json`, skip the markdown.
 
 **Type:** <Feature | Bugfix | Refactor | Chore | Test | Docs> ·
 **Size:** <XS | S | M | L> (<N> production lines) ·
-**Rules applied:** <rule IDs>
+**Rules applied:** <rule names>
 
 ### What changed
 - <key change tied to a concrete file/feature>
@@ -138,12 +140,12 @@ JSON, then `---`, then the markdown. With `json`, skip the markdown.
 **Status (author fills):** ✅ Addressed · 📋 Future Story (add YouTrack ID) ·
 ❌ Disagree (justify) · 🔄 In Progress
 
-<!-- Skipped: RULE_X (reason), RULE_Y (reason) -->
+<!-- Skipped: <rule name> (reason), <rule name> (reason) -->
 ````
 
 Sort rows by severity (critical→suggestion) then file; number the `#` column;
 collapse newlines and escape `|` as `\|` in cells; omit `:<line>` for PR-level
-issues (RULE_1); build the blockquote from `statistics.by_severity`.
+issues (`Digestible PR`); build the blockquote from `statistics.by_severity`.
 
 ### Saving the review file
 
@@ -180,6 +182,6 @@ rule module means the file was likely deleted.
 
 - Scripts are idempotent. The legacy monolithic `scripts/review_pr.sh` is
   retired; keep it only as a historical reference for detection patterns.
-- Always record gate results (RULE_13/RULE_14) in `rules_applied` or
-  `rules_skipped` so coverage is auditable.
+- Always record gate results (`Mutation Testing`/`Accessibility`) in
+  `rules_applied` or `rules_skipped` so coverage is auditable.
 

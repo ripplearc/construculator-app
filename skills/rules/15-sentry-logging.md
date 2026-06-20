@@ -1,7 +1,7 @@
 # RULE 15: Judicious Sentry Error Reporting
 
-## Rule ID
-RULE_15
+## Name
+Sentry Logging
 
 ## Category
 Error Handling & Monitoring
@@ -147,7 +147,7 @@ Inside a `catch` block, branch on the error code/type before choosing a log leve
 
 - [Sentry Best Practices](https://docs.sentry.io/platforms/flutter/best-practices/)
 - Review Script Lines: 519-539 in `scripts/review_pr.sh`
-- Related: RULE_5 (UI/Business separation), `code-data` skill (error mapping table)
+- Related: UI / Business Separation, `code-data` skill (error mapping table)
 
 ## Notes
 

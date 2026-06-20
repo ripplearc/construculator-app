@@ -1,7 +1,7 @@
 # RULE 4: CoreUI Components Usage
 
-## Rule ID
-RULE_4
+## Name
+CoreUI Components
 
 ## Category
 UI Components

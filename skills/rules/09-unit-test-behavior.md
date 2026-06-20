@@ -1,7 +1,7 @@
 # RULE 9: Unit Tests — Behavior Over Implementation
 
-## Rule ID
-RULE_9
+## Name
+Unit Test Behavior
 
 ## Category
 Testing - Unit Tests
@@ -40,7 +40,7 @@ What aspect of this class am I testing?
 ├─ Side effects (DB/API writes)?     → Verify data written to fake boundary ✅
 ├─ Error handling?                   → Trigger error, assert on error output ✅
 ├─ Private method called?            → DON'T TEST — implementation detail ❌
-└─ Method call count?                → DON'T TEST — use fakes (RULE_3), not mocks ❌
+└─ Method call count?                → DON'T TEST — use fakes (Test Double Pattern), not mocks ❌
 ```
 
 ### Canonical Examples
@@ -113,13 +113,13 @@ Apply the same shape for error paths (trigger via fake, assert on returned `Left
 | `verify(mockRepo.save(any))` | Assert on fake boundary state instead | Critical |
 | `calculator._privateMethod()` | Test public API that uses it | Critical |
 | `expect(bloc._cache.length, 5)` | Assert on emitted state instead | Major |
-| `when(mock.method()).thenReturn(...)` | Use fakes (RULE_3) | Critical |
+| `when(mock.method()).thenReturn(...)` | Use fakes (Test Double Pattern) | Critical |
 | No `expect()` in test body | Add assertions on observable outputs | Major |
 | Test breaks on behavior-preserving refactor | Test is coupled to implementation; rewrite against public API | Major |
 
 ### Review Questions
 
-1. Does this test use `verify()` or `when()`? → Violation (use fakes per RULE_3).
+1. Does this test use `verify()` or `when()`? → Violation (use fakes per Test Double Pattern).
 2. Does this test access private methods/fields (`._name`)? → Violation.
 3. Would this test break if we refactored without changing behavior? → Coupled to implementation.
 4. Does this test assert on something a caller would observe? → If no, it's testing implementation.
@@ -128,7 +128,7 @@ Apply the same shape for error paths (trigger via fake, assert on returned `Left
 
 ## Summary: Suggested Fixes
 
-1. **Remove mocks** — replace with fakes (RULE_3).
+1. **Remove mocks** — replace with fakes (Test Double Pattern).
 2. **Test public APIs only** — drop tests of private methods/state.
 3. **Assert on outputs** — return values, emitted states, boundary effects.
 4. **Make tests refactor-safe** — pass after internal refactoring.
@@ -136,7 +136,7 @@ Apply the same shape for error paths (trigger via fake, assert on returned `Left
 ## References
 
 - Review Script Lines: 391-403 in `scripts/review_pr.sh`
-- Related: RULE_3 (Test Double Pattern), RULE_8 (Widget Test Finders)
+- Related: Test Double Pattern, Widget Test Finders
 
 ## Notes
 
