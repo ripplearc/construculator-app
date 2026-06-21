@@ -31,6 +31,7 @@ dependencies:
   async: 2.13.0
   intl: 0.20.2
   sentry_flutter: ^9.15.0
+  powersync: 1.17.0
 
 dev_dependencies:
   flutter_test:
@@ -45,6 +46,11 @@ dev_dependencies:
   json_serializable: 6.9.5
   custom_lint: 0.7.5
   bloc_test: 10.0.0
+
+# powersync_core 1.8.0 uses `Deprecated.subclass` (requires Dart 3.9+),
+# but its SDK constraint wrongly claims ^3.4.3. Pin to 1.7.0 for Dart 3.8.0.
+dependency_overrides:
+  powersync_core: 1.7.0
 
 flutter:
   uses-material-design: true
