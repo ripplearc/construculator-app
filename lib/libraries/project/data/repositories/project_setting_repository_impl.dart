@@ -42,12 +42,6 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
   }
 
   @override
-  Stream<Either<Failure, Project>> watchProjectSetting(String projectId) {
-    // TODO(CA-245): wire to Supabase realtime once the data-source layer exposes it.
-    throw UnimplementedError('watchProjectSetting is not yet wired to remote');
-  }
-
-  @override
   Future<Either<Failure, Project>> updateProject(Project project) async {
     final hasPermission = _permissionDataSource.hasProjectPermission(
       project.id,

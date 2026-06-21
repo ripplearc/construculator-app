@@ -23,9 +23,6 @@ abstract class ProjectSettingRepository {
   /// [Failure] if the project is not found or a data error occurs.
   Future<Either<Failure, Project>> getProjectSetting(String projectId);
 
-  /// Watches live updates for the project identified by [projectId].
-  Stream<Either<Failure, Project>> watchProjectSetting(String projectId);
-
   /// Persists editable fields of [project] to remote storage.
   ///
   /// Checks [PermissionConstants.editProject] before delegating.

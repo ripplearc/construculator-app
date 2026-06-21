@@ -60,15 +60,11 @@ void main() {
       bloc.close();
     });
 
-    group('ProjectSettingsWatchStarted', () {
+    group('ProjectSettingsLoadRequested', () {
       blocTest<ProjectSettingsBloc, ProjectSettingsState>(
-        'emits [Loading, Loaded] when stream delivers a project',
+        'emits [Loading, Loaded] on load success',
         build: () => Modular.get<ProjectSettingsBloc>(),
-        act: (bloc) async {
-          bloc.add(const ProjectSettingsWatchStarted(testProjectId));
-          await fakeRepository.firstListenerReady;
-          fakeRepository.emitProject(tProject);
-        },
+        act: (bloc) => bloc.add(const ProjectSettingsLoadRequested(testProjectId)),
         expect: () => [
           const ProjectSettingsLoading(),
           isA<ProjectSettingsLoaded>()
@@ -82,15 +78,15 @@ void main() {
       );
 
       blocTest<ProjectSettingsBloc, ProjectSettingsState>(
-        'emits [Loading, Error] when stream delivers a failure',
-        build: () => Modular.get<ProjectSettingsBloc>(),
-        act: (bloc) async {
-          bloc.add(const ProjectSettingsWatchStarted(testProjectId));
-          await fakeRepository.firstListenerReady;
-          fakeRepository.emitFailure(
-            const ProjectFailure(errorType: ProjectErrorType.connectionError),
+        'emits [Loading, Error] on load failure',
+        build: () {
+          fakeRepository.shouldFailOnGet = true;
+          fakeRepository.failureToReturn = const ProjectFailure(
+            errorType: ProjectErrorType.connectionError,
           );
+          return Modular.get<ProjectSettingsBloc>();
         },
+        act: (bloc) => bloc.add(const ProjectSettingsLoadRequested(testProjectId)),
         expect: () => [
           const ProjectSettingsLoading(),
           isA<ProjectSettingsError>().having(
@@ -98,67 +94,6 @@ void main() {
             'failure',
             isA<ProjectFailure>(),
           ),
-        ],
-      );
-
-      blocTest<ProjectSettingsBloc, ProjectSettingsState>(
-        'emits [Loading, Error] when stream emits an error event',
-        build: () => Modular.get<ProjectSettingsBloc>(),
-        act: (bloc) async {
-          bloc.add(const ProjectSettingsWatchStarted(testProjectId));
-          await fakeRepository.firstListenerReady;
-          fakeRepository.emitStreamError(Exception('unexpected stream error'));
-        },
-        expect: () => [
-          const ProjectSettingsLoading(),
-          isA<ProjectSettingsError>().having(
-            (s) => s.failure,
-            'failure',
-            isA<UnexpectedFailure>(),
-          ),
-        ],
-      );
-
-      blocTest<ProjectSettingsBloc, ProjectSettingsState>(
-        'preserves lastProject in Error when previously in Loaded state',
-        build: () => Modular.get<ProjectSettingsBloc>(),
-        act: (bloc) async {
-          bloc.add(const ProjectSettingsWatchStarted(testProjectId));
-          await fakeRepository.firstListenerReady;
-          fakeRepository.emitProject(tProject);
-          await bloc.stream.firstWhere((s) => s is ProjectSettingsLoaded);
-          fakeRepository.emitFailure(
-            const ProjectFailure(errorType: ProjectErrorType.connectionError),
-          );
-        },
-        expect: () => [
-          const ProjectSettingsLoading(),
-          isA<ProjectSettingsLoaded>(),
-          isA<ProjectSettingsError>()
-              .having((s) => s.lastProject, 'lastProject', tProject),
-        ],
-      );
-
-      blocTest<ProjectSettingsBloc, ProjectSettingsState>(
-        'preserves lastProject from Editing state when stream fails',
-        build: () => Modular.get<ProjectSettingsBloc>(),
-        act: (bloc) async {
-          bloc.add(const ProjectSettingsWatchStarted(testProjectId));
-          await fakeRepository.firstListenerReady;
-          fakeRepository.emitProject(tProject);
-          await bloc.stream.firstWhere((s) => s is ProjectSettingsLoaded);
-          bloc.add(ProjectSettingsEditingStarted(tProject));
-          await bloc.stream.firstWhere((s) => s is ProjectSettingsEditing);
-          fakeRepository.emitFailure(
-            const ProjectFailure(errorType: ProjectErrorType.connectionError),
-          );
-        },
-        expect: () => [
-          const ProjectSettingsLoading(),
-          isA<ProjectSettingsLoaded>(),
-          isA<ProjectSettingsEditing>(),
-          isA<ProjectSettingsError>()
-              .having((s) => s.lastProject, 'lastProject', tProject),
         ],
       );
     });
@@ -237,26 +172,6 @@ void main() {
         act: (bloc) =>
             bloc.add(const ProjectSettingsDeleteRequested(testProjectId)),
         expect: () => [
-          const ProjectSettingsDeleteInProgress(),
-          const ProjectSettingsInitial(),
-        ],
-      );
-
-      blocTest<ProjectSettingsBloc, ProjectSettingsState>(
-        'does not emit stale stream events after delete success',
-        build: () => Modular.get<ProjectSettingsBloc>(),
-        act: (bloc) async {
-          bloc.add(const ProjectSettingsWatchStarted(testProjectId));
-          await fakeRepository.firstListenerReady;
-          fakeRepository.emitProject(tProject);
-          await bloc.stream.firstWhere((s) => s is ProjectSettingsLoaded);
-          bloc.add(const ProjectSettingsDeleteRequested(testProjectId));
-          await bloc.stream.firstWhere((s) => s is ProjectSettingsInitial);
-          fakeRepository.emitProject(tProject);
-        },
-        expect: () => [
-          const ProjectSettingsLoading(),
-          isA<ProjectSettingsLoaded>(),
           const ProjectSettingsDeleteInProgress(),
           const ProjectSettingsInitial(),
         ],

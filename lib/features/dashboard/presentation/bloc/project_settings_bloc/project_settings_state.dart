@@ -13,12 +13,12 @@ class ProjectSettingsInitial extends ProjectSettingsState {
   const ProjectSettingsInitial();
 }
 
-/// Emitted while the project settings stream is being established.
+/// Emitted while the project settings are being fetched.
 class ProjectSettingsLoading extends ProjectSettingsState {
   const ProjectSettingsLoading();
 }
 
-/// Emitted when the stream delivers a successful project snapshot.
+/// Emitted when the project settings are successfully loaded.
 class ProjectSettingsLoaded extends ProjectSettingsState {
   /// The currently loaded project.
   final Project project;

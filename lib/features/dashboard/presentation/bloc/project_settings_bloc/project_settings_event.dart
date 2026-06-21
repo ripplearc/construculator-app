@@ -8,12 +8,12 @@ abstract class ProjectSettingsEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Starts (or restarts) the project settings stream for [projectId].
-class ProjectSettingsWatchStarted extends ProjectSettingsEvent {
-  /// The identifier of the project to watch.
+/// Requests a one-time load of the project settings for [projectId].
+class ProjectSettingsLoadRequested extends ProjectSettingsEvent {
+  /// The identifier of the project to load.
   final String projectId;
 
-  const ProjectSettingsWatchStarted(this.projectId);
+  const ProjectSettingsLoadRequested(this.projectId);
 
   @override
   List<Object?> get props => [projectId];
@@ -52,11 +52,3 @@ class ProjectSettingsDeleteRequested extends ProjectSettingsEvent {
   List<Object?> get props => [projectId];
 }
 
-class _ProjectSettingsStreamUpdated extends ProjectSettingsEvent {
-  final Either<Failure, Project> result;
-
-  const _ProjectSettingsStreamUpdated(this.result);
-
-  @override
-  List<Object?> get props => [result];
-}

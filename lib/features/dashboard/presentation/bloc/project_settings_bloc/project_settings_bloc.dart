@@ -1,9 +1,6 @@
-import 'dart:async';
-
-import 'package:construculator/libraries/either/either.dart';
-import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_setting_repository.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -15,32 +12,26 @@ part 'project_settings_state.dart';
 class ProjectSettingsBloc
     extends Bloc<ProjectSettingsEvent, ProjectSettingsState> {
   final ProjectSettingRepository _repository;
-  StreamSubscription<Either<Failure, Project>>? _subscription;
 
   ProjectSettingsBloc({required ProjectSettingRepository repository})
       : _repository = repository,
         super(const ProjectSettingsInitial()) {
-    on<ProjectSettingsWatchStarted>(_onWatchStarted);
+    on<ProjectSettingsLoadRequested>(_onLoadRequested);
     on<ProjectSettingsEditingStarted>(_onEditingStarted);
     on<ProjectSettingsUpdateSubmitted>(_onUpdateSubmitted);
     on<ProjectSettingsDeleteRequested>(_onDeleteRequested);
-    on<_ProjectSettingsStreamUpdated>(_onStreamUpdated);
   }
 
-  Future<void> _onWatchStarted(
-    ProjectSettingsWatchStarted event,
+  Future<void> _onLoadRequested(
+    ProjectSettingsLoadRequested event,
     Emitter<ProjectSettingsState> emit,
   ) async {
     emit(const ProjectSettingsLoading());
-    await _subscription?.cancel();
-    _subscription = _repository
-        .watchProjectSetting(event.projectId)
-        .listen(
-          (result) => add(_ProjectSettingsStreamUpdated(result)),
-          onError: (Object error) => add(
-            _ProjectSettingsStreamUpdated(Left(UnexpectedFailure())),
-          ),
-        );
+    final result = await _repository.getProjectSetting(event.projectId);
+    result.fold(
+      (failure) => emit(ProjectSettingsError(failure: failure)),
+      (project) => emit(ProjectSettingsLoaded(project)),
+    );
   }
 
   void _onEditingStarted(
@@ -90,41 +81,11 @@ class ProjectSettingsBloc
     emit(const ProjectSettingsDeleteInProgress());
 
     final result = await _repository.deleteProject(event.projectId);
-    await result.fold(
-      (failure) async => emit(
-        ProjectSettingsError(failure: failure, lastProject: lastProject),
-      ),
-      (_) async {
-        await _subscription?.cancel();
-        _subscription = null;
-        emit(const ProjectSettingsInitial());
-      },
-    );
-  }
-
-  void _onStreamUpdated(
-    _ProjectSettingsStreamUpdated event,
-    Emitter<ProjectSettingsState> emit,
-  ) {
-    final currentState = state;
-    final lastProject = switch (currentState) {
-      ProjectSettingsLoaded(:final project) => project,
-      ProjectSettingsEditing(:final originalProject) => originalProject,
-      _ => null,
-    };
-
-    event.result.fold(
+    result.fold(
       (failure) => emit(
         ProjectSettingsError(failure: failure, lastProject: lastProject),
       ),
-      (project) => emit(ProjectSettingsLoaded(project)),
+      (_) => emit(const ProjectSettingsInitial()),
     );
-  }
-
-  @override
-  Future<void> close() async {
-    await _subscription?.cancel();
-    _subscription = null;
-    return super.close();
   }
 }
