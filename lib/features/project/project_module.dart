@@ -37,5 +37,10 @@ void _registerDependencies(Injector i) {
     () => GetProjectHeaderUseCase(i(), i()),
   );
 
-  i.add<GetProjectBloc>(() => GetProjectBloc(getProjectHeaderUseCase: i()));
+  i.add<GetProjectBloc>(
+    () => GetProjectBloc(
+      getProjectHeaderUseCase: i(),
+      currentProjectNotifier: i(),
+    ),
+  );
 }

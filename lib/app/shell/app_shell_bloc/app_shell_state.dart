@@ -14,7 +14,6 @@ class AppShellState extends Equatable {
     required this.loadedTabIndexes,
   });
 
-  /// Creates a copy of this state, replacing the provided properties with new values.
   AppShellState copyWith({int? selectedTabIndex, Set<int>? loadedTabIndexes}) {
     return AppShellState(
       selectedTabIndex: selectedTabIndex ?? this.selectedTabIndex,
@@ -23,5 +22,5 @@ class AppShellState extends Equatable {
   }
 
   @override
-  List<Object> get props => [selectedTabIndex, loadedTabIndexes];
+  List<Object?> get props => [selectedTabIndex, loadedTabIndexes];
 }

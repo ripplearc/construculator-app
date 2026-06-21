@@ -4,33 +4,69 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-class ProjectHeaderAppBar extends StatelessWidget
-    implements PreferredSizeWidget {
-  final String projectId;
-
-  /// The bloc used to fetch and stream the project details shown in the header.
-  final GetProjectBloc getProjectBloc;
-
+class ProjectHeaderAppBar extends StatefulWidget implements PreferredSizeWidget {
+  final GetProjectBloc Function() getProjectBlocFactory;
   final VoidCallback? onProjectTap;
   final VoidCallback? onSearchTap;
   final VoidCallback? onNotificationTap;
 
   const ProjectHeaderAppBar({
     super.key,
-    required this.projectId,
-    required this.getProjectBloc,
+    required this.getProjectBlocFactory,
     this.onProjectTap,
     this.onSearchTap,
     this.onNotificationTap,
   });
 
   @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
+  State<ProjectHeaderAppBar> createState() => _ProjectHeaderAppBarState();
+}
+
+class _ProjectHeaderAppBarState extends State<ProjectHeaderAppBar> {
+  late final GetProjectBloc _bloc;
+
+  @override
+  void initState() {
+    super.initState();
+    _bloc = widget.getProjectBlocFactory();
+    _bloc.add(const GetProjectWatchStarted());
+  }
+
+  @override
+  void dispose() {
+    _bloc.close();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final appColorTheme = context.colorTheme;
     return BlocProvider.value(
-      value: getProjectBloc..add(GetProjectByIdLoadRequested(projectId)),
-      child: Builder(
-        builder: (context) {
+      value: _bloc,
+      child: BlocBuilder<GetProjectBloc, GetProjectState>(
+        builder: (context, state) {
+          if (state is GetProjectInitial) {
+            return Container(
+              decoration: BoxDecoration(
+                color: appColorTheme.pageBackground,
+                boxShadow: CoreShadows.medium,
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: CoreSpacing.space4,
+                vertical: CoreSpacing.space2,
+              ),
+              child: AppBar(
+                backgroundColor: appColorTheme.pageBackground,
+                elevation: 0,
+                centerTitle: true,
+                titleSpacing: 0,
+                title: Text(context.l10n.appTitle),
+              ),
+            );
+          }
           return PhysicalModel(
             color: appColorTheme.pageBackground,
             elevation: 0,
@@ -47,49 +83,33 @@ class ProjectHeaderAppBar extends StatelessWidget
                 elevation: 0,
                 scrolledUnderElevation: 0,
                 titleSpacing: 0,
-                title: Semantics(
-                  button: onProjectTap != null,
-                  label: onProjectTap != null
-                      ? context.l10n.projectSelectorSemanticLabel
-                      : null,
-                  child: InkWell(
-                    onTap: onProjectTap,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(minHeight: 48),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(child: _buildProjectName()),
-                          const SizedBox(width: 4),
-                          CoreIconWidget(
-                            icon: CoreIcons.arrowDown,
-                            color: appColorTheme.iconGrayMid,
-                            size: 24,
-                          ),
-                        ],
+                title: InkWell(
+                  onTap: widget.onProjectTap,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(child: _buildProjectName()),
+                      const SizedBox(width: 4),
+                      CoreIconWidget(
+                        icon: CoreIcons.arrowDown,
+                        color: appColorTheme.iconGrayMid,
+                        size: 24,
                       ),
-                    ),
+                    ],
                   ),
                 ),
                 actions: [
-                  Semantics(
-                    label: context.l10n.dashboardSearchSemanticLabel,
-                    button: onSearchTap != null,
-                    onTap: onSearchTap,
-                    child: ExcludeSemantics(
-                      child: CoreIconWidget(
-                        key: const Key('project_header_search_button'),
-                        icon: CoreIcons.search,
-                        size: 24,
-                        padding: const EdgeInsets.all(CoreSpacing.space3),
-                        onTap: onSearchTap,
-                        color: appColorTheme.iconDark,
-                      ),
-                    ),
+                  CoreIconWidget(
+                    key: const Key('project_header_search_button'),
+                    icon: CoreIcons.search,
+                    size: 24,
+                    padding: const EdgeInsets.all(CoreSpacing.space3),
+                    onTap: widget.onSearchTap,
+                    color: appColorTheme.iconDark,
                   ),
                   CoreIconWidget(
                     key: const Key('project_header_notification_button'),
-                    onTap: onNotificationTap,
+                    onTap: widget.onNotificationTap,
                     icon: CoreIcons.notification,
                     size: 24,
                     padding: const EdgeInsets.all(CoreSpacing.space3),
@@ -156,7 +176,4 @@ class ProjectHeaderAppBar extends StatelessWidget
       },
     );
   }
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }

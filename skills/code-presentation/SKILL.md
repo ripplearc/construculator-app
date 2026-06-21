@@ -87,7 +87,7 @@ In `{feature}_module.dart`, register BLoCs as transient: `i.add<{Feature}Bloc>((
 4. **Pages are passive** — Pages display BLoC-provided state and do not contain logic
 5. **BLoC coordinates state** — Derive computed values and state transitions in BLoC (RULE_12)
 6. **Routing (three-tier model):**
-   - Tab switching (within shell): `context.read<AppShellBloc>().add(AppShellTabSelected(index))`
+   - Tab switching (within shell): receive `AppShellBloc` as a constructor prop and call `appShellBloc.add(AppShellTabSelected(tab))` — `AppShellBloc` is not in the widget tree as a `BlocProvider`, so `context.read<AppShellBloc>()` will not work
    - Full-screen (above shell): `_router.push(...)` — resolve as `final _router = Modular.get<AppRouter>();` class field
    - In-tab drill-downs: `Navigator.of(context).push(...)` / `.pop()` — never AppRouter here
    - ⚠️ **Never use AppRouter for tab-switching or in-tab navigation** — it resets tab state and navigators.

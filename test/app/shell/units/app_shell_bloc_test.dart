@@ -13,8 +13,8 @@ void main() {
 
   setUp(() {
     Modular.init(ShellModule(FakeAppBootstrapFactory.create()));
-    bloc = Modular.get<AppShellBloc>();
     tabModuleManager = Modular.get<TabModuleManager>();
+    bloc = Modular.get<AppShellBloc>();
   });
 
   tearDown(() async {
@@ -23,18 +23,15 @@ void main() {
   });
 
   group('AppShellBloc', () {
-    test('loads home tab via the self-dispatched AppShellInitialized', () async {
-      final expected = AppShellState(
-        selectedTabIndex: ShellTab.home.index,
-        loadedTabIndexes: {ShellTab.home.index},
-      );
-      if (bloc.state != expected) {
-        await bloc.stream.firstWhere((s) => s == expected);
-      }
-
-      expect(bloc.state, expected);
-      expect(tabModuleManager.isLoaded(ShellTab.home), isTrue);
-    });
+    blocTest<AppShellBloc, AppShellState>(
+      'emits home tab loaded after AppShellInitialized',
+      build: () => Modular.get<AppShellBloc>(),
+      act: (b) => b.add(const AppShellInitialized()),
+      expect: () => [
+        const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {0}),
+      ],
+      verify: (_) => expect(tabModuleManager.isLoaded(ShellTab.home), isTrue),
+    );
 
     test('events expose value equality through props', () {
       expect(
@@ -59,10 +56,7 @@ void main() {
 
       expect(copiedState.selectedTabIndex, 1);
       expect(copiedState.loadedTabIndexes, {0, 1});
-      expect(copiedState.props, [
-        1,
-        {0, 1},
-      ]);
+      expect(copiedState.props, [1, {0, 1}]);
       expect(copiedState, equals(state));
     });
 

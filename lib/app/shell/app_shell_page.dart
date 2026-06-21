@@ -1,26 +1,19 @@
-import 'dart:async';
-
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/app/shell/widgets/tab_navigator.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
-import 'package:construculator/features/dashboard/presentation/widgets/projects_bottom_sheet.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/libraries/logging/app_logger.dart';
-import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
-import 'package:construculator/libraries/router/routes/global_search_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// The primary shell page for the application's authenticated interface.
@@ -28,32 +21,20 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// This widget provides the bottom navigation bar and manages the state of
 /// tab navigation using [AppShellBloc]. Module lazy-loading is orchestrated
 /// inside the BLoC, keeping this Page a pure presentation concern.
-///
-/// The app bar is driven by [CurrentProjectNotifier]: when a project is
-/// selected it renders [ProjectHeaderAppBar]; otherwise it shows the static
-/// app title.
 class AppShellPage extends StatefulWidget {
-  /// Builds the project header app bar displayed above the tab content.
+  final AppShellBloc appShellBloc;
   final ProjectUIProvider projectUIProvider;
 
-  // TODO: [CA-708] Remove once DashboardPage reads authNotifier, authManager, router, and recentEstimationsBloc from the module directly.
+  // TODO: [CA-708] Remove once DashboardPage reads these from the module directly.
   // https://ripplearc.youtrack.cloud/issue/CA-708
-
-  /// Notifies when the authenticated user's profile changes.
   final AuthNotifier authNotifier;
-
-  /// Manages authentication state and credentials.
   final AuthManager authManager;
-
-  /// Handles navigation across the top-level route stack.
   final AppRouter router;
-
-  /// Bloc that streams recent cost estimations into the home tab's
-  /// [DashboardPage].
   final RecentEstimationsBloc recentEstimationsBloc;
 
   const AppShellPage({
     super.key,
+    required this.appShellBloc,
     required this.projectUIProvider,
     required this.authNotifier,
     required this.authManager,
@@ -66,41 +47,21 @@ class AppShellPage extends StatefulWidget {
 }
 
 class _AppShellPageState extends State<AppShellPage> {
-  static final _logger = AppLogger().tag('AppShellPage');
-  late final CurrentProjectNotifier _currentProjectNotifier;
-  StreamSubscription<String?>? _projectSubscription;
-  String? _currentProjectId;
-
   final List<GlobalKey<NavigatorState>> _tabNavigatorKeys = List.generate(
     ShellTab.values.length,
     (_) => GlobalKey<NavigatorState>(),
   );
 
   @override
-  void initState() {
-    super.initState();
-    _currentProjectNotifier = Modular.get<CurrentProjectNotifier>();
-    _currentProjectId = _currentProjectNotifier.currentProjectId;
-    _projectSubscription = _currentProjectNotifier.onCurrentProjectChanged
-        .listen((id) {
-          if (mounted && _currentProjectId != id) {
-            setState(() => _currentProjectId = id);
-          }
-        });
-  }
-
-  @override
   void dispose() {
-    _projectSubscription?.cancel();
-    // Do not close _currentProjectNotifier — it is DI-owned.
+    widget.appShellBloc.close();
     super.dispose();
   }
 
   void _onPopInvoked(bool didPop) {
     if (didPop) return;
 
-    final bloc = BlocProvider.of<AppShellBloc>(context);
-    final state = bloc.state;
+    final state = widget.appShellBloc.state;
     final currentNavigator =
         _tabNavigatorKeys[state.selectedTabIndex].currentState;
 
@@ -110,7 +71,7 @@ class _AppShellPageState extends State<AppShellPage> {
     }
 
     if (state.selectedTabIndex != 0) {
-      bloc.add(const AppShellTabSelected(ShellTab.home));
+      widget.appShellBloc.add(const AppShellTabSelected(ShellTab.home));
       return;
     }
 
@@ -119,20 +80,20 @@ class _AppShellPageState extends State<AppShellPage> {
 
   void _handleTabTap(int index) {
     assert(index < ShellTab.values.length, 'Tab index $index out of range');
-    BlocProvider.of<AppShellBloc>(context).add(AppShellTabSelected(ShellTab.values[index]));
+    widget.appShellBloc.add(AppShellTabSelected(ShellTab.values[index]));
   }
 
   Widget _buildTabRoot(ShellTab tab) {
     switch (tab) {
+      // TODO: [CA-708] Remove once DashboardPage reads these from the module directly.
+      // https://ripplearc.youtrack.cloud/issue/CA-708
       case ShellTab.home:
-        // TODO: [CA-708] Remove authNotifier, authManager, router, and recentEstimationsBloc from DashboardPage once the page reads them from the module directly.
-        // https://ripplearc.youtrack.cloud/issue/CA-708
         return DashboardPage(
           authNotifier: widget.authNotifier,
           authManager: widget.authManager,
           router: widget.router,
           recentEstimationsBloc: widget.recentEstimationsBloc,
-          appShellBloc: BlocProvider.of<AppShellBloc>(context),
+          appShellBloc: widget.appShellBloc,
         );
       case ShellTab.calculations:
         return const CalculationsPage();
@@ -143,75 +104,16 @@ class _AppShellPageState extends State<AppShellPage> {
     }
   }
 
-  Future<void> _navigateToSearch() async {
-    if (!mounted) return;
-    try {
-      await widget.router.pushNamed(fullGlobalSearchRoute);
-    } catch (error, stackTrace) {
-      _logger.error(
-        'Failed to navigate to GlobalSearchPage: $error',
-        stackTrace.toString(),
-      );
-      if (mounted) {
-        CoreToast.showError(
-          context,
-          context.l10n.searchNavigationError,
-          context.l10n.closeButton,
-        );
-      }
-    }
-  }
-
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    final projectId = _currentProjectId ?? '';
-    if (projectId.isEmpty) {
-      final coreColors = Theme.of(context).coreColors;
-      return PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: Container(
-          decoration: BoxDecoration(
-            color: coreColors.pageBackground,
-            boxShadow: CoreShadows.medium,
-          ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: CoreSpacing.space4,
-            vertical: CoreSpacing.space2,
-          ),
-          child: AppBar(
-            backgroundColor: coreColors.pageBackground,
-            elevation: 0,
-            centerTitle: true,
-            titleSpacing: 0,
-            title: Text(context.l10n.appTitle),
-            actions: [
-              CoreIconWidget(
-                icon: CoreIcons.search,
-                semanticLabel: context.l10n.dashboardSearchSemanticLabel,
-                onTap: () => _navigateToSearch(),
-              ),
-              const SizedBox(width: CoreSpacing.space4),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return widget.projectUIProvider.buildProjectHeaderAppbar(
-      projectId: projectId,
-      onProjectTap: () => ProjectsBottomSheet.show(context),
-      onSearchTap: () => _navigateToSearch(),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AppShellBloc, AppShellState>(
+      bloc: widget.appShellBloc,
       builder: (context, state) {
         return PopScope(
           canPop: false,
           onPopInvokedWithResult: (didPop, _) => _onPopInvoked(didPop),
           child: Scaffold(
-            appBar: _buildAppBar(context),
+            appBar: widget.projectUIProvider.buildProjectHeaderAppbar(),
             body: Stack(
               children: List.generate(ShellTab.values.length, (index) {
                 final tab = ShellTab.values[index];
