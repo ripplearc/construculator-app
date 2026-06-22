@@ -9,6 +9,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// the member's name (or email when no name is available), and a Contributor
 /// role badge with a dropdown indicator.
 class InvitedMembersList extends StatelessWidget {
+  /// The list of members to display as read-only tiles.
   final List<InvitedMember> members;
 
   const InvitedMembersList({

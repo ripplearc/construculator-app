@@ -3,16 +3,20 @@ import 'package:construculator/libraries/members/domain/invited_member.dart';
 import 'package:construculator/features/members/presentation/widgets/invited_members_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
+  setUp(() async {
+    await loadAppFonts();
+  });
+
   Future<void> pumpWidget(
     WidgetTester tester, {
     required List<InvitedMember> members,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: CoreTheme.light(),
+        theme: createTestTheme(),
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
