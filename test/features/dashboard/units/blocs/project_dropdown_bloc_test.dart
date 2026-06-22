@@ -1,9 +1,9 @@
 import 'package:bloc_test/bloc_test.dart';
-import 'package:construculator/features/dashboard/dashboard_module.dart';
+import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
+import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/errors/failures.dart';
-import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
-import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
+import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -15,10 +15,30 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 
+// Minimal harness that provides ProjectDropdownBloc as a factory (i.add) so
+// blocTest can resolve a fresh instance per test via Modular.get without the
+// singleton lifecycle issue that addLazySingleton would cause.
+class _ProjectDropdownBlocTestModule extends Module {
+  final AppBootstrap appBootstrap;
+  _ProjectDropdownBlocTestModule(this.appBootstrap);
+
+  @override
+  List<Module> get imports => [
+    AuthLibraryModule(appBootstrap),
+    ProjectLibraryModule(appBootstrap),
+  ];
+
+  @override
+  void binds(Injector i) {
+    i.add<ProjectDropdownBloc>(
+      () => ProjectDropdownBloc(projectRepository: i(), authManager: i()),
+    );
+  }
+}
+
 void main() {
   group('ProjectDropdownBloc', () {
     late FakeSupabaseWrapper fakeSupabaseWrapper;
-    late FakeCurrentProjectNotifier fakeNotifier;
     late FakeClockImpl clock;
     const String testUserId = 'user-1';
 
@@ -27,11 +47,9 @@ void main() {
       final bootstrap = FakeAppBootstrapFactory.create(
         supabaseWrapper: FakeSupabaseWrapper(clock: clock),
       );
-      Modular.init(DashboardModule(bootstrap));
+      Modular.init(_ProjectDropdownBlocTestModule(bootstrap));
       fakeSupabaseWrapper =
           Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
-      fakeNotifier = FakeCurrentProjectNotifier();
-      Modular.replaceInstance<CurrentProjectNotifier>(fakeNotifier);
     });
 
     tearDownAll(() {
@@ -40,7 +58,6 @@ void main() {
 
     setUp(() {
       fakeSupabaseWrapper.reset();
-      fakeNotifier.reset();
       fakeSupabaseWrapper.setCurrentUser(
         FakeUser(
           id: testUserId,
@@ -672,131 +689,6 @@ void main() {
       );
     });
 
-    group('CurrentProjectNotifier integration', () {
-      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
-        'notifies CurrentProjectNotifier with first project on initial load',
-        build: () {
-          seedProjectsTable([
-            buildProjectMap(
-              id: 'project-1',
-              projectName: 'P1',
-              creatorUserId: testUserId,
-              updatedAt: DateTime(2025, 1, 1),
-            ),
-          ]);
-          return Modular.get<ProjectDropdownBloc>();
-        },
-        act: (bloc) async {
-          bloc.add(const ProjectDropdownStarted());
-          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
-        },
-        verify: (_) {
-          expect(fakeNotifier.currentProjectId, 'project-1');
-          expect(fakeNotifier.projectIdChangedEvents, ['project-1']);
-        },
-      );
-
-      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
-        'notifies CurrentProjectNotifier when user selects a different project',
-        build: () {
-          seedProjectsTable([
-            buildProjectMap(
-              id: 'project-1',
-              projectName: 'P1',
-              creatorUserId: testUserId,
-              updatedAt: DateTime(2025, 1, 2),
-            ),
-            buildProjectMap(
-              id: 'project-2',
-              projectName: 'P2',
-              creatorUserId: testUserId,
-              updatedAt: DateTime(2025, 1, 1),
-            ),
-          ]);
-          return Modular.get<ProjectDropdownBloc>();
-        },
-        act: (bloc) async {
-          bloc.add(const ProjectDropdownStarted());
-          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
-          bloc.add(const ProjectDropdownSelected('project-2'));
-          await bloc.stream.firstWhere(
-            (s) =>
-                s is ProjectDropdownLoadSuccess &&
-                s.selectedProject!.id == 'project-2',
-          );
-        },
-        verify: (_) {
-          expect(fakeNotifier.currentProjectId, 'project-2');
-          expect(fakeNotifier.projectIdChangedEvents, [
-            'project-1',
-            'project-2',
-          ]);
-        },
-      );
-
-      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
-        'does not re-notify CurrentProjectNotifier when selecting the already-current project',
-        build: () {
-          seedProjectsTable([
-            buildProjectMap(
-              id: 'project-1',
-              projectName: 'P1',
-              creatorUserId: testUserId,
-              updatedAt: DateTime(2025, 1, 1),
-            ),
-          ]);
-          return Modular.get<ProjectDropdownBloc>();
-        },
-        act: (bloc) async {
-          bloc.add(const ProjectDropdownStarted());
-          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
-          bloc.add(const ProjectDropdownSelected('project-1'));
-        },
-        verify: (_) {
-          expect(fakeNotifier.projectIdChangedEvents, ['project-1']);
-        },
-      );
-
-      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
-        'does not re-notify CurrentProjectNotifier when stream re-emits with same selected project id',
-        build: () {
-          seedProjectsTable([
-            buildProjectMap(
-              id: 'project-1',
-              projectName: 'P1',
-              creatorUserId: testUserId,
-              updatedAt: DateTime(2025, 1, 1),
-            ),
-          ]);
-          return Modular.get<ProjectDropdownBloc>();
-        },
-        act: (bloc) async {
-          bloc.add(const ProjectDropdownStarted());
-          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
-          // Simulate a Supabase re-emission with the same project id but a new
-          // updatedAt so the repository emits a new event (reconnect scenario).
-          // The dedup guard in _onProjectsUpdated skips the notifier since the
-          // selected project id hasn't changed.
-          seedProjectsTable([
-            buildProjectMap(
-              id: 'project-1',
-              projectName: 'P1 Updated',
-              creatorUserId: testUserId,
-              updatedAt: DateTime(2025, 1, 12),
-            ),
-          ]);
-          await bloc.stream.firstWhere(
-            (s) =>
-                s is ProjectDropdownLoadSuccess &&
-                s.selectedProject!.projectName == 'P1 Updated',
-          );
-        },
-        verify: (_) {
-          // Guard prevents re-notification when the selected project id hasn't changed.
-          expect(fakeNotifier.projectIdChangedEvents, ['project-1']);
-        },
-      );
-    });
   });
 }
 

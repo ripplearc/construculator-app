@@ -2,6 +2,7 @@ import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/app/shell/widgets/tab_navigator.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
@@ -9,6 +10,7 @@ import 'package:construculator/features/members/presentation/pages/members_page.
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +26,8 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 class AppShellPage extends StatefulWidget {
   final AppShellBloc appShellBloc;
   final ProjectUIProvider projectUIProvider;
+  final ProjectDropdownBloc projectDropdownBloc;
+  final CurrentProjectNotifier currentProjectNotifier;
 
   // TODO: [CA-708] Remove once DashboardPage reads these from the module directly.
   // https://ripplearc.youtrack.cloud/issue/CA-708
@@ -36,6 +40,8 @@ class AppShellPage extends StatefulWidget {
     super.key,
     required this.appShellBloc,
     required this.projectUIProvider,
+    required this.projectDropdownBloc,
+    required this.currentProjectNotifier,
     required this.authNotifier,
     required this.authManager,
     required this.router,
@@ -106,9 +112,19 @@ class _AppShellPageState extends State<AppShellPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AppShellBloc, AppShellState>(
-      bloc: widget.appShellBloc,
-      builder: (context, state) {
+    return BlocListener<ProjectDropdownBloc, ProjectDropdownState>(
+      bloc: widget.projectDropdownBloc,
+      listener: (context, dropdownState) {
+        if (dropdownState is ProjectDropdownLoadSuccess) {
+          final newId = dropdownState.selectedProject?.id;
+          if (widget.currentProjectNotifier.currentProjectId != newId) {
+            widget.currentProjectNotifier.setCurrentProjectId(newId);
+          }
+        }
+      },
+      child: BlocBuilder<AppShellBloc, AppShellState>(
+        bloc: widget.appShellBloc,
+        builder: (context, state) {
         return PopScope(
           canPop: false,
           onPopInvokedWithResult: (didPop, _) => _onPopInvoked(didPop),
@@ -161,7 +177,8 @@ class _AppShellPageState extends State<AppShellPage> {
             ),
           ),
         );
-      },
+        },
+      ),
     );
   }
 }

@@ -1,8 +1,10 @@
+import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
 import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
@@ -12,10 +14,17 @@ import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
+import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
+import 'package:construculator/libraries/estimation/testing/fake_cost_estimation_repository.dart';
+import 'package:construculator/libraries/project/domain/entities/enums.dart';
+import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -24,11 +33,13 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+import '../../utils/dashboard_shell_test_module.dart';
 import '../../utils/fake_app_bootstrap_factory.dart';
 
 void main() {
   late FakeCurrentProjectNotifier fakeProjectNotifier;
   late FakeSupabaseWrapper fakeSupabaseWrapper;
+  late AppBootstrap appBootstrap;
 
   setUpAll(() {
     CoreToast.disableTimers();
@@ -62,7 +73,7 @@ void main() {
 
     fakeSupabaseWrapper.addTableData('users', [fakeUser.toJson()]);
 
-    final appBootstrap = FakeAppBootstrapFactory.create(
+    appBootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabaseWrapper,
     );
 
@@ -94,6 +105,8 @@ void main() {
       home: AppShellPage(
         appShellBloc: Modular.get<AppShellBloc>(),
         projectUIProvider: Modular.get<ProjectUIProvider>(),
+        projectDropdownBloc: Modular.get<ProjectDropdownBloc>(),
+        currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
         authNotifier: Modular.get<AuthNotifier>(),
         authManager: Modular.get<AuthManager>(),
         router: Modular.get<AppRouter>(),
@@ -278,6 +291,79 @@ void main() {
 
       expect(find.byType(_FakeProjectAppBar), findsOneWidget);
     });
+  });
+
+  group('Project Selection Wiring', () {
+    late FakeProjectRepository fakeProjectRepository;
+
+    Project buildProject(String id, String name, DateTime updatedAt) {
+      return Project(
+        id: id,
+        projectName: name,
+        creatorUserId: 'fake-id',
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: updatedAt,
+        status: ProjectStatus.active,
+      );
+    }
+
+    setUp(() {
+      Modular.destroy();
+      Modular.init(DashboardShellTestModule(appBootstrap));
+      final supabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+      supabase.setCurrentUser(
+        FakeUser(
+          id: 'fake-id',
+          email: 'test@example.com',
+          createdAt: '2025-01-01T00:00:00Z',
+        ),
+      );
+      fakeProjectRepository = FakeProjectRepository();
+      Modular.replaceInstance<ProjectRepository>(fakeProjectRepository);
+      Modular.replaceInstance<CurrentProjectNotifier>(fakeProjectNotifier);
+      Modular.replaceInstance<CostEstimationRepository>(
+        FakeCostEstimationRepository(),
+      );
+      Modular.replaceInstance<ProjectUIProvider>(_FakeProjectUIProvider());
+    });
+
+    tearDown(() => fakeProjectNotifier.reset());
+
+    testWidgets(
+      'updates CurrentProjectNotifier when project selection changes',
+      (tester) async {
+        fakeProjectRepository.setAccessibleProjects([
+          buildProject('project-a', 'Project A', DateTime(2025, 1, 2)),
+          buildProject('project-b', 'Project B', DateTime(2025, 1, 1)),
+        ]);
+
+        await tester.pumpWidget(makeApp());
+        // Two pumps: first drains AppShellInitialized, second drains the
+        // resulting tab-load rebuild. pumpAndSettle is avoided because
+        // DashboardShellTestModule keeps animations running indefinitely.
+        await tester.pump();
+        await tester.pump();
+
+        final dropdownBloc = Modular.get<ProjectDropdownBloc>();
+
+        final firstLoad = dropdownBloc.stream
+            .firstWhere((s) => s is ProjectDropdownLoadSuccess);
+        dropdownBloc.add(const ProjectDropdownStarted());
+        await tester.runAsync(() => firstLoad);
+        await tester.pump();
+        expect(fakeProjectNotifier.currentProjectId, 'project-a');
+
+        final secondLoad = dropdownBloc.stream.firstWhere(
+          (s) =>
+              s is ProjectDropdownLoadSuccess &&
+              s.selectedProject!.id == 'project-b',
+        );
+        dropdownBloc.add(const ProjectDropdownSelected('project-b'));
+        await tester.runAsync(() => secondLoad);
+        await tester.pump();
+        expect(fakeProjectNotifier.currentProjectId, 'project-b');
+      },
+    );
   });
 }
 
