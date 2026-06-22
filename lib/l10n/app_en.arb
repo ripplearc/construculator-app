@@ -1317,6 +1317,10 @@
     "description": "Label for close/dismiss action buttons and toasts",
     "context": "N/A"
   },
+  "projectDropdownSemanticLabel": "Select project",
+  "@projectDropdownSemanticLabel": {
+    "description": "Accessibility label for the project selector dropdown in the header"
+  },
   "notificationSemanticLabel": "Notifications",
   "@notificationSemanticLabel": {
     "description": "Accessibility label for the notification icon button in the header"

@@ -838,6 +838,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get closeButton => 'Close';
 
   @override
+  String get projectDropdownSemanticLabel => 'Select project';
+
+  @override
   String get notificationSemanticLabel => 'Notifications';
 
   @override

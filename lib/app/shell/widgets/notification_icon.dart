@@ -2,6 +2,7 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+/// Bell icon button with an unread-count badge; displays "99+" when count exceeds 99.
 class NotificationIcon extends StatelessWidget {
   final int unreadCount;
   final VoidCallback? onTap;

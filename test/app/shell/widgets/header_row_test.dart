@@ -69,6 +69,18 @@ void main() {
     expect(tapped, isTrue);
   });
 
+  testWidgets('invokes onProjectTap when project dropdown is tapped', (
+    tester,
+  ) async {
+    var tapped = false;
+    await pumpHeaderRow(tester, onProjectTap: () => tapped = true);
+
+    await tester.tap(find.byType(InkWell).first);
+    await tester.pump();
+
+    expect(tapped, isTrue);
+  });
+
   testWidgets('invokes onNotificationTap when notification icon is tapped', (
     tester,
   ) async {

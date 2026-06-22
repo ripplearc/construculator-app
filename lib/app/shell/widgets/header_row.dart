@@ -4,6 +4,8 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+/// App-shell header for the home tab, showing the project selector, search,
+/// notification badge, and profile avatar.
 class HeaderRow extends StatelessWidget implements PreferredSizeWidget {
   final String userName;
   final String? avatarImageUrl;
@@ -53,33 +55,37 @@ class HeaderRow extends StatelessWidget implements PreferredSizeWidget {
           title: Row(
             children: [
               Expanded(
-                child: InkWell(
-                  onTap: onProjectTap,
-                  child: SizedBox(
-                    height: CoreSpacing.space12,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: CoreSpacing.space3,
-                      ),
-                      child: Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              context.l10n.appTitle,
-                              style: typography.titleMediumSemiBold.copyWith(
-                                color: colors.textHeadline,
+                child: Semantics(
+                  label: context.l10n.projectDropdownSemanticLabel,
+                  button: true,
+                  child: InkWell(
+                    onTap: onProjectTap,
+                    child: SizedBox(
+                      height: CoreSpacing.space12,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: CoreSpacing.space3,
+                        ),
+                        child: Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                context.l10n.appTitle,
+                                style: typography.titleMediumSemiBold.copyWith(
+                                  color: colors.textHeadline,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
                             ),
-                          ),
-                          const SizedBox(width: CoreSpacing.space1),
-                          CoreIconWidget(
-                            icon: CoreIcons.arrowDropDown,
-                            color: colors.iconGrayMid,
-                            size: CoreIconSize.size24,
-                          ),
-                        ],
+                            const SizedBox(width: CoreSpacing.space1),
+                            CoreIconWidget(
+                              icon: CoreIcons.arrowDropDown,
+                              color: colors.iconGrayMid,
+                              size: CoreIconSize.size24,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

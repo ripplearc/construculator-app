@@ -2,6 +2,8 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+/// Circular avatar showing a network image when available, falling back to a
+/// letter avatar derived from [name]. Fixed at 40×40 dp.
 class ProfileAvatar extends StatelessWidget {
   final String? imageUrl;
   final String name;
