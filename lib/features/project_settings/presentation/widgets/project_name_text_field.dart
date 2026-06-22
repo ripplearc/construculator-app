@@ -50,14 +50,23 @@ class _ProjectNameTextFieldState extends State<ProjectNameTextField> {
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(covariant ProjectNameTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_onTextChanged);
+      widget.controller.addListener(_onTextChanged);
+      _validate();
+    }
+  }
+
   void _onTextChanged() {
     final wasDirty = _isDirty;
-    if (!wasDirty) _isDirty = true;
-    _validate();
+    _validate(markDirty: !wasDirty);
     if (!wasDirty) widget.onDirtyChanged?.call(true);
   }
 
-  void _validate() {
+  void _validate({bool markDirty = false}) {
     final l10n = context.l10n;
     final trimmed = widget.controller.text.trim();
     final errors = <String>[];
@@ -68,98 +77,22 @@ class _ProjectNameTextFieldState extends State<ProjectNameTextField> {
       errors.add(l10n.projectNameTooLongError);
     }
 
-    setState(() => _errors = errors);
+    setState(() {
+      if (markDirty) _isDirty = true;
+      _errors = errors;
+    });
     widget.onValidationChanged?.call(errors.isEmpty);
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorTheme = context.colorTheme;
-    final textTheme = context.textTheme;
     final l10n = context.l10n;
-    final hasError = _isDirty && _errors.isNotEmpty;
-    final borderRadius = BorderRadius.circular(CoreSpacing.space1);
-
-    return TextFormField(
+    return CoreTextField(
       controller: widget.controller,
+      label: l10n.projectNameLabel,
+      hintText: l10n.projectNameHintText,
       enabled: widget.enabled,
-      style: textTheme.bodyLargeRegular.copyWith(
-        color: widget.enabled ? colorTheme.textDark : colorTheme.textDisable,
-      ),
-      decoration: InputDecoration(
-        labelText: l10n.projectNameLabel,
-        labelStyle: textTheme.bodyLargeRegular.copyWith(
-          color: widget.enabled ? colorTheme.textHeadline : colorTheme.textDisable,
-        ),
-        floatingLabelStyle: textTheme.bodyLargeRegular.copyWith(
-          color: hasError
-              ? colorTheme.textError
-              : (widget.enabled ? colorTheme.textDark : colorTheme.textDisable),
-        ),
-        hintText: l10n.projectNameHintText,
-        hintStyle: textTheme.bodyLargeRegular.copyWith(
-          color: colorTheme.textBody,
-        ),
-        filled: true,
-        fillColor: widget.enabled
-            ? colorTheme.pageBackground
-            : colorTheme.backgroundGrayMid,
-        contentPadding: const EdgeInsets.symmetric(
-          vertical: CoreSpacing.space3,
-          horizontal: CoreSpacing.space4,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: borderRadius,
-          borderSide: BorderSide(color: colorTheme.lineDarkOutline),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: borderRadius,
-          borderSide: BorderSide(color: colorTheme.lineDarkOutline),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: borderRadius,
-          borderSide: BorderSide(color: colorTheme.textDark),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: borderRadius,
-          borderSide: BorderSide(color: colorTheme.statusError),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: borderRadius,
-          borderSide: BorderSide(color: colorTheme.statusError),
-        ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: borderRadius,
-          borderSide: BorderSide(color: colorTheme.lineMid),
-        ),
-        error: hasError
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: _errors
-                    .map(
-                      (e) => Row(
-                        children: [
-                          CoreIconWidget(
-                            icon: CoreIcons.error,
-                            size: 16,
-                            color: colorTheme.iconRed,
-                          ),
-                          const SizedBox(width: CoreSpacing.space1),
-                          Expanded(
-                            child: Text(
-                              e,
-                              style: textTheme.bodySmallRegular.copyWith(
-                                color: colorTheme.textError,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                    .toList(),
-              )
-            : null,
-      ),
+      errorTextList: (_isDirty && _errors.isNotEmpty) ? _errors : null,
     );
   }
 }

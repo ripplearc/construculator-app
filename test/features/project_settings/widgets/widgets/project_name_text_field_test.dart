@@ -57,7 +57,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final textField = tester.widget<TextFormField>(find.byType(TextFormField));
+        final textField = tester.widget<CoreTextField>(find.byType(CoreTextField));
         expect(textField.enabled, isFalse);
       });
     });
