@@ -113,8 +113,8 @@ class _AppShellPageState extends State<AppShellPage> {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context, AppShellState state) {
-    // TODO: [CA-621] Wire ProjectDropdownBloc result into app bar via CurrentProjectNotifier.
-    // https://ripplearc.youtrack.cloud/issue/CA-621
+    // TODO: [CA-615] Wire ProjectDropdownBloc result into app bar via CurrentProjectNotifier.
+    // https://ripplearc.youtrack.cloud/issue/CA-615
     const projectId = '';
     final coreColors = Theme.of(context).coreColors;
     if (projectId.isEmpty) {
@@ -125,10 +125,10 @@ class _AppShellPageState extends State<AppShellPage> {
               builder: (_) => const GlobalSearchPage(),
             ),
           ),
-          // TODO: [CA-622] Wire NotificationBloc when NotificationModule is ready.
-          // https://ripplearc.youtrack.cloud/issue/CA-622
-          // TODO: [CA-623] Wire ProfileBloc when ProfileModule is ready.
-          // https://ripplearc.youtrack.cloud/issue/CA-623
+          // TODO: [CA-731] Wire NotificationBloc when NotificationModule is ready.
+          // https://ripplearc.youtrack.cloud/issue/CA-731
+          // TODO: [CA-732] Wire ProfileBloc when ProfileModule is ready.
+          // https://ripplearc.youtrack.cloud/issue/CA-732
         );
       }
       return PreferredSize(
