@@ -1,5 +1,4 @@
-import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/features/dashboard/dashboard_module.dart';
+import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/projects_bottom_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -15,23 +14,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../utils/fake_app_bootstrap_factory.dart';
 import '../../utils/screenshot/font_loader.dart';
-
-// Wraps DashboardModule and adds the ProjectDropdownBloc binding, which moved
-// to ShellModule in production but is still needed by ProjectsBottomSheet.
-class _ProjectsBottomSheetTestModule extends Module {
-  final AppBootstrap appBootstrap;
-  _ProjectsBottomSheetTestModule(this.appBootstrap);
-
-  @override
-  List<Module> get imports => [DashboardModule(appBootstrap)];
-
-  @override
-  void binds(Injector i) {
-    i.add<ProjectDropdownBloc>(
-      () => ProjectDropdownBloc(projectRepository: i(), authManager: i()),
-    );
-  }
-}
 
 /// Shared test harness for [ProjectsBottomSheet] widget and screenshot tests.
 ///
@@ -90,7 +72,7 @@ class ProjectsBottomSheetTestHarness {
     final bootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
     );
-    Modular.init(_ProjectsBottomSheetTestModule(bootstrap));
+    Modular.init(ShellModule(bootstrap));
     Modular.replaceInstance<SupabaseWrapper>(fakeSupabase);
     Modular.replaceInstance<ProjectRepository>(fakeRepository);
 
