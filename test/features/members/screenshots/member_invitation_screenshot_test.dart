@@ -1,5 +1,5 @@
 import 'package:construculator/l10n/generated/app_localizations.dart';
-import 'package:construculator/libraries/members/presentation/widgets/member_invitation_widget.dart';
+import 'package:construculator/features/members/presentation/widgets/member_invitation_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
