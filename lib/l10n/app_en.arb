@@ -1371,5 +1371,15 @@
   "@globalSearchTagsSheetApply": {
     "description": "Label for the Apply button in the Tags filter bottom sheet",
     "context": "N/A"
+  },
+  "globalSearchTagsSheetEmpty": "No tags found.",
+  "@globalSearchTagsSheetEmpty": {
+    "description": "Message shown in the Tags filter bottom sheet when no tags match the search or none exist",
+    "context": "N/A"
+  },
+  "globalSearchTagsLoadErrorMessage": "Could not load tags.",
+  "@globalSearchTagsLoadErrorMessage": {
+    "description": "Warning toast shown when fetching the available tags for the filter sheet fails",
+    "context": "N/A"
   }
 }

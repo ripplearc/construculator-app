@@ -46,6 +46,9 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
   }
 
   Future<void> _showTagsSheet(BuildContext context, Set<String> selectedTags) {
+    BlocProvider.of<GlobalSearchBloc>(
+      context,
+    ).add(const GlobalSearchAvailableTagsRequested());
     return CoreQuickSheet.show(
       context: context,
       child: BlocProvider.value(
@@ -280,6 +283,12 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
                       CoreToast.showWarning(
                         context,
                         l10n.globalSearchSuggestionsErrorMessage,
+                        l10n.closeLabel,
+                      );
+                    } else if (state is GlobalSearchTagsLoadFailure) {
+                      CoreToast.showWarning(
+                        context,
+                        l10n.globalSearchTagsLoadErrorMessage,
                         l10n.closeLabel,
                       );
                     } else if (state is GlobalSearchEmptyQuery) {

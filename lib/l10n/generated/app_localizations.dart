@@ -1641,6 +1641,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Apply'**
   String get globalSearchTagsSheetApply;
+
+  /// Message shown in the Tags filter bottom sheet when no tags match the search or none exist
+  ///
+  /// In en, this message translates to:
+  /// **'No tags found.'**
+  String get globalSearchTagsSheetEmpty;
+
+  /// Warning toast shown when fetching the available tags for the filter sheet fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load tags.'**
+  String get globalSearchTagsLoadErrorMessage;
 }
 
 class _AppLocalizationsDelegate

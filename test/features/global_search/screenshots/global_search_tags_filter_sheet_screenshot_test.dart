@@ -5,6 +5,7 @@ import 'package:construculator/features/global_search/presentation/pages/global_
 import 'package:construculator/features/global_search/presentation/widgets/global_search_tags_filter_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -56,10 +57,34 @@ void main() {
     fakeSupabase.reset();
   });
 
+  void seedTags(List<String> names) {
+    fakeSupabase.addTableData(
+      DatabaseConstants.tagsTable,
+      names
+          .map(
+            (name) => <String, dynamic>{
+              DatabaseConstants.idColumn: 'tag-$name',
+              DatabaseConstants.nameColumn: name,
+            },
+          )
+          .toList(),
+    );
+  }
+
   Future<void> pumpPageAndOpenTagsSheet({
     required WidgetTester tester,
     Set<String> activeTagsBeforeOpen = const {},
   }) async {
+    seedTags(const [
+      'Roofing',
+      'Carpeting',
+      'Flooring',
+      'Wall',
+      'Bed room wall',
+      'Plumbing',
+      'Electrical',
+      'Painting',
+    ]);
     await tester.pumpWidget(
       MaterialApp(
         theme: createTestTheme(),
@@ -121,7 +146,9 @@ void main() {
 
       await pumpPageAndOpenTagsSheet(
         tester: tester,
-        activeTagsBeforeOpen: const {'Roofing', 'Wall'},
+        // Tags near the top of the alphabetically ordered list so the
+        // checked state is visible within the sheet's viewport.
+        activeTagsBeforeOpen: const {'Bed room wall', 'Carpeting'},
       );
 
       await expectLater(

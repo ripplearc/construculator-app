@@ -865,4 +865,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get globalSearchTagsSheetApply => 'Apply';
+
+  @override
+  String get globalSearchTagsSheetEmpty => 'No tags found.';
+
+  @override
+  String get globalSearchTagsLoadErrorMessage => 'Could not load tags.';
 }

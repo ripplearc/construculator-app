@@ -95,6 +95,40 @@ void main() {
       fakeSupabase.reset();
     });
 
+    void seedTags(List<String> names) {
+      fakeSupabase.addTableData(
+        DatabaseConstants.tagsTable,
+        names
+            .map(
+              (name) => <String, dynamic>{
+                DatabaseConstants.idColumn: 'tag-$name',
+                DatabaseConstants.nameColumn: name,
+              },
+            )
+            .toList(),
+      );
+    }
+
+    // Seeds the project owners RPC with one owner per (id, firstName) pair,
+    // preserving order so tests can assert the bloc keeps RPC ordering.
+    void seedOwners(List<({String id, String firstName})> owners) {
+      fakeSupabase.setRpcResponse(
+        DatabaseConstants.projectOwnersRpcFunction,
+        owners
+            .map(
+              (owner) => <String, dynamic>{
+                DatabaseConstants.idColumn: owner.id,
+                DatabaseConstants.credentialIdColumn: null,
+                DatabaseConstants.firstNameColumn: owner.firstName,
+                DatabaseConstants.lastNameColumn: 'Doe',
+                DatabaseConstants.professionalRoleColumn: 'Engineer',
+                DatabaseConstants.profilePhotoUrlColumn: null,
+              },
+            )
+            .toList(),
+      );
+    }
+
     test(
       'initial state is GlobalSearchInitial (cold start, no history yet)',
       () {
@@ -586,6 +620,59 @@ void main() {
           );
         },
       );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'forwards the alphabetically first selected owner id to the RPC when multiple owners are active',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {'projects': [], 'estimations': [], 'members': []},
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          // Apply two owners; 'owner-1' sorts before 'owner-2'.
+          bloc.add(
+            const GlobalSearchOwnerFiltersApplied(
+              ownerIds: {'owner-2', 'owner-1'},
+            ),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchPerformed(query: 'steel'));
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedOwnerIds,
+            'owners applied',
+            containsAll(['owner-1', 'owner-2']),
+          ),
+          const GlobalSearchLoadInProgress(query: 'steel'),
+          isA<GlobalSearchLoadEmpty>(),
+        ],
+        verify: (_) {
+          final rpcCalls = fakeSupabase.getMethodCallsFor('rpc');
+          final globalSearchCall = rpcCalls.firstWhere(
+            (call) =>
+                call['functionName'] ==
+                DatabaseConstants.globalSearchRpcFunction,
+          );
+          final rpcParams =
+              globalSearchCall['params'] as Map<String, dynamic>;
+          expect(
+            rpcParams['filter_by_owner'],
+            equals('owner-1'),
+            reason:
+                'must forward the alphabetically first owner id, not an arbitrary Set element',
+          );
+        },
+      );
     });
 
     group('GlobalSearchQueryUpdated', () {
@@ -971,6 +1058,475 @@ void main() {
             (s) => s.selectedTags,
             'tags reset on restart',
             isEmpty,
+          ),
+        ],
+      );
+    });
+
+    group('GlobalSearchAvailableTagsRequested', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits loading then tags sorted alphabetically on success',
+        setUp: () => seedTags(['Wall', 'Carpeting', 'Roofing']),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchAvailableTagsRequested()),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTagsLoading,
+            'availableTagsLoading',
+            isTrue,
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableTags,
+                'availableTags',
+                ['Carpeting', 'Roofing', 'Wall'],
+              )
+              .having(
+                (s) => s.availableTagsLoading,
+                'availableTagsLoading',
+                isFalse,
+              ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'reuses cached tags without refetching on subsequent requests',
+        setUp: () => seedTags(['Roofing']),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableTagsLoading,
+          );
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+        },
+        verify: (_) {
+          final selectCalls = fakeSupabase
+              .getMethodCallsFor('selectMatch')
+              .where(
+                (call) => call['table'] == DatabaseConstants.tagsTable,
+              );
+          expect(selectCalls.length, 1);
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchTagsLoadFailure then recovers to Ready on error',
+        setUp: () {
+          fakeSupabase.shouldThrowOnSelectMatch = true;
+          fakeSupabase.selectMatchExceptionType =
+              SupabaseExceptionType.postgrest;
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchAvailableTagsRequested()),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTagsLoading,
+            'availableTagsLoading',
+            isTrue,
+          ),
+          isA<GlobalSearchTagsLoadFailure>().having(
+            (s) => s.failure,
+            'failure',
+            isA<SearchFailure>(),
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTags,
+            'availableTags stay empty',
+            isEmpty,
+          ),
+        ],
+      );
+    });
+
+    group('GlobalSearchTagSearchQueryUpdated', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'filters available tags case-insensitively by substring',
+        setUp: () => seedTags(['Roofing', 'Carpeting', 'Wall', 'Painting']),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableTagsLoading,
+          );
+          bloc.add(const GlobalSearchTagSearchQueryUpdated(query: 'ING'));
+        },
+        skip: 2,
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTags,
+            'filtered tags',
+            ['Carpeting', 'Painting', 'Roofing'],
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'restores the full list when the query is cleared',
+        setUp: () => seedTags(['Roofing', 'Wall']),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableTagsLoading,
+          );
+          bloc.add(const GlobalSearchTagSearchQueryUpdated(query: 'roof'));
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchTagSearchQueryUpdated(query: ''));
+        },
+        skip: 3,
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTags,
+            'full list restored',
+            ['Roofing', 'Wall'],
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'resets the tag search query when the sheet is reopened',
+        setUp: () => seedTags(['Roofing', 'Wall']),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableTagsLoading,
+          );
+          bloc.add(const GlobalSearchTagSearchQueryUpdated(query: 'roof'));
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+        },
+        skip: 3,
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTags,
+            'query reset restores full list',
+            ['Roofing', 'Wall'],
+          ),
+        ],
+      );
+    });
+
+    group('GlobalSearchOwnerFiltersApplied', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchReady with selectedOwnerIds when owners are applied',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(
+          const GlobalSearchOwnerFiltersApplied(
+            ownerIds: {'owner-1', 'owner-2'},
+          ),
+        ),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedOwnerIds,
+            'selectedOwnerIds',
+            containsAll(['owner-1', 'owner-2']),
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchReady with empty selectedOwnerIds when empty set is applied',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) =>
+            bloc.add(const GlobalSearchOwnerFiltersApplied(ownerIds: {})),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedOwnerIds,
+            'selectedOwnerIds',
+            isEmpty,
+          ),
+        ],
+      );
+    });
+
+    group('GlobalSearchOwnerFilterCleared', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchReady with owner removed from selectedOwnerIds',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            const GlobalSearchOwnerFiltersApplied(
+              ownerIds: {'owner-1', 'owner-2'},
+            ),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchOwnerFilterCleared(ownerId: 'owner-1'));
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedOwnerIds,
+            'two owners selected',
+            containsAll(['owner-1', 'owner-2']),
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedOwnerIds,
+                'owner-1 removed',
+                isNot(contains('owner-1')),
+              )
+              .having(
+                (s) => s.selectedOwnerIds,
+                'owner-2 remains',
+                contains('owner-2'),
+              ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchReady with empty selectedOwnerIds when last owner is cleared',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            const GlobalSearchOwnerFiltersApplied(ownerIds: {'owner-1'}),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchOwnerFilterCleared(ownerId: 'owner-1'));
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedOwnerIds,
+            'one owner selected',
+            contains('owner-1'),
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedOwnerIds,
+            'selectedOwnerIds empty after last cleared',
+            isEmpty,
+          ),
+        ],
+      );
+    });
+
+    group('GlobalSearchStarted resets selectedOwnerIds', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'clears selectedOwnerIds when GlobalSearchStarted is dispatched after owners were applied',
+        setUp: () {
+          fakeSupabase.setCurrentUser(null);
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            const GlobalSearchOwnerFiltersApplied(ownerIds: {'owner-1'}),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchStarted());
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedOwnerIds,
+            'owners applied',
+            contains('owner-1'),
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedOwnerIds,
+            'owners reset on restart',
+            isEmpty,
+          ),
+        ],
+      );
+    });
+
+    group('GlobalSearchAvailableOwnersRequested', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits loading then owners in RPC order on success',
+        setUp: () => seedOwners([
+          (id: 'owner-1', firstName: 'John'),
+          (id: 'owner-2', firstName: 'Floyd'),
+        ]),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchAvailableOwnersRequested()),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableOwnersLoading,
+            'availableOwnersLoading',
+            isTrue,
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableOwners.map((o) => o.id).toList(),
+                'availableOwners',
+                ['owner-1', 'owner-2'],
+              )
+              .having(
+                (s) => s.availableOwnersLoading,
+                'availableOwnersLoading',
+                isFalse,
+              ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'reuses cached owners without refetching on subsequent requests',
+        setUp: () => seedOwners([(id: 'owner-1', firstName: 'John')]),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableOwnersLoading,
+          );
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+        },
+        verify: (_) {
+          final rpcCalls = fakeSupabase.getMethodCallsFor('rpc').where(
+                (call) =>
+                    call['functionName'] ==
+                    DatabaseConstants.projectOwnersRpcFunction,
+              );
+          expect(rpcCalls.length, 1);
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchOwnersLoadFailure then recovers to Ready on error',
+        setUp: () {
+          fakeSupabase.shouldThrowOnRpc = true;
+          fakeSupabase.rpcExceptionType = SupabaseExceptionType.postgrest;
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchAvailableOwnersRequested()),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableOwnersLoading,
+            'availableOwnersLoading',
+            isTrue,
+          ),
+          isA<GlobalSearchOwnersLoadFailure>().having(
+            (s) => s.failure,
+            'failure',
+            isA<SearchFailure>(),
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableOwners,
+            'availableOwners stay empty',
+            isEmpty,
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        're-fetches owners on the next request after a failed fetch',
+        setUp: () {
+          fakeSupabase.shouldThrowOnRpc = true;
+          fakeSupabase.rpcExceptionType = SupabaseExceptionType.postgrest;
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableOwnersLoading,
+          );
+          // Recover the backend, then request again: the failed fetch must
+          // not have cached, so this second request hits the RPC again.
+          fakeSupabase.shouldThrowOnRpc = false;
+          seedOwners([(id: 'owner-1', firstName: 'John')]);
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                !state.availableOwnersLoading &&
+                state.availableOwners.isNotEmpty,
+          );
+        },
+        verify: (_) {
+          final rpcCalls = fakeSupabase.getMethodCallsFor('rpc').where(
+                (call) =>
+                    call['functionName'] ==
+                    DatabaseConstants.projectOwnersRpcFunction,
+              );
+          expect(
+            rpcCalls.length,
+            2,
+            reason: 'a failed fetch must not cache; the retry refetches',
+          );
+        },
+      );
+    });
+
+    group('GlobalSearchOwnerSearchQueryUpdated', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'filters available owners case-insensitively by full name substring',
+        setUp: () => seedOwners([
+          (id: 'owner-1', firstName: 'John'),
+          (id: 'owner-2', firstName: 'Johnny'),
+          (id: 'owner-3', firstName: 'Floyd'),
+        ]),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableOwnersLoading,
+          );
+          bloc.add(const GlobalSearchOwnerSearchQueryUpdated(query: 'JOHN'));
+        },
+        skip: 2,
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableOwners.map((o) => o.id).toList(),
+            'filtered owners',
+            ['owner-1', 'owner-2'],
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'restores the full list when the query is cleared',
+        setUp: () => seedOwners([
+          (id: 'owner-1', firstName: 'John'),
+          (id: 'owner-2', firstName: 'Floyd'),
+        ]),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableOwnersLoading,
+          );
+          bloc.add(const GlobalSearchOwnerSearchQueryUpdated(query: 'john'));
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchOwnerSearchQueryUpdated(query: ''));
+        },
+        skip: 3,
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableOwners.map((o) => o.id).toList(),
+            'full list restored',
+            ['owner-1', 'owner-2'],
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'resets the owner search query when the sheet is reopened',
+        setUp: () => seedOwners([
+          (id: 'owner-1', firstName: 'John'),
+          (id: 'owner-2', firstName: 'Floyd'),
+        ]),
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableOwnersLoading,
+          );
+          bloc.add(const GlobalSearchOwnerSearchQueryUpdated(query: 'john'));
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+        },
+        skip: 3,
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableOwners.map((o) => o.id).toList(),
+            'query reset restores full list',
+            ['owner-1', 'owner-2'],
           ),
         ],
       );
