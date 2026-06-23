@@ -9,8 +9,10 @@ import 'package:construculator/libraries/project/data/data_source/remote_project
 import 'package:construculator/libraries/project/data/data_source/remote_project_search_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/remote_project_setting_data_source.dart';
 import 'package:construculator/libraries/project/data/repositories/project_repository_impl.dart';
+import 'package:construculator/libraries/project/data/repositories/project_search_repository_impl.dart';
 import 'package:construculator/libraries/project/data/repositories/project_setting_repository_impl.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_search_repository.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_setting_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -78,5 +80,11 @@ void _registerDependencies(Injector i) {
       permissionDataSource: Modular.get<ProjectPermissionDataSource>(),
     ),
     config: BindConfig(onDispose: (repository) => repository.dispose()),
+  );
+
+  i.addLazySingleton<ProjectSearchRepository>(
+    () => ProjectSearchRepositoryImpl(
+      dataSource: Modular.get<ProjectSearchDataSource>(),
+    ),
   );
 }

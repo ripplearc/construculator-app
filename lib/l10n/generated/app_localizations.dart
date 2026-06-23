@@ -1599,6 +1599,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'People invited'**
   String get peopleInvited;
+
+  /// Warning toast shown when the user submits an empty or whitespace-only search query
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a search term.'**
+  String get globalSearchEmptyQueryMessage;
+
+  /// Accessibility label for the Tags filter chip on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by tags'**
+  String get globalSearchFilterTagsSemanticLabel;
+
+  /// Accessibility label for the × button that removes a single active tag filter chip
+  ///
+  /// In en, this message translates to:
+  /// **'Clear tag filter {tag}'**
+  String globalSearchClearTagFilterSemanticLabel(String tag);
+
+  /// Title of the Tags filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get globalSearchTagsSheetTitle;
+
+  /// Placeholder text in the search field inside the Tags filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Search by tag name'**
+  String get globalSearchTagsSheetSearchHint;
+
+  /// Label for the Clear all button in the Tags filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get globalSearchTagsSheetClearAll;
+
+  /// Label for the Apply button in the Tags filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get globalSearchTagsSheetApply;
+
+  /// Message shown in the Tags filter bottom sheet when no tags match the search or none exist
+  ///
+  /// In en, this message translates to:
+  /// **'No tags found.'**
+  String get globalSearchTagsSheetEmpty;
+
+  /// Warning toast shown when fetching the available tags for the filter sheet fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load tags.'**
+  String get globalSearchTagsLoadErrorMessage;
 }
 
 class _AppLocalizationsDelegate

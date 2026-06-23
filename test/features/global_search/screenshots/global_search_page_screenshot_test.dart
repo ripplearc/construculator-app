@@ -1,5 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
+import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
@@ -85,6 +86,7 @@ void main() {
     testWidgets('renders default state correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       await pumpGlobalSearchPage(tester: tester);
 
@@ -101,6 +103,7 @@ void main() {
       (tester) async {
         tester.view.physicalSize = size;
         tester.view.devicePixelRatio = ratio;
+        addTearDown(tester.view.reset);
 
         await pumpGlobalSearchPage(tester: tester);
 
@@ -124,6 +127,7 @@ void main() {
     testWidgets('renders with recent searches correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       fakeSupabase.setCurrentUser(
         FakeUser(
@@ -143,6 +147,28 @@ void main() {
         find.byType(GlobalSearchPage),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_with_recent_searches.png',
+        ),
+      );
+    });
+
+    testWidgets('renders with active tag filter chips correctly', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpGlobalSearchPage(tester: tester);
+
+      Modular.get<GlobalSearchBloc>().add(
+        const GlobalSearchTagFiltersApplied(tags: {'Roofing', 'Wall'}),
+      );
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(GlobalSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_active_tags.png',
         ),
       );
     });

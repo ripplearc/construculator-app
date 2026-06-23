@@ -1,6 +1,7 @@
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_empty_recent_widget.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_recent_searches_list.dart';
+import 'package:construculator/features/global_search/presentation/widgets/global_search_tags_filter_sheet.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
@@ -32,12 +33,29 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
 
   void _onItemTap(BuildContext context, String term) {
     _searchController.text = term;
-    BlocProvider.of<GlobalSearchBloc>(context).add(GlobalSearchPerformed(query: term));
+    BlocProvider.of<GlobalSearchBloc>(
+      context,
+    ).add(GlobalSearchPerformed(query: term));
   }
 
   void _onTrailingTap(BuildContext context, String term) {
     _searchController.text = term;
-    BlocProvider.of<GlobalSearchBloc>(context).add(GlobalSearchQueryUpdated(query: term));
+    BlocProvider.of<GlobalSearchBloc>(
+      context,
+    ).add(GlobalSearchQueryUpdated(query: term));
+  }
+
+  Future<void> _showTagsSheet(BuildContext context, Set<String> selectedTags) {
+    BlocProvider.of<GlobalSearchBloc>(
+      context,
+    ).add(const GlobalSearchAvailableTagsRequested());
+    return CoreQuickSheet.show(
+      context: context,
+      child: BlocProvider.value(
+        value: BlocProvider.of<GlobalSearchBloc>(context),
+        child: GlobalSearchTagsFilterSheet(initialSelectedTags: selectedTags),
+      ),
+    );
   }
 
   Widget _buildBackButton(BuildContext context) {
@@ -68,6 +86,79 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTagsFilterChips(BuildContext context, Set<String> selectedTags) {
+    final colors = context.colorTheme;
+    final typography = context.textTheme;
+    final l10n = context.l10n;
+
+    if (selectedTags.isEmpty) {
+      return Semantics(
+        label: l10n.globalSearchFilterTagsSemanticLabel,
+        child: CoreFilterChip(
+          key: const Key('global_search_tags_filter_chip'),
+          label: l10n.globalSearchFilterTags,
+          onTap: () => _showTagsSheet(context, selectedTags),
+        ),
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final tag in selectedTags) ...[
+          Semantics(
+            label: l10n.globalSearchClearTagFilterSemanticLabel(tag),
+            button: true,
+            child: InkWell(
+              key: Key('active_tag_chip_$tag'),
+              onTap: () => BlocProvider.of<GlobalSearchBloc>(
+                context,
+              ).add(GlobalSearchTagFilterCleared(tag: tag)),
+              borderRadius: BorderRadius.circular(CoreSpacing.space3),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: CoreSpacing.space3,
+                  vertical: CoreSpacing.space2,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(CoreSpacing.space3),
+                  color: colors.backgroundGrayMid,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ExcludeSemantics(
+                      child: Text(
+                        tag,
+                        style: typography.bodyMediumRegular.copyWith(
+                          color: colors.textDark,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: CoreSpacing.space2),
+                    ExcludeSemantics(
+                      child: CoreIconWidget(
+                        icon: CoreIcons.close,
+                        color: colors.iconDark,
+                        size: CoreSpacing.space4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: CoreSpacing.space2),
+        ],
+        CoreFilterChip(
+          key: const Key('global_search_tags_filter_chip_active'),
+          label: l10n.globalSearchFilterTags,
+          onTap: () => _showTagsSheet(context, selectedTags),
+        ),
+      ],
     );
   }
 
@@ -114,10 +205,12 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
                     hintText: l10n.globalSearchHint,
                     clearSemanticLabel:
                         l10n.globalSearchClearSearchSemanticLabel,
-                    onChanged: (query) => BlocProvider.of<GlobalSearchBloc>(innerContext)
-                        .add(GlobalSearchQueryUpdated(query: query)),
-                    onSearch: () => BlocProvider.of<GlobalSearchBloc>(innerContext)
-                        .add(GlobalSearchPerformed(query: _searchController.text)),
+                    onChanged: (query) => BlocProvider.of<GlobalSearchBloc>(
+                      innerContext,
+                    ).add(GlobalSearchQueryUpdated(query: query)),
+                    onSearch: () => BlocProvider.of<GlobalSearchBloc>(
+                      innerContext,
+                    ).add(GlobalSearchPerformed(query: _searchController.text)),
                   ),
                 ),
               ],
@@ -132,15 +225,32 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
                   horizontal: CoreSpacing.space4,
                   vertical: CoreSpacing.space3,
                 ),
-                child: Row(
-                  children: [
-                    // TODO: [CA-638] Wire CoreFilterChip.onTap to GlobalSearchBloc filter state. https://ripplearc.youtrack.cloud/issue/CA-638/DashboardGlobalSearch-Wire-CoreFilterChip.onTap-to-GlobalSearchBloc-filter-state
-                    CoreFilterChip(label: l10n.globalSearchFilterTags),
-                    const SizedBox(width: CoreSpacing.space2),
-                    CoreFilterChip(label: l10n.globalSearchFilterModified),
-                    const SizedBox(width: CoreSpacing.space2),
-                    CoreFilterChip(label: l10n.globalSearchFilterType),
-                  ],
+                child: BlocBuilder<GlobalSearchBloc, GlobalSearchState>(
+                  buildWhen: (prev, curr) {
+                    // Reference equality is sufficient: each emit creates a new Set.unmodifiable.
+                    final p = prev is GlobalSearchReady
+                        ? prev.selectedTags
+                        : null;
+                    final c = curr is GlobalSearchReady
+                        ? curr.selectedTags
+                        : null;
+                    return p != c;
+                  },
+                  builder: (context, state) {
+                    final effectiveTags = state is GlobalSearchReady
+                        ? state.selectedTags
+                        : _lastReady?.selectedTags ?? const {};
+                    return Row(
+                      children: [
+                        _buildTagsFilterChips(context, effectiveTags),
+                        const SizedBox(width: CoreSpacing.space2),
+                        // TODO: [CA-638] Wire Modified and Type chips. https://ripplearc.youtrack.cloud/issue/CA-638/DashboardGlobalSearch-Wire-CoreFilterChip.onTap-to-GlobalSearchBloc-filter-state
+                        CoreFilterChip(label: l10n.globalSearchFilterModified),
+                        const SizedBox(width: CoreSpacing.space2),
+                        CoreFilterChip(label: l10n.globalSearchFilterType),
+                      ],
+                    );
+                  },
                 ),
               ),
               Padding(
@@ -173,6 +283,18 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
                       CoreToast.showWarning(
                         context,
                         l10n.globalSearchSuggestionsErrorMessage,
+                        l10n.closeLabel,
+                      );
+                    } else if (state is GlobalSearchTagsLoadFailure) {
+                      CoreToast.showWarning(
+                        context,
+                        l10n.globalSearchTagsLoadErrorMessage,
+                        l10n.closeLabel,
+                      );
+                    } else if (state is GlobalSearchEmptyQuery) {
+                      CoreToast.showWarning(
+                        context,
+                        l10n.globalSearchEmptyQueryMessage,
                         l10n.closeLabel,
                       );
                     }

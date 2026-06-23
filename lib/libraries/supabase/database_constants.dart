@@ -18,10 +18,18 @@ class DatabaseConstants {
   static const String projectsTable = 'projects';
   static const String projectMembersTable = 'project_members';
   static const String searchHistoryTable = 'search_history';
+  static const String tagsTable = 'tags';
 
   // RPC function names
   static const String globalSearchRpcFunction = 'global_search';
   static const String searchSuggestionsRpcFunction = 'get_search_suggestions';
+
+  /// The RPC that returns the project owners the caller can filter by.
+  ///
+  /// The backend scopes the result to owners (project creators) of projects
+  /// the authenticated caller can access; identity is derived from the
+  /// Supabase auth session JWT, so no explicit user id param is required.
+  static const String projectOwnersRpcFunction = 'get_project_owners';
 
   // RPC param values
   /// The scope value passed to the [globalSearchRpcFunction] RPC to restrict
@@ -38,6 +46,7 @@ class DatabaseConstants {
 
   // Column names
   static const String idColumn = 'id';
+  static const String nameColumn = 'name';
   static const String projectIdColumn = 'project_id';
   static const String userIdColumn = 'user_id';
   static const String creatorUserIdColumn = 'creator_user_id';
