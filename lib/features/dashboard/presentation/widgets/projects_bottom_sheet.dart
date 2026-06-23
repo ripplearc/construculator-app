@@ -1,4 +1,5 @@
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
+import 'package:construculator/libraries/router/routes/project_settings_routes.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/project_list_item.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
@@ -80,7 +81,8 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
   }
 
   void _onCreateProject() {
-    // TODO: [CA-116] Wire to the create-project flow once it exists. https://ripplearc.youtrack.cloud/issue/CA-116
+    Navigator.of(context).pop();
+    Modular.to.pushNamed(createProjectRoute);
   }
 
   void _onProjectSettings(Project project) {

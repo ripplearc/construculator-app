@@ -1,0 +1,261 @@
+import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/project/domain/entities/enums.dart';
+import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_setting_repository.dart';
+import 'package:equatable/equatable.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+/// Base event for [ProjectSettingsBloc].
+abstract class ProjectSettingsEvent extends Equatable {
+  const ProjectSettingsEvent();
+
+  @override
+  List<Object?> get props => [];
+}
+
+class ProjectSettingsLoadRequested extends ProjectSettingsEvent {
+  final String projectId;
+
+  const ProjectSettingsLoadRequested(this.projectId);
+
+  @override
+  List<Object?> get props => [projectId];
+}
+
+class ProjectSettingsEditingStarted extends ProjectSettingsEvent {
+  final Project project;
+
+  const ProjectSettingsEditingStarted(this.project);
+
+  @override
+  List<Object?> get props => [project];
+}
+
+class ProjectSettingsUpdateSubmitted extends ProjectSettingsEvent {
+  final Project project;
+
+  const ProjectSettingsUpdateSubmitted(this.project);
+
+  @override
+  List<Object?> get props => [project];
+}
+
+class ProjectSettingsDeleteRequested extends ProjectSettingsEvent {
+  final String projectId;
+
+  const ProjectSettingsDeleteRequested(this.projectId);
+
+  @override
+  List<Object?> get props => [projectId];
+}
+
+class ProjectSettingsCreationRequested extends ProjectSettingsEvent {
+  final String name;
+  final String? description;
+  final String? creatorUserId;
+  final StorageProvider? exportStorageProvider;
+
+  const ProjectSettingsCreationRequested({
+    required this.name,
+    required this.creatorUserId,
+    this.description,
+    this.exportStorageProvider,
+  });
+
+  @override
+  List<Object?> get props => [name, description, creatorUserId, exportStorageProvider];
+}
+
+/// Base state for [ProjectSettingsBloc].
+abstract class ProjectSettingsState extends Equatable {
+  const ProjectSettingsState();
+
+  @override
+  List<Object?> get props => [];
+}
+
+class ProjectSettingsInitial extends ProjectSettingsState {
+  const ProjectSettingsInitial();
+}
+
+class ProjectSettingsLoading extends ProjectSettingsState {
+  const ProjectSettingsLoading();
+}
+
+class ProjectSettingsLoaded extends ProjectSettingsState {
+  final Project project;
+
+  const ProjectSettingsLoaded(this.project);
+
+  @override
+  List<Object?> get props => [project];
+}
+
+class ProjectSettingsEditing extends ProjectSettingsState {
+  final Project project;
+  final Project originalProject;
+
+  const ProjectSettingsEditing({
+    required this.project,
+    required this.originalProject,
+  });
+
+  ProjectSettingsEditing copyWith({Project? project, Project? originalProject}) {
+    return ProjectSettingsEditing(
+      project: project ?? this.project,
+      originalProject: originalProject ?? this.originalProject,
+    );
+  }
+
+  @override
+  List<Object?> get props => [project, originalProject];
+}
+
+class ProjectSettingsSaving extends ProjectSettingsState {
+  final Project project;
+
+  const ProjectSettingsSaving(this.project);
+
+  @override
+  List<Object?> get props => [project];
+}
+
+class ProjectSettingsDeleteInProgress extends ProjectSettingsState {
+  const ProjectSettingsDeleteInProgress();
+}
+
+class ProjectCreating extends ProjectSettingsState {
+  const ProjectCreating();
+}
+
+class ProjectCreated extends ProjectSettingsState {
+  final Project project;
+
+  const ProjectCreated(this.project);
+
+  @override
+  List<Object?> get props => [project];
+}
+
+class ProjectSettingsError extends ProjectSettingsState {
+  final Failure failure;
+  final Project? lastProject;
+
+  const ProjectSettingsError({required this.failure, this.lastProject});
+
+  @override
+  List<Object?> get props => [failure, lastProject];
+}
+
+class ProjectSettingsBloc
+    extends Bloc<ProjectSettingsEvent, ProjectSettingsState> {
+  final ProjectSettingRepository _repository;
+
+  ProjectSettingsBloc({required ProjectSettingRepository repository})
+      : _repository = repository,
+        super(const ProjectSettingsInitial()) {
+    on<ProjectSettingsLoadRequested>(_onLoadRequested);
+    on<ProjectSettingsEditingStarted>(_onEditingStarted);
+    on<ProjectSettingsUpdateSubmitted>(_onUpdateSubmitted);
+    on<ProjectSettingsDeleteRequested>(_onDeleteRequested);
+    on<ProjectSettingsCreationRequested>(_onCreationRequested);
+  }
+
+  Future<void> _onLoadRequested(
+    ProjectSettingsLoadRequested event,
+    Emitter<ProjectSettingsState> emit,
+  ) async {
+    emit(const ProjectSettingsLoading());
+    final result = await _repository.getProjectSetting(event.projectId);
+    result.fold(
+      (failure) => emit(ProjectSettingsError(failure: failure)),
+      (project) => emit(ProjectSettingsLoaded(project)),
+    );
+  }
+
+  void _onEditingStarted(
+    ProjectSettingsEditingStarted event,
+    Emitter<ProjectSettingsState> emit,
+  ) {
+    if (state is! ProjectSettingsLoaded) return;
+    emit(
+      ProjectSettingsEditing(
+        project: event.project,
+        originalProject: event.project,
+      ),
+    );
+  }
+
+  Future<void> _onUpdateSubmitted(
+    ProjectSettingsUpdateSubmitted event,
+    Emitter<ProjectSettingsState> emit,
+  ) async {
+    final currentState = state;
+    final originalProject = currentState is ProjectSettingsEditing
+        ? currentState.originalProject
+        : event.project;
+
+    emit(ProjectSettingsSaving(event.project));
+
+    final result = await _repository.updateProject(event.project);
+    result.fold(
+      (failure) => emit(
+        ProjectSettingsError(failure: failure, lastProject: originalProject),
+      ),
+      (updated) => emit(ProjectSettingsLoaded(updated)),
+    );
+  }
+
+  Future<void> _onDeleteRequested(
+    ProjectSettingsDeleteRequested event,
+    Emitter<ProjectSettingsState> emit,
+  ) async {
+    final currentState = state;
+    final lastProject = switch (currentState) {
+      ProjectSettingsLoaded(:final project) => project,
+      ProjectSettingsEditing(:final originalProject) => originalProject,
+      _ => null,
+    };
+
+    emit(const ProjectSettingsDeleteInProgress());
+
+    final result = await _repository.deleteProject(event.projectId);
+    result.fold(
+      (failure) => emit(
+        ProjectSettingsError(failure: failure, lastProject: lastProject),
+      ),
+      (_) => emit(const ProjectSettingsInitial()),
+    );
+  }
+
+  Future<void> _onCreationRequested(
+    ProjectSettingsCreationRequested event,
+    Emitter<ProjectSettingsState> emit,
+  ) async {
+    final creatorUserId = event.creatorUserId;
+    if (creatorUserId == null) {
+      emit(ProjectSettingsError(failure: UnexpectedFailure()));
+      return;
+    }
+
+    emit(const ProjectCreating());
+
+    final now = DateTime.now();
+    final project = Project(
+      id: '',
+      projectName: event.name,
+      description: event.description?.isNotEmpty == true ? event.description : null,
+      creatorUserId: creatorUserId,
+      exportStorageProvider: event.exportStorageProvider,
+      createdAt: now,
+      updatedAt: now,
+      status: ProjectStatus.active,
+    );
+
+    final result = await _repository.createProject(project);
+    result.fold(
+      (failure) => emit(ProjectSettingsError(failure: failure)),
+      (created) => emit(ProjectCreated(created)),
+    );
+  }
+}

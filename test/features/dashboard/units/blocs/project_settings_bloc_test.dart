@@ -164,6 +164,64 @@ void main() {
       );
     });
 
+    group('ProjectSettingsCreationRequested', () {
+      const testCreatorUserId = 'creator-id-1';
+
+      blocTest<ProjectSettingsBloc, ProjectSettingsState>(
+        'emits [ProjectCreating, ProjectCreated] on creation success',
+        build: () => Modular.get<ProjectSettingsBloc>(),
+        act: (bloc) => bloc.add(
+          const ProjectSettingsCreationRequested(
+            name: 'New Project',
+            creatorUserId: testCreatorUserId,
+          ),
+        ),
+        expect: () => [
+          const ProjectCreating(),
+          isA<ProjectCreated>()
+              .having((s) => s.project.projectName, 'project.projectName', 'New Project')
+              .having((s) => s.project.creatorUserId, 'project.creatorUserId', testCreatorUserId),
+        ],
+      );
+
+      blocTest<ProjectSettingsBloc, ProjectSettingsState>(
+        'emits [ProjectSettingsError] when creatorUserId is null',
+        build: () => Modular.get<ProjectSettingsBloc>(),
+        act: (bloc) => bloc.add(
+          const ProjectSettingsCreationRequested(
+            name: 'New Project',
+            creatorUserId: null,
+          ),
+        ),
+        expect: () => [
+          isA<ProjectSettingsError>()
+              .having((s) => s.failure, 'failure', isA<UnexpectedFailure>()),
+        ],
+      );
+
+      blocTest<ProjectSettingsBloc, ProjectSettingsState>(
+        'emits [ProjectCreating, ProjectSettingsError] on creation failure',
+        build: () {
+          fakeRepository.shouldFailOnCreate = true;
+          fakeRepository.failureToReturn = const ProjectFailure(
+            errorType: ProjectErrorType.connectionError,
+          );
+          return Modular.get<ProjectSettingsBloc>();
+        },
+        act: (bloc) => bloc.add(
+          const ProjectSettingsCreationRequested(
+            name: 'New Project',
+            creatorUserId: testCreatorUserId,
+          ),
+        ),
+        expect: () => [
+          const ProjectCreating(),
+          isA<ProjectSettingsError>()
+              .having((s) => s.failure, 'failure', isA<ProjectFailure>()),
+        ],
+      );
+    });
+
     group('ProjectSettingsDeleteRequested', () {
       blocTest<ProjectSettingsBloc, ProjectSettingsState>(
         'emits [DeleteInProgress, Initial] on delete success',
