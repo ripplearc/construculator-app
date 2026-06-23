@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/local_jwt_project_permission_data_source.dart';
@@ -248,7 +249,7 @@ void main() {
       );
 
       test(
-        'does not propagate realtime watch errors and keeps the stream alive',
+        'propagates realtime watch errors as a ProjectFailure',
         () async {
           const userId = 'user-123';
 
@@ -262,7 +263,7 @@ void main() {
           ];
 
           final firstEmission = Completer<void>();
-          final secondEmission = Completer<void>();
+          final errorReceived = Completer<void>();
           Object? receivedError;
           final subscription = repository
               .watchProjects(userId)
@@ -270,28 +271,21 @@ void main() {
                 (_) {
                   if (!firstEmission.isCompleted) {
                     firstEmission.complete();
-                  } else if (!secondEmission.isCompleted) {
-                    secondEmission.complete();
                   }
                 },
-                onError: (Object error, _) => receivedError = error,
+                onError: (Object error, _) {
+                  receivedError = error;
+                  if (!errorReceived.isCompleted) {
+                    errorReceived.complete();
+                  }
+                },
               );
           await firstEmission.future;
 
           projectDataSource.emitError(Exception('realtime failure'));
 
-          projectDataSource.ownedProjects = [
-            _createProjectDto(
-              id: 'owned-project',
-              projectName: 'Owned V2',
-              creatorUserId: 'user-123',
-              updatedAt: DateTime(2025, 1, 2),
-            ),
-          ];
-          projectDataSource.emitProjectChange();
-
-          await secondEmission.future;
-          expect(receivedError, isNull);
+          await errorReceived.future;
+          expect(receivedError, isA<ProjectFailure>());
           await subscription.cancel();
         },
       );
