@@ -963,4 +963,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dateRangeSheetCancel => 'Cancel';
+
+  @override
+  String get addDescriptionButton => 'Add Description';
+
+  @override
+  String get inviteMemberButton => 'Invite member';
 }
