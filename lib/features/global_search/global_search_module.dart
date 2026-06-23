@@ -7,9 +7,11 @@ import 'package:construculator/features/global_search/presentation/bloc/global_s
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/libraries/estimation/data/estimation_tile_provider_impl.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
+import 'package:construculator/libraries/owner/owner_library_module.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/global_search_routes.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
+import 'package:construculator/libraries/tag/tag_library_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 /// Module for the global search feature.
@@ -22,7 +24,11 @@ class GlobalSearchModule extends Module {
   GlobalSearchModule(this.appBootstrap);
 
   @override
-  List<Module> get imports => [SupabaseModule(appBootstrap)];
+  List<Module> get imports => [
+    SupabaseModule(appBootstrap),
+    TagLibraryModule(appBootstrap),
+    OwnerLibraryModule(appBootstrap),
+  ];
 
   @override
   void binds(Injector i) {
@@ -35,7 +41,11 @@ class GlobalSearchModule extends Module {
       () => GlobalSearchRepositoryImpl(dataSource: i()),
     );
     i.add<GlobalSearchBloc>(
-      () => GlobalSearchBloc(repository: i()),
+      () => GlobalSearchBloc(
+        repository: i(),
+        tagRepository: i(),
+        ownerRepository: i(),
+      ),
     );
     i.addSingleton<EstimationTileProvider>(
       () => const EstimationTileProviderImpl(),
