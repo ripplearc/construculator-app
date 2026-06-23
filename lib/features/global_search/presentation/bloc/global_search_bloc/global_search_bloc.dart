@@ -217,7 +217,8 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
             ? null
             : (_selectedTags.toList()..sort()).first,
         // SearchParams accepts a single owner; sort for deterministic
-        // selection until the API supports multi-owner filtering.
+        // selection until CA-737 extends the API to support multi-owner
+        // filtering.
         filterByOwner: _selectedOwnerIds.isEmpty
             ? null
             : (_selectedOwnerIds.toList()..sort()).first,
