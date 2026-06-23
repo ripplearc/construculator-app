@@ -6,9 +6,6 @@ import 'package:flutter_modular/flutter_modular.dart';
 class TagLibraryTestModule extends Module {
   @override
   void exportedBinds(Injector i) {
-    i.addLazySingleton<TagRepository>(
-      () => FakeTagRepository(),
-      key: 'fakeTagRepository',
-    );
+    i.addLazySingleton<TagRepository>(() => FakeTagRepository());
   }
 }

@@ -135,24 +135,28 @@ void main() {
       });
     });
 
-    test('getTags maps postgres connection error codes to connectionError',
-        () async {
-      fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
-      fakeSupabaseWrapper.selectMatchExceptionType =
-          SupabaseExceptionType.postgrest;
-      fakeSupabaseWrapper.postgrestErrorCode =
-          PostgresErrorCode.connectionFailure;
+    for (final code in [
+      PostgresErrorCode.connectionFailure,
+      PostgresErrorCode.unableToConnect,
+      PostgresErrorCode.connectionDoesNotExist,
+    ]) {
+      test('getTags maps postgres code $code to connectionError', () async {
+        fakeSupabaseWrapper.shouldThrowOnSelectMatch = true;
+        fakeSupabaseWrapper.selectMatchExceptionType =
+            SupabaseExceptionType.postgrest;
+        fakeSupabaseWrapper.postgrestErrorCode = code;
 
-      final result = await repository.getTags();
+        final result = await repository.getTags();
 
-      expectLeft(result, (failure) {
-        expect(failure, isA<SearchFailure>());
-        expect(
-          (failure as SearchFailure).errorType,
-          SearchErrorType.connectionError,
-        );
+        expectLeft(result, (failure) {
+          expect(failure, isA<SearchFailure>());
+          expect(
+            (failure as SearchFailure).errorType,
+            SearchErrorType.connectionError,
+          );
+        });
       });
-    });
+    }
 
     test('getTags maps malformed rows to parsing SearchFailure', () async {
       fakeSupabaseWrapper.addTableData(DatabaseConstants.tagsTable, [

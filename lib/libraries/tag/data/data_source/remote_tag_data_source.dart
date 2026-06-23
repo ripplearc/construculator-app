@@ -26,10 +26,7 @@ class RemoteTagDataSource implements TagDataSource {
 
       return rows.map(TagDto.fromJson).toList();
     } catch (error, stackTrace) {
-      _logger.error(
-        'Error while fetching tags, error: $error',
-        stackTrace.toString(),
-      );
+      _logger.error('Error while fetching tags', error, stackTrace);
       rethrow;
     }
   }
