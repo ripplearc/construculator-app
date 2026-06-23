@@ -993,4 +993,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exportOneDriveLabel => 'OneDrive link:';
+
+  @override
+  String get createProjectScreenTitle => 'Create a project';
 }
