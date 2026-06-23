@@ -32,10 +32,7 @@ class RemoteOwnerDataSource implements OwnerDataSource {
           .map(UserProfileDto.fromJson)
           .toList();
     } catch (error, stackTrace) {
-      _logger.error(
-        'Error while fetching project owners, error: $error',
-        stackTrace.toString(),
-      );
+      _logger.error('Error while fetching project owners', error, stackTrace);
       rethrow;
     }
   }
