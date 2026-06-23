@@ -962,4 +962,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inviteMemberButton => 'Invite member';
+
+  @override
+  String get createProjectScreenTitle => 'Create a project';
 }
