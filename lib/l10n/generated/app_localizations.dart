@@ -1815,6 +1815,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get dateRangeSheetCancel;
+
+  /// Label for the button that toggles the project description text area
+  ///
+  /// In en, this message translates to:
+  /// **'Add Description'**
+  String get addDescriptionButton;
+
+  /// Label for the button that opens the invite member flow
+  ///
+  /// In en, this message translates to:
+  /// **'Invite member'**
+  String get inviteMemberButton;
 }
 
 class _AppLocalizationsDelegate

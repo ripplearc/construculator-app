@@ -1501,5 +1501,15 @@
   "@dateRangeSheetCancel": {
     "description": "Label for the Cancel button in the Date range filter bottom sheet",
     "context": "N/A"
+  },
+  "addDescriptionButton": "Add Description",
+  "@addDescriptionButton": {
+    "description": "Label for the button that toggles the project description text area",
+    "context": "Project creation screen"
+  },
+  "inviteMemberButton": "Invite member",
+  "@inviteMemberButton": {
+    "description": "Label for the button that opens the invite member flow",
+    "context": "Project creation screen"
   }
 }
