@@ -6,9 +6,6 @@ import 'package:flutter_modular/flutter_modular.dart';
 class OwnerLibraryTestModule extends Module {
   @override
   void exportedBinds(Injector i) {
-    i.addLazySingleton<OwnerRepository>(
-      () => FakeOwnerRepository(),
-      key: 'fakeOwnerRepository',
-    );
+    i.addLazySingleton<OwnerRepository>(() => FakeOwnerRepository());
   }
 }

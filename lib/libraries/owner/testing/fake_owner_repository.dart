@@ -5,10 +5,8 @@ import 'package:construculator/libraries/owner/domain/repositories/owner_reposit
 
 /// Fake implementation of [OwnerRepository] for testing.
 class FakeOwnerRepository implements OwnerRepository {
-  // Tracks method calls for assertions.
   final List<Map<String, dynamic>> _methodCalls = [];
 
-  // Owners returned by getOwners.
   final List<UserProfile> _owners = [];
 
   /// Controls whether [getOwners] returns a [Failure].
