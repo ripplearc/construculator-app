@@ -21,7 +21,7 @@ If the input context from `plan-implementation` is incomplete or missing, respon
 
 ## 1. Class Overview
 
-| Class Type | Naming (RULE_2) | Purpose | Location |
+| Class Type | Naming | Purpose | Location |
 |------------|-----------------|---------|----------|
 | **Page** | `{Feature}Page` | Top-level screen with route; contains BLoC provider | `presentation/pages/{feature}_page.dart` |
 | **BLoC** | `{Feature}Bloc` | State coordinator; emits states based on events | `presentation/bloc/{feature}_bloc/{feature}_bloc.dart` |
@@ -34,7 +34,7 @@ If the input context from `plan-implementation` is incomplete or missing, respon
 Top-level screen; provides BLoC; builds UI tree. Pages are **passive** — they display state, they don't decide what it means.
 
 **BuildContext extensions** (always use these — never hardcode):
-- Localization (RULE_10): `context.l10n.keyName` (not `S.of(context)`)
+- Localization: `context.l10n.keyName` (not `S.of(context)`)
 - Colors: `context.colorTheme.primary` / `.pageBackground`
 - Typography: `context.textTheme.bodyMediumRegular` / `.titleLargeBold`
 
@@ -44,20 +44,20 @@ Top-level screen; provides BLoC; builds UI tree. Pages are **passive** — they 
 
 Coordinate UI state; handle events; emit states. BLoC is **not** a business rule engine.
 
-- **RULE_12:** State derivation lives here, not in widgets (`total`, `isValid`, `filteredItems`).
-- **RULE_5:** BLoC orchestrates UseCases; never implements business logic.
+- **State Derivation:** State derivation lives here, not in widgets (`total`, `isValid`, `filteredItems`).
+- **UI / Business Separation:** BLoC orchestrates UseCases; never implements business logic.
 - Events = user actions (`SubmitPressed`) or lifecycle (`PageLoaded`); States = UI representations (`Loading`, `Success`, `Error`). Transition with `emit()`.
-- **Error handling:** Catch UseCase failures; emit error states with localized messages (RULE_10).
+- **Error handling:** Catch UseCase failures; emit error states with localized messages (Localization).
 
 ## 4. Widget Pattern
 
-Reusable UI components; data via constructor; no state management. Widgets are **dumb presenters** (RULE_5) — zero business logic, no state derivation, no UseCase calls. Use CoreUI only (RULE_4), `context.l10n` for text (RULE_10), `context.colorTheme` / `context.textTheme` for styling. Prefer `const` constructors.
+Reusable UI components; data via constructor; no state management. Widgets are **dumb presenters** (UI / Business Separation) — zero business logic, no state derivation, no UseCase calls. Use CoreUI only (CoreUI Components), `context.l10n` for text (Localization), `context.colorTheme` / `context.textTheme` for styling. Prefer `const` constructors.
 
 ## 5. Dependency Registration
 
 In `{feature}_module.dart`, register BLoCs as transient: `i.add<{Feature}Bloc>(() => {Feature}Bloc(useCase: i()));`. See `code-domain` skill for canonical module pattern.
 
-## 6. Layer Boundaries (RULE_5)
+## 6. Layer Boundaries (UI / Business Separation)
 
 | ❌ Presentation MUST NOT | ✅ Presentation CAN |
 |-------------------------|-------------------|
@@ -79,13 +79,13 @@ In `{feature}_module.dart`, register BLoCs as transient: `i.add<{Feature}Bloc>((
 ## Priority Rules (Critical to Follow)
 
 ### 🔴 Non-Negotiable
-1. **Zero business logic** — Presentation must not implement business rules; always call UseCases (RULE_5)
-2. **Localization & Theming** — All user-facing text via `context.l10n`; use `context.colorTheme` and `context.textTheme` for colors/typography (RULE_10)
-3. **CoreUI Only** — Use `ripplearc_coreui` components; avoid direct `Material` widgets (RULE_4)
+1. **Zero business logic** — Presentation must not implement business rules; always call UseCases (UI / Business Separation)
+2. **Localization & Theming** — All user-facing text via `context.l10n`; use `context.colorTheme` and `context.textTheme` for colors/typography (Localization)
+3. **CoreUI Only** — Use `ripplearc_coreui` components; avoid direct `Material` widgets (CoreUI Components)
 
 ### 🟡 Core Patterns (Always Apply)
 4. **Pages are passive** — Pages display BLoC-provided state and do not contain logic
-5. **BLoC coordinates state** — Derive computed values and state transitions in BLoC (RULE_12)
+5. **BLoC coordinates state** — Derive computed values and state transitions in BLoC (State Derivation)
 6. **Routing (three-tier model):**
    - Tab switching (within shell): receive `AppShellBloc` as a constructor prop and call `appShellBloc.add(AppShellTabSelected(tab))` — `AppShellBloc` is not in the widget tree as a `BlocProvider`, so `context.read<AppShellBloc>()` will not work
    - Full-screen (above shell): `_router.push(...)` — resolve as `final _router = Modular.get<AppRouter>();` class field
@@ -95,11 +95,11 @@ In `{feature}_module.dart`, register BLoCs as transient: `i.add<{Feature}Bloc>((
 
 ## References
 
-- **RULE_4:** `skills/rules/04-coreui-components.md` — CoreUI components
-- **RULE_5:** `skills/rules/05-ui-business-separation.md` — No business logic in UI + State derivation in BLoC
-- **RULE_7:** `skills/rules/07-self-documenting-code.md` — Comments explain why
-- **RULE_10:** `skills/rules/10-localization.md` — All user-facing text
-- **RULE_12:** `skills/rules/12-state-derivation.md` — Derive in BLoC, not widgets
+- **CoreUI Components:** `skills/rules/04-coreui-components.md` — CoreUI components
+- **UI / Business Separation:** `skills/rules/05-ui-business-separation.md` — No business logic in UI + State derivation in BLoC
+- **Self-Documenting Code:** `skills/rules/07-self-documenting-code.md` — Comments explain why
+- **Localization:** `skills/rules/10-localization.md` — All user-facing text
+- **State Derivation:** `skills/rules/12-state-derivation.md` — Derive in BLoC, not widgets
 - **CoreUI API:** `skills/references/coreui-api.md`
 - **Examples:** `lib/features/auth/presentation/`, `lib/features/project/presentation/`
 - `write-tests` skill — Widget tests for pages

@@ -1,343 +1,187 @@
 ---
 name: pr-review
 description: |
-  Modular PR review skill for Flutter/Dart changes.
-  Use when a user asks for a PR review, code review, branch comparison, or
-  asks to check CoreUI, localization, UI/business separation, or test quality.
+  Modular PR review for Flutter/Dart changes. Auto-detects which rules apply to
+  each changed file, applies the full rule set in skills/rules/ (referenced by
+  name), and returns a copy-paste-ready markdown PR description + review table.
 
-  This skill starts with a proof of concept for RULE_4, RULE_5, and RULE_10,
-  while preserving the existing scripts/review_pr.sh workflow during migration.
+  Use when a user asks to review a PR, review a branch, compare branches, or
+  check naming, CoreUI, testing, streams, localization, accessibility, logging,
+  or UI/business separation.
 
   Trigger phrases: "review this PR", "review my PR", "review feat/X to main",
-  "check my branch", "code review", "analyze my changes"
-
+  "check my branch", "code review", "analyze my changes".
 disable-model-invocation: false
-allowed-tools: Bash Read Grep
+allowed-tools: Bash Read Grep Write
 ---
 
 # PR Review Skill
 
-This skill reviews PR changes in a structured way and returns findings in JSON.
-It follows a progressive disclosure model:
-
-1. Use `scripts/collect_changes.sh` to gather changed files.
-2. Auto-detect applicable rules based on file types.
-3. Use `scripts/generate_diff.sh` to fetch diffs for analysis.
-4. Apply rules to identify issues and violations.
-5. Return structured JSON with findings.
-
-## Current POC Scope
-
-This migration starts with three high-signal rules:
+Reviews a branch diff against a base, routes each changed file to only the rules
+that apply, and reports findings. Default output is a markdown document ready to
+paste into a PR (see [Output](#output)).
+
+## Rules
+
+The full rule set lives in `skills/rules/`. Each rule file owns its detection
+patterns (its `Detective` section), severity levels, and fix guidance — load a
+rule only when it's routed to a changed file.
+
+| Rule | Applies to |
+|------|-----------|
+| Digestible PR | Production-code diff size (PR-level) |
+| Naming & Abstraction | `lib/**/*.dart` |
+| Test Double Pattern | `test/**/*.dart` |
+| CoreUI Components | `**/presentation/`, `lib/app/` |
+| UI / Business Separation | `**/presentation/`, `lib/app/` |
+| Stream Lifecycle | Stream-owning `lib/**` (Repo/DataSource/BLoC/Service) |
+| Self-Documenting Code | `lib/**/*.dart` |
+| Widget Test Finders | `test/**/widgets/`, `testWidgets(` |
+| Unit Test Behavior | `test/features/**` unit tests |
+| Localization | `**/presentation/`, `lib/app/` |
+| Mutation Testing | **Gated:** logic-heavy domain/data files |
+| Accessibility | **Gated:** user-facing UI + `*_a11y_test.dart` |
+| Sentry Logging | `lib/**` using `AppLogger` |
+
+`Abstraction Naming`→`Naming & Abstraction` and `State Derivation`→`UI /
+Business Separation` are deprecated; if a user passes them, map transparently and
+note it in `rules_skipped`.
+
+## Input
+
+| Field | Required | Default | Notes |
+|-------|----------|---------|-------|
+| `pr_branch` | yes | — | branch with changes |
+| `base_branch` | no | `main` | target branch |
+| `rules` | no | all | force a subset by name, e.g. `["Naming & Abstraction","Stream Lifecycle"]` |
+| `output_format` | no | `markdown` | `markdown` \| `json` \| `both` |
+| `output_dir` | no | `reviews/` | directory (repo-root-relative) the `.md` review file is written to |
+| `max_file_size_kb` | no | `100` | skip larger files (1–1000) |
+
+On missing/invalid input, return an error object (see [Errors](#errors)).
+
+## Workflow
+
+1. **Collect** changed files — pipe `{"pr_branch","base_branch"}` into
+   `scripts/collect_changes.sh`. It already excludes generated (`*.g.dart`,
+   `*.freezed.dart`, …) and binary files, so every returned file is relevant.
+   No files → return empty issues with all rules in `rules_skipped`.
+
+2. **Route** each file to rules using the *Applies to* column above. Path-based
+   buckets come from `scripts/filter_files.sh`; content-derived buckets
+   (`stream_owning`, `logic_heavy`, `logger_using`) are confirmed by grepping the
+   file (e.g. `grep -lE "StreamController|\.listen\(" …`, `grep -l "AppLogger" …`).
+   `Digestible PR` always runs once over the production-code diff size.
+
+3. **Gate** `Mutation Testing` and `Accessibility`:
+   - `Mutation Testing` only if a logic-heavy file (3+ branches / math / data
+     transforms) changed — else skip: `"No logic-heavy code changed"`.
+   - `Accessibility` only if an interactive presentation file changed; then require
+     a matching `*_a11y_test.dart` update and flag if missing — else skip:
+     `"No user-facing UI changed"`.
+   If the user passed `rules`, apply only those (after the `Abstraction Naming`→
+   `Naming & Abstraction` / `State Derivation`→`UI / Business Separation` mapping);
+   record the rest in `rules_skipped` with reason `"User specified rules: [...]"`.
+
+4. **Apply** each routed rule: `cat` its module from `skills/rules/`, read the
+   file (`git show "$PR_BRANCH:path"`), get diff context via
+   `scripts/generate_diff.sh`, and use the rule's own detection patterns. Record
+   each violation as an issue: `file`, `line`, `snippet` (3 lines context),
+   `severity`, `suggested_fix`, and `references` (the rule module + any relevant
+   `skills/references/*.md`).
+
+5. **Compile** statistics (counts by severity and rule) and build the output
+   object below.
+
+Any rule with an empty routed bucket is skipped with a reason. Cache file
+contents to avoid re-reading.
+
+## Output
+
+The findings are modeled as JSON matching `schemas/output.schema.json`:
+`summary`, `metadata`, `issues[]`, `rules_applied`, `rules_skipped[]`,
+`next_steps`, `statistics`.
+
+Each issue: `{ id, name, description, rule, severity, file, line, snippet,
+suggested_fix, references[] }` with severity ∈ `critical|major|minor|suggestion`.
+
+**`markdown` (default) / `both`** — render the JSON as one self-contained
+document the user pastes straight into the PR. Output *only* the markdown (no
+outer code fence, no JSON), derive every value from the computed issues, and
+leave `Status`/`Notes` blank for the author. With zero issues, omit the table
+and write `✅ No issues found — all applied rules passed.` With `both`, emit the
+JSON, then `---`, then the markdown. With `json`, skip the markdown.
+
+````markdown
+# PR Review: <pr_branch> → <base_branch>
+
+## 📝 PR Description
+
+<2–4 plain-language sentences on what this PR does and why — no rule jargon.>
 
-- RULE_4: CoreUI Components Usage
-- RULE_5: UI & Business Logic Separation
-- RULE_10: Localization Usage
+**Type:** <Feature | Bugfix | Refactor | Chore | Test | Docs> ·
+**Size:** <XS | S | M | L> (<N> production lines) ·
+**Rules applied:** <rule names>
 
-## Input Contract
+### What changed
+- <key change tied to a concrete file/feature>
+- <key change>
 
-Required:
-- `pr_branch`: branch containing changes (e.g., "feat/login")
+---
 
-Optional:
-- `base_branch`: target branch, defaults to `main`
-- `rules`: optional list of rule IDs to force (e.g., ["RULE_4", "RULE_5"])
-- `output_format`: `json`, `markdown`, or `both`, defaults to `json`
-- `max_file_size_kb`: skip files larger than this (1-1000), defaults to 100
+## 🔍 Review Summary
 
-## Agent Execution Workflow
+> Found <N> issue(s): <X> 🔴 critical · <Y> 🟠 major · <Z> 🟡 minor · <W> 🔵 suggestion — across <M> file(s).
 
-### Step 1: Parse and Validate Input
+| # | Issue | Severity | Location | Description | Suggested Fix | Status | Notes |
+|---|-------|----------|----------|-------------|---------------|--------|-------|
+| 1 | <name> | 🔴 Critical | `<file>:<line>` | <what & why> | <fix> | | |
 
-Extract parameters from user request and validate against input schema:
-
-```
-- pr_branch (required): string, non-empty
-- base_branch (optional): string, defaults to "main"
-- rules (optional): array of ["RULE_4", "RULE_5", "RULE_10"]
-- output_format (optional): enum [json, markdown, both], defaults to "json"
-- max_file_size_kb (optional): number 1-1000, defaults to 100
-
-If any required field is missing or invalid, return error JSON:
-{
-  "error": "Field X is required/invalid",
-  "code": "MISSING_REQUIRED_FIELD" | "INVALID_ENUM" | "PARSE_ERROR",
-  "suggestions": ["How to fix"]
-}
-```
+**Status (author fills):** ✅ Addressed · 📋 Future Story (add YouTrack ID) ·
+❌ Disagree (justify) · 🔄 In Progress
 
-### Step 2: Collect Changed Files
-
-Run `bash skills/pr-review/scripts/collect_changes.sh` with input:
+<!-- Skipped: <rule name> (reason), <rule name> (reason) -->
+````
 
-```bash
-echo '{"pr_branch": "'"$PR_BRANCH"'", "base_branch": "'"$BASE_BRANCH"'"}' | \
-  bash skills/pr-review/scripts/collect_changes.sh
-```
-
-Expected output:
-```json
-{
-  "files": [
-    {"path": "lib/features/auth/login.dart", "status": "M"},
-    {"path": "lib/features/auth/login_screen.dart", "status": "A"},
-    ...
-  ]
-}
-```
+Sort rows by severity (critical→suggestion) then file; number the `#` column;
+collapse newlines and escape `|` as `\|` in cells; omit `:<line>` for PR-level
+issues (`Digestible PR`); build the blockquote from `statistics.by_severity`.
 
-**Handle errors:**
-- If script returns `{"error": "..."}`, abort and return error to user
-- If no files changed, return empty issues list with `rules_skipped` = all rules
+### Saving the review file
 
-### Step 3: Filter Applicable Files
-
-Filter changed files to only presentation files (these are the only files applicable to POC rules):
-
-```bash
-echo "{\"files\": [$FILES_JSON], \"pattern\": \"lib/features/**/presentation/\"}" | \
-  bash skills/pr-review/scripts/filter_files.sh
-```
-
-Also filter `lib/app/presentation/` files:
-
-```bash
-echo "{\"files\": [$REMAINING_FILES], \"pattern\": \"lib/app/presentation/\"}" | \
-  bash skills/pr-review/scripts/filter_files.sh
-```
-
-Merge and deduplicate the two filter outputs into a single presentation file list before continuing. Example (pseudo):
-
-```bash
-# outputA and outputB are JSON arrays returned by filter_files.sh
-# merge, dedupe:
-jq -s 'add | unique_by(.path)' outputA.json outputB.json > presentation_files.json
-```
-
-Expected output:
-```json
-{
-  "files": [
-    {"path": "lib/features/auth/presentation/login_screen.dart"},
-    {"path": "lib/app/presentation/app_widget.dart"}
-  ]
-}
-```
-
-**Result:** Reduced file set ready for rule application. If no presentation files, `rules_skipped` = all 3 rules.
-
-### Step 4: Auto-Detect Applicable Rules
-
-Based on changed file paths, determine which rules to apply:
-
-**Rule Selection Logic:**
-
-```
-For filtered presentation files (already filtered in Step 3):
-  → Always apply RULE_4 (CoreUI Components)
-  → Always apply RULE_5 (UI/Business Logic Separation)
-  → Always apply RULE_10 (Localization)
-
-If user specified --rules argument:
-  → Override and apply only specified rules
-
-If no presentation files were filtered:
-  → All 3 rules are skipped with reason "No presentation files changed"
-```
-
-**Example:**
-- Input: 14 files changed across project
-- After filtering (Step 3): 2 presentation files
-- Rules applied: [RULE_4, RULE_5, RULE_10]
-- All 3 rules run against both files
-
-**If user overrides with specific rules:**
-```
-Input: {"rules": ["RULE_4"]}
-→ Only RULE_4 runs on filtered presentation files
-→ RULE_5, RULE_10 tracked as skipped: {"rule": "RULE_5", "reason": "User specified rules: [RULE_4]"}
-```
-
-### Step 5: Load Rule Modules
-
-For each applicable rule, load the rule file from shared rules directory and extract detection patterns:
-
-```bash
-cat skills/rules/04-coreui-components.md
-cat skills/rules/05-ui-business-separation.md
-cat skills/rules/10-localization.md
-```
-
-**Note:** All rules are now in the shared `skills/rules/` directory and can be referenced by any skill.
-
-Each rule module provides:
-- Detection patterns (regex or semantic patterns)
-- Severity levels (critical, major, minor, suggestion)
-- Suggested fixes
-- References and examples
-
-### Step 6: Apply Rules to Filtered Files
-
-For each filtered presentation file and applicable rule:
-
-**6a. Read file content** (if not already cached):
-```bash
-git show infra/agentic-skills:lib/features/auth/presentation/login_screen.dart
-```
-
-**6b. Generate diff** for context:
-```bash
-echo '{
-  "pr_branch": "infra/agentic-skills",
-  "base_branch": "main",
-  "file": "lib/features/auth/presentation/login_screen.dart",
-  "context_lines": 3
-}' | bash skills/pr-review/scripts/generate_diff.sh
-```
-
-**6c. Search for violations** using grep patterns defined in rule:
-
-For RULE_4, search for:
-- `EdgeInsets\.(all|symmetric|only)\((?!CoreSpacing)` → Hardcoded spacing
-- `Icons\.` → Material icons (not CoreUI)
-- `ElevatedButton|TextFormField|AppBar` → Material components
-- `Colors\.` → Hardcoded colors
-
-**6d. Extract issue details** for each violation found:
-- File path
-- Line number(s)
-- Snippet with context (3 lines before/after)
-- Severity (based on rule)
-- Suggested fix
-- References to documentation
-
-**6e. Compile issue object:**
-```json
-{
-  "id": "RULE_4-001",
-  "name": "Hardcoded spacing value",
-  "description": "EdgeInsets.all(24.0) should use CoreSpacing constant",
-  "rule": "RULE_4",
-  "severity": "major",
-  "file": "lib/features/auth/presentation/login_screen.dart",
-  "line": 42,
-  "snippet": "Padding(\n  padding: EdgeInsets.all(24.0),  // ← Issue here\n  child: ...",
-  "suggested_fix": "Replace EdgeInsets.all(24.0) with EdgeInsets.all(CoreSpacing.space24)",
-  "references": [
-    "skills/rules/04-coreui-components.md",
-    "skills/references/coreui-api.md#spacing"
-  ]
-}
-```
-
-### Step 7: Compile Statistics
-
-Count issues by severity and rule:
-
-```json
-{
-  "statistics": {
-    "total_issues": 5,
-    "by_severity": {
-      "critical": 0,
-      "major": 2,
-      "minor": 2,
-      "suggestion": 1
-    },
-    "by_rule": {
-      "RULE_4": 3,
-      "RULE_5": 2,
-      "RULE_10": 0
-    },
-    "files_analyzed": 2,
-    "files_with_issues": 2
-  }
-}
-```
-
-### Step 8: Generate Final Output
-
-Compile all issues, metadata, and statistics into output JSON matching `schemas/output.schema.json`:
-
-```json
-{
-  "summary": "Found 5 issues (2 major, 2 minor, 1 suggestion) in 2 files",
-  "metadata": {
-    "pr_branch": "feat/auth",
-    "base_branch": "main",
-    "skill_version": "1.0.0-poc",
-    "timestamp": "2026-04-30T18:24:03Z",
-    "files_changed": 2,
-    "rules_applied": ["RULE_4", "RULE_5", "RULE_10"]
-  },
-  "issues": [...],
-  "rules_applied": ["RULE_4", "RULE_5", "RULE_10"],
-  "rules_skipped": [...],
-  "next_steps": [
-    "Replace hardcoded spacing with CoreSpacing constants",
-    "Move business logic out of LoginScreen widget",
-    "Add localization for user-facing strings"
-  ],
-  "statistics": {...}
-}
-```
-
-If `output_format` is "markdown" or "both", also generate markdown output.
-
-## Error Handling
-
-All scripts return JSON on success or error. Handle these error codes:
-
-```json
-{
-  "error": "Human-readable message",
-  "code": "ERROR_CODE",
-  "details": {"field": "...", "expected": "...", "received": "..."},
-  "suggestions": ["How to fix"]
-}
-```
-
-**Error codes:**
-- `MISSING_REQUIRED_FIELD` - Required input missing
-- `INVALID_ENUM` - Invalid enum value
-- `INVALID_BRANCH` - Branch doesn't exist
-- `GIT_ERROR` - Git command failed
-- `PARSE_ERROR` - Failed to parse JSON
-- `FILE_NOT_FOUND` - File doesn't exist in branch
-
-**Agent behavior on error:**
-- If schema validation fails → Return error, ask user to correct input
-- If git command fails → Return error with branch names to verify
-- If file is too large (> max_file_size_kb) → Skip file, log in rules_skipped
-- If rule module is missing → Return error, file likely deleted
-
-## File Routing
-
-**RULE_4, RULE_5, RULE_10 trigger on:**
-- ✅ `lib/features/**/presentation/*.dart`
-- ✅ `lib/app/presentation/*.dart`
-- ❌ `test/` (test files skip all rules)
-- ❌ `lib/**/*.g.dart`, `*.freezed.dart`, etc. (generated code)
-
-## Output Shape
-
-Return a JSON object matching `schemas/output.schema.json` with:
-
-- `summary` - Human-readable summary of findings
-- `metadata` - Execution metadata (branches, timestamp, version)
-- `issues` - Array of issue objects
-- `rules_applied` - List of rules that ran
-- `rules_skipped` - List of rules with skip reason
-- `next_steps` - Suggested next actions
-- `statistics` - Issue counts by severity/rule
+Whenever the output includes markdown (`markdown` or `both`), **also persist it to a
+file** — don't only print it. Steps:
+
+1. Ensure the output directory exists: `mkdir -p "$OUTPUT_DIR"` (default
+   `reviews/`, repo-root-relative).
+2. Build a slug from the branches by replacing every non-alphanumeric character
+   (including `/`) with `-`: `<pr_slug>__to__<base_slug>.md`. Example:
+   `feat/power-sync-wrappers` → `feat-power-sync-wrappers`, base
+   `feat/wire-powersync` → `feat-wire-powersync`, so the file is
+   `reviews/feat-power-sync-wrappers__to__feat-wire-powersync.md`.
+3. Write the exact rendered markdown document (the same content described above,
+   no outer code fence) to that path with the `Write` tool, overwriting any
+   existing file for the same branch pair.
+4. Report the written file path to the user, then show the markdown inline.
+
+For `output_format: json` (no markdown), skip file creation. The `reviews/`
+directory is a working artifact — assume it may be git-ignored; create it if
+missing rather than failing.
+
+## Errors
+
+Scripts and this skill return JSON on failure:
+`{ "error", "code", "details?", "suggestions" }`.
+
+Codes: `MISSING_REQUIRED_FIELD`, `INVALID_ENUM`, `INVALID_BRANCH`, `GIT_ERROR`,
+`PARSE_ERROR`, `FILE_NOT_FOUND`. On a git/branch failure, return the branch names
+to verify; oversized files are skipped and noted in `rules_skipped`; a missing
+rule module means the file was likely deleted.
 
 ## Notes
 
-- Keep the existing `scripts/review_pr.sh` available during the transition.
-- Expand the rule set incrementally after the POC is validated on real PRs.
-- All scripts are idempotent and can be run multiple times without side effects.
-- Agent should cache file contents to minimize disk I/O.
+- Scripts are idempotent. The legacy monolithic `scripts/review_pr.sh` is
+  retired; keep it only as a historical reference for detection patterns.
+- Always record gate results (`Mutation Testing`/`Accessibility`) in
+  `rules_applied` or `rules_skipped` so coverage is auditable.
 
-- Deprecation note: `scripts/review_pr.sh` is kept for backward compatibility during
-  the POC. Remove or retire the script after the POC has been validated on several
-  real PRs (for example, "remove after POC is validated on N real PRs or by YYYY-MM-DD").

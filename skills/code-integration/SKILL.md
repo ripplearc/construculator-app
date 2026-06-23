@@ -28,12 +28,12 @@ disable-model-invocation: false
 
 ## Wrapper Pattern Classes
 
-| Class Type | Naming (RULE_2) | Signature | Responsibilities | Type Boundary |
+| Class Type | Naming | Signature | Responsibilities | Type Boundary |
 |------------|-----------------|-----------|------------------|---------------|
 | **Wrapper** | `{SDK}Wrapper` | Concrete class with SDK-specific methods | Wraps SDK client; maps SDK types ↔ domain types; handles SDK errors | **Only place SDK types appear** |
 | **Interface** (optional) | `{SDK}WrapperInterface` | Abstract class with domain types only | Domain-facing contract when abstraction needed | Domain sees this |
 | **Failure** | `{SDK}Failure extends Failure` | `{SDK}ErrorType errorType` | SDK-specific error types (timeout, auth, rate limit, etc.) | Domain error type |
-| **Fake** (test) | `Fake{SDK}Client` | `implements sdk.{SDK}Client` | Faithful re-implementation of the SDK client interface; injected in place of the real SDK in tests; exposes configurable fields to control responses and errors per-test (RULE_3) | Test boundary |
+| **Fake** (test) | `Fake{SDK}Client` | `implements sdk.{SDK}Client` | Faithful re-implementation of the SDK client interface; injected in place of the real SDK in tests; exposes configurable fields to control responses and errors per-test (Test Double Pattern) | Test boundary |
 
 **Pattern:** Create wrapper in `lib/libraries/{sdk}/{sdk}_wrapper.dart` that domain code depends on directly (or via optional interface).
 
@@ -43,7 +43,7 @@ disable-model-invocation: false
 |---------------|-----------|--------------|-------|
 | SDK-specific (e.g., `sdk.{SDK}Exception`) | error | `{SDK}Failure(errorType: ...)` | Map SDK error codes to domain types |
 | `TimeoutException` | warning | `{SDK}Failure(timeout)` | Expected error |
-| Other | error | `UnexpectedFailure()` | RULE_15: Log once at wrapper boundary |
+| Other | error | `UnexpectedFailure()` | Sentry Logging: Log once at wrapper boundary |
 
 
 ## Dependency Registration
@@ -58,7 +58,7 @@ Create `lib/libraries/{sdk}/_{sdk}_module.dart` extending `Module`. In `binds(In
 - `lib/libraries/{sdk}/{sdk}_wrapper.dart`
 - `lib/libraries/{sdk}/_{sdk}_module.dart`
 - `lib/libraries/{sdk}/domain/{sdk}_failure.dart`
-- `test/libraries/{sdk}/fake_{sdk}_client.dart` (RULE_3: fake, not mock)
+- `test/libraries/{sdk}/fake_{sdk}_client.dart` (Test Double Pattern: fake, not mock)
 - `test/libraries/{sdk}/{sdk}_wrapper_test.dart`
 - Updated: `lib/app/app_module.dart` (import `{SDK}Module`)
 
@@ -67,13 +67,13 @@ Create `lib/libraries/{sdk}/_{sdk}_module.dart` extending `Module`. In `binds(In
 1. **Domain isolation** — Wrapper is boundary; domain never imports SDK directly
 2. **Wrapper is type translation layer** — SDK types → Domain types
 3. **Error translation** — SDK exceptions → Domain Failures at wrapper boundary. `{SDK}Failure extends Failure` and `UnexpectedFailure` both come from `package:construculator/libraries/errors/failures.dart`
-4. **Testability** — Fake SDK client (RULE_3), test wrapper mapping logic
+4. **Testability** — Fake SDK client (Test Double Pattern), test wrapper mapping logic
 
 ## References
 
-- **RULE_2:** `skills/rules/02-naming-conventions.md`
-- **RULE_3:** `skills/rules/03-test-double-pattern.md`
-- **RULE_15:** Sentry logging at boundaries
+- **Naming & Abstraction:** `skills/rules/02-naming-conventions.md`
+- **Test Double Pattern:** `skills/rules/03-test-double-pattern.md`
+- **Sentry Logging:** Sentry logging at boundaries
 - **Clean Architecture:** Domain depends on wrappers, not SDKs
 - **Example:** `lib/libraries/supabase/supabase_wrapper.dart`
 - `write-tests` skill — Wrapper tests with fake SDK clients

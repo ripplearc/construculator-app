@@ -1,26 +1,26 @@
-# RULE 12: No State Derivation in UI (MERGED)
+# State Derivation (MERGED)
 
-> **⚠️ This rule has been merged into RULE_5: UI & Business Logic Separation**
+> **⚠️ This rule has been merged into `UI / Business Separation`**
 >
 > **Location:** `skills/rules/05-ui-business-separation.md`
 >
-> **Section:** "State Derivation (original RULE_12)"
+> **Section:** "Core Principle 2: No State Derivation"
 
-## Rule ID
-RULE_12 (Deprecated - use RULE_5)
+## Name
+State Derivation (Deprecated - use UI / Business Separation)
 
 ## Migration Note
 
-RULE_12 (No State Derivation in UI) and RULE_5 (UI & Business Logic Separation) have been merged because both enforce UI purity. The combined rule now covers:
+`State Derivation` and `UI / Business Separation` have been merged because both enforce UI purity. The combined rule now covers:
 
-1. **Business logic separation** (original RULE_5) - No validation, coordination, or decisions in UI
-2. **State derivation** (original RULE_12) - No calculations, transformations, or derived values in UI
+1. **Business logic separation** - No validation, coordination, or decisions in UI
+2. **State derivation** - No calculations, transformations, or derived values in UI
 
 ## Where to Find This Content Now
 
-All content from RULE_12 is now in:
+All content from `State Derivation` is now in:
 - **File:** `skills/rules/05-ui-business-separation.md`
-- **Section:** Lines 130+ under "Core Principle 2: No State Derivation (original RULE_12)"
+- **Section:** "Core Principle 2: No State Derivation"
 
 Key topics covered:
 - Widget must not calculate or transform state
@@ -54,9 +54,10 @@ Widget build(BuildContext context) {
 }
 ```
 
-## For Skills Referencing RULE_12
+## For Skills Referencing State Derivation
 
-If your skill references `RULE_12`, update to reference `RULE_5` instead:
+If your skill references `State Derivation`, update to reference
+`UI / Business Separation` instead:
 
 ```bash
 # Old reference
@@ -64,7 +65,7 @@ cat skills/rules/12-state-derivation.md
 
 # New reference
 cat skills/rules/05-ui-business-separation.md
-# Look for section: "Core Principle 2: No State Derivation (original RULE_12)"
+# Look for section: "Core Principle 2: No State Derivation"
 ```
 
 ## Detection Patterns

@@ -1,7 +1,7 @@
 # RULE 7: Self-Documenting & Clean Code
 
-## Rule ID
-RULE_7
+## Name
+Self-Documenting Code
 
 ## Category
 Code Quality & Maintainability

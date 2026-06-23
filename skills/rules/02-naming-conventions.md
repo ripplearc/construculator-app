@@ -1,7 +1,7 @@
 # RULE 2: Naming Conventions & Abstraction Levels
 
-## Rule ID
-RULE_2
+## Name
+Naming & Abstraction
 
 ## Category
 Architecture & Design
@@ -137,5 +137,5 @@ abstract class EstimationDataSource {
 
 ## References
 
-- [RULE_2 Gist: Class Naming Convention](https://gist.github.com/ripplearcgit/89f05e4f83e087f63148bbbb1d99a178)
-- Related: RULE_5 (UI/Business Separation) — places classes in the right layer.
+- [Naming & Abstraction Gist: Class Naming Convention](https://gist.github.com/ripplearcgit/89f05e4f83e087f63148bbbb1d99a178)
+- Related: UI / Business Separation — places classes in the right layer.

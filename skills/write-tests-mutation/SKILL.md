@@ -97,7 +97,7 @@ If score ≥ threshold (`<threshold failure>` from the XML) → done. If score i
 
 ## References
 
-- **RULE_13:** `skills/rules/13-mutation-testing.md`
+- **Mutation Testing:** `skills/rules/13-mutation-testing.md`
 - **Example config:** `test/features/estimations/mutations/add_cost_estimation_usecase.xml`
 - **CI runner:** `scripts/run_check.sh` (`run_mutation_tests` function, line 202)
 - **CI docs:** `docs/Testing/CI-Scripts.md` — "Mutation testing behavior" section

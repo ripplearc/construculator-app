@@ -1,7 +1,7 @@
 # RULE 3: Test Double Pattern
 
-## Rule ID
-RULE_3
+## Name
+Test Double Pattern
 
 ## Category
 Testing Strategy
@@ -140,5 +140,5 @@ See `docs/Testing/Fakes.md` for the full decision matrix and `FakeSupabaseWrappe
 ## References
 
 - [Test Double Pattern Gist](https://gist.github.com/ripplearcgit/89687b7414f62a8c042b16b52e9ceb0b)
-- Related: RULE_8 (Widget Test Finders), RULE_9 (Unit Test Behavior)
+- Related: Widget Test Finders, Unit Test Behavior
 - Existing fakes: `test/utils/fake_app_bootstrap_factory.dart`, `test/utils/a11y/` (helpers).

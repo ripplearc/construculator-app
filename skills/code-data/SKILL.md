@@ -19,7 +19,7 @@ disable-model-invocation: false
 
 ## 1. Class Overview
 
-| Class Type | Naming (RULE_2) | Purpose |
+| Class Type | Naming | Purpose |
 |------------|-----------------|---------|
 | **DataSource** (interface) | `{Noun}DataSource` | Contract with **explicit method names** (e.g., `fetchInitialEstimationsByProjectId`) |
 | **RemoteDataSource** | `Remote{Noun}DataSource` | Fetches from API/DB via `SupabaseWrapper` |
@@ -28,7 +28,7 @@ disable-model-invocation: false
 
 ## 2. RemoteDataSource Pattern
 
-Fetch from external source. Log `_logger.debug('Fetched N items')` on success; **always rethrow on error** — RepositoryImpl is the error boundary (RULE_15); do NOT log errors here.
+Fetch from external source. Log `_logger.debug('Fetched N items')` on success; **always rethrow on error** — RepositoryImpl is the error boundary (Sentry Logging); do NOT log errors here.
 
 ## 3. RepositoryImpl Pattern
 
@@ -44,7 +44,7 @@ Implement domain repository interface; delegate to DataSource; map exceptions to
 | `PostgrestException` (critical) | error | `{Feature}Failure(databaseError)` | Critical — unknown PG codes, server errors; log error (Sentry) |
 | Other | error | `UnexpectedFailure()` | Critical — unexpected exceptions; log error (Sentry) |
 
-**RULE_15 — Log once at RepositoryImpl only:**
+**Sentry Logging — Log once at RepositoryImpl only:**
 - **Warning level:** Expected errors; no Sentry event
 - **Error level:** Critical/unexpected errors; sends Sentry event
 
@@ -69,7 +69,7 @@ Implement domain repository interface; delegate to DataSource; map exceptions to
 
 In `{feature}_module.dart`, register DataSource as `addLazySingleton` (inject `SupabaseWrapper`) and RepositoryImpl as `addLazySingleton` (inject DataSource). See `code-domain` skill for the canonical `_registerDependencies` shape.
 
-## 6. Layer Boundaries (RULE_5)
+## 6. Layer Boundaries (UI / Business Separation)
 
 | ❌ Data MUST NOT Import | ✅ Data CAN Import |
 |-------------------------|-------------------|
@@ -88,17 +88,17 @@ In `{feature}_module.dart`, register DataSource as `addLazySingleton` (inject `S
 
 ## Key Principles
 
-1. **Explicit names** — `fetchInitialEstimationsByProjectId`, not `getEstimations` (RULE_2)
+1. **Explicit names** — `fetchInitialEstimationsByProjectId`, not `getEstimations` (Naming & Abstraction)
 2. **Error boundary** — RemoteDataSource rethrows without logging; RepositoryImpl is the error boundary where exceptions become Failures
 3. **DTO ↔ Entity** — DTOs for JSON; Entities for domain; validate/handle invalid JSON
-4. **RULE_15: Log once** — At RepositoryImpl boundary only (don't re-log as errors propagate)
+4. **Sentry Logging: Log once** — At RepositoryImpl boundary only (don't re-log as errors propagate)
 5. **Never throw from repository** — Always `Either<Failure, T>`. Use `package:construculator/libraries/either/either.dart` for `Either` and `package:construculator/libraries/errors/failures.dart` for `Failure` — **do NOT import `dartz`**.
 
 ## References
 
-- **RULE_2:** `skills/rules/02-naming-conventions.md`
-- **RULE_5:** `skills/rules/05-ui-business-separation.md`
-- **RULE_15:** Sentry logging at boundaries
+- **Naming & Abstraction:** `skills/rules/02-naming-conventions.md`
+- **UI / Business Separation:** `skills/rules/05-ui-business-separation.md`
+- **Sentry Logging:** Sentry logging at boundaries
 - **Examples:** `lib/features/global_search/data/data_source/remote_global_search_data_source.dart`, `lib/features/global_search/data/repositories/global_search_repository_impl.dart`
 - `write-tests` skill — Unit tests for data layer with fakes
 

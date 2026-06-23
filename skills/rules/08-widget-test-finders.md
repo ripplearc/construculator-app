@@ -1,7 +1,7 @@
 # RULE 8: Widget Test Finders & Behavior
 
-## Rule ID
-RULE_8
+## Name
+Widget Test Finders
 
 ## Category
 Testing - Widget Tests
@@ -78,7 +78,7 @@ testWidgets('shows error message on invalid email', (tester) async {
   await tester.tap(find.byKey(const Key('submit_button')));
   await tester.pumpAndSettle();
 
-  expect(find.text(l10n().invalidEmailError), findsOneWidget); // RULE_10
+  expect(find.text(l10n().invalidEmailError), findsOneWidget); // Localization
 });
 ```
 
@@ -128,7 +128,7 @@ Test inputs by Key, taps by Key, assertions on user-visible text (always via `l1
 
 - [Flutter Widget Testing Guide](https://flutter.dev/docs/cookbook/testing/widget/introduction)
 - Review Script Lines: 360-386 in `scripts/review_pr.sh`
-- Related: RULE_9 (same principle for unit tests), RULE_10 (localized strings in assertions)
+- Related: Unit Test Behavior (same principle for unit tests), Localization (localized strings in assertions)
 
 ## Notes
 

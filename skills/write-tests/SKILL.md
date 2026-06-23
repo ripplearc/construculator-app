@@ -51,11 +51,11 @@ Test real coordination: RepositoryImpl delegates to DataSource; DataSource calls
 
 ### Page Tests
 
-Create a `makeTestableWidget` helper that wraps the page in `BlocProvider` + `MaterialApp` with `createTestTheme()`, `locale: const Locale('en')`, and `AppLocalizations` delegates. Seed `fakeSupabase` before pumping. Use `pumpAndSettle()` after pump. Find text via `lookupAppLocalizations(const Locale('en'))` — never hardcoded strings (RULE_10).
+Create a `makeTestableWidget` helper that wraps the page in `BlocProvider` + `MaterialApp` with `createTestTheme()`, `locale: const Locale('en')`, and `AppLocalizations` delegates. Seed `fakeSupabase` before pumping. Use `pumpAndSettle()` after pump. Find text via `lookupAppLocalizations(const Locale('en'))` — never hardcoded strings (Localization).
 
 ### Widget Interaction Tests
 
-Pump the page, interact using `tester.enterText` (find by key, RULE_8) and `tester.tap` (find by `l10n` string), `pumpAndSettle()` after each action, then assert the resulting state.
+Pump the page, interact using `tester.enterText` (find by key, Widget Test Finders) and `tester.tap` (find by `l10n` string), `pumpAndSettle()` after each action, then assert the resulting state.
 
 ## 4. Test Module Setup
 
@@ -109,9 +109,9 @@ See `skills/write-tests/REFERENCE.md` for Dart examples: invalid inputs, error s
 
 ## References
 
-- **RULE_3:** `skills/rules/03-test-double-pattern.md` — Use fakes, never mocks
-- **RULE_8:** `skills/rules/08-widget-test-finders.md` — Semantic finders
-- **RULE_9:** `skills/rules/09-unit-test-behavior.md` — Test behavior, not implementation
+- **Test Double Pattern:** `skills/rules/03-test-double-pattern.md` — Use fakes, never mocks
+- **Widget Test Finders:** `skills/rules/08-widget-test-finders.md` — Semantic finders
+- **Unit Test Behavior:** `skills/rules/09-unit-test-behavior.md` — Test behavior, not implementation
 - **Testing Docs:** `docs/Testing/Fakes.md`, `docs/Testing/Directories.md`, `docs/Testing/Accessibility-Testing.md`
 - **Examples:** `test/features/auth/units/blocs/`, `test/features/auth/widgets/pages/`
 - **Next:** `write-tests-golden` (gated — screenshot tests for UI changes)

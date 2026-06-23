@@ -1,7 +1,7 @@
 # RULE 10: Localization Usage
 
-## Rule ID
-RULE_10
+## Name
+Localization
 
 ## Category
 Localization

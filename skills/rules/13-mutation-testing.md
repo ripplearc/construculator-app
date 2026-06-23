@@ -1,7 +1,7 @@
 # RULE 13: Mutation Testing for Logic-Heavy Changes
 
-## Rule ID
-RULE_13
+## Name
+Mutation Testing
 
 ## Category
 Testing - Quality Assurance
