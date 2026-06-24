@@ -22,6 +22,8 @@ class DashboardModule extends Module {
       () => DashboardBloc(
         projectRepository: i(),
         currentProjectNotifier: i(),
+        authNotifier: i(),
+        authManager: i(),
       ),
     );
   }
