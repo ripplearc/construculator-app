@@ -47,6 +47,8 @@ class HeaderRow extends StatelessWidget implements PreferredSizeWidget {
         ),
         child: AppBar(
           backgroundColor: colors.pageBackground,
+          // elevation/scrolledUnderElevation are 0 intentionally — shadow comes
+          // from the outer Container's BoxDecoration to avoid a double-shadow.
           elevation: 0,
           scrolledUnderElevation: 0,
           titleSpacing: 0,
