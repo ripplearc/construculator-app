@@ -37,7 +37,8 @@ void main() {
     test('defaults optional fields to null and default pagination', () {
       expect(base.query, 'hello');
       expect(base.filterByTag, isNull);
-      expect(base.filterByDate, isNull);
+      expect(base.filterByDateFrom, isNull);
+      expect(base.filterByDateTo, isNull);
       expect(base.filterByOwner, isNull);
       expect(base.scope, isNull);
       expect(base.pagination, const PaginationParams());
@@ -52,15 +53,18 @@ void main() {
     });
 
     test('copyWith sets nullable fields when explicitly provided', () {
-      final now = DateTime(2024);
+      final from = DateTime(2024);
+      final to = DateTime(2024, 1, 31);
       final updated = base.copyWith(
         filterByTag: 'urgent',
-        filterByDate: now,
+        filterByDateFrom: from,
+        filterByDateTo: to,
         filterByOwner: 'user-1',
         scope: SearchScope.estimation,
       );
       expect(updated.filterByTag, 'urgent');
-      expect(updated.filterByDate, now);
+      expect(updated.filterByDateFrom, from);
+      expect(updated.filterByDateTo, to);
       expect(updated.filterByOwner, 'user-1');
       expect(updated.scope, SearchScope.estimation);
     });
@@ -68,15 +72,21 @@ void main() {
     test('copyWith clears nullable fields when null is passed explicitly', () {
       final withFields = base.copyWith(
         filterByTag: 'tag',
+        filterByDateFrom: DateTime(2024),
+        filterByDateTo: DateTime(2024, 1, 31),
         filterByOwner: 'owner',
         scope: SearchScope.dashboard,
       );
       final cleared = withFields.copyWith(
         filterByTag: null,
+        filterByDateFrom: null,
+        filterByDateTo: null,
         filterByOwner: null,
         scope: null,
       );
       expect(cleared.filterByTag, isNull);
+      expect(cleared.filterByDateFrom, isNull);
+      expect(cleared.filterByDateTo, isNull);
       expect(cleared.filterByOwner, isNull);
       expect(cleared.scope, isNull);
     });
@@ -89,6 +99,7 @@ void main() {
     test('props includes all fields', () {
       expect(base.props, [
         'hello',
+        null,
         null,
         null,
         null,

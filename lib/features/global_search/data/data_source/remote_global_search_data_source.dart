@@ -186,7 +186,8 @@ class RemoteGlobalSearchDataSource implements GlobalSearchDataSource {
     return {
       'query': params.query,
       'filter_by_tag': params.filterByTag,
-      'filter_by_date': params.filterByDate?.toIso8601String(),
+      'filter_by_date_from': params.filterByDateFrom?.toIso8601String(),
+      'filter_by_date_to': params.filterByDateTo?.toIso8601String(),
       'filter_by_owner': params.filterByOwner,
       'scope': params.scope?.name,
       'offset': params.pagination.offset,
