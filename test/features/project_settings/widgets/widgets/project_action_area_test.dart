@@ -25,5 +25,25 @@ void main() {
       expect(find.byKey(const Key('add_description_button')), findsOneWidget);
       expect(find.byKey(const Key('invite_member_button')), findsOneWidget);
     });
+
+    testWidgets('tapping add description button does not throw', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('add_description_button')));
+      await tester.pump();
+    });
+
+    testWidgets('tapping invite member button does not throw', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('invite_member_button')));
+      await tester.pump();
+    });
   });
 }
