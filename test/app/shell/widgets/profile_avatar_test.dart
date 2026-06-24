@@ -52,7 +52,7 @@ void main() {
     final originalOnError = FlutterError.onError;
     FlutterError.onError = (details) {
       if (details.library != 'image resource service') {
-        originalOnError?.call(details);
+        originalOnError!(details);
       }
     };
     addTearDown(() => FlutterError.onError = originalOnError);
