@@ -1666,6 +1666,18 @@ abstract class AppLocalizations {
   /// **'Clear tag filter {tag}'**
   String globalSearchClearTagFilterSemanticLabel(String tag);
 
+  /// Accessibility label for the Modified date filter chip on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by modification date'**
+  String get globalSearchFilterModifiedSemanticLabel;
+
+  /// Accessibility label for the × button that removes the active modification-date filter
+  ///
+  /// In en, this message translates to:
+  /// **'Clear modification date filter'**
+  String get globalSearchClearDateFilterSemanticLabel;
+
   /// Title of the Tags filter bottom sheet
   ///
   /// In en, this message translates to:

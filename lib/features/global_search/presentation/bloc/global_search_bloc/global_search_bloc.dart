@@ -3,6 +3,7 @@ import 'package:construculator/features/global_search/domain/entities/search_par
 import 'package:construculator/features/global_search/domain/entities/search_results.dart';
 import 'package:construculator/features/global_search/domain/entities/search_scope_entity.dart';
 import 'package:construculator/features/global_search/domain/repositories/global_search_repository.dart';
+import 'package:construculator/features/global_search/presentation/widgets/date_range_bottom_sheet.dart';
 import 'package:construculator/libraries/auth/domain/entities/user_profile_entity.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
@@ -62,6 +63,8 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
 
   String _ownerSearchQuery = '';
 
+  DateRange? _selectedDateRange;
+
   GlobalSearchBloc({
     required GlobalSearchRepository repository,
     required TagRepository tagRepository,
@@ -92,6 +95,8 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     // Intentionally not debounced: owner filtering is in-memory (no network
     // call), so instant per-keystroke feedback is cheap and preferable.
     on<GlobalSearchOwnerSearchQueryUpdated>(_onOwnerSearchQueryUpdated);
+    on<GlobalSearchDateFilterApplied>(_onDateFilterApplied);
+    on<GlobalSearchDateFilterCleared>(_onDateFilterCleared);
   }
 
   // Returns _availableTags filtered by the current tag search query.
@@ -130,6 +135,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       selectedOwnerIds: _selectedOwnerIds,
       availableOwners: _filterAvailableOwners(),
       availableOwnersLoading: availableOwnersLoading,
+      selectedDateRange: _selectedDateRange,
     );
   }
 
@@ -183,6 +189,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       _tagSearchQuery = '';
       _selectedOwnerIds = const {};
       _ownerSearchQuery = '';
+      _selectedDateRange = null;
       emit(_readyState());
     });
   }
@@ -222,6 +229,8 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
         filterByOwner: _selectedOwnerIds.isEmpty
             ? null
             : (_selectedOwnerIds.toList()..sort()).first,
+        filterByDateFrom: _selectedDateRange?.start,
+        filterByDateTo: _selectedDateRange?.end,
       ),
     );
 
@@ -365,6 +374,22 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     _selectedOwnerIds = Set.unmodifiable(
       _selectedOwnerIds.where((id) => id != event.ownerId),
     );
+    emit(_readyState());
+  }
+
+  void _onDateFilterApplied(
+    GlobalSearchDateFilterApplied event,
+    Emitter<GlobalSearchState> emit,
+  ) {
+    _selectedDateRange = event.range;
+    emit(_readyState());
+  }
+
+  void _onDateFilterCleared(
+    GlobalSearchDateFilterCleared event,
+    Emitter<GlobalSearchState> emit,
+  ) {
+    _selectedDateRange = null;
     emit(_readyState());
   }
 }
