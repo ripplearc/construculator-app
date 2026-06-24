@@ -59,14 +59,14 @@ class ProjectSettingsDeleteInProgress extends ProjectSettingsState {
   const ProjectSettingsDeleteInProgress();
 }
 
-class ProjectCreating extends ProjectSettingsState {
-  const ProjectCreating();
+class ProjectSettingsCreating extends ProjectSettingsState {
+  const ProjectSettingsCreating();
 }
 
-class ProjectCreated extends ProjectSettingsState {
+class ProjectSettingsCreated extends ProjectSettingsState {
   final Project project;
 
-  const ProjectCreated(this.project);
+  const ProjectSettingsCreated(this.project);
 
   @override
   List<Object?> get props => [project];

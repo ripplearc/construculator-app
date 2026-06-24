@@ -99,7 +99,7 @@ class ProjectSettingsBloc
       return;
     }
 
-    emit(const ProjectCreating());
+    emit(const ProjectSettingsCreating());
 
     final now = DateTime.now();
     final project = Project(
@@ -116,7 +116,7 @@ class ProjectSettingsBloc
     final result = await _repository.createProject(project);
     result.fold(
       (failure) => emit(ProjectSettingsError(failure: failure)),
-      (created) => emit(ProjectCreated(created)),
+      (created) => emit(ProjectSettingsCreated(created)),
     );
   }
 }

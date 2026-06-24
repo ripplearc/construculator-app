@@ -17,5 +17,4 @@ class ProjectSettingsModule extends Module {
       () => ProjectSettingsBloc(repository: i()),
     );
   }
-
 }

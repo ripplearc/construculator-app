@@ -168,7 +168,7 @@ void main() {
       const testCreatorUserId = 'creator-id-1';
 
       blocTest<ProjectSettingsBloc, ProjectSettingsState>(
-        'emits [ProjectCreating, ProjectCreated] on creation success',
+        'emits [ProjectSettingsCreating, ProjectSettingsCreated] on creation success',
         build: () => Modular.get<ProjectSettingsBloc>(),
         act: (bloc) => bloc.add(
           const ProjectSettingsCreationRequested(
@@ -177,8 +177,8 @@ void main() {
           ),
         ),
         expect: () => [
-          const ProjectCreating(),
-          isA<ProjectCreated>()
+          const ProjectSettingsCreating(),
+          isA<ProjectSettingsCreated>()
               .having((s) => s.project.projectName, 'project.projectName', 'New Project')
               .having((s) => s.project.creatorUserId, 'project.creatorUserId', testCreatorUserId),
         ],
@@ -200,7 +200,7 @@ void main() {
       );
 
       blocTest<ProjectSettingsBloc, ProjectSettingsState>(
-        'emits [ProjectCreating, ProjectSettingsError] on creation failure',
+        'emits [ProjectSettingsCreating, ProjectSettingsError] on creation failure',
         build: () {
           fakeRepository.shouldFailOnCreate = true;
           fakeRepository.failureToReturn = const ProjectFailure(
@@ -215,7 +215,7 @@ void main() {
           ),
         ),
         expect: () => [
-          const ProjectCreating(),
+          const ProjectSettingsCreating(),
           isA<ProjectSettingsError>()
               .having((s) => s.failure, 'failure', isA<ProjectFailure>()),
         ],
