@@ -113,11 +113,9 @@ class _AppShellPageState extends State<AppShellPage> {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context, AppShellState state) {
-    // Stub: replaced by CurrentProjectNotifier result once CA-615 is complete.
-    // https://ripplearc.youtrack.cloud/issue/CA-615
-    const projectId = '';
+    final projectId = widget.currentProjectNotifier.currentProjectId;
     final coreColors = Theme.of(context).coreColors;
-    if (projectId.isEmpty) {
+    if (projectId == null || projectId.isEmpty) {
       if (state.selectedTabIndex == ShellTab.home.index) {
         return HeaderRow(
           onSearchTap: () => Navigator.of(context).push(
