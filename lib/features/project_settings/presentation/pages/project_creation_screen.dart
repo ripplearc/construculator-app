@@ -2,7 +2,7 @@ import 'package:construculator/features/project_settings/presentation/widgets/pr
 import 'package:construculator/features/project_settings/presentation/widgets/project_name_text_field.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/libraries/project/bloc/project_settings_bloc.dart';
+import 'package:construculator/features/project_settings/presentation/bloc/project_settings_bloc/project_settings_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -11,7 +11,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 ///
 /// Connects [ProjectNameTextField] and [ProjectActionArea]. Dispatches
 /// [ProjectSettingsCreationRequested] on submission and navigates back on
-/// [ProjectCreated].
+/// [ProjectSettingsCreated].
 // TODO: [CA-733] Add CostFileSection
 // TODO: [CA-734] Add ExportFolderSection
 class ProjectCreationScreen extends StatefulWidget {
@@ -52,7 +52,7 @@ class _ProjectCreationScreenState extends State<ProjectCreationScreen> {
   Widget build(BuildContext context) {
     return BlocListener<ProjectSettingsBloc, ProjectSettingsState>(
       listener: (context, state) {
-        if (state is ProjectCreated) {
+        if (state is ProjectSettingsCreated) {
           Navigator.of(context).pop();
         } else if (state is ProjectSettingsError) {
           CoreToast.showError(
@@ -132,7 +132,7 @@ class _ProjectCreationScreenState extends State<ProjectCreationScreen> {
           builder: (context, state) => CoreButton(
             key: const Key('create_project_button'),
             label: l10n.createProjectButton,
-            isDisabled: !_canSubmit || state is ProjectCreating,
+            isDisabled: !_canSubmit || state is ProjectSettingsCreating,
             onPressed: _onSubmit,
           ),
         ),

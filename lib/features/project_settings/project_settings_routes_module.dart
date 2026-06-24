@@ -1,5 +1,5 @@
 import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/libraries/project/bloc/project_settings_bloc.dart';
+import 'package:construculator/features/project_settings/presentation/bloc/project_settings_bloc/project_settings_bloc.dart';
 import 'package:construculator/features/project_settings/presentation/pages/project_creation_screen.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
