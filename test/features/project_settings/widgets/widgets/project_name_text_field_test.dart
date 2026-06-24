@@ -231,6 +231,39 @@ void main() {
 
         expect(validValue, isTrue);
       });
+
+      testWidgets('re-validates and detaches old controller when parent swaps controller', (
+        tester,
+      ) async {
+        bool? validValue;
+        final controllerA = TextEditingController(text: 'HD building');
+        final controllerB = TextEditingController();
+        addTearDown(controllerA.dispose);
+        addTearDown(controllerB.dispose);
+
+        await tester.pumpWidget(
+          wrap(ProjectNameTextField(
+            controller: controllerA,
+            onValidationChanged: (v) => validValue = v,
+          )),
+        );
+        await tester.pumpAndSettle();
+        expect(validValue, isTrue);
+
+        await tester.pumpWidget(
+          wrap(ProjectNameTextField(
+            controller: controllerB,
+            onValidationChanged: (v) => validValue = v,
+          )),
+        );
+        await tester.pumpAndSettle();
+        expect(validValue, isFalse);
+
+        final valueBefore = validValue;
+        controllerA.text = 'should be ignored';
+        await tester.pumpAndSettle();
+        expect(validValue, equals(valueBefore));
+      });
     });
   });
 }
