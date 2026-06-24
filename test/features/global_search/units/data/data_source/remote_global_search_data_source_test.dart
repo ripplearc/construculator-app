@@ -177,11 +177,13 @@ void main() {
             {'projects': [], 'estimations': [], 'members': []},
           );
 
-          final filterDate = DateTime(2024, 3, 15);
+          final filterDateFrom = DateTime(2024, 3, 15);
+          final filterDateTo = DateTime(2024, 3, 31);
           final params = SearchParamsDto(
             query: 'wall',
             filterByTag: 'construction',
-            filterByDate: filterDate,
+            filterByDateFrom: filterDateFrom,
+            filterByDateTo: filterDateTo,
             filterByOwner: 'owner-1',
             scope: SearchScopeDto.estimation,
             pagination: const PaginationParamsDto(offset: 10, limit: 25),
@@ -203,8 +205,12 @@ void main() {
           expect(paramsMap!['query'], equals('wall'));
           expect(paramsMap['filter_by_tag'], equals('construction'));
           expect(
-            paramsMap['filter_by_date'],
-            equals(filterDate.toIso8601String()),
+            paramsMap['filter_by_date_from'],
+            equals(filterDateFrom.toIso8601String()),
+          );
+          expect(
+            paramsMap['filter_by_date_to'],
+            equals(filterDateTo.toIso8601String()),
           );
           expect(paramsMap['filter_by_owner'], equals('owner-1'));
           expect(paramsMap['scope'], equals('estimation'));
