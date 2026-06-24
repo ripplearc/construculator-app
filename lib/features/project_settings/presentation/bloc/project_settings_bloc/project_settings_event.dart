@@ -53,7 +53,7 @@ class ProjectSettingsCreationRequested extends ProjectSettingsEvent {
 
   const ProjectSettingsCreationRequested({
     required this.name,
-    required this.creatorUserId,
+    this.creatorUserId,
     this.description,
     this.exportStorageProvider,
   });
