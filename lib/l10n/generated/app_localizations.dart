@@ -1743,6 +1743,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Description must be 100 characters or less'**
   String get projectDescriptionTooLongError;
+
+  /// Title of the Date range filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Date range'**
+  String get dateRangeSheetTitle;
+
+  /// Predefined range option for today in the Date range filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get dateRangeSheetToday;
+
+  /// Predefined range option for the last 7 days in the Date range filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get dateRangeSheetLast7Days;
+
+  /// Predefined range option for the last 30 days in the Date range filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get dateRangeSheetLast30Days;
+
+  /// Predefined range option for the current calendar month in the Date range filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get dateRangeSheetThisMonth;
+
+  /// Option in the Date range filter bottom sheet that opens the start/end date pickers
+  ///
+  /// In en, this message translates to:
+  /// **'Custom range'**
+  String get dateRangeSheetCustomRange;
+
+  /// Label shown in the date picker when selecting the start of a custom date range
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get dateRangeSheetStartDateLabel;
+
+  /// Label shown in the date picker when selecting the end of a custom date range
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get dateRangeSheetEndDateLabel;
+
+  /// Label for the Apply button in the Date range filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get dateRangeSheetApply;
+
+  /// Label for the Cancel button in the Date range filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get dateRangeSheetCancel;
 }
 
 class _AppLocalizationsDelegate
