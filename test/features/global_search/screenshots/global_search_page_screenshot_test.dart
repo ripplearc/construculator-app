@@ -176,5 +176,31 @@ void main() {
         ),
       );
     });
+
+    testWidgets('renders with active date filter chip correctly', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpGlobalSearchPage(tester: tester);
+
+      // Drive the interaction through the actual widget tree (tap) rather
+      // than a second Modular.get<GlobalSearchBloc>() call, since the bloc
+      // is registered as a factory (i.add) — a freshly resolved instance
+      // would not be the one GlobalSearchPage's BlocProvider created.
+      await tester.tap(find.byKey(const Key('global_search_date_filter_chip')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('date_range_apply_button')));
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(GlobalSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_active_date_filter.png',
+        ),
+      );
+    });
   });
 }

@@ -1384,6 +1384,16 @@
       }
     }
   },
+  "globalSearchFilterModifiedSemanticLabel": "Filter by modification date",
+  "@globalSearchFilterModifiedSemanticLabel": {
+    "description": "Accessibility label for the Modified date filter chip on the global search screen",
+    "context": "N/A"
+  },
+  "globalSearchClearDateFilterSemanticLabel": "Clear modification date filter",
+  "@globalSearchClearDateFilterSemanticLabel": {
+    "description": "Accessibility label for the × button that removes the active modification-date filter",
+    "context": "N/A"
+  },
   "globalSearchTagsSheetTitle": "Tags",
   "@globalSearchTagsSheetTitle": {
     "description": "Title of the Tags filter bottom sheet",

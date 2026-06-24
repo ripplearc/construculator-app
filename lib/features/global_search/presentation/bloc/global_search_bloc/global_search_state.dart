@@ -52,6 +52,9 @@ class GlobalSearchReady extends GlobalSearchState {
   /// Whether the available owners fetch is currently in flight.
   final bool availableOwnersLoading;
 
+  /// The modification-date range currently applied as a filter, if any.
+  final DateRange? selectedDateRange;
+
   const GlobalSearchReady({
     this.recentSearches = const [],
     this.query = '',
@@ -63,9 +66,14 @@ class GlobalSearchReady extends GlobalSearchState {
     this.selectedOwnerIds = const {},
     this.availableOwners = const [],
     this.availableOwnersLoading = false,
+    this.selectedDateRange,
   });
 
   /// Returns a copy of this state with the given fields replaced.
+  ///
+  /// [selectedDateRange] is passed through as-is (not defaulted via `??`) so
+  /// callers can explicitly clear it by passing `null`; use the bloc's
+  /// private field directly when no change to the date range is intended.
   GlobalSearchReady copyWith({
     List<String>? recentSearches,
     String? query,
@@ -77,6 +85,7 @@ class GlobalSearchReady extends GlobalSearchState {
     Set<String>? selectedOwnerIds,
     List<UserProfile>? availableOwners,
     bool? availableOwnersLoading,
+    DateRange? selectedDateRange,
   }) {
     return GlobalSearchReady(
       recentSearches: recentSearches ?? this.recentSearches,
@@ -90,6 +99,7 @@ class GlobalSearchReady extends GlobalSearchState {
       availableOwners: availableOwners ?? this.availableOwners,
       availableOwnersLoading:
           availableOwnersLoading ?? this.availableOwnersLoading,
+      selectedDateRange: selectedDateRange ?? this.selectedDateRange,
     );
   }
 
@@ -105,6 +115,7 @@ class GlobalSearchReady extends GlobalSearchState {
     selectedOwnerIds,
     availableOwners,
     availableOwnersLoading,
+    selectedDateRange,
   ];
 }
 
