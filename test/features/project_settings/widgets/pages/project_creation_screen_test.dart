@@ -1,13 +1,7 @@
-// ignore_for_file: no_direct_instantiation
+import 'package:construculator/features/project_settings/presentation/bloc/project_settings_bloc/project_settings_bloc.dart';
 import 'package:construculator/features/project_settings/presentation/pages/project_creation_screen.dart';
 import 'package:construculator/features/project_settings/presentation/widgets/project_name_text_field.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
-import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
-import 'package:construculator/libraries/auth/data/models/auth_user.dart';
-import 'package:construculator/libraries/auth/data/models/professional_role.dart';
-import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
-import 'package:construculator/libraries/project/bloc/project_settings_bloc.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/testing/fake_project_setting_repository.dart';
@@ -17,88 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/screenshot/font_loader.dart';
-
-const String _testUserId = 'test-user-id';
-
-class _StubAuthManager implements AuthManager {
-  final String? userId;
-
-  const _StubAuthManager({this.userId = _testUserId});
-
-  @override
-  AuthResult<UserCredential?> getCurrentCredentials() {
-    if (userId == null) return const AuthResult.success(null);
-    return AuthResult.success(
-      UserCredential(
-        id: userId!,
-        email: 'test@example.com',
-        metadata: const {},
-        createdAt: DateTime(2025, 1, 1),
-      ),
-    );
-  }
-
-  @override
-  Future<AuthResult<UserCredential>> loginWithEmail(
-    String email,
-    String password,
-  ) => throw UnimplementedError();
-
-  @override
-  Future<AuthResult<UserCredential>> registerWithEmail(
-    String email,
-    String password,
-  ) => throw UnimplementedError();
-
-  @override
-  Future<AuthResult> sendOtp(String address, OtpReceiver receiver) =>
-      throw UnimplementedError();
-
-  @override
-  Future<AuthResult<UserCredential>> verifyOtp(
-    String address,
-    String otp,
-    OtpReceiver receiver,
-  ) => throw UnimplementedError();
-
-  @override
-  Future<AuthResult<bool>> resetPassword(String email) =>
-      throw UnimplementedError();
-
-  @override
-  Future<AuthResult<bool>> isEmailRegistered(String email) =>
-      throw UnimplementedError();
-
-  @override
-  Future<AuthResult<void>> logout() => throw UnimplementedError();
-
-  @override
-  bool isAuthenticated() => userId != null;
-
-  @override
-  Future<AuthResult<User?>> getUserProfile(String credentialId) =>
-      throw UnimplementedError();
-
-  @override
-  Future<AuthResult<User?>> createUserProfile(User user) =>
-      throw UnimplementedError();
-
-  @override
-  Future<AuthResult<User?>> updateUserProfile(User user) =>
-      throw UnimplementedError();
-
-  @override
-  Future<AuthResult<UserCredential?>> updateUserPassword(String password) =>
-      throw UnimplementedError();
-
-  @override
-  Future<AuthResult<UserCredential?>> updateUserEmail(String email) =>
-      throw UnimplementedError();
-
-  @override
-  Future<AuthResult<List<ProfessionalRole>>> getProfessionalRoles() =>
-      throw UnimplementedError();
-}
+import '../../testing/stub_auth_manager.dart';
 
 void main() {
   late FakeProjectSettingRepository fakeRepository;
@@ -126,7 +39,7 @@ void main() {
         home: BlocProvider.value(
           value: bloc,
           child: ProjectCreationScreen(
-            authManager: authManager ?? const _StubAuthManager(),
+            authManager: authManager ?? const StubAuthManager(),
           ),
         ),
       );
@@ -213,7 +126,7 @@ void main() {
           await tester.tap(find.byKey(const Key('create_project_button')));
           await tester.pump();
 
-          expect(bloc.state, isA<ProjectCreating>());
+          expect(bloc.state, isA<ProjectSettingsCreating>());
         },
       );
 
@@ -237,17 +150,17 @@ void main() {
           expect(calls, hasLength(1));
           final project = calls.first['project'] as Project;
           expect(project.projectName, 'My Building');
-          expect(project.creatorUserId, _testUserId);
+          expect(project.creatorUserId, kStubTestUserId);
         },
       );
 
       testWidgets(
-        'submit button is disabled while ProjectCreating state is active',
+        'submit button is disabled while ProjectSettingsCreating state is active',
         (tester) async {
           await tester.pumpWidget(buildScreen());
           await tester.pumpAndSettle();
 
-          bloc.emit(const ProjectCreating());
+          bloc.emit(const ProjectSettingsCreating());
           await tester.pump();
 
           final button = tester.widget<CoreButton>(
@@ -257,7 +170,7 @@ void main() {
         },
       );
 
-      testWidgets('ProjectCreated state pops the screen', (tester) async {
+      testWidgets('ProjectSettingsCreated state pops the screen', (tester) async {
         bool popped = false;
 
         await tester.pumpWidget(
@@ -273,8 +186,8 @@ void main() {
                     MaterialPageRoute<void>(
                       builder: (_) => BlocProvider.value(
                         value: bloc,
-                        child: ProjectCreationScreen(
-                          authManager: const _StubAuthManager(),
+                        child: const ProjectCreationScreen(
+                          authManager: StubAuthManager(),
                         ),
                       ),
                     ),
@@ -297,12 +210,12 @@ void main() {
         final createdProject = Project(
           id: 'proj-1',
           projectName: 'Test',
-          creatorUserId: _testUserId,
+          creatorUserId: kStubTestUserId,
           createdAt: DateTime(2025, 1, 1),
           updatedAt: DateTime(2025, 1, 1),
           status: ProjectStatus.active,
         );
-        bloc.emit(ProjectCreated(createdProject));
+        bloc.emit(ProjectSettingsCreated(createdProject));
         await tester.pumpAndSettle();
 
         expect(popped, isTrue);
