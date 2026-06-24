@@ -113,7 +113,7 @@ class _AppShellPageState extends State<AppShellPage> {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context, AppShellState state) {
-    // TODO: [CA-615] Wire ProjectDropdownBloc result into app bar via CurrentProjectNotifier.
+    // Stub: replaced by CurrentProjectNotifier result once CA-615 is complete.
     // https://ripplearc.youtrack.cloud/issue/CA-615
     const projectId = '';
     final coreColors = Theme.of(context).coreColors;
