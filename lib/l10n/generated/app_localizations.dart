@@ -1819,7 +1819,7 @@ abstract class AppLocalizations {
   /// Label for the button that toggles the project description text area
   ///
   /// In en, this message translates to:
-  /// **'Add Description'**
+  /// **'Add description'**
   String get addDescriptionButton;
 
   /// Label for the button that opens the invite member flow

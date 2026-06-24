@@ -1502,7 +1502,7 @@
     "description": "Label for the Cancel button in the Date range filter bottom sheet",
     "context": "N/A"
   },
-  "addDescriptionButton": "Add Description",
+  "addDescriptionButton": "Add description",
   "@addDescriptionButton": {
     "description": "Label for the button that toggles the project description text area",
     "context": "Project creation screen"
