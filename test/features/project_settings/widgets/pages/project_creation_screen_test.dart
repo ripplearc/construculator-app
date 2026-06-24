@@ -2,6 +2,7 @@ import 'package:construculator/features/project_settings/presentation/bloc/proje
 import 'package:construculator/features/project_settings/presentation/pages/project_creation_screen.dart';
 import 'package:construculator/features/project_settings/presentation/widgets/project_name_text_field.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/testing/fake_project_setting_repository.dart';
