@@ -1,8 +1,8 @@
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/dashboard_bloc/dashboard_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
@@ -19,6 +19,7 @@ import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -68,6 +69,8 @@ void main() {
   setUp(() {
     fakeSupabase.reset();
     router.reset();
+    authManager.reset();
+    authNotifier.reset();
     authRepository.returnNullUserProfile = false;
   });
 
@@ -78,6 +81,9 @@ void main() {
       supportedLocales: AppLocalizations.supportedLocales,
       home: MultiBlocProvider(
         providers: [
+          BlocProvider<DashboardBloc>(
+            create: (_) => Modular.get<DashboardBloc>()..add(const DashboardStarted()),
+          ),
           BlocProvider<RecentEstimationsBloc>.value(
             value: Modular.get<RecentEstimationsBloc>(),
           ),
@@ -85,11 +91,7 @@ void main() {
             value: Modular.get<AppShellBloc>(),
           ),
         ],
-        child: DashboardPage(
-          authNotifier: authNotifier,
-          authManager: authManager,
-          router: router,
-        ),
+        child: DashboardPage(router: router),
       ),
     );
   }
@@ -132,6 +134,7 @@ void main() {
 
   testWidgets('navigates to login when credentials id is null', (tester) async {
     await tester.pumpWidget(makeApp());
+    await tester.pumpAndSettle();
 
     expect(router.navigationHistory.length, 1);
     expect(router.navigationHistory.first.route, fullLoginRoute);
@@ -174,6 +177,8 @@ void main() {
     await tester.pumpWidget(makeApp());
     await tester.pumpAndSettle();
 
+    expect(find.text('Welcome back, $firstName $lastName!'), findsOneWidget);
+
     await tester.tap(find.widgetWithText(CoreButton, 'Logout'));
     await tester.pumpAndSettle();
 
@@ -181,22 +186,23 @@ void main() {
     expect(router.navigationHistory.last.route, fullLoginRoute);
   });
 
-  testWidgets('navigates to create account when user profile event is null', (
-    tester,
-  ) async {
-    const testEmail = 'test@example.com';
-    final credential = createCredential(email: testEmail);
+  testWidgets(
+    'navigates to create account when user profile returns null',
+    (tester) async {
+      const testEmail = 'test@example.com';
+      final credential = createCredential(email: testEmail);
 
-    authManager.setCurrentCredential(credential);
-    authRepository.returnNullUserProfile = true;
+      authManager.setCurrentCredential(credential);
+      authRepository.returnNullUserProfile = true;
 
-    await tester.pumpWidget(makeApp());
-    await tester.pump();
+      await tester.pumpWidget(makeApp());
+      await tester.pumpAndSettle();
 
-    expect(router.navigationHistory.length, 1);
-    expect(router.navigationHistory.first.route, fullCreateAccountRoute);
-    expect(router.navigationHistory.first.arguments, testEmail);
-  });
+      expect(router.navigationHistory.length, 1);
+      expect(router.navigationHistory.first.route, fullCreateAccountRoute);
+      expect(router.navigationHistory.first.arguments, testEmail);
+    },
+  );
 
   testWidgets('shows placeholder when getUserProfile returns null', (
     tester,
@@ -207,7 +213,7 @@ void main() {
     authRepository.returnNullUserProfile = true;
 
     await tester.pumpWidget(makeApp());
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.text('Welcome back, ...'), findsOneWidget);
   });

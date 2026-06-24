@@ -45,3 +45,28 @@ class DashboardError extends DashboardState {
   @override
   List<Object?> get props => [failure];
 }
+
+/// Emitted after the user's display name is resolved, to show in the header.
+class DashboardUserLoaded extends DashboardState {
+  final String userDisplayName;
+
+  const DashboardUserLoaded({required this.userDisplayName});
+
+  @override
+  List<Object?> get props => [userDisplayName];
+}
+
+/// One-shot state that signals navigation to the login screen.
+class DashboardNavigateToLogin extends DashboardState {
+  const DashboardNavigateToLogin();
+}
+
+/// One-shot state that signals navigation to the create-account screen.
+class DashboardNavigateToCreateAccount extends DashboardState {
+  final String? email;
+
+  const DashboardNavigateToCreateAccount(this.email);
+
+  @override
+  List<Object?> get props => [email];
+}

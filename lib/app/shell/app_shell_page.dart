@@ -6,8 +6,6 @@ import 'package:construculator/features/dashboard/presentation/bloc/project_drop
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
@@ -25,19 +23,12 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 class AppShellPage extends StatefulWidget {
   final ProjectUIProvider projectUIProvider;
   final CurrentProjectNotifier currentProjectNotifier;
-
-  // TODO: [CA-708] Remove once DashboardPage reads auth from the module directly.
-  // https://ripplearc.youtrack.cloud/issue/CA-708
-  final AuthNotifier authNotifier;
-  final AuthManager authManager;
   final AppRouter router;
 
   const AppShellPage({
     super.key,
     required this.projectUIProvider,
     required this.currentProjectNotifier,
-    required this.authNotifier,
-    required this.authManager,
     required this.router,
   });
 
@@ -79,14 +70,8 @@ class _AppShellPageState extends State<AppShellPage> {
 
   Widget _buildTabRoot(ShellTab tab) {
     switch (tab) {
-      // TODO: [CA-708] Remove auth params once DashboardPage reads auth from the module directly.
-      // https://ripplearc.youtrack.cloud/issue/CA-708
       case ShellTab.home:
-        return DashboardPage(
-          authNotifier: widget.authNotifier,
-          authManager: widget.authManager,
-          router: widget.router,
-        );
+        return DashboardPage(router: widget.router);
       case ShellTab.calculations:
         return const CalculationsPage();
       case ShellTab.estimation:
