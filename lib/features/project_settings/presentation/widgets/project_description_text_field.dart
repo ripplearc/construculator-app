@@ -71,8 +71,12 @@ class _ProjectDescriptionTextFieldState
       errors.add(l10n.projectDescriptionTooLongError);
     }
 
+    final wasValid = _errors.isEmpty;
+    final isNowValid = errors.isEmpty;
     setState(() => _errors = errors);
-    widget.onValidationChanged?.call(errors.isEmpty);
+    if (wasValid != isNowValid) {
+      widget.onValidationChanged?.call(isNowValid);
+    }
   }
 
   @override
@@ -118,12 +122,6 @@ class _ProjectDescriptionTextFieldState
             contentPadding: const EdgeInsets.symmetric(
               vertical: CoreSpacing.space3,
               horizontal: CoreSpacing.space4,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(CoreSpacing.space1),
-              borderSide: BorderSide(
-                color: hasError ? colorTheme.statusError : colorTheme.lineDarkOutline,
-              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(CoreSpacing.space1),
