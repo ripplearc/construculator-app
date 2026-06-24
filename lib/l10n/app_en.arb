@@ -1381,5 +1381,21 @@
   "@globalSearchTagsLoadErrorMessage": {
     "description": "Warning toast shown when fetching the available tags for the filter sheet fails",
     "context": "N/A"
+  },
+  "projectNameLabel": "Project name*",
+  "@projectNameLabel": {
+    "description": "Label for the project name text field"
+  },
+  "projectNameHintText": "Enter project name",
+  "@projectNameHintText": {
+    "description": "Hint text shown inside the project name text field"
+  },
+  "projectNameRequiredError": "Project name is required",
+  "@projectNameRequiredError": {
+    "description": "Error shown when the project name field is empty"
+  },
+  "projectNameTooLongError": "Project name must be 100 characters or less",
+  "@projectNameTooLongError": {
+    "description": "Error shown when the project name exceeds 100 characters"
   }
 }
