@@ -2,6 +2,10 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+/// A multiline text field for entering a project description.
+///
+/// Validates that the text does not exceed [maxLength] characters and
+/// exposes [onValidationChanged] and [onDirtyChanged] callbacks to the parent.
 class ProjectDescriptionTextField extends StatefulWidget {
   const ProjectDescriptionTextField({
     super.key,
@@ -11,11 +15,21 @@ class ProjectDescriptionTextField extends StatefulWidget {
     this.enabled = true,
   });
 
+  /// The controller that holds the current description text.
   final TextEditingController controller;
+
+  /// Called when the validity state transitions (valid → invalid or vice-versa).
+  ///
+  /// Passes `true` when valid, `false` when the text exceeds [maxLength].
   final void Function(bool isValid)? onValidationChanged;
+
+  /// Called once, on the first keystroke, with `true` to indicate the field is dirty.
   final void Function(bool isDirty)? onDirtyChanged;
+
+  /// Whether the field accepts user input. Defaults to `true`.
   final bool enabled;
 
+  /// Maximum allowed character count for the description.
   static const int maxLength = 100;
 
   @override
@@ -56,8 +70,12 @@ class _ProjectDescriptionTextFieldState
       errors.add(l10n.projectDescriptionTooLongError);
     }
 
+    final wasValid = _errors.isEmpty;
+    final isNowValid = errors.isEmpty;
     setState(() => _errors = errors);
-    widget.onValidationChanged?.call(errors.isEmpty);
+    if (wasValid != isNowValid) {
+      widget.onValidationChanged?.call(isNowValid);
+    }
   }
 
   @override
@@ -103,12 +121,6 @@ class _ProjectDescriptionTextFieldState
             contentPadding: const EdgeInsets.symmetric(
               vertical: CoreSpacing.space3,
               horizontal: CoreSpacing.space4,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(CoreSpacing.space1),
-              borderSide: BorderSide(
-                color: hasError ? colorTheme.statusError : colorTheme.lineDarkOutline,
-              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(CoreSpacing.space1),

@@ -68,7 +68,7 @@ void main() {
 
         await tester.enterText(
           find.byType(ProjectDescriptionTextField),
-          'hello',
+          'A' * 101,
         );
         await tester.pumpAndSettle();
         await tester.enterText(
@@ -242,7 +242,7 @@ void main() {
         expect(validValue, isFalse);
       });
 
-      testWidgets('calls onValidationChanged with true for valid text', (
+      testWidgets('calls onValidationChanged with true when text returns to valid', (
         tester,
       ) async {
         bool? validValue;
@@ -258,11 +258,38 @@ void main() {
 
         await tester.enterText(
           find.byType(ProjectDescriptionTextField),
+          'A' * 101,
+        );
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byType(ProjectDescriptionTextField),
           'Valid description',
         );
         await tester.pumpAndSettle();
 
         expect(validValue, isTrue);
+      });
+
+      testWidgets('onDirtyChanged fires exactly once even after multiple keystrokes', (
+        tester,
+      ) async {
+        int dirtyCount = 0;
+        await tester.pumpWidget(
+          wrap(
+            ProjectDescriptionTextField(
+              controller: controller,
+              onDirtyChanged: (_) => dirtyCount++,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byType(ProjectDescriptionTextField), 'a');
+        await tester.pump();
+        await tester.enterText(find.byType(ProjectDescriptionTextField), 'ab');
+        await tester.pump();
+
+        expect(dirtyCount, 1);
       });
     });
   });

@@ -33,6 +33,7 @@ void main() {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
       final controller = TextEditingController();
       addTearDown(controller.dispose);
@@ -54,6 +55,7 @@ void main() {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
       final controller = TextEditingController(text: 'A two-storey building');
       addTearDown(controller.dispose);
@@ -75,6 +77,7 @@ void main() {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
       final controller = TextEditingController();
       addTearDown(controller.dispose);
