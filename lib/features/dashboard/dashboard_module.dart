@@ -1,6 +1,5 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
-import 'package:construculator/features/dashboard/domain/usecases/watch_recent_estimations_usecase.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/dashboard_bloc/dashboard_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_settings_bloc/project_settings_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
@@ -8,12 +7,12 @@ import 'package:construculator/features/dashboard/presentation/pages/dashboard_p
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
-import 'package:construculator/libraries/estimation/estimation_library_module.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/router_module.dart';
 import 'package:construculator/libraries/router/routes/dashboard_routes.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class DashboardModule extends Module {
@@ -23,21 +22,11 @@ class DashboardModule extends Module {
   List<Module> get imports => [
     AuthLibraryModule(appBootstrap),
     ProjectLibraryModule(appBootstrap),
-    EstimationLibraryModule(appBootstrap),
     RouterModule(),
   ];
 
   @override
   void binds(Injector i) {
-    i.add<WatchRecentEstimationsUseCase>(
-      () => WatchRecentEstimationsUseCase(i(), i()),
-    );
-    i.add<RecentEstimationsBloc>(
-      () => RecentEstimationsBloc(
-        watchRecentEstimationsUseCase: i(),
-        currentProjectNotifier: i(),
-      ),
-    );
     i.add<DashboardBloc>(
       () => DashboardBloc(
         projectRepository: i(),
@@ -54,12 +43,22 @@ class DashboardModule extends Module {
     r.child(
       dashboardRoute,
       guards: [AuthGuard(() => Modular.get<AuthManager>())],
-      child: (context) => DashboardPage(
-        authNotifier: Modular.get<AuthNotifier>(),
-        authManager: Modular.get<AuthManager>(),
-        router: Modular.get<AppRouter>(),
-        recentEstimationsBloc: Modular.get<RecentEstimationsBloc>(),
-        appShellBloc: Modular.get<AppShellBloc>(),
+      // TODO: [CA-708] Remove authNotifier, authManager once DashboardPage reads auth from the module directly.
+      // https://ripplearc.youtrack.cloud/issue/CA-708
+      child: (context) => MultiBlocProvider(
+        providers: [
+          BlocProvider<RecentEstimationsBloc>(
+            create: (_) => Modular.get<RecentEstimationsBloc>(),
+          ),
+          BlocProvider<AppShellBloc>(
+            create: (_) => Modular.get<AppShellBloc>(),
+          ),
+        ],
+        child: DashboardPage(
+          authNotifier: Modular.get<AuthNotifier>(),
+          authManager: Modular.get<AuthManager>(),
+          router: Modular.get<AppRouter>(),
+        ),
       ),
     );
   }

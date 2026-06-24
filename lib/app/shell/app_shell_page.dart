@@ -3,7 +3,6 @@ import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/app/shell/widgets/tab_navigator.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
-import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
@@ -24,28 +23,22 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// tab navigation using [AppShellBloc]. Module lazy-loading is orchestrated
 /// inside the BLoC, keeping this Page a pure presentation concern.
 class AppShellPage extends StatefulWidget {
-  final AppShellBloc appShellBloc;
   final ProjectUIProvider projectUIProvider;
-  final ProjectDropdownBloc projectDropdownBloc;
   final CurrentProjectNotifier currentProjectNotifier;
 
-  // TODO: [CA-708] Remove once DashboardPage reads these from the module directly.
+  // TODO: [CA-708] Remove once DashboardPage reads auth from the module directly.
   // https://ripplearc.youtrack.cloud/issue/CA-708
   final AuthNotifier authNotifier;
   final AuthManager authManager;
   final AppRouter router;
-  final RecentEstimationsBloc recentEstimationsBloc;
 
   const AppShellPage({
     super.key,
-    required this.appShellBloc,
     required this.projectUIProvider,
-    required this.projectDropdownBloc,
     required this.currentProjectNotifier,
     required this.authNotifier,
     required this.authManager,
     required this.router,
-    required this.recentEstimationsBloc,
   });
 
   @override
@@ -58,16 +51,11 @@ class _AppShellPageState extends State<AppShellPage> {
     (_) => GlobalKey<NavigatorState>(),
   );
 
-  @override
-  void dispose() {
-    widget.appShellBloc.close();
-    super.dispose();
-  }
-
   void _onPopInvoked(bool didPop) {
     if (didPop) return;
 
-    final state = widget.appShellBloc.state;
+    final appShellBloc = context.read<AppShellBloc>();
+    final state = appShellBloc.state;
     final currentNavigator =
         _tabNavigatorKeys[state.selectedTabIndex].currentState;
 
@@ -77,7 +65,7 @@ class _AppShellPageState extends State<AppShellPage> {
     }
 
     if (state.selectedTabIndex != 0) {
-      widget.appShellBloc.add(const AppShellTabSelected(ShellTab.home));
+      appShellBloc.add(const AppShellTabSelected(ShellTab.home));
       return;
     }
 
@@ -86,20 +74,18 @@ class _AppShellPageState extends State<AppShellPage> {
 
   void _handleTabTap(int index) {
     assert(index < ShellTab.values.length, 'Tab index $index out of range');
-    widget.appShellBloc.add(AppShellTabSelected(ShellTab.values[index]));
+    context.read<AppShellBloc>().add(AppShellTabSelected(ShellTab.values[index]));
   }
 
   Widget _buildTabRoot(ShellTab tab) {
     switch (tab) {
-      // TODO: [CA-708] Remove once DashboardPage reads these from the module directly.
+      // TODO: [CA-708] Remove auth params once DashboardPage reads auth from the module directly.
       // https://ripplearc.youtrack.cloud/issue/CA-708
       case ShellTab.home:
         return DashboardPage(
           authNotifier: widget.authNotifier,
           authManager: widget.authManager,
           router: widget.router,
-          recentEstimationsBloc: widget.recentEstimationsBloc,
-          appShellBloc: widget.appShellBloc,
         );
       case ShellTab.calculations:
         return const CalculationsPage();
@@ -113,7 +99,6 @@ class _AppShellPageState extends State<AppShellPage> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<ProjectDropdownBloc, ProjectDropdownState>(
-      bloc: widget.projectDropdownBloc,
       listener: (context, dropdownState) {
         if (dropdownState is ProjectDropdownLoadSuccess) {
           final newId = dropdownState.selectedProject?.id;
@@ -123,7 +108,6 @@ class _AppShellPageState extends State<AppShellPage> {
         }
       },
       child: BlocBuilder<AppShellBloc, AppShellState>(
-        bloc: widget.appShellBloc,
         builder: (context, state) {
         return PopScope(
           canPop: false,

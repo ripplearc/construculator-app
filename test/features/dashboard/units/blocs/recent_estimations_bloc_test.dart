@@ -1,8 +1,12 @@
 import 'package:bloc_test/bloc_test.dart';
-import 'package:construculator/features/dashboard/dashboard_module.dart';
+import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/dashboard/domain/usecases/watch_recent_estimations_usecase.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
+import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
+import 'package:construculator/libraries/estimation/estimation_library_module.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -13,6 +17,31 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 
+class _TestModule extends Module {
+  final AppBootstrap appBootstrap;
+  _TestModule(this.appBootstrap);
+
+  @override
+  List<Module> get imports => [
+    AuthLibraryModule(appBootstrap),
+    ProjectLibraryModule(appBootstrap),
+    EstimationLibraryModule(appBootstrap),
+  ];
+
+  @override
+  void binds(Injector i) {
+    i.add<WatchRecentEstimationsUseCase>(
+      () => WatchRecentEstimationsUseCase(i(), i()),
+    );
+    i.add<RecentEstimationsBloc>(
+      () => RecentEstimationsBloc(
+        watchRecentEstimationsUseCase: i(),
+        currentProjectNotifier: i(),
+      ),
+    );
+  }
+}
+
 void main() {
   late RecentEstimationsBloc bloc;
   late FakeSupabaseWrapper fakeSupabaseWrapper;
@@ -22,7 +51,7 @@ void main() {
 
   setUpAll(() {
     final bootstrap = FakeAppBootstrapFactory.create();
-    Modular.init(DashboardModule(bootstrap));
+    Modular.init(_TestModule(bootstrap));
     fakeSupabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
   });
 
