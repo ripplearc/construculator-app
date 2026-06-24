@@ -43,6 +43,26 @@ void main() {
     expect(find.byType(CoreLetterAvatar), findsOneWidget);
   });
 
+  testWidgets('shows CoreAvatar without letter fallback when imageUrl is provided', (
+    tester,
+  ) async {
+    // Suppress the image resource service error: NetworkImage returns HTTP 400
+    // in the test environment. The widget structure (no CoreLetterAvatar) is
+    // what matters here, not whether the image actually loads.
+    final originalOnError = FlutterError.onError;
+    FlutterError.onError = (details) {
+      if (details.library != 'image resource service') {
+        originalOnError?.call(details);
+      }
+    };
+    addTearDown(() => FlutterError.onError = originalOnError);
+
+    await pumpAvatar(tester, imageUrl: 'https://example.com/avatar.jpg');
+
+    expect(find.byType(CoreLetterAvatar), findsNothing);
+    expect(find.byType(CoreAvatar), findsOneWidget);
+  });
+
   testWidgets('invokes onTap callback when tapped', (tester) async {
     var tapped = false;
     await pumpAvatar(tester, onTap: () => tapped = true);
