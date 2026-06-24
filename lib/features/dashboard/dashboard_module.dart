@@ -6,7 +6,6 @@ import 'package:construculator/features/dashboard/presentation/bloc/recent_estim
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -31,6 +30,8 @@ class DashboardModule extends Module {
       () => DashboardBloc(
         projectRepository: i(),
         currentProjectNotifier: i(),
+        authNotifier: i(),
+        authManager: i(),
       ),
     );
     i.add<ProjectSettingsBloc>(
@@ -43,22 +44,20 @@ class DashboardModule extends Module {
     r.child(
       dashboardRoute,
       guards: [AuthGuard(() => Modular.get<AuthManager>())],
-      // TODO: [CA-708] Remove authNotifier, authManager once DashboardPage reads auth from the module directly.
-      // https://ripplearc.youtrack.cloud/issue/CA-708
       child: (context) => MultiBlocProvider(
         providers: [
+          BlocProvider<DashboardBloc>(
+            create: (_) => Modular.get<DashboardBloc>()..add(const DashboardStarted()),
+          ),
           BlocProvider<RecentEstimationsBloc>(
-            create: (_) => Modular.get<RecentEstimationsBloc>(),
+            create: (_) => Modular.get<RecentEstimationsBloc>()
+                ..add(const RecentEstimationsWatchStarted()),
           ),
           BlocProvider<AppShellBloc>(
             create: (_) => Modular.get<AppShellBloc>(),
           ),
         ],
-        child: DashboardPage(
-          authNotifier: Modular.get<AuthNotifier>(),
-          authManager: Modular.get<AuthManager>(),
-          router: Modular.get<AppRouter>(),
-        ),
+        child: DashboardPage(router: Modular.get<AppRouter>()),
       ),
     );
   }

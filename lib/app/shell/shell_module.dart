@@ -2,14 +2,15 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
+import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/domain/usecases/watch_recent_estimations_usecase.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/dashboard_bloc/dashboard_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/estimation/estimation_routes_module.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
@@ -31,6 +32,7 @@ class ShellModule extends Module {
     AuthLibraryModule(appBootstrap),
     ProjectLibraryModule(appBootstrap),
     EstimationLibraryModule(appBootstrap),
+    DashboardModule(appBootstrap),
   ];
 
   @override
@@ -60,10 +62,11 @@ class ShellModule extends Module {
   void routes(RouteManager r) {
     r.child(
       '/',
-      // TODO: [CA-708] Remove authNotifier, authManager, router once DashboardPage reads auth from the module directly.
-      // https://ripplearc.youtrack.cloud/issue/CA-708
       child: (_) => MultiBlocProvider(
         providers: [
+          BlocProvider<DashboardBloc>(
+            create: (_) => Modular.get<DashboardBloc>()..add(const DashboardStarted()),
+          ),
           BlocProvider<AppShellBloc>(
             create: (_) => Modular.get<AppShellBloc>(),
           ),
@@ -71,14 +74,13 @@ class ShellModule extends Module {
             create: (_) => Modular.get<ProjectDropdownBloc>(),
           ),
           BlocProvider<RecentEstimationsBloc>(
-            create: (_) => Modular.get<RecentEstimationsBloc>(),
+            create: (_) => Modular.get<RecentEstimationsBloc>()
+                ..add(const RecentEstimationsWatchStarted()),
           ),
         ],
         child: AppShellPage(
           projectUIProvider: Modular.get<ProjectUIProvider>(),
           currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
-          authNotifier: Modular.get<AuthNotifier>(),
-          authManager: Modular.get<AuthManager>(),
           router: Modular.get<AppRouter>(),
         ),
       ),
