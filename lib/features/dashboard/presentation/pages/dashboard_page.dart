@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
@@ -9,31 +8,26 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/auth_routes.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class DashboardPage extends StatefulWidget {
   /// Notifies the widget of changes in user authentication or profile state.
+  // TODO: [CA-708] Remove once auth is accessed via DashboardBloc.
   final AuthNotifier authNotifier;
 
   /// Manages user credentials and profile loading.
+  // TODO: [CA-708] Remove once auth is accessed via DashboardBloc.
   final AuthManager authManager;
 
   /// The router used to navigate to other pages (e.g. login, create account).
   final AppRouter router;
-
-  /// Bloc that streams recent cost estimations into [RecentEstimationsSection].
-  final RecentEstimationsBloc recentEstimationsBloc;
-
-  /// The shell bloc used to switch tabs from within the dashboard.
-  final AppShellBloc appShellBloc;
 
   const DashboardPage({
     super.key,
     required this.authNotifier,
     required this.authManager,
     required this.router,
-    required this.recentEstimationsBloc,
-    required this.appShellBloc,
   });
 
   @override
@@ -47,6 +41,8 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
+    context.read<RecentEstimationsBloc>().add(const RecentEstimationsWatchStarted());
+
     _profileSubscription = widget.authNotifier.onUserProfileChanged.listen((
       event,
     ) {
@@ -124,11 +120,7 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ),
             const SizedBox(height: CoreSpacing.space8),
-            RecentEstimationsSection(
-              bloc: widget.recentEstimationsBloc,
-              router: widget.router,
-              appShellBloc: widget.appShellBloc,
-            ),
+            RecentEstimationsSection(router: widget.router),
             const SizedBox(height: CoreSpacing.space8),
             Center(
               child: CoreButton(
