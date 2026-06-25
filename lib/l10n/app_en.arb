@@ -1409,5 +1409,21 @@
   "projectDescriptionTooLongError": "Description must be 100 characters or less",
   "@projectDescriptionTooLongError": {
     "description": "Error shown when the project description exceeds 100 characters"
+  },
+  "exportSettingsTitle": "Folder link for export",
+  "@exportSettingsTitle": {
+    "description": "Section heading for the export settings display"
+  },
+  "exportGoogleDriveLabel": "Google drive link:",
+  "@exportGoogleDriveLabel": {
+    "description": "Label for the Google Drive export row in ExportSettingsDisplay"
+  },
+  "exportDropboxLabel": "Dropbox link:",
+  "@exportDropboxLabel": {
+    "description": "Label for the Dropbox export row in ExportSettingsDisplay"
+  },
+  "exportOneDriveLabel": "One drive link:",
+  "@exportOneDriveLabel": {
+    "description": "Label for the OneDrive export row in ExportSettingsDisplay"
   }
 }
