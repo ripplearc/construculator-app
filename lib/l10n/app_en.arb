@@ -1521,5 +1521,22 @@
   "@inviteMemberButton": {
     "description": "Label for the button that opens the invite member flow",
     "context": "Project creation screen"
+  },
+  "exportSettingsTitle": "Folder link for export",
+  "@exportSettingsTitle": {
+    "description": "Section heading for the export settings display"
+  },
+  "exportGoogleDriveLabel": "Google Drive link:",
+  "@exportGoogleDriveLabel": {
+    "description": "Label for the Google Drive export row in ExportSettingsDisplay"
+  },
+  "exportDropboxLabel": "Dropbox link:",
+  "@exportDropboxLabel": {
+    "description": "Label for the Dropbox export row in ExportSettingsDisplay"
+  },
+  "exportOneDriveLabel": "OneDrive link:",
+  "@exportOneDriveLabel": {
+    "description": "Label for the OneDrive export row in ExportSettingsDisplay"
   }
 }
+

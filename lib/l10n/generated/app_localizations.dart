@@ -1839,6 +1839,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Invite member'**
   String get inviteMemberButton;
+
+  /// Section heading for the export settings display
+  ///
+  /// In en, this message translates to:
+  /// **'Folder link for export'**
+  String get exportSettingsTitle;
+
+  /// Label for the Google Drive export row in ExportSettingsDisplay
+  ///
+  /// In en, this message translates to:
+  /// **'Google Drive link:'**
+  String get exportGoogleDriveLabel;
+
+  /// Label for the Dropbox export row in ExportSettingsDisplay
+  ///
+  /// In en, this message translates to:
+  /// **'Dropbox link:'**
+  String get exportDropboxLabel;
+
+  /// Label for the OneDrive export row in ExportSettingsDisplay
+  ///
+  /// In en, this message translates to:
+  /// **'OneDrive link:'**
+  String get exportOneDriveLabel;
 }
 
 class _AppLocalizationsDelegate
