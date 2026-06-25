@@ -409,7 +409,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get members => 'Members';
 
   @override
-  String get invitePeopleTitle => 'Invite people for Material of building';
+  String get invitePeopleTitle => 'Invite team members';
 
   @override
   String get invitePeopleSubtitle => 'You can invite other people by email';

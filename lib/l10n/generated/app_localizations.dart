@@ -847,7 +847,7 @@ abstract class AppLocalizations {
   /// Title for the member invitation widget
   ///
   /// In en, this message translates to:
-  /// **'Invite people for Material of building'**
+  /// **'Invite team members'**
   String get invitePeopleTitle;
 
   /// Subtitle for the member invitation widget
