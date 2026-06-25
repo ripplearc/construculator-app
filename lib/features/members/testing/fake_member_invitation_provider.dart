@@ -11,9 +11,6 @@ class FakeMemberInvitationProvider implements MemberInvitationProvider {
   /// Creates a [FakeMemberInvitationProvider].
   const FakeMemberInvitationProvider();
 
-  /// Builds and returns a [MemberInvitationWidget] with the given parameters.
-  ///
-  /// The [onInvite] callback is invoked when the user taps the Invite button.
   @override
   Widget buildMemberInvitationWidget({
     required String title,
@@ -27,7 +24,6 @@ class FakeMemberInvitationProvider implements MemberInvitationProvider {
     );
   }
 
-  /// Builds and returns an [InvitedMembersList] with the given [members].
   @override
   Widget buildInvitedMembersList({
     required List<InvitedMember> members,
