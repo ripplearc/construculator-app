@@ -253,8 +253,8 @@ class _EmailInputRow extends StatelessWidget {
   }
 }
 
-// TODO: [CA-XXX] Contribute _EmailChip to CoreUI as CoreInputChip (non-toggleable
-//   chip with remove button). https://ripplearc.youtrack.cloud/issue/CA-XXX
+// TODO: [CA-753] Contribute _EmailChip to CoreUI as CoreInputChip (non-toggleable
+//   chip with remove button). https://ripplearc.youtrack.cloud/issue/CA-753
 class _EmailChip extends StatelessWidget {
   final String email;
   final VoidCallback onRemove;
