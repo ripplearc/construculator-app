@@ -844,6 +844,36 @@ abstract class AppLocalizations {
   /// **'Members'**
   String get members;
 
+  /// Title for the member invitation widget
+  ///
+  /// In en, this message translates to:
+  /// **'Invite team members'**
+  String get invitePeopleTitle;
+
+  /// Subtitle for the member invitation widget
+  ///
+  /// In en, this message translates to:
+  /// **'You can invite other people by email'**
+  String get invitePeopleSubtitle;
+
+  /// Hint text for the email input in the invitation widget
+  ///
+  /// In en, this message translates to:
+  /// **'Assign by email'**
+  String get assignByEmailHint;
+
+  /// Label for the Invite action button in the member invitation widget
+  ///
+  /// In en, this message translates to:
+  /// **'Invite'**
+  String get inviteButton;
+
+  /// Static role label shown in the invitation widget
+  ///
+  /// In en, this message translates to:
+  /// **'Contributor'**
+  String get contributorRole;
+
   /// Empty state message shown when no cost estimations exist
   ///
   /// In en, this message translates to:

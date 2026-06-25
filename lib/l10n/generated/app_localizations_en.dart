@@ -409,6 +409,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get members => 'Members';
 
   @override
+  String get invitePeopleTitle => 'Invite team members';
+
+  @override
+  String get invitePeopleSubtitle => 'You can invite other people by email';
+
+  @override
+  String get assignByEmailHint => 'Assign by email';
+
+  @override
+  String get inviteButton => 'Invite';
+
+  @override
+  String get contributorRole => 'Contributor';
+
+  @override
   String get costEstimationEmptyMessage =>
       'No estimation added. To add an estimation please click on add button';
 
