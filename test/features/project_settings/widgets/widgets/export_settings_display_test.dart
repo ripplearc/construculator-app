@@ -3,7 +3,7 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart' show CoreTheme;
 
 void main() {
   Future<void> pumpExportSettingsDisplay(
@@ -44,7 +44,10 @@ void main() {
       ) async {
         await pumpExportSettingsDisplay(tester);
 
-        expect(find.byType(CoreIconWidget), findsNothing);
+        expect(
+          find.byKey(const Key('export_settings_provider_icon')),
+          findsNothing,
+        );
       });
 
       testWidgets('shows Google Drive label for googleDrive provider', (
@@ -102,14 +105,17 @@ void main() {
         expect(find.text('Cost estimation'), findsNothing);
       });
 
-      testWidgets('shows provider icons when provider is set', (tester) async {
+      testWidgets('shows provider icon when provider is set', (tester) async {
         await pumpExportSettingsDisplay(
           tester,
           storageProvider: StorageProvider.googleDrive,
           folderName: 'My folder',
         );
 
-        expect(find.byType(CoreIconWidget), findsWidgets);
+        expect(
+          find.byKey(const Key('export_settings_provider_icon')),
+          findsOneWidget,
+        );
       });
     });
   });

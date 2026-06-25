@@ -89,6 +89,7 @@ class _ProviderRow extends StatelessWidget {
       StorageProvider.dropbox => CoreIcons.share,
     };
     return CoreIconWidget(
+      key: const Key('export_settings_provider_icon'),
       icon: icon,
       size: CoreIconSize.size24,
       color: colors.iconDark,
