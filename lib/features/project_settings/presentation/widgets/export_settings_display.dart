@@ -66,7 +66,7 @@ class _ProviderRow extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _providerIcon(colors),
+        _providerIcon(),
         const SizedBox(width: CoreSpacing.space4),
         Text(
           _providerLabel(context),
@@ -82,17 +82,16 @@ class _ProviderRow extends StatelessWidget {
     );
   }
 
-  Widget _providerIcon(AppColorsExtension colors) {
+  Widget _providerIcon() {
     final icon = switch (storageProvider) {
-      StorageProvider.googleDrive => CoreIcons.google,
-      StorageProvider.oneDrive => CoreIcons.microsoft,
-      StorageProvider.dropbox => CoreIcons.share,
+      StorageProvider.googleDrive => CoreIcons.googleDrive,
+      StorageProvider.oneDrive => CoreIcons.onedrive,
+      StorageProvider.dropbox => CoreIcons.dropbox,
     };
     return CoreIconWidget(
       key: const Key('export_settings_provider_icon'),
       icon: icon,
       size: CoreIconSize.size24,
-      color: colors.iconDark,
     );
   }
 
