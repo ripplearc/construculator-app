@@ -38,6 +38,14 @@ void main() {
         tester,
         buildWidget,
         find.byKey(const Key('member_invitation_invite_button')),
+        setupAfterPump: (t) async {
+          await t.enterText(
+            find.byKey(const Key('member_invitation_email_input')),
+            'a@b.com',
+          );
+          await t.testTextInput.receiveAction(TextInputAction.done);
+          await t.pump();
+        },
       );
     });
 
@@ -51,11 +59,12 @@ void main() {
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
         buildWidget,
+        // Key pattern: 'remove_chip_$email' — must match the email entered in setupAfterPump
         find.byKey(const Key('remove_chip_a@b.com')),
         setupAfterPump: (t) async {
           await t.enterText(
             find.byKey(const Key('member_invitation_email_input')),
-            'a@b.com',
+            'a@b.com', // same email as the key above
           );
           await t.testTextInput.receiveAction(TextInputAction.done);
           await t.pump();
