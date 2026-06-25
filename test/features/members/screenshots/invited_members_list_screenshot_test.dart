@@ -1,6 +1,6 @@
+import 'package:construculator/features/members/presentation/widgets/invited_members_list.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/members/domain/invited_member.dart';
-import 'package:construculator/features/members/presentation/widgets/invited_members_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
