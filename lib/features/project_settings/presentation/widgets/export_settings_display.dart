@@ -127,7 +127,7 @@ class _FolderNameChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           CoreIconWidget(
-            icon: CoreIcons.editDocument,
+            icon: CoreIcons.docs,
             size: CoreIconSize.size16,
             color: colors.iconDark,
           ),
