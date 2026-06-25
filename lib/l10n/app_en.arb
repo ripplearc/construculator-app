@@ -1397,5 +1397,17 @@
   "projectNameTooLongError": "Project name must be 100 characters or less",
   "@projectNameTooLongError": {
     "description": "Error shown when the project name exceeds 100 characters"
+  },
+  "projectDescriptionLabel": "Project description",
+  "@projectDescriptionLabel": {
+    "description": "Label for the project description text area"
+  },
+  "projectDescriptionHintText": "Project description",
+  "@projectDescriptionHintText": {
+    "description": "Hint text shown inside the project description text area"
+  },
+  "projectDescriptionTooLongError": "Description must be 100 characters or less",
+  "@projectDescriptionTooLongError": {
+    "description": "Error shown when the project description exceeds 100 characters"
   }
 }

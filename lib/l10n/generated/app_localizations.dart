@@ -1677,6 +1677,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Project name must be 100 characters or less'**
   String get projectNameTooLongError;
+
+  /// Label for the project description text area
+  ///
+  /// In en, this message translates to:
+  /// **'Project description'**
+  String get projectDescriptionLabel;
+
+  /// Hint text shown inside the project description text area
+  ///
+  /// In en, this message translates to:
+  /// **'Project description'**
+  String get projectDescriptionHintText;
+
+  /// Error shown when the project description exceeds 100 characters
+  ///
+  /// In en, this message translates to:
+  /// **'Description must be 100 characters or less'**
+  String get projectDescriptionTooLongError;
 }
 
 class _AppLocalizationsDelegate
