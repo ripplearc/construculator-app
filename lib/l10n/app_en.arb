@@ -623,7 +623,7 @@
   "@members": {
     "description": "Label for members tab or header"
   },
-  "invitePeopleTitle": "Invite people for Material of building",
+  "invitePeopleTitle": "Invite team members",
   "@invitePeopleTitle": {
     "description": "Title for the member invitation widget"
   },

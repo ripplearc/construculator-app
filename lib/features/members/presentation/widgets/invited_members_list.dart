@@ -49,7 +49,7 @@ class _MemberTile extends StatelessWidget {
     final colors = context.colorTheme;
     final typography = context.textTheme;
     final display = member.name ?? member.email;
-    final initial = display.isNotEmpty ? display[0].toUpperCase() : '?';
+    final initial = display[0].toUpperCase();
 
     return Container(
       height: CoreSpacing.space16,
