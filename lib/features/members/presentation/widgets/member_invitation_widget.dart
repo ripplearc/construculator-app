@@ -6,12 +6,17 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// A widget that lets users invite collaborators by email address.
 ///
+/// Present via [CoreQuickSheet.show] — do not wrap in ClipRRect.
+///
 /// Manages its own invitation list. Added emails appear as removable chips
 /// inside the input field. Calls [onInvite] with the final list when the
 /// user taps the Invite button.
 class MemberInvitationWidget extends StatefulWidget {
   final String title;
   final String subtitle;
+
+  /// Callback invoked when the user taps Invite.
+  /// May be null in tests; must be non-null in production call sites.
   final void Function(List<String> emails)? onInvite;
 
   const MemberInvitationWidget({
@@ -74,15 +79,10 @@ class _MemberInvitationWidgetState extends State<MemberInvitationWidget> {
     final colors = context.colorTheme;
     final typography = context.textTheme;
 
-    return ClipRRect(
+    return Container(
       key: const Key('member_invitation_widget'),
-      borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(CoreSpacing.space7),
-        topRight: Radius.circular(CoreSpacing.space7),
-      ),
-      child: Container(
-        color: colors.pageBackground,
-        child: Column(
+      color: colors.pageBackground,
+      child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -122,7 +122,6 @@ class _MemberInvitationWidgetState extends State<MemberInvitationWidget> {
               onPressed: _onInvite,
             ),
           ],
-        ),
       ),
     );
   }
@@ -142,51 +141,28 @@ class _Header extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: colors.textInverse,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(CoreSpacing.space7),
-          topRight: Radius.circular(CoreSpacing.space7),
-        ),
         boxShadow: CoreShadows.small,
+      ),
+      padding: const EdgeInsets.only(
+        top: CoreSpacing.space3,
+        left: CoreSpacing.space4,
+        right: CoreSpacing.space4,
+        bottom: CoreSpacing.space3,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space3),
-              child: Container(
-                width: CoreSpacing.space8,
-                height: CoreSpacing.space1,
-                decoration: BoxDecoration(
-                  color: colors.lineDarkOutline,
-                  borderRadius: BorderRadius.circular(100),
-                ),
-              ),
+          Text(
+            title,
+            style: typography.titleMediumSemiBold.copyWith(
+              color: colors.textHeadline,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(
-              left: CoreSpacing.space4,
-              right: CoreSpacing.space4,
-              bottom: CoreSpacing.space3,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: typography.titleMediumSemiBold.copyWith(
-                    color: colors.textHeadline,
-                  ),
-                ),
-                const SizedBox(height: CoreSpacing.space1),
-                Text(
-                  subtitle,
-                  style: typography.bodyMediumRegular.copyWith(
-                    color: colors.textBody,
-                  ),
-                ),
-              ],
+          const SizedBox(height: CoreSpacing.space1),
+          Text(
+            subtitle,
+            style: typography.bodyMediumRegular.copyWith(
+              color: colors.textBody,
             ),
           ),
         ],
@@ -277,6 +253,8 @@ class _EmailInputRow extends StatelessWidget {
   }
 }
 
+// TODO: [CA-XXX] Contribute _EmailChip to CoreUI as CoreInputChip (non-toggleable
+//   chip with remove button). https://ripplearc.youtrack.cloud/issue/CA-XXX
 class _EmailChip extends StatelessWidget {
   final String email;
   final VoidCallback onRemove;
