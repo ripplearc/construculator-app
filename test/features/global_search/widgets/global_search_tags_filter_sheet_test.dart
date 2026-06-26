@@ -1,5 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
+import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_tags_filter_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
