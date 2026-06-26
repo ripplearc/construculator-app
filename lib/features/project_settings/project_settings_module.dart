@@ -1,5 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/project_settings/presentation/bloc/project_settings_bloc/project_settings_bloc.dart';
+import 'package:construculator/features/project_settings/presentation/pages/edit_project_screen.dart';
 import 'package:construculator/features/project_settings/presentation/pages/project_detail_screen.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
@@ -37,5 +38,6 @@ class ProjectSettingsModule extends Module {
       guards: [AuthGuard(() => Modular.get<AuthManager>())],
       child: (_) => const ProjectDetailScreen(),
     );
+    r.child(editProjectChildRoute, child: (_) => const EditProjectScreen());
   }
 }

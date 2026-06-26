@@ -394,6 +394,18 @@ abstract class AppLocalizations {
   /// **'Calculations'**
   String get sortFavouriteCalculations;
 
+  /// Accessibility label for the edit project button on the project detail screen
+  ///
+  /// In en, this message translates to:
+  /// **'Edit project'**
+  String get editProjectSemanticLabel;
+
+  /// AppBar title of the edit project screen
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Project'**
+  String get editProjectScreenTitle;
+
   /// Accessibility label for the per-project settings icon button in the projects list
   ///
   /// In en, this message translates to:

@@ -76,6 +76,15 @@ class ProjectSettingsNameValidationError extends ProjectSettingsState {
   const ProjectSettingsNameValidationError();
 }
 
+class ProjectSettingsEdited extends ProjectSettingsState {
+  final Project project;
+
+  const ProjectSettingsEdited(this.project);
+
+  @override
+  List<Object?> get props => [project];
+}
+
 class ProjectSettingsError extends ProjectSettingsState {
   final Failure failure;
   final Project? lastProject;

@@ -9,3 +9,6 @@ const String viewProjectRoute = '/view-project';
 
 /// Full routable path to [ProjectDetailScreen].
 const String fullViewProjectRoute = '$projectSettingsBaseRoute$viewProjectRoute';
+
+final String editProjectChildRoute = '/edit-project';
+final String editProjectRoute = '$projectSettingsBaseRoute$editProjectChildRoute';
