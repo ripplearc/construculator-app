@@ -7,7 +7,7 @@ import '../../../utils/screenshot/await_images_extension.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
-  final size = const Size(390, 320);
+  final size = const Size(390, 520);
   const ratio = 1.0;
   TestWidgetsFlutterBinding.ensureInitialized();
 
