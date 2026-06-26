@@ -144,7 +144,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recentEstimationsEmptyState => 'No recent estimations found.';
 
   @override
-  String get editProjectSemanticLabel => 'Edit project';
+  String get editProjectButton => 'Edit project';
 
   @override
   String get editProjectScreenTitle => 'Edit Project';

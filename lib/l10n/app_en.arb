@@ -215,9 +215,9 @@
     "description": "Empty state message shown when there are no recent estimations",
     "context": "Dashboard recent estimations section"
   },
-  "editProjectSemanticLabel": "Edit project",
-  "@editProjectSemanticLabel": {
-    "description": "Accessibility label for the edit project button on the project detail screen",
+  "editProjectButton": "Edit project",
+  "@editProjectButton": {
+    "description": "Label for the button that navigates to the edit project screen",
     "context": "Project settings"
   },
   "editProjectScreenTitle": "Edit Project",

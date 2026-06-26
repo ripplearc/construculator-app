@@ -27,32 +27,20 @@ void main() {
     );
   }
 
-  testWidgets('renders edit icon when idle', (tester) async {
+  testWidgets('renders Edit project label when onPressed is set', (tester) async {
     await tester.pumpWidget(buildTestApp(onPressed: () async {}));
     await tester.pump();
 
-    expect(find.byKey(const Key('edit_project_icon')), findsOneWidget);
-    expect(find.byKey(const Key('edit_project_loading')), findsNothing);
+    expect(find.text('Edit project'), findsOneWidget);
+    expect(find.byType(CoreButton), findsOneWidget);
   });
 
-  testWidgets('shows loading indicator while onPressed is in flight', (
-    tester,
-  ) async {
-    final completer = Completer<void>();
-    await tester.pumpWidget(buildTestApp(onPressed: () => completer.future));
+  testWidgets('is hidden entirely when onPressed is null', (tester) async {
+    await tester.pumpWidget(buildTestApp());
     await tester.pump();
 
-    await tester.tap(find.byType(EditProjectButton));
-    await tester.pump();
-
-    expect(find.byKey(const Key('edit_project_loading')), findsOneWidget);
-    expect(find.byKey(const Key('edit_project_icon')), findsNothing);
-
-    completer.complete();
-    await tester.pump();
-
-    expect(find.byKey(const Key('edit_project_loading')), findsNothing);
-    expect(find.byKey(const Key('edit_project_icon')), findsOneWidget);
+    expect(find.byType(CoreButton), findsNothing);
+    expect(find.text('Edit project'), findsNothing);
   });
 
   testWidgets('calls onPressed exactly once when tapped', (tester) async {
@@ -62,15 +50,37 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.byType(EditProjectButton));
+    await tester.tap(find.byType(CoreButton));
     await tester.pump();
 
     expect(callCount, 1);
   });
 
-  testWidgets('ignores second tap while onPressed is in flight', (
-    tester,
-  ) async {
+  testWidgets('disables button while onPressed is in flight', (tester) async {
+    final completer = Completer<void>();
+    await tester.pumpWidget(
+      buildTestApp(onPressed: () => completer.future),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byType(CoreButton));
+    await tester.pump();
+
+    expect(
+      tester.widget<CoreButton>(find.byType(CoreButton)).isDisabled,
+      isTrue,
+    );
+
+    completer.complete();
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<CoreButton>(find.byType(CoreButton)).isDisabled,
+      isFalse,
+    );
+  });
+
+  testWidgets('ignores second tap while onPressed is in flight', (tester) async {
     var callCount = 0;
     final completer = Completer<void>();
     await tester.pumpWidget(
@@ -81,10 +91,10 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.byType(EditProjectButton));
+    await tester.tap(find.byType(CoreButton));
     await tester.pump();
 
-    await tester.tap(find.byType(EditProjectButton));
+    await tester.tap(find.byType(CoreButton));
     await tester.pump();
 
     expect(callCount, 1);
@@ -93,32 +103,10 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets(
-    'exposes semantics button with edit project label when onPressed set',
-    (tester) async {
-      await tester.pumpWidget(buildTestApp(onPressed: () async {}));
-      await tester.pump();
-
-      expect(find.bySemanticsLabel('Edit project'), findsOneWidget);
-    },
-  );
-
-  testWidgets('is hidden entirely when onPressed is null', (tester) async {
-    await tester.pumpWidget(buildTestApp());
-    await tester.pump();
-
-    expect(find.byKey(const Key('edit_project_icon')), findsNothing);
-    expect(find.bySemanticsLabel('Edit project'), findsNothing);
-  });
-
-  testWidgets('hit target is 48 × 48 points to satisfy a11y guidelines', (
-    tester,
-  ) async {
+  testWidgets('exposes semantics button with Edit project label', (tester) async {
     await tester.pumpWidget(buildTestApp(onPressed: () async {}));
     await tester.pump();
 
-    final box = tester.getRect(find.byType(EditProjectButton));
-    expect(box.width, CoreSpacing.space12);
-    expect(box.height, CoreSpacing.space12);
+    expect(find.bySemanticsLabel('Edit project'), findsOneWidget);
   });
 }

@@ -352,11 +352,11 @@ abstract class AppLocalizations {
   /// **'No recent estimations found.'**
   String get recentEstimationsEmptyState;
 
-  /// Accessibility label for the edit project button on the project detail screen
+  /// Label for the button that navigates to the edit project screen
   ///
   /// In en, this message translates to:
   /// **'Edit project'**
-  String get editProjectSemanticLabel;
+  String get editProjectButton;
 
   /// AppBar title of the edit project screen
   ///
