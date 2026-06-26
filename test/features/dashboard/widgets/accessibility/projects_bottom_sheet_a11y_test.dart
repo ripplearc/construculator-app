@@ -31,7 +31,7 @@ void main() {
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: const Scaffold(body: ProjectsBottomSheet()),
+      home: Scaffold(body: ProjectsBottomSheet(bloc: bloc)),
     );
   }
 
