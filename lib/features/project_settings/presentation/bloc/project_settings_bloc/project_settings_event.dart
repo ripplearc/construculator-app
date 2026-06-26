@@ -45,6 +45,10 @@ class ProjectSettingsDeleteRequested extends ProjectSettingsEvent {
   List<Object?> get props => [projectId];
 }
 
+class ProjectSettingsEditingCancelled extends ProjectSettingsEvent {
+  const ProjectSettingsEditingCancelled();
+}
+
 class ProjectSettingsCreationRequested extends ProjectSettingsEvent {
   final String name;
   final String? description;

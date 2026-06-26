@@ -72,6 +72,15 @@ class ProjectSettingsCreated extends ProjectSettingsState {
   List<Object?> get props => [project];
 }
 
+class ProjectSettingsEdited extends ProjectSettingsState {
+  final Project project;
+
+  const ProjectSettingsEdited(this.project);
+
+  @override
+  List<Object?> get props => [project];
+}
+
 class ProjectSettingsError extends ProjectSettingsState {
   final Failure failure;
   final Project? lastProject;

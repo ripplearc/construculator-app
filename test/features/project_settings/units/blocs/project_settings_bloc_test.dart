@@ -126,7 +126,7 @@ void main() {
 
     group('ProjectSettingsUpdateSubmitted', () {
       blocTest<ProjectSettingsBloc, ProjectSettingsState>(
-        'emits [Saving, Loaded] on update success',
+        'emits [Saving, Edited] on update success',
         build: () => Modular.get<ProjectSettingsBloc>(),
         seed: () => ProjectSettingsEditing(
           project: tProject,
@@ -136,7 +136,7 @@ void main() {
         expect: () => [
           isA<ProjectSettingsSaving>()
               .having((s) => s.project.id, 'project.id', testProjectId),
-          isA<ProjectSettingsLoaded>()
+          isA<ProjectSettingsEdited>()
               .having((s) => s.project.id, 'project.id', testProjectId),
         ],
       );
@@ -219,6 +219,30 @@ void main() {
           isA<ProjectSettingsError>()
               .having((s) => s.failure, 'failure', isA<ProjectFailure>()),
         ],
+      );
+    });
+
+    group('ProjectSettingsEditingCancelled', () {
+      blocTest<ProjectSettingsBloc, ProjectSettingsState>(
+        'emits [Loaded(originalProject)] when state is Editing',
+        build: () => Modular.get<ProjectSettingsBloc>(),
+        seed: () => ProjectSettingsEditing(
+          project: tProject,
+          originalProject: tProject,
+        ),
+        act: (bloc) => bloc.add(const ProjectSettingsEditingCancelled()),
+        expect: () => [
+          isA<ProjectSettingsLoaded>()
+              .having((s) => s.project.id, 'project.id', testProjectId),
+        ],
+      );
+
+      blocTest<ProjectSettingsBloc, ProjectSettingsState>(
+        'is ignored when state is not Editing',
+        build: () => Modular.get<ProjectSettingsBloc>(),
+        seed: () => const ProjectSettingsLoading(),
+        act: (bloc) => bloc.add(const ProjectSettingsEditingCancelled()),
+        expect: () => [],
       );
     });
 
