@@ -2,7 +2,6 @@ import 'package:construculator/features/estimation/presentation/widgets/cost_est
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// The cost estimation details page.
@@ -12,9 +11,15 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// costs, and a bottom bar with lock and preview actions.
 class CostEstimationDetailsPage extends StatelessWidget {
   final String estimationId;
-  final _router = Modular.get<AppRouter>();
 
-  CostEstimationDetailsPage({super.key, required this.estimationId});
+  /// Router used for navigation (e.g. popping this page).
+  final AppRouter router;
+
+  const CostEstimationDetailsPage({
+    super.key,
+    required this.estimationId,
+    required this.router,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +48,7 @@ class CostEstimationDetailsPage extends StatelessWidget {
               size: 24,
               visualDensity: VisualDensity.compact,
               semanticLabel: l10n.backLabel,
-              onTap: _router.pop,
+              onTap: router.pop,
             ),
             // TODO: [CA-154] [Cost Estimation] Implement Rename Estimation Logic https://ripplearc.youtrack.cloud/issue/CA-154/Cost-Estimation-Implement-Rename-Estimation-Logic
             title: Row(

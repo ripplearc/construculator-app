@@ -1,7 +1,9 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
+import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -68,7 +70,10 @@ void main() {
       home: Builder(
         builder: (context) {
           buildContext = context;
-          return const GlobalSearchPage();
+          return GlobalSearchPage(
+            router: Modular.get<AppRouter>(),
+            blocFactory: () => Modular.get<GlobalSearchBloc>(),
+          );
         },
       ),
       locale: const Locale('en'),

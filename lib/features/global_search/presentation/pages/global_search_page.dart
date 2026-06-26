@@ -6,7 +6,6 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// The Global Search screen.
@@ -14,7 +13,17 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// Provides a search input field, filter chips (Tags, Modified, Type),
 /// a recent searches section, and an empty state when no recent searches exist.
 class GlobalSearchPage extends StatefulWidget {
-  const GlobalSearchPage({super.key});
+  /// Router used for navigation (e.g. popping this page).
+  final AppRouter router;
+
+  /// Factory that produces a fresh [GlobalSearchBloc] instance for each navigation.
+  final GlobalSearchBloc Function() blocFactory;
+
+  const GlobalSearchPage({
+    super.key,
+    required this.router,
+    required this.blocFactory,
+  });
 
   @override
   State<GlobalSearchPage> createState() => _GlobalSearchPageState();
@@ -22,7 +31,6 @@ class GlobalSearchPage extends StatefulWidget {
 
 class _GlobalSearchPageState extends State<GlobalSearchPage> {
   late final TextEditingController _searchController = TextEditingController();
-  late final AppRouter _router = Modular.get<AppRouter>();
   GlobalSearchReady? _lastReady;
 
   @override
@@ -67,7 +75,7 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
       button: true,
       child: GestureDetector(
         key: const Key('global_search_back_button'),
-        onTap: () => _router.pop(),
+        onTap: () => widget.router.pop(),
         child: ConstrainedBox(
           constraints: const BoxConstraints(
             minWidth: CoreSpacing.space12,
@@ -187,8 +195,7 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
     final l10n = context.l10n;
 
     return BlocProvider(
-      create: (_) =>
-          Modular.get<GlobalSearchBloc>()..add(const GlobalSearchStarted()),
+      create: (_) => widget.blocFactory()..add(const GlobalSearchStarted()),
       child: Builder(
         builder: (innerContext) => Scaffold(
           backgroundColor: colors.pageBackground,

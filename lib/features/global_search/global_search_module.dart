@@ -10,6 +10,7 @@ import 'package:construculator/libraries/estimation/data/estimation_tile_provide
 import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
 import 'package:construculator/libraries/owner/owner_library_module.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/global_search_routes.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:construculator/libraries/tag/tag_library_module.dart';
@@ -58,7 +59,10 @@ class GlobalSearchModule extends Module {
     r.child(
       globalSearchPageRoute,
       guards: [AuthGuard(() => Modular.get<AuthManager>())],
-      child: (_) => const GlobalSearchPage(),
+      child: (_) => GlobalSearchPage(
+        router: Modular.get<AppRouter>(),
+        blocFactory: () => Modular.get<GlobalSearchBloc>(),
+      ),
     );
   }
 }
