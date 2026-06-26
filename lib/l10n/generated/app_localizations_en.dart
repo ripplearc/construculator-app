@@ -165,7 +165,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sortFavouriteCalculations => 'Calculations';
 
   @override
-  String get editProjectSemanticLabel => 'Edit project';
+  String get editProjectButton => 'Edit project';
 
   @override
   String get editProjectScreenTitle => 'Edit Project';
