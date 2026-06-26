@@ -13,7 +13,10 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// Provides a search input field, filter chips (Tags, Modified, Type),
 /// a recent searches section, and an empty state when no recent searches exist.
 class GlobalSearchPage extends StatefulWidget {
+  /// Router used for navigation (e.g. popping this page).
   final AppRouter router;
+
+  /// Factory that produces a fresh [GlobalSearchBloc] instance for each navigation.
   final GlobalSearchBloc Function() blocFactory;
 
   const GlobalSearchPage({

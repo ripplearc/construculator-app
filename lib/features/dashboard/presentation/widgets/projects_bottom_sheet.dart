@@ -18,6 +18,7 @@ const double _kProjectsSearchIconSize = CoreSpacing.space5;
 /// [ProjectDropdownSelected] and dismisses the sheet. Loading, error (with a
 /// cached fallback), and empty states are all rendered inline.
 class ProjectsBottomSheet extends StatefulWidget {
+  /// The bloc that manages project selection and loading state.
   final ProjectDropdownBloc bloc;
 
   const ProjectsBottomSheet({super.key, required this.bloc});

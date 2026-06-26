@@ -11,6 +11,8 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// costs, and a bottom bar with lock and preview actions.
 class CostEstimationDetailsPage extends StatelessWidget {
   final String estimationId;
+
+  /// Router used for navigation (e.g. popping this page).
   final AppRouter router;
 
   const CostEstimationDetailsPage({
