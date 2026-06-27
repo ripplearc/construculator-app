@@ -1594,6 +1594,24 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get closeButton;
 
+  /// Accessibility label for the project selector dropdown in the header
+  ///
+  /// In en, this message translates to:
+  /// **'Select project'**
+  String get projectDropdownSemanticLabel;
+
+  /// Accessibility label for the notification icon button in the header
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationSemanticLabel;
+
+  /// Accessibility label for the profile avatar button in the header
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profileSemanticLabel;
+
   /// Section header shown above the list of most relevant search results
   ///
   /// In en, this message translates to:

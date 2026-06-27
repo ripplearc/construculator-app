@@ -2,6 +2,7 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
 import 'package:construculator/app/shell/shell_module.dart';
+import 'package:construculator/app/shell/widgets/header_row.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
@@ -286,11 +287,13 @@ void main() {
   });
 
   group('App Bar', () {
-    testWidgets('renders project UI provider app bar', (tester) async {
+    testWidgets('renders HeaderRow on home tab when no project is selected', (
+      tester,
+    ) async {
       await tester.pumpWidget(makeApp());
       await tester.pump();
 
-      expect(find.byType(_FakeProjectAppBar), findsOneWidget);
+      expect(find.byType(HeaderRow), findsOneWidget);
     });
   });
 
