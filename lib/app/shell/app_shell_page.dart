@@ -7,7 +7,6 @@ import 'package:construculator/features/dashboard/presentation/bloc/project_drop
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
-import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
@@ -15,6 +14,7 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/routes/global_search_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -118,11 +118,7 @@ class _AppShellPageState extends State<AppShellPage> {
     if (projectId == null || projectId.isEmpty) {
       if (state.selectedTabIndex == ShellTab.home.index) {
         return HeaderRow(
-          onSearchTap: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => const GlobalSearchPage(),
-            ),
-          ),
+          onSearchTap: () => widget.router.pushNamed(fullGlobalSearchRoute),
           // TODO: [CA-731] Wire NotificationBloc when NotificationModule is ready.
           // https://ripplearc.youtrack.cloud/issue/CA-731
           // TODO: [CA-732] Wire ProfileBloc when ProfileModule is ready.
@@ -150,11 +146,7 @@ class _AppShellPageState extends State<AppShellPage> {
               CoreIconWidget(
                 icon: CoreIcons.search,
                 semanticLabel: context.l10n.dashboardSearchSemanticLabel,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const GlobalSearchPage(),
-                  ),
-                ),
+                onTap: () => widget.router.pushNamed(fullGlobalSearchRoute),
               ),
               const SizedBox(width: CoreSpacing.space4),
             ],
