@@ -2,6 +2,7 @@ import 'package:construculator/features/members/presentation/widgets/member_invi
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/screenshot/font_loader.dart';
 
@@ -24,11 +25,13 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          backgroundColor: const Color(0xFF003A54),
-          body: Align(
-            alignment: Alignment.bottomCenter,
-            child: widget,
+        home: Builder(
+          builder: (context) => Scaffold(
+            backgroundColor: Theme.of(context).extension<AppColorsExtension>()!.backgroundDarkOrient,
+            body: Align(
+              alignment: Alignment.bottomCenter,
+              child: widget,
+            ),
           ),
         ),
       ),
@@ -93,11 +96,13 @@ void main() {
           locale: const Locale('en'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            backgroundColor: const Color(0xFF003A54),
-            body: Align(
-              alignment: Alignment.bottomCenter,
-              child: widget,
+          home: Builder(
+            builder: (context) => Scaffold(
+              backgroundColor: Theme.of(context).extension<AppColorsExtension>()!.backgroundDarkOrient,
+              body: Align(
+                alignment: Alignment.bottomCenter,
+                child: widget,
+              ),
             ),
           ),
         ),
