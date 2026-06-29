@@ -1384,6 +1384,16 @@
       }
     }
   },
+  "globalSearchFilterModifiedSemanticLabel": "Filter by modification date",
+  "@globalSearchFilterModifiedSemanticLabel": {
+    "description": "Accessibility label for the Modified date filter chip on the global search screen",
+    "context": "N/A"
+  },
+  "globalSearchClearDateFilterSemanticLabel": "Clear modification date filter",
+  "@globalSearchClearDateFilterSemanticLabel": {
+    "description": "Accessibility label for the × button that removes the active modification-date filter",
+    "context": "N/A"
+  },
   "globalSearchTagsSheetTitle": "Tags",
   "@globalSearchTagsSheetTitle": {
     "description": "Title of the Tags filter bottom sheet",
@@ -1441,5 +1451,55 @@
   "projectDescriptionTooLongError": "Description must be 100 characters or less",
   "@projectDescriptionTooLongError": {
     "description": "Error shown when the project description exceeds 100 characters"
+  },
+  "dateRangeSheetTitle": "Date range",
+  "@dateRangeSheetTitle": {
+    "description": "Title of the Date range filter bottom sheet",
+    "context": "N/A"
+  },
+  "dateRangeSheetToday": "Today",
+  "@dateRangeSheetToday": {
+    "description": "Predefined range option for today in the Date range filter bottom sheet",
+    "context": "N/A"
+  },
+  "dateRangeSheetLast7Days": "Last 7 days",
+  "@dateRangeSheetLast7Days": {
+    "description": "Predefined range option for the last 7 days in the Date range filter bottom sheet",
+    "context": "N/A"
+  },
+  "dateRangeSheetLast30Days": "Last 30 days",
+  "@dateRangeSheetLast30Days": {
+    "description": "Predefined range option for the last 30 days in the Date range filter bottom sheet",
+    "context": "N/A"
+  },
+  "dateRangeSheetThisMonth": "This month",
+  "@dateRangeSheetThisMonth": {
+    "description": "Predefined range option for the current calendar month in the Date range filter bottom sheet",
+    "context": "N/A"
+  },
+  "dateRangeSheetCustomRange": "Custom range",
+  "@dateRangeSheetCustomRange": {
+    "description": "Option in the Date range filter bottom sheet that opens the start/end date pickers",
+    "context": "N/A"
+  },
+  "dateRangeSheetStartDateLabel": "Start date",
+  "@dateRangeSheetStartDateLabel": {
+    "description": "Label shown in the date picker when selecting the start of a custom date range",
+    "context": "N/A"
+  },
+  "dateRangeSheetEndDateLabel": "End date",
+  "@dateRangeSheetEndDateLabel": {
+    "description": "Label shown in the date picker when selecting the end of a custom date range",
+    "context": "N/A"
+  },
+  "dateRangeSheetApply": "Apply",
+  "@dateRangeSheetApply": {
+    "description": "Label for the Apply button in the Date range filter bottom sheet",
+    "context": "N/A"
+  },
+  "dateRangeSheetCancel": "Cancel",
+  "@dateRangeSheetCancel": {
+    "description": "Label for the Cancel button in the Date range filter bottom sheet",
+    "context": "N/A"
   }
 }

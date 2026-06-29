@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/global_search/domain/entities/search_scope_entity.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
+import 'package:construculator/features/global_search/presentation/widgets/date_range_bottom_sheet.dart';
 
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/global_search/domain/search_error_type.dart';
@@ -1329,6 +1330,187 @@ void main() {
             isEmpty,
           ),
         ],
+      );
+    });
+
+    group('GlobalSearchDateFilterApplied', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchReady with selectedDateRange when a range is applied',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(
+          GlobalSearchDateFilterApplied(
+            range: DateRange(
+              start: DateTime(2024, 3, 1),
+              end: DateTime(2024, 3, 31),
+            ),
+          ),
+        ),
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedDateRange,
+            'selectedDateRange',
+            DateRange(start: DateTime(2024, 3, 1), end: DateTime(2024, 3, 31)),
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'replaces a previously applied range when a new one is applied',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            GlobalSearchDateFilterApplied(
+              range: DateRange(
+                start: DateTime(2024, 1, 1),
+                end: DateTime(2024, 1, 31),
+              ),
+            ),
+          );
+          await bloc.stream.first;
+          bloc.add(
+            GlobalSearchDateFilterApplied(
+              range: DateRange(
+                start: DateTime(2024, 3, 1),
+                end: DateTime(2024, 3, 31),
+              ),
+            ),
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedDateRange,
+            'first range applied',
+            DateRange(start: DateTime(2024, 1, 1), end: DateTime(2024, 1, 31)),
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedDateRange,
+            'second range replaces first',
+            DateRange(start: DateTime(2024, 3, 1), end: DateTime(2024, 3, 31)),
+          ),
+        ],
+      );
+    });
+
+    group('GlobalSearchDateFilterCleared', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits GlobalSearchReady with null selectedDateRange after clearing',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            GlobalSearchDateFilterApplied(
+              range: DateRange(
+                start: DateTime(2024, 3, 1),
+                end: DateTime(2024, 3, 31),
+              ),
+            ),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchDateFilterCleared());
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedDateRange,
+            'range applied',
+            isNotNull,
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedDateRange,
+            'selectedDateRange cleared',
+            isNull,
+          ),
+        ],
+      );
+    });
+
+    group('GlobalSearchStarted resets selectedDateRange', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'clears selectedDateRange when GlobalSearchStarted is dispatched after a range was applied',
+        setUp: () {
+          fakeSupabase.setCurrentUser(null);
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            GlobalSearchDateFilterApplied(
+              range: DateRange(
+                start: DateTime(2024, 3, 1),
+                end: DateTime(2024, 3, 31),
+              ),
+            ),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchStarted());
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedDateRange,
+            'range applied',
+            isNotNull,
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedDateRange,
+            'range reset on restart',
+            isNull,
+          ),
+        ],
+      );
+    });
+
+    group('GlobalSearchPerformed forwards date range to the RPC', () {
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'forwards filter_by_date_from and filter_by_date_to when a range is active',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {'projects': [], 'estimations': [], 'members': []},
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            GlobalSearchDateFilterApplied(
+              range: DateRange(
+                start: DateTime(2024, 3, 1),
+                end: DateTime(2024, 3, 31),
+              ),
+            ),
+          );
+          await bloc.stream.first;
+          bloc.add(const GlobalSearchPerformed(query: 'steel'));
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedDateRange,
+            'range applied',
+            isNotNull,
+          ),
+          const GlobalSearchLoadInProgress(query: 'steel'),
+          isA<GlobalSearchLoadEmpty>(),
+        ],
+        verify: (_) {
+          final rpcCalls = fakeSupabase.getMethodCallsFor('rpc');
+          final globalSearchCall = rpcCalls.firstWhere(
+            (call) =>
+                call['functionName'] ==
+                DatabaseConstants.globalSearchRpcFunction,
+          );
+          final rpcParams = globalSearchCall['params'] as Map<String, dynamic>;
+          expect(
+            rpcParams['filter_by_date_from'],
+            equals(DateTime(2024, 3, 1).toIso8601String()),
+          );
+          expect(
+            rpcParams['filter_by_date_to'],
+            equals(DateTime(2024, 3, 31).toIso8601String()),
+          );
+        },
       );
     });
 

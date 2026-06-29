@@ -203,11 +203,13 @@ void main() {
             {'projects': [], 'estimations': [], 'members': []},
           );
 
-          final filterDate = DateTime(2024, 6, 1);
+          final filterDateFrom = DateTime(2024, 6, 1);
+          final filterDateTo = DateTime(2024, 6, 30);
           final params = SearchParams(
             query: 'concrete',
             filterByTag: 'structural',
-            filterByDate: filterDate,
+            filterByDateFrom: filterDateFrom,
+            filterByDateTo: filterDateTo,
             filterByOwner: 'owner-42',
             scope: SearchScope.estimation,
             pagination: const PaginationParams(offset: 5, limit: 10),
@@ -222,8 +224,12 @@ void main() {
           expect(rpcParams!['query'], equals('concrete'));
           expect(rpcParams['filter_by_tag'], equals('structural'));
           expect(
-            rpcParams['filter_by_date'],
-            equals(filterDate.toIso8601String()),
+            rpcParams['filter_by_date_from'],
+            equals(filterDateFrom.toIso8601String()),
+          );
+          expect(
+            rpcParams['filter_by_date_to'],
+            equals(filterDateTo.toIso8601String()),
           );
           expect(rpcParams['filter_by_owner'], equals('owner-42'));
           expect(rpcParams['scope'], equals('estimation'));

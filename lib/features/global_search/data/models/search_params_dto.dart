@@ -6,16 +6,18 @@ import 'package:equatable/equatable.dart';
 ///
 /// Used as input for the [global_search] RPC function.
 ///
-/// **Date filtering**: [filterByDate] is sent as an ISO8601 string. If the UI
-/// lets users pick a calendar date (e.g. March 20th), truncate to start of day
-/// (00:00:00) before passing, or ensure the backend RPC treats it as a date range.
+/// **Date filtering**: [filterByDateFrom]/[filterByDateTo] are sent as ISO8601
+/// strings and define an inclusive range. Either bound may be omitted for an
+/// open-ended range.
 class SearchParamsDto extends Equatable {
   final String query;
   final String? filterByTag;
 
-  /// Date filter. Truncate to start of day (00:00:00) if picking a calendar date
-  /// to avoid exact-timestamp mismatch with backend.
-  final DateTime? filterByDate;
+  /// Inclusive lower bound of the modification-date range filter.
+  final DateTime? filterByDateFrom;
+
+  /// Inclusive upper bound of the modification-date range filter.
+  final DateTime? filterByDateTo;
   final String? filterByOwner;
   final SearchScopeDto? scope;
   final PaginationParamsDto pagination;
@@ -23,7 +25,8 @@ class SearchParamsDto extends Equatable {
   const SearchParamsDto({
     required this.query,
     this.filterByTag,
-    this.filterByDate,
+    this.filterByDateFrom,
+    this.filterByDateTo,
     this.filterByOwner,
     this.scope,
     this.pagination = const PaginationParamsDto(),
@@ -34,7 +37,8 @@ class SearchParamsDto extends Equatable {
   SearchParamsDto copyWith({
     String? query,
     Object? filterByTag = _absent,
-    Object? filterByDate = _absent,
+    Object? filterByDateFrom = _absent,
+    Object? filterByDateTo = _absent,
     Object? filterByOwner = _absent,
     Object? scope = _absent,
     PaginationParamsDto? pagination,
@@ -42,7 +46,8 @@ class SearchParamsDto extends Equatable {
     return SearchParamsDto(
       query: query ?? this.query,
       filterByTag: filterByTag == _absent ? this.filterByTag : filterByTag as String?,
-      filterByDate: filterByDate == _absent ? this.filterByDate : filterByDate as DateTime?,
+      filterByDateFrom: filterByDateFrom == _absent ? this.filterByDateFrom : filterByDateFrom as DateTime?,
+      filterByDateTo: filterByDateTo == _absent ? this.filterByDateTo : filterByDateTo as DateTime?,
       filterByOwner: filterByOwner == _absent ? this.filterByOwner : filterByOwner as String?,
       scope: scope == _absent ? this.scope : scope as SearchScopeDto?,
       pagination: pagination ?? this.pagination,
@@ -50,5 +55,13 @@ class SearchParamsDto extends Equatable {
   }
 
   @override
-  List<Object?> get props => [query, filterByTag, filterByDate, filterByOwner, scope, pagination];
+  List<Object?> get props => [
+    query,
+    filterByTag,
+    filterByDateFrom,
+    filterByDateTo,
+    filterByOwner,
+    scope,
+    pagination,
+  ];
 }

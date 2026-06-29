@@ -2,6 +2,7 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
+import 'package:construculator/features/global_search/presentation/widgets/date_range_bottom_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
@@ -11,6 +12,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dar
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -193,8 +195,98 @@ void main() {
       },
     );
 
-    // TODO: [CA-727] Add a11y coverage (tap-target size + semantic label) for
-    // the active tag dismiss chips ('active_tag_chip_$tag').
-    // https://ripplearc.youtrack.cloud/issue/CA-727
+    testWidgets(
+      'meets a11y guidelines for Modified date filter chip in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme),
+          find.byKey(const Key('global_search_date_filter_chip')),
+          checkTapTargetSize: true,
+          checkLabeledTapTarget: true,
+        );
+      },
+    );
+
+    testWidgets(
+      'meets a11y guidelines for active date filter dismiss chip in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme),
+          find.byKey(const Key('active_date_filter_chip')),
+          checkTapTargetSize: true,
+          checkLabeledTapTarget: true,
+          setupAfterPump: (t) async {
+            // Apply a fixed range to the in-tree BLoC so the active dismiss
+            // pill renders. GlobalSearchPage owns the BlocProvider, so the BLoC
+            // is read from a descendant element (the factory registration means
+            // Modular.get would return a different instance).
+            final element = t.element(
+              find.descendant(
+                of: find.byType(GlobalSearchPage),
+                matching: find.byType(
+                  BlocConsumer<GlobalSearchBloc, GlobalSearchState>,
+                ),
+              ),
+            );
+            BlocProvider.of<GlobalSearchBloc>(element).add(
+              GlobalSearchDateFilterApplied(
+                range: DateRange(
+                  start: DateTime(2026, 1, 5),
+                  end: DateTime(2026, 1, 12),
+                ),
+              ),
+            );
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
+
+    testWidgets(
+      'meets a11y guidelines for active tag dismiss chip in both themes',
+      (tester) async {
+        fakeSupabase.addTableData(DatabaseConstants.tagsTable, [
+          {
+            DatabaseConstants.idColumn: 'tag-Roofing',
+            DatabaseConstants.nameColumn: 'Roofing',
+          },
+        ]);
+
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme),
+          find.byKey(const Key('active_tag_chip_Roofing')),
+          checkTapTargetSize: true,
+          checkLabeledTapTarget: true,
+          setupAfterPump: (t) async {
+            // GlobalSearchBloc is registered as a factory (i.add), so every
+            // pumpWidget starts with a fresh bloc and GlobalSearchStarted
+            // resets selectedTags to empty — the chip is never pre-populated
+            // here. This guard is a safety net in case registration ever
+            // changes to a singleton; it is not a currently reachable path.
+            if (find
+                .byKey(const Key('active_tag_chip_Roofing'))
+                .evaluate()
+                .isNotEmpty) {
+              return;
+            }
+            await t.tap(find.byKey(const Key('global_search_tags_filter_chip')));
+            await t.pumpAndSettle();
+            await t.tap(find.byKey(const Key('tag_filter_item_Roofing')));
+            await t.pump();
+            await t.tap(find.byKey(const Key('tags_filter_apply_button')));
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
   });
 }

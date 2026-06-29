@@ -879,6 +879,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get globalSearchFilterModifiedSemanticLabel =>
+      'Filter by modification date';
+
+  @override
+  String get globalSearchClearDateFilterSemanticLabel =>
+      'Clear modification date filter';
+
+  @override
   String get globalSearchTagsSheetTitle => 'Tags';
 
   @override
@@ -918,4 +926,34 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get projectDescriptionTooLongError =>
       'Description must be 100 characters or less';
+
+  @override
+  String get dateRangeSheetTitle => 'Date range';
+
+  @override
+  String get dateRangeSheetToday => 'Today';
+
+  @override
+  String get dateRangeSheetLast7Days => 'Last 7 days';
+
+  @override
+  String get dateRangeSheetLast30Days => 'Last 30 days';
+
+  @override
+  String get dateRangeSheetThisMonth => 'This month';
+
+  @override
+  String get dateRangeSheetCustomRange => 'Custom range';
+
+  @override
+  String get dateRangeSheetStartDateLabel => 'Start date';
+
+  @override
+  String get dateRangeSheetEndDateLabel => 'End date';
+
+  @override
+  String get dateRangeSheetApply => 'Apply';
+
+  @override
+  String get dateRangeSheetCancel => 'Cancel';
 }
