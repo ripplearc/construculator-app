@@ -3,9 +3,11 @@ import 'package:construculator/libraries/project/data/current_project_notifier_i
 import 'package:construculator/libraries/project/data/data_source/interfaces/permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_search_data_source.dart';
+import 'package:construculator/libraries/project/data/data_source/interfaces/project_setting_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/local_jwt_project_permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/remote_project_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/remote_project_search_data_source.dart';
+import 'package:construculator/libraries/project/data/data_source/remote_project_setting_data_source.dart';
 import 'package:construculator/libraries/project/data/repositories/project_repository_impl.dart';
 import 'package:construculator/libraries/project/data/repositories/project_search_repository_impl.dart';
 import 'package:construculator/libraries/project/data/repositories/project_setting_repository_impl.dart';
