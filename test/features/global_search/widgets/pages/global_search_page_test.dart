@@ -151,6 +151,41 @@ void main() {
       expect(find.text(l10n().globalSearchFilterType), findsOneWidget);
     });
 
+    testWidgets(
+      'tapping the Modified chip opens the date range sheet and applying shows the active pill',
+      (tester) async {
+        await renderPage(tester);
+
+        await tester.tap(find.byKey(const Key('global_search_date_filter_chip')));
+        await tester.pumpAndSettle();
+        expect(find.text(l10n().dateRangeSheetTitle), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('date_range_apply_button')));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('active_date_filter_chip')), findsOneWidget);
+        expect(find.byKey(const Key('global_search_date_filter_chip')), findsNothing);
+      },
+    );
+
+    testWidgets('clearing the active date filter restores the inactive chip', (
+      tester,
+    ) async {
+      await renderPage(tester);
+
+      await tester.tap(find.byKey(const Key('global_search_date_filter_chip')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('date_range_apply_button')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('active_date_filter_chip')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('active_date_filter_chip')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('global_search_date_filter_chip')), findsOneWidget);
+      expect(find.byKey(const Key('active_date_filter_chip')), findsNothing);
+    });
+
     testWidgets('sees Recent searches section title', (tester) async {
       await renderPage(tester);
 

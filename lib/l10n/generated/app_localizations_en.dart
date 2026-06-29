@@ -879,6 +879,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get globalSearchFilterModifiedSemanticLabel =>
+      'Filter by modification date';
+
+  @override
+  String get globalSearchClearDateFilterSemanticLabel =>
+      'Clear modification date filter';
+
+  @override
   String get globalSearchTagsSheetTitle => 'Tags';
 
   @override

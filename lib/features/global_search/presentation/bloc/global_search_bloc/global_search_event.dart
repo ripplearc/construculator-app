@@ -168,3 +168,23 @@ class GlobalSearchOwnerSearchQueryUpdated extends GlobalSearchEvent {
   @override
   List<Object?> get props => [query];
 }
+
+/// Applies (or replaces) the active modification-date range filter.
+///
+/// Dispatched when the user taps Apply in [DateRangeBottomSheet].
+class GlobalSearchDateFilterApplied extends GlobalSearchEvent {
+  /// The date range to apply as the active filter.
+  final DateRange range;
+
+  const GlobalSearchDateFilterApplied({required this.range});
+
+  @override
+  List<Object?> get props => [range];
+}
+
+/// Clears the active modification-date range filter.
+///
+/// Dispatched when the user taps the × icon on the active date filter chip.
+class GlobalSearchDateFilterCleared extends GlobalSearchEvent {
+  const GlobalSearchDateFilterCleared();
+}
