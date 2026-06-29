@@ -742,6 +742,20 @@
     "description": "Label for cancel/keep button",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-9022&t=wjWHI4P6ds90viit-4"
   },
+  "deleteProjectConfirmTitle": "Are you sure you want to remove \"{projectName}\" Project?",
+  "@deleteProjectConfirmTitle": {
+    "description": "Title for delete project confirmation bottom sheet",
+    "placeholders": {
+      "projectName": {
+        "type": "String",
+        "example": "Material of Building"
+      }
+    }
+  },
+  "deleteProjectWarningMessage": "By removing you will loose the all calculation & Cost of this project as well as image attach to your calculation",
+  "@deleteProjectWarningMessage": {
+    "description": "Warning body text for delete project confirmation bottom sheet"
+  },
   "estimationDeletedSuccess": "Estimation deleted successfully",
   "@estimationDeletedSuccess": {
     "description": "Success message shown when an estimation is deleted"

@@ -483,6 +483,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noKeepButton => 'No, Keep';
 
   @override
+  String deleteProjectConfirmTitle(String projectName) {
+    return 'Are you sure you want to remove \"$projectName\" Project?';
+  }
+
+  @override
+  String get deleteProjectWarningMessage =>
+      'By removing you will loose the all calculation & Cost of this project as well as image attach to your calculation';
+
+  @override
   String get estimationDeletedSuccess => 'Estimation deleted successfully';
 
   @override
