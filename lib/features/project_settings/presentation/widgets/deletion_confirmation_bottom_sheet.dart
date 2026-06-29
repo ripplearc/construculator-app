@@ -72,7 +72,7 @@ class _DeletionConfirmationBottomSheetState
                 child: Center(
                   child: CoreIconWidget(
                     icon: CoreIcons.delete,
-                    size: 32,
+                    size: CoreSpacing.space8,
                     color: colorTheme.iconRed,
                   ),
                 ),
