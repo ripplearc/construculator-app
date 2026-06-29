@@ -37,6 +37,10 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
   /// Every [execute] call, in order.
   final List<RecordedSqlCall> executeCalls = [];
 
+  /// Every [writeTransaction] invocation, in order (call count only — writes
+  /// within the transaction appear in [executeCalls] as usual).
+  int writeTransactionCallCount = 0;
+
   /// Every [syncStream] activation, in order (by stream name).
   final List<String> syncStreamCalls = [];
 
@@ -44,12 +48,14 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
   /// in order — so tests can assert an activated stream is released on cancel.
   final List<String> syncStreamUnsubscribes = [];
 
-  /// When set, every [getAll] call throws this error until it is cleared
-  /// (set back to `null`) or [reset] is called.
+  /// When set, every [getAll] call throws this error on every call until
+  /// explicitly cleared (`getAllError = null`) or [reset] is called — it does
+  /// NOT self-clear after one use.
   Object? getAllError;
 
-  /// When set, every [execute] call throws this error until it is cleared
-  /// (set back to `null`) or [reset] is called.
+  /// When set, every [execute] call throws this error on every call until
+  /// explicitly cleared (`executeError = null`) or [reset] is called — it does
+  /// NOT self-clear after one use.
   Object? executeError;
 
   /// When set, every [syncStream] call throws this error until it is cleared
@@ -131,6 +137,12 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
   }
 
   @override
+  Future<T> writeTransaction<T>(Future<T> Function(WriteContext tx) action) {
+    writeTransactionCallCount++;
+    return action(_FakeWriteContext(this));
+  }
+
+  @override
   Future<SyncStreamHandle> syncStream(String name) async {
     syncStreamCalls.add(name);
     final error = syncStreamError;
@@ -149,6 +161,7 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
     getAllCalls.clear();
     watchCalls.clear();
     executeCalls.clear();
+    writeTransactionCallCount = 0;
     syncStreamCalls.clear();
     syncStreamUnsubscribes.clear();
     getAllError = null;
@@ -168,6 +181,19 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
     }
     _watchControllers.clear();
   }
+}
+
+/// Routes writes issued inside [FakePowerSyncDatabaseWrapper.writeTransaction]
+/// through the fake's own [execute], so they appear in [executeCalls] and
+/// respect [executeError] — no real transaction semantics needed in tests.
+class _FakeWriteContext implements WriteContext {
+  final FakePowerSyncDatabaseWrapper _fake;
+
+  _FakeWriteContext(this._fake);
+
+  @override
+  Future<void> execute(String sql, [List<Object?> parameters = const []]) =>
+      _fake.execute(sql, parameters);
 }
 
 /// A [SyncStreamHandle] whose [unsubscribe] runs the callback the fake uses to

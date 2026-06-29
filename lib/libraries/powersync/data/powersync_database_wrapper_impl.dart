@@ -2,6 +2,7 @@
 
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:powersync/powersync.dart';
+import 'package:sqlite_async/sqlite_async.dart';
 
 /// Default [PowerSyncDatabaseWrapper] that forwards to the opened
 /// [PowerSyncDatabase].
@@ -56,6 +57,13 @@ class PowerSyncDatabaseWrapperImpl implements PowerSyncDatabaseWrapper {
     await _database.execute(sql, parameters);
   }
 
+  @override
+  Future<T> writeTransaction<T>(Future<T> Function(WriteContext tx) action) {
+    return _database.writeTransaction(
+      (ctx) => action(_SqliteWriteContextAdapter(ctx)),
+    );
+  }
+
   /// Subscribes to the on-demand sync stream [name] and returns a handle that
   /// releases the subscription when unsubscribed.
   @override
@@ -65,6 +73,22 @@ class PowerSyncDatabaseWrapperImpl implements PowerSyncDatabaseWrapper {
     // and cannot be DI-managed.
     // ignore: no_direct_instantiation, reason: subscription-scoped adapter
     return _PowerSyncStreamHandle(subscription);
+  }
+}
+
+/// Adapts [SqliteWriteContext] to the project-owned [WriteContext] seam,
+/// keeping the sqlite_async type out of the data-source layer.
+class _SqliteWriteContextAdapter implements WriteContext {
+  final SqliteWriteContext _ctx;
+
+  _SqliteWriteContextAdapter(this._ctx);
+
+  @override
+  Future<void> execute(
+    String sql, [
+    List<Object?> parameters = const [],
+  ]) async {
+    await _ctx.execute(sql, parameters);
   }
 }
 

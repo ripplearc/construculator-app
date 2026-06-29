@@ -44,10 +44,7 @@ void main() {
         final error = Exception('read failed');
         fakeWrapper.getAllError = error;
 
-        await expectLater(
-          fakeWrapper.getAll('SELECT 1'),
-          throwsA(same(error)),
-        );
+        await expectLater(fakeWrapper.getAll('SELECT 1'), throwsA(same(error)));
         expect(fakeWrapper.getAllCalls, hasLength(1));
       });
     });
@@ -158,6 +155,68 @@ void main() {
       });
     });
 
+    group('writeTransaction', () {
+      test('returns the value produced by the action', () async {
+        final result = await fakeWrapper.writeTransaction((_) async => 42);
+
+        expect(result, 42);
+      });
+
+      test(
+        'increments writeTransactionCallCount for each invocation',
+        () async {
+          await fakeWrapper.writeTransaction((_) async {});
+          await fakeWrapper.writeTransaction((_) async {});
+
+          expect(fakeWrapper.writeTransactionCallCount, 2);
+        },
+      );
+
+      test('writes inside the action appear in executeCalls', () async {
+        await fakeWrapper.writeTransaction((tx) async {
+          await tx.execute('INSERT INTO projects (id) VALUES (?)', ['p1']);
+          await tx.execute('INSERT INTO line_items (project_id) VALUES (?)', [
+            'p1',
+          ]);
+        });
+
+        expect(fakeWrapper.executeCalls, hasLength(2));
+        expect(
+          fakeWrapper.executeCalls.first.sql,
+          'INSERT INTO projects (id) VALUES (?)',
+        );
+        expect(
+          fakeWrapper.executeCalls.last.sql,
+          'INSERT INTO line_items (project_id) VALUES (?)',
+        );
+      });
+
+      test(
+        'executeError causes writes inside the transaction to throw',
+        () async {
+          final error = Exception('write failed');
+          fakeWrapper.executeError = error;
+
+          await expectLater(
+            fakeWrapper.writeTransaction(
+              (tx) =>
+                  tx.execute('INSERT INTO projects (id) VALUES (?)', ['p1']),
+            ),
+            throwsA(same(error)),
+          );
+        },
+      );
+
+      test('propagates an error thrown by the action', () async {
+        final error = Exception('action failed');
+
+        await expectLater(
+          fakeWrapper.writeTransaction<void>((_) async => throw error),
+          throwsA(same(error)),
+        );
+      });
+    });
+
     group('reset', () {
       test('clears recorded calls, stubs, errors, and watch seeds', () async {
         const sql = 'SELECT * FROM projects';
@@ -169,6 +228,7 @@ void main() {
         ]);
         await fakeWrapper.getAll(sql);
         await fakeWrapper.execute('DELETE FROM projects');
+        await fakeWrapper.writeTransaction((_) async {});
         final handle = await fakeWrapper.syncStream('user_cost_estimates');
         handle.unsubscribe();
         fakeWrapper.getAllError = Exception('x');
@@ -180,6 +240,7 @@ void main() {
         expect(fakeWrapper.getAllCalls, isEmpty);
         expect(fakeWrapper.executeCalls, isEmpty);
         expect(fakeWrapper.watchCalls, isEmpty);
+        expect(fakeWrapper.writeTransactionCallCount, 0);
         expect(fakeWrapper.syncStreamCalls, isEmpty);
         expect(fakeWrapper.syncStreamUnsubscribes, isEmpty);
         expect(fakeWrapper.getAllError, isNull);
@@ -187,8 +248,6 @@ void main() {
         expect(fakeWrapper.syncStreamError, isNull);
         expect(await fakeWrapper.getAll(sql), isEmpty);
 
-        // The cleared seed must not replay: the first value a new listener sees
-        // is the post-reset emission, not the pre-reset 'p1'.
         final emission = expectLater(
           fakeWrapper.watch(sql),
           emits([
