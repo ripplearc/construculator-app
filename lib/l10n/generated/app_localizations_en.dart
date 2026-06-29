@@ -60,12 +60,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get continueWithPhone => 'Continue with Phone';
 
   @override
-  String get createAccountSubtitle =>
-      'Email you entered is not registered with us, to create your construculator account enter details below';
+  String get createAccountSubtitle => 'Email you entered is not registered with us, to create your construculator account enter details below';
 
   @override
-  String get createAccountSuccessMessage =>
-      'You have successfully registered with Construculator';
+  String get createAccountSuccessMessage => 'You have successfully registered with Construculator';
 
   @override
   String get createAccountTitle => 'Create your Account';
@@ -83,8 +81,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get duplicateErrorMessage => 'Duplicate Error';
 
   @override
-  String get emailAlreadyRegistered =>
-      'Email ID already registered with us. Please ';
+  String get emailAlreadyRegistered => 'Email ID already registered with us. Please ';
 
   @override
   String get emailDuplicateErrorMessage => 'Email exists';
@@ -102,15 +99,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emailRequiredError => 'Email is required';
 
   @override
-  String get enterPasswordDescription =>
-      'Enter your password for this account. Your email id is';
+  String get enterPasswordDescription => 'Enter your password for this account. Your email id is';
 
   @override
   String get enterPasswordTitle => 'Enter your password';
 
   @override
-  String get enterYourEmailIdToLoginToYourAccount =>
-      'Hey, Enter your details to log in to your account';
+  String get enterYourEmailIdToLoginToYourAccount => 'Hey, Enter your details to log in to your account';
 
   @override
   String get firstNameHint => 'First name';
@@ -122,8 +117,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get firstNameRequired => 'First name is required';
 
   @override
-  String get forgotPasswordDescription =>
-      'An OTP will be sent to your registered email ID to reset your password';
+  String get forgotPasswordDescription => 'An OTP will be sent to your registered email ID to reset your password';
 
   @override
   String get forgotPasswordLink => 'Forgot password?';
@@ -183,8 +177,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createProjectButton => 'Create a project';
 
   @override
-  String get projectCreationSuccessMessage =>
-      'You have successfully created a new project';
+  String get projectCreationSuccessMessage => 'You have successfully created a new project';
 
   @override
   String get continueToDashboardButton => 'Continue to Dashboard';
@@ -205,8 +198,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get projectDetailsRetryButton => 'Retry';
 
   @override
-  String get heyEnterYourDetailsToRegisterWithUs =>
-      'Hey, Enter your details to Register with us';
+  String get heyEnterYourDetailsToRegisterWithUs => 'Hey, Enter your details to Register with us';
 
   @override
   String get invalidCredentialsError => 'Invalid credentials';
@@ -218,8 +210,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get invalidOtpError => 'OTP must be exactly 6 digits';
 
   @override
-  String get invalidPhoneError =>
-      'Please enter a valid phone number in international format (e.g., +1234567890)';
+  String get invalidPhoneError => 'Please enter a valid phone number in international format (e.g., +1234567890)';
 
   @override
   String get invalidVerificationCode => 'Invalid verification code';
@@ -243,12 +234,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get logginLink => 'Log in';
 
   @override
-  String get loginFailedInvalidCredentials =>
-      'Login failed - invalid credentials';
+  String get loginFailedInvalidCredentials => 'Login failed - invalid credentials';
 
   @override
-  String get loginSuccessMessage =>
-      'You have successfully logged in with Construculator';
+  String get loginSuccessMessage => 'You have successfully logged in with Construculator';
 
   @override
   String get mobileNumberHint => 'Mobile Number';
@@ -272,8 +261,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get otpIncompleteError => 'Please enter the complete 6-digit OTP.';
 
   @override
-  String get otpPhoneVerificationNote =>
-      'Enter 6 digit code we just texted to your phone number';
+  String get otpPhoneVerificationNote => 'Enter 6 digit code we just texted to your phone number';
 
   @override
   String get otpRequiredError => 'OTP is required';
@@ -282,8 +270,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get otpResendSuccess => 'OTP Resent!';
 
   @override
-  String get otpVerificationNote =>
-      'Enter 6 digit code we just texted to your email ID';
+  String get otpVerificationNote => 'Enter 6 digit code we just texted to your email ID';
 
   @override
   String get passwordHint => 'Password';
@@ -292,20 +279,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordLabel => 'Password*';
 
   @override
-  String get passwordMissingLowercaseError =>
-      'Password must contain at least one lowercase letter';
+  String get passwordMissingLowercaseError => 'Password must contain at least one lowercase letter';
 
   @override
-  String get passwordMissingNumberError =>
-      'Password must contain at least one number';
+  String get passwordMissingNumberError => 'Password must contain at least one number';
 
   @override
-  String get passwordMissingSpecialCharError =>
-      'Password must contain at least one special character (!@#\$&*~)';
+  String get passwordMissingSpecialCharError => 'Password must contain at least one special character (!@#\$&*~)';
 
   @override
-  String get passwordMissingUppercaseError =>
-      'Password must contain at least one uppercase letter';
+  String get passwordMissingUppercaseError => 'Password must contain at least one uppercase letter';
 
   @override
   String get passwordRequiredError => 'Password is required';
@@ -317,15 +300,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hidePasswordLabel => 'Hide password';
 
   @override
-  String get passwordResetSuccessMessage =>
-      'Your password has been reset successfully!';
+  String get passwordResetSuccessMessage => 'Your password has been reset successfully!';
 
   @override
   String get passwordsDoNotMatchError => 'Passwords do not match';
 
   @override
-  String get passwordTooShortError =>
-      'Password must be at least 8 characters long';
+  String get passwordTooShortError => 'Password must be at least 8 characters long';
 
   @override
   String get phoneDuplicateErrorMessage => 'Phone number exists';
@@ -346,12 +327,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get registrationFailedError => 'Registration failed';
 
   @override
-  String get registrationFailedTryAgain =>
-      'Registration failed - please try again';
+  String get registrationFailedTryAgain => 'Registration failed - please try again';
 
   @override
-  String get registrationSuccessMessage =>
-      'You have successfully registered with Construculator';
+  String get registrationSuccessMessage => 'You have successfully registered with Construculator';
 
   @override
   String get requestTimedOut => 'Request timed out. Please try again.';
@@ -375,8 +354,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rolesLoadingError => 'Error loading roles. Please try again.';
 
   @override
-  String get samePasswordErrorMessage =>
-      'Password is the same as current one, please change it.';
+  String get samePasswordErrorMessage => 'Password is the same as current one, please change it.';
 
   @override
   String get selectCountryCode => 'Select Country Code';
@@ -394,8 +372,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serverError => 'Server error';
 
   @override
-  String get setNewPasswordDescription =>
-      'Your password must minimum of 8 characters, with upper and lowercase and a number or a symbol';
+  String get setNewPasswordDescription => 'Your password must minimum of 8 characters, with upper and lowercase and a number or a symbol';
 
   @override
   String get setNewPasswordTitle => 'Set new password';
@@ -407,8 +384,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingPasswordButton => 'Setting Password...';
 
   @override
-  String get termsAndConditionsText =>
-      'By selecting agree and continue. I agree to Construculator ';
+  String get termsAndConditionsText => 'By selecting agree and continue. I agree to Construculator ';
 
   @override
   String get termsAndServicesLink => 'terms & services';
@@ -417,12 +393,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get timeoutError => 'Request timeout';
 
   @override
-  String get tooManyAttempts =>
-      'Too many attempts, please try again in a minute.';
+  String get tooManyAttempts => 'Too many attempts, please try again in a minute.';
 
   @override
-  String get unexpectedErrorMessage =>
-      'An unexpected error occurred, try again or contact support.';
+  String get unexpectedErrorMessage => 'An unexpected error occurred, try again or contact support.';
 
   @override
   String get unknownError => 'Unknown error occurred';
@@ -464,8 +438,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get contributorRole => 'Contributor';
 
   @override
-  String get costEstimationEmptyMessage =>
-      'No estimation added. To add an estimation please click on add button';
+  String get costEstimationEmptyMessage => 'No estimation added. To add an estimation please click on add button';
 
   @override
   String get projectLoadError => 'Unable to load project';
@@ -508,8 +481,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get deleteEstimationWarningMessage =>
-      'By removing you will lose all the Material, Labour and Equipment Cost Calculation Permanently as well as the images and documents attached with that calculation also will be removed';
+  String get deleteEstimationWarningMessage => 'By removing you will lose all the Material, Labour and Equipment Cost Calculation Permanently as well as the images and documents attached with that calculation also will be removed';
 
   @override
   String imagesAttachedCount(int count) {
@@ -533,8 +505,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get deleteProjectWarningMessage =>
-      'By removing this project you will lose all calculations, costs, and images attached to your calculations';
+  String get deleteProjectWarningMessage => 'By removing this project you will lose all calculations, costs, and images attached to your calculations';
 
   @override
   String get deleteProjectButton => 'Delete project';
@@ -557,16 +528,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get estimationLockedSuccessTitle => 'You have locked the estimation';
 
   @override
-  String get estimationLockedSuccessDescription =>
-      'If you want to unlock it again press the same unlock button';
+  String get estimationLockedSuccessDescription => 'If you want to unlock it again press the same unlock button';
 
   @override
-  String get estimationUnlockedSuccessTitle =>
-      'You have unlocked the estimation';
+  String get estimationUnlockedSuccessTitle => 'You have unlocked the estimation';
 
   @override
-  String get estimationUnlockedSuccessDescription =>
-      'If you want to lock it again press the same lock button';
+  String get estimationUnlockedSuccessDescription => 'If you want to lock it again press the same lock button';
 
   @override
   String get addCostName => 'Add a cost name';
@@ -787,8 +755,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noActivityLogs => 'No Activity Yet';
 
   @override
-  String get noActivityLogsDescription =>
-      'Activity logs will appear here when changes are made to this estimation.';
+  String get noActivityLogsDescription => 'Activity logs will appear here when changes are made to this estimation.';
 
   @override
   String get errorLoadingLogs => 'Unable to Load Activity';
@@ -809,8 +776,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get estimatesTab => 'Estimates';
 
   @override
-  String get permissionDenied =>
-      'You don\'t have permission to perform this action';
+  String get permissionDenied => 'You don\'t have permission to perform this action';
 
   @override
   String get materialsTab => 'Materials';
@@ -822,16 +788,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get equipmentsTab => 'Equipments';
 
   @override
-  String get noMaterialCostMessage =>
-      'No material cost added. For adding cost please click on add button';
+  String get noMaterialCostMessage => 'No material cost added. For adding cost please click on add button';
 
   @override
-  String get noLabourCostMessage =>
-      'No labour cost added. For adding cost please click on add button';
+  String get noLabourCostMessage => 'No labour cost added. For adding cost please click on add button';
 
   @override
-  String get noEquipmentCostMessage =>
-      'No equipment cost added. For adding cost please click on add button';
+  String get noEquipmentCostMessage => 'No equipment cost added. For adding cost please click on add button';
 
   @override
   String get addMaterialCostButton => 'Add material cost';
@@ -959,30 +922,25 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get globalSearchLoadErrorMessage =>
-      'Failed to load recent searches. Please try again.';
+  String get globalSearchLoadErrorMessage => 'Failed to load recent searches. Please try again.';
 
   @override
   String get searchPerformErrorMessage => 'Search failed. Please try again.';
 
   @override
-  String get searchFailureBodyMessage =>
-      'Something went wrong while searching.';
+  String get searchFailureBodyMessage => 'Something went wrong while searching.';
 
   @override
   String get searchFailureRetryLabel => 'Retry';
 
   @override
-  String get globalSearchDeleteErrorMessage =>
-      'Failed to remove recent search. Please try again.';
+  String get globalSearchDeleteErrorMessage => 'Failed to remove recent search. Please try again.';
 
   @override
-  String get globalSearchSuggestionsErrorMessage =>
-      'Could not load suggestions.';
+  String get globalSearchSuggestionsErrorMessage => 'Could not load suggestions.';
 
   @override
-  String get searchNavigationError =>
-      'Failed to open search. Please try again.';
+  String get searchNavigationError => 'Failed to open search. Please try again.';
 
   @override
   String get closeButton => 'Close';
@@ -1005,8 +963,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get dashboardLoadProfileError =>
-      'Failed to load profile. Please try again.';
+  String get dashboardLoadProfileError => 'Failed to load profile. Please try again.';
 
   @override
   String get projectSelectorSemanticLabel => 'Select project';
@@ -1032,12 +989,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get globalSearchFilterModifiedSemanticLabel =>
-      'Filter by modification date';
+  String get globalSearchFilterModifiedSemanticLabel => 'Filter by modification date';
 
   @override
-  String get projectSearchFilterModifiedSemanticLabel =>
-      'Filter by modification date';
+  String get projectSearchFilterModifiedSemanticLabel => 'Filter by modification date';
 
   @override
   String get projectSearchFilterOwner => 'Owner';
@@ -1056,8 +1011,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get projectSearchClearDateFilterSemanticLabel =>
-      'Clear modification date filter';
+  String get projectSearchClearDateFilterSemanticLabel => 'Clear modification date filter';
 
   @override
   String get projectSearchTagsSheetTitle => 'Tags';
@@ -1090,8 +1044,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get projectSearchOwnerSheetEmpty => 'No owners found.';
 
   @override
-  String get globalSearchClearDateFilterSemanticLabel =>
-      'Clear modification date filter';
+  String get globalSearchClearDateFilterSemanticLabel => 'Clear modification date filter';
 
   @override
   String get globalSearchTagsSheetTitle => 'Tags';
@@ -1120,8 +1073,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get globalSearchTypeSheetTitle =>
-      'Select Filter by cost or calculation';
+  String get globalSearchTypeSheetTitle => 'Select Filter by cost or calculation';
 
   @override
   String get globalSearchTypeCostLabel => 'Cost';
@@ -1151,8 +1103,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get projectNameRequiredError => 'Project name is required';
 
   @override
-  String get projectNameTooLongError =>
-      'Project name must be 100 characters or less';
+  String get projectNameTooLongError => 'Project name must be 100 characters or less';
 
   @override
   String get projectDescriptionLabel => 'Project description';
@@ -1161,8 +1112,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get projectDescriptionHintText => 'Project description';
 
   @override
-  String get projectDescriptionTooLongError =>
-      'Description must be 100 characters or less';
+  String get projectDescriptionTooLongError => 'Description must be 100 characters or less';
 
   @override
   String get dateRangeSheetTitle => 'Date range';
@@ -1339,12 +1289,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get equipmentNameRequiredError => 'Equipment name is required';
 
   @override
-  String get projectSettingsNavigationError =>
-      'Unable to open project settings. Please try again.';
+  String get projectSettingsNavigationError => 'Unable to open project settings. Please try again.';
 
   @override
-  String get projectSettingsPermissionError =>
-      'You don\'t have permission to view this project.';
+  String get projectSettingsPermissionError => 'You don\'t have permission to view this project.';
 
   @override
   String get calculatorOcLabel => 'O.C';

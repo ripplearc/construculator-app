@@ -1,10 +1,21 @@
-// coverage: ignore-file
+// coverage:ignore-file
 
 /// Default throttle for [PowerSyncDatabaseWrapper.watch]: coalesces rapid
 /// successive change events into a single emission. Matches PowerSync's own
 /// `watch` default; shared by the interface, implementation, and fake so the
 /// value lives in one place.
 const Duration kDefaultWatchThrottle = Duration(milliseconds: 30);
+
+/// Project-owned write context passed to [PowerSyncDatabaseWrapper.writeTransaction].
+///
+/// Keeps `sqlite_async`'s `SqliteWriteContext` out of the data-source layer —
+/// callers depend only on this narrow interface, not on the underlying SDK type.
+abstract class WriteContext {
+  /// Executes a write [sql] within the enclosing transaction.
+  ///
+  /// [parameters] are bound positionally to `?` placeholders in [sql].
+  Future<void> execute(String sql, [List<Object?> parameters = const []]);
+}
 
 /// Thin, project-owned seam over `PowerSyncDatabase`.
 ///
@@ -24,9 +35,6 @@ const Duration kDefaultWatchThrottle = Duration(milliseconds: 30);
 ///
 /// The surface intentionally starts small and grows as features require it.
 /// Deliberately omitted for now:
-/// - `writeTransaction` — would leak `sqlite_async`'s `SqliteWriteContext`,
-///   which is a transitive (not direct) dependency. Add it, with a direct
-///   dependency, when a feature needs atomic multi-statement writes.
 /// - `currentStatus` / `statusStream` — `SyncStatus` has an `@internal`
 ///   constructor, so it cannot be faked cleanly. Expose a project-owned sync
 ///   status value object when a sync indicator is actually built.
@@ -58,6 +66,15 @@ abstract class PowerSyncDatabaseWrapper {
   /// re-emits at once) and queued for upload by the connector in the
   /// background. [parameters] are bound positionally to `?` placeholders.
   Future<void> execute(String sql, [List<Object?> parameters = const []]);
+
+  /// Runs [action] inside a single write transaction.
+  ///
+  /// All writes issued through the [WriteContext] passed to [action] are
+  /// applied atomically — PowerSync's sync uploader sees them as a single unit,
+  /// so the server never observes partial state (e.g., a cost estimate without
+  /// its line items). The transaction is committed when [action] completes
+  /// normally and rolled back if it throws.
+  Future<T> writeTransaction<T>(Future<T> Function(WriteContext tx) action);
 
   /// Activates the on-demand sync stream named [name] (declared in the backend
   /// sync rules and referenced from `schema.dart`) so its rows begin
