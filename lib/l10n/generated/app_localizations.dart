@@ -1743,6 +1743,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Description must be 100 characters or less'**
   String get projectDescriptionTooLongError;
+
+  /// Section heading for the export settings display
+  ///
+  /// In en, this message translates to:
+  /// **'Folder link for export'**
+  String get exportSettingsTitle;
+
+  /// Label for the Google Drive export row in ExportSettingsDisplay
+  ///
+  /// In en, this message translates to:
+  /// **'Google drive link:'**
+  String get exportGoogleDriveLabel;
+
+  /// Label for the Dropbox export row in ExportSettingsDisplay
+  ///
+  /// In en, this message translates to:
+  /// **'Dropbox link:'**
+  String get exportDropboxLabel;
+
+  /// Label for the OneDrive export row in ExportSettingsDisplay
+  ///
+  /// In en, this message translates to:
+  /// **'One drive link:'**
+  String get exportOneDriveLabel;
 }
 
 class _AppLocalizationsDelegate

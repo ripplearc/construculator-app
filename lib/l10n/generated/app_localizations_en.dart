@@ -918,4 +918,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get projectDescriptionTooLongError =>
       'Description must be 100 characters or less';
+
+  @override
+  String get exportSettingsTitle => 'Folder link for export';
+
+  @override
+  String get exportGoogleDriveLabel => 'Google drive link:';
+
+  @override
+  String get exportDropboxLabel => 'Dropbox link:';
+
+  @override
+  String get exportOneDriveLabel => 'One drive link:';
 }
