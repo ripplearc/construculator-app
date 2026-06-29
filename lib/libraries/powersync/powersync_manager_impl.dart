@@ -23,8 +23,8 @@ class PowerSyncManagerImpl implements PowerSyncManager, Disposable {
 
   StreamSubscription<supabase.AuthState>? _authSubscription;
 
-  /// Whether a sync connection is currently established. Guards against
-  /// redundant [connect] calls when several auth events arrive in succession.
+  // Whether a sync connection is currently established. Guards against
+  // redundant [connect] calls when several auth events arrive in succession.
   bool _connected = false;
 
   PowerSyncManagerImpl({
