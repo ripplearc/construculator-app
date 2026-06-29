@@ -756,6 +756,10 @@
   "@deleteProjectWarningMessage": {
     "description": "Warning body text for delete project confirmation bottom sheet"
   },
+  "deleteProjectButton": "Delete project",
+  "@deleteProjectButton": {
+    "description": "Label for the Delete Project button shown to admin users on the project settings screen"
+  },
   "estimationDeletedSuccess": "Estimation deleted successfully",
   "@estimationDeletedSuccess": {
     "description": "Success message shown when an estimation is deleted"
