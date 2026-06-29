@@ -43,8 +43,9 @@ leak above the data-source layer.
 |--------|-----------|
 | `Stream<List<Map>> watch(sql, {parameters, throttle})` | **Default read.** Live result set; re-emits on every local *or* synced change. |
 | `Future<List<Map>> getAll(sql, [parameters])` | **One-shot read only** — validation lookups, export snapshots, reading a value inside a write flow. |
-| `Future<void> execute(sql, [parameters])` | **Write.** Applies to local SQLite immediately, queues for background upload. |
-| `Future<void> syncStream(name)` | **On-demand sync** — activate an on-demand stream when the feature is entered. |
+| `Future<void> execute(sql, [parameters])` | **Single-row write.** Applies to local SQLite immediately, queues for background upload. |
+| `Future<T> writeTransaction<T>((WriteContext tx) → Future<T>)` | **Atomic write.** All `tx.execute()` calls inside the callback commit together — use when inserting into two or more tables that must land as a unit (e.g. estimate + line items). |
+| `Future<SyncStreamHandle> syncStream(name)` | **On-demand sync** — activate an on-demand stream when the feature is entered. Returns a handle whose `unsubscribe()` must be called on cancel. |
 
 The seam intentionally starts small and **grows as features require it**. If you need
 surface it lacks (`writeTransaction` for atomic multi-statement writes, a project-owned
@@ -110,6 +111,17 @@ not separate instances. The divergence lives in separate Cubits, not the data la
   [`supabase_powersync_connector.dart`](../../lib/libraries/powersync/data/connectors/supabase_powersync_connector.dart).
 - **Always write IDs/timestamps explicitly** — PowerSync does not generate them on the
   local row. Generate UUIDs client-side and set `created_at`/`updated_at` yourself.
+- **Atomic multi-table writes use `writeTransaction`.** When two or more rows must land
+  together, wrap them in a single transaction:
+  ```dart
+  await _wrapper.writeTransaction((tx) async {
+    await tx.execute(insertEstimateSql, estimateParams);
+    await tx.execute(insertLineItemSql, lineItemParams);
+  });
+  ```
+  `tx` is a `WriteContext` — it exposes only `execute`, not `watch` or `getAll`. The
+  transaction commits atomically; if it throws, all writes roll back. Use bare `execute()`
+  for single-row writes; only reach for `writeTransaction` when atomicity is required.
 
 > 🛑 **Decision gate — do not guess.** When a write's *server acceptance* matters to the
 > UX (e.g. locking a cost estimate, anything where showing "saved" before the server
@@ -159,12 +171,15 @@ subscription lifecycle via `Stream.multi`:
 @override
 Stream<List<CostEstimateDto>> watchByProject(String projectId) {
   return Stream<List<CostEstimateDto>>.multi((controller) async {
-    await _wrapper.syncStream('cost_estimates');        // JWT-gated; no client params
+    final handle = await _wrapper.syncStream('cost_estimates'); // JWT-gated; no client params
     final sub = _wrapper
         .watch(_byProjectSql, parameters: [projectId])  // watch() stays single source of truth
         .map((rows) => rows.map(CostEstimateDto.fromRow).toList())
         .listen(controller.add, onError: controller.addError, onDone: controller.close);
-    controller.onCancel = sub.cancel;                   // release on cancel — no leak
+    controller.onCancel = () {
+      sub.cancel();
+      handle.unsubscribe(); // release the on-demand stream — no leak
+    };
   });
 }
 ```
@@ -223,8 +238,17 @@ from the `write-tests` skills; the PowerSync-specific moves are:
   to prove the RepositoryImpl maps to the right `Failure`.
 - **Write assertions:** after a write, assert `fake.executeCalls` contains the expected
   `(sql, parameters)` — verify the SQL and bound params, not just that a call happened.
+- **Transaction assertions:** assert `fake.writeTransactionCallCount == 1` to confirm a
+  transaction was opened. Each `tx.execute()` inside it still appears in `fake.executeCalls`
+  in order, so you can verify both the transaction boundary and the individual statements.
+  To test the error path, set `fake.executeError` — it propagates through the transaction
+  callback just as it does for bare `execute()` calls.
 - **Lazy on-demand activation:** assert `syncStream(...)` is called on first `watch`
   subscription and that the watch controller is released on cancel (no leak).
+- **syncStream error path:** set `fake.syncStreamError = SomeException()` to prove the
+  DataSource propagates a thrown handle-acquisition error to `controller.addError`.
+- **Handle release assertion:** after cancelling the subscription, assert
+  `fake.syncStreamUnsubscribes` contains the stream name — confirming no leak.
 - Use `fake.reset()` between tests and `fake.dispose()` in teardown to close controllers.
 
 ---
