@@ -64,7 +64,21 @@ git diff --stat $BASE_BRANCH..$PR_BRANCH -- 'lib/**/*.dart' \
 
 ### Key Principle
 
-Each PR should have a **single, clear purpose** and **pass tests independently**.
+Each PR should have a **single, clear purpose** and **pass CI checks independently**:
+
+```bash
+# 1. Fast check on changed files (run locally after pushing)
+./scripts/run_check.sh --pre --target main
+
+# 2. Full validation (run inside Docker — required for golden test consistency)
+docker exec -it construculator-app-flutter-1 bash
+./scripts/run_check.sh --comp --target main
+```
+
+- `--pre`: analysis + lint + changed tests + coverage threshold
+- `--comp`: full analysis + all tests + goldens + mutation (if XML changed) + Android build
+
+Every split PR must pass both before merge — an intermediate PR that breaks CI is not a valid split point.
 
 **Bad Example:**
 - PR contains: New authentication flow + Refactor EstimationBloc + Fix currency formatter bug
