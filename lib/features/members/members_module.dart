@@ -1,5 +1,5 @@
-import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/features/members/data/member_invitation_provider_impl.dart';
+import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/libraries/members/domain/member_invitation_provider.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 

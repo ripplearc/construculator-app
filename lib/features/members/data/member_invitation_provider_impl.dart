@@ -1,7 +1,7 @@
-import 'package:construculator/libraries/members/domain/invited_member.dart';
-import 'package:construculator/libraries/members/domain/member_invitation_provider.dart';
 import 'package:construculator/features/members/presentation/widgets/invited_members_list.dart';
 import 'package:construculator/features/members/presentation/widgets/member_invitation_widget.dart';
+import 'package:construculator/libraries/members/domain/invited_member.dart';
+import 'package:construculator/libraries/members/domain/member_invitation_provider.dart';
 import 'package:flutter/widgets.dart';
 
 /// Concrete [MemberInvitationProvider] that renders [MemberInvitationWidget]
