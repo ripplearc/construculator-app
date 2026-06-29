@@ -5,7 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:powersync/powersync.dart';
 
-/// File name for the on-device PowerSync SQLite database.
+// File name for the on-device PowerSync SQLite database.
 const _databaseFileName = 'construculator.db';
 
 /// Opens (and migrates) the local PowerSync database.
