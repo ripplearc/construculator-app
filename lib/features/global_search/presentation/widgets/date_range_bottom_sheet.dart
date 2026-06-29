@@ -124,6 +124,11 @@ class _DateRangeBottomSheetState extends State<DateRangeBottomSheet> {
   }
 
   void _onApply() {
+    // [_selected] is only ever set to custom once both custom dates have been
+    // picked (see [_pickCustomRange]); cancelling a picker reverts the
+    // selection to its prior value. So the custom branch of [_rangeFor] can
+    // never resolve to its today→today fallback at apply time — no extra guard
+    // is needed here.
     Navigator.of(context).pop(_rangeFor(_selected, DateTime.now()));
   }
 
@@ -180,7 +185,17 @@ class _DateRangeBottomSheetState extends State<DateRangeBottomSheet> {
           controlAffinity: ListTileControlAffinity.leading,
           onChanged: (_) {
             if (range == _PredefinedRange.custom) {
-              _pickCustomRange(l10n);
+              // Only reopen the pickers when there is no complete custom range
+              // yet, or the user is switching back to Custom from another
+              // option. Re-tapping an already-complete Custom selection just
+              // keeps it instead of forcing the pickers open again.
+              if (_customStart == null ||
+                  _customEnd == null ||
+                  _selected != _PredefinedRange.custom) {
+                _pickCustomRange(l10n);
+              } else {
+                setState(() => _selected = _PredefinedRange.custom);
+              }
             } else {
               setState(() => _selected = range);
             }
