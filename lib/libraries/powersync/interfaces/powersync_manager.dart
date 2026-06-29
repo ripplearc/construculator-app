@@ -1,3 +1,5 @@
+// coverage:ignore-file
+
 import 'package:powersync/powersync.dart';
 
 /// Owns the PowerSync sync lifecycle and ties it to authentication.
