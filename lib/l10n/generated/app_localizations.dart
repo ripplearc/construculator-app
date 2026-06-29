@@ -988,6 +988,12 @@ abstract class AppLocalizations {
   /// **'By removing you will loose the all calculation & Cost of this project as well as image attach to your calculation'**
   String get deleteProjectWarningMessage;
 
+  /// Label for the Delete Project button shown to admin users on the project settings screen
+  ///
+  /// In en, this message translates to:
+  /// **'Delete project'**
+  String get deleteProjectButton;
+
   /// Success message shown when an estimation is deleted
   ///
   /// In en, this message translates to:

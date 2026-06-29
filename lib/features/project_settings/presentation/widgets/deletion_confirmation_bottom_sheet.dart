@@ -21,9 +21,6 @@ class DeletionConfirmationBottomSheet extends StatefulWidget {
     this.imagesAttachedCount,
   });
 
-  // TODO: CA-116 — add a static show() helper wired to ProjectSettingsBloc
-  // once ProjectDetailScreen exists and triggers this sheet.
-
   @override
   State<DeletionConfirmationBottomSheet> createState() =>
       _DeletionConfirmationBottomSheetState();
