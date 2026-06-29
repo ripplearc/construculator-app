@@ -1,5 +1,4 @@
 import 'package:construculator/features/project_settings/presentation/widgets/delete_project_button.dart';
-import 'package:construculator/features/project_settings/presentation/widgets/deletion_confirmation_bottom_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -64,7 +63,7 @@ void main() {
         await tester.tap(find.byKey(const Key('delete_project_button')));
         await tester.pumpAndSettle();
 
-        expect(find.byType(DeletionConfirmationBottomSheet), findsOneWidget);
+        expect(find.byKey(const Key('delete_project_confirm_button')), findsOneWidget);
       });
 
       testWidgets('tapping does nothing when isDeleting is true', (
@@ -78,7 +77,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byType(DeletionConfirmationBottomSheet), findsNothing);
+        expect(find.byKey(const Key('delete_project_confirm_button')), findsNothing);
         expect(tester.takeException(), isNull);
       });
     });
@@ -92,7 +91,7 @@ void main() {
         await tester.tap(find.byKey(const Key('delete_project_button')));
         await tester.pumpAndSettle();
 
-        expect(find.byType(DeletionConfirmationBottomSheet), findsOneWidget);
+        expect(find.byKey(const Key('delete_project_confirm_button')), findsOneWidget);
       });
 
       testWidgets('confirming deletion calls onDeleteConfirmed', (
