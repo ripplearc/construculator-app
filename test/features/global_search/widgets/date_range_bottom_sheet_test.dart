@@ -228,4 +228,60 @@ void main() {
       expect(holder.value, initial);
     },
   );
+
+  testWidgets(
+    'cancelling Custom keeps Today selected and applying resolves with today, '
+    'never a silent custom fallback',
+    (tester) async {
+      final holder = await pumpAndShow(tester);
+      final today = DateTime.now();
+
+      // Select Custom then cancel the start picker. The selection falls back to
+      // Today (Custom is only committed once both dates are picked), so the
+      // _onApply guard never lets an unpicked Custom resolve as today→today.
+      await tester.tap(find.byKey(const Key('date_range_option_custom')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel').last);
+      await tester.pumpAndSettle();
+
+      final todayTile = tester.widget<RadioListTile<Object?>>(
+        find.byKey(const Key('date_range_option_today')),
+      );
+      expect(todayTile.groupValue, todayTile.value);
+
+      await tester.tap(find.byKey(const Key('date_range_apply_button')));
+      await tester.pumpAndSettle();
+
+      expect(holder.resolved, isTrue);
+      expect(holder.value!.start, DateTime(today.year, today.month, today.day));
+      expect(holder.value!.end, DateTime(today.year, today.month, today.day));
+    },
+  );
+
+  testWidgets(
+    're-tapping Custom with a complete range does not reopen the pickers',
+    (tester) async {
+      final initial = DateRange(
+        start: DateTime(2026, 1, 1),
+        end: DateTime(2026, 1, 5),
+      );
+
+      final holder = await pumpAndShow(tester, initialRange: initial);
+
+      // Custom is already selected with a complete initial range; re-tapping it
+      // must keep the range without opening any CoreDatePicker dialog.
+      await tester.tap(find.byKey(const Key('date_range_option_custom')));
+      await tester.pumpAndSettle();
+
+      // No picker dialog opened (no OK/Cancel buttons present), and applying
+      // still resolves with the untouched initial range.
+      expect(find.text('OK'), findsNothing);
+
+      await tester.tap(find.byKey(const Key('date_range_apply_button')));
+      await tester.pumpAndSettle();
+
+      expect(holder.resolved, isTrue);
+      expect(holder.value, initial);
+    },
+  );
 }
