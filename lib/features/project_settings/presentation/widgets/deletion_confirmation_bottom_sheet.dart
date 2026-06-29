@@ -91,20 +91,18 @@ class _DeletionConfirmationBottomSheetState
               if (widget.imagesAttachedCount != null)
                 Container(
                   key: const Key('project_images_attached_count_container'),
-                  height: CoreSpacing.space9,
                   padding: const EdgeInsets.symmetric(
                     horizontal: CoreSpacing.space4,
+                    vertical: CoreSpacing.space2,
                   ),
                   decoration: BoxDecoration(
                     color: colorTheme.backgroundBlueLight,
                     borderRadius: BorderRadius.circular(100),
                   ),
-                  child: Center(
-                    child: Text(
-                      l10n.imagesAttachedCount(widget.imagesAttachedCount ?? 0),
-                      style: textTheme.bodyMediumRegular.copyWith(
-                        color: colorTheme.textDark,
-                      ),
+                  child: Text(
+                    l10n.imagesAttachedCount(widget.imagesAttachedCount ?? 0),
+                    style: textTheme.bodyMediumRegular.copyWith(
+                      color: colorTheme.textDark,
                     ),
                   ),
                 ),
