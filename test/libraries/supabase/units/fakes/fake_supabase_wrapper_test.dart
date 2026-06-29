@@ -417,6 +417,26 @@ void main() {
         expect(user, isNull);
       });
 
+      test('currentSession returns null when no user is signed in', () {
+        expect(fakeWrapper.currentSession, isNull);
+      });
+
+      test('currentSession returns a FakeSession with correct tokens after sign-in', () async {
+        await fakeWrapper.signInWithPassword(
+          email: 'session@example.com',
+          password: 'password',
+        );
+
+        final session = fakeWrapper.currentSession;
+        expect(session, isA<FakeSession>());
+        expect(session!.user.email, equals('session@example.com'));
+        expect(
+          session.accessToken,
+          equals('fake-access-token-${fakeWrapper.currentUser!.id}'),
+        );
+        expect(session.refreshToken, equals('fake-refresh-token'));
+      });
+
       test('isAuthenticated reflects the current sign-in status', () async {
         // Initially not authenticated
         expect(
@@ -1538,6 +1558,27 @@ void main() {
                 'message',
                 contains('Upsert failed'),
               ),
+            ),
+          );
+        });
+
+        test('throws PostgrestException with 42501 on RLS denial', () async {
+          fakeWrapper.shouldThrowOnUpsert = true;
+          fakeWrapper.upsertExceptionType = SupabaseExceptionType.postgrest;
+          fakeWrapper.postgrestErrorCode = PostgresErrorCode.rlsViolation;
+          fakeWrapper.upsertErrorMessage = 'permission denied for table projects';
+
+          await expectLater(
+            () async => fakeWrapper.upsert(
+              table: 'projects',
+              data: {'id': 'p1'},
+              onConflict: 'id',
+            ),
+            throwsA(
+              isA<supabase.PostgrestException>()
+                  .having((e) => e.code, 'code', '42501')
+                  .having((e) => e.message, 'message',
+                      'permission denied for table projects'),
             ),
           );
         });
