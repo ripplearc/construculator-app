@@ -382,11 +382,11 @@ abstract class AppLocalizations {
   /// **'You have successfully created a new project'**
   String get projectCreationSuccessMessage;
 
-  /// Label for the button that navigates back to the calculation view after project creation
+  /// Label for the CTA button on the project creation success sheet that navigates to the dashboard
   ///
   /// In en, this message translates to:
-  /// **'Back to calculation'**
-  String get backToCalculationButton;
+  /// **'Continue to Dashboard'**
+  String get continueToDashboardButton;
 
   /// Empty state message shown when the user has no projects
   ///

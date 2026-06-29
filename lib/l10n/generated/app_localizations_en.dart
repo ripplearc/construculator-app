@@ -160,7 +160,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'You have successfully created a new project';
 
   @override
-  String get backToCalculationButton => 'Back to calculation';
+  String get continueToDashboardButton => 'Continue to Dashboard';
 
   @override
   String get projectsEmptyState => 'No projects yet.';

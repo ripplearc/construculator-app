@@ -11,7 +11,6 @@ void main() {
   AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
 
   Widget buildContent({
-    VoidCallback? onBackToCalculation,
     VoidCallback? onContinue,
   }) {
     return MaterialApp(
@@ -24,7 +23,6 @@ void main() {
           buildContext = context;
           return Scaffold(
             body: ProjectCreationSuccessSheetContent(
-              onBackToCalculation: onBackToCalculation ?? () {},
               onContinue: onContinue ?? () {},
             ),
           );
@@ -42,24 +40,7 @@ void main() {
     });
 
     testWidgets(
-      '"Back to calculation" button triggers onBackToCalculation callback',
-      (tester) async {
-        bool called = false;
-
-        await tester.pumpWidget(
-          buildContent(onBackToCalculation: () => called = true),
-        );
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.byKey(const Key('back_to_calculation_button')));
-        await tester.pump();
-
-        expect(called, isTrue);
-      },
-    );
-
-    testWidgets(
-      '"Continue" button triggers onContinue callback',
+      '"Continue to Dashboard" button triggers onContinue callback',
       (tester) async {
         bool called = false;
 
@@ -68,7 +49,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byKey(const Key('continue_button')));
+        await tester.tap(find.byKey(const Key('continue_to_dashboard_button')));
         await tester.pump();
 
         expect(called, isTrue);

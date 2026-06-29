@@ -240,10 +240,10 @@
     "description": "Success message shown after a new project has been created",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
   },
-  "backToCalculationButton": "Back to calculation",
-  "@backToCalculationButton": {
-    "description": "Label for the button that navigates back to the calculation view after project creation",
-    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  "continueToDashboardButton": "Continue to Dashboard",
+  "@continueToDashboardButton": {
+    "description": "Label for the CTA button on the project creation success sheet that navigates to the dashboard",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=64930-5265"
   },
   "projectsEmptyState": "No projects yet.",
   "@projectsEmptyState": {

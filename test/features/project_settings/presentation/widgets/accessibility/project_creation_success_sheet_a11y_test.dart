@@ -17,7 +17,6 @@ void main() {
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: ProjectCreationSuccessSheetContent(
-          onBackToCalculation: () {},
           onContinue: () {},
         ),
       ),
@@ -28,27 +27,14 @@ void main() {
 
   group('ProjectCreationSuccessSheetContent - accessibility', () {
     testWidgets(
-      '"Back to calculation" button meets a11y guidelines in both themes',
+      '"Continue to Dashboard" button meets a11y guidelines in both themes',
       (tester) async {
         await setupA11yTest(tester);
 
         await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
           tester,
           buildTestApp,
-          find.byKey(const Key('back_to_calculation_button')),
-        );
-      },
-    );
-
-    testWidgets(
-      '"Continue" button meets a11y guidelines in both themes',
-      (tester) async {
-        await setupA11yTest(tester);
-
-        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
-          tester,
-          buildTestApp,
-          find.byKey(const Key('continue_button')),
+          find.byKey(const Key('continue_to_dashboard_button')),
         );
       },
     );

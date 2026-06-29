@@ -7,8 +7,6 @@ import '../../../utils/screenshot/await_images_extension.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
-  final size = const Size(390, 520);
-  const ratio = 1.0;
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
@@ -16,6 +14,9 @@ void main() {
   });
 
   group('ProjectCreationSuccessSheetContent Screenshot Tests', () {
+    final size = const Size(390, 520);
+    const ratio = 1.0;
+
     Future<void> pumpSuccessSheet({required WidgetTester tester}) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -24,7 +25,6 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: ProjectCreationSuccessSheetContent(
-              onBackToCalculation: () {},
               onContinue: () {},
             ),
           ),
@@ -37,6 +37,8 @@ void main() {
     testWidgets('renders success sheet correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
       await pumpSuccessSheet(tester: tester);
 
@@ -44,6 +46,55 @@ void main() {
         find.byType(ProjectCreationSuccessSheetContent),
         matchesGoldenFile(
           'goldens/project_creation_success_sheet/${size.width}x${size.height}/project_creation_success_sheet.png',
+        ),
+      );
+    });
+  });
+
+  group('ProjectCreationSuccessSheet Popup Screenshot Tests', () {
+    final size = const Size(390, 844);
+    const ratio = 1.0;
+
+    testWidgets('renders success sheet as popup over background', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: createTestTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => Center(
+                child: ElevatedButton(
+                  key: const Key('open_sheet_button'),
+                  onPressed: () {
+                    ProjectCreationSuccessSheet.show(
+                      context,
+                      onContinue: () {},
+                    );
+                  },
+                  child: const Text('Open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('open_sheet_button')));
+      await tester.pumpAndSettle();
+      await tester.awaitImages();
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/project_creation_success_sheet/${size.width}x${size.height}/project_creation_success_sheet_popup.png',
         ),
       );
     });
