@@ -69,6 +69,10 @@ class DateFilterChip extends StatelessWidget {
         onTap: onClear,
         borderRadius: BorderRadius.circular(CoreSpacing.space3),
         child: Container(
+          // Guarantee a 48dp-tall tap target to meet the Android/iOS minimum
+          // tap-target accessibility guideline; the symmetric padding alone
+          // leaves the pill shorter than 48dp.
+          constraints: const BoxConstraints(minHeight: CoreSpacing.space12),
           padding: const EdgeInsets.symmetric(
             horizontal: CoreSpacing.space3,
             vertical: CoreSpacing.space2,

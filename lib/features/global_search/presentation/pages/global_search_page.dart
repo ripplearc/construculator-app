@@ -264,12 +264,12 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
                         const SizedBox(width: CoreSpacing.space2),
                         DateFilterChip(
                           selectedDateRange: effectiveDateRange,
-                          onApply: (range) => BlocProvider.of<GlobalSearchBloc>(
-                            context,
-                          ).add(GlobalSearchDateFilterApplied(range: range)),
-                          onClear: () => BlocProvider.of<GlobalSearchBloc>(
-                            context,
-                          ).add(const GlobalSearchDateFilterCleared()),
+                          onApply: (range) => context
+                              .read<GlobalSearchBloc>()
+                              .add(GlobalSearchDateFilterApplied(range: range)),
+                          onClear: () => context
+                              .read<GlobalSearchBloc>()
+                              .add(const GlobalSearchDateFilterCleared()),
                         ),
                         const SizedBox(width: CoreSpacing.space2),
                         // TODO: [CA-638] Wire Type chip. https://ripplearc.youtrack.cloud/issue/CA-638/DashboardGlobalSearch-Wire-CoreFilterChip.onTap-to-GlobalSearchBloc-filter-state
