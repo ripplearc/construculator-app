@@ -267,6 +267,11 @@ void main() {
           checkTapTargetSize: true,
           checkLabeledTapTarget: true,
           setupAfterPump: (t) async {
+            // GlobalSearchBloc is registered as a factory (i.add), so every
+            // pumpWidget starts with a fresh bloc and GlobalSearchStarted
+            // resets selectedTags to empty — the chip is never pre-populated
+            // here. This guard is a safety net in case registration ever
+            // changes to a singleton; it is not a currently reachable path.
             if (find
                 .byKey(const Key('active_tag_chip_Roofing'))
                 .evaluate()
