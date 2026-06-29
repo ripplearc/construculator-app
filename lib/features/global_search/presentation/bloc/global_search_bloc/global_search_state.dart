@@ -70,10 +70,6 @@ class GlobalSearchReady extends GlobalSearchState {
   });
 
   /// Returns a copy of this state with the given fields replaced.
-  ///
-  /// [selectedDateRange] is passed through as-is (not defaulted via `??`) so
-  /// callers can explicitly clear it by passing `null`; use the bloc's
-  /// private field directly when no change to the date range is intended.
   GlobalSearchReady copyWith({
     List<String>? recentSearches,
     String? query,

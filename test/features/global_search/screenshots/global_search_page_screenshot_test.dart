@@ -2,6 +2,7 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
+import 'package:construculator/features/global_search/presentation/widgets/date_range_bottom_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
@@ -11,6 +12,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dar
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -186,13 +188,28 @@ void main() {
 
       await pumpGlobalSearchPage(tester: tester);
 
-      // Drive the interaction through the actual widget tree (tap) rather
-      // than a second Modular.get<GlobalSearchBloc>() call, since the bloc
-      // is registered as a factory (i.add) — a freshly resolved instance
-      // would not be the one GlobalSearchPage's BlocProvider created.
-      await tester.tap(find.byKey(const Key('global_search_date_filter_chip')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('date_range_apply_button')));
+      // Apply a fixed range directly to the in-tree BLoC rather than tapping
+      // through the sheet, which resolves to DateTime.now() and would make the
+      // golden encode the capture date (drifting the next time goldens are
+      // regenerated). GlobalSearchPage creates the BlocProvider internally, so
+      // the BLoC is looked up from a descendant element below it (the factory
+      // registration means Modular.get would return a different instance).
+      final element = tester.element(
+        find.descendant(
+          of: find.byType(GlobalSearchPage),
+          matching: find.byType(
+            BlocConsumer<GlobalSearchBloc, GlobalSearchState>,
+          ),
+        ),
+      );
+      BlocProvider.of<GlobalSearchBloc>(element).add(
+        GlobalSearchDateFilterApplied(
+          range: DateRange(
+            start: DateTime(2026, 1, 5),
+            end: DateTime(2026, 1, 12),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       await expectLater(
