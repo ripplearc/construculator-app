@@ -248,8 +248,45 @@ void main() {
       },
     );
 
-    // TODO: [CA-727] Add a11y coverage (tap-target size + semantic label) for
-    // the active tag dismiss chips ('active_tag_chip_$tag').
-    // https://ripplearc.youtrack.cloud/issue/CA-727
+    testWidgets(
+      'meets a11y guidelines for active tag dismiss chip in both themes',
+      (tester) async {
+        fakeSupabase.addTableData(DatabaseConstants.tagsTable, [
+          {
+            DatabaseConstants.idColumn: 'tag-Roofing',
+            DatabaseConstants.nameColumn: 'Roofing',
+          },
+        ]);
+
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme),
+          find.byKey(const Key('active_tag_chip_Roofing')),
+          checkTapTargetSize: true,
+          checkLabeledTapTarget: true,
+          setupAfterPump: (t) async {
+            // GlobalSearchBloc is registered as a factory (i.add), so every
+            // pumpWidget starts with a fresh bloc and GlobalSearchStarted
+            // resets selectedTags to empty — the chip is never pre-populated
+            // here. This guard is a safety net in case registration ever
+            // changes to a singleton; it is not a currently reachable path.
+            if (find
+                .byKey(const Key('active_tag_chip_Roofing'))
+                .evaluate()
+                .isNotEmpty) {
+              return;
+            }
+            await t.tap(find.byKey(const Key('global_search_tags_filter_chip')));
+            await t.pumpAndSettle();
+            await t.tap(find.byKey(const Key('tag_filter_item_Roofing')));
+            await t.pump();
+            await t.tap(find.byKey(const Key('tags_filter_apply_button')));
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
   });
 }
