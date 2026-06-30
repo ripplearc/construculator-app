@@ -29,8 +29,6 @@ class _ProjectCreationScreenState extends State<ProjectCreationScreen> {
   bool _nameValid = false;
   bool _submitAttempted = false;
 
-  bool get _canSubmit => _nameValid;
-
   @override
   void dispose() {
     _nameController.dispose();
@@ -39,7 +37,6 @@ class _ProjectCreationScreenState extends State<ProjectCreationScreen> {
 
   void _onSubmit() {
     setState(() => _submitAttempted = true);
-    if (!_canSubmit) return;
     context.read<ProjectSettingsBloc>().add(
       ProjectSettingsCreationRequested(
         name: _nameController.text.trim(),
@@ -65,11 +62,15 @@ class _ProjectCreationScreenState extends State<ProjectCreationScreen> {
           );
         }
       },
-      child: Scaffold(
-        backgroundColor: context.colorTheme.pageBackground,
-        appBar: _buildAppBar(context),
-        body: _buildBody(context),
-        bottomNavigationBar: _buildSubmitButton(context),
+      child: BlocBuilder<ProjectSettingsBloc, ProjectSettingsState>(
+        buildWhen: (prev, curr) =>
+            curr is ProjectSettingsCreating || prev is ProjectSettingsCreating,
+        builder: (context, state) => Scaffold(
+          backgroundColor: context.colorTheme.pageBackground,
+          appBar: _buildAppBar(context),
+          body: _buildBody(context),
+          bottomNavigationBar: _buildSubmitButton(context, state),
+        ),
       ),
     );
   }
@@ -126,19 +127,17 @@ class _ProjectCreationScreenState extends State<ProjectCreationScreen> {
     );
   }
 
-  Widget _buildSubmitButton(BuildContext context) {
+  Widget _buildSubmitButton(BuildContext context, ProjectSettingsState state) {
     final l10n = context.l10n;
 
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(CoreSpacing.space4),
-        child: BlocBuilder<ProjectSettingsBloc, ProjectSettingsState>(
-          builder: (context, state) => CoreButton(
-            key: const Key('create_project_button'),
-            label: l10n.createProjectButton,
-            isDisabled: state is ProjectSettingsCreating,
-            onPressed: _onSubmit,
-          ),
+        child: CoreButton(
+          key: const Key('create_project_button'),
+          label: l10n.createProjectButton,
+          isDisabled: state is ProjectSettingsCreating,
+          onPressed: _onSubmit,
         ),
       ),
     );
