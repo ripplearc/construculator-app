@@ -115,5 +115,31 @@ void main() {
         ),
       );
     });
+
+    testWidgets('renders with suggestions correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      fakeSupabase.setRpcResponse(
+        DatabaseConstants.projectSearchSuggestionsRpcFunction,
+        ['Carpentry', 'Carparking cost', 'Plumbing'],
+      );
+
+      await pumpProjectSearchPage(tester: tester);
+
+      final searchField = find.byType(TextFormField);
+      await tester.enterText(searchField, 'Car');
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+      await tester.awaitImages();
+
+      await expectLater(
+        find.byType(ProjectSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_suggestions.png',
+        ),
+      );
+    });
   });
 }

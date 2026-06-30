@@ -1,6 +1,7 @@
 import 'package:construculator/features/dashboard/presentation/bloc/project_search_bloc/project_search_bloc.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_empty_recent_widget.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_recent_searches_list.dart';
+import 'package:construculator/features/global_search/presentation/widgets/global_search_suggestions_list.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
@@ -90,12 +91,24 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
       // (history + suggestions only); keep showing the last history view.
       return const SizedBox.shrink();
     }
+    if (state.query.isNotEmpty) {
+      if (state.suggestionsLoading) {
+        return const Center(child: CoreLoadingIndicator());
+      }
+      if (state.suggestions.isNotEmpty) {
+        return GlobalSearchSuggestionsList(
+          suggestions: state.suggestions,
+          query: state.query,
+          onItemTap: (term) => _onItemTap(context, term),
+          onTrailingTap: (term) => _onTrailingTap(context, term),
+        );
+      }
+      return const SizedBox.shrink();
+    }
     if (state.isLoadingHistory) {
       return const Center(child: CoreLoadingIndicator());
     }
     if (state.recentSearches.isEmpty) {
-      // Suggestions (CA-689) render here once available; recents take
-      // priority when present.
       return const GlobalSearchEmptyRecentWidget();
     }
     return GlobalSearchRecentSearchesList(
@@ -105,10 +118,32 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
     );
   }
 
+  Widget _buildSectionTitle(BuildContext context, ProjectSearchState state) {
+    final l10n = context.l10n;
+    final typography = context.textTheme;
+    if (state is! ProjectSearchInitial) return const SizedBox.shrink();
+    final hasQuery = state.query.isNotEmpty;
+    final hasSuggestions = state.suggestions.isNotEmpty;
+    if (hasQuery && !hasSuggestions && !state.suggestionsLoading) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: CoreSpacing.space4,
+        vertical: CoreSpacing.space3,
+      ),
+      child: Text(
+        hasQuery
+            ? l10n.globalSearchSuggestionsTitle
+            : l10n.globalSearchRecentSearchesTitle,
+        style: typography.bodyLargeSemiBold,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colorTheme;
-    final typography = context.textTheme;
     final l10n = context.l10n;
 
     return BlocProvider(
@@ -175,15 +210,8 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
                   ],
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: CoreSpacing.space4,
-                  vertical: CoreSpacing.space3,
-                ),
-                child: Text(
-                  l10n.globalSearchRecentSearchesTitle,
-                  style: typography.bodyLargeSemiBold,
-                ),
+              BlocBuilder<ProjectSearchBloc, ProjectSearchState>(
+                builder: (context, state) => _buildSectionTitle(context, state),
               ),
               Expanded(
                 child: BlocBuilder<ProjectSearchBloc, ProjectSearchState>(
