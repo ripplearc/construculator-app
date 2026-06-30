@@ -1,4 +1,6 @@
 import 'package:construculator/features/dashboard/presentation/bloc/project_search_bloc/project_search_bloc.dart';
+import 'package:construculator/features/global_search/presentation/widgets/global_search_empty_recent_widget.dart';
+import 'package:construculator/features/global_search/presentation/widgets/global_search_recent_searches_list.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
@@ -37,6 +39,20 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
     super.dispose();
   }
 
+  void _onItemTap(BuildContext context, String term) {
+    _searchController.text = term;
+    BlocProvider.of<ProjectSearchBloc>(
+      context,
+    ).add(ProjectSearchPerformedEvent(query: term));
+  }
+
+  void _onTrailingTap(BuildContext context, String term) {
+    _searchController.text = term;
+    BlocProvider.of<ProjectSearchBloc>(
+      context,
+    ).add(ProjectSearchQueryUpdatedEvent(query: term));
+  }
+
   Widget _buildBackButton(BuildContext context) {
     final colors = context.colorTheme;
     final l10n = context.l10n;
@@ -69,14 +85,30 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
   }
 
   Widget _buildBody(BuildContext context, ProjectSearchState state) {
-    // TODO: [CA-690] Render recent-history list in this scaffold.
-    // TODO: [CA-689] Render suggestions list in this scaffold.
-    return const SizedBox.shrink();
+    if (state is! ProjectSearchInitial) {
+      // Loading/results/failure surfaces are not part of CA-690/CA-689 scope
+      // (history + suggestions only); keep showing the last history view.
+      return const SizedBox.shrink();
+    }
+    if (state.isLoadingHistory) {
+      return const Center(child: CoreLoadingIndicator());
+    }
+    if (state.recentSearches.isEmpty) {
+      // TODO: [CA-689] Render suggestions list in this scaffold once
+      // available; recents take priority when present.
+      return const GlobalSearchEmptyRecentWidget();
+    }
+    return GlobalSearchRecentSearchesList(
+      recentSearches: state.recentSearches,
+      onItemTap: (term) => _onItemTap(context, term),
+      onTrailingTap: (term) => _onTrailingTap(context, term),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colorTheme;
+    final typography = context.textTheme;
     final l10n = context.l10n;
 
     return BlocProvider(
@@ -141,6 +173,16 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
                       ),
                     ),
                   ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: CoreSpacing.space4,
+                  vertical: CoreSpacing.space3,
+                ),
+                child: Text(
+                  l10n.projectSearchRecentSearchesTitle,
+                  style: typography.bodyLargeSemiBold,
                 ),
               ),
               Expanded(

@@ -5,6 +5,7 @@ import 'package:construculator/features/dashboard/presentation/pages/project_sea
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -131,5 +132,32 @@ void main() {
         },
       );
     });
+
+    testWidgets(
+      'meets a11y guidelines for recent search fill icon in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        fakeSupabase.addTableData(
+          DatabaseConstants.projectSearchHistoryTable,
+          [
+            {
+              DatabaseConstants.userIdColumn: _testUserId,
+              DatabaseConstants.searchTermColumn: 'foundation',
+              DatabaseConstants.updatedAtColumn: '2024-06-01T00:00:00.000Z',
+            },
+          ],
+        );
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme),
+          find.descendant(
+            of: find.byKey(const ValueKey('recent_search_item_foundation')),
+            matching: find.byKey(const Key('trailing_icon')),
+          ),
+          checkTapTargetSize: true,
+        );
+      },
+    );
   });
 }
