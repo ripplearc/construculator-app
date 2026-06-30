@@ -89,7 +89,7 @@ class _FavoriteCalculationCardState extends State<FavoriteCalculationCard> {
                 Row(
                   children: [
                     CoreIconWidget(
-                      icon: CoreIcons.calculator,
+                      icon: CoreIcons.calculate,
                       size: CoreIconSize.size24,
                       color: colors.iconGrayMid,
                     ),
