@@ -2,7 +2,6 @@ import 'package:construculator/features/project_settings/presentation/widgets/va
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/screenshot/font_loader.dart';
 
@@ -32,13 +31,13 @@ void main() {
         expect(find.text('Field is required'), findsOneWidget);
       });
 
-      testWidgets('renders a CoreIconWidget', (tester) async {
+      testWidgets('renders an error icon', (tester) async {
         await tester.pumpWidget(
           wrap(const ValidationErrorWidget(message: 'Some error')),
         );
         await tester.pumpAndSettle();
 
-        expect(find.byType(CoreIconWidget), findsOneWidget);
+        expect(find.byKey(const Key('validation_error_icon')), findsOneWidget);
       });
 
       testWidgets('displays different messages correctly', (tester) async {
