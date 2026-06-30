@@ -4,6 +4,7 @@ import 'package:construculator/features/global_search/presentation/bloc/global_s
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_empty_recent_widget.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_recent_searches_list.dart';
+import 'package:construculator/features/global_search/presentation/widgets/global_search_suggestions_list.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -104,6 +105,10 @@ void main() {
       _fakeHistoryRow('Material of building'),
       _fakeHistoryRow('MD bungalow'),
     ]);
+    fakeSupabase.setRpcResponse(
+      DatabaseConstants.searchSuggestionsRpcFunction,
+      <String>[],
+    );
   }
 
   AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
@@ -305,7 +310,7 @@ void main() {
 
       await tester.tap(trailingIcon);
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump(const Duration(seconds: 5));
 
       expect(
         find.descendant(
@@ -336,5 +341,110 @@ void main() {
       );
     });
 
+  });
+
+  void seedSuggestions(List<String> terms) {
+    fakeSupabase.setCurrentUser(
+      FakeUser(
+        id: _testUserId,
+        email: _testUserEmail,
+        createdAt: '2024-01-01T00:00:00.000Z',
+      ),
+    );
+    fakeSupabase.setRpcResponse(
+      DatabaseConstants.searchSuggestionsRpcFunction,
+      terms,
+    );
+  }
+
+  group('User on GlobalSearchPage with suggestions', () {
+    testWidgets(
+      'typing a non-empty query shows the suggestions title and list',
+      (tester) async {
+        seedSuggestions(['Carpentry', 'Carparking cost', 'Plumbing']);
+        await renderPage(tester);
+
+        final searchField = find.ancestor(
+          of: find.text(l10n().globalSearchHint),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(searchField, 'Car');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump();
+
+        expect(
+          find.text(l10n().globalSearchSuggestionsTitle),
+          findsOneWidget,
+        );
+        expect(find.byType(GlobalSearchSuggestionsList), findsOneWidget);
+        expect(find.text('Carpentry'), findsOneWidget);
+        expect(find.text('Carparking cost'), findsOneWidget);
+        expect(find.text('Plumbing'), findsNothing);
+
+        await tester.pump(const Duration(seconds: 5));
+      },
+    );
+
+    testWidgets(
+      'clearing the query restores the recent searches title',
+      (tester) async {
+        seedRecentSearches();
+        fakeSupabase.setRpcResponse(
+          DatabaseConstants.searchSuggestionsRpcFunction,
+          <String>['Carpentry'],
+        );
+        await renderPage(tester);
+
+        final searchField = find.ancestor(
+          of: find.text(l10n().globalSearchHint),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(searchField, 'Car');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump();
+        expect(
+          find.text(l10n().globalSearchSuggestionsTitle),
+          findsOneWidget,
+        );
+
+        await tester.enterText(searchField, '');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump();
+
+        expect(
+          find.text(l10n().globalSearchRecentSearchesTitle),
+          findsOneWidget,
+        );
+
+        await tester.pump(const Duration(seconds: 5));
+      },
+    );
+
+    testWidgets('tapping a suggestion fills the search field', (tester) async {
+      seedSuggestions(['Carpentry', 'Carparking cost']);
+      await renderPage(tester);
+
+      final searchField = find.ancestor(
+        of: find.text(l10n().globalSearchHint),
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(searchField, 'Car');
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump();
+
+      await tester.tap(
+        find.byKey(const ValueKey('suggestion_item_Carpentry')),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 5));
+
+      expect(
+        find.descendant(
+          of: find.byType(TextFormField),
+          matching: find.text('Carpentry'),
+        ),
+        findsOneWidget,
+      );
+    });
   });
 }
