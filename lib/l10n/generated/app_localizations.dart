@@ -352,6 +352,18 @@ abstract class AppLocalizations {
   /// **'No recent estimations found.'**
   String get recentEstimationsEmptyState;
 
+  /// Section title for the dashboard favourites widget
+  ///
+  /// In en, this message translates to:
+  /// **'Favourites'**
+  String get favouritesSectionTitle;
+
+  /// Empty state message shown when there are no favourited items
+  ///
+  /// In en, this message translates to:
+  /// **'No favourites yet.'**
+  String get favouritesEmptyState;
+
   /// Accessibility label for the per-project settings icon button in the projects list
   ///
   /// In en, this message translates to:

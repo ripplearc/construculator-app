@@ -215,6 +215,16 @@
     "description": "Empty state message shown when there are no recent estimations",
     "context": "Dashboard recent estimations section"
   },
+  "favouritesSectionTitle": "Favourites",
+  "@favouritesSectionTitle": {
+    "description": "Section title for the dashboard favourites widget",
+    "context": "Dashboard favourites section"
+  },
+  "favouritesEmptyState": "No favourites yet.",
+  "@favouritesEmptyState": {
+    "description": "Empty state message shown when there are no favourited items",
+    "context": "Dashboard favourites section"
+  },
   "projectSettingsSemanticLabel": "Project settings",
   "@projectSettingsSemanticLabel": {
     "description": "Accessibility label for the per-project settings icon button in the projects list",
