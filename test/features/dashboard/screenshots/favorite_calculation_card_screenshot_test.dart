@@ -64,7 +64,7 @@ void main() {
     testWidgets('renders calculation card with many tags correctly', (
       tester,
     ) async {
-      const manyTagsSize = Size(390, 280);
+      const manyTagsSize = Size(390, 200);
       final calculation = FavoriteCalculation(
         id: 'calc-2',
         date: DateTime(2025, 4, 22, 14, 30),

@@ -121,7 +121,7 @@ class _FavoriteCalculationCardState extends State<FavoriteCalculationCard> {
                   CoreChip(
                     label: widget.calculation.tags[i],
                     selected: _tagSelected[i],
-                    size: CoreChipSize.medium,
+                    size: CoreChipSize.small,
                   ),
               ],
             ),
