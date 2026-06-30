@@ -3,9 +3,11 @@ import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:powersync/powersync.dart';
 
 /// Factory for creating test AppBootstrap instances with fake dependencies.
 ///
@@ -19,6 +21,8 @@ class FakeAppBootstrapFactory {
   ///   database state and assertions
   /// - [config]: Provide custom app configuration for the test
   /// - [envLoader]: Provide custom environment loading behavior
+  /// - [powerSyncDatabase]: Provide a specific fake database to assert against
+  ///   sync lifecycle calls
   ///
   /// When parameters are omitted, sensible test defaults are provided.
   ///
@@ -37,6 +41,7 @@ class FakeAppBootstrapFactory {
     FakeSupabaseWrapper? supabaseWrapper,
     Config? config,
     EnvLoader? envLoader,
+    PowerSyncDatabase? powerSyncDatabase,
   }) {
     return AppBootstrap(
       supabaseWrapper:
@@ -44,6 +49,7 @@ class FakeAppBootstrapFactory {
       config: config ?? FakeAppConfig(),
       envLoader: envLoader ?? FakeEnvLoader(),
       sentryWrapper: FakeSentryWrapper(),
+      powerSyncDatabase: powerSyncDatabase ?? FakePowerSyncDatabase(),
     );
   }
 }

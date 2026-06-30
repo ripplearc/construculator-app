@@ -5,6 +5,7 @@ import 'package:construculator/libraries/config/app_config_impl.dart';
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/config/env_loader_impl.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:construculator/libraries/powersync/data/open_powersync_database.dart';
 import 'package:construculator/libraries/sentry/sentry_wrapper_impl.dart';
 import 'package:construculator/libraries/supabase/supabase_wrapper_impl.dart';
 import 'package:flutter/material.dart';
@@ -38,11 +39,13 @@ Future<AppBootstrap> _initializeApp() async {
   final wrapper = SupabaseWrapperImpl(envLoader: envLoader);
   await wrapper.initialize();
   final sentryWrapper = SentryWrapperImpl(envLoader: envLoader, config: config);
+  final powerSyncDatabase = await openPowerSyncDatabase();
   return AppBootstrap(
     config: config,
     envLoader: envLoader,
     supabaseWrapper: wrapper,
     sentryWrapper: sentryWrapper,
+    powerSyncDatabase: powerSyncDatabase,
   );
 }
 
