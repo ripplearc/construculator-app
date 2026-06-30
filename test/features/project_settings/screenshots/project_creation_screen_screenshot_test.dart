@@ -93,5 +93,43 @@ void main() {
         matchesGoldenFile(goldenPath('project_creation_initial_dark')),
       );
     });
+
+    testWidgets('error state — submit attempted with empty name, light theme', (
+      tester,
+    ) async {
+      tester.view.physicalSize = _screenSize;
+      tester.view.devicePixelRatio = _pixelRatio;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(buildScreen());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('create_project_button')));
+      await tester.pump();
+
+      await expectLater(
+        find.byType(ProjectCreationScreen),
+        matchesGoldenFile(goldenPath('project_creation_error_state_light')),
+      );
+    });
+
+    testWidgets('error state — submit attempted with empty name, dark theme', (
+      tester,
+    ) async {
+      tester.view.physicalSize = _screenSize;
+      tester.view.devicePixelRatio = _pixelRatio;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(buildScreen(theme: createTestThemeDark()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('create_project_button')));
+      await tester.pump();
+
+      await expectLater(
+        find.byType(ProjectCreationScreen),
+        matchesGoldenFile(goldenPath('project_creation_error_state_dark')),
+      );
+    });
   });
 }
