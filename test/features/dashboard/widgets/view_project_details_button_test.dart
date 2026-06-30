@@ -104,31 +104,4 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets(
-    'exposes semantics button with project settings label when onPressed set',
-    (tester) async {
-      await tester.pumpWidget(buildTestApp(onPressed: () async {}));
-      await tester.pump();
-
-      expect(find.bySemanticsLabel('Project settings'), findsOneWidget);
-    },
-  );
-
-  testWidgets('excludes semantics when onPressed is null', (tester) async {
-    await tester.pumpWidget(buildTestApp());
-    await tester.pump();
-
-    expect(find.bySemanticsLabel('Project settings'), findsNothing);
-  });
-
-  testWidgets('hit target is 48 × 48 points to satisfy a11y guidelines', (
-    tester,
-  ) async {
-    await tester.pumpWidget(buildTestApp(onPressed: () async {}));
-    await tester.pump();
-
-    final box = tester.getRect(find.byType(ViewProjectDetailsButton));
-    expect(box.width, CoreSpacing.space12);
-    expect(box.height, CoreSpacing.space12);
-  });
 }

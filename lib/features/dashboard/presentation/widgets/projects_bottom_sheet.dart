@@ -1,6 +1,7 @@
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/project_list_item.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/project_search_routes.dart';
@@ -26,8 +27,7 @@ class ProjectsBottomSheet extends StatefulWidget {
   /// The bloc that manages project selection and loading state.
   final ProjectDropdownBloc bloc;
 
-  /// Router used to navigate to [ProjectSearchPage] when the search field
-  /// is tapped.
+  /// Handles navigation away from the sheet.
   final AppRouter router;
 
   const ProjectsBottomSheet({
@@ -54,6 +54,7 @@ class ProjectsBottomSheet extends StatefulWidget {
 }
 
 class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
+  static final _logger = AppLogger().tag('ProjectsBottomSheet');
   late final ProjectDropdownBloc _bloc;
   final TextEditingController _searchController = TextEditingController();
 
@@ -104,8 +105,9 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
 
   Future<void> _onProjectSettings(Project project) async {
     try {
-      await Modular.to.pushNamed(fullViewProjectRoute, arguments: project.id);
-    } catch (_) {
+      await widget.router.pushNamed(fullViewProjectRoute, arguments: project.id);
+    } catch (e, st) {
+      _logger.warning('Navigation to project details failed', e, st);
       if (mounted) {
         CoreToast.showError(
           context,
