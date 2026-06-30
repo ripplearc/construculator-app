@@ -110,4 +110,88 @@ class ProjectSearchRepositoryImpl implements ProjectSearchRepository {
       return Left(_handleError(e, 'searching projects'));
     }
   }
+
+  @override
+  Future<Either<Failure, void>> saveRecentProjectSearch({
+    required String userId,
+    required String searchTerm,
+    bool hasResults = false,
+  }) async {
+    if (userId.trim().isEmpty || searchTerm.trim().isEmpty) {
+      return Right(null);
+    }
+
+    try {
+      _logger.debug(
+        'Saving recent project search: $searchTerm, hasResults: $hasResults',
+      );
+      await _dataSource.saveRecentProjectSearch(
+        userId: userId,
+        searchTerm: searchTerm,
+        hasResults: hasResults,
+      );
+      return Right(null);
+    } catch (e) {
+      return Left(_handleError(e, 'saving recent project search'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<String>>> getRecentProjectSearches({
+    required String userId,
+  }) async {
+    if (userId.trim().isEmpty) {
+      return Right([]);
+    }
+
+    try {
+      _logger.debug('Fetching recent project searches for userId: $userId');
+      final terms = await _dataSource.getRecentProjectSearches(userId: userId);
+      _logger.debug('Fetched ${terms.length} recent project searches');
+      return Right(terms);
+    } catch (e) {
+      return Left(_handleError(e, 'fetching recent project searches'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteRecentProjectSearch({
+    required String userId,
+    required String searchTerm,
+  }) async {
+    if (userId.trim().isEmpty || searchTerm.trim().isEmpty) {
+      return Right(null);
+    }
+
+    try {
+      _logger.debug('Deleting recent project search: $searchTerm');
+      await _dataSource.deleteRecentProjectSearch(
+        userId: userId,
+        searchTerm: searchTerm,
+      );
+      return Right(null);
+    } catch (e) {
+      return Left(_handleError(e, 'deleting recent project search'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<String>>> getProjectSearchSuggestions({
+    required String userId,
+  }) async {
+    if (userId.trim().isEmpty) {
+      return Right([]);
+    }
+
+    try {
+      _logger.debug('Fetching project search suggestions for userId: $userId');
+      final suggestions = await _dataSource.getProjectSearchSuggestions(
+        userId: userId,
+      );
+      _logger.debug('Fetched ${suggestions.length} project search suggestions');
+      return Right(suggestions);
+    } catch (e) {
+      return Left(_handleError(e, 'fetching project search suggestions'));
+    }
+  }
 }
