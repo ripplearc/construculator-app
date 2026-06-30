@@ -72,6 +72,10 @@ class ProjectSettingsCreated extends ProjectSettingsState {
   List<Object?> get props => [project];
 }
 
+class ProjectSettingsNameValidationError extends ProjectSettingsState {
+  const ProjectSettingsNameValidationError();
+}
+
 class ProjectSettingsError extends ProjectSettingsState {
   final Failure failure;
   final Project? lastProject;

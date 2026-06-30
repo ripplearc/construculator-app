@@ -95,6 +95,11 @@ class ProjectSettingsBloc
     ProjectSettingsCreationRequested event,
     Emitter<ProjectSettingsState> emit,
   ) async {
+    if (event.name.trim().isEmpty) {
+      emit(const ProjectSettingsNameValidationError());
+      return;
+    }
+
     final creatorUserId = event.creatorUserId;
     if (creatorUserId == null) {
       emit(ProjectSettingsError(failure: UnexpectedFailure()));

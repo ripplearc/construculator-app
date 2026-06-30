@@ -78,12 +78,12 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.tap(find.byKey(const Key('create_project_button')));
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         expect(find.text('Project name is required'), findsOneWidget);
       });
 
-      testWidgets('tapping submit with empty name does not dispatch creation event', (
+      testWidgets('tapping submit with empty name emits name validation error', (
         tester,
       ) async {
         await tester.pumpWidget(buildScreen());
@@ -92,7 +92,7 @@ void main() {
         await tester.tap(find.byKey(const Key('create_project_button')));
         await tester.pump();
 
-        expect(bloc.state, isA<ProjectSettingsInitial>());
+        expect(bloc.state, isA<ProjectSettingsNameValidationError>());
       });
 
       testWidgets('name error clears after valid name entered post-attempt', (
@@ -102,7 +102,7 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.tap(find.byKey(const Key('create_project_button')));
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('Project name is required'), findsOneWidget);
 
         await tester.enterText(find.byType(ProjectNameTextField), 'My Building');

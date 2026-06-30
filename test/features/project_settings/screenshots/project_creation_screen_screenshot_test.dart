@@ -105,7 +105,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const Key('create_project_button')));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       await expectLater(
         find.byType(ProjectCreationScreen),
@@ -124,7 +124,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const Key('create_project_button')));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       await expectLater(
         find.byType(ProjectCreationScreen),

@@ -103,7 +103,7 @@ void main() {
           checkTextContrast: false,
           setupAfterPump: (tester) async {
             await tester.tap(find.byKey(const Key('create_project_button')));
-            await tester.pump();
+            await tester.pumpAndSettle();
           },
         );
       },
