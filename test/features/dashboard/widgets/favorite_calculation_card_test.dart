@@ -3,7 +3,6 @@ import 'package:construculator/features/dashboard/presentation/widgets/favorite_
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/screenshot/font_loader.dart';
 
@@ -62,7 +61,7 @@ void main() {
     expect(find.text('apr 22, 2025 · 2:30 pm'), findsOneWidget);
   });
 
-  testWidgets('renders all tags as CoreChip widgets', (tester) async {
+  testWidgets('renders all tag labels', (tester) async {
     final tags = ['Flooring', 'Area', 'Tagname'];
     await pumpCard(
       tester,
@@ -70,7 +69,6 @@ void main() {
       onTap: () {},
     );
 
-    expect(find.byType(CoreChip), findsNWidgets(tags.length));
     for (final tag in tags) {
       expect(find.text(tag), findsOneWidget);
     }

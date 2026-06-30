@@ -69,6 +69,7 @@ class FavoriteEstimationCard extends StatelessWidget {
                   icon: CoreIcons.moreVert,
                   size: CoreIconSize.size24,
                   color: colors.iconGrayMid,
+                  semanticLabel: context.l10n.moreOptionsLabel,
                   onTap: onMoreOptions,
                 ),
               ],

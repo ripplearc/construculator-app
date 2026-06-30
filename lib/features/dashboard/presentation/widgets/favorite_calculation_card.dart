@@ -106,6 +106,7 @@ class _FavoriteCalculationCardState extends State<FavoriteCalculationCard> {
                   icon: CoreIcons.moreVert,
                   size: CoreIconSize.size24,
                   color: colors.iconGrayMid,
+                  semanticLabel: context.l10n.moreOptionsLabel,
                   onTap: widget.onMoreOptions,
                 ),
               ],
