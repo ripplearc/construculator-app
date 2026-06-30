@@ -58,7 +58,7 @@ void main() {
       onTap: () {},
     );
 
-    expect(find.text('apr 22, 2025 · 2:30 pm'), findsOneWidget);
+    expect(find.text('Apr 22, 2025 · 2:30 pm'), findsOneWidget);
   });
 
   testWidgets('renders all tag labels', (tester) async {
