@@ -1320,6 +1320,11 @@
     "description": "Section title for the recent searches list on the global search screen",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
   },
+  "projectSearchRecentSearchesTitle": "Recent searches",
+  "@projectSearchRecentSearchesTitle": {
+    "description": "Section title for the recent searches list on the project search screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
   "globalSearchFilterTags": "Tags",
   "@globalSearchFilterTags": {
     "description": "Label for the Tags filter chip on the global search screen",

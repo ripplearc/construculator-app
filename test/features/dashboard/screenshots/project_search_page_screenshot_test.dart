@@ -5,7 +5,9 @@ import 'package:construculator/features/dashboard/presentation/pages/project_sea
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +17,9 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/screenshot/await_images_extension.dart';
 import '../../../utils/screenshot/font_loader.dart';
+
+const String _testUserId = 'user-project-search-screenshot-test';
+const String _testUserEmail = 'project-search-screenshot@test.com';
 
 class _ProjectSearchPageScreenshotModule extends Module {
   final AppBootstrap appBootstrap;
@@ -53,6 +58,13 @@ void main() {
 
   setUp(() {
     fakeSupabase.reset();
+    fakeSupabase.setCurrentUser(
+      FakeUser(
+        id: _testUserId,
+        email: _testUserEmail,
+        createdAt: '2024-01-01T00:00:00.000Z',
+      ),
+    );
   });
 
   Future<void> pumpProjectSearchPage({required WidgetTester tester}) async {
@@ -113,5 +125,33 @@ void main() {
         );
       },
     );
+
+    testWidgets('renders with recent searches correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      fakeSupabase.addTableData(DatabaseConstants.projectSearchHistoryTable, [
+        {
+          DatabaseConstants.userIdColumn: _testUserId,
+          DatabaseConstants.searchTermColumn: 'foundation',
+          DatabaseConstants.updatedAtColumn: '2024-06-01T00:00:00.000Z',
+        },
+        {
+          DatabaseConstants.userIdColumn: _testUserId,
+          DatabaseConstants.searchTermColumn: 'wall',
+          DatabaseConstants.updatedAtColumn: '2024-05-01T00:00:00.000Z',
+        },
+      ]);
+
+      await pumpProjectSearchPage(tester: tester);
+
+      await expectLater(
+        find.byType(ProjectSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_recent_searches.png',
+        ),
+      );
+    });
   });
 }

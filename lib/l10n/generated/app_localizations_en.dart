@@ -839,6 +839,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get globalSearchRecentSearchesTitle => 'Recent searches';
 
   @override
+  String get projectSearchRecentSearchesTitle => 'Recent searches';
+
+  @override
   String get globalSearchFilterTags => 'Tags';
 
   @override

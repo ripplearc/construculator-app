@@ -1600,6 +1600,12 @@ abstract class AppLocalizations {
   /// **'Recent searches'**
   String get globalSearchRecentSearchesTitle;
 
+  /// Section title for the recent searches list on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Recent searches'**
+  String get projectSearchRecentSearchesTitle;
+
   /// Label for the Tags filter chip on the global search screen
   ///
   /// In en, this message translates to:

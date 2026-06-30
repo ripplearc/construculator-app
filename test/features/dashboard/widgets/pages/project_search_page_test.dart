@@ -2,6 +2,8 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_search_bloc/project_search_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/project_search_page.dart';
+import 'package:construculator/features/global_search/presentation/widgets/global_search_empty_recent_widget.dart';
+import 'package:construculator/features/global_search/presentation/widgets/global_search_recent_searches_list.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -68,6 +70,21 @@ void main() {
       ),
     );
   });
+
+  void seedRecentSearches() {
+    fakeSupabase.addTableData(DatabaseConstants.projectSearchHistoryTable, [
+      {
+        DatabaseConstants.userIdColumn: _testUserId,
+        DatabaseConstants.searchTermColumn: 'foundation',
+        DatabaseConstants.updatedAtColumn: '2024-06-01T00:00:00.000Z',
+      },
+      {
+        DatabaseConstants.userIdColumn: _testUserId,
+        DatabaseConstants.searchTermColumn: 'wall',
+        DatabaseConstants.updatedAtColumn: '2024-05-01T00:00:00.000Z',
+      },
+    ]);
+  }
 
   AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
 
@@ -145,6 +162,23 @@ void main() {
       expect(find.text(l10n().projectSearchFilterModified), findsOneWidget);
     });
 
+    testWidgets('sees empty state message when no recent searches', (
+      tester,
+    ) async {
+      await renderPage(tester);
+
+      expect(find.byType(GlobalSearchEmptyRecentWidget), findsOneWidget);
+    });
+
+    testWidgets('sees Recent searches section title', (tester) async {
+      await renderPage(tester);
+
+      expect(
+        find.text(l10n().projectSearchRecentSearchesTitle),
+        findsOneWidget,
+      );
+    });
+
     testWidgets(
       'entering text in the search box dispatches ProjectSearchQueryUpdatedEvent',
       (tester) async {
@@ -210,5 +244,60 @@ void main() {
         await tester.pump(const Duration(seconds: 5));
       },
     );
+  });
+
+  group('User on ProjectSearchPage with recent searches', () {
+    testWidgets('sees recent search items', (tester) async {
+      seedRecentSearches();
+      await renderPage(tester);
+
+      expect(find.byType(GlobalSearchRecentSearchesList), findsOneWidget);
+      expect(find.text('foundation'), findsOneWidget);
+      expect(find.text('wall'), findsOneWidget);
+    });
+
+    testWidgets('tapping trailing icon fills search field', (tester) async {
+      seedRecentSearches();
+      await renderPage(tester);
+
+      final trailingIcon = find.descendant(
+        of: find.byKey(const ValueKey('recent_search_item_foundation')),
+        matching: find.byKey(const Key('trailing_icon')),
+      );
+      expect(trailingIcon, findsOneWidget);
+
+      await tester.tap(trailingIcon);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(
+        find.descendant(
+          of: find.byType(TextFormField),
+          matching: find.text('foundation'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('tapping row body fills search field and runs search', (
+      tester,
+    ) async {
+      seedRecentSearches();
+      await renderPage(tester);
+
+      await tester.tap(
+        find.byKey(const ValueKey('recent_search_item_foundation')),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 5));
+
+      expect(
+        find.descendant(
+          of: find.byType(TextFormField),
+          matching: find.text('foundation'),
+        ),
+        findsOneWidget,
+      );
+    });
   });
 }
