@@ -25,7 +25,7 @@ class FavoriteEstimationCard extends StatelessWidget {
     final colors = context.colorTheme;
     final typography = context.textTheme;
 
-    final dateTimeText = _dateTimeFormatter.format(estimation.date).toLowerCase();
+    final dateTimeText = _dateTimeFormatter.format(estimation.date).replaceAll('AM', 'am').replaceAll('PM', 'pm');
     final costText = _costFormatter.format(estimation.totalCost);
 
     return GestureDetector(
@@ -82,7 +82,7 @@ class FavoriteEstimationCard extends StatelessWidget {
                   children: [
                     CoreIconWidget(
                       icon: CoreIcons.calendar,
-                      size: CoreIconSize.size24,
+                      size: CoreIconSize.size16,
                       color: colors.iconGrayMid,
                     ),
                     const SizedBox(width: CoreSpacing.space2),
