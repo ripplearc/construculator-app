@@ -2,6 +2,7 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/features/dashboard/domain/usecases/watch_recent_estimations_usecase.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/dashboard_bloc/dashboard_bloc.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/project_search_bloc/project_search_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_settings_bloc/project_settings_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
@@ -46,6 +47,9 @@ class DashboardModule extends Module {
     );
     i.add<ProjectSettingsBloc>(
       () => ProjectSettingsBloc(repository: i()),
+    );
+    i.add<ProjectSearchBloc>(
+      () => ProjectSearchBloc(repository: i(), authManager: i()),
     );
   }
 
