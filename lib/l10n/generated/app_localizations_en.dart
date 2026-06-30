@@ -144,6 +144,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recentEstimationsEmptyState => 'No recent estimations found.';
 
   @override
+  String get favouritesSectionTitle => 'Favourites';
+
+  @override
+  String get favouritesEmptyState => 'No favourites yet.';
+
+  @override
   String get projectSettingsSemanticLabel => 'Project settings';
 
   @override
