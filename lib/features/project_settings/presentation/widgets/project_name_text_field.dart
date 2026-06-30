@@ -10,6 +10,7 @@ class ProjectNameTextField extends StatefulWidget {
     this.onValidationChanged,
     this.onDirtyChanged,
     this.enabled = true,
+    this.showErrors = false,
   });
 
   /// Controls the text being edited.
@@ -24,6 +25,10 @@ class ProjectNameTextField extends StatefulWidget {
   /// Whether the field accepts user input.
   final bool enabled;
 
+  /// When true, shows validation errors even before the field has been edited.
+  /// Use this to surface errors on a submit attempt without prior interaction.
+  final bool showErrors;
+
   /// Maximum allowed character count for a project name.
   static const int maxLength = 100;
 
@@ -34,11 +39,13 @@ class ProjectNameTextField extends StatefulWidget {
 class _ProjectNameTextFieldState extends State<ProjectNameTextField> {
   bool _isDirty = false;
   List<String> _errors = [];
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     widget.controller.addListener(_onTextChanged);
+    _focusNode.addListener(_onFocusChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _validate();
     });
@@ -47,6 +54,8 @@ class _ProjectNameTextFieldState extends State<ProjectNameTextField> {
   @override
   void dispose() {
     widget.controller.removeListener(_onTextChanged);
+    _focusNode.removeListener(_onFocusChanged);
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -64,6 +73,10 @@ class _ProjectNameTextFieldState extends State<ProjectNameTextField> {
     final wasDirty = _isDirty;
     _validate(markDirty: !wasDirty);
     if (!wasDirty) widget.onDirtyChanged?.call(true);
+  }
+
+  void _onFocusChanged() {
+    if (!_focusNode.hasFocus) _validate(markDirty: true);
   }
 
   void _validate({bool markDirty = false}) {
@@ -89,10 +102,11 @@ class _ProjectNameTextFieldState extends State<ProjectNameTextField> {
     final l10n = context.l10n;
     return CoreTextField(
       controller: widget.controller,
+      focusNode: _focusNode,
       label: l10n.projectNameLabel,
       hintText: l10n.projectNameHintText,
       enabled: widget.enabled,
-      errorTextList: (_isDirty && _errors.isNotEmpty) ? _errors : null,
+      errorTextList: (_isDirty || widget.showErrors) && _errors.isNotEmpty ? _errors : null,
     );
   }
 }

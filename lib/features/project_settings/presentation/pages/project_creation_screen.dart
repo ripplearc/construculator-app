@@ -27,6 +27,7 @@ class _ProjectCreationScreenState extends State<ProjectCreationScreen> {
   final TextEditingController _nameController = TextEditingController();
 
   bool _nameValid = false;
+  bool _submitAttempted = false;
 
   bool get _canSubmit => _nameValid;
 
@@ -37,6 +38,8 @@ class _ProjectCreationScreenState extends State<ProjectCreationScreen> {
   }
 
   void _onSubmit() {
+    setState(() => _submitAttempted = true);
+    if (!_canSubmit) return;
     context.read<ProjectSettingsBloc>().add(
       ProjectSettingsCreationRequested(
         name: _nameController.text.trim(),
@@ -113,6 +116,7 @@ class _ProjectCreationScreenState extends State<ProjectCreationScreen> {
           ProjectNameTextField(
             controller: _nameController,
             onValidationChanged: (v) => setState(() => _nameValid = v),
+            showErrors: _submitAttempted,
           ),
           const SizedBox(height: CoreSpacing.space4),
           const ProjectActionArea(),
@@ -132,7 +136,7 @@ class _ProjectCreationScreenState extends State<ProjectCreationScreen> {
           builder: (context, state) => CoreButton(
             key: const Key('create_project_button'),
             label: l10n.createProjectButton,
-            isDisabled: !_canSubmit || state is ProjectSettingsCreating,
+            isDisabled: state is ProjectSettingsCreating,
             onPressed: _onSubmit,
           ),
         ),
