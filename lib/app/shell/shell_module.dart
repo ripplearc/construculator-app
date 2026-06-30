@@ -6,7 +6,9 @@ import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/domain/usecases/watch_recent_estimations_usecase.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/dashboard_bloc/dashboard_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/project_search_bloc/project_search_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
+import 'package:construculator/features/dashboard/presentation/pages/project_search_page.dart';
 import 'package:construculator/features/estimation/estimation_routes_module.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
 import 'package:construculator/features/project_settings/project_settings_routes_module.dart';
@@ -20,6 +22,7 @@ import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/router/routes/global_search_routes.dart';
+import 'package:construculator/libraries/router/routes/project_search_routes.dart';
 import 'package:construculator/libraries/router/routes/project_settings_routes.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -97,6 +100,14 @@ class ShellModule extends Module {
           module: ProjectSettingsRoutesModule(appBootstrap),
         ),
       ],
+    );
+    r.child(
+      projectSearchRoute,
+      guards: [AuthGuard(() => Modular.get<AuthManager>())],
+      child: (_) => ProjectSearchPage(
+        router: Modular.get<AppRouter>(),
+        blocFactory: () => Modular.get<ProjectSearchBloc>(),
+      ),
     );
     r.module(globalSearchBaseRoute, module: GlobalSearchModule(appBootstrap));
   }
