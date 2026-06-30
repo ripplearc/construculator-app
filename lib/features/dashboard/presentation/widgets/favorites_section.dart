@@ -70,25 +70,25 @@ class FavoritesSection extends StatelessWidget {
             ),
           )
         else
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: calculations.length + estimations.length,
-            separatorBuilder: (_, __) => const SizedBox(height: CoreSpacing.space3),
-            itemBuilder: (context, index) {
-              if (index < calculations.length) {
-                final calculation = calculations[index];
-                return FavoriteCalculationCard(
-                  calculation: calculation,
-                  onTap: () => onCalculationTap(calculation.id),
-                );
-              }
-              final estimation = estimations[index - calculations.length];
-              return FavoriteEstimationCard(
-                estimation: estimation,
-                onTap: () => onEstimationTap(estimation.id),
-              );
-            },
+          Column(
+            children: [
+              for (int i = 0; i < calculations.length; i++) ...[
+                FavoriteCalculationCard(
+                  calculation: calculations[i],
+                  onTap: () => onCalculationTap(calculations[i].id),
+                ),
+                if (i < calculations.length - 1 || estimations.isNotEmpty)
+                  const SizedBox(height: CoreSpacing.space3),
+              ],
+              for (int i = 0; i < estimations.length; i++) ...[
+                FavoriteEstimationCard(
+                  estimation: estimations[i],
+                  onTap: () => onEstimationTap(estimations[i].id),
+                ),
+                if (i < estimations.length - 1)
+                  const SizedBox(height: CoreSpacing.space3),
+              ],
+            ],
           ),
       ],
     );
