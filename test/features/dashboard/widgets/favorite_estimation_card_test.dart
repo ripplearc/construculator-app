@@ -80,7 +80,7 @@ void main() {
       onTap: () {},
     );
 
-    expect(find.text('may 3, 2025 · 2:30 pm'), findsOneWidget);
+    expect(find.text('May 3, 2025 · 2:30 pm'), findsOneWidget);
   });
 
   testWidgets('invokes onTap when the card is tapped', (tester) async {
