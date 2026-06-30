@@ -22,4 +22,41 @@ abstract class ProjectSearchRepository {
     String? filterByTag,
     String? filterByOwner,
   });
+
+  /// Persists [searchTerm] as a recent project-search entry for [userId].
+  ///
+  /// [hasResults] should be `true` only when the caller has confirmed the
+  /// search returned at least one result. Repeat saves of the same term are
+  /// de-duplicated rather than creating multiple entries.
+  ///
+  /// Returns `Right` (void) when [userId] is empty or [searchTerm] is
+  /// empty/whitespace — no failure is raised for these inputs.
+  Future<Either<Failure, void>> saveRecentProjectSearch({
+    required String userId,
+    required String searchTerm,
+    bool hasResults = false,
+  });
+
+  /// Returns [userId]'s recent project-search terms, most recently used first.
+  ///
+  /// Returns `Right([])` when [userId] is empty.
+  Future<Either<Failure, List<String>>> getRecentProjectSearches({
+    required String userId,
+  });
+
+  /// Removes [searchTerm] from [userId]'s recent project-search history.
+  ///
+  /// Returns `Right` (void) when [userId] is empty or [searchTerm] is
+  /// empty/whitespace.
+  Future<Either<Failure, void>> deleteRecentProjectSearch({
+    required String userId,
+    required String searchTerm,
+  });
+
+  /// Returns up to 10 personalized project-search suggestion terms for [userId].
+  ///
+  /// Returns `Right([])` when [userId] is empty or no suggestions exist.
+  Future<Either<Failure, List<String>>> getProjectSearchSuggestions({
+    required String userId,
+  });
 }
