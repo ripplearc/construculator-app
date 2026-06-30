@@ -63,7 +63,7 @@ class _FavoriteCalculationCardState extends State<FavoriteCalculationCard> {
     final colors = context.colorTheme;
     final typography = context.textTheme;
 
-    final dateTimeText = _dateTimeFormatter.format(widget.calculation.date).toLowerCase();
+    final dateTimeText = _dateTimeFormatter.format(widget.calculation.date).replaceAll('AM', 'am').replaceAll('PM', 'pm');
 
     return GestureDetector(
       onTap: widget.onTap,
