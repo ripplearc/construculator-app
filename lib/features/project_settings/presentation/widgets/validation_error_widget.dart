@@ -21,6 +21,7 @@ class ValidationErrorWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         CoreIconWidget(
+          key: const Key('validation_error_icon'),
           icon: CoreIcons.error,
           size: CoreIconSize.size16,
           color: colors.iconRed,
