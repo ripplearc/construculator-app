@@ -1,4 +1,3 @@
-import 'package:construculator/features/dashboard/presentation/widgets/highlighted_project_item.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/project_list_item.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
@@ -115,24 +114,13 @@ void main() {
     return border.top.width;
   }
 
-  testWidgets('renders HighlightedProjectItem when selected', (tester) async {
+  testWidgets('uses a 3 px border when selected', (tester) async {
     await tester.pumpWidget(
       buildTestApp(project: buildProject(), isSelected: true),
     );
     await tester.pump();
 
-    expect(find.byType(HighlightedProjectItem), findsOneWidget);
-  });
-
-  testWidgets('does not render HighlightedProjectItem when not selected', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      buildTestApp(project: buildProject(), isSelected: false),
-    );
-    await tester.pump();
-
-    expect(find.byType(HighlightedProjectItem), findsNothing);
+    expect(borderWidthOf(tester), 3);
   });
 
   testWidgets('uses a thin border when not selected', (tester) async {

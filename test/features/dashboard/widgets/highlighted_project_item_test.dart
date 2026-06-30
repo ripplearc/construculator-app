@@ -1,5 +1,4 @@
 import 'package:construculator/features/dashboard/presentation/widgets/highlighted_project_item.dart';
-import 'package:construculator/features/dashboard/presentation/widgets/project_selection_indicator.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
@@ -96,11 +95,18 @@ void main() {
     expect(tapped, isFalse);
   });
 
-  testWidgets('contains a ProjectSelectionIndicator', (tester) async {
+  testWidgets('renders with a 3 px selection border', (tester) async {
     await tester.pumpWidget(buildTestApp(project: buildProject()));
     await tester.pump();
 
-    expect(find.byType(ProjectSelectionIndicator), findsOneWidget);
+    final ink = tester.widget<Ink>(
+      find.descendant(
+        of: find.byType(HighlightedProjectItem),
+        matching: find.byType(Ink),
+      ),
+    );
+    final border = (ink.decoration as BoxDecoration).border as Border;
+    expect(border.top.width, 3);
   });
 
   testWidgets('has Semantics with selected true when onTap is provided', (
