@@ -16,9 +16,14 @@ import 'package:rxdart/rxdart.dart';
 part 'global_search_event.dart';
 part 'global_search_state.dart';
 
-/// Debounce duration applied to [GlobalSearchQueryUpdated] events.
-/// Kept here so the BLoC owns the contract — no UI-side debouncing required.
+// Debounce duration applied to [GlobalSearchQueryUpdated] events. Kept here
+// so the BLoC owns the contract — no UI-side debouncing required.
 const Duration _kQueryDebounceDuration = Duration(milliseconds: 300);
+
+// Maximum number of personalized suggestions exposed to the UI for a given
+// query. The raw list fetched from the repository may be longer; the cap
+// keeps the dropdown short per PRD DASH-019.
+const int _kMaxDisplayedSuggestions = 5;
 
 /// Returns an [EventTransformer] that debounces events by [duration] and
 /// switches to the latest mapper stream, cancelling any in-flight processing.
@@ -37,7 +42,9 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
 
   List<String> _recentSearches = const [];
 
-  List<String> _suggestions = const [];
+  List<String> _rawSuggestions = const [];
+
+  bool _suggestionsFetched = false;
 
   String _currentQuery = '';
 
@@ -127,7 +134,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     return GlobalSearchReady(
       recentSearches: _recentSearches,
       query: _currentQuery,
-      suggestions: _suggestions,
+      suggestions: _filterSuggestions(_currentQuery),
       suggestionsLoading: suggestionsLoading,
       selectedTags: _selectedTags,
       availableTags: _filterAvailableTags(),
@@ -183,7 +190,8 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       recentSearches,
     ) {
       _recentSearches = recentSearches;
-      _suggestions = const [];
+      _rawSuggestions = const [];
+      _suggestionsFetched = false;
       _currentQuery = '';
       _selectedTags = const {};
       _tagSearchQuery = '';
@@ -194,11 +202,22 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     });
   }
 
-  void _onQueryUpdated(
+  Future<void> _onQueryUpdated(
     GlobalSearchQueryUpdated event,
     Emitter<GlobalSearchState> emit,
-  ) {
+  ) async {
     _currentQuery = event.query;
+
+    if (event.query.isEmpty) {
+      emit(_readyState());
+      return;
+    }
+
+    if (!_suggestionsFetched) {
+      await _fetchAndEmitSuggestions(emit);
+      return;
+    }
+
     emit(_readyState());
   }
 
@@ -293,6 +312,12 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     GlobalSearchSuggestionsRequested event,
     Emitter<GlobalSearchState> emit,
   ) async {
+    await _fetchAndEmitSuggestions(emit);
+  }
+
+  Future<void> _fetchAndEmitSuggestions(
+    Emitter<GlobalSearchState> emit,
+  ) async {
     emit(_readyState(suggestionsLoading: true));
 
     final result = await _repository.getSearchSuggestions();
@@ -300,10 +325,22 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     result.fold(
       (failure) => emit(GlobalSearchSuggestionsLoadFailure(failure: failure)),
       (suggestions) {
-        _suggestions = suggestions;
+        _rawSuggestions = suggestions;
+        _suggestionsFetched = true;
         emit(_readyState());
       },
     );
+  }
+
+  // Filters [_rawSuggestions] to terms that start with [query] (case-insensitive)
+  // and caps the result at [_kMaxDisplayedSuggestions].
+  List<String> _filterSuggestions(String query) {
+    if (query.isEmpty) return const [];
+    final lower = query.toLowerCase();
+    return _rawSuggestions
+        .where((s) => s.toLowerCase().startsWith(lower))
+        .take(_kMaxDisplayedSuggestions)
+        .toList();
   }
 
   void _onTagFiltersApplied(
