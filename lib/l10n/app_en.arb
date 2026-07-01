@@ -955,6 +955,11 @@
     "description": "Activity log message for cost file deleted without details",
     "context": "N/A"
   },
+  "uploadedOnLabel": "Uploaded on",
+  "@uploadedOnLabel": {
+    "description": "Label shown before the upload date of a cost file",
+    "context": "CostFileItem metadata row"
+  },
   "activityAttachmentAdded": "Added attachment: {fileName}",
   "@activityAttachmentAdded": {
     "description": "Activity log message for attachment added with file name",
