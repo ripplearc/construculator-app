@@ -603,6 +603,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityCostFileDeletedSimple => 'Cost File Deleted';
 
   @override
+  String get uploadedOnLabel => 'Uploaded on';
+
+  @override
   String activityAttachmentAdded(String fileName) {
     return 'Added attachment: $fileName';
   }
