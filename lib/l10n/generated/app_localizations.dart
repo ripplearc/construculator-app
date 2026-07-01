@@ -1827,6 +1827,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get dateRangeSheetCancel;
+
+  /// Error toast shown when navigation to the project details screen fails
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to open project details. Please try again.'**
+  String get projectDetailsNavigationError;
+
+  /// Title shown in the app bar of the project details screen
+  ///
+  /// In en, this message translates to:
+  /// **'Project Details'**
+  String get projectDetailScreenTitle;
 }
 
 class _AppLocalizationsDelegate

@@ -6,6 +6,7 @@ import 'package:construculator/features/dashboard/presentation/bloc/project_drop
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/estimation/estimation_routes_module.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
+import 'package:construculator/features/project_settings/project_settings_module.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
@@ -16,6 +17,7 @@ import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/router/routes/global_search_routes.dart';
+import 'package:construculator/libraries/router/routes/project_settings_routes.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 /// Modular module that owns the app shell's dependency bindings and root route.
@@ -68,5 +70,6 @@ class ShellModule extends Module {
       ],
     );
     r.module(globalSearchBaseRoute, module: GlobalSearchModule(appBootstrap));
+    r.module(projectSettingsBaseRoute, module: ProjectSettingsModule());
   }
 }

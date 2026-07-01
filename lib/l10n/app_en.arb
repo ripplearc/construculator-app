@@ -1511,5 +1511,15 @@
   "@dateRangeSheetCancel": {
     "description": "Label for the Cancel button in the Date range filter bottom sheet",
     "context": "N/A"
+  },
+  "projectDetailsNavigationError": "Unable to open project details. Please try again.",
+  "@projectDetailsNavigationError": {
+    "description": "Error toast shown when navigation to the project details screen fails",
+    "context": "Dashboard projects sheet"
+  },
+  "projectDetailScreenTitle": "Project Details",
+  "@projectDetailScreenTitle": {
+    "description": "Title shown in the app bar of the project details screen",
+    "context": "Project settings"
   }
 }
