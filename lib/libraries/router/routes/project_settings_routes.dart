@@ -1,3 +1,3 @@
-const String projectSettingsBaseRoute = '/project-settings';
-const String createProjectChildRoute = '/create-project';
-const String createProjectRoute = '$projectSettingsBaseRoute$createProjectChildRoute';
+final String projectSettingsBaseRoute = '/project-settings';
+final String createProjectChildRoute = '/create-project';
+final String createProjectRoute = '$projectSettingsBaseRoute$createProjectChildRoute';
