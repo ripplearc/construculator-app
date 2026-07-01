@@ -1,10 +1,11 @@
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
-import 'package:construculator/libraries/router/routes/project_settings_routes.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/project_list_item.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/router/routes/project_settings_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 const int _kProjectsSkeletonItemCount = 4;
