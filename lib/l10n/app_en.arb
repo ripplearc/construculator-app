@@ -238,7 +238,7 @@
   "projectCreationSuccessMessage": "You have successfully created a new project",
   "@projectCreationSuccessMessage": {
     "description": "Success message shown after a new project has been created",
-    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=64930-5265"
   },
   "continueToDashboardButton": "Continue to Dashboard",
   "@continueToDashboardButton": {

@@ -31,6 +31,8 @@ void main() {
     );
   }
 
+  setUpAll(loadAppFontsAll);
+
   group('ProjectCreationSuccessSheetContent', () {
     testWidgets('renders project creation success message', (tester) async {
       await tester.pumpWidget(buildContent());

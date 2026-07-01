@@ -19,6 +19,7 @@ class ProjectCreationSuccessSheet {
 
 /// Content widget for the project creation success sheet.
 class ProjectCreationSuccessSheetContent extends StatelessWidget {
+  /// Called when the user taps "Continue to Dashboard".
   final VoidCallback onContinue;
 
   const ProjectCreationSuccessSheetContent({
