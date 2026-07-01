@@ -52,7 +52,7 @@ class CostFileItem extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: CoreSpacing.space1),
                 Row(
                   children: [
                     Text(
@@ -63,8 +63,8 @@ class CostFileItem extends StatelessWidget {
                     ),
                     const SizedBox(width: CoreSpacing.space2),
                     Container(
-                      width: 4,
-                      height: 4,
+                      width: CoreSpacing.space1,
+                      height: CoreSpacing.space1,
                       decoration: BoxDecoration(
                         color: colors.textBody,
                         shape: BoxShape.circle,
