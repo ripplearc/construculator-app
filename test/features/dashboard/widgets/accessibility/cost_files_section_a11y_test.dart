@@ -43,8 +43,6 @@ void main() {
     testWidgets('section title meets guidelines in both themes', (tester) async {
       await setupA11yTest(tester);
 
-      // textDark on page background is WCAG AA compliant; checkTextContrast is
-      // disabled because pixel-sampling over shadows gives inaccurate results.
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
         (theme) => makeTestableWidget(theme: theme, files: sampleFiles),
