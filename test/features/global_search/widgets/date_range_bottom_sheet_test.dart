@@ -138,13 +138,20 @@ void main() {
       await tester.tap(find.byKey(const Key('date_range_option_custom')));
       await tester.pumpAndSettle();
 
-      // Start date picker is open; tap a day then confirm.
+      // Navigate to the previous month so days 12 and 15 are not disabled by
+      // the lastDate: now constraint (which blocks future dates in the current
+      // month when today is early in the month, e.g. the 1st).
+      await tester.tap(find.bySemanticsLabel('Previous month'));
+      await tester.pump();
+
+      // Start date picker: tap day 12 then confirm.
       await tester.tap(find.text('12').first);
       await tester.pump();
       await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
 
-      // End date picker is open; tap a later day then confirm.
+      // End date picker opens showing the same previous month (initialDate = start).
+      // Day 15 is enabled: it falls between firstDate (12th) and lastDate (today).
       await tester.tap(find.text('15').first);
       await tester.pump();
       await tester.tap(find.text('OK'));

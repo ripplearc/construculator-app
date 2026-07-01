@@ -376,6 +376,18 @@ abstract class AppLocalizations {
   /// **'Create a project'**
   String get createProjectButton;
 
+  /// Success message shown after a new project has been created
+  ///
+  /// In en, this message translates to:
+  /// **'You have successfully created a new project'**
+  String get projectCreationSuccessMessage;
+
+  /// Label for the CTA button on the project creation success sheet that navigates to the dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Continue to Dashboard'**
+  String get continueToDashboardButton;
+
   /// Empty state message shown when the user has no projects
   ///
   /// In en, this message translates to:
