@@ -13,6 +13,7 @@ import 'package:construculator/libraries/project/domain/repositories/project_rep
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_project_data_source.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
@@ -471,17 +472,13 @@ ProjectDto _createProjectDto({
   );
 }
 
-class _FakeProjectDataSource implements ProjectDataSource {
-  List<ProjectDto> ownedProjects = [];
-  List<ProjectDto> sharedProjects = [];
+class _FakeProjectDataSource extends FakeProjectDataSource {
   String? lastOwnedUserId;
   String? lastSharedUserId;
   Object? getOwnedProjectsError;
   int getOwnedProjectsCalls = 0;
   Completer<void>? firstGetOwnedProjectsStartedCompleter;
   Completer<void>? nextGetOwnedProjectsCompleter;
-  final StreamController<void> _changesController =
-      StreamController<void>.broadcast();
 
   @override
   Future<List<ProjectDto>> getOwnedProjects(String userId) async {
@@ -510,31 +507,11 @@ class _FakeProjectDataSource implements ProjectDataSource {
   @override
   Future<List<ProjectDto>> getSharedProjects(String userId) async {
     lastSharedUserId = userId;
-    return sharedProjects;
-  }
-
-  @override
-  Stream<void> watchProjectChanges(String userId) => _changesController.stream;
-
-  @override
-  Future<ProjectDto> getProject(String projectId) async {
-    return ownedProjects.firstWhere((dto) => dto.id == projectId);
-  }
-
-  void emitProjectChange() {
-    _changesController.add(null);
-  }
-
-  void emitError(Object error) {
-    _changesController.addError(error);
-  }
-
-  void dispose() {
-    _changesController.close();
+    return super.getSharedProjects(userId);
   }
 }
 
-// TODO: Refactor to use FakeSupabaseWrapper instead of custom _FakeProjectDataSource (https://ripplearc.youtrack.cloud/issue/CA-635/Project-Refactor-projectrepositorytest.dart-to-use-FakeSupabaseWrapper-instead-of-custom-fake)
+// TODO: Migrate to FakeSupabaseWrapper per CA-635 (https://ripplearc.youtrack.cloud/issue/CA-635/Project-Refactor-projectrepositorytest.dart-to-use-FakeSupabaseWrapper-instead-of-custom-fake)
 class _ProjectRepositoryTestModule extends Module {
   final FakeClockImpl clock;
 
