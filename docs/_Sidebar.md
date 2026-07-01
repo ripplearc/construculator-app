@@ -23,4 +23,5 @@
 - [Fakes](Fakes)
 - [Accessibility (a11y) Testing](Accessibility-Testing)
 - [CI Scripts and Workflows](CI-Scripts)
+- [E2E CUJ Strategy](Testing/E2E-CUJ-Strategy)
 
