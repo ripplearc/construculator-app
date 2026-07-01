@@ -38,9 +38,6 @@ void main() {
     testWidgets('file name meets text contrast in both themes', (tester) async {
       await setupA11yTest(tester);
 
-      // textDark (#1d2939) on white is WCAG AA compliant; checkTextContrast is
-      // disabled because pixel-sampling over a shadow-decorated card gives
-      // inaccurate results in the test renderer.
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
         (theme) => makeTestableWidget(theme: theme),
@@ -54,9 +51,6 @@ void main() {
     testWidgets('uploaded on label meets text contrast in both themes', (tester) async {
       await setupA11yTest(tester);
 
-      // textBody (#475467) on white is WCAG AA compliant; checkTextContrast is
-      // disabled because the test framework's pixel-sampling produces an
-      // inaccurate result for small text rendered over a shadow-decorated card.
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
         (theme) => makeTestableWidget(theme: theme),
