@@ -8,6 +8,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 part 'project_settings_event.dart';
 part 'project_settings_state.dart';
 
+/// Manages [ProjectSettingRepository] operations for loading, editing,
+/// updating, deleting, and creating projects.
 class ProjectSettingsBloc
     extends Bloc<ProjectSettingsEvent, ProjectSettingsState> {
   final ProjectSettingRepository _repository;
