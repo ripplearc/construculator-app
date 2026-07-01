@@ -4,6 +4,8 @@ import 'package:construculator/features/dashboard/presentation/widgets/project_l
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/router/routes/project_search_routes.dart';
+import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -70,33 +72,18 @@ void main() {
     expect(find.text(l10n.projectsEmptyState), findsOneWidget);
   });
 
-  testWidgets('filters projects by search query', (tester) async {
-    harness.fakeRepository.setAccessibleProjects([
-      buildProject(id: 'project-1', projectName: 'My project'),
-      buildProject(id: 'project-2', projectName: 'Material of building'),
-    ]);
+  testWidgets('search field is read-only', (tester) async {
+    harness.fakeRepository.setAccessibleProjects([]);
 
     await harness.pumpSheet(tester);
 
-    await tester.enterText(
-      find.byKey(const Key('projects_search_field')),
-      'material',
+    final field = tester.widget<TextField>(
+      find.descendant(
+        of: find.byKey(const Key('projects_search_field')),
+        matching: find.byType(TextField),
+      ),
     );
-    await tester.runAsync(() async {
-      final current = harness.bloc.state;
-      final alreadyFiltered =
-          current is ProjectDropdownLoadSuccess &&
-          current.searchQuery == 'material';
-      if (!alreadyFiltered) {
-        await harness.bloc.stream.firstWhere(
-          (s) => s is ProjectDropdownLoadSuccess && s.searchQuery == 'material',
-        );
-      }
-    });
-    await tester.pump();
-
-    expect(find.text('Material of building'), findsOneWidget);
-    expect(find.text('My project'), findsNothing);
+    expect(field.readOnly, isTrue);
   });
 
   testWidgets('selecting a project dispatches selection and pops the sheet', (
@@ -154,26 +141,20 @@ void main() {
     expect(find.text(l10n.projectsLoadError), findsOneWidget);
   });
 
-  testWidgets('search filtering is delegated to the bloc', (tester) async {
-    harness.fakeRepository.setAccessibleProjects([
-      buildProject(id: 'project-1', projectName: 'My project'),
-      buildProject(id: 'project-2', projectName: 'Material of building'),
-    ]);
+  testWidgets(
+    'tapping the search field pops the sheet and navigates to project search',
+    (tester) async {
+      harness.fakeRepository.setAccessibleProjects([]);
 
-    await harness.pumpSheet(tester);
+      await harness.pumpSheet(tester);
 
-    await tester.enterText(
-      find.byKey(const Key('projects_search_field')),
-      'material',
-    );
-    await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('projects_search_field')));
+      await tester.pumpAndSettle();
 
-    final state = harness.bloc.state;
-    expect(state, isA<ProjectDropdownLoadSuccess>());
-    final loaded = state as ProjectDropdownLoadSuccess;
-    expect(loaded.searchQuery, 'material');
-    expect(loaded.projects.length, 2);
-    expect(loaded.visibleProjects.length, 1);
-    expect(loaded.visibleProjects.first.id, 'project-2');
-  });
+      expect(
+        harness.router.navigationHistory,
+        contains(const RouteCall(projectSearchRoute, null)),
+      );
+    },
+  );
 }

@@ -4,6 +4,7 @@ import 'package:construculator/features/dashboard/presentation/widgets/projects_
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
+import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -21,6 +22,7 @@ void main() {
   late FakeSupabaseWrapper fakeSupabase;
   late FakeProjectRepository fakeRepository;
   late ProjectDropdownBloc bloc;
+  late FakeAppRouter router;
 
   const String testUserId = 'user-1';
   final l10n = lookupAppLocalizations(const Locale('en'));
@@ -31,7 +33,7 @@ void main() {
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(body: ProjectsBottomSheet(bloc: bloc)),
+      home: Scaffold(body: ProjectsBottomSheet(bloc: bloc, router: router)),
     );
   }
 
@@ -43,6 +45,7 @@ void main() {
   setUp(() {
     fakeSupabase = FakeSupabaseWrapper(clock: clock);
     fakeRepository = FakeProjectRepository();
+    router = FakeAppRouter();
 
     final bootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
