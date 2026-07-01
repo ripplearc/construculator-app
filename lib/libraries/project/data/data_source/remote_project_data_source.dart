@@ -29,7 +29,8 @@ class RemoteProjectDataSource implements ProjectDataSource {
     } catch (error, stackTrace) {
       _logger.error(
         'Error while getting owned projects for userId: $userId, error: $error',
-        stackTrace.toString(),
+        error,
+        stackTrace,
       );
       rethrow;
     }
@@ -66,7 +67,8 @@ class RemoteProjectDataSource implements ProjectDataSource {
     } catch (error, stackTrace) {
       _logger.error(
         'Error while getting shared projects for userId: $userId, error: $error',
-        stackTrace.toString(),
+        error,
+        stackTrace,
       );
       rethrow;
     }
@@ -130,7 +132,8 @@ class RemoteProjectDataSource implements ProjectDataSource {
     ]).doOnError((Object error, StackTrace stackTrace) {
       _logger.error(
         'Error while watching project changes for userId: $userId, error: $error',
-        stackTrace.toString(),
+        error,
+        stackTrace,
       );
     });
   }
