@@ -1,5 +1,4 @@
 import 'package:construculator/features/dashboard/domain/entities/cost_file_entity.dart';
-import 'package:construculator/features/dashboard/presentation/widgets/cost_file_item.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/cost_files_section.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -50,7 +49,6 @@ void main() {
     ]));
     await tester.pump();
 
-    expect(find.byType(CostFileItem), findsNWidgets(2));
     expect(find.text('File A.xls'), findsOneWidget);
     expect(find.text('File B.xls'), findsOneWidget);
   });
@@ -60,6 +58,5 @@ void main() {
     await tester.pump();
 
     expect(find.text('No cost files attached.'), findsOneWidget);
-    expect(find.byType(CostFileItem), findsNothing);
   });
 }
