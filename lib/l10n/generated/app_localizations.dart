@@ -352,6 +352,18 @@ abstract class AppLocalizations {
   /// **'No recent estimations found.'**
   String get recentEstimationsEmptyState;
 
+  /// Label for the button that navigates to the edit project screen
+  ///
+  /// In en, this message translates to:
+  /// **'Edit project'**
+  String get editProjectButton;
+
+  /// AppBar title of the edit project screen
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Project'**
+  String get editProjectScreenTitle;
+
   /// Accessibility label for the per-project settings icon button in the projects list
   ///
   /// In en, this message translates to:

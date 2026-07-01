@@ -21,6 +21,7 @@ class ProjectSettingsBloc
     on<ProjectSettingsEditingStarted>(_onEditingStarted);
     on<ProjectSettingsUpdateSubmitted>(_onUpdateSubmitted);
     on<ProjectSettingsDeleteRequested>(_onDeleteRequested);
+    on<ProjectSettingsEditingCancelled>(_onEditingCancelled);
     on<ProjectSettingsCreationRequested>(_onCreationRequested);
   }
 
@@ -65,8 +66,17 @@ class ProjectSettingsBloc
       (failure) => emit(
         ProjectSettingsError(failure: failure, lastProject: originalProject),
       ),
-      (updated) => emit(ProjectSettingsLoaded(updated)),
+      (updated) => emit(ProjectSettingsEdited(updated)),
     );
+  }
+
+  void _onEditingCancelled(
+    ProjectSettingsEditingCancelled event,
+    Emitter<ProjectSettingsState> emit,
+  ) {
+    final currentState = state;
+    if (currentState is! ProjectSettingsEditing) return;
+    emit(ProjectSettingsLoaded(currentState.originalProject));
   }
 
   Future<void> _onDeleteRequested(
