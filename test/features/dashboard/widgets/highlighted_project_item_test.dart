@@ -1,4 +1,4 @@
-import 'package:construculator/features/dashboard/presentation/widgets/project_list_item.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/highlighted_project_item.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
@@ -26,7 +26,6 @@ void main() {
 
   Widget buildTestApp({
     required Project project,
-    bool isSelected = false,
     VoidCallback? onTap,
     VoidCallback? onSettingsTap,
   }) {
@@ -36,9 +35,8 @@ void main() {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: ProjectListItem(
+        body: HighlightedProjectItem(
           project: project,
-          isSelected: isSelected,
           onTap: onTap,
           onSettingsTap: onSettingsTap,
         ),
@@ -97,38 +95,34 @@ void main() {
     expect(tapped, isFalse);
   });
 
-  double borderWidthOf(WidgetTester tester) {
-    final decorated = tester
-        .widgetList<Ink>(
-          find.descendant(
-            of: find.byType(ProjectListItem),
-            matching: find.byType(Ink),
-          ),
-        )
-        .firstWhere((ink) {
-          final decoration = ink.decoration;
-          return decoration is BoxDecoration && decoration.border is Border;
-        });
-    final decoration = decorated.decoration as BoxDecoration;
-    final border = decoration.border as Border;
-    return border.top.width;
-  }
-
-  testWidgets('uses a 3 px border when selected', (tester) async {
-    await tester.pumpWidget(
-      buildTestApp(project: buildProject(), isSelected: true),
-    );
+  testWidgets('renders with a 3 px selection border', (tester) async {
+    await tester.pumpWidget(buildTestApp(project: buildProject()));
     await tester.pump();
 
-    expect(borderWidthOf(tester), 3);
+    final ink = tester.widget<Ink>(
+      find.descendant(
+        of: find.byType(HighlightedProjectItem),
+        matching: find.byType(Ink),
+      ),
+    );
+    final border = (ink.decoration as BoxDecoration).border as Border;
+    expect(border.top.width, 3);
   });
 
-  testWidgets('uses a thin border when not selected', (tester) async {
+  testWidgets('has Semantics with selected true when onTap is provided', (
+    tester,
+  ) async {
     await tester.pumpWidget(
-      buildTestApp(project: buildProject(), isSelected: false),
+      buildTestApp(project: buildProject(), onTap: () {}),
     );
     await tester.pump();
 
-    expect(borderWidthOf(tester), 1);
+    final semanticsWidget = tester.firstWidget<Semantics>(
+      find.descendant(
+        of: find.byType(HighlightedProjectItem),
+        matching: find.byType(Semantics),
+      ),
+    );
+    expect(semanticsWidget.properties.selected, isTrue);
   });
 }

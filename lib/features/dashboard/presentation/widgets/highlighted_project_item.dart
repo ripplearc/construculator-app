@@ -1,13 +1,12 @@
-import 'package:construculator/features/dashboard/presentation/widgets/highlighted_project_item.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/project_selection_indicator.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-const double _kProjectListItemBorderWidth = 1;
-const double _kProjectListItemMetaIconSize = CoreSpacing.space4;
-const double _kProjectListItemSettingsHitTarget = CoreSpacing.space12;
+const double _kHighlightedProjectItemMetaIconSize = CoreSpacing.space4;
+const double _kHighlightedProjectItemSettingsHitTarget = CoreSpacing.space12;
 
 final _dateFormatCache = <String, DateFormat>{};
 final _timeFormatCache = <String, DateFormat>{};
@@ -18,43 +17,31 @@ DateFormat _dateFormat(String locale) =>
 DateFormat _timeFormat(String locale) =>
     _timeFormatCache.putIfAbsent(locale, () => DateFormat('h:mm a', locale));
 
-/// A card widget that displays a summary of a single [Project] within the
-/// projects bottom sheet, showing the project name and its last-updated
-/// date and time, plus a per-project settings affordance.
+/// The selected-state variant of a project card, rendered when the user's
+/// current working project matches this item.
 ///
-/// When [isSelected] is true the card is highlighted to indicate it is the
-/// currently active project.
-class ProjectListItem extends StatelessWidget {
+/// Visually identical to the unselected [ProjectListItem] except the border
+/// comes from [ProjectSelectionIndicator] (3 px cyan) and the widget exposes
+/// [SemanticsFlag.isSelected] so screen readers announce the active project.
+class HighlightedProjectItem extends StatelessWidget {
   /// The project data displayed by this item.
   final Project project;
 
-  /// Whether this project is the currently selected one.
-  final bool isSelected;
-
-  /// Called when the item body is tapped to select the project.
+  /// Called when the item body is tapped.
   final VoidCallback? onTap;
 
   /// Called when the per-project settings affordance is tapped.
   final VoidCallback? onSettingsTap;
 
-  const ProjectListItem({
+  const HighlightedProjectItem({
     super.key,
     required this.project,
-    this.isSelected = false,
     this.onTap,
     this.onSettingsTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (isSelected) {
-      return HighlightedProjectItem(
-        project: project,
-        onTap: onTap,
-        onSettingsTap: onSettingsTap,
-      );
-    }
-
     final colors = context.colorTheme;
     final typography = context.textTheme;
 
@@ -68,17 +55,7 @@ class ProjectListItem extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(CoreSpacing.space3),
-        child: Ink(
-          padding: const EdgeInsets.all(CoreSpacing.space4),
-          decoration: BoxDecoration(
-            color: colors.pageBackground,
-            borderRadius: BorderRadius.circular(CoreSpacing.space3),
-            border: Border.all(
-              color: colors.lineLight,
-              width: _kProjectListItemBorderWidth,
-            ),
-            boxShadow: CoreShadows.small,
-          ),
+        child: ProjectSelectionIndicator(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -107,7 +84,7 @@ class ProjectListItem extends StatelessWidget {
                   ExcludeSemantics(
                     child: CoreIconWidget(
                       icon: CoreIcons.calendar,
-                      size: _kProjectListItemMetaIconSize,
+                      size: _kHighlightedProjectItemMetaIconSize,
                       color: colors.iconGrayMid,
                     ),
                   ),
@@ -133,6 +110,7 @@ class ProjectListItem extends StatelessWidget {
     if (onTap != null) {
       return Semantics(
         button: true,
+        selected: true,
         label: project.projectName,
         child: card,
       );
@@ -143,15 +121,15 @@ class ProjectListItem extends StatelessWidget {
   Widget _buildSettingsButton(BuildContext context) {
     final colors = context.colorTheme;
     final hitTarget = SizedBox(
-      width: _kProjectListItemSettingsHitTarget,
-      height: _kProjectListItemSettingsHitTarget,
+      width: _kHighlightedProjectItemSettingsHitTarget,
+      height: _kHighlightedProjectItemSettingsHitTarget,
       child: GestureDetector(
         onTap: onSettingsTap,
         behavior: HitTestBehavior.opaque,
         child: Center(
           child: CoreIconWidget(
             icon: CoreIcons.settings,
-            size: _kProjectListItemMetaIconSize,
+            size: _kHighlightedProjectItemMetaIconSize,
             color: colors.iconGrayMid,
           ),
         ),
