@@ -129,6 +129,46 @@ void main() {
       });
     });
 
+    group('showErrors', () {
+      testWidgets('showErrors: true shows required error without user interaction', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          wrap(ProjectNameTextField(controller: controller, showErrors: true)),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Project name is required'), findsOneWidget);
+      });
+
+      testWidgets('showErrors: false hides error before user interacts', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          wrap(ProjectNameTextField(controller: controller)),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Project name is required'), findsNothing);
+      });
+
+      testWidgets('showErrors: true clears error once valid name is entered', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          wrap(ProjectNameTextField(controller: controller, showErrors: true)),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Project name is required'), findsOneWidget);
+
+        await tester.enterText(find.byType(ProjectNameTextField), 'My Project');
+        await tester.pumpAndSettle();
+
+        expect(find.text('Project name is required'), findsNothing);
+      });
+    });
+
     group('Callbacks', () {
       testWidgets('calls onDirtyChanged(true) on first keystroke', (tester) async {
         bool? dirtyValue;

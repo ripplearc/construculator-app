@@ -27,8 +27,7 @@ class _ProjectCreationScreenState extends State<ProjectCreationScreen> {
   final TextEditingController _nameController = TextEditingController();
 
   bool _nameValid = false;
-
-  bool get _canSubmit => _nameValid;
+  bool _submitAttempted = false;
 
   @override
   void dispose() {
@@ -37,6 +36,7 @@ class _ProjectCreationScreenState extends State<ProjectCreationScreen> {
   }
 
   void _onSubmit() {
+    setState(() => _submitAttempted = true);
     context.read<ProjectSettingsBloc>().add(
       ProjectSettingsCreationRequested(
         name: _nameController.text.trim(),
@@ -62,11 +62,15 @@ class _ProjectCreationScreenState extends State<ProjectCreationScreen> {
           );
         }
       },
-      child: Scaffold(
-        backgroundColor: context.colorTheme.pageBackground,
-        appBar: _buildAppBar(context),
-        body: _buildBody(context),
-        bottomNavigationBar: _buildSubmitButton(context),
+      child: BlocBuilder<ProjectSettingsBloc, ProjectSettingsState>(
+        buildWhen: (prev, curr) =>
+            curr is ProjectSettingsCreating || prev is ProjectSettingsCreating,
+        builder: (context, state) => Scaffold(
+          backgroundColor: context.colorTheme.pageBackground,
+          appBar: _buildAppBar(context),
+          body: _buildBody(context),
+          bottomNavigationBar: _buildSubmitButton(context, state),
+        ),
       ),
     );
   }
@@ -113,6 +117,7 @@ class _ProjectCreationScreenState extends State<ProjectCreationScreen> {
           ProjectNameTextField(
             controller: _nameController,
             onValidationChanged: (v) => setState(() => _nameValid = v),
+            showErrors: _submitAttempted,
           ),
           const SizedBox(height: CoreSpacing.space4),
           const ProjectActionArea(),
@@ -122,19 +127,17 @@ class _ProjectCreationScreenState extends State<ProjectCreationScreen> {
     );
   }
 
-  Widget _buildSubmitButton(BuildContext context) {
+  Widget _buildSubmitButton(BuildContext context, ProjectSettingsState state) {
     final l10n = context.l10n;
 
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(CoreSpacing.space4),
-        child: BlocBuilder<ProjectSettingsBloc, ProjectSettingsState>(
-          builder: (context, state) => CoreButton(
-            key: const Key('create_project_button'),
-            label: l10n.createProjectButton,
-            isDisabled: !_canSubmit || state is ProjectSettingsCreating,
-            onPressed: _onSubmit,
-          ),
+        child: CoreButton(
+          key: const Key('create_project_button'),
+          label: l10n.createProjectButton,
+          isDisabled: state is ProjectSettingsCreating,
+          onPressed: _onSubmit,
         ),
       ),
     );

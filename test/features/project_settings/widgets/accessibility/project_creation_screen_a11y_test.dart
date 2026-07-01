@@ -89,5 +89,24 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'create button remains accessible after a failed submit attempt',
+      (tester) async {
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => buildScreen(theme: theme),
+          find.byKey(const Key('create_project_button')),
+          checkTapTargetSize: false,
+          checkTextContrast: false,
+          setupAfterPump: (tester) async {
+            await tester.tap(find.byKey(const Key('create_project_button')));
+            await tester.pumpAndSettle();
+          },
+        );
+      },
+    );
   });
 }

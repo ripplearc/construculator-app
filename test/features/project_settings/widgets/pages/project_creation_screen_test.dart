@@ -47,7 +47,7 @@ void main() {
 
   group('ProjectCreationScreen', () {
     group('Initial state', () {
-      testWidgets('submit button is disabled when name is empty', (
+      testWidgets('submit button is enabled in initial state', (
         tester,
       ) async {
         await tester.pumpWidget(buildScreen());
@@ -56,7 +56,7 @@ void main() {
         final button = tester.widget<CoreButton>(
           find.byKey(const Key('create_project_button')),
         );
-        expect(button.isDisabled, isTrue);
+        expect(button.isDisabled, isFalse);
       });
 
       testWidgets('add description and invite member buttons are present', (
@@ -71,43 +71,59 @@ void main() {
     });
 
     group('Name validation', () {
-      testWidgets('submit enables when a valid name is entered', (
+      testWidgets('tapping submit with empty name shows required field error', (
         tester,
       ) async {
         await tester.pumpWidget(buildScreen());
         await tester.pumpAndSettle();
 
-        await tester.enterText(
-          find.byType(ProjectNameTextField),
-          'My Building',
-        );
+        await tester.tap(find.byKey(const Key('create_project_button')));
         await tester.pumpAndSettle();
 
-        final button = tester.widget<CoreButton>(
-          find.byKey(const Key('create_project_button')),
-        );
-        expect(button.isDisabled, isFalse);
+        expect(find.text('Project name is required'), findsOneWidget);
       });
 
-      testWidgets('submit disables again after name is cleared', (
+      testWidgets('tapping submit with empty name emits name validation error', (
         tester,
       ) async {
         await tester.pumpWidget(buildScreen());
         await tester.pumpAndSettle();
 
-        await tester.enterText(
-          find.byType(ProjectNameTextField),
-          'My Building',
-        );
+        await tester.tap(find.byKey(const Key('create_project_button')));
+        await tester.pump();
+
+        expect(bloc.state, isA<ProjectSettingsNameValidationError>());
+      });
+
+      testWidgets('name error clears after valid name entered post-attempt', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildScreen());
         await tester.pumpAndSettle();
 
-        await tester.enterText(find.byType(ProjectNameTextField), '');
+        await tester.tap(find.byKey(const Key('create_project_button')));
+        await tester.pumpAndSettle();
+        expect(find.text('Project name is required'), findsOneWidget);
+
+        await tester.enterText(find.byType(ProjectNameTextField), 'My Building');
         await tester.pumpAndSettle();
 
-        final button = tester.widget<CoreButton>(
-          find.byKey(const Key('create_project_button')),
-        );
-        expect(button.isDisabled, isTrue);
+        expect(find.text('Project name is required'), findsNothing);
+      });
+
+      testWidgets('submitting after entering valid name dispatches creation event', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildScreen());
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byType(ProjectNameTextField), 'My Building');
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('create_project_button')));
+        await tester.pump();
+
+        expect(bloc.state, isA<ProjectSettingsCreating>());
       });
     });
 
@@ -162,6 +178,7 @@ void main() {
           await tester.pumpAndSettle();
 
           bloc.emit(const ProjectSettingsCreating());
+          await tester.pump();
           await tester.pump();
 
           final button = tester.widget<CoreButton>(
