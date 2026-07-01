@@ -960,6 +960,16 @@
     "description": "Label shown before the upload date of a cost file",
     "context": "CostFileItem metadata row"
   },
+  "costFilesSectionTitle": "Cost files",
+  "@costFilesSectionTitle": {
+    "description": "Section title for the list of attached cost files on the project details screen",
+    "context": "CostFilesSection"
+  },
+  "costFilesEmptyState": "No cost files attached.",
+  "@costFilesEmptyState": {
+    "description": "Empty state message when no cost files are attached to a project",
+    "context": "CostFilesSection"
+  },
   "activityAttachmentAdded": "Added attachment: {fileName}",
   "@activityAttachmentAdded": {
     "description": "Activity log message for attachment added with file name",

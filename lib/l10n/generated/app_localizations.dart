@@ -1180,6 +1180,18 @@ abstract class AppLocalizations {
   /// **'Uploaded on'**
   String get uploadedOnLabel;
 
+  /// Section title for the list of attached cost files on the project details screen
+  ///
+  /// In en, this message translates to:
+  /// **'Cost files'**
+  String get costFilesSectionTitle;
+
+  /// Empty state message when no cost files are attached to a project
+  ///
+  /// In en, this message translates to:
+  /// **'No cost files attached.'**
+  String get costFilesEmptyState;
+
   /// Activity log message for attachment added with file name
   ///
   /// In en, this message translates to:
