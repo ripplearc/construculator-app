@@ -5,7 +5,7 @@ import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/permission_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/interfaces/project_data_source.dart';
 import 'package:construculator/libraries/project/data/data_source/local_jwt_project_permission_data_source.dart';
-import 'package:construculator/libraries/project/data/models/project_dto.dart';
+import 'package:construculator/libraries/project/data/data_source/remote_project_data_source.dart';
 import 'package:construculator/libraries/project/data/repositories/project_repository_impl.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
@@ -13,7 +13,8 @@ import 'package:construculator/libraries/project/domain/repositories/project_rep
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
-import 'package:construculator/libraries/project/testing/fake_project_data_source.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
+import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/interfaces/clock.dart';
@@ -26,18 +27,18 @@ import '../../../../../utils/fake_app_bootstrap_factory.dart';
 void main() {
   group('ProjectRepositoryImpl', () {
     late FakeClockImpl clock;
-    late _FakeProjectDataSource projectDataSource;
+    late FakeSupabaseWrapper supabaseWrapper;
     late ProjectRepositoryImpl repository;
 
     setUp(() {
       clock = FakeClockImpl(DateTime(2025, 10, 1, 10, 30));
       Modular.init(_ProjectRepositoryTestModule(clock: clock));
-      projectDataSource = Modular.get<_FakeProjectDataSource>();
+      supabaseWrapper = Modular.get<FakeSupabaseWrapper>();
       repository = Modular.get<ProjectRepositoryImpl>();
     });
 
     tearDown(() {
-      projectDataSource.dispose();
+      supabaseWrapper.dispose();
       Modular.destroy();
     });
 
@@ -109,65 +110,83 @@ void main() {
         final result = await repository.getProjects('');
 
         expect(result, isEmpty);
-        expect(projectDataSource.lastOwnedUserId, isNull);
-        expect(projectDataSource.lastSharedUserId, isNull);
+        expect(supabaseWrapper.getMethodCallsFor('select'), isEmpty);
       });
 
       test(
-        'merges owned/shared projects, deduplicates, and sorts by updatedAt',
+        'merges owned and shared projects, deduplicates, and sorts by updatedAt',
         () async {
           const userId = 'user-123';
 
-          projectDataSource.ownedProjects = [
-            _createProjectDto(
-              id: 'owned-old',
-              projectName: 'Owned Old',
+          supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+            _createProjectRow(
+              id: 'project-a',
+              projectName: 'Oldest',
               creatorUserId: 'user-123',
               updatedAt: DateTime(2025, 1, 1),
             ),
-            _createProjectDto(
-              id: 'duplicate-project',
-              projectName: 'Owned Duplicate (older)',
+            _createProjectRow(
+              id: 'project-b',
+              projectName: 'Middle',
               creatorUserId: 'user-123',
-              updatedAt: DateTime(2025, 1, 2),
-            ),
-          ];
-
-          projectDataSource.sharedProjects = [
-            _createProjectDto(
-              id: 'shared-new',
-              projectName: 'Shared Newest',
-              creatorUserId: 'another-user',
-              updatedAt: DateTime(2025, 1, 4),
-            ),
-            _createProjectDto(
-              id: 'duplicate-project',
-              projectName: 'Shared Duplicate (newer)',
-              creatorUserId: 'another-user',
               updatedAt: DateTime(2025, 1, 3),
             ),
-          ];
+            _createProjectRow(
+              id: 'project-c',
+              projectName: 'Newest',
+              creatorUserId: 'other-user',
+              updatedAt: DateTime(2025, 1, 4),
+            ),
+          ]);
+          // project-b appears in both owned (creator) and shared (membership),
+          // project-c is shared only — verifies deduplication and sort.
+          supabaseWrapper.addTableData(DatabaseConstants.projectMembersTable, [
+            {
+              DatabaseConstants.idColumn: 'member-1',
+              DatabaseConstants.userIdColumn: 'user-123',
+              DatabaseConstants.projectIdColumn: 'project-b',
+            },
+            {
+              DatabaseConstants.idColumn: 'member-2',
+              DatabaseConstants.userIdColumn: 'user-123',
+              DatabaseConstants.projectIdColumn: 'project-c',
+            },
+          ]);
 
           final result = await repository.getProjects(userId);
 
-          expect(projectDataSource.lastOwnedUserId, userId);
-          expect(projectDataSource.lastSharedUserId, userId);
-          expect(result.map((project) => project.id).toList(), [
-            'shared-new',
-            'duplicate-project',
-            'owned-old',
-          ]);
+          final selectCalls = supabaseWrapper.getMethodCallsFor('select');
           expect(
-            result
-                .firstWhere((project) => project.id == 'duplicate-project')
-                .projectName,
-            'Shared Duplicate (newer)',
+            selectCalls.any(
+              (c) =>
+                  c['table'] == DatabaseConstants.projectsTable &&
+                  c['filterColumn'] ==
+                      DatabaseConstants.creatorUserIdColumn &&
+                  c['filterValue'] == userId,
+            ),
+            isTrue,
           );
+          expect(
+            selectCalls.any(
+              (c) =>
+                  c['table'] == DatabaseConstants.projectMembersTable &&
+                  c['filterColumn'] == DatabaseConstants.userIdColumn &&
+                  c['filterValue'] == userId,
+            ),
+            isTrue,
+          );
+          expect(result.map((p) => p.id).toList(), [
+            'project-c',
+            'project-b',
+            'project-a',
+          ]);
         },
       );
 
       test('throws ProjectFailure when owned projects fetch fails', () async {
-        projectDataSource.getOwnedProjectsError = TimeoutException('timeout');
+        supabaseWrapper.shouldThrowOnSelectMultiple = true;
+        supabaseWrapper.selectMultipleExceptionType =
+            SupabaseExceptionType.timeout;
 
         expect(
           () => repository.getProjects('user-123'),
@@ -199,22 +218,27 @@ void main() {
         () async {
           const userId = 'user-123';
 
-          projectDataSource.ownedProjects = [
-            _createProjectDto(
+          supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+            _createProjectRow(
               id: 'owned-project',
               projectName: 'Owned',
               creatorUserId: 'user-123',
               updatedAt: DateTime(2025, 1, 1),
             ),
-          ];
-          projectDataSource.sharedProjects = [
-            _createProjectDto(
+            _createProjectRow(
               id: 'shared-project',
               projectName: 'Shared V1',
               creatorUserId: 'other-user',
               updatedAt: DateTime(2025, 1, 2),
             ),
-          ];
+          ]);
+          supabaseWrapper.addTableData(DatabaseConstants.projectMembersTable, [
+            {
+              DatabaseConstants.idColumn: 'member-1',
+              DatabaseConstants.userIdColumn: 'user-123',
+              DatabaseConstants.projectIdColumn: 'shared-project',
+            },
+          ]);
 
           final emittedBatches = <List<Project>>[];
           final firstEmissionReceived = Completer<void>();
@@ -233,15 +257,20 @@ void main() {
 
           await firstEmissionReceived.future;
 
-          projectDataSource.sharedProjects = [
-            _createProjectDto(
+          supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+            _createProjectRow(
+              id: 'owned-project',
+              projectName: 'Owned',
+              creatorUserId: 'user-123',
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+            _createProjectRow(
               id: 'shared-project',
               projectName: 'Shared V2',
               creatorUserId: 'other-user',
               updatedAt: DateTime(2025, 1, 3),
             ),
-          ];
-          projectDataSource.emitProjectChange();
+          ]);
 
           await secondEmissionReceived.future;
 
@@ -276,7 +305,8 @@ void main() {
             );
         await firstEmission.future;
 
-        projectDataSource.emitError(Exception('realtime failure'));
+        supabaseWrapper.shouldEmitStreamErrors = true;
+        supabaseWrapper.addTableData(DatabaseConstants.projectsTable, []);
 
         await errorReceived.future;
         await subscription.cancel();
@@ -287,20 +317,18 @@ void main() {
         () async {
           const userId = 'user-123';
 
-          projectDataSource.ownedProjects = [
-            _createProjectDto(
+          supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+            _createProjectRow(
               id: 'owned-project',
               projectName: 'Owned V1',
               creatorUserId: 'user-123',
               updatedAt: DateTime(2025, 1, 1),
             ),
-          ];
+          ]);
 
-          projectDataSource.firstGetOwnedProjectsStartedCompleter =
-              Completer<void>();
+          supabaseWrapper.shouldDelayOperations = true;
           final firstRefreshCompleter = Completer<void>();
-          projectDataSource.nextGetOwnedProjectsCompleter =
-              firstRefreshCompleter;
+          supabaseWrapper.completer = firstRefreshCompleter;
 
           final emittedBatches = <List<Project>>[];
           final secondEmissionReceived = Completer<void>();
@@ -313,18 +341,17 @@ void main() {
             }
           });
 
-          await projectDataSource.firstGetOwnedProjectsStartedCompleter!.future;
-
-          // While first refresh is in-flight, update data and emit a second tick.
-          projectDataSource.ownedProjects = [
-            _createProjectDto(
+          // By the time .listen() returns, select() has already taken its V1
+          // snapshot and is blocking on firstRefreshCompleter. Updating now
+          // triggers a watch event that queues a follow-up refresh.
+          supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+            _createProjectRow(
               id: 'owned-project',
               projectName: 'Owned V2',
               creatorUserId: 'user-123',
               updatedAt: DateTime(2025, 1, 2),
             ),
-          ];
-          projectDataSource.emitProjectChange();
+          ]);
 
           firstRefreshCompleter.complete();
           await secondEmissionReceived.future;
@@ -332,7 +359,15 @@ void main() {
           await subscription.cancel();
 
           expect(
-            projectDataSource.getOwnedProjectsCalls,
+            supabaseWrapper
+                .getMethodCallsFor('select')
+                .where(
+                  (c) =>
+                      c['table'] == DatabaseConstants.projectsTable &&
+                      c['filterColumn'] ==
+                          DatabaseConstants.creatorUserIdColumn,
+                )
+                .length,
             greaterThanOrEqualTo(2),
           );
           expect(emittedBatches.length, greaterThanOrEqualTo(2));
@@ -456,59 +491,20 @@ void main() {
   });
 }
 
-ProjectDto _createProjectDto({
+Map<String, dynamic> _createProjectRow({
   required String id,
   required String projectName,
   required String creatorUserId,
   required DateTime updatedAt,
 }) {
-  return ProjectDto(
-    id: id,
-    projectName: projectName,
-    creatorUserId: creatorUserId,
-    createdAt: DateTime(2025, 1, 1),
-    updatedAt: updatedAt,
-    status: ProjectStatus.active,
-  );
-}
-
-class _FakeProjectDataSource extends FakeProjectDataSource {
-  String? lastOwnedUserId;
-  String? lastSharedUserId;
-  Object? getOwnedProjectsError;
-  int getOwnedProjectsCalls = 0;
-  Completer<void>? firstGetOwnedProjectsStartedCompleter;
-  Completer<void>? nextGetOwnedProjectsCompleter;
-
-  @override
-  Future<List<ProjectDto>> getOwnedProjects(String userId) async {
-    lastOwnedUserId = userId;
-    getOwnedProjectsCalls++;
-
-    final error = getOwnedProjectsError;
-    if (error != null) {
-      throw error;
-    }
-
-    final snapshot = List<ProjectDto>.from(ownedProjects);
-    if (firstGetOwnedProjectsStartedCompleter?.isCompleted == false) {
-      firstGetOwnedProjectsStartedCompleter?.complete();
-    }
-
-    final pendingDelay = nextGetOwnedProjectsCompleter;
-    if (pendingDelay != null) {
-      nextGetOwnedProjectsCompleter = null;
-      await pendingDelay.future;
-    }
-
-    return snapshot;
-  }
-
-  @override
-  Future<List<ProjectDto>> getSharedProjects(String userId) async {
-    lastSharedUserId = userId;
-    return super.getSharedProjects(userId);
-  }
+  return {
+    DatabaseConstants.idColumn: id,
+    DatabaseConstants.projectNameColumn: projectName,
+    DatabaseConstants.creatorUserIdColumn: creatorUserId,
+    DatabaseConstants.createdAtColumn: DateTime(2025, 1, 1),
+    DatabaseConstants.updatedAtColumn: updatedAt,
+    DatabaseConstants.statusColumn: 'active',
+  };
 }
 
 class _ProjectRepositoryTestModule extends Module {
@@ -518,13 +514,17 @@ class _ProjectRepositoryTestModule extends Module {
 
   @override
   void binds(Injector i) {
-    i.addLazySingleton<_FakeProjectDataSource>(() => _FakeProjectDataSource());
+    i.addLazySingleton<FakeSupabaseWrapper>(
+      () => FakeSupabaseWrapper(clock: clock),
+    );
     i.addLazySingleton<ProjectDataSource>(
-      () => i.get<_FakeProjectDataSource>(),
+      () => RemoteProjectDataSource(
+        supabaseWrapper: i.get<FakeSupabaseWrapper>(),
+      ),
     );
     i.addLazySingleton<ProjectPermissionDataSource>(
       () => LocalJwtProjectPermissionDataSource(
-        supabaseWrapper: FakeSupabaseWrapper(clock: clock),
+        supabaseWrapper: i.get<FakeSupabaseWrapper>(),
       ),
     );
     i.addLazySingleton<CurrentProjectNotifier>(
