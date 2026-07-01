@@ -2,6 +2,7 @@ import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/recent_estimations_section.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
@@ -75,12 +76,20 @@ void main() {
       theme: createTestTheme(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: DashboardPage(
-        authNotifier: authNotifier,
-        authManager: authManager,
-        router: router,
-        recentEstimationsBloc: Modular.get<RecentEstimationsBloc>(),
-        appShellBloc: Modular.get<AppShellBloc>(),
+      home: MultiBlocProvider(
+        providers: [
+          BlocProvider<RecentEstimationsBloc>.value(
+            value: Modular.get<RecentEstimationsBloc>(),
+          ),
+          BlocProvider<AppShellBloc>.value(
+            value: Modular.get<AppShellBloc>(),
+          ),
+        ],
+        child: DashboardPage(
+          authNotifier: authNotifier,
+          authManager: authManager,
+          router: router,
+        ),
       ),
     );
   }

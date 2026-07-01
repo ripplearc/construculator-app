@@ -18,6 +18,7 @@ import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -56,11 +57,15 @@ void main() {
       home: Builder(
         builder: (context) {
           buildContext = context;
-          return Scaffold(
-            body: RecentEstimationsSection(
-              bloc: bloc,
-              router: router,
-              appShellBloc: Modular.get<AppShellBloc>(),
+          return MultiBlocProvider(
+            providers: [
+              BlocProvider<RecentEstimationsBloc>.value(value: bloc),
+              BlocProvider<AppShellBloc>(
+                create: (_) => Modular.get<AppShellBloc>(),
+              ),
+            ],
+            child: Scaffold(
+              body: RecentEstimationsSection(router: router),
             ),
           );
         },
@@ -73,6 +78,7 @@ void main() {
       (state) =>
           state is RecentEstimationsLoaded || state is RecentEstimationsError,
     );
+    bloc.add(const RecentEstimationsWatchStarted());
     await tester.pumpWidget(buildTestApp());
     await tester.pump();
     await tester.runAsync(() => settled);
@@ -126,6 +132,7 @@ void main() {
   testWidgets('shows loading placeholders while estimations are loading', (
     tester,
   ) async {
+    bloc.add(const RecentEstimationsWatchStarted());
 
     await tester.pumpWidget(buildTestApp());
     await tester.pump();
