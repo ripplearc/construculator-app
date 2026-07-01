@@ -1511,5 +1511,10 @@
   "@inviteMemberButton": {
     "description": "Label for the button that opens the invite member flow",
     "context": "Project creation screen"
+  },
+  "createProjectScreenTitle": "Create a project",
+  "@createProjectScreenTitle": {
+    "description": "Title for the project creation screen app bar",
+    "context": "Project creation screen"
   }
 }
