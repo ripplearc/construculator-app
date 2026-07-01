@@ -1,7 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/app/app_bootstrap.dart';
-import 'package:construculator/features/dashboard/dashboard_module.dart';
-import 'package:construculator/features/dashboard/presentation/bloc/project_settings_bloc/project_settings_bloc.dart';
+import 'package:construculator/features/project_settings/presentation/bloc/project_settings_bloc/project_settings_bloc.dart';
+import 'package:construculator/features/project_settings/project_settings_module.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
@@ -164,6 +164,64 @@ void main() {
       );
     });
 
+    group('ProjectSettingsCreationRequested', () {
+      const testCreatorUserId = 'creator-id-1';
+
+      blocTest<ProjectSettingsBloc, ProjectSettingsState>(
+        'emits [ProjectSettingsCreating, ProjectSettingsCreated] on creation success',
+        build: () => Modular.get<ProjectSettingsBloc>(),
+        act: (bloc) => bloc.add(
+          const ProjectSettingsCreationRequested(
+            name: 'New Project',
+            creatorUserId: testCreatorUserId,
+          ),
+        ),
+        expect: () => [
+          const ProjectSettingsCreating(),
+          isA<ProjectSettingsCreated>()
+              .having((s) => s.project.projectName, 'project.projectName', 'New Project')
+              .having((s) => s.project.creatorUserId, 'project.creatorUserId', testCreatorUserId),
+        ],
+      );
+
+      blocTest<ProjectSettingsBloc, ProjectSettingsState>(
+        'emits [ProjectSettingsError] when creatorUserId is null',
+        build: () => Modular.get<ProjectSettingsBloc>(),
+        act: (bloc) => bloc.add(
+          const ProjectSettingsCreationRequested(
+            name: 'New Project',
+            creatorUserId: null,
+          ),
+        ),
+        expect: () => [
+          isA<ProjectSettingsError>()
+              .having((s) => s.failure, 'failure', isA<UnexpectedFailure>()),
+        ],
+      );
+
+      blocTest<ProjectSettingsBloc, ProjectSettingsState>(
+        'emits [ProjectSettingsCreating, ProjectSettingsError] on creation failure',
+        build: () {
+          fakeRepository.shouldFailOnCreate = true;
+          fakeRepository.failureToReturn = const ProjectFailure(
+            errorType: ProjectErrorType.connectionError,
+          );
+          return Modular.get<ProjectSettingsBloc>();
+        },
+        act: (bloc) => bloc.add(
+          const ProjectSettingsCreationRequested(
+            name: 'New Project',
+            creatorUserId: testCreatorUserId,
+          ),
+        ),
+        expect: () => [
+          const ProjectSettingsCreating(),
+          isA<ProjectSettingsError>()
+              .having((s) => s.failure, 'failure', isA<ProjectFailure>()),
+        ],
+      );
+    });
+
     group('ProjectSettingsDeleteRequested', () {
       blocTest<ProjectSettingsBloc, ProjectSettingsState>(
         'emits [DeleteInProgress, Initial] on delete success',
@@ -229,5 +287,5 @@ class _ProjectSettingsBlocTestModule extends Module {
   _ProjectSettingsBlocTestModule(this.bootstrap);
 
   @override
-  List<Module> get imports => [DashboardModule(bootstrap)];
+  List<Module> get imports => [ProjectSettingsModule(bootstrap)];
 }

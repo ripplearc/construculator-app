@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_setting_repository.dart';
 import 'package:equatable/equatable.dart';
@@ -7,8 +8,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 part 'project_settings_event.dart';
 part 'project_settings_state.dart';
 
-/// Manages [ProjectSettingRepository] operations and exposes states for
-/// loading, editing, saving, deleting, and error scenarios.
+/// Manages [ProjectSettingRepository] operations for loading, editing,
+/// updating, deleting, and creating projects.
 class ProjectSettingsBloc
     extends Bloc<ProjectSettingsEvent, ProjectSettingsState> {
   final ProjectSettingRepository _repository;
@@ -20,6 +21,7 @@ class ProjectSettingsBloc
     on<ProjectSettingsEditingStarted>(_onEditingStarted);
     on<ProjectSettingsUpdateSubmitted>(_onUpdateSubmitted);
     on<ProjectSettingsDeleteRequested>(_onDeleteRequested);
+    on<ProjectSettingsCreationRequested>(_onCreationRequested);
   }
 
   Future<void> _onLoadRequested(
@@ -86,6 +88,37 @@ class ProjectSettingsBloc
         ProjectSettingsError(failure: failure, lastProject: lastProject),
       ),
       (_) => emit(const ProjectSettingsInitial()),
+    );
+  }
+
+  Future<void> _onCreationRequested(
+    ProjectSettingsCreationRequested event,
+    Emitter<ProjectSettingsState> emit,
+  ) async {
+    final creatorUserId = event.creatorUserId;
+    if (creatorUserId == null) {
+      emit(ProjectSettingsError(failure: UnexpectedFailure()));
+      return;
+    }
+
+    emit(const ProjectSettingsCreating());
+
+    final now = DateTime.now();
+    final project = Project(
+      id: '',
+      projectName: event.name,
+      description: event.description?.isNotEmpty == true ? event.description : null,
+      creatorUserId: creatorUserId,
+      exportStorageProvider: event.exportStorageProvider,
+      createdAt: now,
+      updatedAt: now,
+      status: ProjectStatus.active,
+    );
+
+    final result = await _repository.createProject(project);
+    result.fold(
+      (failure) => emit(ProjectSettingsError(failure: failure)),
+      (created) => emit(ProjectSettingsCreated(created)),
     );
   }
 }
