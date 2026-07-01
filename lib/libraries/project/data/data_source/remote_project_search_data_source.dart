@@ -73,4 +73,167 @@ class RemoteProjectSearchDataSource implements ProjectSearchDataSource {
       rethrow;
     }
   }
+
+  @override
+  Future<void> saveRecentProjectSearch({
+    required String userId,
+    required String searchTerm,
+    bool hasResults = false,
+  }) async {
+    final normalized = searchTerm.toLowerCase().trim();
+    if (userId.trim().isEmpty || normalized.isEmpty) {
+      _logger.debug('Empty userId or searchTerm — skipping save');
+      return;
+    }
+
+    try {
+      _logger.debug(
+        'Saving recent project search: $normalized for userId: $userId, '
+        'hasResults: $hasResults',
+      );
+
+      await _supabaseWrapper.upsert(
+        table: DatabaseConstants.projectSearchHistoryTable,
+        data: {
+          DatabaseConstants.userIdColumn: userId,
+          DatabaseConstants.searchTermColumn: normalized,
+          DatabaseConstants.hasResultsColumn: hasResults,
+          // search_count intentionally omitted — incremented atomically by the
+          // BEFORE UPDATE trigger on conflict.
+          // created_at intentionally omitted — DB DEFAULT handles insert; the
+          // trigger preserves OLD.created_at on conflict update.
+        },
+        onConflict: DatabaseConstants.projectSearchHistoryUpsertConflictColumns,
+      );
+    } on supabase.PostgrestException catch (error, stackTrace) {
+      _logger.warning(
+        'Supabase error while saving recent project search: $normalized, error: $error',
+        stackTrace.toString(),
+      );
+      rethrow;
+    } catch (error, stackTrace) {
+      _logger.warning(
+        'Unexpected error while saving recent project search: $normalized, error: $error',
+        stackTrace.toString(),
+      );
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<String>> getRecentProjectSearches({
+    required String userId,
+  }) async {
+    if (userId.trim().isEmpty) {
+      _logger.debug('Empty userId — skipping recent project search fetch');
+      return [];
+    }
+
+    try {
+      _logger.debug('Fetching recent project searches for userId: $userId');
+
+      final rows = await _supabaseWrapper.selectMatch(
+        table: DatabaseConstants.projectSearchHistoryTable,
+        filters: {DatabaseConstants.userIdColumn: userId},
+        orderBy: DatabaseConstants.updatedAtColumn,
+        ascending: false,
+      );
+
+      return rows
+          .map(
+            (row) => row[DatabaseConstants.searchTermColumn]?.toString() ?? '',
+          )
+          .where((term) => term.isNotEmpty)
+          // TODO: [CA-722] Replace in-memory .take() with a DB-level limit
+          // once SupabaseWrapper.selectMatch supports a limit parameter.
+          // https://ripplearc.youtrack.cloud/issue/CA-722
+          .take(DatabaseConstants.recentProjectSearchesMaxResults)
+          .toList();
+    } on supabase.PostgrestException catch (error, stackTrace) {
+      _logger.warning(
+        'Supabase error while fetching recent project searches for userId: $userId, error: $error',
+        stackTrace.toString(),
+      );
+      rethrow;
+    } catch (error, stackTrace) {
+      _logger.warning(
+        'Unexpected error while fetching recent project searches for userId: $userId, error: $error',
+        stackTrace.toString(),
+      );
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> deleteRecentProjectSearch({
+    required String userId,
+    required String searchTerm,
+  }) async {
+    final normalized = searchTerm.toLowerCase().trim();
+    if (userId.trim().isEmpty || normalized.isEmpty) {
+      _logger.debug('Empty userId or searchTerm — skipping delete');
+      return;
+    }
+
+    try {
+      _logger.debug(
+        'Deleting recent project search: $normalized for userId: $userId',
+      );
+
+      await _supabaseWrapper.deleteMatch(
+        table: DatabaseConstants.projectSearchHistoryTable,
+        filters: {
+          DatabaseConstants.userIdColumn: userId,
+          DatabaseConstants.searchTermColumn: normalized,
+        },
+      );
+    } on supabase.PostgrestException catch (error, stackTrace) {
+      _logger.warning(
+        'Supabase error while deleting recent project search: $normalized, error: $error',
+        stackTrace.toString(),
+      );
+      rethrow;
+    } catch (error, stackTrace) {
+      _logger.warning(
+        'Unexpected error while deleting recent project search: $normalized, error: $error',
+        stackTrace.toString(),
+      );
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<String>> getProjectSearchSuggestions({
+    required String userId,
+  }) async {
+    if (userId.trim().isEmpty) {
+      _logger.debug('Empty userId — skipping project search suggestions fetch');
+      return [];
+    }
+
+    try {
+      _logger.debug('Fetching project search suggestions for userId: $userId');
+
+      final response = await _supabaseWrapper.rpc<List<dynamic>>(
+        DatabaseConstants.projectSearchSuggestionsRpcFunction,
+        params: {
+          DatabaseConstants.projectSearchSuggestionsUserIdParam: userId,
+        },
+      );
+
+      return response.whereType<String>().toList();
+    } on supabase.PostgrestException catch (error, stackTrace) {
+      _logger.warning(
+        'Supabase error while fetching project search suggestions for userId: $userId, error: $error',
+        stackTrace.toString(),
+      );
+      rethrow;
+    } catch (error, stackTrace) {
+      _logger.warning(
+        'Unexpected error while fetching project search suggestions for userId: $userId, error: $error',
+        stackTrace.toString(),
+      );
+      rethrow;
+    }
+  }
 }

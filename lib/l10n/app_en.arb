@@ -1307,6 +1307,21 @@
       }
     }
   },
+  "globalSearchSuggestionsTitle": "Search suggestions",
+  "@globalSearchSuggestionsTitle": {
+    "description": "Section title shown above the suggestions list on the global search screen when the user has typed a query",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "globalSearchSuggestionFillSemanticLabel": "Fill search field with {term}",
+  "@globalSearchSuggestionFillSemanticLabel": {
+    "description": "Accessibility label for the trailing icon on a suggestion row — fills the search field with the suggested term",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design",
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
   "globalSearchLoadErrorMessage": "Failed to load recent searches. Please try again.",
   "@globalSearchLoadErrorMessage": {
     "description": "Error toast shown when loading recent searches fails",

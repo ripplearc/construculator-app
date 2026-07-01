@@ -2,6 +2,8 @@ import 'package:construculator/features/dashboard/presentation/bloc/project_drop
 import 'package:construculator/features/dashboard/presentation/widgets/project_list_item.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/routes/project_search_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -12,23 +14,36 @@ const double _kProjectsListMaxHeight = CoreSpacing.space64 * 2;
 const double _kProjectsSearchIconSize = CoreSpacing.space5;
 
 /// A bottom sheet that lists the user's accessible projects, allowing them to
-/// search, select, and start creating a project.
+/// select a project, search, or start creating a project.
 ///
 /// The list is driven by [ProjectDropdownBloc]; selecting a project dispatches
 /// [ProjectDropdownSelected] and dismisses the sheet. Loading, error (with a
-/// cached fallback), and empty states are all rendered inline.
+/// cached fallback), and empty states are all rendered inline. Tapping the
+/// search field dismisses the sheet and navigates to `ProjectSearchPage`.
 class ProjectsBottomSheet extends StatefulWidget {
   /// The bloc that manages project selection and loading state.
   final ProjectDropdownBloc bloc;
 
-  const ProjectsBottomSheet({super.key, required this.bloc});
+  /// Router used to navigate to [ProjectSearchPage] when the search field
+  /// is tapped.
+  final AppRouter router;
+
+  const ProjectsBottomSheet({
+    super.key,
+    required this.bloc,
+    required this.router,
+  });
 
   /// Shows the projects bottom sheet using [CoreQuickSheet].
-  static Future<void> show(BuildContext context, ProjectDropdownBloc bloc) {
+  static Future<void> show(
+    BuildContext context,
+    ProjectDropdownBloc bloc,
+    AppRouter router,
+  ) {
     return CoreQuickSheet.show<void>(
       context: context,
       useSafeArea: true,
-      child: ProjectsBottomSheet(bloc: bloc),
+      child: ProjectsBottomSheet(bloc: bloc, router: router),
     );
   }
 
@@ -55,8 +70,9 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
     super.dispose();
   }
 
-  void _onSearchChanged(String query) {
-    _bloc.add(ProjectDropdownSearchChanged(query.trim()));
+  void _onSearchTap() {
+    Navigator.of(context).pop();
+    widget.router.pushNamed(projectSearchRoute);
   }
 
   Future<void> _onRefresh() async {
@@ -106,15 +122,20 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
             ),
           ),
           const SizedBox(height: CoreSpacing.space4),
-          CoreTextField(
+          GestureDetector(
             key: const Key('projects_search_field'),
-            controller: _searchController,
-            hintText: l10n.searchProjectsHint,
-            onChanged: _onSearchChanged,
-            prefix: CoreIconWidget(
-              icon: CoreIcons.search,
-              size: _kProjectsSearchIconSize,
-              color: colors.iconGrayMid,
+            onTap: _onSearchTap,
+            child: AbsorbPointer(
+              child: CoreTextField(
+                controller: _searchController,
+                hintText: l10n.searchProjectsHint,
+                readOnly: true,
+                prefix: CoreIconWidget(
+                  icon: CoreIcons.search,
+                  size: _kProjectsSearchIconSize,
+                  color: colors.iconGrayMid,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: CoreSpacing.space4),
