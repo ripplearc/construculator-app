@@ -511,7 +511,6 @@ class _FakeProjectDataSource extends FakeProjectDataSource {
   }
 }
 
-// TODO: Migrate to FakeSupabaseWrapper per CA-635 (https://ripplearc.youtrack.cloud/issue/CA-635/Project-Refactor-projectrepositorytest.dart-to-use-FakeSupabaseWrapper-instead-of-custom-fake)
 class _ProjectRepositoryTestModule extends Module {
   final FakeClockImpl clock;
 
