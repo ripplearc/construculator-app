@@ -12,7 +12,7 @@ void main() {
     await loadAppFontsAll();
   });
 
-  final _calculation = FavoriteCalculation(
+  FavoriteCalculation buildCalculation() => FavoriteCalculation(
     id: 'calc-1',
     date: DateTime(2025, 4, 22, 14, 30),
     tags: const ['Flooring', 'Area', 'Tagname'],
@@ -27,7 +27,7 @@ void main() {
       home: Scaffold(
         body: Center(
           child: FavoriteCalculationCard(
-            calculation: _calculation,
+            calculation: buildCalculation(),
             onTap: () {},
             onMoreOptions: () {},
           ),
