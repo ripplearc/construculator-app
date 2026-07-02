@@ -28,7 +28,7 @@ class AppShellPage extends StatefulWidget {
   final ProjectUIProvider projectUIProvider;
   final CurrentProjectNotifier currentProjectNotifier;
 
-  // TODO: [CA-708] Remove once DashboardPage reads auth from the module directly.
+  // TODO: [CA-708] Remove once DashboardPage reads these from the module directly.
   // https://ripplearc.youtrack.cloud/issue/CA-708
   final AuthNotifier authNotifier;
   final AuthManager authManager;
@@ -56,8 +56,8 @@ class _AppShellPageState extends State<AppShellPage> {
   void _onPopInvoked(bool didPop) {
     if (didPop) return;
 
-    final appShellBloc = context.read<AppShellBloc>();
-    final state = appShellBloc.state;
+    final bloc = context.read<AppShellBloc>();
+    final state = bloc.state;
     final currentNavigator =
         _tabNavigatorKeys[state.selectedTabIndex].currentState;
 
@@ -67,7 +67,7 @@ class _AppShellPageState extends State<AppShellPage> {
     }
 
     if (state.selectedTabIndex != 0) {
-      appShellBloc.add(const AppShellTabSelected(ShellTab.home));
+      bloc.add(const AppShellTabSelected(ShellTab.home));
       return;
     }
 
@@ -81,7 +81,7 @@ class _AppShellPageState extends State<AppShellPage> {
 
   Widget _buildTabRoot(ShellTab tab) {
     switch (tab) {
-      // TODO: [CA-708] Remove auth params once DashboardPage reads auth from the module directly.
+      // TODO: [CA-708] Remove once DashboardPage reads these from the module directly.
       // https://ripplearc.youtrack.cloud/issue/CA-708
       case ShellTab.home:
         return DashboardPage(
