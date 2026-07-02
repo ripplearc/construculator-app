@@ -10,7 +10,6 @@ import '../../../utils/screenshot/font_loader.dart';
 void main() {
   const size = Size(390, 500);
   const ratio = 1.0;
-  TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() async {
     await loadAppFontsAll();

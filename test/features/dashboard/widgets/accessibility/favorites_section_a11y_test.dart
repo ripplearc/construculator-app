@@ -13,7 +13,7 @@ void main() {
     await loadAppFontsAll();
   });
 
-  final _calculations = [
+  final calculations = [
     FavoriteCalculation(
       id: 'c1',
       date: DateTime(2025, 4, 22, 14, 30),
@@ -21,7 +21,7 @@ void main() {
     ),
   ];
 
-  final _estimations = [
+  final estimations = [
     FavoriteEstimation(
       id: 'e1',
       title: '2nd Wall cost',
@@ -84,8 +84,8 @@ void main() {
           tester,
           (theme) => makeTestableWidget(
             theme: theme,
-            calculations: _calculations,
-            estimations: _estimations,
+            calculations: calculations,
+            estimations: estimations,
           ),
           find.byType(FavoritesSection),
           checkTapTargetSize: false,

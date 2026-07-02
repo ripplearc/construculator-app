@@ -14,6 +14,7 @@ void main() {
     await loadAppFontsAll();
   });
 
+  final l10n = lookupAppLocalizations(const Locale('en'));
   final date = DateTime(2025, 4, 22, 14, 30);
 
   FavoriteCalculation makeCalculation(String id) => FavoriteCalculation(
@@ -60,17 +61,17 @@ void main() {
 
   testWidgets('renders section title', (tester) async {
     await pumpSection(tester);
-    expect(find.text('Favourites'), findsOneWidget);
+    expect(find.text(l10n.favouritesSectionTitle), findsOneWidget);
   });
 
   testWidgets('renders view all button', (tester) async {
     await pumpSection(tester);
-    expect(find.text('View all'), findsOneWidget);
+    expect(find.text(l10n.viewAllButton), findsOneWidget);
   });
 
   testWidgets('shows empty state when both lists are empty', (tester) async {
     await pumpSection(tester);
-    expect(find.text('No favourites yet.'), findsOneWidget);
+    expect(find.text(l10n.favouritesEmptyState), findsOneWidget);
     expect(find.byType(FavoriteCalculationCard), findsNothing);
     expect(find.byType(FavoriteEstimationCard), findsNothing);
   });
@@ -123,7 +124,7 @@ void main() {
     var viewAllTapped = false;
     await pumpSection(tester, onViewAll: () => viewAllTapped = true);
 
-    await tester.tap(find.text('View all'));
+    await tester.tap(find.text(l10n.viewAllButton));
     await tester.pump();
 
     expect(viewAllTapped, isTrue);

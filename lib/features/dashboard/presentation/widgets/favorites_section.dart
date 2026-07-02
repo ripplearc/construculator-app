@@ -6,13 +6,24 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-/// Displays the Favourites section on the dashboard, combining favorited
-/// calculations and cost estimations in a vertical list.
+/// Displays the Favourites section on the dashboard. Shows a header row with
+/// a "View all" button and, when [calculations] and [estimations] are both
+/// empty, renders a centred empty-state message; otherwise renders a vertical
+/// list of [FavoriteCalculationCard]s followed by [FavoriteEstimationCard]s.
 class FavoritesSection extends StatelessWidget {
+  /// The list of favourited calculations to display.
   final List<FavoriteCalculation> calculations;
+
+  /// The list of favourited estimations to display.
   final List<FavoriteEstimation> estimations;
+
+  /// Called when the "View all" button is tapped.
   final VoidCallback onViewAll;
+
+  /// Called with the [FavoriteCalculation.id] when a calculation card is tapped.
   final void Function(String id) onCalculationTap;
+
+  /// Called with the [FavoriteEstimation.id] when an estimation card is tapped.
   final void Function(String id) onEstimationTap;
 
   const FavoritesSection({
@@ -50,11 +61,24 @@ class FavoritesSection extends StatelessWidget {
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: Text(
-                context.l10n.viewAllButton,
-                style: typography.bodyMediumSemiBold.copyWith(
-                  color: colors.textLink,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    context.l10n.viewAllButton,
+                    style: typography.bodyMediumSemiBold.copyWith(
+                      color: colors.textLink,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(CoreSpacing.space2),
+                    child: CoreIconWidget(
+                      icon: CoreIcons.arrowDropDown,
+                      size: CoreIconSize.size20,
+                      color: colors.textLink,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
