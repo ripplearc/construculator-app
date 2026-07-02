@@ -9,8 +9,13 @@ class FavoriteEstimationCard extends StatelessWidget {
   static final _dateTimeFormatter = DateFormat("MMM d, yyyy · h:mm a");
   static final _costFormatter = NumberFormat.currency(symbol: '\$');
 
+  /// The favorited estimation data to display.
   final FavoriteEstimation estimation;
+
+  /// Called when the card body is tapped.
   final VoidCallback onTap;
+
+  /// Called when the more-options icon is tapped. If null, the icon is still shown but does nothing.
   final VoidCallback? onMoreOptions;
 
   const FavoriteEstimationCard({
@@ -64,13 +69,16 @@ class FavoriteEstimationCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                CoreIconWidget(
-                  key: const Key('estimation_more_options'),
-                  icon: CoreIcons.moreVert,
-                  size: CoreIconSize.size24,
-                  color: colors.iconGrayMid,
-                  semanticLabel: context.l10n.moreOptionsLabel,
-                  onTap: onMoreOptions,
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  child: CoreIconWidget(
+                    key: const Key('estimation_more_options'),
+                    icon: CoreIcons.moreVert,
+                    size: CoreIconSize.size24,
+                    color: colors.iconGrayMid,
+                    semanticLabel: context.l10n.moreOptionsLabel,
+                    onTap: onMoreOptions,
+                  ),
                 ),
               ],
             ),

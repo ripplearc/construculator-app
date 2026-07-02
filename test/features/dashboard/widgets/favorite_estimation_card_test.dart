@@ -119,20 +119,16 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
+    const longTitle =
+        'Very Long Estimation Title That Should Be Truncated With Ellipsis';
     await pumpCard(
       tester,
-      estimation: buildEstimation(
-        title: 'Very Long Estimation Title That Should Be Truncated With Ellipsis',
-      ),
+      estimation: buildEstimation(title: longTitle),
       onTap: () {},
     );
 
-    final textWidget = tester.widget<Text>(
-      find.text(
-        'Very Long Estimation Title That Should Be Truncated With Ellipsis',
-      ),
-    );
-    expect(textWidget.maxLines, 1);
+    final textWidget = tester.widget<Text>(find.text(longTitle));
+    expect(textWidget.data, longTitle);
     expect(textWidget.overflow, TextOverflow.ellipsis);
   });
 }

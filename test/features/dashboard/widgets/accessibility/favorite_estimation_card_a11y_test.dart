@@ -12,14 +12,13 @@ void main() {
     await loadAppFontsAll();
   });
 
-  final _estimation = FavoriteEstimation(
-    id: 'est-1',
-    title: '2nd Wall cost',
-    date: DateTime(2025, 5, 3, 14, 30),
-    totalCost: 12343.88,
-  );
-
   Widget makeTestableWidget({ThemeData? theme}) {
+    final estimation = FavoriteEstimation(
+      id: 'est-1',
+      title: '2nd Wall cost',
+      date: DateTime(2025, 5, 3, 14, 30),
+      totalCost: 12343.88,
+    );
     return MaterialApp(
       theme: theme ?? createTestTheme(),
       locale: const Locale('en'),
@@ -28,7 +27,7 @@ void main() {
       home: Scaffold(
         body: Center(
           child: FavoriteEstimationCard(
-            estimation: _estimation,
+            estimation: estimation,
             onTap: () {},
             onMoreOptions: () {},
           ),
