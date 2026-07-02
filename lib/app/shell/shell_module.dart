@@ -110,6 +110,6 @@ class ShellModule extends Module {
       ),
     );
     r.module(globalSearchBaseRoute, module: GlobalSearchModule(appBootstrap));
-    r.module(projectSettingsBaseRoute, module: ProjectSettingsModule());
+    r.module(projectSettingsBaseRoute, module: ProjectSettingsModule(appBootstrap));
   }
 }

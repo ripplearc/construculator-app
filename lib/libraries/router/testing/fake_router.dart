@@ -23,9 +23,14 @@ class FakeAppRouter implements AppRouter {
   /// The number of times the pop method was called.
   int popCalls = 0;
 
+  /// When non-null, [pushNamed] throws this exception instead of recording the call.
+  Exception? pushError;
+
   @override
   Future<void> pushNamed(String route, {Object? arguments}) async {
     navigationHistory.add(RouteCall(route, arguments));
+    final error = pushError;
+    if (error != null) throw error;
   }
 
   @override
@@ -43,5 +48,6 @@ class FakeAppRouter implements AppRouter {
   void reset() {
     navigationHistory.clear();
     popCalls = 0;
+    pushError = null;
   }
 }

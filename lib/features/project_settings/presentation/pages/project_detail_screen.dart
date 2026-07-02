@@ -1,7 +1,7 @@
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 
-// TODO: [DASH-029] Implement project details content.
+// TODO: [CA-180] Implement project details content. https://ripplearc.youtrack.cloud/issue/CA-180
 class ProjectDetailScreen extends StatelessWidget {
   const ProjectDetailScreen({super.key});
 
