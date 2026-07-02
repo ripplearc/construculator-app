@@ -969,4 +969,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inviteMemberButton => 'Invite member';
+
+  @override
+  String get exportSettingsTitle => 'Folder link for export';
+
+  @override
+  String get exportGoogleDriveLabel => 'Google Drive link:';
+
+  @override
+  String get exportDropboxLabel => 'Dropbox link:';
+
+  @override
+  String get exportOneDriveLabel => 'OneDrive link:';
 }
