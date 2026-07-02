@@ -1,7 +1,9 @@
 import 'package:construculator/features/dashboard/domain/entities/favorite_calculation_entity.dart';
 import 'package:construculator/features/dashboard/domain/entities/favorite_estimation_entity.dart';
+import 'package:construculator/features/dashboard/domain/entities/favourite_filter_type.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/favorite_calculation_card.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/favorite_estimation_card.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/favourite_sort_bottom_sheet.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -17,7 +19,7 @@ class FavoritesSection extends StatelessWidget {
   /// The list of favourited estimations to display.
   final List<FavoriteEstimation> estimations;
 
-  /// Called when the "View all" button is tapped.
+  /// Called when the "View all" text is tapped.
   final VoidCallback onViewAll;
 
   /// Called with the [FavoriteCalculation.id] when a calculation card is tapped.
@@ -26,6 +28,13 @@ class FavoritesSection extends StatelessWidget {
   /// Called with the [FavoriteEstimation.id] when an estimation card is tapped.
   final void Function(String id) onEstimationTap;
 
+  /// The currently active filter; controls which items are visible.
+  final FavouriteFilterType selectedFilter;
+
+  /// Called with the chosen [FavouriteFilterType] when the user picks an option
+  /// from the sort bottom sheet.
+  final void Function(FavouriteFilterType) onFilterChanged;
+
   const FavoritesSection({
     super.key,
     required this.calculations,
@@ -33,6 +42,8 @@ class FavoritesSection extends StatelessWidget {
     required this.onViewAll,
     required this.onCalculationTap,
     required this.onEstimationTap,
+    this.selectedFilter = FavouriteFilterType.all,
+    required this.onFilterChanged,
   });
 
   @override
@@ -54,32 +65,43 @@ class FavoritesSection extends StatelessWidget {
                 color: colors.textDark,
               ),
             ),
-            TextButton(
-              onPressed: onViewAll,
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextButton(
+                  onPressed: onViewAll,
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
                     context.l10n.viewAllButton,
                     style: typography.bodyMediumSemiBold.copyWith(
                       color: colors.textLink,
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(CoreSpacing.space2),
-                    child: CoreIconWidget(
-                      icon: CoreIcons.arrowDropDown,
-                      size: CoreIconSize.size20,
-                      color: colors.textLink,
+                ),
+                Semantics(
+                  label: context.l10n.sortFavouriteSemanticLabel,
+                  button: true,
+                  child: GestureDetector(
+                    onTap: () => FavouriteSortBottomSheet.show(
+                      context,
+                      selectedFilter: selectedFilter,
+                      onFilterSelected: onFilterChanged,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(CoreSpacing.space2),
+                      child: CoreIconWidget(
+                        icon: CoreIcons.arrowDropDown,
+                        size: CoreIconSize.size20,
+                        color: colors.textLink,
+                      ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ],
         ),

@@ -364,6 +364,36 @@ abstract class AppLocalizations {
   /// **'No favourites yet.'**
   String get favouritesEmptyState;
 
+  /// Accessibility label for the sort/filter dropdown button in the Favourites header
+  ///
+  /// In en, this message translates to:
+  /// **'Sort favourites'**
+  String get sortFavouriteSemanticLabel;
+
+  /// Title of the bottom sheet for sorting/filtering favourites
+  ///
+  /// In en, this message translates to:
+  /// **'Sort favourite'**
+  String get sortFavouriteTitle;
+
+  /// Filter option showing all favourites
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get sortFavouriteAll;
+
+  /// Filter option showing only favourited cost estimations
+  ///
+  /// In en, this message translates to:
+  /// **'Cost estimations'**
+  String get sortFavouriteCostEstimations;
+
+  /// Filter option showing only favourited calculations
+  ///
+  /// In en, this message translates to:
+  /// **'Calculations'**
+  String get sortFavouriteCalculations;
+
   /// Accessibility label for the per-project settings icon button in the projects list
   ///
   /// In en, this message translates to:

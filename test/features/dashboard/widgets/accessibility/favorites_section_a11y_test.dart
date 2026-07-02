@@ -49,6 +49,7 @@ void main() {
             onViewAll: () {},
             onCalculationTap: (_) {},
             onEstimationTap: (_) {},
+            onFilterChanged: (_) {},
           ),
         ),
       ),

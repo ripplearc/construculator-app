@@ -1,5 +1,7 @@
 import 'package:construculator/features/dashboard/domain/entities/favorite_calculation_entity.dart';
 import 'package:construculator/features/dashboard/domain/entities/favorite_estimation_entity.dart';
+import 'package:construculator/features/dashboard/domain/entities/favourite_filter_type.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/favourite_sort_bottom_sheet.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/favorites_section.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -40,6 +42,7 @@ void main() {
                 onViewAll: () {},
                 onCalculationTap: (_) {},
                 onEstimationTap: (_) {},
+                onFilterChanged: (_) {},
               ),
             ),
           ),
@@ -97,6 +100,76 @@ void main() {
         find.byType(FavoritesSection),
         matchesGoldenFile(
           'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favorites_section_empty.png',
+        ),
+      );
+    });
+  });
+
+  group('FavouriteSortBottomSheet Screenshot Tests', () {
+    Future<void> pumpBottomSheet({
+      required WidgetTester tester,
+      FavouriteFilterType selectedFilter = FavouriteFilterType.all,
+    }) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: createTestTheme(),
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: FavouriteSortBottomSheet(
+              selectedFilter: selectedFilter,
+              onFilterSelected: (_) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('renders sort sheet with All selected', (tester) async {
+      await pumpBottomSheet(tester: tester);
+
+      await expectLater(
+        find.byType(FavouriteSortBottomSheet),
+        matchesGoldenFile(
+          'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favourite_sort_sheet_all.png',
+        ),
+      );
+    });
+
+    testWidgets('renders sort sheet with Cost estimations selected', (
+      tester,
+    ) async {
+      await pumpBottomSheet(
+        tester: tester,
+        selectedFilter: FavouriteFilterType.costEstimations,
+      );
+
+      await expectLater(
+        find.byType(FavouriteSortBottomSheet),
+        matchesGoldenFile(
+          'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favourite_sort_sheet_cost_estimations.png',
+        ),
+      );
+    });
+
+    testWidgets('renders sort sheet with Calculations selected', (
+      tester,
+    ) async {
+      await pumpBottomSheet(
+        tester: tester,
+        selectedFilter: FavouriteFilterType.calculations,
+      );
+
+      await expectLater(
+        find.byType(FavouriteSortBottomSheet),
+        matchesGoldenFile(
+          'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favourite_sort_sheet_calculations.png',
         ),
       );
     });

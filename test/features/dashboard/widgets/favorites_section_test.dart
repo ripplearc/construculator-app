@@ -1,7 +1,9 @@
 import 'package:construculator/features/dashboard/domain/entities/favorite_calculation_entity.dart';
 import 'package:construculator/features/dashboard/domain/entities/favorite_estimation_entity.dart';
+import 'package:construculator/features/dashboard/domain/entities/favourite_filter_type.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/favorite_calculation_card.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/favorite_estimation_card.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/favourite_sort_bottom_sheet.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/favorites_section.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -38,6 +40,8 @@ void main() {
     VoidCallback? onViewAll,
     void Function(String id)? onCalculationTap,
     void Function(String id)? onEstimationTap,
+    FavouriteFilterType selectedFilter = FavouriteFilterType.all,
+    void Function(FavouriteFilterType)? onFilterChanged,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -52,6 +56,8 @@ void main() {
             onViewAll: onViewAll ?? () {},
             onCalculationTap: onCalculationTap ?? (_) {},
             onEstimationTap: onEstimationTap ?? (_) {},
+            selectedFilter: selectedFilter,
+            onFilterChanged: onFilterChanged ?? (_) {},
           ),
         ),
       ),
@@ -160,5 +166,32 @@ void main() {
     await tester.pump();
 
     expect(tappedId, 'est-99');
+  });
+
+  testWidgets('tapping dropdown arrow opens FavouriteSortBottomSheet', (
+    tester,
+  ) async {
+    await pumpSection(tester);
+
+    await tester.tap(find.byIcon(Icons.arrow_drop_down));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FavouriteSortBottomSheet), findsOneWidget);
+    expect(find.text(l10n.sortFavouriteTitle), findsOneWidget);
+  });
+
+  testWidgets('onFilterChanged is called when a sort option is selected', (
+    tester,
+  ) async {
+    FavouriteFilterType? selected;
+    await pumpSection(tester, onFilterChanged: (f) => selected = f);
+
+    await tester.tap(find.byIcon(Icons.arrow_drop_down));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.sortFavouriteCalculations));
+    await tester.pumpAndSettle();
+
+    expect(selected, FavouriteFilterType.calculations);
   });
 }
