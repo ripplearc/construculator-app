@@ -67,8 +67,8 @@ class ShellModule extends Module {
           BlocProvider<AppShellBloc>(
             create: (_) => Modular.get<AppShellBloc>(),
           ),
-          BlocProvider<ProjectDropdownBloc>(
-            create: (_) => Modular.get<ProjectDropdownBloc>(),
+          BlocProvider<ProjectDropdownBloc>.value(
+            value: Modular.get<ProjectDropdownBloc>(),
           ),
           BlocProvider<RecentEstimationsBloc>(
             create: (_) => Modular.get<RecentEstimationsBloc>(),
