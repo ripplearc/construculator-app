@@ -42,49 +42,60 @@ class FavouriteSortBottomSheet extends StatelessWidget {
     final typography = context.textTheme;
     final l10n = context.l10n;
 
-    return Padding(
-      padding: const EdgeInsets.only(
-        left: CoreSpacing.space6,
-        right: CoreSpacing.space6,
-        bottom: CoreSpacing.space6,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: CoreSpacing.space4,
+            vertical: CoreSpacing.space3,
+          ),
+          child: Text(
             l10n.sortFavouriteTitle,
             style: typography.titleLargeSemiBold.copyWith(
               color: colors.textHeadline,
             ),
           ),
-          const SizedBox(height: CoreSpacing.space4),
-          _OptionRow(
-            label: l10n.sortFavouriteAll,
-            isSelected: selectedFilter == FavouriteFilterType.all,
-            onTap: () {
-              onFilterSelected(FavouriteFilterType.all);
-              Navigator.of(context).pop();
-            },
+        ),
+        const SizedBox(height: CoreSpacing.space4),
+        Padding(
+          padding: const EdgeInsets.only(
+            left: CoreSpacing.space4,
+            right: CoreSpacing.space4,
+            bottom: CoreSpacing.space4,
           ),
-          _OptionRow(
-            label: l10n.sortFavouriteCostEstimations,
-            isSelected: selectedFilter == FavouriteFilterType.costEstimations,
-            onTap: () {
-              onFilterSelected(FavouriteFilterType.costEstimations);
-              Navigator.of(context).pop();
-            },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _OptionRow(
+                label: l10n.sortFavouriteAll,
+                isSelected: selectedFilter == FavouriteFilterType.all,
+                onTap: () {
+                  onFilterSelected(FavouriteFilterType.all);
+                  Navigator.of(context).pop();
+                },
+              ),
+              _OptionRow(
+                label: l10n.sortFavouriteCostEstimations,
+                isSelected: selectedFilter == FavouriteFilterType.costEstimations,
+                onTap: () {
+                  onFilterSelected(FavouriteFilterType.costEstimations);
+                  Navigator.of(context).pop();
+                },
+              ),
+              _OptionRow(
+                label: l10n.sortFavouriteCalculations,
+                isSelected: selectedFilter == FavouriteFilterType.calculations,
+                onTap: () {
+                  onFilterSelected(FavouriteFilterType.calculations);
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
           ),
-          _OptionRow(
-            label: l10n.sortFavouriteCalculations,
-            isSelected: selectedFilter == FavouriteFilterType.calculations,
-            onTap: () {
-              onFilterSelected(FavouriteFilterType.calculations);
-              Navigator.of(context).pop();
-            },
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -100,6 +111,10 @@ class _OptionRow extends StatelessWidget {
     required this.onTap,
   });
 
+  // Pill radius for selected row, matching Figma's 48px cornerRadius on a 48px
+  // tall cell. Unselected rows have no background so their 8px radius is moot.
+  static const double _selectedRadius = 48;
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colorTheme;
@@ -109,28 +124,26 @@ class _OptionRow extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: CoreSpacing.space4,
-          vertical: CoreSpacing.space3,
-        ),
+        padding: const EdgeInsets.all(CoreSpacing.space3),
         decoration: BoxDecoration(
           color: isSelected ? colors.orientLight : null,
-          borderRadius: BorderRadius.circular(CoreSpacing.space2),
+          borderRadius: BorderRadius.circular(
+            isSelected ? _selectedRadius : CoreSpacing.space2,
+          ),
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(
-              child: Text(
-                label,
-                style: typography.bodyMediumRegular.copyWith(
-                  color: colors.textDark,
-                ),
+            Text(
+              label,
+              style: typography.bodyMediumRegular.copyWith(
+                color: colors.textDark,
               ),
             ),
             if (isSelected)
               CoreIconWidget(
                 icon: CoreIcons.checkMark,
-                size: CoreIconSize.size20,
+                size: CoreIconSize.size24,
                 color: colors.statusSuccess,
               ),
           ],
