@@ -23,8 +23,9 @@ void main() {
         required WidgetTester tester,
         String projectName = 'Material of Building',
         int? imagesAttachedCount,
+        Size pumpSize = size,
       }) async {
-        tester.view.physicalSize = size;
+        tester.view.physicalSize = pumpSize;
         tester.view.devicePixelRatio = ratio;
 
         await tester.pumpWidget(
@@ -69,33 +70,18 @@ void main() {
       });
 
       testWidgets('renders with long project name', (tester) async {
-        const longNameSize = Size(390, 500);
-        tester.view.physicalSize = longNameSize;
-        tester.view.devicePixelRatio = ratio;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: createTestTheme(),
-            locale: const Locale('en'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: DeletionConfirmationBottomSheet(
-                projectName:
-                    'This is a very long construction project name that should wrap to multiple lines to test overflow handling',
-                imagesAttachedCount: 25,
-                onConfirm: () {},
-                onCancel: () {},
-              ),
-            ),
-          ),
+        await pumpSheet(
+          tester: tester,
+          projectName:
+              'This is a very long construction project name that should wrap to multiple lines to test overflow handling',
+          imagesAttachedCount: 25,
+          pumpSize: const Size(390, 500),
         );
-        await tester.pumpAndSettle();
 
         await expectLater(
           find.byType(DeletionConfirmationBottomSheet),
           matchesGoldenFile(
-            'goldens/deletion_confirmation_bottom_sheet/${longNameSize.width.toInt()}x${longNameSize.height.toInt()}/long_project_name.png',
+            'goldens/deletion_confirmation_bottom_sheet/390x500/long_project_name.png',
           ),
         );
       });

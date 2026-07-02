@@ -491,12 +491,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String deleteProjectConfirmTitle(String projectName) {
-    return 'Are you sure you want to remove \"$projectName\" Project?';
+    return 'Are you sure you want to remove \"$projectName\" project?';
   }
 
   @override
   String get deleteProjectWarningMessage =>
-      'By removing you will loose the all calculation & Cost of this project as well as image attach to your calculation';
+      'By removing this project you will lose all calculations, costs, and images attached to your calculations';
 
   @override
   String get estimationDeletedSuccess => 'Estimation deleted successfully';

@@ -2,7 +2,7 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-class DeletionConfirmationBottomSheet extends StatefulWidget {
+class DeletionConfirmationBottomSheet extends StatelessWidget {
   final String projectName;
   final VoidCallback? onConfirm;
   final VoidCallback? onCancel;
@@ -21,21 +21,16 @@ class DeletionConfirmationBottomSheet extends StatefulWidget {
     this.imagesAttachedCount,
   });
 
-  // TODO: CA-116 — add a static show() helper wired to ProjectSettingsBloc
-  // once ProjectDetailScreen exists and triggers this sheet.
+  // TODO: [CA-182] Add a static show() helper wired to ProjectSettingsBloc
+  // once DeleteProjectButton wires this sheet.
+  // https://ripplearc.youtrack.cloud/issue/CA-182
 
-  @override
-  State<DeletionConfirmationBottomSheet> createState() =>
-      _DeletionConfirmationBottomSheetState();
-}
-
-class _DeletionConfirmationBottomSheetState
-    extends State<DeletionConfirmationBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
     final l10n = context.l10n;
+    final imageCount = imagesAttachedCount;
 
     return Container(
       decoration: BoxDecoration(
@@ -79,7 +74,7 @@ class _DeletionConfirmationBottomSheetState
               ),
 
               Text(
-                l10n.deleteProjectConfirmTitle(widget.projectName),
+                l10n.deleteProjectConfirmTitle(projectName),
                 style: textTheme.titleMediumSemiBold,
               ),
 
@@ -88,7 +83,7 @@ class _DeletionConfirmationBottomSheetState
                 style: textTheme.bodyMediumRegular,
               ),
 
-              if (widget.imagesAttachedCount != null)
+              if (imageCount != null)
                 Container(
                   key: const Key('project_images_attached_count_container'),
                   padding: const EdgeInsets.symmetric(
@@ -100,7 +95,7 @@ class _DeletionConfirmationBottomSheetState
                     borderRadius: BorderRadius.circular(100),
                   ),
                   child: Text(
-                    l10n.imagesAttachedCount(widget.imagesAttachedCount ?? 0),
+                    l10n.imagesAttachedCount(imageCount),
                     style: textTheme.bodyMediumRegular.copyWith(
                       color: colorTheme.textDark,
                     ),
@@ -115,7 +110,7 @@ class _DeletionConfirmationBottomSheetState
                 child: CoreButton(
                   key: const Key('delete_project_confirm_button'),
                   label: l10n.yesDeleteButton,
-                  onPressed: widget.onConfirm,
+                  onPressed: onConfirm,
                   variant: CoreButtonVariant.secondary,
                 ),
               ),
@@ -124,7 +119,7 @@ class _DeletionConfirmationBottomSheetState
                 child: CoreButton(
                   key: const Key('delete_project_cancel_button'),
                   label: l10n.noKeepButton,
-                  onPressed: widget.onCancel,
+                  onPressed: onCancel,
                   variant: CoreButtonVariant.primary,
                 ),
               ),
