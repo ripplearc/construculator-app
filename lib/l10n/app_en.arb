@@ -1948,6 +1948,16 @@
   "equipmentNameRequiredError": "Equipment name is required",
   "@equipmentNameRequiredError": {
     "description": "Validation error shown below the equipment name field when it is submitted empty"
+  },
+  "projectSettingsNavigationError": "Unable to open project settings. Please try again.",
+  "@projectSettingsNavigationError": {
+    "description": "Toast shown when navigation to project settings fails",
+    "context": "Dashboard projects sheet"
+  },
+  "projectSettingsPermissionError": "You don't have permission to view this project's settings.",
+  "@projectSettingsPermissionError": {
+    "description": "Toast shown when the user lacks permission to view project settings",
+    "context": "Dashboard projects sheet"
   }
 }
 

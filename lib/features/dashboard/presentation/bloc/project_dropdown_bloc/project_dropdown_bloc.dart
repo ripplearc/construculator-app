@@ -4,6 +4,7 @@ import 'dart:collection';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/project/domain/permission_constants.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -43,6 +44,18 @@ class ProjectDropdownBloc
     _projectsSubscription?.cancel();
     return super.close();
   }
+
+  // Pre-computes the view_project permission per project so the UI never
+  // queries the repository itself.
+  Set<String> _settingsAccessibleIds(List<Project> projects) => projects
+      .where(
+        (project) => _projectRepository.hasProjectPermission(
+          project.id,
+          PermissionConstants.viewProject,
+        ),
+      )
+      .map((project) => project.id)
+      .toSet();
 
   Future<void> _onStarted(
     ProjectDropdownStarted event,
@@ -111,6 +124,7 @@ class ProjectDropdownBloc
         projects: event.projects,
         selectedProject: selectedProject,
         searchQuery: searchQuery,
+        settingsAccessibleProjectIds: _settingsAccessibleIds(event.projects),
       ),
     );
   }
@@ -128,6 +142,9 @@ class ProjectDropdownBloc
       searchQuery: currentState is ProjectDropdownLoadSuccess
           ? currentState.searchQuery
           : '',
+      settingsAccessibleProjectIds: currentState is ProjectDropdownLoadSuccess
+          ? currentState.settingsAccessibleProjectIds
+          : const {},
     ));
   }
 

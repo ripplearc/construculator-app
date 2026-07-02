@@ -44,10 +44,16 @@ class ProjectDropdownLoadSuccess extends ProjectDropdownState {
   /// The active case-insensitive search query applied to [projects].
   final String searchQuery;
 
+  /// IDs of projects the current user may open settings for, pre-computed by
+  /// the BLoC from the `view_project` permission so the UI renders the flag
+  /// without deriving it.
+  final Set<String> settingsAccessibleProjectIds;
+
   ProjectDropdownLoadSuccess({
     required List<Project> projects,
     required this.selectedProject,
     this.searchQuery = '',
+    this.settingsAccessibleProjectIds = const {},
   }) : projects = UnmodifiableListView<Project>(List<Project>.from(projects));
 
   /// The projects matching [searchQuery]; equals [projects] when the query is
@@ -58,16 +64,24 @@ class ProjectDropdownLoadSuccess extends ProjectDropdownState {
   ProjectDropdownLoadSuccess copyWith({
     Project? selectedProject,
     String? searchQuery,
+    Set<String>? settingsAccessibleProjectIds,
   }) {
     return ProjectDropdownLoadSuccess(
       projects: projects.toList(),
       selectedProject: selectedProject ?? this.selectedProject,
       searchQuery: searchQuery ?? this.searchQuery,
+      settingsAccessibleProjectIds:
+          settingsAccessibleProjectIds ?? this.settingsAccessibleProjectIds,
     );
   }
 
   @override
-  List<Object?> get props => [projects, selectedProject, searchQuery];
+  List<Object?> get props => [
+    projects,
+    selectedProject,
+    searchQuery,
+    settingsAccessibleProjectIds,
+  ];
 }
 
 /// State emitted when loading projects fails.
@@ -80,10 +94,16 @@ class ProjectDropdownLoadFailure extends ProjectDropdownState {
   final UnmodifiableListView<Project> cachedProjects;
   final String searchQuery;
 
+  /// IDs of projects the current user may open settings for, pre-computed by
+  /// the BLoC from the `view_project` permission so the UI renders the flag
+  /// without deriving it.
+  final Set<String> settingsAccessibleProjectIds;
+
   ProjectDropdownLoadFailure({
     required this.failure,
     List<Project> cachedProjects = const [],
     this.searchQuery = '',
+    this.settingsAccessibleProjectIds = const {},
   }) : cachedProjects = UnmodifiableListView<Project>(
          List<Project>.from(cachedProjects),
        );
@@ -92,5 +112,10 @@ class ProjectDropdownLoadFailure extends ProjectDropdownState {
       _filterByQuery(cachedProjects.toList(), searchQuery);
 
   @override
-  List<Object?> get props => [failure, cachedProjects, searchQuery];
+  List<Object?> get props => [
+    failure,
+    cachedProjects,
+    searchQuery,
+    settingsAccessibleProjectIds,
+  ];
 }

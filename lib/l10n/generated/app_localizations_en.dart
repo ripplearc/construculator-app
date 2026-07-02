@@ -1249,4 +1249,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get equipmentNameRequiredError => 'Equipment name is required';
+
+  @override
+  String get projectSettingsNavigationError =>
+      'Unable to open project settings. Please try again.';
+
+  @override
+  String get projectSettingsPermissionError =>
+      'You don\'t have permission to view this project\'s settings.';
 }

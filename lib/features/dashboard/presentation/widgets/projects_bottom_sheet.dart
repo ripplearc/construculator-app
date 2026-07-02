@@ -55,8 +55,14 @@ class ProjectsBottomSheet extends StatefulWidget {
 
 class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
   static final _logger = AppLogger().tag('ProjectsBottomSheet');
+
+
   late final ProjectDropdownBloc _bloc;
   final TextEditingController _searchController = TextEditingController();
+
+  // The ID of the project currently being navigated to via its settings
+  // affordance. While non-null, that project's settings button is disabled.
+  String? _navigatingSettingsProjectId;
 
   @override
   void initState() {
@@ -103,17 +109,38 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
     Modular.to.pushNamed(createProjectRoute);
   }
 
-  Future<void> _onProjectSettings(Project project) async {
+  Future<void> _onProjectSettings(
+    Project project, {
+    required bool canView,
+  }) async {
+    if (!canView) {
+      CoreToast.showError(
+        context,
+        context.l10n.projectSettingsPermissionError,
+        context.l10n.closeButton,
+      );
+      return;
+    }
+
+    setState(() => _navigatingSettingsProjectId = project.id);
     try {
       await widget.router.pushNamed(fullViewProjectRoute, arguments: project.id);
-    } catch (e, st) {
-      _logger.warning('Navigation to project details failed', e, st);
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Failed to navigate to project settings',
+        error,
+        stackTrace,
+      );
       if (mounted) {
         CoreToast.showError(
           context,
-          context.l10n.projectDetailsNavigationError,
-          context.l10n.closeLabel,
+          context.l10n.projectSettingsNavigationError,
+          context.l10n.closeButton,
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _navigatingSettingsProjectId = null);
       }
     }
   }
@@ -178,6 +205,7 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
         context,
         projects: state.visibleProjects,
         selectedProjectId: state.selectedProject?.id,
+        settingsAccessibleProjectIds: state.settingsAccessibleProjectIds,
       );
     }
 
@@ -187,6 +215,7 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
           context,
           projects: state.visibleProjects,
           selectedProjectId: null,
+          settingsAccessibleProjectIds: state.settingsAccessibleProjectIds,
           errorBanner: true,
         );
       }
@@ -249,6 +278,7 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
     BuildContext context, {
     required List<Project> projects,
     required String? selectedProjectId,
+    required Set<String> settingsAccessibleProjectIds,
     bool errorBanner = false,
   }) {
     return ConstrainedBox(
@@ -289,7 +319,14 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
                       project: project,
                       isSelected: project.id == selectedProjectId,
                       onTap: () => _onProjectSelected(project),
-                      onSettingsTap: () => _onProjectSettings(project),
+                      onSettingsTap: _navigatingSettingsProjectId == project.id
+                          ? null
+                          : () => _onProjectSettings(
+                              project,
+                              canView: settingsAccessibleProjectIds.contains(
+                                project.id,
+                              ),
+                            ),
                     ),
                   );
                 },

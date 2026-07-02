@@ -3,6 +3,7 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/project/domain/permission_constants.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -689,6 +690,105 @@ void main() {
       );
     });
 
+    group('settingsAccessibleProjectIds', () {
+      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+        'success state contains only projects granted view_project',
+        build: () {
+          seedProjectsTable([
+            buildProjectMap(
+              id: 'project-1',
+              projectName: 'Granted',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 2),
+            ),
+            buildProjectMap(
+              id: 'project-2',
+              projectName: 'Denied',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ]);
+          fakeSupabaseWrapper.setProjectPermissions('project-1', [
+            PermissionConstants.viewProject,
+          ]);
+          fakeSupabaseWrapper.setProjectPermissions('project-2', [
+            PermissionConstants.editProject,
+          ]);
+          return Modular.get<ProjectDropdownBloc>();
+        },
+        act: (bloc) async {
+          bloc.add(const ProjectDropdownStarted());
+          await bloc.stream.firstWhere(
+            (s) =>
+                s is ProjectDropdownLoadSuccess ||
+                s is ProjectDropdownLoadFailure,
+          );
+        },
+        expect: () => [
+          const ProjectDropdownLoadInProgress(),
+          isA<ProjectDropdownLoadSuccess>().having(
+            (s) => s.settingsAccessibleProjectIds,
+            'settingsAccessibleProjectIds',
+            {'project-1'},
+          ),
+        ],
+      );
+
+      blocTest<ProjectDropdownBloc, ProjectDropdownState>(
+        'cached failure state preserves settingsAccessibleProjectIds',
+        build: () {
+          seedProjectsTable([
+            buildProjectMap(
+              id: 'project-1',
+              projectName: 'Granted',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 2),
+            ),
+          ]);
+          fakeSupabaseWrapper.setProjectPermissions('project-1', [
+            PermissionConstants.viewProject,
+          ]);
+          return Modular.get<ProjectDropdownBloc>();
+        },
+        act: (bloc) async {
+          bloc.add(const ProjectDropdownStarted());
+          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadSuccess);
+          // Make the next watch re-query throw so the stream errors and the
+          // bloc emits a cached failure.
+          fakeSupabaseWrapper.shouldThrowOnSelectMultiple = true;
+          fakeSupabaseWrapper.selectMultipleExceptionType =
+              SupabaseExceptionType.socket;
+          seedProjectsTable([
+            buildProjectMap(
+              id: 'project-1',
+              projectName: 'Granted',
+              creatorUserId: testUserId,
+              updatedAt: DateTime(2025, 1, 3),
+            ),
+          ]);
+          await bloc.stream.firstWhere((s) => s is ProjectDropdownLoadFailure);
+        },
+        expect: () => [
+          const ProjectDropdownLoadInProgress(),
+          isA<ProjectDropdownLoadSuccess>().having(
+            (s) => s.settingsAccessibleProjectIds,
+            'settingsAccessibleProjectIds',
+            {'project-1'},
+          ),
+          isA<ProjectDropdownLoadFailure>()
+              .having(
+                (s) => s.cachedProjects.length,
+                'cachedProjects.length',
+                1,
+              )
+              .having(
+                (s) => s.settingsAccessibleProjectIds,
+                'settingsAccessibleProjectIds',
+                {'project-1'},
+              ),
+        ],
+      );
+    });
   });
 }
 
