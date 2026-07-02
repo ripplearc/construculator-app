@@ -77,3 +77,4 @@ android/build/
 devtools_options.yaml
 .fvm/
 test/**/failures
+integration_test/test_bundle.dart
