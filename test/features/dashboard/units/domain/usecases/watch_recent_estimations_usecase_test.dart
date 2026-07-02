@@ -1,4 +1,4 @@
-import 'package:construculator/features/dashboard/dashboard_module.dart';
+import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/dashboard/domain/usecases/watch_recent_estimations_usecase.dart';
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
@@ -6,13 +6,33 @@ import 'package:construculator/libraries/estimation/domain/entities/cost_estimat
 import 'package:construculator/libraries/estimation/domain/enums/estimation_sort_option.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
+import 'package:construculator/libraries/estimation/estimation_library_module.dart';
 import 'package:construculator/libraries/estimation/testing/fake_cost_estimation_repository.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../../utils/fake_app_bootstrap_factory.dart';
+
+class _TestModule extends Module {
+  final AppBootstrap appBootstrap;
+  _TestModule(this.appBootstrap);
+
+  @override
+  List<Module> get imports => [
+    ProjectLibraryModule(appBootstrap),
+    EstimationLibraryModule(appBootstrap),
+  ];
+
+  @override
+  void binds(Injector i) {
+    i.add<WatchRecentEstimationsUseCase>(
+      () => WatchRecentEstimationsUseCase(i(), i()),
+    );
+  }
+}
 
 void main() {
   const testProjectId = 'project-123';
@@ -27,7 +47,7 @@ void main() {
       currentProjectNotifier = FakeCurrentProjectNotifier(
         initialProjectId: testProjectId,
       );
-      Modular.init(DashboardModule(FakeAppBootstrapFactory.create()));
+      Modular.init(_TestModule(FakeAppBootstrapFactory.create()));
       Modular.replaceInstance<CostEstimationRepository>(repository);
       Modular.replaceInstance<CurrentProjectNotifier>(currentProjectNotifier);
       useCase = Modular.get<WatchRecentEstimationsUseCase>();

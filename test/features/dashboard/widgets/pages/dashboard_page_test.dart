@@ -18,6 +18,7 @@ import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -75,12 +76,20 @@ void main() {
       theme: createTestTheme(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: DashboardPage(
-        authNotifier: authNotifier,
-        authManager: authManager,
-        router: router,
-        recentEstimationsBloc: Modular.get<RecentEstimationsBloc>(),
-        appShellBloc: Modular.get<AppShellBloc>(),
+      home: MultiBlocProvider(
+        providers: [
+          BlocProvider<RecentEstimationsBloc>.value(
+            value: Modular.get<RecentEstimationsBloc>(),
+          ),
+          BlocProvider<AppShellBloc>.value(
+            value: Modular.get<AppShellBloc>(),
+          ),
+        ],
+        child: DashboardPage(
+          authNotifier: authNotifier,
+          authManager: authManager,
+          router: router,
+        ),
       ),
     );
   }

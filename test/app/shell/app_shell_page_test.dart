@@ -30,6 +30,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dar
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -104,15 +105,25 @@ void main() {
         buildContext = context;
         return child!;
       },
-      home: AppShellPage(
-        appShellBloc: Modular.get<AppShellBloc>(),
-        projectUIProvider: Modular.get<ProjectUIProvider>(),
-        projectDropdownBloc: Modular.get<ProjectDropdownBloc>(),
-        currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
-        authNotifier: Modular.get<AuthNotifier>(),
-        authManager: Modular.get<AuthManager>(),
-        router: Modular.get<AppRouter>(),
-        recentEstimationsBloc: Modular.get<RecentEstimationsBloc>(),
+      home: MultiBlocProvider(
+        providers: [
+          BlocProvider<AppShellBloc>.value(
+            value: Modular.get<AppShellBloc>(),
+          ),
+          BlocProvider<ProjectDropdownBloc>.value(
+            value: Modular.get<ProjectDropdownBloc>(),
+          ),
+          BlocProvider<RecentEstimationsBloc>.value(
+            value: Modular.get<RecentEstimationsBloc>(),
+          ),
+        ],
+        child: AppShellPage(
+          projectUIProvider: Modular.get<ProjectUIProvider>(),
+          currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
+          authNotifier: Modular.get<AuthNotifier>(),
+          authManager: Modular.get<AuthManager>(),
+          router: Modular.get<AppRouter>(),
+        ),
       ),
     );
   }
