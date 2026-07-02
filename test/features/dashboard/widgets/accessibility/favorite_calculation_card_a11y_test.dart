@@ -44,7 +44,9 @@ void main() {
         // Tap target size disabled: CoreChipSize.small renders at 42px, below
         // the 48px minimum. Chips are supplementary visual labels per Figma spec.
         // Text contrast disabled: chip label tokens achieve ~3.73:1, below WCAG
-        // AA (4.5:1 for 14px). A dedicated chip text token is needed in CoreUI.
+        // AA (4.5:1 for 14px).
+        // TODO: [CA-781] Add a dedicated chip label text token to CoreUI.
+        // https://ripplearc.youtrack.cloud/issue/CA-781
         await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
           tester,
           (theme) => makeTestableWidget(theme: theme),

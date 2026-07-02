@@ -5,10 +5,18 @@ import 'package:intl/intl.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// A card displaying a favorited calculation with its date/time and type tags.
-class FavoriteCalculationCard extends StatefulWidget {
+class FavoriteCalculationCard extends StatelessWidget {
+  /// The favorited calculation data to display.
   final FavoriteCalculation calculation;
+
+  /// Called when the user taps the card body.
   final VoidCallback onTap;
+
+  /// Called when the user taps the more-options icon. Optional.
   final VoidCallback? onMoreOptions;
+
+  static final _dateTimeFormatter = DateFormat("MMM d, yyyy · h:mm a");
+  static final _chipNotSelected = ValueNotifier<bool>(false);
 
   const FavoriteCalculationCard({
     super.key,
@@ -18,55 +26,17 @@ class FavoriteCalculationCard extends StatefulWidget {
   });
 
   @override
-  State<FavoriteCalculationCard> createState() =>
-      _FavoriteCalculationCardState();
-}
-
-class _FavoriteCalculationCardState extends State<FavoriteCalculationCard> {
-  static final _dateTimeFormatter = DateFormat("MMM d, yyyy · h:mm a");
-
-  late List<ValueNotifier<bool>> _tagSelected;
-
-  @override
-  void initState() {
-    super.initState();
-    _tagSelected = List.generate(
-      widget.calculation.tags.length,
-      (_) => ValueNotifier(false),
-    );
-  }
-
-  @override
-  void didUpdateWidget(FavoriteCalculationCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.calculation.tags.length != widget.calculation.tags.length) {
-      for (final n in _tagSelected) {
-        n.dispose();
-      }
-      _tagSelected = List.generate(
-        widget.calculation.tags.length,
-        (_) => ValueNotifier(false),
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    for (final n in _tagSelected) {
-      n.dispose();
-    }
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final colors = context.colorTheme;
     final typography = context.textTheme;
 
-    final dateTimeText = _dateTimeFormatter.format(widget.calculation.date).replaceAll('AM', 'am').replaceAll('PM', 'pm');
+    final dateTimeText = _dateTimeFormatter
+        .format(calculation.date)
+        .replaceAll('AM', 'am')
+        .replaceAll('PM', 'pm');
 
     return GestureDetector(
-      onTap: widget.onTap,
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.fromLTRB(
           CoreSpacing.space4,
@@ -108,22 +78,24 @@ class _FavoriteCalculationCardState extends State<FavoriteCalculationCard> {
                   size: CoreIconSize.size24,
                   color: colors.iconGrayMid,
                   semanticLabel: context.l10n.moreOptionsLabel,
-                  onTap: widget.onMoreOptions,
+                  onTap: onMoreOptions,
                 ),
               ],
             ),
             const SizedBox(height: CoreSpacing.space2),
-            Wrap(
-              spacing: CoreSpacing.space2,
-              runSpacing: CoreSpacing.space2,
-              children: [
-                for (var i = 0; i < widget.calculation.tags.length; i++)
-                  CoreChip(
-                    label: widget.calculation.tags[i],
-                    selected: _tagSelected[i],
-                    size: CoreChipSize.small,
-                  ),
-              ],
+            IgnorePointer(
+              child: Wrap(
+                spacing: CoreSpacing.space2,
+                runSpacing: CoreSpacing.space2,
+                children: [
+                  for (final tag in calculation.tags)
+                    CoreChip(
+                      label: tag,
+                      selected: _chipNotSelected,
+                      size: CoreChipSize.small,
+                    ),
+                ],
+              ),
             ),
           ],
         ),
