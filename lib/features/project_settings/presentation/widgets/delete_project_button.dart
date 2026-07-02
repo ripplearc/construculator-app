@@ -3,9 +3,11 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-// TODO: CA-180 — place DeleteProjectButton in ProjectDetailScreen once it exists.
-// TODO: CA-180 — add a BlocListener in ProjectDetailScreen to show an error
+// TODO: [CA-180] place DeleteProjectButton in ProjectDetailScreen once it exists.
+//   https://ripplearc.youtrack.cloud/issue/CA-180
+// TODO: [CA-180] add a BlocListener in ProjectDetailScreen to show an error
 //   snackbar when ProjectSettingsBloc emits ProjectSettingsError after deletion.
+//   https://ripplearc.youtrack.cloud/issue/CA-180
 
 class DeleteProjectButton extends StatelessWidget {
   /// Display name of the project, forwarded to [DeletionConfirmationBottomSheet].
@@ -42,13 +44,13 @@ class DeleteProjectButton extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (_) => DeletionConfirmationBottomSheet(
+      builder: (sheetContext) => DeletionConfirmationBottomSheet(
         projectName: projectName,
         onConfirm: () {
-          Navigator.of(context).pop();
+          Navigator.of(sheetContext).pop();
           onDeleteConfirmed?.call();
         },
-        onCancel: () => Navigator.of(context).pop(),
+        onCancel: () => Navigator.of(sheetContext).pop(),
       ),
     );
   }

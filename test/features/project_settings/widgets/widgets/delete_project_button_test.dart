@@ -6,6 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 
 void main() {
+  setUpAll(() async {
+    await loadAppFontsAll();
+  });
+
   group('DeleteProjectButton', () {
     const testProjectName = 'Material of Building';
 
