@@ -1,10 +1,14 @@
 // ignore_for_file: no_direct_instantiation
+import 'dart:async';
+
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/project_list_item.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/project/domain/permission_constants.dart';
 import 'package:construculator/libraries/router/routes/project_search_routes.dart';
+import 'package:construculator/libraries/router/routes/project_settings_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -165,21 +169,98 @@ void main() {
     },
   );
 
-  testWidgets('shows error toast when navigation throws', (tester) async {
-    harness.router.pushError = Exception('nav failed');
-    harness.fakeRepository.setAccessibleProjects([
-      buildProject(id: 'project-1', projectName: 'My project'),
-    ]);
 
-    await harness.pumpSheet(tester);
+  group('project settings navigation', () {
+    Finder settingsGear() =>
+        find.bySemanticsLabel(l10n.projectSettingsSemanticLabel);
 
-    // The BLoC auto-selects the first project, so HighlightedProjectItem is
-    // rendered (not ProjectListItem), which uses a VoidCallback-based settings
-    // button rather than ViewProjectDetailsButton. Use the shared semantics
-    // label to tap whichever settings button variant is visible.
-    await tester.tap(find.bySemanticsLabel(l10n.projectSettingsSemanticLabel));
-    await tester.pumpAndSettle();
+    testWidgets(
+      'tapping the settings gear with permission navigates to project settings',
+      (tester) async {
+        harness.fakeRepository.setAccessibleProjects([
+          buildProject(id: 'project-1', projectName: 'My project'),
+        ]);
+        harness.fakeRepository.setProjectPermissions('project-1', [
+          PermissionConstants.viewProject,
+        ]);
 
-    expect(find.text(l10n.projectDetailsNavigationError), findsOneWidget);
+        await harness.pumpSheet(tester);
+
+        await tester.tap(settingsGear());
+        await tester.pump();
+
+        expect(
+          harness.router.navigationHistory,
+          contains(const RouteCall(fullViewProjectRoute, 'project-1')),
+        );
+      },
+    );
+
+    testWidgets(
+      'tapping the settings gear without permission shows a toast and does not navigate',
+      (tester) async {
+        harness.fakeRepository.setAccessibleProjects([
+          buildProject(id: 'project-1', projectName: 'My project'),
+        ]);
+
+        await harness.pumpSheet(tester);
+
+        await tester.tap(settingsGear());
+        await tester.pump();
+
+        expect(find.text(l10n.projectSettingsPermissionError), findsOneWidget);
+        expect(harness.router.navigationHistory, isEmpty);
+      },
+    );
+
+    testWidgets('settings gear is disabled while navigation is in flight', (
+      tester,
+    ) async {
+      harness.fakeRepository.setAccessibleProjects([
+        buildProject(id: 'project-1', projectName: 'My project'),
+      ]);
+      harness.fakeRepository.setProjectPermissions('project-1', [
+        PermissionConstants.viewProject,
+      ]);
+      final completer = Completer<void>();
+      harness.router.pushNamedCompleter = completer;
+
+      await harness.pumpSheet(tester);
+
+      await tester.tap(settingsGear());
+      await tester.pump();
+
+      // While the pushNamed future is pending, the gear's callback is null,
+      // so its semantics (and tappability) are removed.
+      expect(settingsGear(), findsNothing);
+
+      completer.complete();
+      // One pump to flush the resumed future's setState, one to rebuild.
+      await tester.pump();
+      await tester.pump();
+
+      expect(settingsGear(), findsOneWidget);
+    });
+
+    testWidgets(
+      'shows an error toast and re-enables the gear when navigation fails',
+      (tester) async {
+        harness.fakeRepository.setAccessibleProjects([
+          buildProject(id: 'project-1', projectName: 'My project'),
+        ]);
+        harness.fakeRepository.setProjectPermissions('project-1', [
+          PermissionConstants.viewProject,
+        ]);
+        harness.router.shouldThrowOnPushNamed = true;
+
+        await harness.pumpSheet(tester);
+
+        await tester.tap(settingsGear());
+        await tester.pump();
+
+        expect(find.text(l10n.projectSettingsNavigationError), findsOneWidget);
+        expect(settingsGear(), findsOneWidget);
+      },
+    );
   });
 }

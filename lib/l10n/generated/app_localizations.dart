@@ -2373,6 +2373,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Equipment name is required'**
   String get equipmentNameRequiredError;
+
+  /// Toast shown when navigation to project settings fails
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to open project settings. Please try again.'**
+  String get projectSettingsNavigationError;
+
+  /// Toast shown when the user lacks permission to view project settings
+  ///
+  /// In en, this message translates to:
+  /// **'You don\'t have permission to view this project\'s settings.'**
+  String get projectSettingsPermissionError;
 }
 
 class _AppLocalizationsDelegate
