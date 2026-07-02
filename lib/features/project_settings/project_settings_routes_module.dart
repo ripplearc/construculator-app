@@ -9,7 +9,7 @@ import 'package:construculator/libraries/router/routes/project_settings_routes.d
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
-/// Modular module owning Tier-1 (full-screen) routes for the Project Settings feature.
+/// Modular module owning routes for the Project Settings feature.
 ///
 /// Imports [ProjectLibraryModule] for shared data-layer bindings, and registers
 /// the [ProjectCreationScreen] route behind an [AuthGuard].
