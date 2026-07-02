@@ -59,7 +59,7 @@ void main() {
           folderName: 'Cost estimation',
         );
 
-        expect(find.text('Google drive link:'), findsOneWidget);
+        expect(find.text('Google Drive link:'), findsOneWidget);
       });
 
       testWidgets('shows Dropbox label for dropbox provider', (tester) async {
@@ -81,7 +81,7 @@ void main() {
           folderName: 'Cost estimation',
         );
 
-        expect(find.text('One drive link:'), findsOneWidget);
+        expect(find.text('OneDrive link:'), findsOneWidget);
       });
 
       testWidgets('shows folder name in chip when folderName is provided', (

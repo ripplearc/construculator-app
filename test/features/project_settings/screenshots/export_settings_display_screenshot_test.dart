@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
-  const size = Size(390, 100);
+  const size = Size(390, 120);
   const ratio = 1.0;
 
   setUpAll(() async {
@@ -98,6 +98,30 @@ void main() {
         find.byType(ExportSettingsDisplay),
         matchesGoldenFile(
           'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_one_drive.png',
+        ),
+      );
+    });
+
+    testWidgets('provider set, no folder name', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        wrap(
+          const ExportSettingsDisplay(
+            storageProvider: StorageProvider.googleDrive,
+            folderName: null,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(ExportSettingsDisplay),
+        matchesGoldenFile(
+          'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_no_folder.png',
         ),
       );
     });
