@@ -147,6 +147,50 @@ void main() {
         matchesGoldenFile(goldenPath('project_creation_error_state_dark')),
       );
     });
+
+    testWidgets('creating state — submit button shows loading indicator', (
+      tester,
+    ) async {
+      tester.view.physicalSize = _screenSize;
+      tester.view.devicePixelRatio = _pixelRatio;
+      addTearDown(tester.view.reset);
+
+      // Seed the in-flight state before the first build so the button
+      // renders its loading indicator from the initial frame.
+      bloc.emit(const ProjectSettingsCreating());
+      await tester.pumpWidget(buildScreen());
+      // Let the Lottie composition load on the real event loop, then pump a
+      // fixed frame; pumpAndSettle would hang on the looping animation.
+      await tester.runAsync(() async {});
+      await tester.pump(const Duration(milliseconds: 750));
+
+      await expectLater(
+        find.byType(ProjectCreationScreen),
+        matchesGoldenFile(goldenPath('project_creation_loading_light')),
+      );
+    });
+
+    testWidgets('creating state — loading indicator, dark theme', (
+      tester,
+    ) async {
+      tester.view.physicalSize = _screenSize;
+      tester.view.devicePixelRatio = _pixelRatio;
+      addTearDown(tester.view.reset);
+
+      // Seed the in-flight state before the first build so the button
+      // renders its loading indicator from the initial frame.
+      bloc.emit(const ProjectSettingsCreating());
+      await tester.pumpWidget(buildScreen(theme: createTestThemeDark()));
+      // Let the Lottie composition load on the real event loop, then pump a
+      // fixed frame; pumpAndSettle would hang on the looping animation.
+      await tester.runAsync(() async {});
+      await tester.pump(const Duration(milliseconds: 750));
+
+      await expectLater(
+        find.byType(ProjectCreationScreen),
+        matchesGoldenFile(goldenPath('project_creation_loading_dark')),
+      );
+    });
   });
 }
 
