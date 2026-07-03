@@ -1,5 +1,6 @@
 import 'package:construculator/features/project_settings/presentation/bloc/project_settings_bloc/project_settings_bloc.dart';
 import 'package:construculator/features/project_settings/presentation/widgets/project_action_area.dart';
+import 'package:construculator/features/project_settings/presentation/widgets/project_creation_success_sheet.dart';
 import 'package:construculator/features/project_settings/presentation/widgets/project_name_text_field.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
@@ -10,8 +11,9 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// Full-page form for creating a new project (DASH-023).
 ///
 /// Connects [ProjectNameTextField] and [ProjectActionArea]. Dispatches
-/// [ProjectSettingsCreationRequested] on submission and navigates back on
-/// [ProjectSettingsCreated].
+/// [ProjectSettingsCreationRequested] on submission and shows
+/// [ProjectCreationSuccessSheet] on [ProjectSettingsCreated]; continuing from
+/// the sheet returns to the dashboard.
 // TODO: [CA-733] Add CostFileSection
 // TODO: [CA-734] Add ExportFolderSection
 class ProjectCreationScreen extends StatefulWidget {
@@ -52,7 +54,15 @@ class _ProjectCreationScreenState extends State<ProjectCreationScreen> {
     return BlocListener<ProjectSettingsBloc, ProjectSettingsState>(
       listener: (context, state) {
         if (state is ProjectSettingsCreated) {
-          Navigator.of(context).pop();
+          ProjectCreationSuccessSheet.show(
+            context,
+            onContinue: () {
+              if (!mounted) return;
+              Navigator.of(context)
+                ..pop() // Dismiss the success sheet.
+                ..pop(); // Close the creation screen back to the dashboard.
+            },
+          );
         } else if (state is ProjectSettingsError) {
           CoreToast.showError(
             context,
@@ -127,15 +137,25 @@ class _ProjectCreationScreenState extends State<ProjectCreationScreen> {
 
   Widget _buildSubmitButton(BuildContext context, ProjectSettingsState state) {
     final l10n = context.l10n;
+    final isCreating = state is ProjectSettingsCreating;
 
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(CoreSpacing.space4),
         child: CoreButton(
           key: const Key('create_project_button'),
-          label: l10n.createProjectButton,
-          isDisabled: state is ProjectSettingsCreating,
+          label: isCreating ? null : l10n.createProjectButton,
+          semanticsLabel: l10n.createProjectButton,
+          isDisabled: isCreating,
           onPressed: _onSubmit,
+          child: isCreating
+              ? const SizedBox(
+                  key: Key('create_project_button_loading'),
+                  width: CoreSpacing.space8,
+                  height: CoreSpacing.space8,
+                  child: CoreLoadingIndicator(size: CoreSpacing.space8),
+                )
+              : null,
         ),
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/project_settings/presentation/bloc/project_settings_bloc/project_settings_bloc.dart';
 import 'package:construculator/features/project_settings/presentation/pages/project_creation_screen.dart';
+import 'package:construculator/features/project_settings/presentation/widgets/project_creation_success_sheet.dart';
 import 'package:construculator/features/project_settings/presentation/widgets/project_name_text_field.dart';
 import 'package:construculator/features/project_settings/project_settings_routes_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -35,6 +36,7 @@ void main() {
   });
 
   setUp(() {
+    CoreToast.disableTimers();
     Modular.replaceInstance<ProjectSettingRepository>(
       FakeProjectSettingRepository(),
     );
@@ -44,6 +46,7 @@ void main() {
   });
 
   tearDown(() {
+    CoreToast.enableTimers();
     bloc.close();
     fakeRepository.reset();
   });
@@ -188,7 +191,8 @@ void main() {
       );
 
       testWidgets(
-        'submit button is disabled while ProjectSettingsCreating state is active',
+        'submit button is disabled and shows loading indicator while '
+        'ProjectSettingsCreating state is active',
         (tester) async {
           await tester.pumpWidget(buildScreen());
           await tester.pumpAndSettle();
@@ -201,62 +205,210 @@ void main() {
             find.byKey(const Key('create_project_button')),
           );
           expect(button.isDisabled, isTrue);
+          expect(
+            find.byKey(const Key('create_project_button_loading')),
+            findsOneWidget,
+          );
+          expect(find.byType(CoreLoadingIndicator), findsOneWidget);
         },
       );
 
-      testWidgets('ProjectSettingsCreated state pops the screen', (tester) async {
-        bool popped = false;
+      testWidgets(
+        'loading indicator is hidden while creation is not in flight',
+        (tester) async {
+          await tester.pumpWidget(buildScreen());
+          await tester.pumpAndSettle();
 
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: createTestTheme(),
-            locale: const Locale('en'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => BlocProvider.value(
-                        value: bloc,
-                        child: const ProjectCreationScreen(
-                          authManager: StubAuthManager(),
+          expect(
+            find.byKey(const Key('create_project_button_loading')),
+            findsNothing,
+          );
+        },
+      );
+    });
+
+    group('Creation success', () {
+      testWidgets(
+        'ProjectSettingsCreated state shows the success sheet without popping '
+        'the screen',
+        (tester) async {
+          await tester.pumpWidget(buildScreen());
+          await tester.pumpAndSettle();
+
+          bloc.emit(ProjectSettingsCreated(_buildCreatedProject()));
+          await tester.pumpAndSettle();
+
+          expect(
+            find.byType(ProjectCreationSuccessSheetContent),
+            findsOneWidget,
+          );
+          expect(find.byType(ProjectCreationScreen), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'continue button dismisses the sheet and pops the screen back to the '
+        'previous route',
+        (tester) async {
+          int popCount = 0;
+
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: createTestTheme(),
+              locale: const Locale('en'),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => BlocProvider.value(
+                          value: bloc,
+                          child: const ProjectCreationScreen(
+                            authManager: StubAuthManager(),
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
-                child: const Text('Open'),
+                    );
+                  },
+                  child: const Text('Open'),
+                ),
               ),
+              navigatorObservers: [
+                _PopObserver(onPop: () => popCount++),
+              ],
             ),
-            navigatorObservers: [
-              _PopObserver(onPop: () => popped = true),
-            ],
-          ),
-        );
+          );
 
-        await tester.tap(find.text('Open'));
-        await tester.pumpAndSettle();
+          await tester.tap(find.text('Open'));
+          await tester.pumpAndSettle();
 
-        expect(find.byType(ProjectCreationScreen), findsOneWidget);
+          bloc.emit(ProjectSettingsCreated(_buildCreatedProject()));
+          await tester.pumpAndSettle();
+          expect(
+            find.byType(ProjectCreationSuccessSheetContent),
+            findsOneWidget,
+          );
 
-        final createdProject = Project(
-          id: 'proj-1',
-          projectName: 'Test',
-          creatorUserId: kStubTestUserId,
-          createdAt: DateTime(2025, 1, 1),
-          updatedAt: DateTime(2025, 1, 1),
-          status: ProjectStatus.active,
-        );
-        bloc.emit(ProjectSettingsCreated(createdProject));
-        await tester.pumpAndSettle();
+          await tester.tap(
+            find.byKey(const Key('continue_to_dashboard_button')),
+          );
+          await tester.pumpAndSettle();
 
-        expect(popped, isTrue);
-      });
+          // One pop for the sheet, one for the creation screen.
+          expect(popCount, 2);
+          expect(find.byType(ProjectCreationSuccessSheetContent), findsNothing);
+          expect(find.byType(ProjectCreationScreen), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'full creation flow: enter name, submit, then surface the '
+        'success sheet',
+        (tester) async {
+          await tester.pumpWidget(buildScreen());
+          await tester.pumpAndSettle();
+
+          await tester.enterText(
+            find.byType(ProjectNameTextField),
+            'My Building',
+          );
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byKey(const Key('create_project_button')));
+          // The repository call completes on the real event loop, so yield to
+          // it before pumping the resulting state into the widget tree.
+          await tester.runAsync(() async {});
+          await tester.pumpAndSettle();
+
+          expect(
+            find.byType(ProjectCreationSuccessSheetContent),
+            findsOneWidget,
+          );
+          final calls = fakeRepository.getMethodCallsFor('createProject');
+          expect(calls, hasLength(1));
+          final project = calls.first['project'] as Project;
+          expect(project.projectName, 'My Building');
+          expect(project.creatorUserId, kStubTestUserId);
+        },
+      );
+    });
+
+    group('Creation failure', () {
+      testWidgets(
+        'creation failure shows the error toast and keeps the screen open',
+        (tester) async {
+          fakeRepository.shouldFailOnCreate = true;
+
+          await tester.pumpWidget(buildScreen());
+          await tester.pumpAndSettle();
+
+          await tester.enterText(
+            find.byType(ProjectNameTextField),
+            'My Building',
+          );
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byKey(const Key('create_project_button')));
+          // The repository call completes on the real event loop, so yield to
+          // it before pumping the resulting state into the widget tree.
+          await tester.runAsync(() async {});
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text(
+              'An unexpected error occurred, try again or contact support.',
+            ),
+            findsOneWidget,
+          );
+          expect(find.byType(ProjectCreationSuccessSheetContent), findsNothing);
+          expect(find.byType(ProjectCreationScreen), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'submit button is re-enabled after a creation failure',
+        (tester) async {
+          fakeRepository.shouldFailOnCreate = true;
+
+          await tester.pumpWidget(buildScreen());
+          await tester.pumpAndSettle();
+
+          await tester.enterText(
+            find.byType(ProjectNameTextField),
+            'My Building',
+          );
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byKey(const Key('create_project_button')));
+          // The repository call completes on the real event loop, so yield to
+          // it before pumping the resulting state into the widget tree.
+          await tester.runAsync(() async {});
+          await tester.pumpAndSettle();
+
+          final button = tester.widget<CoreButton>(
+            find.byKey(const Key('create_project_button')),
+          );
+          expect(button.isDisabled, isFalse);
+          expect(
+            find.byKey(const Key('create_project_button_loading')),
+            findsNothing,
+          );
+        },
+      );
     });
   });
 }
+
+Project _buildCreatedProject() => Project(
+      id: 'proj-1',
+      projectName: 'Test',
+      creatorUserId: kStubTestUserId,
+      createdAt: DateTime(2025, 1, 1),
+      updatedAt: DateTime(2025, 1, 1),
+      status: ProjectStatus.active,
+    );
 
 class _PopObserver extends NavigatorObserver {
   final VoidCallback onPop;
