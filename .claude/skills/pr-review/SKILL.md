@@ -9,7 +9,7 @@ description: |
   check naming, CoreUI, testing, streams, localization, accessibility, logging,
   or UI/business separation.
 
-  Trigger phrases: "review this PR", "review my PR", "review feat/X to main",
+  Trigger phrases: "review my PR", "review branch/X to branch/Y",
   "check my branch", "code review", "analyze my changes".
 disable-model-invocation: false
 allowed-tools: Bash Read Grep Write
