@@ -1537,6 +1537,72 @@
   "exportOneDriveLabel": "OneDrive link:",
   "@exportOneDriveLabel": {
     "description": "Label for the OneDrive export row in ExportSettingsDisplay"
+  },
+  "costItemTileQuantityLabel": "Quantity",
+  "@costItemTileQuantityLabel": {
+    "description": "Label for quantity in cost item tile"
+  },
+  "costItemTileUomLabel": "UOM",
+  "@costItemTileUomLabel": {
+    "description": "Label for unit of measurement in cost item tile"
+  },
+  "costItemTileUnitPriceLabel": "Unit Price",
+  "@costItemTileUnitPriceLabel": {
+    "description": "Label for unit price in cost item tile"
+  },
+  "costItemTileTotalLabel": "Total",
+  "@costItemTileTotalLabel": {
+    "description": "Label for total cost in cost item tile"
+  },
+  "costItemTileMenuSemanticLabel": "Open {name} item menu",
+  "@costItemTileMenuSemanticLabel": {
+    "description": "Semantic label for the 3-dot menu button on cost item tile",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "costItemTileExpandSemanticLabel": "Expand {name} details",
+  "@costItemTileExpandSemanticLabel": {
+    "description": "Semantic label for the expand/collapse button on cost item tile",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "costItemTileLaborMethodLabel": "Method",
+  "@costItemTileLaborMethodLabel": {
+    "description": "Label for labor calculation method in cost item tile"
+  },
+  "costItemTileLaborMethodPerHour": "Per Hour",
+  "@costItemTileLaborMethodPerHour": {
+    "description": "Display value for per-hour labor calculation method"
+  },
+  "costItemTileLaborMethodPerDay": "Per Day",
+  "@costItemTileLaborMethodPerDay": {
+    "description": "Display value for per-day labor calculation method"
+  },
+  "costItemTileLaborMethodPerUnit": "Per Unit",
+  "@costItemTileLaborMethodPerUnit": {
+    "description": "Display value for per-unit labor calculation method"
+  },
+  "costItemTileLaborHoursLabel": "Hours",
+  "@costItemTileLaborHoursLabel": {
+    "description": "Label for labor hours in cost item tile"
+  },
+  "costItemTileLaborDaysLabel": "Days",
+  "@costItemTileLaborDaysLabel": {
+    "description": "Label for labor days in cost item tile"
+  },
+  "costItemTileLaborCrewSizeLabel": "Crew",
+  "@costItemTileLaborCrewSizeLabel": {
+    "description": "Label for crew size in cost item tile"
+  },
+  "costItemTileLaborUnitRateLabel": "Rate",
+  "@costItemTileLaborUnitRateLabel": {
+    "description": "Label for the per-unit labor rate in cost item tile"
   }
 }
 

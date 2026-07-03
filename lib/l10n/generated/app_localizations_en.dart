@@ -981,4 +981,50 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exportOneDriveLabel => 'OneDrive link:';
+
+  @override
+  String get costItemTileQuantityLabel => 'Quantity';
+
+  @override
+  String get costItemTileUomLabel => 'UOM';
+
+  @override
+  String get costItemTileUnitPriceLabel => 'Unit Price';
+
+  @override
+  String get costItemTileTotalLabel => 'Total';
+
+  @override
+  String costItemTileMenuSemanticLabel(String name) {
+    return 'Open $name item menu';
+  }
+
+  @override
+  String costItemTileExpandSemanticLabel(String name) {
+    return 'Expand $name details';
+  }
+
+  @override
+  String get costItemTileLaborMethodLabel => 'Method';
+
+  @override
+  String get costItemTileLaborMethodPerHour => 'Per Hour';
+
+  @override
+  String get costItemTileLaborMethodPerDay => 'Per Day';
+
+  @override
+  String get costItemTileLaborMethodPerUnit => 'Per Unit';
+
+  @override
+  String get costItemTileLaborHoursLabel => 'Hours';
+
+  @override
+  String get costItemTileLaborDaysLabel => 'Days';
+
+  @override
+  String get costItemTileLaborCrewSizeLabel => 'Crew';
+
+  @override
+  String get costItemTileLaborUnitRateLabel => 'Rate';
 }

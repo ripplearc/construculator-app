@@ -1863,6 +1863,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OneDrive link:'**
   String get exportOneDriveLabel;
+
+  /// Label for quantity in cost item tile
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get costItemTileQuantityLabel;
+
+  /// Label for unit of measurement in cost item tile
+  ///
+  /// In en, this message translates to:
+  /// **'UOM'**
+  String get costItemTileUomLabel;
+
+  /// Label for unit price in cost item tile
+  ///
+  /// In en, this message translates to:
+  /// **'Unit Price'**
+  String get costItemTileUnitPriceLabel;
+
+  /// Label for total cost in cost item tile
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get costItemTileTotalLabel;
+
+  /// Semantic label for the 3-dot menu button on cost item tile
+  ///
+  /// In en, this message translates to:
+  /// **'Open {name} item menu'**
+  String costItemTileMenuSemanticLabel(String name);
+
+  /// Semantic label for the expand/collapse button on cost item tile
+  ///
+  /// In en, this message translates to:
+  /// **'Expand {name} details'**
+  String costItemTileExpandSemanticLabel(String name);
+
+  /// Label for labor calculation method in cost item tile
+  ///
+  /// In en, this message translates to:
+  /// **'Method'**
+  String get costItemTileLaborMethodLabel;
+
+  /// Display value for per-hour labor calculation method
+  ///
+  /// In en, this message translates to:
+  /// **'Per Hour'**
+  String get costItemTileLaborMethodPerHour;
+
+  /// Display value for per-day labor calculation method
+  ///
+  /// In en, this message translates to:
+  /// **'Per Day'**
+  String get costItemTileLaborMethodPerDay;
+
+  /// Display value for per-unit labor calculation method
+  ///
+  /// In en, this message translates to:
+  /// **'Per Unit'**
+  String get costItemTileLaborMethodPerUnit;
+
+  /// Label for labor hours in cost item tile
+  ///
+  /// In en, this message translates to:
+  /// **'Hours'**
+  String get costItemTileLaborHoursLabel;
+
+  /// Label for labor days in cost item tile
+  ///
+  /// In en, this message translates to:
+  /// **'Days'**
+  String get costItemTileLaborDaysLabel;
+
+  /// Label for crew size in cost item tile
+  ///
+  /// In en, this message translates to:
+  /// **'Crew'**
+  String get costItemTileLaborCrewSizeLabel;
+
+  /// Label for the per-unit labor rate in cost item tile
+  ///
+  /// In en, this message translates to:
+  /// **'Rate'**
+  String get costItemTileLaborUnitRateLabel;
 }
 
 class _AppLocalizationsDelegate
