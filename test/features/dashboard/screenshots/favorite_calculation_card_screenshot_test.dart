@@ -61,10 +61,10 @@ void main() {
       );
     });
 
-    testWidgets('renders calculation card with many tags correctly', (
+    testWidgets('renders overflow chip when tags exceed maximum', (
       tester,
     ) async {
-      const manyTagsSize = Size(390, 200);
+      const size = Size(390, 200);
       final calculation = FavoriteCalculation(
         id: 'calc-2',
         date: DateTime(2025, 4, 22, 14, 30),
@@ -82,13 +82,61 @@ void main() {
       await pumpCalculationCard(
         tester: tester,
         calculation: calculation,
-        size: manyTagsSize,
+        size: size,
       );
 
       await expectLater(
         find.byType(FavoriteCalculationCard),
         matchesGoldenFile(
-          'goldens/favorite_calculation_card/${manyTagsSize.width.toInt()}x${manyTagsSize.height.toInt()}/favorite_calculation_card_many_tags.png',
+          'goldens/favorite_calculation_card/${size.width.toInt()}x${size.height.toInt()}/favorite_calculation_card_overflow.png',
+        ),
+      );
+    });
+
+    testWidgets('renders no overflow chip when tags equal maximum', (
+      tester,
+    ) async {
+      const size = Size(390, 200);
+      final calculation = FavoriteCalculation(
+        id: 'calc-3',
+        date: DateTime(2025, 4, 22, 14, 30),
+        tags: const ['Flooring', 'Area', 'Tagname'],
+      );
+
+      await pumpCalculationCard(
+        tester: tester,
+        calculation: calculation,
+        size: size,
+      );
+
+      await expectLater(
+        find.byType(FavoriteCalculationCard),
+        matchesGoldenFile(
+          'goldens/favorite_calculation_card/${size.width.toInt()}x${size.height.toInt()}/favorite_calculation_card_base.png',
+        ),
+      );
+    });
+
+    testWidgets('renders overflow chip with count 1 when one tag exceeds maximum', (
+      tester,
+    ) async {
+      const size = Size(390, 200);
+      final calculation = FavoriteCalculation(
+        id: 'calc-4',
+        date: DateTime(2025, 4, 22, 14, 30),
+        tags: const ['Flooring', 'Area', 'Tagname', 'Extra'],
+      );
+
+      await pumpCalculationCard(
+        tester: tester,
+        calculation: calculation,
+        size: size,
+      );
+
+      await expectLater(
+        find.byType(FavoriteCalculationCard),
+        matchesGoldenFile(
+          'goldens/favorite_calculation_card/${size.width.toInt()}x${size.height.toInt()}/favorite_calculation_card_overflow_plus1.png',
         ),
       );
     });

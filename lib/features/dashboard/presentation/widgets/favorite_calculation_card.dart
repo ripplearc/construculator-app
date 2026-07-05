@@ -15,6 +15,7 @@ class FavoriteCalculationCard extends StatelessWidget {
   /// Called when the user taps the more-options icon. Optional.
   final VoidCallback? onMoreOptions;
 
+  static const _maxVisibleTags = 3;
   static final _dateTimeFormatter = DateFormat("MMM d, yyyy · h:mm a");
   static final _chipNotSelected = ValueNotifier<bool>(false);
 
@@ -88,9 +89,15 @@ class FavoriteCalculationCard extends StatelessWidget {
                 spacing: CoreSpacing.space2,
                 runSpacing: CoreSpacing.space2,
                 children: [
-                  for (final tag in calculation.tags)
+                  for (final tag in calculation.tags.take(_maxVisibleTags))
                     CoreChip(
                       label: tag,
+                      selected: _chipNotSelected,
+                      size: CoreChipSize.small,
+                    ),
+                  if (calculation.tags.length > _maxVisibleTags)
+                    CoreChip(
+                      label: '+${calculation.tags.length - _maxVisibleTags}',
                       selected: _chipNotSelected,
                       size: CoreChipSize.small,
                     ),
