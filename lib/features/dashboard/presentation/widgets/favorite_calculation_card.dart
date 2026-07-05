@@ -16,7 +16,7 @@ class FavoriteCalculationCard extends StatelessWidget {
   final VoidCallback? onMoreOptions;
 
   static const _maxVisibleTags = 7;
-  static final _dateTimeFormatter = DateFormat("MMM d, yyyy · h:mm a");
+  static final _dateTimeFormatter = DateFormat('MMM d, yyyy · h:mm a');
   static final _chipNotSelected = ValueNotifier<bool>(false);
 
   const FavoriteCalculationCard({
