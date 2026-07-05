@@ -2,9 +2,15 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+/// Bottom sheet that prompts the user to confirm permanent deletion of a project.
 class DeletionConfirmationBottomSheet extends StatelessWidget {
+  /// The name of the project to be deleted, shown in the confirmation title.
   final String projectName;
+
+  /// Called when the user taps the confirm (delete) button.
   final VoidCallback? onConfirm;
+
+  /// Called when the user taps the cancel (keep) button.
   final VoidCallback? onCancel;
 
   /// Count of images attached to the project's calculations.
@@ -21,9 +27,26 @@ class DeletionConfirmationBottomSheet extends StatelessWidget {
     this.imagesAttachedCount,
   });
 
-  // TODO: [CA-182] Add a static show() helper wired to ProjectSettingsBloc
-  // once DeleteProjectButton wires this sheet.
+  // TODO: [CA-182] Wire show() to ProjectSettingsBloc once DeleteProjectButton
+  // calls this helper.
   // https://ripplearc.youtrack.cloud/issue/CA-182
+  static Future<void> show(
+    BuildContext context, {
+    required String projectName,
+    VoidCallback? onConfirm,
+    VoidCallback? onCancel,
+    int? imagesAttachedCount,
+  }) {
+    return CoreQuickSheet.show<void>(
+      context: context,
+      child: DeletionConfirmationBottomSheet(
+        projectName: projectName,
+        onConfirm: onConfirm,
+        onCancel: onCancel,
+        imagesAttachedCount: imagesAttachedCount,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,27 +55,12 @@ class DeletionConfirmationBottomSheet extends StatelessWidget {
     final l10n = context.l10n;
     final imageCount = imagesAttachedCount;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colorTheme.pageBackground,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
+    return Padding(
       padding: const EdgeInsets.all(CoreSpacing.space4),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         spacing: CoreSpacing.space8,
         children: [
-          Center(
-            child: Container(
-              width: CoreSpacing.space10,
-              height: CoreSpacing.space1,
-              decoration: BoxDecoration(
-                color: colorTheme.textDisable,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-
           Column(
             spacing: CoreSpacing.space3,
             crossAxisAlignment: CrossAxisAlignment.start,

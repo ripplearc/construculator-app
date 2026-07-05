@@ -98,17 +98,14 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            debugShowCheckedModeBanner: false,
             theme: createTestTheme(),
             locale: const Locale('en'),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: _ModalBackgroundPage(
-              sheet: DeletionConfirmationBottomSheet(
-                projectName: 'Material of Building',
-                imagesAttachedCount: 25,
-                onConfirm: () {},
-                onCancel: () {},
-              ),
+              projectName: 'Material of Building',
+              imagesAttachedCount: 25,
             ),
           ),
         );
@@ -125,24 +122,26 @@ void main() {
   });
 }
 
-/// Renders a plain background page and shows [sheet] as a modal bottom sheet
+/// Renders a plain background page and opens the deletion sheet as a modal
 /// after the first frame, so the golden captures the real modal overlay.
 class _ModalBackgroundPage extends StatelessWidget {
-  final Widget sheet;
+  final String projectName;
+  final int? imagesAttachedCount;
 
-  const _ModalBackgroundPage({required this.sheet});
+  const _ModalBackgroundPage({
+    required this.projectName,
+    this.imagesAttachedCount,
+  });
 
   @override
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: context.colorTheme.transparent,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        builder: (_) => sheet,
+      DeletionConfirmationBottomSheet.show(
+        context,
+        projectName: projectName,
+        imagesAttachedCount: imagesAttachedCount,
+        onConfirm: () {},
+        onCancel: () {},
       );
     });
     return const Scaffold(
