@@ -61,7 +61,7 @@ void main() {
       );
     });
 
-    testWidgets('renders overflow chip when tags exceed maximum', (
+    testWidgets('renders no overflow chip when tags equal maximum', (
       tester,
     ) async {
       const size = Size(390, 200);
@@ -72,10 +72,80 @@ void main() {
           'Flooring',
           'Area',
           'Tagname',
+          'Roofing',
+          'Walls',
+          'Ceiling',
+          'Paint',
+        ],
+      );
+
+      await pumpCalculationCard(
+        tester: tester,
+        calculation: calculation,
+        size: size,
+      );
+
+      await expectLater(
+        find.byType(FavoriteCalculationCard),
+        matchesGoldenFile(
+          'goldens/favorite_calculation_card/${size.width.toInt()}x${size.height.toInt()}/favorite_calculation_card_at_max.png',
+        ),
+      );
+    });
+
+    testWidgets('renders overflow chip with count 1 when one tag exceeds maximum', (
+      tester,
+    ) async {
+      const size = Size(390, 200);
+      final calculation = FavoriteCalculation(
+        id: 'calc-3',
+        date: DateTime(2025, 4, 22, 14, 30),
+        tags: const [
+          'Flooring',
+          'Area',
           'Tagname',
+          'Roofing',
+          'Walls',
+          'Ceiling',
+          'Paint',
+          'Extra',
+        ],
+      );
+
+      await pumpCalculationCard(
+        tester: tester,
+        calculation: calculation,
+        size: size,
+      );
+
+      await expectLater(
+        find.byType(FavoriteCalculationCard),
+        matchesGoldenFile(
+          'goldens/favorite_calculation_card/${size.width.toInt()}x${size.height.toInt()}/favorite_calculation_card_overflow_plus1.png',
+        ),
+      );
+    });
+
+    testWidgets('renders overflow chip when tags exceed maximum', (
+      tester,
+    ) async {
+      const size = Size(390, 200);
+      final calculation = FavoriteCalculation(
+        id: 'calc-4',
+        date: DateTime(2025, 4, 22, 14, 30),
+        tags: const [
+          'Flooring',
+          'Area',
           'Tagname',
-          'Tagname',
-          'Tagname',
+          'Roofing',
+          'Walls',
+          'Ceiling',
+          'Paint',
+          'Doors',
+          'Windows',
+          'Insulation',
+          'Fixtures',
+          'Plumbing',
         ],
       );
 
@@ -89,54 +159,6 @@ void main() {
         find.byType(FavoriteCalculationCard),
         matchesGoldenFile(
           'goldens/favorite_calculation_card/${size.width.toInt()}x${size.height.toInt()}/favorite_calculation_card_overflow.png',
-        ),
-      );
-    });
-
-    testWidgets('renders no overflow chip when tags equal maximum', (
-      tester,
-    ) async {
-      const size = Size(390, 200);
-      final calculation = FavoriteCalculation(
-        id: 'calc-3',
-        date: DateTime(2025, 4, 22, 14, 30),
-        tags: const ['Flooring', 'Area', 'Tagname'],
-      );
-
-      await pumpCalculationCard(
-        tester: tester,
-        calculation: calculation,
-        size: size,
-      );
-
-      await expectLater(
-        find.byType(FavoriteCalculationCard),
-        matchesGoldenFile(
-          'goldens/favorite_calculation_card/${size.width.toInt()}x${size.height.toInt()}/favorite_calculation_card_base.png',
-        ),
-      );
-    });
-
-    testWidgets('renders overflow chip with count 1 when one tag exceeds maximum', (
-      tester,
-    ) async {
-      const size = Size(390, 200);
-      final calculation = FavoriteCalculation(
-        id: 'calc-4',
-        date: DateTime(2025, 4, 22, 14, 30),
-        tags: const ['Flooring', 'Area', 'Tagname', 'Extra'],
-      );
-
-      await pumpCalculationCard(
-        tester: tester,
-        calculation: calculation,
-        size: size,
-      );
-
-      await expectLater(
-        find.byType(FavoriteCalculationCard),
-        matchesGoldenFile(
-          'goldens/favorite_calculation_card/${size.width.toInt()}x${size.height.toInt()}/favorite_calculation_card_overflow_plus1.png',
         ),
       );
     });

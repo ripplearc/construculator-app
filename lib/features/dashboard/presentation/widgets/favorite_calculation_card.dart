@@ -15,7 +15,7 @@ class FavoriteCalculationCard extends StatelessWidget {
   /// Called when the user taps the more-options icon. Optional.
   final VoidCallback? onMoreOptions;
 
-  static const _maxVisibleTags = 3;
+  static const _maxVisibleTags = 7;
   static final _dateTimeFormatter = DateFormat("MMM d, yyyy · h:mm a");
   static final _chipNotSelected = ValueNotifier<bool>(false);
 
