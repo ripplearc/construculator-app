@@ -16,13 +16,8 @@ import 'package:rxdart/rxdart.dart';
 part 'global_search_event.dart';
 part 'global_search_state.dart';
 
-// Debounce duration applied to [GlobalSearchQueryUpdated] events. Kept here
-// so the BLoC owns the contract — no UI-side debouncing required.
 const Duration _kQueryDebounceDuration = Duration(milliseconds: 300);
 
-// Maximum number of personalized suggestions exposed to the UI for a given
-// query. The raw list fetched from the repository may be longer; the cap
-// keeps the dropdown short per PRD DASH-019.
 const int _kMaxDisplayedSuggestions = 5;
 
 /// Returns an [EventTransformer] that debounces events by [duration] and
@@ -208,7 +203,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   ) async {
     _currentQuery = event.query;
 
-    if (event.query.isEmpty) {
+    if (event.query.trim().isEmpty) {
       emit(_readyState());
       return;
     }
@@ -323,7 +318,10 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     final result = await _repository.getSearchSuggestions();
 
     result.fold(
-      (failure) => emit(GlobalSearchSuggestionsLoadFailure(failure: failure)),
+      (failure) {
+        emit(GlobalSearchSuggestionsLoadFailure(failure: failure));
+        emit(_readyState());
+      },
       (suggestions) {
         _rawSuggestions = suggestions;
         _suggestionsFetched = true;
@@ -332,8 +330,6 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     );
   }
 
-  // Filters [_rawSuggestions] to terms that start with [query] (case-insensitive)
-  // and caps the result at [_kMaxDisplayedSuggestions].
   List<String> _filterSuggestions(String query) {
     if (query.isEmpty) return const [];
     final lower = query.toLowerCase();

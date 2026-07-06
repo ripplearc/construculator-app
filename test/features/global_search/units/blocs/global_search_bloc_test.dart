@@ -910,6 +910,11 @@ void main() {
             'failure',
             SearchFailure(errorType: SearchErrorType.timeoutError),
           ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.suggestionsLoading,
+            'suggestionsLoading',
+            isFalse,
+          ),
         ],
       );
     });
