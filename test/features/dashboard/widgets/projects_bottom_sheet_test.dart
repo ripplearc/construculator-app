@@ -243,6 +243,48 @@ void main() {
     });
 
     testWidgets(
+      'settings gear for one project stays enabled while another project '
+      'navigation is in flight',
+      (tester) async {
+        harness.fakeRepository.setAccessibleProjects([
+          buildProject(id: 'project-1', projectName: 'First project'),
+          buildProject(id: 'project-2', projectName: 'Second project'),
+        ]);
+        harness.fakeRepository.setProjectPermissions('project-1', [
+          PermissionConstants.viewProject,
+        ]);
+        harness.fakeRepository.setProjectPermissions('project-2', [
+          PermissionConstants.viewProject,
+        ]);
+        final completer = Completer<void>();
+        harness.router.pushNamedCompleter = completer;
+
+        await harness.pumpSheet(tester);
+
+        final project1Gear = find.descendant(
+          of: find.byKey(const ValueKey<String>('project-1')),
+          matching: settingsGear(),
+        );
+        final project2Gear = find.descendant(
+          of: find.byKey(const ValueKey<String>('project-2')),
+          matching: settingsGear(),
+        );
+
+        await tester.tap(project1Gear);
+        await tester.pump();
+
+        // project-1's gear is disabled while its navigation is in flight,
+        // but project-2's gear must remain enabled and tappable.
+        expect(project1Gear, findsNothing);
+        expect(project2Gear, findsOneWidget);
+
+        completer.complete();
+        await tester.pump();
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
       'shows an error toast and re-enables the gear when navigation fails',
       (tester) async {
         harness.fakeRepository.setAccessibleProjects([
