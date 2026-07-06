@@ -1,13 +1,17 @@
+import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/project_settings/presentation/bloc/project_settings_bloc/project_settings_bloc.dart';
 import 'package:construculator/features/project_settings/presentation/pages/project_creation_screen.dart';
+import 'package:construculator/features/project_settings/project_settings_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_setting_repository.dart';
 import 'package:construculator/libraries/project/testing/fake_project_setting_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
+import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 import '../../testing/stub_auth_manager.dart';
 
@@ -17,11 +21,22 @@ void main() {
 
   setUpAll(() async {
     await loadAppFontsAll();
+    Modular.init(
+      _ProjectCreationScreenTestModule(FakeAppBootstrapFactory.create()),
+    );
+  });
+
+  tearDownAll(() {
+    Modular.dispose();
   });
 
   setUp(() {
-    fakeRepository = FakeProjectSettingRepository();
-    bloc = ProjectSettingsBloc(repository: fakeRepository);
+    Modular.replaceInstance<ProjectSettingRepository>(
+      FakeProjectSettingRepository(),
+    );
+    fakeRepository =
+        Modular.get<ProjectSettingRepository>() as FakeProjectSettingRepository;
+    bloc = Modular.get<ProjectSettingsBloc>();
   });
 
   tearDown(() {
@@ -90,4 +105,12 @@ void main() {
       },
     );
   });
+}
+
+class _ProjectCreationScreenTestModule extends Module {
+  final AppBootstrap appBootstrap;
+  _ProjectCreationScreenTestModule(this.appBootstrap);
+
+  @override
+  List<Module> get imports => [ProjectSettingsModule(appBootstrap)];
 }

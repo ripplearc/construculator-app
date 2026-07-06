@@ -1,8 +1,8 @@
+import 'package:construculator/features/project_settings/presentation/bloc/project_settings_bloc/project_settings_bloc.dart';
 import 'package:construculator/features/project_settings/presentation/widgets/project_action_area.dart';
 import 'package:construculator/features/project_settings/presentation/widgets/project_name_text_field.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/features/project_settings/presentation/bloc/project_settings_bloc/project_settings_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
