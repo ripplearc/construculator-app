@@ -6,7 +6,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// A card displaying a favorited cost estimation with its title, date/time, and total cost.
 class FavoriteEstimationCard extends StatelessWidget {
-  static final _dateTimeFormatter = DateFormat("MMM d, yyyy · h:mm a");
+  static final _dateTimeFormatter = DateFormat('MMM d, yyyy · h:mm a');
   static final _costFormatter = NumberFormat.currency(symbol: '\$');
 
   /// The favorited estimation data to display.
