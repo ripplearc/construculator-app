@@ -560,6 +560,7 @@ void main() {
         build: () => Modular.get<ProjectSearchBloc>(),
         act: (bloc) async {
           bloc.add(const ProjectSearchPerformedEvent(query: 'wall'));
+          await bloc.stream.firstWhere((s) => s is ProjectSearchResultsLoaded);
           await bloc.lastSaveCompleted;
         },
         verify: (_) {
@@ -592,6 +593,7 @@ void main() {
         build: () => Modular.get<ProjectSearchBloc>(),
         act: (bloc) async {
           bloc.add(const ProjectSearchPerformedEvent(query: 'nothing'));
+          await bloc.stream.firstWhere((s) => s is ProjectSearchResultsLoaded);
           await bloc.lastSaveCompleted;
         },
         verify: (_) {
@@ -617,8 +619,10 @@ void main() {
           fakeSupabase.rpcErrorMessage = 'Timeout';
         },
         build: () => Modular.get<ProjectSearchBloc>(),
-        act: (bloc) =>
-            bloc.add(const ProjectSearchPerformedEvent(query: 'wall')),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchPerformedEvent(query: 'wall'));
+          await bloc.stream.firstWhere((s) => s is ProjectSearchFailureState);
+        },
         verify: (_) {
           final upserts = fakeSupabase
               .getMethodCallsFor('upsert')
