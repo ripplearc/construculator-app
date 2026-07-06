@@ -26,7 +26,6 @@ class ProjectCreationScreen extends StatefulWidget {
 class _ProjectCreationScreenState extends State<ProjectCreationScreen> {
   final TextEditingController _nameController = TextEditingController();
 
-  bool _nameValid = false;
   bool _submitAttempted = false;
 
   @override
@@ -116,7 +115,6 @@ class _ProjectCreationScreenState extends State<ProjectCreationScreen> {
         children: [
           ProjectNameTextField(
             controller: _nameController,
-            onValidationChanged: (v) => setState(() => _nameValid = v),
             showErrors: _submitAttempted,
           ),
           const SizedBox(height: CoreSpacing.space4),
