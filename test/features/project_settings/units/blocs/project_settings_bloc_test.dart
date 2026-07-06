@@ -185,6 +185,30 @@ void main() {
       );
 
       blocTest<ProjectSettingsBloc, ProjectSettingsState>(
+        'emits [ProjectSettingsNameValidationError] when name is empty',
+        build: () => Modular.get<ProjectSettingsBloc>(),
+        act: (bloc) => bloc.add(
+          const ProjectSettingsCreationRequested(
+            name: '',
+            creatorUserId: testCreatorUserId,
+          ),
+        ),
+        expect: () => [const ProjectSettingsNameValidationError()],
+      );
+
+      blocTest<ProjectSettingsBloc, ProjectSettingsState>(
+        'emits [ProjectSettingsNameValidationError] when name is whitespace only',
+        build: () => Modular.get<ProjectSettingsBloc>(),
+        act: (bloc) => bloc.add(
+          const ProjectSettingsCreationRequested(
+            name: '   ',
+            creatorUserId: testCreatorUserId,
+          ),
+        ),
+        expect: () => [const ProjectSettingsNameValidationError()],
+      );
+
+      blocTest<ProjectSettingsBloc, ProjectSettingsState>(
         'emits [ProjectSettingsError] when creatorUserId is null',
         build: () => Modular.get<ProjectSettingsBloc>(),
         act: (bloc) => bloc.add(
