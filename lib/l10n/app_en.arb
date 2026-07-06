@@ -215,6 +215,41 @@
     "description": "Empty state message shown when there are no recent estimations",
     "context": "Dashboard recent estimations section"
   },
+  "favouritesSectionTitle": "Favourites",
+  "@favouritesSectionTitle": {
+    "description": "Section title for the dashboard favourites widget",
+    "context": "Dashboard favourites section"
+  },
+  "favouritesEmptyState": "No favourites yet.",
+  "@favouritesEmptyState": {
+    "description": "Empty state message shown when there are no favourited items",
+    "context": "Dashboard favourites section"
+  },
+  "sortFavouriteSemanticLabel": "Sort favourites",
+  "@sortFavouriteSemanticLabel": {
+    "description": "Accessibility label for the sort/filter dropdown button in the Favourites header",
+    "context": "Dashboard favourites section"
+  },
+  "sortFavouriteTitle": "Sort favourite",
+  "@sortFavouriteTitle": {
+    "description": "Title of the bottom sheet for sorting/filtering favourites",
+    "context": "Dashboard favourites sort sheet"
+  },
+  "sortFavouriteAll": "All",
+  "@sortFavouriteAll": {
+    "description": "Filter option showing all favourites",
+    "context": "Dashboard favourites sort sheet"
+  },
+  "sortFavouriteCostEstimations": "Cost estimations",
+  "@sortFavouriteCostEstimations": {
+    "description": "Filter option showing only favourited cost estimations",
+    "context": "Dashboard favourites sort sheet"
+  },
+  "sortFavouriteCalculations": "Calculations",
+  "@sortFavouriteCalculations": {
+    "description": "Filter option showing only favourited calculations",
+    "context": "Dashboard favourites sort sheet"
+  },
   "projectSettingsSemanticLabel": "Project settings",
   "@projectSettingsSemanticLabel": {
     "description": "Accessibility label for the per-project settings icon button in the projects list",
