@@ -57,7 +57,7 @@ void main() {
       );
     });
 
-    testWidgets('meets a11y guidelines for project name text in both themes', (
+    testWidgets('meets a11y guidelines for project name action in both themes', (
       tester,
     ) async {
       await setupA11yTest(tester);
@@ -72,9 +72,10 @@ void main() {
             onSettingsTap: () {},
           ),
         ),
-        find.text('My project'),
-        checkTapTargetSize: false,
-        checkLabeledTapTarget: false,
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics && widget.properties.label == 'My project',
+        ),
       );
     });
   });

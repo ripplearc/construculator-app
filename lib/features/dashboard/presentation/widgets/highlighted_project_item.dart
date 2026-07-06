@@ -8,15 +8,6 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 const double _kHighlightedProjectItemMetaIconSize = CoreSpacing.space4;
 const double _kHighlightedProjectItemSettingsHitTarget = CoreSpacing.space12;
 
-final _dateFormatCache = <String, DateFormat>{};
-final _timeFormatCache = <String, DateFormat>{};
-
-DateFormat _dateFormat(String locale) =>
-    _dateFormatCache.putIfAbsent(locale, () => DateFormat('MMM d, yyyy', locale));
-
-DateFormat _timeFormat(String locale) =>
-    _timeFormatCache.putIfAbsent(locale, () => DateFormat('h:mm a', locale));
-
 /// The selected-state variant of a project card, rendered when the user's
 /// current working project matches this item.
 ///
@@ -46,9 +37,10 @@ class HighlightedProjectItem extends StatelessWidget {
     final typography = context.textTheme;
 
     final locale = Localizations.localeOf(context).toLanguageTag();
-    final formattedDate = _dateFormat(locale).format(project.updatedAt);
+    final formattedDate =
+        DateFormat('MMM d, yyyy', locale).format(project.updatedAt);
     final formattedTime =
-        _timeFormat(locale).format(project.updatedAt).toLowerCase();
+        DateFormat('h:mm a', locale).format(project.updatedAt).toLowerCase();
 
     final card = Material(
       borderRadius: BorderRadius.circular(CoreSpacing.space3),
