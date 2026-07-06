@@ -24,8 +24,9 @@ class SearchParams extends Equatable {
   /// Inclusive upper bound of the modification-date range filter.
   final DateTime? filterByDateTo;
 
-  /// Optional owner identifier to restrict results to items owned by this user.
-  final String? filterByOwner;
+  /// Optional owner identifiers to restrict results to items owned by any of
+  /// these users. `null` and an empty list both mean no owner filter.
+  final List<String>? filterByOwners;
 
   /// Optional scope limiting which areas or entity types are searched.
   final SearchScope? scope;
@@ -38,7 +39,7 @@ class SearchParams extends Equatable {
     this.filterByTag,
     this.filterByDateFrom,
     this.filterByDateTo,
-    this.filterByOwner,
+    this.filterByOwners,
     this.scope,
     this.pagination = const PaginationParams(),
   });
@@ -51,7 +52,7 @@ class SearchParams extends Equatable {
     Object? filterByTag = _absent,
     Object? filterByDateFrom = _absent,
     Object? filterByDateTo = _absent,
-    Object? filterByOwner = _absent,
+    Object? filterByOwners = _absent,
     Object? scope = _absent,
     PaginationParams? pagination,
   }) {
@@ -60,7 +61,7 @@ class SearchParams extends Equatable {
       filterByTag: filterByTag == _absent ? this.filterByTag : filterByTag as String?,
       filterByDateFrom: filterByDateFrom == _absent ? this.filterByDateFrom : filterByDateFrom as DateTime?,
       filterByDateTo: filterByDateTo == _absent ? this.filterByDateTo : filterByDateTo as DateTime?,
-      filterByOwner: filterByOwner == _absent ? this.filterByOwner : filterByOwner as String?,
+      filterByOwners: filterByOwners == _absent ? this.filterByOwners : filterByOwners as List<String>?,
       scope: scope == _absent ? this.scope : scope as SearchScope?,
       pagination: pagination ?? this.pagination,
     );
@@ -72,7 +73,7 @@ class SearchParams extends Equatable {
     filterByTag,
     filterByDateFrom,
     filterByDateTo,
-    filterByOwner,
+    filterByOwners,
     scope,
     pagination,
   ];

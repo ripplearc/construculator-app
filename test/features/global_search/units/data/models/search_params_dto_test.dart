@@ -18,7 +18,7 @@ void main() {
         expect(params.filterByTag, isNull);
         expect(params.filterByDateFrom, isNull);
         expect(params.filterByDateTo, isNull);
-        expect(params.filterByOwner, isNull);
+        expect(params.filterByOwners, isNull);
         expect(params.scope, isNull);
       });
     });
@@ -30,7 +30,7 @@ void main() {
           filterByTag: 'residential',
           filterByDateFrom: DateTime(2025, 3, 1),
           filterByDateTo: DateTime(2025, 3, 31),
-          filterByOwner: 'user-123',
+          filterByOwners: const ['user-123', 'user-456'],
           scope: SearchScopeDto.estimation,
           pagination: const PaginationParamsDto(offset: 20),
         );
@@ -57,14 +57,14 @@ void main() {
           filterByTag: 'residential',
           filterByDateFrom: from,
           filterByDateTo: to,
-          filterByOwner: 'user-123',
+          filterByOwners: const ['user-123', 'user-456'],
           scope: SearchScopeDto.estimation,
         );
 
         expect(copy.filterByTag, 'residential');
         expect(copy.filterByDateFrom, from);
         expect(copy.filterByDateTo, to);
-        expect(copy.filterByOwner, 'user-123');
+        expect(copy.filterByOwners, ['user-123', 'user-456']);
         expect(copy.scope, SearchScopeDto.estimation);
       });
 
@@ -84,7 +84,7 @@ void main() {
           filterByTag: 'residential',
           filterByDateFrom: DateTime(2025, 3, 1),
           filterByDateTo: DateTime(2025, 3, 31),
-          filterByOwner: 'user-123',
+          filterByOwners: const ['user-123'],
           scope: SearchScopeDto.estimation,
         );
 
@@ -92,14 +92,14 @@ void main() {
           filterByTag: null,
           filterByDateFrom: null,
           filterByDateTo: null,
-          filterByOwner: null,
+          filterByOwners: null,
           scope: null,
         );
 
         expect(copy.filterByTag, isNull);
         expect(copy.filterByDateFrom, isNull);
         expect(copy.filterByDateTo, isNull);
-        expect(copy.filterByOwner, isNull);
+        expect(copy.filterByOwners, isNull);
         expect(copy.scope, isNull);
       });
     });
@@ -114,7 +114,7 @@ void main() {
           filterByTag: 'residential',
           filterByDateFrom: from,
           filterByDateTo: to,
-          filterByOwner: 'user-123',
+          filterByOwners: const ['user-123', 'user-456'],
           scope: SearchScopeDto.estimation,
           pagination: const PaginationParamsDto(offset: 20),
         );
@@ -124,7 +124,7 @@ void main() {
           filterByTag: 'residential',
           filterByDateFrom: from,
           filterByDateTo: to,
-          filterByOwner: 'user-123',
+          filterByOwners: const ['user-123', 'user-456'],
           scope: SearchScopeDto.estimation,
           pagination: const PaginationParamsDto(offset: 20),
         );
@@ -135,6 +135,19 @@ void main() {
       test('two instances with different query are not equal', () {
         const params1 = SearchParamsDto(query: 'bridge');
         const params2 = SearchParamsDto(query: 'road');
+
+        expect(params1, isNot(equals(params2)));
+      });
+
+      test('two instances with different owner filters are not equal', () {
+        const params1 = SearchParamsDto(
+          query: 'bridge',
+          filterByOwners: ['user-123'],
+        );
+        const params2 = SearchParamsDto(
+          query: 'bridge',
+          filterByOwners: ['user-456'],
+        );
 
         expect(params1, isNot(equals(params2)));
       });

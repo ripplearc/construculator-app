@@ -47,7 +47,7 @@ class GlobalSearchRepositoryImpl implements GlobalSearchRepository {
       filterByTag: entity.filterByTag,
       filterByDateFrom: entity.filterByDateFrom,
       filterByDateTo: entity.filterByDateTo,
-      filterByOwner: entity.filterByOwner,
+      filterByOwners: entity.filterByOwners,
       scope: entityScope != null ? _toDataScope(entityScope) : null,
       pagination: PaginationParamsDto(
         offset: entity.pagination.offset,
