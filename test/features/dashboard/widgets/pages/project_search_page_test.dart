@@ -1,9 +1,11 @@
+import 'dart:async';
+
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_search_bloc/project_search_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/project_search_page.dart';
-import 'package:construculator/features/global_search/presentation/widgets/global_search_empty_recent_widget.dart';
-import 'package:construculator/features/global_search/presentation/widgets/global_search_recent_searches_list.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/project_search_empty_recent_widget.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/project_search_recent_searches_list.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -17,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 
@@ -167,7 +170,7 @@ void main() {
     ) async {
       await renderPage(tester);
 
-      expect(find.byType(GlobalSearchEmptyRecentWidget), findsOneWidget);
+      expect(find.byType(ProjectSearchEmptyRecentWidget), findsOneWidget);
     });
 
     testWidgets('sees Recent searches section title', (tester) async {
@@ -251,7 +254,7 @@ void main() {
       seedRecentSearches();
       await renderPage(tester);
 
-      expect(find.byType(GlobalSearchRecentSearchesList), findsOneWidget);
+      expect(find.byType(ProjectSearchRecentSearchesList), findsOneWidget);
       expect(find.text('foundation'), findsOneWidget);
       expect(find.text('wall'), findsOneWidget);
     });
@@ -298,6 +301,66 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+
+    testWidgets('shows a loading indicator while history is loading', (
+      tester,
+    ) async {
+      seedRecentSearches();
+      // Hold the history fetch open so the isLoadingHistory frame is
+      // observable; renderPage's pumpAndSettle would hang on the spinner.
+      final completer = Completer<void>();
+      fakeSupabase.shouldDelayOperations = true;
+      fakeSupabase.completer = completer;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: createTestTheme(),
+          home: ProjectSearchPage(
+            router: router,
+            blocFactory: () => Modular.get<ProjectSearchBloc>(),
+          ),
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CoreLoadingIndicator), findsOneWidget);
+
+      completer.complete();
+      fakeSupabase.shouldDelayOperations = false;
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(CoreLoadingIndicator), findsNothing);
+      expect(find.text('foundation'), findsOneWidget);
+    });
+
+    testWidgets('renders a blank body once a search is performed', (
+      tester,
+    ) async {
+      seedRecentSearches();
+      fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
+        'projects': [],
+        'estimations': [],
+        'members': [],
+      });
+      await renderPage(tester);
+      expect(find.byType(ProjectSearchRecentSearchesList), findsOneWidget);
+
+      await tester.enterText(find.byType(TextFormField), 'wall');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pump();
+      await tester.pump();
+
+      // Post-search states are out of CA-690/CA-689 scope, so the body is
+      // intentionally blank: no history list and no spinner.
+      expect(find.byType(ProjectSearchRecentSearchesList), findsNothing);
+      expect(find.byType(CoreLoadingIndicator), findsNothing);
+
+      await tester.pump(const Duration(seconds: 5));
     });
   });
 }

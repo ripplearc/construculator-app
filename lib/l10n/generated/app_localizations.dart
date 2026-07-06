@@ -1654,6 +1654,12 @@ abstract class AppLocalizations {
   /// **'Modified'**
   String get projectSearchFilterModified;
 
+  /// Message shown when there are no recent searches on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'No recent searches available'**
+  String get projectSearchEmptyRecentMessage;
+
   /// Title text displayed in the dashboard app bar
   ///
   /// In en, this message translates to:
@@ -1695,6 +1701,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fill search field with {term}'**
   String globalSearchRecentSearchFillSemanticLabel(String term);
+
+  /// Accessibility label for the trailing icon on a recent project search row — fills the search field with the term
+  ///
+  /// In en, this message translates to:
+  /// **'Fill search field with {term}'**
+  String projectSearchRecentSearchFillSemanticLabel(String term);
 
   /// Error toast shown when loading recent searches fails
   ///

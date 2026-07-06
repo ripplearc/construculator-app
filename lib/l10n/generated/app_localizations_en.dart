@@ -868,6 +868,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get projectSearchFilterModified => 'Modified';
 
   @override
+  String get projectSearchEmptyRecentMessage => 'No recent searches available';
+
+  @override
   String get dashboardTitle => 'Construculator';
 
   @override
@@ -887,6 +890,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String globalSearchRecentSearchFillSemanticLabel(String term) {
+    return 'Fill search field with $term';
+  }
+
+  @override
+  String projectSearchRecentSearchFillSemanticLabel(String term) {
     return 'Fill search field with $term';
   }
 
