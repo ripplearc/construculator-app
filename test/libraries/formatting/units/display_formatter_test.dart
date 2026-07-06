@@ -210,6 +210,31 @@ void main() {
       });
     });
 
+    group('formatFileSize', () {
+      test('should format bytes under 1KB', () {
+        expect(DisplayFormatter.formatFileSize(0), equals('0B'));
+        expect(DisplayFormatter.formatFileSize(512), equals('512B'));
+        expect(DisplayFormatter.formatFileSize(1023), equals('1023B'));
+      });
+
+      test('should format bytes in KB range', () {
+        expect(DisplayFormatter.formatFileSize(1024), equals('1KB'));
+        expect(DisplayFormatter.formatFileSize(204800), equals('200KB'));
+        expect(DisplayFormatter.formatFileSize(1047552), equals('1023KB'));
+      });
+
+      test('should promote to MB at the KB/MB boundary', () {
+        // 1,048,575 rounds to 1024KB which must promote to MB, not display "1024KB"
+        expect(DisplayFormatter.formatFileSize(1048575), equals('1.0MB'));
+        expect(DisplayFormatter.formatFileSize(1048576), equals('1.0MB'));
+      });
+
+      test('should format bytes in MB range', () {
+        expect(DisplayFormatter.formatFileSize(1572864), equals('1.5MB'));
+        expect(DisplayFormatter.formatFileSize(10485760), equals('10.0MB'));
+      });
+    });
+
     group('Static formatters', () {
       test('should have consistent static formatters', () {
         expect(DisplayFormatter.currency.decimalDigits, equals(2));

@@ -1246,6 +1246,12 @@ abstract class AppLocalizations {
   /// **'Cost File Deleted'**
   String get activityCostFileDeletedSimple;
 
+  /// Label shown before the upload date of a cost file
+  ///
+  /// In en, this message translates to:
+  /// **'Uploaded on'**
+  String get uploadedOnLabel;
+
   /// Activity log message for attachment added with file name
   ///
   /// In en, this message translates to:
