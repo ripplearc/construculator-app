@@ -1881,6 +1881,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OneDrive link:'**
   String get exportOneDriveLabel;
+
+  /// Title for the project creation screen app bar
+  ///
+  /// In en, this message translates to:
+  /// **'Create a project'**
+  String get createProjectScreenTitle;
 }
 
 class _AppLocalizationsDelegate

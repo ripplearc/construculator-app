@@ -1555,6 +1555,11 @@
   "exportOneDriveLabel": "OneDrive link:",
   "@exportOneDriveLabel": {
     "description": "Label for the OneDrive export row in ExportSettingsDisplay"
+  },
+  "createProjectScreenTitle": "Create a project",
+  "@createProjectScreenTitle": {
+    "description": "Title for the project creation screen app bar",
+    "context": "Project creation screen"
   }
 }
 
