@@ -63,7 +63,7 @@ class ProjectSearchRepositoryImpl implements ProjectSearchRepository {
       if (postgresErrorCode == PostgresErrorCode.connectionFailure ||
           postgresErrorCode == PostgresErrorCode.unableToConnect ||
           postgresErrorCode == PostgresErrorCode.connectionDoesNotExist) {
-        _logger.warning(
+        _logger.error(
           'PostgreSQL connection error $operation: '
           'code=${error.code}, message=${error.message}, '
           'details=${error.details}, hint=${error.hint}',
@@ -118,7 +118,7 @@ class ProjectSearchRepositoryImpl implements ProjectSearchRepository {
     bool hasResults = false,
   }) async {
     if (userId.trim().isEmpty || searchTerm.trim().isEmpty) {
-      return Right(null);
+      return const Right(null);
     }
 
     try {
@@ -130,7 +130,7 @@ class ProjectSearchRepositoryImpl implements ProjectSearchRepository {
         searchTerm: searchTerm,
         hasResults: hasResults,
       );
-      return Right(null);
+      return const Right(null);
     } catch (e) {
       return Left(_handleError(e, 'saving recent project search'));
     }
@@ -160,7 +160,7 @@ class ProjectSearchRepositoryImpl implements ProjectSearchRepository {
     required String searchTerm,
   }) async {
     if (userId.trim().isEmpty || searchTerm.trim().isEmpty) {
-      return Right(null);
+      return const Right(null);
     }
 
     try {
@@ -169,7 +169,7 @@ class ProjectSearchRepositoryImpl implements ProjectSearchRepository {
         userId: userId,
         searchTerm: searchTerm,
       );
-      return Right(null);
+      return const Right(null);
     } catch (e) {
       return Left(_handleError(e, 'deleting recent project search'));
     }
