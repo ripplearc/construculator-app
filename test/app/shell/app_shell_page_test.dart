@@ -23,6 +23,7 @@ import 'package:construculator/libraries/project/interfaces/current_project_noti
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
+import 'package:construculator/libraries/project/testing/fake_project_ui_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -85,7 +86,7 @@ void main() {
     Modular.bindModule(DashboardModule(appBootstrap));
 
     Modular.replaceInstance<CurrentProjectNotifier>(fakeProjectNotifier);
-    Modular.replaceInstance<ProjectUIProvider>(_FakeProjectUIProvider());
+    Modular.replaceInstance<ProjectUIProvider>(FakeProjectUIProvider());
   });
 
   tearDown(() {
@@ -339,7 +340,7 @@ void main() {
       Modular.replaceInstance<CostEstimationRepository>(
         FakeCostEstimationRepository(),
       );
-      Modular.replaceInstance<ProjectUIProvider>(_FakeProjectUIProvider());
+      Modular.replaceInstance<ProjectUIProvider>(FakeProjectUIProvider());
     });
 
     tearDown(() => fakeProjectNotifier.reset());
@@ -380,26 +381,4 @@ void main() {
       },
     );
   });
-}
-
-// TODO: [CA-724] Migrate to lib/libraries/project/testing/fake_project_ui_provider.dart
-class _FakeProjectUIProvider extends ProjectUIProvider {
-  @override
-  PreferredSizeWidget buildProjectHeaderAppbar({
-    VoidCallback? onProjectTap,
-    VoidCallback? onSearchTap,
-    VoidCallback? onNotificationTap,
-  }) {
-    return const PreferredSize(
-      preferredSize: Size.fromHeight(kToolbarHeight),
-      child: _FakeProjectAppBar(),
-    );
-  }
-}
-
-class _FakeProjectAppBar extends StatelessWidget {
-  const _FakeProjectAppBar();
-
-  @override
-  Widget build(BuildContext context) => const SizedBox.shrink();
 }
