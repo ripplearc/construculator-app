@@ -223,7 +223,11 @@ void main() {
           equals(filterDate.toIso8601String()),
         );
         expect(params['filter_by_tag'], equals('structural'));
-        expect(params['filter_by_owner'], equals('owner-42'));
+        expect(
+          params['filter_by_owners'],
+          equals(['owner-42']),
+          reason: 'a single owner must be wrapped in the RPC owner-id array',
+        );
         expect(params['scope'], equals('dashboard'));
       });
 

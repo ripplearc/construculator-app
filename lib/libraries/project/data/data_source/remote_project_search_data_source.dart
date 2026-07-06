@@ -44,7 +44,10 @@ class RemoteProjectSearchDataSource implements ProjectSearchDataSource {
           'query': query,
           'filter_by_tag': filterByTag,
           'filter_by_date': filterByDate?.toIso8601String(),
-          'filter_by_owner': filterByOwner,
+          // The RPC takes an owner-id array; this data source still exposes a
+          // single-owner filter, so wrap it. Widening this interface to
+          // multiple owners is tracked in CA-771.
+          'filter_by_owners': filterByOwner == null ? null : [filterByOwner],
           'scope': DatabaseConstants.globalSearchDashboardScope,
           'offset': DatabaseConstants.globalSearchDefaultOffset,
           'limit': DatabaseConstants.globalSearchDefaultLimit,

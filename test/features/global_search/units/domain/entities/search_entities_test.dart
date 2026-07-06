@@ -39,7 +39,7 @@ void main() {
       expect(base.filterByTag, isNull);
       expect(base.filterByDateFrom, isNull);
       expect(base.filterByDateTo, isNull);
-      expect(base.filterByOwner, isNull);
+      expect(base.filterByOwners, isNull);
       expect(base.scope, isNull);
       expect(base.pagination, const PaginationParams());
     });
@@ -59,13 +59,13 @@ void main() {
         filterByTag: 'urgent',
         filterByDateFrom: from,
         filterByDateTo: to,
-        filterByOwner: 'user-1',
+        filterByOwners: const ['user-1', 'user-2'],
         scope: SearchScope.estimation,
       );
       expect(updated.filterByTag, 'urgent');
       expect(updated.filterByDateFrom, from);
       expect(updated.filterByDateTo, to);
-      expect(updated.filterByOwner, 'user-1');
+      expect(updated.filterByOwners, ['user-1', 'user-2']);
       expect(updated.scope, SearchScope.estimation);
     });
 
@@ -74,20 +74,20 @@ void main() {
         filterByTag: 'tag',
         filterByDateFrom: DateTime(2024),
         filterByDateTo: DateTime(2024, 1, 31),
-        filterByOwner: 'owner',
+        filterByOwners: const ['owner'],
         scope: SearchScope.dashboard,
       );
       final cleared = withFields.copyWith(
         filterByTag: null,
         filterByDateFrom: null,
         filterByDateTo: null,
-        filterByOwner: null,
+        filterByOwners: null,
         scope: null,
       );
       expect(cleared.filterByTag, isNull);
       expect(cleared.filterByDateFrom, isNull);
       expect(cleared.filterByDateTo, isNull);
-      expect(cleared.filterByOwner, isNull);
+      expect(cleared.filterByOwners, isNull);
       expect(cleared.scope, isNull);
     });
 

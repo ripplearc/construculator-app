@@ -624,7 +624,7 @@ void main() {
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
-        'forwards the alphabetically first selected owner id to the RPC when multiple owners are active',
+        'forwards all selected owner ids to the RPC sorted alphabetically when multiple owners are active',
         setUp: () {
           fakeSupabase.setCurrentUser(
             FakeUser(
@@ -668,10 +668,51 @@ void main() {
           final rpcParams =
               globalSearchCall['params'] as Map<String, dynamic>;
           expect(
-            rpcParams['filter_by_owner'],
-            equals('owner-1'),
+            rpcParams['filter_by_owners'],
+            equals(['owner-1', 'owner-2']),
             reason:
-                'must forward the alphabetically first owner id, not an arbitrary Set element',
+                'must forward every selected owner id, sorted so equal '
+                'selections always produce the same RPC payload',
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'forwards a null owner filter to the RPC when no owners are selected',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {'projects': [], 'estimations': [], 'members': []},
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchPerformed(query: 'steel')),
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'steel'),
+          isA<GlobalSearchLoadEmpty>(),
+        ],
+        verify: (_) {
+          final rpcCalls = fakeSupabase.getMethodCallsFor('rpc');
+          final globalSearchCall = rpcCalls.firstWhere(
+            (call) =>
+                call['functionName'] ==
+                DatabaseConstants.globalSearchRpcFunction,
+          );
+          final rpcParams =
+              globalSearchCall['params'] as Map<String, dynamic>;
+          expect(
+            rpcParams['filter_by_owners'],
+            isNull,
+            reason:
+                'an empty owner selection must be forwarded as null, the '
+                'backend contract for "no owner filter"',
           );
         },
       );

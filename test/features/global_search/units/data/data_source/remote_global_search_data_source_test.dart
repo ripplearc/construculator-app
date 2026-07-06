@@ -184,7 +184,7 @@ void main() {
             filterByTag: 'construction',
             filterByDateFrom: filterDateFrom,
             filterByDateTo: filterDateTo,
-            filterByOwner: 'owner-1',
+            filterByOwners: const ['owner-1', 'owner-2'],
             scope: SearchScopeDto.estimation,
             pagination: const PaginationParamsDto(offset: 10, limit: 25),
           );
@@ -212,7 +212,10 @@ void main() {
             paramsMap['filter_by_date_to'],
             equals(filterDateTo.toIso8601String()),
           );
-          expect(paramsMap['filter_by_owner'], equals('owner-1'));
+          expect(
+            paramsMap['filter_by_owners'],
+            equals(['owner-1', 'owner-2']),
+          );
           expect(paramsMap['scope'], equals('estimation'));
           expect(paramsMap['offset'], equals(10));
           expect(paramsMap['limit'], equals(25));

@@ -238,12 +238,10 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
         filterByTag: _selectedTags.isEmpty
             ? null
             : (_selectedTags.toList()..sort()).first,
-        // SearchParams accepts a single owner; sort for deterministic
-        // selection until CA-737 extends the API to support multi-owner
-        // filtering.
-        filterByOwner: _selectedOwnerIds.isEmpty
+        // Sorted so equal selections always produce the same RPC payload.
+        filterByOwners: _selectedOwnerIds.isEmpty
             ? null
-            : (_selectedOwnerIds.toList()..sort()).first,
+            : (_selectedOwnerIds.toList()..sort()),
         filterByDateFrom: _selectedDateRange?.start,
         filterByDateTo: _selectedDateRange?.end,
       ),

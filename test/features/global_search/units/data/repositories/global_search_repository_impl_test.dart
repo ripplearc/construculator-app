@@ -210,7 +210,7 @@ void main() {
             filterByTag: 'structural',
             filterByDateFrom: filterDateFrom,
             filterByDateTo: filterDateTo,
-            filterByOwner: 'owner-42',
+            filterByOwners: const ['owner-42', 'owner-7'],
             scope: SearchScope.estimation,
             pagination: const PaginationParams(offset: 5, limit: 10),
           );
@@ -231,7 +231,10 @@ void main() {
             rpcParams['filter_by_date_to'],
             equals(filterDateTo.toIso8601String()),
           );
-          expect(rpcParams['filter_by_owner'], equals('owner-42'));
+          expect(
+            rpcParams['filter_by_owners'],
+            equals(['owner-42', 'owner-7']),
+          );
           expect(rpcParams['scope'], equals('estimation'));
           expect(rpcParams['offset'], equals(5));
           expect(rpcParams['limit'], equals(10));

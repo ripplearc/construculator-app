@@ -213,7 +213,11 @@ void main() {
         final params = supabaseWrapper.getMethodCallsFor('rpc').first['params']
             as Map<String, dynamic>?;
         expect(params!['filter_by_tag'], equals('structural'));
-        expect(params['filter_by_owner'], equals('owner-42'));
+        expect(
+          params['filter_by_owners'],
+          equals(['owner-42']),
+          reason: 'a single owner must be wrapped in the RPC owner-id array',
+        );
       });
 
       test('ignores estimations and members in RPC response', () async {
