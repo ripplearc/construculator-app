@@ -75,7 +75,8 @@ class DisplayFormatter {
   /// Example: 204800 -> "200KB", 1572864 -> "1.5MB", 512 -> "512B"
   static String formatFileSize(int bytes) {
     if (bytes < 1024) return '${bytes}B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).round()}KB';
+    final kb = (bytes / 1024).round();
+    if (kb < 1024) return '${kb}KB';
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)}MB';
   }
 }

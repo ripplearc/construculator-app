@@ -44,6 +44,10 @@ void main() {
         find.text('Major Material Cost.xls'),
         checkTapTargetSize: false,
         checkLabeledTapTarget: false,
+        // textContrastGuideline picks the most-frequent dark pixel, but at
+        // 12px anti-aliased edges outnumber solid ink pixels, so it selects
+        // the edge color (#e0e3e6) instead of the true text color (#475467).
+        // Actual contrast is 7.6:1 — well above WCAG 4.5:1.
         checkTextContrast: false,
       );
     });
@@ -57,6 +61,10 @@ void main() {
         find.text('Uploaded on'),
         checkTapTargetSize: false,
         checkLabeledTapTarget: false,
+        // textContrastGuideline picks the most-frequent dark pixel, but at
+        // 12px anti-aliased edges outnumber solid ink pixels, so it selects
+        // the edge color (#e0e3e6) instead of the true text color (#475467).
+        // Actual contrast is 7.6:1 — well above WCAG 4.5:1.
         checkTextContrast: false,
       );
     });

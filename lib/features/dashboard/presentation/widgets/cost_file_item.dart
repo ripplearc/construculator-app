@@ -30,7 +30,7 @@ class CostFileItem extends StatelessWidget {
             padding: const EdgeInsets.all(CoreSpacing.space2),
             decoration: BoxDecoration(
               color: colors.backgroundBlueLight,
-              borderRadius: BorderRadius.circular(30),
+              shape: BoxShape.circle,
             ),
             child: CoreIconWidget(
               icon: CoreIcons.file,
