@@ -1,0 +1,117 @@
+import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/dashboard/dashboard_module.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/project_search_bloc/project_search_bloc.dart';
+import 'package:construculator/features/dashboard/presentation/pages/project_search_page.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/testing/router_test_module.dart';
+import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import '../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../utils/screenshot/await_images_extension.dart';
+import '../../../utils/screenshot/font_loader.dart';
+
+class _ProjectSearchPageScreenshotModule extends Module {
+  final AppBootstrap appBootstrap;
+
+  _ProjectSearchPageScreenshotModule(this.appBootstrap);
+
+  @override
+  List<Module> get imports => [
+    RouterTestModule(),
+    DashboardModule(appBootstrap),
+  ];
+}
+
+void main() {
+  const size = Size(390, 844);
+  const ratio = 1.0;
+  const testName = 'project_search_page';
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  late FakeSupabaseWrapper fakeSupabase;
+
+  setUpAll(() async {
+    await loadAppFontsAll();
+    final bootstrap = FakeAppBootstrapFactory.create(
+      supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
+    );
+    Modular.init(_ProjectSearchPageScreenshotModule(bootstrap));
+    final supabase = Modular.get<SupabaseWrapper>();
+    expect(supabase, isA<FakeSupabaseWrapper>());
+    fakeSupabase = supabase as FakeSupabaseWrapper;
+  });
+
+  tearDownAll(() {
+    Modular.destroy();
+  });
+
+  setUp(() {
+    fakeSupabase.reset();
+  });
+
+  Future<void> pumpProjectSearchPage({required WidgetTester tester}) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: createTestTheme(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ProjectSearchPage(
+          router: Modular.get<AppRouter>(),
+          blocFactory: () => Modular.get<ProjectSearchBloc>(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.awaitImages();
+  }
+
+  group('ProjectSearchPage Screenshot Tests', () {
+    testWidgets('renders default state correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpProjectSearchPage(tester: tester);
+
+      await expectLater(
+        find.byType(ProjectSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_default.png',
+        ),
+      );
+    });
+
+    testWidgets(
+      'renders with search text and clear button visible correctly',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = ratio;
+        addTearDown(tester.view.reset);
+
+        await pumpProjectSearchPage(tester: tester);
+
+        final textFieldFinder = find.descendant(
+          of: find.byType(ProjectSearchPage),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(textFieldFinder, 'wall');
+        await tester.pumpAndSettle();
+        expect(find.text('wall'), findsOneWidget);
+
+        await expectLater(
+          find.byType(ProjectSearchPage),
+          matchesGoldenFile(
+            'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_text.png',
+          ),
+        );
+      },
+    );
+  });
+}

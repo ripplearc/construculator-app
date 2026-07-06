@@ -1636,6 +1636,18 @@ abstract class AppLocalizations {
   /// **'No recent searches available'**
   String get globalSearchEmptyRecentMessage;
 
+  /// Label for the Tags filter chip on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get projectSearchFilterTags;
+
+  /// Label for the Modified filter chip on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Modified'**
+  String get projectSearchFilterModified;
+
   /// Title text displayed in the dashboard app bar
   ///
   /// In en, this message translates to:
@@ -1659,6 +1671,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear search'**
   String get globalSearchClearSearchSemanticLabel;
+
+  /// Accessibility label for the back button on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get projectSearchBackSemanticLabel;
+
+  /// Accessibility label for the clear search button on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get projectSearchClearSearchSemanticLabel;
 
   /// Accessibility label for the trailing icon on a recent search row — fills the search field with the term
   ///
@@ -1762,6 +1786,12 @@ abstract class AppLocalizations {
   /// **'Filter by tags'**
   String get globalSearchFilterTagsSemanticLabel;
 
+  /// Accessibility label for the Tags filter chip on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by tags'**
+  String get projectSearchFilterTagsSemanticLabel;
+
   /// Accessibility label for the × button that removes a single active tag filter chip
   ///
   /// In en, this message translates to:
@@ -1773,6 +1803,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Filter by modification date'**
   String get globalSearchFilterModifiedSemanticLabel;
+
+  /// Accessibility label for the Modified date filter chip on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by modification date'**
+  String get projectSearchFilterModifiedSemanticLabel;
 
   /// Accessibility label for the × button that removes the active modification-date filter
   ///

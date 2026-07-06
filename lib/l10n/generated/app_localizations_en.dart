@@ -859,6 +859,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get globalSearchEmptyRecentMessage => 'No recent searches available';
 
   @override
+  String get projectSearchFilterTags => 'Tags';
+
+  @override
+  String get projectSearchFilterModified => 'Modified';
+
+  @override
   String get dashboardTitle => 'Construculator';
 
   @override
@@ -869,6 +875,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get globalSearchClearSearchSemanticLabel => 'Clear search';
+
+  @override
+  String get projectSearchBackSemanticLabel => 'Back';
+
+  @override
+  String get projectSearchClearSearchSemanticLabel => 'Clear search';
 
   @override
   String globalSearchRecentSearchFillSemanticLabel(String term) {
@@ -931,12 +943,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get globalSearchFilterTagsSemanticLabel => 'Filter by tags';
 
   @override
+  String get projectSearchFilterTagsSemanticLabel => 'Filter by tags';
+
+  @override
   String globalSearchClearTagFilterSemanticLabel(String tag) {
     return 'Clear tag filter $tag';
   }
 
   @override
   String get globalSearchFilterModifiedSemanticLabel =>
+      'Filter by modification date';
+
+  @override
+  String get projectSearchFilterModifiedSemanticLabel =>
       'Filter by modification date';
 
   @override
