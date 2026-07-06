@@ -7,6 +7,9 @@ import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
   const suggestions = ['Carpentry', 'Carparking cost'];
+  BuildContext? buildContext;
+
+  AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
 
   Widget makeTestableWidget({
     List<String> items = suggestions,
@@ -17,13 +20,18 @@ void main() {
   }) {
     return MaterialApp(
       theme: theme ?? createTestTheme(),
-      home: Scaffold(
-        body: GlobalSearchSuggestionsList(
-          suggestions: items,
-          query: query,
-          onItemTap: onItemTap ?? (_) {},
-          onTrailingTap: onTrailingTap ?? (_) {},
-        ),
+      home: Builder(
+        builder: (context) {
+          buildContext = context;
+          return Scaffold(
+            body: GlobalSearchSuggestionsList(
+              suggestions: items,
+              query: query,
+              onItemTap: onItemTap ?? (_) {},
+              onTrailingTap: onTrailingTap ?? (_) {},
+            ),
+          );
+        },
       ),
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -71,7 +79,9 @@ void main() {
       await tester.pump();
 
       await tester.tap(
-        find.bySemanticsLabel('Fill search field with Carpentry'),
+        find.bySemanticsLabel(
+          l10n().globalSearchSuggestionFillSemanticLabel('Carpentry'),
+        ),
       );
       await tester.pump();
 

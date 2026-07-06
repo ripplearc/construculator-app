@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
@@ -17,6 +19,7 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 
@@ -381,6 +384,9 @@ void main() {
         expect(find.text('Carparking cost'), findsOneWidget);
         expect(find.text('Plumbing'), findsNothing);
 
+        // 5 s needed: filling the field fires onChanged → GlobalSearchQueryUpdated
+        // → RxDart debounceTime(300 ms) timer → async RPC. Shorter durations leave
+        // a pending timer at teardown and fail the !timersPending invariant.
         await tester.pump(const Duration(seconds: 5));
       },
     );
@@ -416,6 +422,9 @@ void main() {
           findsOneWidget,
         );
 
+        // 5 s needed: filling the field fires onChanged → GlobalSearchQueryUpdated
+        // → RxDart debounceTime(300 ms) timer → async RPC. Shorter durations leave
+        // a pending timer at teardown and fail the !timersPending invariant.
         await tester.pump(const Duration(seconds: 5));
       },
     );
@@ -436,6 +445,9 @@ void main() {
         find.byKey(const ValueKey('suggestion_item_Carpentry')),
       );
       await tester.pump();
+      // 5 s needed: filling the field fires onChanged → GlobalSearchQueryUpdated
+      // → RxDart debounceTime(300 ms) timer → async RPC. Shorter durations leave
+      // a pending timer at teardown and fail the !timersPending invariant.
       await tester.pump(const Duration(seconds: 5));
 
       expect(
@@ -446,5 +458,100 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'clears the loading spinner and restores the title after a '
+      'suggestions-fetch failure',
+      (tester) async {
+        fakeSupabase.setCurrentUser(
+          FakeUser(
+            id: _testUserId,
+            email: _testUserEmail,
+            createdAt: '2024-01-01T00:00:00.000Z',
+          ),
+        );
+        fakeSupabase.shouldThrowOnRpc = true;
+        await renderPage(tester);
+
+        final searchField = find.ancestor(
+          of: find.text(l10n().globalSearchHint),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(searchField, 'Car');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump();
+
+        expect(find.byType(CoreLoadingIndicator), findsNothing);
+        expect(
+          find.text(l10n().globalSearchSuggestionsTitle),
+          findsNothing,
+        );
+
+        await tester.pump(_kToastDismissDuration);
+      },
+    );
+
+    testWidgets(
+      'shows the loading spinner while the suggestions fetch is in flight',
+      (tester) async {
+        seedSuggestions(['Carpentry']);
+        await renderPage(tester);
+
+        // Hold the RPC open so the suggestionsLoading frame is observable.
+        final completer = Completer<void>();
+        fakeSupabase.shouldDelayOperations = true;
+        fakeSupabase.completer = completer;
+
+        final searchField = find.ancestor(
+          of: find.text(l10n().globalSearchHint),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(searchField, 'Car');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump();
+
+        expect(find.byType(CoreLoadingIndicator), findsOneWidget);
+        expect(
+          find.text(l10n().globalSearchSuggestionsTitle),
+          findsOneWidget,
+        );
+
+        completer.complete();
+        fakeSupabase.shouldDelayOperations = false;
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(CoreLoadingIndicator), findsNothing);
+        expect(find.text('Carpentry'), findsOneWidget);
+
+        await tester.pump(const Duration(seconds: 5));
+      },
+    );
+
+    testWidgets(
+      'renders an empty body and hides the title when no suggestions match '
+      'the query',
+      (tester) async {
+        seedSuggestions(['Plumbing']);
+        await renderPage(tester);
+
+        final searchField = find.ancestor(
+          of: find.text(l10n().globalSearchHint),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(searchField, 'Car');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump();
+
+        expect(find.byType(CoreLoadingIndicator), findsNothing);
+        expect(find.byType(GlobalSearchSuggestionsList), findsNothing);
+        expect(
+          find.text(l10n().globalSearchSuggestionsTitle),
+          findsNothing,
+        );
+
+        await tester.pump(const Duration(seconds: 5));
+      },
+    );
   });
 }
