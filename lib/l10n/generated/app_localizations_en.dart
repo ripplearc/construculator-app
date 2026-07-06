@@ -499,6 +499,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'By removing this project you will lose all calculations, costs, and images attached to your calculations';
 
   @override
+  String get deleteProjectButton => 'Delete project';
+
+  @override
   String get estimationDeletedSuccess => 'Estimation deleted successfully';
 
   @override
