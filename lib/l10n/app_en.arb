@@ -1370,6 +1370,11 @@
     "description": "Label for the Modified filter chip on the project search screen",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
   },
+  "projectSearchEmptyRecentMessage": "No recent searches available",
+  "@projectSearchEmptyRecentMessage": {
+    "description": "Message shown when there are no recent searches on the project search screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
   "dashboardTitle": "Construculator",
   "@dashboardTitle": {
     "description": "Title text displayed in the dashboard app bar",
@@ -1403,6 +1408,16 @@
   "globalSearchRecentSearchFillSemanticLabel": "Fill search field with {term}",
   "@globalSearchRecentSearchFillSemanticLabel": {
     "description": "Accessibility label for the trailing icon on a recent search row — fills the search field with the term",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design",
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
+  "projectSearchRecentSearchFillSemanticLabel": "Fill search field with {term}",
+  "@projectSearchRecentSearchFillSemanticLabel": {
+    "description": "Accessibility label for the trailing icon on a recent project search row — fills the search field with the term",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design",
     "placeholders": {
       "term": {

@@ -1,6 +1,6 @@
 import 'package:construculator/features/dashboard/presentation/bloc/project_search_bloc/project_search_bloc.dart';
-import 'package:construculator/features/global_search/presentation/widgets/global_search_empty_recent_widget.dart';
-import 'package:construculator/features/global_search/presentation/widgets/global_search_recent_searches_list.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/project_search_empty_recent_widget.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/project_search_recent_searches_list.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
@@ -87,7 +87,8 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
   Widget _buildBody(BuildContext context, ProjectSearchState state) {
     if (state is! ProjectSearchInitial) {
       // Loading/results/failure surfaces are not part of CA-690/CA-689 scope
-      // (history + suggestions only); keep showing the last history view.
+      // (history + suggestions only); render nothing rather than the last
+      // history view.
       return const SizedBox.shrink();
     }
     if (state.isLoadingHistory) {
@@ -96,9 +97,9 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
     if (state.recentSearches.isEmpty) {
       // TODO: [CA-689] Render suggestions list in this scaffold once
       // available; recents take priority when present.
-      return const GlobalSearchEmptyRecentWidget();
+      return const ProjectSearchEmptyRecentWidget();
     }
-    return GlobalSearchRecentSearchesList(
+    return ProjectSearchRecentSearchesList(
       recentSearches: state.recentSearches,
       onItemTap: (term) => _onItemTap(context, term),
       onTrailingTap: (term) => _onTrailingTap(context, term),
