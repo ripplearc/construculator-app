@@ -988,6 +988,18 @@ abstract class AppLocalizations {
   /// **'No, Keep'**
   String get noKeepButton;
 
+  /// Title for delete project confirmation bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to remove \"{projectName}\" project?'**
+  String deleteProjectConfirmTitle(String projectName);
+
+  /// Warning body text for delete project confirmation bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'By removing this project you will lose all calculations, costs, and images attached to your calculations'**
+  String get deleteProjectWarningMessage;
+
   /// Success message shown when an estimation is deleted
   ///
   /// In en, this message translates to:
