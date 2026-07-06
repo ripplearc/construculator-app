@@ -1355,6 +1355,16 @@
     "description": "Message shown when there are no recent searches on the global search screen",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
   },
+  "projectSearchFilterTags": "Tags",
+  "@projectSearchFilterTags": {
+    "description": "Label for the Tags filter chip on the project search screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
+  "projectSearchFilterModified": "Modified",
+  "@projectSearchFilterModified": {
+    "description": "Label for the Modified filter chip on the project search screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design"
+  },
   "dashboardTitle": "Construculator",
   "@dashboardTitle": {
     "description": "Title text displayed in the dashboard app bar",
@@ -1373,6 +1383,16 @@
   "globalSearchClearSearchSemanticLabel": "Clear search",
   "@globalSearchClearSearchSemanticLabel": {
     "description": "Accessibility label for the clear search button on the global search screen",
+    "context": "N/A"
+  },
+  "projectSearchBackSemanticLabel": "Back",
+  "@projectSearchBackSemanticLabel": {
+    "description": "Accessibility label for the back button on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchClearSearchSemanticLabel": "Clear search",
+  "@projectSearchClearSearchSemanticLabel": {
+    "description": "Accessibility label for the clear search button on the project search screen",
     "context": "N/A"
   },
   "globalSearchRecentSearchFillSemanticLabel": "Fill search field with {term}",
@@ -1467,6 +1487,11 @@
     "description": "Accessibility label for the Tags filter chip on the global search screen",
     "context": "N/A"
   },
+  "projectSearchFilterTagsSemanticLabel": "Filter by tags",
+  "@projectSearchFilterTagsSemanticLabel": {
+    "description": "Accessibility label for the Tags filter chip on the project search screen",
+    "context": "N/A"
+  },
   "globalSearchClearTagFilterSemanticLabel": "Clear tag filter {tag}",
   "@globalSearchClearTagFilterSemanticLabel": {
     "description": "Accessibility label for the × button that removes a single active tag filter chip",
@@ -1480,6 +1505,11 @@
   "globalSearchFilterModifiedSemanticLabel": "Filter by modification date",
   "@globalSearchFilterModifiedSemanticLabel": {
     "description": "Accessibility label for the Modified date filter chip on the global search screen",
+    "context": "N/A"
+  },
+  "projectSearchFilterModifiedSemanticLabel": "Filter by modification date",
+  "@projectSearchFilterModifiedSemanticLabel": {
+    "description": "Accessibility label for the Modified date filter chip on the project search screen",
     "context": "N/A"
   },
   "globalSearchClearDateFilterSemanticLabel": "Clear modification date filter",

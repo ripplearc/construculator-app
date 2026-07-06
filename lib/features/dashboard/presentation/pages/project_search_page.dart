@@ -42,7 +42,7 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
     final l10n = context.l10n;
 
     return Semantics(
-      label: l10n.globalSearchBackSemanticLabel,
+      label: l10n.projectSearchBackSemanticLabel,
       button: true,
       child: GestureDetector(
         key: const Key('project_search_back_button'),
@@ -69,8 +69,8 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
   }
 
   Widget _buildBody(BuildContext context, ProjectSearchState state) {
-    // Recent-history (CA-690) and suggestions (CA-689) bodies land in
-    // follow-up PRs hosted inside this page's scaffold.
+    // TODO: [CA-690] Render recent-history list in this scaffold.
+    // TODO: [CA-689] Render suggestions list in this scaffold.
     return const SizedBox.shrink();
   }
 
@@ -96,7 +96,7 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
                   child: CoreSearchBox(
                     controller: _searchController,
                     hintText: l10n.searchProjectsHint,
-                    clearSemanticLabel: l10n.globalSearchClearSearchSemanticLabel,
+                    clearSemanticLabel: l10n.projectSearchClearSearchSemanticLabel,
                     onChanged: (query) => BlocProvider.of<ProjectSearchBloc>(
                       innerContext,
                     ).add(ProjectSearchQueryUpdatedEvent(query: query)),
@@ -126,18 +126,18 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
                     // ProjectSearchBloc.
                     // https://ripplearc.youtrack.cloud/issue/CA-771
                     Semantics(
-                      label: l10n.globalSearchFilterTagsSemanticLabel,
+                      label: l10n.projectSearchFilterTagsSemanticLabel,
                       child: CoreFilterChip(
                         key: const Key('project_search_owner_filter_chip'),
-                        label: l10n.globalSearchFilterTags,
+                        label: l10n.projectSearchFilterTags,
                       ),
                     ),
                     const SizedBox(width: CoreSpacing.space2),
                     Semantics(
-                      label: l10n.globalSearchFilterModifiedSemanticLabel,
+                      label: l10n.projectSearchFilterModifiedSemanticLabel,
                       child: CoreFilterChip(
                         key: const Key('project_search_modified_filter_chip'),
-                        label: l10n.globalSearchFilterModified,
+                        label: l10n.projectSearchFilterModified,
                       ),
                     ),
                   ],
