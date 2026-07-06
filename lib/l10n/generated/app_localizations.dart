@@ -1708,23 +1708,17 @@ abstract class AppLocalizations {
   /// **'Fill search field with {term}'**
   String projectSearchRecentSearchFillSemanticLabel(String term);
 
-  /// Section title shown above the suggestions list on the global search screen when the user has typed a query
-  ///
-  /// In en, this message translates to:
-  /// **'Search suggestions'**
-  String get globalSearchSuggestionsTitle;
-
   /// Section title shown above the suggestions list on the project search screen when the user has typed a query
   ///
   /// In en, this message translates to:
   /// **'Search suggestions'**
   String get projectSearchSuggestionsTitle;
 
-  /// Accessibility label for the trailing icon on a suggestion row — fills the search field with the suggested term
+  /// Accessibility label for the trailing icon on a project search suggestion row — fills the search field with the suggested term
   ///
   /// In en, this message translates to:
   /// **'Fill search field with {term}'**
-  String globalSearchSuggestionFillSemanticLabel(String term);
+  String projectSearchSuggestionFillSemanticLabel(String term);
 
   /// Error toast shown when loading recent searches fails
   ///

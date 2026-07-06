@@ -3,6 +3,7 @@ import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_search_bloc/project_search_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/project_search_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/l10n/generated/app_localizations_en.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -156,6 +157,33 @@ void main() {
             matching: find.byKey(const Key('trailing_icon')),
           ),
           checkTapTargetSize: true,
+        );
+      },
+    );
+
+    testWidgets(
+      'meets a11y guidelines for suggestion fill icon in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        fakeSupabase.setRpcResponse(
+          DatabaseConstants.projectSearchSuggestionsRpcFunction,
+          ['Carpentry'],
+        );
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme),
+          find.bySemanticsLabel(
+            AppLocalizationsEn().projectSearchSuggestionFillSemanticLabel(
+              'Carpentry',
+            ),
+          ),
+          checkTapTargetSize: true,
+          setupAfterPump: (t) async {
+            await t.enterText(find.byType(TextFormField), 'Car');
+            await t.pump(const Duration(milliseconds: 400));
+            await t.pump();
+          },
         );
       },
     );

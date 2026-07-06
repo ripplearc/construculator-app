@@ -2,13 +2,13 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-/// A single row in the search suggestions list.
+/// A single row in the project search suggestions list.
 ///
 /// Wraps [CoreSearchRowItem.suggestion] and forwards [query] so the package
 /// renders the matching prefix in bold. Supplies a localized trailing-icon
 /// semantic label via
-/// [AppLocalizations.globalSearchSuggestionFillSemanticLabel].
-class GlobalSearchSuggestionItem extends StatelessWidget {
+/// [AppLocalizations.projectSearchSuggestionFillSemanticLabel].
+class ProjectSearchSuggestionItem extends StatelessWidget {
   /// The suggested search term to display.
   final String term;
 
@@ -22,8 +22,8 @@ class GlobalSearchSuggestionItem extends StatelessWidget {
   /// with [term] without running a search.
   final VoidCallback onTrailingTap;
 
-  /// Creates a [GlobalSearchSuggestionItem].
-  const GlobalSearchSuggestionItem({
+  /// Creates a [ProjectSearchSuggestionItem].
+  const ProjectSearchSuggestionItem({
     super.key,
     required this.term,
     required this.query,
@@ -39,7 +39,7 @@ class GlobalSearchSuggestionItem extends StatelessWidget {
       onTap: onTap,
       onTrailingTap: onTrailingTap,
       trailingSemanticLabel:
-          context.l10n.globalSearchSuggestionFillSemanticLabel(term),
+          context.l10n.projectSearchSuggestionFillSemanticLabel(term),
     );
   }
 }

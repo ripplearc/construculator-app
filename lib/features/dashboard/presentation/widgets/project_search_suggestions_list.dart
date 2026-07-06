@@ -1,15 +1,15 @@
-import 'package:construculator/features/global_search/presentation/widgets/global_search_suggestion_item.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/project_search_suggestion_item.dart';
 import 'package:flutter/material.dart';
 
-/// A scrollable list of search suggestions.
+/// A scrollable list of project search suggestions.
 ///
-/// Displays one [GlobalSearchSuggestionItem] per entry in [suggestions]. All
+/// Displays one [ProjectSearchSuggestionItem] per entry in [suggestions]. All
 /// interaction is delegated upward via callbacks — this widget holds no BLoC
 /// references.
 ///
 /// Must be placed inside a bounded vertical context (e.g. [Expanded] or a
 /// fixed-height container) to avoid an unbounded-height layout exception.
-class GlobalSearchSuggestionsList extends StatelessWidget {
+class ProjectSearchSuggestionsList extends StatelessWidget {
   /// The ordered list of suggestion terms to display.
   final List<String> suggestions;
 
@@ -23,8 +23,8 @@ class GlobalSearchSuggestionsList extends StatelessWidget {
   /// Called when the user taps the trailing ↖ icon to fill the search field.
   final ValueChanged<String> onTrailingTap;
 
-  /// Creates a [GlobalSearchSuggestionsList].
-  const GlobalSearchSuggestionsList({
+  /// Creates a [ProjectSearchSuggestionsList].
+  const ProjectSearchSuggestionsList({
     super.key,
     required this.suggestions,
     required this.query,
@@ -38,7 +38,7 @@ class GlobalSearchSuggestionsList extends StatelessWidget {
       itemCount: suggestions.length,
       itemBuilder: (context, index) {
         final term = suggestions[index];
-        return GlobalSearchSuggestionItem(
+        return ProjectSearchSuggestionItem(
           key: ValueKey('suggestion_item_$term'),
           term: term,
           query: query,

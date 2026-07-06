@@ -6,7 +6,7 @@ import 'package:construculator/features/dashboard/presentation/bloc/project_sear
 import 'package:construculator/features/dashboard/presentation/pages/project_search_page.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/project_search_empty_recent_widget.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/project_search_recent_searches_list.dart';
-import 'package:construculator/features/global_search/presentation/widgets/global_search_suggestions_list.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/project_search_suggestions_list.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -388,7 +388,7 @@ void main() {
         await tester.pump();
 
         expect(find.text(l10n().projectSearchSuggestionsTitle), findsOneWidget);
-        expect(find.byType(GlobalSearchSuggestionsList), findsOneWidget);
+        expect(find.byType(ProjectSearchSuggestionsList), findsOneWidget);
         expect(find.text('Carpentry'), findsOneWidget);
         expect(find.text('Carparking cost'), findsOneWidget);
         expect(find.text('Plumbing'), findsNothing);
