@@ -12,6 +12,7 @@ import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
+import 'package:construculator/libraries/project/testing/fake_project_ui_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -62,7 +63,7 @@ void main() {
     Modular.init(ShellModule(appBootstrap));
     Modular.bindModule(DashboardModule(appBootstrap));
     Modular.replaceInstance<CurrentProjectNotifier>(fakeProjectNotifier);
-    Modular.replaceInstance<ProjectUIProvider>(_FakeProjectUIProvider());
+    Modular.replaceInstance<ProjectUIProvider>(FakeProjectUIProvider());
   });
 
   tearDown(() => Modular.destroy());
@@ -135,29 +136,7 @@ void main() {
       await tester.pumpWidget(makeApp());
       await tester.pump();
 
-      expect(find.byType(_FakeProjectAppBar), findsOneWidget);
+      expect(find.byType(FakeProjectAppBar), findsOneWidget);
     });
   });
-}
-
-// TODO: [CA-724] Migrate to lib/libraries/project/testing/fake_project_ui_provider.dart
-class _FakeProjectUIProvider extends ProjectUIProvider {
-  @override
-  PreferredSizeWidget buildProjectHeaderAppbar({
-    VoidCallback? onProjectTap,
-    VoidCallback? onSearchTap,
-    VoidCallback? onNotificationTap,
-  }) {
-    return const PreferredSize(
-      preferredSize: Size.fromHeight(kToolbarHeight),
-      child: _FakeProjectAppBar(),
-    );
-  }
-}
-
-class _FakeProjectAppBar extends StatelessWidget {
-  const _FakeProjectAppBar();
-
-  @override
-  Widget build(BuildContext context) => const SizedBox.shrink();
 }
