@@ -45,8 +45,6 @@ class ProjectDropdownBloc
     return super.close();
   }
 
-  // Pre-computes the view_project permission per project so the UI never
-  // queries the repository itself.
   Set<String> _settingsAccessibleIds(List<Project> projects) => projects
       .where(
         (project) => _projectRepository.hasProjectPermission(

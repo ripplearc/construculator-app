@@ -60,9 +60,7 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
   late final ProjectDropdownBloc _bloc;
   final TextEditingController _searchController = TextEditingController();
 
-  // The ID of the project currently being navigated to via its settings
-  // affordance. While non-null, that project's settings button is disabled.
-  String? _navigatingSettingsProjectId;
+  final Set<String> _navigatingSettingsProjectIds = {};
 
   @override
   void initState() {
@@ -122,7 +120,7 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
       return;
     }
 
-    setState(() => _navigatingSettingsProjectId = project.id);
+    setState(() => _navigatingSettingsProjectIds.add(project.id));
     try {
       await widget.router.pushNamed(fullViewProjectRoute, arguments: project.id);
     } catch (error, stackTrace) {
@@ -140,7 +138,7 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
       }
     } finally {
       if (mounted) {
-        setState(() => _navigatingSettingsProjectId = null);
+        setState(() => _navigatingSettingsProjectIds.remove(project.id));
       }
     }
   }
@@ -319,7 +317,8 @@ class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
                       project: project,
                       isSelected: project.id == selectedProjectId,
                       onTap: () => _onProjectSelected(project),
-                      onSettingsTap: _navigatingSettingsProjectId == project.id
+                      onSettingsTap:
+                          _navigatingSettingsProjectIds.contains(project.id)
                           ? null
                           : () => _onProjectSettings(
                               project,
