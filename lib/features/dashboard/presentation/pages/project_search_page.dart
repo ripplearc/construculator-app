@@ -1,7 +1,7 @@
 import 'package:construculator/features/dashboard/presentation/bloc/project_search_bloc/project_search_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/project_search_empty_recent_widget.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/project_search_recent_searches_list.dart';
-import 'package:construculator/features/global_search/presentation/widgets/global_search_suggestions_list.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/project_search_suggestions_list.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
@@ -29,6 +29,36 @@ class ProjectSearchPage extends StatefulWidget {
 
   @override
   State<ProjectSearchPage> createState() => _ProjectSearchPageState();
+}
+
+/// Derived view flags shared by [_ProjectSearchPageState._buildBody] and
+/// [_ProjectSearchPageState._buildSectionTitle] so both read the same
+/// `ProjectSearchInitial` fields instead of re-deriving them independently.
+class _ProjectSearchViewState {
+  final bool hasQuery;
+  final bool hasSuggestions;
+  final bool suggestionsLoading;
+
+  const _ProjectSearchViewState({
+    required this.hasQuery,
+    required this.hasSuggestions,
+    required this.suggestionsLoading,
+  });
+
+  factory _ProjectSearchViewState.from(ProjectSearchState state) {
+    if (state is! ProjectSearchInitial) {
+      return const _ProjectSearchViewState(
+        hasQuery: false,
+        hasSuggestions: false,
+        suggestionsLoading: false,
+      );
+    }
+    return _ProjectSearchViewState(
+      hasQuery: state.query.isNotEmpty,
+      hasSuggestions: state.suggestions.isNotEmpty,
+      suggestionsLoading: state.suggestionsLoading,
+    );
+  }
 }
 
 class _ProjectSearchPageState extends State<ProjectSearchPage> {
@@ -92,12 +122,13 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
       // history view.
       return const SizedBox.shrink();
     }
-    if (state.query.isNotEmpty) {
-      if (state.suggestionsLoading) {
+    final viewState = _ProjectSearchViewState.from(state);
+    if (viewState.hasQuery) {
+      if (viewState.suggestionsLoading) {
         return const Center(child: CoreLoadingIndicator());
       }
-      if (state.suggestions.isNotEmpty) {
-        return GlobalSearchSuggestionsList(
+      if (viewState.hasSuggestions) {
+        return ProjectSearchSuggestionsList(
           suggestions: state.suggestions,
           query: state.query,
           onItemTap: (term) => _onItemTap(context, term),
@@ -123,9 +154,10 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
     final l10n = context.l10n;
     final typography = context.textTheme;
     if (state is! ProjectSearchInitial) return const SizedBox.shrink();
-    final hasQuery = state.query.isNotEmpty;
-    final hasSuggestions = state.suggestions.isNotEmpty;
-    if (hasQuery && !hasSuggestions && !state.suggestionsLoading) {
+    final viewState = _ProjectSearchViewState.from(state);
+    if (viewState.hasQuery &&
+        !viewState.hasSuggestions &&
+        !viewState.suggestionsLoading) {
       return const SizedBox.shrink();
     }
     return Padding(
@@ -134,7 +166,7 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
         vertical: CoreSpacing.space3,
       ),
       child: Text(
-        hasQuery
+        viewState.hasQuery
             ? l10n.projectSearchSuggestionsTitle
             : l10n.projectSearchRecentSearchesTitle,
         style: typography.bodyLargeSemiBold,
