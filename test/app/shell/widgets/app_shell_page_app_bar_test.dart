@@ -3,13 +3,12 @@ import 'package:construculator/app/shell/app_shell_page.dart';
 import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/app/shell/widgets/header_row.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/dashboard_bloc/dashboard_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
@@ -91,12 +90,13 @@ void main() {
           BlocProvider<RecentEstimationsBloc>(
             create: (_) => Modular.get<RecentEstimationsBloc>(),
           ),
+          BlocProvider<DashboardBloc>(
+            create: (_) => Modular.get<DashboardBloc>(),
+          ),
         ],
         child: AppShellPage(
           projectUIProvider: Modular.get<ProjectUIProvider>(),
           currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
-          authNotifier: Modular.get<AuthNotifier>(),
-          authManager: Modular.get<AuthManager>(),
           router: Modular.get<AppRouter>(),
         ),
       ),

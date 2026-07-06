@@ -5,6 +5,7 @@ import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/app/shell/widgets/header_row.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/dashboard_bloc/dashboard_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
@@ -13,8 +14,6 @@ import 'package:construculator/features/members/presentation/pages/members_page.
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
-import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/estimation/testing/fake_cost_estimation_repository.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
@@ -107,6 +106,9 @@ void main() {
       },
       home: MultiBlocProvider(
         providers: [
+          BlocProvider<DashboardBloc>.value(
+            value: Modular.get<DashboardBloc>(),
+          ),
           BlocProvider<AppShellBloc>.value(
             value: Modular.get<AppShellBloc>(),
           ),
@@ -120,8 +122,6 @@ void main() {
         child: AppShellPage(
           projectUIProvider: Modular.get<ProjectUIProvider>(),
           currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
-          authNotifier: Modular.get<AuthNotifier>(),
-          authManager: Modular.get<AuthManager>(),
           router: Modular.get<AppRouter>(),
         ),
       ),
