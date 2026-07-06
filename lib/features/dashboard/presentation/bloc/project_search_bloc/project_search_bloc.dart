@@ -16,12 +16,8 @@ part 'project_search_state.dart';
 
 const Duration _kQueryDebounceDuration = Duration(milliseconds: 300);
 
-/// Upper bound on the cached recents list to prevent unbounded growth.
 const int _kMaxCachedRecents = 20;
 
-/// Maximum number of suggestions shown for a given query. The raw list
-/// fetched from the repository may be longer; the cap keeps the dropdown
-/// short, matching Global Search's `_kMaxDisplayedSuggestions`.
 const int _kMaxDisplayedSuggestions = 5;
 
 EventTransformer<E> _debounce<E>(Duration duration) =>
@@ -41,9 +37,6 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
   List<String> _cachedSuggestions = const [];
   String _currentQuery = '';
 
-  // Whether _cachedSuggestions has been fetched at least once for the
-  // current page session, so subsequent keystrokes only re-filter locally
-  // instead of re-fetching from the repository.
   bool _suggestionsFetched = false;
 
   /// Exposed for testing only — resolves when the last save-after-search
@@ -115,8 +108,6 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     emit(_initialFromCache());
   }
 
-  // Filters _cachedSuggestions to terms that start with [query]
-  // (case-insensitive) and caps the result at _kMaxDisplayedSuggestions.
   List<String> _filterSuggestions(String query) {
     if (query.isEmpty) return const [];
     final lower = query.toLowerCase();
