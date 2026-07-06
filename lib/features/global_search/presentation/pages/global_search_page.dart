@@ -179,7 +179,10 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
     if (state is GlobalSearchReady) {
       _lastReady = state;
     }
-    final effectiveReady = state is GlobalSearchReady ? state : _lastReady;
+    var effectiveReady = state is GlobalSearchReady ? state : _lastReady;
+    if (state is GlobalSearchSuggestionsLoadFailure) {
+      effectiveReady = effectiveReady?.copyWith(suggestionsLoading: false);
+    }
     if (effectiveReady == null) {
       return const GlobalSearchEmptyRecentWidget();
     }
@@ -214,7 +217,9 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
     final query = effectiveReady?.query ?? '';
     final hasQuery = query.isNotEmpty;
     final hasSuggestions = effectiveReady?.suggestions.isNotEmpty ?? false;
-    final loading = effectiveReady?.suggestionsLoading ?? false;
+    final loading = state is GlobalSearchSuggestionsLoadFailure
+        ? false
+        : effectiveReady?.suggestionsLoading ?? false;
     if (hasQuery && !hasSuggestions && !loading) {
       return const SizedBox.shrink();
     }
