@@ -98,12 +98,15 @@ abstract class SupabaseWrapper {
   /// [filters] Map of column → value pairs that must all match
   /// [orderBy] Optional column name to order results by
   /// [ascending] Sort direction when [orderBy] is provided, defaults to true
+  /// [limit] Optional maximum number of rows to return, applied at the
+  /// database level; null means no limit
   Future<List<Map<String, dynamic>>> selectMatch({
     required String table,
     String columns = '*',
     required Map<String, dynamic> filters,
     String? orderBy,
     bool ascending = true,
+    int? limit,
   });
 
   /// Select a set of rows from a table where [filterColumn] value is in [filterValues].

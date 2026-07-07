@@ -483,6 +483,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required Map<String, dynamic> filters,
     String? orderBy,
     bool ascending = true,
+    int? limit,
   }) async {
     final tableDataSnapshot = List<Map<String, dynamic>>.from(_tables[table] ?? <Map<String, dynamic>>[]);
 
@@ -493,6 +494,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       'filters': Map<String, dynamic>.from(filters),
       if (orderBy != null) 'orderBy': orderBy,
       'ascending': ascending,
+      if (limit != null) 'limit': limit,
     });
 
     if (shouldDelayOperations) {
@@ -531,6 +533,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       });
     }
 
+    if (limit != null) {
+      return results.take(limit).toList();
+    }
     return results;
   }
 

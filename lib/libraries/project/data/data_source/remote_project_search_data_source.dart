@@ -140,6 +140,7 @@ class RemoteProjectSearchDataSource implements ProjectSearchDataSource {
         filters: {DatabaseConstants.userIdColumn: userId},
         orderBy: DatabaseConstants.updatedAtColumn,
         ascending: false,
+        limit: DatabaseConstants.recentProjectSearchesMaxResults,
       );
 
       return rows
@@ -147,10 +148,6 @@ class RemoteProjectSearchDataSource implements ProjectSearchDataSource {
             (row) => row[DatabaseConstants.searchTermColumn]?.toString() ?? '',
           )
           .where((term) => term.isNotEmpty)
-          // TODO: [CA-722] Replace in-memory .take() with a DB-level limit
-          // once SupabaseWrapper.selectMatch supports a limit parameter.
-          // https://ripplearc.youtrack.cloud/issue/CA-722
-          .take(DatabaseConstants.recentProjectSearchesMaxResults)
           .toList();
     } on supabase.PostgrestException catch (error, stackTrace) {
       _logger.warning(

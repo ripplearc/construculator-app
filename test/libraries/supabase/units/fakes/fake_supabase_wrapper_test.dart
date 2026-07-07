@@ -1278,6 +1278,7 @@ void main() {
             table: 'items',
             columns: 'id,status',
             filters: {'project_id': 'p1', 'status': 'active'},
+            limit: 3,
           );
 
           final calls = fakeWrapper.getMethodCallsFor('selectMatch');
@@ -1289,6 +1290,45 @@ void main() {
             call['filters'],
             equals({'project_id': 'p1', 'status': 'active'}),
           );
+          expect(call['limit'], equals(3));
+        });
+
+        test('truncates matching rows to limit after ordering', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1', 'rank': 3},
+            {'id': '2', 'project_id': 'p1', 'rank': 1},
+            {'id': '3', 'project_id': 'p1', 'rank': 2},
+            {'id': '4', 'project_id': 'p2', 'rank': 0},
+          ]);
+
+          final result = await fakeWrapper.selectMatch(
+            table: 'items',
+            filters: {'project_id': 'p1'},
+            orderBy: 'rank',
+            limit: 2,
+          );
+
+          expect(result, hasLength(2));
+          expect(
+            result.map((row) => row['id']),
+            equals(['2', '3']),
+            reason: 'Limit must apply to the ordered rows, not insertion order',
+          );
+        });
+
+        test('returns all matching rows when limit is null', () async {
+          fakeWrapper.addTableData('items', [
+            {'id': '1', 'project_id': 'p1'},
+            {'id': '2', 'project_id': 'p1'},
+            {'id': '3', 'project_id': 'p1'},
+          ]);
+
+          final result = await fakeWrapper.selectMatch(
+            table: 'items',
+            filters: {'project_id': 'p1'},
+          );
+
+          expect(result, hasLength(3));
         });
 
         test('records call before delay completes', () async {

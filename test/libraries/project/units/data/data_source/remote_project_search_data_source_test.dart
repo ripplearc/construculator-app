@@ -466,7 +466,7 @@ void main() {
       });
 
       test(
-        'caps results at recentProjectSearchesMaxResults',
+        'caps results at recentProjectSearchesMaxResults via DB-level limit',
         () async {
           final overLimit =
               DatabaseConstants.recentProjectSearchesMaxResults + 5;
@@ -490,6 +490,13 @@ void main() {
           expect(
             result,
             hasLength(DatabaseConstants.recentProjectSearchesMaxResults),
+          );
+          final call = supabaseWrapper.getMethodCallsFor('selectMatch').single;
+          expect(
+            call['limit'],
+            equals(DatabaseConstants.recentProjectSearchesMaxResults),
+            reason: 'Row-count bounding must happen at the DB level, '
+                'not in memory after fetching all rows',
           );
         },
       );
