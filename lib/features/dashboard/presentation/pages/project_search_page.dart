@@ -122,13 +122,13 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
                 ),
                 child: Row(
                   children: [
-                    // TODO: [CA-771] Wire Owner + Modified filter chips to
+                    // TODO: [CA-771] Wire Tags + Modified filter chips to
                     // ProjectSearchBloc.
                     // https://ripplearc.youtrack.cloud/issue/CA-771
                     Semantics(
                       label: l10n.projectSearchFilterTagsSemanticLabel,
                       child: CoreFilterChip(
-                        key: const Key('project_search_owner_filter_chip'),
+                        key: const Key('project_search_tags_filter_chip'),
                         label: l10n.projectSearchFilterTags,
                       ),
                     ),
