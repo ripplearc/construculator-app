@@ -127,15 +127,17 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
     required Map<String, dynamic> filters,
     String? orderBy,
     bool ascending = true,
+    int? limit,
   }) async {
     var query = _supabaseClient
         .from(table)
         .select(columns)
         .match(filters.cast<String, Object>());
     if (orderBy != null) {
-      return await query.order(orderBy, ascending: ascending);
+      final ordered = query.order(orderBy, ascending: ascending);
+      return limit != null ? await ordered.limit(limit) : await ordered;
     }
-    return await query;
+    return limit != null ? await query.limit(limit) : await query;
   }
 
   @override
