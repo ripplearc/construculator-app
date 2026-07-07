@@ -721,6 +721,37 @@ void main() {
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'skips the suggestions fetch when query is whitespace-only',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.searchSuggestionsRpcFunction,
+            ['foundation', 'concrete'],
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchQueryUpdated(query: '   ')),
+        wait: const Duration(milliseconds: 310),
+        expect: () => [const GlobalSearchReady()],
+        verify: (_) {
+          final rpcCalls = fakeSupabase
+              .getMethodCallsFor('rpc')
+              .where(
+                (call) =>
+                    call['functionName'] ==
+                    DatabaseConstants.searchSuggestionsRpcFunction,
+              );
+          expect(rpcCalls, isEmpty);
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
         'reuses cached raw suggestions on subsequent query updates with no extra RPC',
         setUp: () {
           fakeSupabase.setCurrentUser(

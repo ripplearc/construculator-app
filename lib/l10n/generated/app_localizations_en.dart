@@ -842,6 +842,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get globalSearchFilterType => 'Type';
 
   @override
+  String get globalSearchSuggestionsTitle => 'Search suggestions';
+
+  @override
+  String globalSearchSuggestionFillSemanticLabel(String term) {
+    return 'Fill search field with $term';
+  }
+
+  @override
   String get globalSearchEmptyRecentMessage => 'No recent searches available';
 
   @override
@@ -868,14 +876,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get globalSearchDeleteErrorMessage =>
       'Failed to remove recent search. Please try again.';
-
-  @override
-  String get globalSearchSuggestionsTitle => 'Search suggestions';
-
-  @override
-  String globalSearchSuggestionFillSemanticLabel(String term) {
-    return 'Fill search field with $term';
-  }
 
   @override
   String get globalSearchSuggestionsErrorMessage =>

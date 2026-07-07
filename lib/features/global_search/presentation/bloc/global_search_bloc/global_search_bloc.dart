@@ -201,9 +201,10 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     GlobalSearchQueryUpdated event,
     Emitter<GlobalSearchState> emit,
   ) async {
-    _currentQuery = event.query;
+    final trimmedQuery = event.query.trim();
+    _currentQuery = trimmedQuery;
 
-    if (event.query.trim().isEmpty) {
+    if (trimmedQuery.isEmpty) {
       emit(_readyState());
       return;
     }
