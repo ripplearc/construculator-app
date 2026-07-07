@@ -113,16 +113,15 @@ void main() {
     ) async {
       await renderPage(tester);
 
-      final element = tester.element(
-        find.descendant(
-          of: find.byType(ProjectSearchPage),
-          matching: find.byType(
-            BlocBuilder<ProjectSearchBloc, ProjectSearchState>,
-          ),
-        ),
-      );
-      final bloc = BlocProvider.of<ProjectSearchBloc>(element);
-      expect(bloc.state, isA<ProjectSearchInitial>());
+      // Assert the observable side effect of the event actually firing: the
+      // recent-searches fetch hit the history table exactly once.
+      final historyFetches = fakeSupabase
+          .getMethodCallsFor('selectMatch')
+          .where(
+            (call) =>
+                call['table'] == DatabaseConstants.projectSearchHistoryTable,
+          );
+      expect(historyFetches, hasLength(1));
     });
 
     testWidgets('tapping back button pops via router', (tester) async {

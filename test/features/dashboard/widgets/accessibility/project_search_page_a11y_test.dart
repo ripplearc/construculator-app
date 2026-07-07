@@ -94,7 +94,7 @@ void main() {
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
         (theme) => makeTestableWidget(theme: theme),
-        find.byKey(const Key('project_search_owner_filter_chip')),
+        find.byKey(const Key('project_search_tags_filter_chip')),
         checkTapTargetSize: true,
         checkLabeledTapTarget: true,
       );
