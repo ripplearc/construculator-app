@@ -172,17 +172,22 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
     );
   }
 
+  GlobalSearchReady? _effectiveReady(GlobalSearchState state) {
+    if (state is GlobalSearchReady) {
+      _lastReady = state;
+    }
+    final effectiveReady = state is GlobalSearchReady ? state : _lastReady;
+    if (state is GlobalSearchSuggestionsLoadFailure) {
+      return effectiveReady?.copyWith(suggestionsLoading: false);
+    }
+    return effectiveReady;
+  }
+
   Widget _buildBody(BuildContext context, GlobalSearchState state) {
     if (state is GlobalSearchInitial) {
       return const Center(child: CoreLoadingIndicator());
     }
-    if (state is GlobalSearchReady) {
-      _lastReady = state;
-    }
-    var effectiveReady = state is GlobalSearchReady ? state : _lastReady;
-    if (state is GlobalSearchSuggestionsLoadFailure) {
-      effectiveReady = effectiveReady?.copyWith(suggestionsLoading: false);
-    }
+    final effectiveReady = _effectiveReady(state);
     if (effectiveReady == null) {
       return const GlobalSearchEmptyRecentWidget();
     }
@@ -213,13 +218,11 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
   Widget _buildSectionTitle(BuildContext context, GlobalSearchState state) {
     final l10n = context.l10n;
     final typography = context.textTheme;
-    final effectiveReady = state is GlobalSearchReady ? state : _lastReady;
+    final effectiveReady = _effectiveReady(state);
     final query = effectiveReady?.query ?? '';
     final hasQuery = query.isNotEmpty;
     final hasSuggestions = effectiveReady?.suggestions.isNotEmpty ?? false;
-    final loading = state is GlobalSearchSuggestionsLoadFailure
-        ? false
-        : effectiveReady?.suggestionsLoading ?? false;
+    final loading = effectiveReady?.suggestionsLoading ?? false;
     if (hasQuery && !hasSuggestions && !loading) {
       return const SizedBox.shrink();
     }
