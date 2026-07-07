@@ -122,7 +122,9 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     Emitter<ProjectSearchState> emit,
   ) async {
     if (event.query.trim().isEmpty) {
-      emit(const ProjectSearchInitial());
+      // Preserve cached recents/suggestions instead of blanking the idle
+      // surface, mirroring _handleQuery's empty-query branch.
+      emit(_initialFromCache());
       return;
     }
     await _executeSearch(event.query, emit);

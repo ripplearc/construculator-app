@@ -253,6 +253,52 @@ void main() {
       );
 
       blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'preserves cached recents when query is empty after history has loaded',
+        setUp: () {
+          fakeSupabase.addTableData(
+            DatabaseConstants.projectSearchHistoryTable,
+            [
+              {
+                DatabaseConstants.userIdColumn: _testUserId,
+                DatabaseConstants.searchTermColumn: 'foundation',
+                DatabaseConstants.updatedAtColumn: '2024-06-01T00:00:00.000Z',
+              },
+            ],
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {
+              'projects': [_fakeProjectData(id: 'p-1', projectName: 'Wall')],
+              'estimations': [],
+              'members': [],
+            },
+          );
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchHistoryRequestedEvent());
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && !s.isLoadingHistory,
+          );
+          // Leave the idle surface via a real search, then submit an empty
+          // query: the idle view must come back with its recents intact.
+          bloc.add(const ProjectSearchPerformedEvent(query: 'wall'));
+          await bloc.stream.firstWhere((s) => s is ProjectSearchResultsLoaded);
+          bloc.add(const ProjectSearchPerformedEvent(query: '   '));
+        },
+        skip: 4,
+        expect: () => [
+          // 'wall' is prepended by the save-after-search of the submit above;
+          // the pre-existing 'foundation' entry must survive the empty submit.
+          isA<ProjectSearchInitial>().having(
+            (s) => s.recentSearches,
+            'recentSearches',
+            ['wall', 'foundation'],
+          ),
+        ],
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
         'emits [ProjectSearchLoading, ProjectSearchResultsLoaded] immediately on success',
         setUp: () {
           fakeSupabase.setRpcResponse(
@@ -506,6 +552,58 @@ void main() {
             fakeSupabase.getMethodCallsFor('deleteMatch'),
             hasLength(1),
           );
+        },
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'updates cache without emitting when current state is not Initial',
+        setUp: () {
+          fakeSupabase.addTableData(
+            DatabaseConstants.projectSearchHistoryTable,
+            [
+              {
+                DatabaseConstants.userIdColumn: _testUserId,
+                DatabaseConstants.searchTermColumn: 'foundation',
+                DatabaseConstants.updatedAtColumn: '2024-06-01T00:00:00.000Z',
+              },
+              {
+                DatabaseConstants.userIdColumn: _testUserId,
+                DatabaseConstants.searchTermColumn: 'wall',
+                DatabaseConstants.updatedAtColumn: '2024-05-01T00:00:00.000Z',
+              },
+            ],
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {
+              'projects': [_fakeProjectData(id: 'p-1', projectName: 'Wall')],
+              'estimations': [],
+              'members': [],
+            },
+          );
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchHistoryRequestedEvent());
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && !s.isLoadingHistory,
+          );
+          // Dismiss while showing search results: the deletion must go
+          // through, but the results view must not be replaced by Initial.
+          bloc.add(const ProjectSearchPerformedEvent(query: 'wall'));
+          await bloc.stream.firstWhere((s) => s is ProjectSearchResultsLoaded);
+          bloc.add(
+            const ProjectSearchHistoryItemDismissedEvent(
+              searchTerm: 'foundation',
+            ),
+          );
+          await pumpEventQueue();
+        },
+        skip: 4,
+        expect: () => <ProjectSearchState>[],
+        verify: (bloc) {
+          expect(bloc.state, isA<ProjectSearchResultsLoaded>());
+          expect(fakeSupabase.getMethodCallsFor('deleteMatch'), hasLength(1));
         },
       );
 
