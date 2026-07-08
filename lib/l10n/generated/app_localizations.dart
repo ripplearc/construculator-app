@@ -1276,6 +1276,12 @@ abstract class AppLocalizations {
   /// **'No cost files attached.'**
   String get costFilesEmptyState;
 
+  /// Last-updated line on the project header card, showing the formatted date
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated: {date}'**
+  String projectLastUpdatedLabel(String date);
+
   /// Activity log message for attachment added with file name
   ///
   /// In en, this message translates to:
