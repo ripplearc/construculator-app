@@ -184,39 +184,36 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
       button: true,
       child: GestureDetector(
         onTap: onTap,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(
-              vertical: 6,
-              horizontal: CoreSpacing.space4,
-            ),
-            decoration: BoxDecoration(
-              color: isActive ? colorTheme.tabsHighlight : colorTheme.transparent,
-              borderRadius: BorderRadius.circular(CoreSpacing.space4),
-              boxShadow: isActive
-                  ? [
-                      BoxShadow(
-                        color: colorTheme.shadowGrey10,
-                        blurRadius: 12,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: isActive
-                  ? textTheme.bodyMediumSemiBold.copyWith(
-                      color: colorTheme.textHeadline,
-                    )
-                  : textTheme.bodyMediumRegular.copyWith(
-                      color: colorTheme.textBody,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(
+            vertical: 6,
+            horizontal: CoreSpacing.space4,
+          ),
+          decoration: BoxDecoration(
+            color: isActive ? colorTheme.tabsHighlight : colorTheme.transparent,
+            borderRadius: BorderRadius.circular(CoreSpacing.space4),
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: colorTheme.shadowGrey10,
+                      blurRadius: 12,
+                      offset: const Offset(0, 2),
                     ),
-            ),
+                  ]
+                : null,
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: isActive
+                ? textTheme.bodyMediumSemiBold.copyWith(
+                    color: colorTheme.textHeadline,
+                  )
+                : textTheme.bodyMediumRegular.copyWith(
+                    color: colorTheme.textBody,
+                  ),
           ),
         ),
       ),
