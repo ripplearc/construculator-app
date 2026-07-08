@@ -81,33 +81,118 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
 
   Widget _buildBody(BuildContext context) {
     final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
     final l10n = context.l10n;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(
-        CoreSpacing.space4,
-        CoreSpacing.space6,
-        CoreSpacing.space4,
-        0,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _CostCalculationModeToggle(
-            fromCostFile: _fromCostFile,
-            onChanged: (value) => setState(() => _fromCostFile = value),
-          ),
-          const SizedBox(height: CoreSpacing.space6),
-          // TODO: [CA-???] Add form fields for cost item entry
-          Center(
-            child: CoreIconWidget(
-              key: const Key('cost_item_form_placeholder'),
-              icon: CoreIcons.emptyEstimation,
-              size: 200,
-              color: colorTheme.iconDark,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ColoredBox(
+          color: colorTheme.backgroundBlueLight,
+          child: Padding(
+            padding: const EdgeInsets.all(CoreSpacing.space4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.howToCalculateCostLabel,
+                  key: const Key('how_to_calculate_label'),
+                  style: textTheme.bodyMediumRegular.copyWith(
+                    color: colorTheme.textHeadline,
+                  ),
+                ),
+                const SizedBox(height: CoreSpacing.space3),
+                _buildModeToggle(context),
+              ],
             ),
           ),
-          const SizedBox(height: CoreSpacing.space20),
-        ],
+        ),
+        // TODO: [CA-???] Add form fields for cost item entry
+      ],
+    );
+  }
+
+  Widget _buildModeToggle(BuildContext context) {
+    final colorTheme = context.colorTheme;
+    final l10n = context.l10n;
+    return Container(
+      key: const Key('mode_toggle_container'),
+      padding: const EdgeInsets.all(CoreSpacing.space1),
+      decoration: BoxDecoration(
+        color: colorTheme.pageBackground,
+        borderRadius: BorderRadius.circular(48),
+        boxShadow: CoreShadows.medium,
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: _buildPill(
+                context,
+                key: const Key('from_cost_file_pill'),
+                label: l10n.fromCostFileMode,
+                semanticLabel: l10n.fromCostFileModeSemanticLabel,
+                isActive: _fromCostFile,
+                onTap: () => setState(() => _fromCostFile = true),
+              ),
+            ),
+            Expanded(
+              child: _buildPill(
+                context,
+                key: const Key('manually_pill'),
+                label: l10n.manuallyMode,
+                semanticLabel: l10n.manuallyModeSemanticLabel,
+                isActive: !_fromCostFile,
+                onTap: () => setState(() => _fromCostFile = false),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPill(
+    BuildContext context, {
+    required Key key,
+    required String label,
+    required String semanticLabel,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    return Semantics(
+      key: key,
+      label: semanticLabel,
+      button: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(
+              vertical: CoreSpacing.space2,
+              horizontal: CoreSpacing.space4,
+            ),
+            decoration: BoxDecoration(
+              color: isActive ? colorTheme.orientMid : colorTheme.transparent,
+              borderRadius: BorderRadius.circular(44),
+              boxShadow: isActive ? CoreShadows.medium : null,
+            ),
+            child: Center(
+              child: Text(
+                label,
+                style: textTheme.bodyMediumRegular.copyWith(
+                  color: isActive
+                      ? colorTheme.pageBackground
+                      : colorTheme.textBody,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -146,123 +231,6 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CostCalculationModeToggle extends StatelessWidget {
-  final bool fromCostFile;
-  final ValueChanged<bool> onChanged;
-
-  const _CostCalculationModeToggle({
-    required this.fromCostFile,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorTheme = context.colorTheme;
-    final textTheme = context.textTheme;
-    final l10n = context.l10n;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n.howToCalculateCostLabel,
-          key: const Key('how_to_calculate_label'),
-          style: textTheme.bodyMediumRegular.copyWith(
-            color: colorTheme.textHeadline,
-          ),
-        ),
-        const SizedBox(height: CoreSpacing.space3),
-        Container(
-          key: const Key('mode_toggle_container'),
-          padding: const EdgeInsets.all(CoreSpacing.space1),
-          decoration: BoxDecoration(
-            color: colorTheme.pageBackground,
-            borderRadius: BorderRadius.circular(48),
-            boxShadow: CoreShadows.medium,
-          ),
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: _TogglePill(
-                    key: const Key('from_cost_file_pill'),
-                    label: l10n.fromCostFileMode,
-                    semanticLabel: l10n.fromCostFileModeSemanticLabel,
-                    isActive: fromCostFile,
-                    onTap: () => onChanged(true),
-                  ),
-                ),
-                Expanded(
-                  child: _TogglePill(
-                    key: const Key('manually_pill'),
-                    label: l10n.manuallyMode,
-                    semanticLabel: l10n.manuallyModeSemanticLabel,
-                    isActive: !fromCostFile,
-                    onTap: () => onChanged(false),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _TogglePill extends StatelessWidget {
-  final String label;
-  final String semanticLabel;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _TogglePill({
-    super.key,
-    required this.label,
-    required this.semanticLabel,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorTheme = context.colorTheme;
-    final textTheme = context.textTheme;
-    return Semantics(
-      label: semanticLabel,
-      button: true,
-      child: GestureDetector(
-        onTap: onTap,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.symmetric(
-              vertical: CoreSpacing.space2,
-              horizontal: CoreSpacing.space4,
-            ),
-            decoration: BoxDecoration(
-              color: isActive ? colorTheme.orientMid : colorTheme.transparent,
-              borderRadius: BorderRadius.circular(44),
-              boxShadow: isActive ? CoreShadows.medium : null,
-            ),
-            child: Center(
-              child: Text(
-                label,
-                style: textTheme.bodyMediumRegular.copyWith(
-                  color: isActive
-                      ? colorTheme.pageBackground
-                      : colorTheme.textBody,
-                ),
-              ),
-            ),
-          ),
         ),
       ),
     );

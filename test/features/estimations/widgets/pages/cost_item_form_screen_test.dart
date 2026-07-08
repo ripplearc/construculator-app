@@ -200,12 +200,12 @@ void main() {
       expect(find.byKey(const Key('cost_item_total_label')), findsOneWidget);
     });
 
-    testWidgets('displays placeholder body', (tester) async {
+    testWidgets('displays how to calculate label in body', (tester) async {
       setUpAuthenticatedUser();
       await pumpAppAtRoute(tester, materialRoute);
 
       expect(
-        find.byKey(const Key('cost_item_form_placeholder')),
+        find.byKey(const Key('how_to_calculate_label')),
         findsOneWidget,
       );
     });

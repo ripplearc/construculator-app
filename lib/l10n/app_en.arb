@@ -1325,12 +1325,12 @@
     "description": "App bar title for the add material cost form screen",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-7186"
   },
-  "addLabourCostsScreenTitle": "Labour cost",
+  "addLabourCostsScreenTitle": "Labour cost entry",
   "@addLabourCostsScreenTitle": {
     "description": "App bar title for the add labour cost form screen",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57363-12305"
   },
-  "addEquipmentCostsScreenTitle": "Equipment cost",
+  "addEquipmentCostsScreenTitle": "Equipment cost entry",
   "@addEquipmentCostsScreenTitle": {
     "description": "App bar title for the add equipment cost form screen",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57406-17357"
