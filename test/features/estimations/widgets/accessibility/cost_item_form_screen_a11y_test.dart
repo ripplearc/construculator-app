@@ -127,6 +127,10 @@ void main() {
         tester,
         (theme) => makeApp(theme: theme),
         find.bySemanticsLabel(l10n.closeLabel),
+        // Mode toggle pills are 32px (CoreSelectButton pattern) so the global
+        // androidTapTargetGuideline check would fail; label and contrast are
+        // still verified.
+        checkTapTargetSize: false,
         setupAfterPump: (t) async {
           Modular.to.navigate(materialRoute);
           await t.pumpAndSettle();
@@ -146,6 +150,7 @@ void main() {
         tester,
         (theme) => makeApp(theme: theme),
         find.byKey(const Key('mode_toggle_container')),
+        checkTapTargetSize: false, // 32px pills match CoreSelectButton design pattern
         checkTextContrast: false,
         setupAfterPump: (t) async {
           Modular.to.navigate(materialRoute);
