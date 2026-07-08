@@ -77,3 +77,4 @@ android/build/
 devtools_options.yaml
 .fvm/
 test/**/failures
+plans/
