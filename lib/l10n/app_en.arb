@@ -1043,6 +1043,17 @@
     "description": "Empty state message when no cost files are attached to a project",
     "context": "CostFilesSection"
   },
+  "projectLastUpdatedLabel": "Last updated: {date}",
+  "@projectLastUpdatedLabel": {
+    "description": "Last-updated line on the project header card, showing the formatted date",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58447-5986&t=oNA2s0Vw1vZ5uGbB-1",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Oct 12, 2024"
+      }
+    }
+  },
   "activityAttachmentAdded": "Added attachment: {fileName}",
   "@activityAttachmentAdded": {
     "description": "Activity log message for attachment added with file name",

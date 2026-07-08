@@ -658,6 +658,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get costFilesEmptyState => 'No cost files attached.';
 
   @override
+  String projectLastUpdatedLabel(String date) {
+    return 'Last updated: $date';
+  }
+
+  @override
   String activityAttachmentAdded(String fileName) {
     return 'Added attachment: $fileName';
   }
