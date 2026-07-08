@@ -827,10 +827,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commentLabel => 'Comment';
 
   @override
+  String get addMaterialCostsScreenTitle => 'Material cost entry';
+
+  @override
+  String get addLabourCostsScreenTitle => 'Labour cost';
+
+  @override
+  String get addEquipmentCostsScreenTitle => 'Equipment cost';
+
+  @override
+  String get howToCalculateCostLabel => 'How you want to calculate cost?';
+
+  @override
   String get fromCostFileMode => 'From cost file';
 
   @override
   String get manuallyMode => 'Manually';
+
+  @override
+  String get costItemTotalLabel => 'Total:';
+
+  @override
+  String get addToCostButton => 'Add to cost';
 
   @override
   String get fromCostFileModeSemanticLabel => 'Switch to cost file mode';

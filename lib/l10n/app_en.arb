@@ -1300,24 +1300,54 @@
     "description": "Accessibility label for the comment icon in the cost estimation details tab view",
     "context": "N/A"
   },
+  "addMaterialCostsScreenTitle": "Material cost entry",
+  "@addMaterialCostsScreenTitle": {
+    "description": "App bar title for the add material cost form screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-7186"
+  },
+  "addLabourCostsScreenTitle": "Labour cost",
+  "@addLabourCostsScreenTitle": {
+    "description": "App bar title for the add labour cost form screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57363-12305"
+  },
+  "addEquipmentCostsScreenTitle": "Equipment cost",
+  "@addEquipmentCostsScreenTitle": {
+    "description": "App bar title for the add equipment cost form screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57406-17357"
+  },
+  "howToCalculateCostLabel": "How you want to calculate cost?",
+  "@howToCalculateCostLabel": {
+    "description": "Label above the manual/cost-file mode toggle on the cost item form screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-7186"
+  },
   "fromCostFileMode": "From cost file",
   "@fromCostFileMode": {
-    "description": "Label for the 'from cost file' mode pill on the cost item mode toggle",
+    "description": "Label for the 'from cost file' mode toggle button on the cost item form screen",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57363-6582"
   },
   "manuallyMode": "Manually",
   "@manuallyMode": {
-    "description": "Label for the 'manually' mode pill on the cost item mode toggle",
+    "description": "Label for the 'manually' mode toggle button on the cost item form screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-7186"
+  },
+  "costItemTotalLabel": "Total:",
+  "@costItemTotalLabel": {
+    "description": "Label shown before the running total amount in the cost item form bottom bar",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-7186"
+  },
+  "addToCostButton": "Add to cost",
+  "@addToCostButton": {
+    "description": "Label for the submit button in the cost item form screen bottom bar",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-7186"
   },
   "fromCostFileModeSemanticLabel": "Switch to cost file mode",
   "@fromCostFileModeSemanticLabel": {
-    "description": "Accessibility label for the 'from cost file' pill on the cost item mode toggle",
+    "description": "Accessibility label for the 'from cost file' toggle button on the cost item form screen",
     "context": "N/A"
   },
   "manuallyModeSemanticLabel": "Switch to manual mode",
   "@manuallyModeSemanticLabel": {
-    "description": "Accessibility label for the 'manually' pill on the cost item mode toggle",
+    "description": "Accessibility label for the 'manually' toggle button on the cost item form screen",
     "context": "N/A"
   },
   "globalSearchHint": "Search for Calculation and cost",
