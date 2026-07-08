@@ -1,4 +1,5 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/project_settings/presentation/bloc/project_details_bloc/project_details_bloc.dart';
 import 'package:construculator/features/project_settings/presentation/bloc/project_settings_bloc/project_settings_bloc.dart';
 import 'package:construculator/features/project_settings/presentation/pages/edit_project_screen.dart';
 import 'package:construculator/features/project_settings/presentation/pages/project_creation_screen.dart';
@@ -27,9 +28,8 @@ class ProjectSettingsRoutesModule extends Module {
 
   @override
   void binds(Injector i) {
-    i.add<ProjectSettingsBloc>(
-      () => ProjectSettingsBloc(repository: i()),
-    );
+    i.add<ProjectSettingsBloc>(() => ProjectSettingsBloc(repository: i()));
+    i.add<ProjectDetailsBloc>(() => ProjectDetailsBloc(projectRepository: i()));
   }
 
   @override
@@ -39,15 +39,28 @@ class ProjectSettingsRoutesModule extends Module {
       guards: [AuthGuard(() => Modular.get<AuthManager>())],
       child: (_) => BlocProvider(
         create: (_) => Modular.get<ProjectSettingsBloc>(),
-        child: ProjectCreationScreen(
-          authManager: Modular.get<AuthManager>(),
-        ),
+        child: ProjectCreationScreen(authManager: Modular.get<AuthManager>()),
       ),
     );
     r.child(
       viewProjectRoute,
       guards: [AuthGuard(() => Modular.get<AuthManager>())],
-      child: (_) => const ProjectDetailScreen(),
+      child: (_) {
+        final args = r.args.data;
+        // Callers must pass the project id as the route args payload; fail
+        // fast with a descriptive error instead of an opaque cast TypeError.
+        if (args is! String || args.isEmpty) {
+          throw ArgumentError.value(
+            args,
+            'r.args.data',
+            'viewProjectRoute requires a non-empty String project id',
+          );
+        }
+        return ProjectDetailScreen(
+          projectId: args,
+          blocFactory: () => Modular.get<ProjectDetailsBloc>(),
+        );
+      },
     );
     r.child(
       editProjectChildRoute,

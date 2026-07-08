@@ -454,6 +454,24 @@ abstract class AppLocalizations {
   /// **'Failed to load projects.'**
   String get projectsLoadError;
 
+  /// App bar title for the project details screen
+  ///
+  /// In en, this message translates to:
+  /// **'Project details'**
+  String get projectDetailScreenTitle;
+
+  /// Error message shown when the project details screen cannot load the project
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load project details.'**
+  String get projectDetailsLoadError;
+
+  /// Label for the retry button on the project details error state
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get projectDetailsRetryButton;
+
   /// Text for hey enter your details to register with us
   ///
   /// In en, this message translates to:
@@ -2115,12 +2133,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unable to open project details. Please try again.'**
   String get projectDetailsNavigationError;
-
-  /// Title shown in the app bar of the project details screen
-  ///
-  /// In en, this message translates to:
-  /// **'Project Details'**
-  String get projectDetailScreenTitle;
 
   /// Label for the FAB on the cost estimation details page when the labours tab is active
   ///
