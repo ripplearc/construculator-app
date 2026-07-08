@@ -204,13 +204,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
                         offset: const Offset(0, 2),
                       ),
                     ]
-                  : [
-                      BoxShadow(
-                        color: colorTheme.iconGrayMid.withValues(alpha: 0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                  : null,
             ),
             child: Text(
               label,
