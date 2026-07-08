@@ -126,7 +126,7 @@ void main() {
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
         (theme) => makeApp(theme: theme),
-        find.bySemanticsLabel(l10n.backLabel),
+        find.bySemanticsLabel(l10n.closeLabel),
         setupAfterPump: (t) async {
           Modular.to.navigate(materialRoute);
           await t.pumpAndSettle();
