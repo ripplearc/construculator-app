@@ -80,7 +80,6 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
                 padding: EdgeInsets.all(CoreSpacing.space2),
                 size: 24,
                 semanticLabel: l10n.editEstimationNameLabel,
-                onTap: () {},
               ),
             ],
           ),
@@ -116,7 +115,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
                     color: colorTheme.textHeadline,
                   ),
                 ),
-                const SizedBox(height: CoreSpacing.space3),
+                const SizedBox(height: CoreSpacing.space2),
                 _buildModeToggle(context),
               ],
             ),
@@ -185,44 +184,44 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
       button: true,
       child: GestureDetector(
         onTap: onTap,
-        child: SizedBox(
-          height: 48,
-          child: Align(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              padding: const EdgeInsets.symmetric(
-                vertical: 6,
-                horizontal: CoreSpacing.space4,
-              ),
-              decoration: BoxDecoration(
-                color: isActive ? colorTheme.orientMid : colorTheme.transparent,
-                borderRadius: BorderRadius.circular(CoreSpacing.space4),
-                boxShadow: isActive
-                    ? [
-                        BoxShadow(
-                          color: colorTheme.shadowGrey10,
-                          blurRadius: 12,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : [
-                        BoxShadow(
-                          color: colorTheme.iconGrayMid.withValues(alpha: 0.2),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-              ),
-              child: Text(
-                label,
-                style: isActive
-                    ? textTheme.bodyMediumSemiBold.copyWith(
-                        color: colorTheme.textHeadline,
-                      )
-                    : textTheme.bodyMediumRegular.copyWith(
-                        color: colorTheme.textBody,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(
+              vertical: 6,
+              horizontal: CoreSpacing.space4,
+            ),
+            decoration: BoxDecoration(
+              color: isActive ? colorTheme.orientMid : colorTheme.transparent,
+              borderRadius: BorderRadius.circular(CoreSpacing.space4),
+              boxShadow: isActive
+                  ? [
+                      BoxShadow(
+                        color: colorTheme.shadowGrey10,
+                        blurRadius: 12,
+                        offset: const Offset(0, 2),
                       ),
-              ),
+                    ]
+                  : [
+                      BoxShadow(
+                        color: colorTheme.iconGrayMid.withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+            ),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: isActive
+                  ? textTheme.bodyMediumSemiBold.copyWith(
+                      color: colorTheme.textHeadline,
+                    )
+                  : textTheme.bodyMediumRegular.copyWith(
+                      color: colorTheme.textBody,
+                    ),
             ),
           ),
         ),
