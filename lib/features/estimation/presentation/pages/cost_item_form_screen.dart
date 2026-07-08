@@ -61,12 +61,28 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
             semanticLabel: l10n.closeLabel,
             onTap: widget.router.pop,
           ),
-          title: Text(
-            _screenTitle(l10n),
-            style: textTheme.titleMediumSemiBold.copyWith(
-              color: colorTheme.textHeadline,
-            ),
-            overflow: TextOverflow.ellipsis,
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  _screenTitle(l10n),
+                  style: textTheme.titleMediumSemiBold.copyWith(
+                    color: colorTheme.textHeadline,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              CoreIconWidget(
+                key: const Key('edit_title_button'),
+                icon: CoreIcons.edit,
+                color: colorTheme.iconDark,
+                padding: EdgeInsets.all(CoreSpacing.space2),
+                size: 24,
+                semanticLabel: l10n.editEstimationNameLabel,
+                onTap: () {},
+              ),
+            ],
           ),
         ),
       ),
@@ -124,33 +140,30 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
           BoxShadow(color: colorTheme.shadowGrey10, blurRadius: 8),
         ],
       ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: _buildPill(
-                context,
-                key: const Key('from_cost_file_pill'),
-                label: l10n.fromCostFileMode,
-                semanticLabel: l10n.fromCostFileModeSemanticLabel,
-                isActive: _fromCostFile,
-                onTap: () => setState(() => _fromCostFile = true),
-              ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildPill(
+              context,
+              key: const Key('from_cost_file_pill'),
+              label: l10n.fromCostFileMode,
+              semanticLabel: l10n.fromCostFileModeSemanticLabel,
+              isActive: _fromCostFile,
+              onTap: () => setState(() => _fromCostFile = true),
             ),
-            const SizedBox(width: 2),
-            Expanded(
-              child: _buildPill(
-                context,
-                key: const Key('manually_pill'),
-                label: l10n.manuallyMode,
-                semanticLabel: l10n.manuallyModeSemanticLabel,
-                isActive: !_fromCostFile,
-                onTap: () => setState(() => _fromCostFile = false),
-              ),
+          ),
+          const SizedBox(width: 2),
+          Expanded(
+            child: _buildPill(
+              context,
+              key: const Key('manually_pill'),
+              label: l10n.manuallyMode,
+              semanticLabel: l10n.manuallyModeSemanticLabel,
+              isActive: !_fromCostFile,
+              onTap: () => setState(() => _fromCostFile = false),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -172,34 +185,34 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
       button: true,
       child: GestureDetector(
         onTap: onTap,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.symmetric(
-              vertical: 6,
-              horizontal: CoreSpacing.space4,
-            ),
-            decoration: BoxDecoration(
-              color: isActive ? colorTheme.orientMid : colorTheme.transparent,
-              borderRadius: BorderRadius.circular(CoreSpacing.space4),
-              boxShadow: isActive
-                  ? [
-                      BoxShadow(
-                        color: colorTheme.shadowGrey10,
-                        blurRadius: 12,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : [
-                      BoxShadow(
-                        color: colorTheme.iconGrayMid.withValues(alpha: 0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-            ),
-            child: Center(
+        child: SizedBox(
+          height: 48,
+          child: Align(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(
+                vertical: 6,
+                horizontal: CoreSpacing.space4,
+              ),
+              decoration: BoxDecoration(
+                color: isActive ? colorTheme.orientMid : colorTheme.transparent,
+                borderRadius: BorderRadius.circular(CoreSpacing.space4),
+                boxShadow: isActive
+                    ? [
+                        BoxShadow(
+                          color: colorTheme.shadowGrey10,
+                          blurRadius: 12,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: colorTheme.iconGrayMid.withValues(alpha: 0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+              ),
               child: Text(
                 label,
                 style: isActive
