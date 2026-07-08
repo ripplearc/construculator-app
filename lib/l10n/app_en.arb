@@ -1300,6 +1300,26 @@
     "description": "Accessibility label for the comment icon in the cost estimation details tab view",
     "context": "N/A"
   },
+  "fromCostFileMode": "From cost file",
+  "@fromCostFileMode": {
+    "description": "Label for the 'from cost file' mode pill on the cost item mode toggle",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57363-6582"
+  },
+  "manuallyMode": "Manually",
+  "@manuallyMode": {
+    "description": "Label for the 'manually' mode pill on the cost item mode toggle",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-7186"
+  },
+  "fromCostFileModeSemanticLabel": "Switch to cost file mode",
+  "@fromCostFileModeSemanticLabel": {
+    "description": "Accessibility label for the 'from cost file' pill on the cost item mode toggle",
+    "context": "N/A"
+  },
+  "manuallyModeSemanticLabel": "Switch to manual mode",
+  "@manuallyModeSemanticLabel": {
+    "description": "Accessibility label for the 'manually' pill on the cost item mode toggle",
+    "context": "N/A"
+  },
   "globalSearchHint": "Search for Calculation and cost",
   "@globalSearchHint": {
     "description": "Hint text displayed in the global search input field",
