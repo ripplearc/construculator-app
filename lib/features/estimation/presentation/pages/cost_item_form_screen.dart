@@ -120,7 +120,9 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
       decoration: BoxDecoration(
         color: colorTheme.pageBackground,
         borderRadius: BorderRadius.circular(48),
-        boxShadow: CoreShadows.medium,
+        boxShadow: [
+          BoxShadow(color: colorTheme.shadowGrey10, blurRadius: 8),
+        ],
       ),
       child: IntrinsicHeight(
         child: Row(
@@ -136,6 +138,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
                 onTap: () => setState(() => _fromCostFile = true),
               ),
             ),
+            const SizedBox(width: 2),
             Expanded(
               child: _buildPill(
                 context,
@@ -165,6 +168,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     return Semantics(
       key: key,
       label: semanticLabel,
+      selected: isActive,
       button: true,
       child: GestureDetector(
         onTap: onTap,
@@ -173,22 +177,32 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
             padding: const EdgeInsets.symmetric(
-              vertical: CoreSpacing.space2,
+              vertical: 6,
               horizontal: CoreSpacing.space4,
             ),
             decoration: BoxDecoration(
               color: isActive ? colorTheme.orientMid : colorTheme.transparent,
-              borderRadius: BorderRadius.circular(44),
-              boxShadow: isActive ? CoreShadows.medium : null,
+              borderRadius: BorderRadius.circular(CoreSpacing.space4),
+              boxShadow: isActive
+                  ? [
+                      BoxShadow(
+                        color: colorTheme.shadowGrey10,
+                        blurRadius: 12,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
             ),
             child: Center(
               child: Text(
                 label,
-                style: textTheme.bodyMediumRegular.copyWith(
-                  color: isActive
-                      ? colorTheme.pageBackground
-                      : colorTheme.textBody,
-                ),
+                style: isActive
+                    ? textTheme.bodyMediumSemiBold.copyWith(
+                        color: colorTheme.textHeadline,
+                      )
+                    : textTheme.bodyMediumRegular.copyWith(
+                        color: colorTheme.textBody,
+                      ),
               ),
             ),
           ),
@@ -212,23 +226,35 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
           color: colorTheme.pageBackground,
         ),
         child: Row(
-          spacing: CoreSpacing.space4,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              '${l10n.costItemTotalLabel} \$0',
+            Row(
               key: const Key('cost_item_total_label'),
-              style: textTheme.titleMediumSemiBold.copyWith(
-                color: colorTheme.textHeadline,
-              ),
+              spacing: CoreSpacing.space1,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  l10n.costItemTotalLabel,
+                  style: textTheme.bodyLargeRegular.copyWith(
+                    color: colorTheme.textBody,
+                  ),
+                ),
+                Text(
+                  '\$0',
+                  style: textTheme.titleLargeSemiBold.copyWith(
+                    color: colorTheme.textHeadline,
+                  ),
+                ),
+              ],
             ),
-            Expanded(
-              // TODO: [CA-???] Wire submission logic for cost item
-              child: CoreButton(
-                key: const Key('add_to_cost_button'),
-                label: l10n.addToCostButton,
-                isDisabled: true,
-                onPressed: () {},
-              ),
+            // TODO: [CA-???] Wire submission logic for cost item
+            CoreButton(
+              key: const Key('add_to_cost_button'),
+              label: l10n.addToCostButton,
+              isDisabled: true,
+              fullWidth: false,
+              onPressed: () {},
             ),
           ],
         ),
