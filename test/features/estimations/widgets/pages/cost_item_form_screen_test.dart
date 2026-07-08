@@ -12,6 +12,7 @@ import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -183,7 +184,10 @@ void main() {
       await tester.tap(find.byKey(const Key('from_cost_file_pill')));
       await tester.pump();
 
-      expect(find.byKey(const Key('from_cost_file_pill')), findsOneWidget);
+      final semantics = tester.getSemantics(
+        find.byKey(const Key('from_cost_file_pill')),
+      );
+      expect(semantics.hasFlag(SemanticsFlag.isSelected), isTrue);
     });
 
     testWidgets('displays add to cost button disabled', (tester) async {
