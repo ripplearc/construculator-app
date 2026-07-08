@@ -53,12 +53,12 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
           titleSpacing: CoreSpacing.space1,
           leading: CoreIconWidget(
             key: const Key('back_button'),
-            icon: CoreIcons.backspaceLeft,
+            icon: CoreIcons.close,
             color: colorTheme.iconDark,
             padding: EdgeInsets.all(CoreSpacing.space4),
             size: 24,
             visualDensity: VisualDensity.compact,
-            semanticLabel: l10n.backLabel,
+            semanticLabel: l10n.closeLabel,
             onTap: widget.router.pop,
           ),
           title: Text(
@@ -191,7 +191,13 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
                         offset: const Offset(0, 2),
                       ),
                     ]
-                  : null,
+                  : [
+                      BoxShadow(
+                        color: colorTheme.iconGrayMid.withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
             ),
             child: Center(
               child: Text(
