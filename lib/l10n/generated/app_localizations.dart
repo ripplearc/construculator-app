@@ -1600,25 +1600,61 @@ abstract class AppLocalizations {
   /// **'Comment'**
   String get commentLabel;
 
-  /// Label for the 'from cost file' mode pill on the cost item mode toggle
+  /// App bar title for the add material cost form screen
+  ///
+  /// In en, this message translates to:
+  /// **'Material cost entry'**
+  String get addMaterialCostsScreenTitle;
+
+  /// App bar title for the add labour cost form screen
+  ///
+  /// In en, this message translates to:
+  /// **'Labour cost'**
+  String get addLabourCostsScreenTitle;
+
+  /// App bar title for the add equipment cost form screen
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment cost'**
+  String get addEquipmentCostsScreenTitle;
+
+  /// Label above the manual/cost-file mode toggle on the cost item form screen
+  ///
+  /// In en, this message translates to:
+  /// **'How you want to calculate cost?'**
+  String get howToCalculateCostLabel;
+
+  /// Label for the 'from cost file' mode toggle button on the cost item form screen
   ///
   /// In en, this message translates to:
   /// **'From cost file'**
   String get fromCostFileMode;
 
-  /// Label for the 'manually' mode pill on the cost item mode toggle
+  /// Label for the 'manually' mode toggle button on the cost item form screen
   ///
   /// In en, this message translates to:
   /// **'Manually'**
   String get manuallyMode;
 
-  /// Accessibility label for the 'from cost file' pill on the cost item mode toggle
+  /// Label shown before the running total amount in the cost item form bottom bar
+  ///
+  /// In en, this message translates to:
+  /// **'Total:'**
+  String get costItemTotalLabel;
+
+  /// Label for the submit button in the cost item form screen bottom bar
+  ///
+  /// In en, this message translates to:
+  /// **'Add to cost'**
+  String get addToCostButton;
+
+  /// Accessibility label for the 'from cost file' toggle button on the cost item form screen
   ///
   /// In en, this message translates to:
   /// **'Switch to cost file mode'**
   String get fromCostFileModeSemanticLabel;
 
-  /// Accessibility label for the 'manually' pill on the cost item mode toggle
+  /// Accessibility label for the 'manually' toggle button on the cost item form screen
   ///
   /// In en, this message translates to:
   /// **'Switch to manual mode'**
