@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:construculator/libraries/errors/exceptions.dart';
+import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -32,6 +33,11 @@ class FakeProjectRepository implements ProjectRepository {
 
   /// Controls whether [getProject] throws an exception
   bool shouldThrowOnGetProject = false;
+
+  /// When non-null, [getProject] throws this typed [Failure] after recording
+  /// the call, mirroring the real repository which maps errors at the
+  /// boundary and rethrows them as [Failure]s.
+  Failure? getProjectFailure;
 
   /// Controls whether [getProjects] throws an exception.
   bool shouldThrowOnGetProjects = false;
@@ -79,6 +85,10 @@ class FakeProjectRepository implements ProjectRepository {
     }
 
     _methodCalls.add({'method': 'getProject', 'id': id});
+
+    if (getProjectFailure case final failure?) {
+      throw failure;
+    }
 
     if (shouldThrowOnGetProject) {
       _throwConfiguredException(
@@ -240,6 +250,7 @@ class FakeProjectRepository implements ProjectRepository {
   void reset() {
     currentProjectId = null;
     shouldThrowOnGetProject = false;
+    getProjectFailure = null;
     shouldThrowOnGetProjects = false;
     shouldThrowOnWatchProjects = false;
     getProjectErrorMessage = null;

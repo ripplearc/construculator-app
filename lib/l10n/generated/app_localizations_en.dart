@@ -196,6 +196,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get projectsLoadError => 'Failed to load projects.';
 
   @override
+  String get projectDetailScreenTitle => 'Project details';
+
+  @override
+  String get projectDetailsLoadError => 'Failed to load project details.';
+
+  @override
+  String get projectDetailsRetryButton => 'Retry';
+
+  @override
   String get heyEnterYourDetailsToRegisterWithUs =>
       'Hey, Enter your details to Register with us';
 
@@ -1120,9 +1129,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get projectDetailsNavigationError =>
       'Unable to open project details. Please try again.';
-
-  @override
-  String get projectDetailScreenTitle => 'Project Details';
 
   @override
   String get addLabourCostButton => 'Add labour cost';

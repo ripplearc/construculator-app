@@ -300,6 +300,21 @@
     "description": "Error message shown when the projects list cannot be loaded",
     "context": "Dashboard projects sheet"
   },
+  "projectDetailScreenTitle": "Project details",
+  "@projectDetailScreenTitle": {
+    "description": "App bar title for the project details screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58447-5986&t=oNA2s0Vw1vZ5uGbB-1"
+  },
+  "projectDetailsLoadError": "Failed to load project details.",
+  "@projectDetailsLoadError": {
+    "description": "Error message shown when the project details screen cannot load the project",
+    "context": "ProjectDetailScreen"
+  },
+  "projectDetailsRetryButton": "Retry",
+  "@projectDetailsRetryButton": {
+    "description": "Label for the retry button on the project details error state",
+    "context": "ProjectDetailScreen"
+  },
   "heyEnterYourDetailsToRegisterWithUs": "Hey, Enter your details to Register with us",
   "@heyEnterYourDetailsToRegisterWithUs": {
     "description": "Text for hey enter your details to register with us",
@@ -1771,11 +1786,6 @@
   "@projectDetailsNavigationError": {
     "description": "Error toast shown when navigation to the project details screen fails",
     "context": "Dashboard projects sheet"
-  },
-  "projectDetailScreenTitle": "Project Details",
-  "@projectDetailScreenTitle": {
-    "description": "Title shown in the app bar of the project details screen",
-    "context": "Project settings"
   },
   "addLabourCostButton": "Add labour cost",
   "@addLabourCostButton": {
