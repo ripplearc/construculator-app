@@ -53,7 +53,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
           titleSpacing: CoreSpacing.space1,
           leading: CoreIconWidget(
             key: const Key('back_button'),
-            icon: CoreIcons.close,
+            icon: CoreIcons.cross,
             color: colorTheme.iconDark,
             padding: EdgeInsets.all(CoreSpacing.space4),
             size: 24,
@@ -194,7 +194,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
               horizontal: CoreSpacing.space4,
             ),
             decoration: BoxDecoration(
-              color: isActive ? colorTheme.orientMid : colorTheme.transparent,
+              color: isActive ? colorTheme.tabsHighlight : colorTheme.transparent,
               borderRadius: BorderRadius.circular(CoreSpacing.space4),
               boxShadow: isActive
                   ? [
