@@ -1588,6 +1588,30 @@ abstract class AppLocalizations {
   /// **'Comment'**
   String get commentLabel;
 
+  /// Label for the 'from cost file' mode pill on the cost item mode toggle
+  ///
+  /// In en, this message translates to:
+  /// **'From cost file'**
+  String get fromCostFileMode;
+
+  /// Label for the 'manually' mode pill on the cost item mode toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Manually'**
+  String get manuallyMode;
+
+  /// Accessibility label for the 'from cost file' pill on the cost item mode toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to cost file mode'**
+  String get fromCostFileModeSemanticLabel;
+
+  /// Accessibility label for the 'manually' pill on the cost item mode toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to manual mode'**
+  String get manuallyModeSemanticLabel;
+
   /// Hint text displayed in the global search input field
   ///
   /// In en, this message translates to:
