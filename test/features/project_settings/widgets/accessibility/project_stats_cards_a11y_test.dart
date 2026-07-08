@@ -1,4 +1,4 @@
-import 'package:construculator/features/project/presentation/widgets/project_stats_cards.dart';
+import 'package:construculator/features/project_settings/presentation/widgets/project_stats_cards.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
