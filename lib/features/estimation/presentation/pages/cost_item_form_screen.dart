@@ -121,7 +121,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
             ),
           ),
         ),
-        // TODO: [CA-???] Add form fields for cost item entry
+        // TODO: [CA-306] Add form fields for cost item entry
       ],
     );
   }
@@ -257,7 +257,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
                 ),
               ],
             ),
-            // TODO: [CA-???] Wire submission logic for cost item
+            // TODO: [CA-355] Wire submission logic for cost item
             CoreButton(
               key: const Key('add_to_cost_button'),
               label: l10n.addToCostButton,
