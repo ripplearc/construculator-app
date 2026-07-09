@@ -1995,6 +1995,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create a project'**
   String get createProjectScreenTitle;
+
+  /// Label for the FAB on the cost estimation details page when the labours tab is active
+  ///
+  /// In en, this message translates to:
+  /// **'Add labour cost'**
+  String get addLabourCostButton;
+
+  /// Label for the FAB on the cost estimation details page when the equipments tab is active
+  ///
+  /// In en, this message translates to:
+  /// **'Add equipment cost'**
+  String get addEquipmentCostButton;
 }
 
 class _AppLocalizationsDelegate

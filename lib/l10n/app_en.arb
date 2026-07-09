@@ -1650,6 +1650,14 @@
   "@createProjectScreenTitle": {
     "description": "Title for the project creation screen app bar",
     "context": "Project creation screen"
+  },
+  "addLabourCostButton": "Add labour cost",
+  "@addLabourCostButton": {
+    "description": "Label for the FAB on the cost estimation details page when the labours tab is active"
+  },
+  "addEquipmentCostButton": "Add equipment cost",
+  "@addEquipmentCostButton": {
+    "description": "Label for the FAB on the cost estimation details page when the equipments tab is active"
   }
 }
 

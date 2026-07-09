@@ -6,7 +6,9 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 ///
 /// Shows empty states with appropriate messages when no costs have been added for each category.
 class CostEstimationDetailsTabView extends StatefulWidget {
-  const CostEstimationDetailsTabView({super.key});
+  final ValueChanged<int>? onTabChanged;
+
+  const CostEstimationDetailsTabView({super.key, this.onTabChanged});
 
   @override
   State<CostEstimationDetailsTabView> createState() =>
@@ -36,6 +38,7 @@ class _CostEstimationDetailsTabViewState
                   setState(() {
                     _selectedIndex = index;
                   });
+                  widget.onTabChanged?.call(index);
                 },
               ),
             ),
