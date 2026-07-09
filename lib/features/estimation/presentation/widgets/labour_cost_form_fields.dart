@@ -6,8 +6,13 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class LabourCostFormFields extends StatefulWidget {
   final bool fromCostFile;
+  final ValueChanged<double>? onTotalChanged;
 
-  const LabourCostFormFields({super.key, required this.fromCostFile});
+  const LabourCostFormFields({
+    super.key,
+    required this.fromCostFile,
+    this.onTotalChanged,
+  });
 
   @override
   State<LabourCostFormFields> createState() => _LabourCostFormFieldsState();
@@ -21,12 +26,39 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
   final _crewSizeController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _crewRateController.addListener(_notifyTotal);
+    _conditionalValueController.addListener(_notifyTotal);
+    _crewSizeController.addListener(_notifyTotal);
+  }
+
+  @override
+  void didUpdateWidget(covariant LabourCostFormFields oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.fromCostFile != widget.fromCostFile) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _notifyTotal());
+    }
+  }
+
+  @override
   void dispose() {
     _labourTypeController.dispose();
     _crewRateController.dispose();
     _conditionalValueController.dispose();
     _crewSizeController.dispose();
     super.dispose();
+  }
+
+  void _notifyTotal() {
+    if (widget.fromCostFile) {
+      widget.onTotalChanged?.call(0);
+      return;
+    }
+    final crewRate = double.tryParse(_crewRateController.text) ?? 0;
+    final conditionalValue = double.tryParse(_conditionalValueController.text) ?? 0;
+    final crewSize = double.tryParse(_crewSizeController.text) ?? 0;
+    widget.onTotalChanged?.call(crewRate * conditionalValue * crewSize);
   }
 
   @override

@@ -4,8 +4,13 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class EquipmentCostFormFields extends StatefulWidget {
   final bool fromCostFile;
+  final ValueChanged<double>? onTotalChanged;
 
-  const EquipmentCostFormFields({super.key, required this.fromCostFile});
+  const EquipmentCostFormFields({
+    super.key,
+    required this.fromCostFile,
+    this.onTotalChanged,
+  });
 
   @override
   State<EquipmentCostFormFields> createState() =>
@@ -18,11 +23,36 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   final _quantityController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _unitPriceController.addListener(_notifyTotal);
+    _quantityController.addListener(_notifyTotal);
+  }
+
+  @override
+  void didUpdateWidget(covariant EquipmentCostFormFields oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.fromCostFile != widget.fromCostFile) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _notifyTotal());
+    }
+  }
+
+  @override
   void dispose() {
     _equipmentNameController.dispose();
     _unitPriceController.dispose();
     _quantityController.dispose();
     super.dispose();
+  }
+
+  void _notifyTotal() {
+    if (widget.fromCostFile) {
+      widget.onTotalChanged?.call(0);
+      return;
+    }
+    final price = double.tryParse(_unitPriceController.text) ?? 0;
+    final qty = double.tryParse(_quantityController.text) ?? 0;
+    widget.onTotalChanged?.call(price * qty);
   }
 
   @override
