@@ -67,7 +67,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
             children: [
               Flexible(
                 child: Text(
-                  _screenTitle(l10n),
+                  _screenTitle(context),
                   style: textTheme.titleMediumSemiBold.copyWith(
                     color: colorTheme.textHeadline,
                   ),
@@ -89,10 +89,10 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     );
   }
 
-  String _screenTitle(dynamic l10n) => switch (widget.type) {
-    CostItemType.material => l10n.addMaterialCostsScreenTitle,
-    CostItemType.labor => l10n.addLabourCostsScreenTitle,
-    CostItemType.equipment => l10n.addEquipmentCostsScreenTitle,
+  String _screenTitle(BuildContext context) => switch (widget.type) {
+    CostItemType.material => context.l10n.addMaterialCostsScreenTitle,
+    CostItemType.labor => context.l10n.addLabourCostsScreenTitle,
+    CostItemType.equipment => context.l10n.addEquipmentCostsScreenTitle,
   };
 
   Widget _buildBody(BuildContext context) {
@@ -126,9 +126,14 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
             ),
           ),
         ),
-        // TODO: [CA-306] Add form fields for cost item entry
+        Expanded(child: _buildFormFields()),
       ],
     );
+  }
+
+  Widget _buildFormFields() {
+    // TODO: [CA-306] Add form fields for material, labour, and equipment modes
+    return const SizedBox.shrink();
   }
 
   Widget _buildBottomBar(BuildContext context) {
