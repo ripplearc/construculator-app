@@ -1658,6 +1658,82 @@
   "addEquipmentCostButton": "Add equipment cost",
   "@addEquipmentCostButton": {
     "description": "Label for the FAB on the cost estimation details page when the equipments tab is active"
+  },
+  "costFilePlaceholder": "Select cost file",
+  "@costFilePlaceholder": {
+    "description": "Placeholder text for the cost file dropdown on cost item form screens"
+  },
+  "materialTypeLabel": "Material type*",
+  "@materialTypeLabel": {
+    "description": "Hint label for the material type field on the material cost form"
+  },
+  "quantityLabel": "Quantity*",
+  "@quantityLabel": {
+    "description": "Hint label for the quantity field on material and equipment cost forms"
+  },
+  "perUnitCostLabel": "Per unit cost*",
+  "@perUnitCostLabel": {
+    "description": "Hint label for the per-unit cost field on the material cost form (manually mode)"
+  },
+  "uomLabel": "Unit of measure*",
+  "@uomLabel": {
+    "description": "Hint label for the unit of measure dropdown on the material cost form (manually mode)"
+  },
+  "otherMaterialDetailsButton": "Other material details",
+  "@otherMaterialDetailsButton": {
+    "description": "Toggle button label that expands/collapses the brand and product link fields on the material cost form"
+  },
+  "brandLabel": "Brand",
+  "@brandLabel": {
+    "description": "Hint label for the brand dropdown in the other material details section"
+  },
+  "productLinkLabel": "Product link",
+  "@productLinkLabel": {
+    "description": "Hint label for the product link text field in the other material details section"
+  },
+  "labourTypeLabel": "Labour type*",
+  "@labourTypeLabel": {
+    "description": "Hint label for the labour type field on the labour cost form"
+  },
+  "calcMethodTitle": "Calculation method",
+  "@calcMethodTitle": {
+    "description": "Section title for the calculation method card on the labour cost form"
+  },
+  "perDayOption": "Per day",
+  "@perDayOption": {
+    "description": "Radio option label for the per-day calculation method on the labour cost form"
+  },
+  "perHoursOption": "Per hours",
+  "@perHoursOption": {
+    "description": "Radio option label for the per-hours calculation method on the labour cost form"
+  },
+  "noOfDaysLabel": "No. of days*",
+  "@noOfDaysLabel": {
+    "description": "Hint label for the number-of-days field when the per-day method is selected on the labour cost form"
+  },
+  "noOfHoursLabel": "No. of hours*",
+  "@noOfHoursLabel": {
+    "description": "Hint label for the number-of-hours field when the per-hours method is selected on the labour cost form"
+  },
+  "crewRateLabel": "Crew rate ($)*",
+  "@crewRateLabel": {
+    "description": "Hint label for the crew rate field on the labour cost form (manually mode)"
+  },
+  "crewSizeLabel": "Crew size*",
+  "@crewSizeLabel": {
+    "description": "Hint label for the crew size field on the labour cost form"
+  },
+  "equipmentTypeLabel": "Equipment type*",
+  "@equipmentTypeLabel": {
+    "description": "Hint label for the equipment type dropdown on the equipment cost form (from cost file mode)"
+  },
+  "equipmentNameLabel": "Equipment name*",
+  "@equipmentNameLabel": {
+    "description": "Hint label for the equipment name field on the equipment cost form (manually mode)"
+  },
+  "unitPriceLabel": "Unit price*",
+  "@unitPriceLabel": {
+    "description": "Hint label for the unit price field on the equipment cost form (manually mode)"
   }
 }
 

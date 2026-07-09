@@ -2007,6 +2007,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add equipment cost'**
   String get addEquipmentCostButton;
+
+  /// Placeholder text for the cost file dropdown on cost item form screens
+  ///
+  /// In en, this message translates to:
+  /// **'Select cost file'**
+  String get costFilePlaceholder;
+
+  /// Hint label for the material type field on the material cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Material type*'**
+  String get materialTypeLabel;
+
+  /// Hint label for the quantity field on material and equipment cost forms
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity*'**
+  String get quantityLabel;
+
+  /// Hint label for the per-unit cost field on the material cost form (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Per unit cost*'**
+  String get perUnitCostLabel;
+
+  /// Hint label for the unit of measure dropdown on the material cost form (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Unit of measure*'**
+  String get uomLabel;
+
+  /// Toggle button label that expands/collapses the brand and product link fields on the material cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Other material details'**
+  String get otherMaterialDetailsButton;
+
+  /// Hint label for the brand dropdown in the other material details section
+  ///
+  /// In en, this message translates to:
+  /// **'Brand'**
+  String get brandLabel;
+
+  /// Hint label for the product link text field in the other material details section
+  ///
+  /// In en, this message translates to:
+  /// **'Product link'**
+  String get productLinkLabel;
+
+  /// Hint label for the labour type field on the labour cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Labour type*'**
+  String get labourTypeLabel;
+
+  /// Section title for the calculation method card on the labour cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Calculation method'**
+  String get calcMethodTitle;
+
+  /// Radio option label for the per-day calculation method on the labour cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Per day'**
+  String get perDayOption;
+
+  /// Radio option label for the per-hours calculation method on the labour cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Per hours'**
+  String get perHoursOption;
+
+  /// Hint label for the number-of-days field when the per-day method is selected on the labour cost form
+  ///
+  /// In en, this message translates to:
+  /// **'No. of days*'**
+  String get noOfDaysLabel;
+
+  /// Hint label for the number-of-hours field when the per-hours method is selected on the labour cost form
+  ///
+  /// In en, this message translates to:
+  /// **'No. of hours*'**
+  String get noOfHoursLabel;
+
+  /// Hint label for the crew rate field on the labour cost form (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Crew rate (\$)*'**
+  String get crewRateLabel;
+
+  /// Hint label for the crew size field on the labour cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Crew size*'**
+  String get crewSizeLabel;
+
+  /// Hint label for the equipment type dropdown on the equipment cost form (from cost file mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment type*'**
+  String get equipmentTypeLabel;
+
+  /// Hint label for the equipment name field on the equipment cost form (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment name*'**
+  String get equipmentNameLabel;
+
+  /// Hint label for the unit price field on the equipment cost form (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Unit price*'**
+  String get unitPriceLabel;
 }
 
 class _AppLocalizationsDelegate

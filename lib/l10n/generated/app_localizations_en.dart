@@ -1056,4 +1056,61 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addEquipmentCostButton => 'Add equipment cost';
+
+  @override
+  String get costFilePlaceholder => 'Select cost file';
+
+  @override
+  String get materialTypeLabel => 'Material type*';
+
+  @override
+  String get quantityLabel => 'Quantity*';
+
+  @override
+  String get perUnitCostLabel => 'Per unit cost*';
+
+  @override
+  String get uomLabel => 'Unit of measure*';
+
+  @override
+  String get otherMaterialDetailsButton => 'Other material details';
+
+  @override
+  String get brandLabel => 'Brand';
+
+  @override
+  String get productLinkLabel => 'Product link';
+
+  @override
+  String get labourTypeLabel => 'Labour type*';
+
+  @override
+  String get calcMethodTitle => 'Calculation method';
+
+  @override
+  String get perDayOption => 'Per day';
+
+  @override
+  String get perHoursOption => 'Per hours';
+
+  @override
+  String get noOfDaysLabel => 'No. of days*';
+
+  @override
+  String get noOfHoursLabel => 'No. of hours*';
+
+  @override
+  String get crewRateLabel => 'Crew rate (\$)*';
+
+  @override
+  String get crewSizeLabel => 'Crew size*';
+
+  @override
+  String get equipmentTypeLabel => 'Equipment type*';
+
+  @override
+  String get equipmentNameLabel => 'Equipment name*';
+
+  @override
+  String get unitPriceLabel => 'Unit price*';
 }
