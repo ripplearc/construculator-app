@@ -26,6 +26,7 @@ class CostItemFormScreen extends StatefulWidget {
 
 class _CostItemFormScreenState extends State<CostItemFormScreen> {
   bool _fromCostFile = false;
+  double _total = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -135,10 +136,20 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
   }
 
   Widget _buildFormFields() {
+    void onTotalChanged(double total) => setState(() => _total = total);
     return switch (widget.type) {
-      CostItemType.material => MaterialCostFormFields(fromCostFile: _fromCostFile),
-      CostItemType.labor => LabourCostFormFields(fromCostFile: _fromCostFile),
-      CostItemType.equipment => EquipmentCostFormFields(fromCostFile: _fromCostFile),
+      CostItemType.material => MaterialCostFormFields(
+          fromCostFile: _fromCostFile,
+          onTotalChanged: onTotalChanged,
+        ),
+      CostItemType.labor => LabourCostFormFields(
+          fromCostFile: _fromCostFile,
+          onTotalChanged: onTotalChanged,
+        ),
+      CostItemType.equipment => EquipmentCostFormFields(
+          fromCostFile: _fromCostFile,
+          onTotalChanged: onTotalChanged,
+        ),
     };
   }
 
@@ -160,24 +171,30 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Row(
-              key: const Key('cost_item_total_label'),
-              spacing: CoreSpacing.space1,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  l10n.costItemTotalLabel,
-                  style: textTheme.bodyLargeRegular.copyWith(
-                    color: colorTheme.textBody,
+            Flexible(
+              child: Row(
+                key: const Key('cost_item_total_label'),
+                mainAxisSize: MainAxisSize.min,
+                spacing: CoreSpacing.space1,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    l10n.costItemTotalLabel,
+                    style: textTheme.bodyLargeRegular.copyWith(
+                      color: colorTheme.textBody,
+                    ),
                   ),
-                ),
-                Text(
-                  '\$0',
-                  style: textTheme.titleLargeSemiBold.copyWith(
-                    color: colorTheme.textHeadline,
+                  Flexible(
+                    child: Text(
+                      '\$${_total.toStringAsFixed(2)}',
+                      style: textTheme.titleLargeSemiBold.copyWith(
+                        color: colorTheme.textHeadline,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             // TODO: [CA-355] Wire submission logic for cost item
             CoreButton(

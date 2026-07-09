@@ -11,14 +11,20 @@ void main() {
     l10n = lookupAppLocalizations(const Locale('en'));
   });
 
-  Widget makeWidget({bool fromCostFile = false}) {
+  Widget makeWidget({
+    bool fromCostFile = false,
+    ValueChanged<double>? onTotalChanged,
+  }) {
     return MaterialApp(
       theme: CoreTheme.light(),
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: MaterialCostFormFields(fromCostFile: fromCostFile),
+        body: MaterialCostFormFields(
+          fromCostFile: fromCostFile,
+          onTotalChanged: onTotalChanged,
+        ),
       ),
     );
   }
@@ -141,6 +147,77 @@ void main() {
 
       expect(find.byKey(const Key('brand_field')), findsOneWidget);
       expect(find.byKey(const Key('product_link_field')), findsOneWidget);
+    });
+  });
+
+  group('MaterialCostFormFields — real-time total', () {
+    testWidgets('calls onTotalChanged with price × quantity', (tester) async {
+      double? capturedTotal;
+      await tester.pumpWidget(
+        makeWidget(onTotalChanged: (total) => capturedTotal = total),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('per_unit_cost_field')),
+        '10',
+      );
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('quantity_field')), '3');
+      await tester.pump();
+
+      expect(capturedTotal, 30.0);
+    });
+
+    testWidgets('total updates when price changes', (tester) async {
+      double? capturedTotal;
+      await tester.pumpWidget(
+        makeWidget(onTotalChanged: (total) => capturedTotal = total),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('quantity_field')), '4');
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('per_unit_cost_field')),
+        '25',
+      );
+      await tester.pump();
+
+      expect(capturedTotal, 100.0);
+    });
+
+    testWidgets('calls onTotalChanged with 0 when price field is empty', (
+      tester,
+    ) async {
+      double? capturedTotal;
+      await tester.pumpWidget(
+        makeWidget(onTotalChanged: (total) => capturedTotal = total),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('quantity_field')), '5');
+      await tester.pump();
+
+      expect(capturedTotal, 0.0);
+    });
+
+    testWidgets('calls onTotalChanged with 0 in fromCostFile mode', (
+      tester,
+    ) async {
+      double? capturedTotal;
+      await tester.pumpWidget(
+        makeWidget(
+          fromCostFile: true,
+          onTotalChanged: (total) => capturedTotal = total,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('quantity_field')), '5');
+      await tester.pump();
+
+      expect(capturedTotal, 0.0);
     });
   });
 
