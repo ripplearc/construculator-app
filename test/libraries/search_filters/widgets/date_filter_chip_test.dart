@@ -1,6 +1,6 @@
-import 'package:construculator/features/global_search/presentation/widgets/date_filter_chip.dart';
-import 'package:construculator/features/global_search/presentation/widgets/date_range_bottom_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/search_filters/presentation/widgets/date_filter_chip.dart';
+import 'package:construculator/libraries/search_filters/presentation/widgets/date_range_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -24,6 +24,11 @@ void main() {
         home: Scaffold(
           body: DateFilterChip(
             selectedDateRange: selectedDateRange,
+            label: l10n.globalSearchFilterModified,
+            semanticLabel: l10n.globalSearchFilterModifiedSemanticLabel,
+            clearSemanticLabel: l10n.globalSearchClearDateFilterSemanticLabel,
+            inactiveChipKey: const Key('global_search_date_filter_chip'),
+            activeChipKey: const Key('active_date_filter_chip'),
             onApply: onApply ?? (_) {},
             onClear: onClear ?? () {},
           ),

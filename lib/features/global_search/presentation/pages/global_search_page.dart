@@ -1,11 +1,11 @@
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
-import 'package:construculator/features/global_search/presentation/widgets/date_filter_chip.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_empty_recent_widget.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_recent_searches_list.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_suggestions_list.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_tags_filter_sheet.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/search_filters/presentation/widgets/date_filter_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -314,6 +314,15 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
                         const SizedBox(width: CoreSpacing.space2),
                         DateFilterChip(
                           selectedDateRange: effectiveDateRange,
+                          label: l10n.globalSearchFilterModified,
+                          semanticLabel:
+                              l10n.globalSearchFilterModifiedSemanticLabel,
+                          clearSemanticLabel:
+                              l10n.globalSearchClearDateFilterSemanticLabel,
+                          inactiveChipKey: const Key(
+                            'global_search_date_filter_chip',
+                          ),
+                          activeChipKey: const Key('active_date_filter_chip'),
                           onApply: (range) => context
                               .read<GlobalSearchBloc>()
                               .add(GlobalSearchDateFilterApplied(range: range)),
