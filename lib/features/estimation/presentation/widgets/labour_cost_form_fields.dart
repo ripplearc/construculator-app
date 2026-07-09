@@ -52,6 +52,7 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
     super.dispose();
   }
 
+  // TODO: [CA-355] Move total calculation into BLoC when submission is wired
   void _notifyTotal() {
     if (widget.fromCostFile) {
       widget.onTotalChanged?.call(0);
