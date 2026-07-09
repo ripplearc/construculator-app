@@ -2133,6 +2133,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unit price*'**
   String get unitPriceLabel;
+
+  /// Rate label inside the calculation method card when per-day method is selected (from cost file mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Rate/Day:'**
+  String get rateDayLabel;
+
+  /// Rate label inside the calculation method card when per-hours method is selected (from cost file mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Rate/Hour:'**
+  String get rateHourLabel;
 }
 
 class _AppLocalizationsDelegate
