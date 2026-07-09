@@ -37,14 +37,46 @@ class ProjectSearchInitial extends ProjectSearchState {
   /// flight.
   final bool suggestionsLoading;
 
+  /// Tags currently applied as filters. Empty means no tag filter is active.
+  final Set<String> selectedTags;
+
+  /// Available tag names to display in the Tags filter sheet, already
+  /// filtered by the current tag search query.
+  final List<String> availableTags;
+
+  /// `true` while the available tags fetch is currently in flight.
+  final bool availableTagsLoading;
+
+  /// Owner ids currently applied as filters. Empty means no owner filter is
+  /// active.
+  final Set<String> selectedOwnerIds;
+
+  /// Available owners to display in the Owner filter sheet, already filtered
+  /// by the current owner search query.
+  final List<UserProfile> availableOwners;
+
+  /// `true` while the available owners fetch is currently in flight.
+  final bool availableOwnersLoading;
+
+  /// The modification-date range currently applied as a filter, if any.
+  final DateRange? selectedDateRange;
+
   /// Creates a [ProjectSearchInitial] with the given [recentSearches],
-  /// [suggestions], [isLoadingHistory], [query], and [suggestionsLoading].
+  /// [suggestions], [isLoadingHistory], [query], [suggestionsLoading], and the
+  /// active/available filter fields.
   const ProjectSearchInitial({
     this.recentSearches = const [],
     this.suggestions = const [],
     this.isLoadingHistory = false,
     this.query = '',
     this.suggestionsLoading = false,
+    this.selectedTags = const {},
+    this.availableTags = const [],
+    this.availableTagsLoading = false,
+    this.selectedOwnerIds = const {},
+    this.availableOwners = const [],
+    this.availableOwnersLoading = false,
+    this.selectedDateRange,
   });
 
   @override
@@ -54,6 +86,13 @@ class ProjectSearchInitial extends ProjectSearchState {
     isLoadingHistory,
     query,
     suggestionsLoading,
+    selectedTags,
+    availableTags,
+    availableTagsLoading,
+    selectedOwnerIds,
+    availableOwners,
+    availableOwnersLoading,
+    selectedDateRange,
   ];
 }
 
@@ -81,7 +120,10 @@ class ProjectSearchResultsLoaded extends ProjectSearchState {
   final String query;
 
   /// Creates a [ProjectSearchResultsLoaded] with the given [results] and [query].
-  const ProjectSearchResultsLoaded({required this.results, required this.query});
+  const ProjectSearchResultsLoaded({
+    required this.results,
+    required this.query,
+  });
 
   @override
   List<Object?> get props => [results, query];
@@ -100,4 +142,34 @@ class ProjectSearchFailureState extends ProjectSearchState {
 
   @override
   List<Object?> get props => [failure, query];
+}
+
+/// Emitted when loading the available tags for the filter sheet fails.
+///
+/// Transient: the BLoC re-emits a [ProjectSearchInitial] immediately after so
+/// the idle surface (with its cached filter state) remains interactive.
+class ProjectSearchTagsLoadFailure extends ProjectSearchState {
+  /// The failure describing why the tags fetch failed.
+  final Failure failure;
+
+  /// Creates a [ProjectSearchTagsLoadFailure] with the given [failure].
+  const ProjectSearchTagsLoadFailure({required this.failure});
+
+  @override
+  List<Object?> get props => [failure];
+}
+
+/// Emitted when loading the available owners for the filter sheet fails.
+///
+/// Transient: the BLoC re-emits a [ProjectSearchInitial] immediately after so
+/// the idle surface (with its cached filter state) remains interactive.
+class ProjectSearchOwnersLoadFailure extends ProjectSearchState {
+  /// The failure describing why the owners fetch failed.
+  final Failure failure;
+
+  /// Creates a [ProjectSearchOwnersLoadFailure] with the given [failure].
+  const ProjectSearchOwnersLoadFailure({required this.failure});
+
+  @override
+  List<Object?> get props => [failure];
 }
