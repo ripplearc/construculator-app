@@ -1113,4 +1113,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unitPriceLabel => 'Unit price*';
+
+  @override
+  String get rateDayLabel => 'Rate/Day:';
+
+  @override
+  String get rateHourLabel => 'Rate/Hour:';
 }
