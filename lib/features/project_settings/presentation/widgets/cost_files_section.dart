@@ -1,5 +1,5 @@
-import 'package:construculator/features/dashboard/domain/entities/cost_file_entity.dart';
-import 'package:construculator/features/dashboard/presentation/widgets/cost_file_item.dart';
+import 'package:construculator/features/project_settings/domain/entities/cost_file_entity.dart';
+import 'package:construculator/features/project_settings/presentation/widgets/cost_file_item.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -7,9 +7,12 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// Displays the Cost Files section on the project details screen,
 /// showing a vertical list of [CostFileItem]s or an empty state.
 ///
-/// TODO(CA-180): Wire [files] to live data from DashboardBloc when the
-/// Project Details Screen is assembled.
+/// TODO: [CA-269] Supply [files] from live data once the cost_files table and
+/// its data source exist. The Project Details Screen currently passes an empty
+/// list, so only the empty state renders.
+/// https://ripplearc.youtrack.cloud/issue/CA-269
 class CostFilesSection extends StatelessWidget {
+  /// The cost files to display; the empty state renders when this is empty.
   final List<CostFile> files;
 
   const CostFilesSection({super.key, required this.files});

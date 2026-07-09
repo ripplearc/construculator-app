@@ -1,5 +1,5 @@
-import 'package:construculator/features/dashboard/domain/entities/cost_file_entity.dart';
-import 'package:construculator/features/dashboard/presentation/widgets/cost_file_item.dart';
+import 'package:construculator/features/project_settings/domain/entities/cost_file_entity.dart';
+import 'package:construculator/features/project_settings/presentation/widgets/cost_file_item.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
