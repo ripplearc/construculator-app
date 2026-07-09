@@ -1638,6 +1638,41 @@
     "description": "Accessibility label for the Modified date filter chip on the project search screen",
     "context": "N/A"
   },
+  "projectSearchFilterOwner": "Owner",
+  "@projectSearchFilterOwner": {
+    "description": "Label for the Owner filter chip on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchFilterOwnerSemanticLabel": "Filter by owner",
+  "@projectSearchFilterOwnerSemanticLabel": {
+    "description": "Accessibility label for the Owner filter chip on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchClearTagFilterSemanticLabel": "Clear tag filter {tag}",
+  "@projectSearchClearTagFilterSemanticLabel": {
+    "description": "Accessibility label for the × button that removes a single active tag filter chip on the project search screen",
+    "context": "N/A",
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  },
+  "projectSearchClearOwnerFilterSemanticLabel": "Clear owner filter {owner}",
+  "@projectSearchClearOwnerFilterSemanticLabel": {
+    "description": "Accessibility label for the × button that removes a single active owner filter chip on the project search screen",
+    "context": "N/A",
+    "placeholders": {
+      "owner": {
+        "type": "String"
+      }
+    }
+  },
+  "projectSearchClearDateFilterSemanticLabel": "Clear modification date filter",
+  "@projectSearchClearDateFilterSemanticLabel": {
+    "description": "Accessibility label for the × button that removes the active modification-date filter on the project search screen",
+    "context": "N/A"
+  },
   "projectSearchTagsSheetTitle": "Tags",
   "@projectSearchTagsSheetTitle": {
     "description": "Title of the Tags filter bottom sheet on the project search screen",
@@ -1721,6 +1756,16 @@
   "globalSearchTagsLoadErrorMessage": "Could not load tags.",
   "@globalSearchTagsLoadErrorMessage": {
     "description": "Warning toast shown when fetching the available tags for the filter sheet fails",
+    "context": "N/A"
+  },
+  "projectSearchTagsLoadErrorMessage": "Could not load tags.",
+  "@projectSearchTagsLoadErrorMessage": {
+    "description": "Warning toast shown when fetching the available tags for the project search filter sheet fails",
+    "context": "N/A"
+  },
+  "projectSearchOwnersLoadErrorMessage": "Could not load owners.",
+  "@projectSearchOwnersLoadErrorMessage": {
+    "description": "Warning toast shown when fetching the available owners for the project search filter sheet fails",
     "context": "N/A"
   },
   "projectNameLabel": "Project name*",
@@ -2005,3 +2050,4 @@
     "context": "Dashboard projects sheet"
   }
 }
+

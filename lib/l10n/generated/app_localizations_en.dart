@@ -1031,6 +1031,26 @@ class AppLocalizationsEn extends AppLocalizations {
       'Filter by modification date';
 
   @override
+  String get projectSearchFilterOwner => 'Owner';
+
+  @override
+  String get projectSearchFilterOwnerSemanticLabel => 'Filter by owner';
+
+  @override
+  String projectSearchClearTagFilterSemanticLabel(String tag) {
+    return 'Clear tag filter $tag';
+  }
+
+  @override
+  String projectSearchClearOwnerFilterSemanticLabel(String owner) {
+    return 'Clear owner filter $owner';
+  }
+
+  @override
+  String get projectSearchClearDateFilterSemanticLabel =>
+      'Clear modification date filter';
+
+  @override
   String get projectSearchTagsSheetTitle => 'Tags';
 
   @override
@@ -1081,6 +1101,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get globalSearchTagsLoadErrorMessage => 'Could not load tags.';
+
+  @override
+  String get projectSearchTagsLoadErrorMessage => 'Could not load tags.';
+
+  @override
+  String get projectSearchOwnersLoadErrorMessage => 'Could not load owners.';
 
   @override
   String get projectNameLabel => 'Project name*';

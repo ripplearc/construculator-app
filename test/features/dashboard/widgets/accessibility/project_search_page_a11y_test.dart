@@ -102,6 +102,20 @@ void main() {
       );
     });
 
+    testWidgets('meets a11y guidelines for Owner filter chip in both themes', (
+      tester,
+    ) async {
+      await setupA11yTest(tester);
+
+      await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+        tester,
+        (theme) => makeTestableWidget(theme: theme),
+        find.byKey(const Key('project_search_owner_filter_chip')),
+        checkTapTargetSize: true,
+        checkLabeledTapTarget: true,
+      );
+    });
+
     testWidgets(
       'meets a11y guidelines for Modified filter chip in both themes',
       (tester) async {
