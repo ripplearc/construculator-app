@@ -1765,6 +1765,14 @@
   "@projectDetailScreenTitle": {
     "description": "Title shown in the app bar of the project details screen",
     "context": "Project settings"
+  },
+  "addLabourCostButton": "Add labour cost",
+  "@addLabourCostButton": {
+    "description": "Label for the FAB on the cost estimation details page when the labours tab is active"
+  },
+  "addEquipmentCostButton": "Add equipment cost",
+  "@addEquipmentCostButton": {
+    "description": "Label for the FAB on the cost estimation details page when the equipments tab is active"
   }
 }
 

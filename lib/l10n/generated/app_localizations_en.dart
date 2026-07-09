@@ -1118,4 +1118,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get projectDetailScreenTitle => 'Project Details';
+
+  @override
+  String get addLabourCostButton => 'Add labour cost';
+
+  @override
+  String get addEquipmentCostButton => 'Add equipment cost';
 }
