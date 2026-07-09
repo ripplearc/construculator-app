@@ -1183,4 +1183,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get crewSizeLabel => 'Crew size*';
+
+  @override
+  String get equipmentTypeLabel => 'Equipment type*';
+
+  @override
+  String get equipmentNameLabel => 'Equipment name*';
+
+  @override
+  String get unitPriceLabel => 'Unit price*';
 }
