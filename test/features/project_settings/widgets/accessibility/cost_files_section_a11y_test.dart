@@ -49,6 +49,10 @@ void main() {
         find.text('Cost files'),
         checkTapTargetSize: false,
         checkLabeledTapTarget: false,
+        // The a11y checker samples the CostFileItem card edge (#e0e3e6) instead
+        // of the card background (#f9fafb), giving a false 1.23:1 contrast on
+        // the "Uploaded on" label. Actual: textBody (#475467) on pageBackground
+        // (#f9fafb) = 5.7:1, well above WCAG 4.5:1.
         checkTextContrast: false,
       );
     });
