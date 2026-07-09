@@ -1,0 +1,189 @@
+import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:flutter/material.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+
+class MaterialCostFormFields extends StatefulWidget {
+  final bool fromCostFile;
+
+  const MaterialCostFormFields({super.key, required this.fromCostFile});
+
+  @override
+  State<MaterialCostFormFields> createState() => _MaterialCostFormFieldsState();
+}
+
+class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
+  bool _showOtherDetails = false;
+  final _materialTypeController = TextEditingController();
+  final _perUnitCostController = TextEditingController();
+  final _quantityController = TextEditingController();
+  final _productLinkController = TextEditingController();
+
+  @override
+  void dispose() {
+    _materialTypeController.dispose();
+    _perUnitCostController.dispose();
+    _quantityController.dispose();
+    _productLinkController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(CoreSpacing.space4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (widget.fromCostFile)
+            ..._fromCostFileFields(context)
+          else
+            ..._manuallyFields(context),
+          const SizedBox(height: CoreSpacing.space5),
+          _buildOtherMaterialDetails(context),
+          const SizedBox(height: CoreSpacing.space6),
+          // TODO: [CA-336] Add assign task section
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _fromCostFileFields(BuildContext context) {
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    return [
+      // TODO: [CA-298] Wire cost file dropdown to CostFileDataSource
+      CoreTextField(
+        key: const Key('cost_file_field'),
+        hintText: l10n.costFilePlaceholder,
+        readOnly: true,
+        enabled: false,
+        suffix: CoreIconWidget(
+          icon: CoreIcons.arrowDropDown,
+          color: colorTheme.iconGrayMid,
+          size: 24,
+        ),
+      ),
+      const SizedBox(height: CoreSpacing.space5),
+      // TODO: [CA-298] Populate material type from selected cost file
+      CoreTextField(
+        key: const Key('material_type_field'),
+        hintText: l10n.materialTypeLabel,
+        readOnly: true,
+        enabled: false,
+        suffix: CoreIconWidget(
+          icon: CoreIcons.arrowDropDown,
+          color: colorTheme.iconGrayMid,
+          size: 24,
+        ),
+      ),
+      const SizedBox(height: CoreSpacing.space5),
+      CoreTextField(
+        key: const Key('quantity_field'),
+        hintText: l10n.quantityLabel,
+        controller: _quantityController,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      ),
+    ];
+  }
+
+  List<Widget> _manuallyFields(BuildContext context) {
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    return [
+      CoreTextField(
+        key: const Key('material_type_field'),
+        hintText: l10n.materialTypeLabel,
+        controller: _materialTypeController,
+      ),
+      const SizedBox(height: CoreSpacing.space5),
+      CoreTextField(
+        key: const Key('per_unit_cost_field'),
+        hintText: l10n.perUnitCostLabel,
+        controller: _perUnitCostController,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        suffix: CoreIconWidget(
+          icon: CoreIcons.dollar,
+          color: colorTheme.textHeadline,
+          size: 24,
+        ),
+      ),
+      const SizedBox(height: CoreSpacing.space5),
+      // TODO: [CA-311] Add UOM dropdown
+      CoreTextField(
+        key: const Key('uom_field'),
+        hintText: l10n.uomLabel,
+        readOnly: true,
+        enabled: false,
+        suffix: CoreIconWidget(
+          icon: CoreIcons.arrowDropDown,
+          color: colorTheme.iconGrayMid,
+          size: 24,
+        ),
+      ),
+      const SizedBox(height: CoreSpacing.space5),
+      CoreTextField(
+        key: const Key('quantity_field'),
+        hintText: l10n.quantityLabel,
+        controller: _quantityController,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      ),
+    ];
+  }
+
+  Widget _buildOtherMaterialDetails(BuildContext context) {
+    final l10n = context.l10n;
+    final colorTheme = context.colorTheme;
+    final textTheme = context.textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_showOtherDetails) ...[
+          // TODO: [CA-332] Add brand dropdown to other material details
+          CoreTextField(
+            key: const Key('brand_field'),
+            hintText: l10n.brandLabel,
+            readOnly: true,
+            enabled: false,
+            suffix: CoreIconWidget(
+              icon: CoreIcons.arrowDropDown,
+              color: colorTheme.iconGrayMid,
+              size: 24,
+            ),
+          ),
+          const SizedBox(height: CoreSpacing.space3),
+          CoreTextField(
+            key: const Key('product_link_field'),
+            hintText: l10n.productLinkLabel,
+            controller: _productLinkController,
+          ),
+          const SizedBox(height: CoreSpacing.space3),
+        ],
+        Semantics(
+          key: const Key('other_material_details_button'),
+          label: l10n.otherMaterialDetailsButton,
+          button: true,
+          child: GestureDetector(
+            onTap: () => setState(() => _showOtherDetails = !_showOtherDetails),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CoreIconWidget(
+                  icon: _showOtherDetails ? CoreIcons.arrowUp : CoreIcons.arrowDown,
+                  color: colorTheme.iconDark,
+                  size: 20,
+                ),
+                const SizedBox(width: CoreSpacing.space1),
+                Text(
+                  l10n.otherMaterialDetailsButton,
+                  style: textTheme.bodyMediumMedium.copyWith(
+                    color: colorTheme.iconDark,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}

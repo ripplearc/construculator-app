@@ -1,15 +1,16 @@
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// The cost estimation details page.
 ///
 /// Displays a tabbed view of [CostEstimationDetailsTabView] (Materials,
-/// Labours, Equipments) with a custom app bar, FAB for adding material
-/// costs, and a bottom bar with lock and preview actions.
-class CostEstimationDetailsPage extends StatelessWidget {
+/// Labours, Equipments) with a custom app bar, context-aware FAB for adding
+/// cost items, and a bottom bar with lock and preview actions.
+class CostEstimationDetailsPage extends StatefulWidget {
   final String estimationId;
 
   /// Router used for navigation (e.g. popping this page).
@@ -20,6 +21,14 @@ class CostEstimationDetailsPage extends StatelessWidget {
     required this.estimationId,
     required this.router,
   });
+
+  @override
+  State<CostEstimationDetailsPage> createState() =>
+      _CostEstimationDetailsPageState();
+}
+
+class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
+  int _selectedTabIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +57,7 @@ class CostEstimationDetailsPage extends StatelessWidget {
               size: 24,
               visualDensity: VisualDensity.compact,
               semanticLabel: l10n.backLabel,
-              onTap: router.pop,
+              onTap: widget.router.pop,
             ),
             // TODO: [CA-154] [Cost Estimation] Implement Rename Estimation Logic https://ripplearc.youtrack.cloud/issue/CA-154/Cost-Estimation-Implement-Rename-Estimation-Logic
             title: Row(
@@ -84,17 +93,10 @@ class CostEstimationDetailsPage extends StatelessWidget {
           ),
         ),
       ),
-      body: const CostEstimationDetailsTabView(),
-      // TODO: [CA-155] [Cost Estimation] Implement Add Material Cost Logic https://ripplearc.youtrack.cloud/issue/CA-155/Cost-Estimation-Implement-Add-Material-Cost-Logic
-      floatingActionButton: CoreButton(
-        key: const Key('add_material_cost_button'),
-        label: l10n.addMaterialCostButton,
-        variant: CoreButtonVariant.secondary,
-        icon: CoreIconWidget(icon: CoreIcons.add),
-        size: CoreButtonSize.medium,
-        fullWidth: false,
-        onPressed: () {},
+      body: CostEstimationDetailsTabView(
+        onTabChanged: (index) => setState(() => _selectedTabIndex = index),
       ),
+      floatingActionButton: _buildFab(),
       bottomNavigationBar: SafeArea(
         child: Container(
           padding: const EdgeInsets.symmetric(
@@ -135,5 +137,44 @@ class CostEstimationDetailsPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildFab() {
+    final l10n = context.l10n;
+    return switch (_selectedTabIndex) {
+      1 => CoreButton(
+        key: const Key('add_labour_cost_button'),
+        label: l10n.addLabourCostButton,
+        variant: CoreButtonVariant.secondary,
+        icon: CoreIconWidget(icon: CoreIcons.add),
+        size: CoreButtonSize.medium,
+        fullWidth: false,
+        onPressed: () => widget.router.pushNamed(
+          '$fullAddLabourCostRoute/${widget.estimationId}',
+        ),
+      ),
+      2 => CoreButton(
+        key: const Key('add_equipment_cost_button'),
+        label: l10n.addEquipmentCostButton,
+        variant: CoreButtonVariant.secondary,
+        icon: CoreIconWidget(icon: CoreIcons.add),
+        size: CoreButtonSize.medium,
+        fullWidth: false,
+        onPressed: () => widget.router.pushNamed(
+          '$fullAddEquipmentCostRoute/${widget.estimationId}',
+        ),
+      ),
+      _ => CoreButton(
+        key: const Key('add_material_cost_button'),
+        label: l10n.addMaterialCostButton,
+        variant: CoreButtonVariant.secondary,
+        icon: CoreIconWidget(icon: CoreIcons.add),
+        size: CoreButtonSize.medium,
+        fullWidth: false,
+        onPressed: () => widget.router.pushNamed(
+          '$fullAddMaterialCostRoute/${widget.estimationId}',
+        ),
+      ),
+    };
   }
 }

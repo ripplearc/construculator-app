@@ -646,12 +646,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uploadedOnLabel => 'Uploaded on';
 
   @override
-  String get costFilesSectionTitle => 'Cost files';
-
-  @override
-  String get costFilesEmptyState => 'No cost files attached.';
-
-  @override
   String activityAttachmentAdded(String fileName) {
     return 'Added attachment: $fileName';
   }
@@ -831,6 +825,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get commentLabel => 'Comment';
+
+  @override
+  String get addMaterialCostsScreenTitle => 'Material cost entry';
+
+  @override
+  String get addLabourCostsScreenTitle => 'Labour cost entry';
+
+  @override
+  String get addEquipmentCostsScreenTitle => 'Equipment cost entry';
+
+  @override
+  String get howToCalculateCostLabel => 'How you want to calculate cost?';
+
+  @override
+  String get fromCostFileMode => 'From cost file';
+
+  @override
+  String get manuallyMode => 'Manually';
+
+  @override
+  String get costItemTotalLabel => 'Total:';
+
+  @override
+  String get addToCostButton => 'Add to cost';
+
+  @override
+  String get fromCostFileModeSemanticLabel => 'Switch to cost file mode';
+
+  @override
+  String get manuallyModeSemanticLabel => 'Switch to manual mode';
 
   @override
   String get globalSearchHint => 'Search for Calculation and cost';
@@ -1026,4 +1050,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createProjectScreenTitle => 'Create a project';
+
+  @override
+  String get addLabourCostButton => 'Add labour cost';
+
+  @override
+  String get addEquipmentCostButton => 'Add equipment cost';
+
+  @override
+  String get costFilePlaceholder => 'Select cost file';
+
+  @override
+  String get materialTypeLabel => 'Material type*';
+
+  @override
+  String get quantityLabel => 'Quantity*';
+
+  @override
+  String get perUnitCostLabel => 'Per unit cost*';
+
+  @override
+  String get uomLabel => 'Unit of measure*';
+
+  @override
+  String get otherMaterialDetailsButton => 'Other material details';
+
+  @override
+  String get brandLabel => 'Brand';
+
+  @override
+  String get productLinkLabel => 'Product link';
 }

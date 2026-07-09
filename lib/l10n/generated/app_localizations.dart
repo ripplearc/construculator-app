@@ -1252,18 +1252,6 @@ abstract class AppLocalizations {
   /// **'Uploaded on'**
   String get uploadedOnLabel;
 
-  /// Section title for the list of attached cost files on the project details screen
-  ///
-  /// In en, this message translates to:
-  /// **'Cost files'**
-  String get costFilesSectionTitle;
-
-  /// Empty state message when no cost files are attached to a project
-  ///
-  /// In en, this message translates to:
-  /// **'No cost files attached.'**
-  String get costFilesEmptyState;
-
   /// Activity log message for attachment added with file name
   ///
   /// In en, this message translates to:
@@ -1587,6 +1575,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Comment'**
   String get commentLabel;
+
+  /// App bar title for the add material cost form screen
+  ///
+  /// In en, this message translates to:
+  /// **'Material cost entry'**
+  String get addMaterialCostsScreenTitle;
+
+  /// App bar title for the add labour cost form screen
+  ///
+  /// In en, this message translates to:
+  /// **'Labour cost entry'**
+  String get addLabourCostsScreenTitle;
+
+  /// App bar title for the add equipment cost form screen
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment cost entry'**
+  String get addEquipmentCostsScreenTitle;
+
+  /// Label above the manual/cost-file mode toggle on the cost item form screen
+  ///
+  /// In en, this message translates to:
+  /// **'How you want to calculate cost?'**
+  String get howToCalculateCostLabel;
+
+  /// Label for the 'from cost file' mode toggle button on the cost item form screen
+  ///
+  /// In en, this message translates to:
+  /// **'From cost file'**
+  String get fromCostFileMode;
+
+  /// Label for the 'manually' mode toggle button on the cost item form screen
+  ///
+  /// In en, this message translates to:
+  /// **'Manually'**
+  String get manuallyMode;
+
+  /// Label shown before the running total amount in the cost item form bottom bar
+  ///
+  /// In en, this message translates to:
+  /// **'Total:'**
+  String get costItemTotalLabel;
+
+  /// Label for the submit button in the cost item form screen bottom bar
+  ///
+  /// In en, this message translates to:
+  /// **'Add to cost'**
+  String get addToCostButton;
+
+  /// Accessibility label for the 'from cost file' toggle button on the cost item form screen
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to cost file mode'**
+  String get fromCostFileModeSemanticLabel;
+
+  /// Accessibility label for the 'manually' toggle button on the cost item form screen
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to manual mode'**
+  String get manuallyModeSemanticLabel;
 
   /// Hint text displayed in the global search input field
   ///
@@ -1947,6 +1995,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create a project'**
   String get createProjectScreenTitle;
+
+  /// Label for the FAB on the cost estimation details page when the labours tab is active
+  ///
+  /// In en, this message translates to:
+  /// **'Add labour cost'**
+  String get addLabourCostButton;
+
+  /// Label for the FAB on the cost estimation details page when the equipments tab is active
+  ///
+  /// In en, this message translates to:
+  /// **'Add equipment cost'**
+  String get addEquipmentCostButton;
+
+  /// Placeholder text for the cost file dropdown on cost item form screens
+  ///
+  /// In en, this message translates to:
+  /// **'Select cost file'**
+  String get costFilePlaceholder;
+
+  /// Hint label for the material type field on the material cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Material type*'**
+  String get materialTypeLabel;
+
+  /// Hint label for the quantity field on material and equipment cost forms
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity*'**
+  String get quantityLabel;
+
+  /// Hint label for the per-unit cost field on the material cost form (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Per unit cost*'**
+  String get perUnitCostLabel;
+
+  /// Hint label for the unit of measure dropdown on the material cost form (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Unit of measure*'**
+  String get uomLabel;
+
+  /// Toggle button label that expands/collapses the brand and product link fields on the material cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Other material details'**
+  String get otherMaterialDetailsButton;
+
+  /// Hint label for the brand dropdown in the other material details section
+  ///
+  /// In en, this message translates to:
+  /// **'Brand'**
+  String get brandLabel;
+
+  /// Hint label for the product link text field in the other material details section
+  ///
+  /// In en, this message translates to:
+  /// **'Product link'**
+  String get productLinkLabel;
 }
 
 class _AppLocalizationsDelegate

@@ -1023,16 +1023,6 @@
     "description": "Label shown before the upload date of a cost file",
     "context": "CostFileItem metadata row"
   },
-  "costFilesSectionTitle": "Cost files",
-  "@costFilesSectionTitle": {
-    "description": "Section title for the list of attached cost files on the project details screen",
-    "context": "CostFilesSection"
-  },
-  "costFilesEmptyState": "No cost files attached.",
-  "@costFilesEmptyState": {
-    "description": "Empty state message when no cost files are attached to a project",
-    "context": "CostFilesSection"
-  },
   "activityAttachmentAdded": "Added attachment: {fileName}",
   "@activityAttachmentAdded": {
     "description": "Activity log message for attachment added with file name",
@@ -1308,6 +1298,56 @@
   "commentLabel": "Comment",
   "@commentLabel": {
     "description": "Accessibility label for the comment icon in the cost estimation details tab view",
+    "context": "N/A"
+  },
+  "addMaterialCostsScreenTitle": "Material cost entry",
+  "@addMaterialCostsScreenTitle": {
+    "description": "App bar title for the add material cost form screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-7186"
+  },
+  "addLabourCostsScreenTitle": "Labour cost entry",
+  "@addLabourCostsScreenTitle": {
+    "description": "App bar title for the add labour cost form screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57363-12305"
+  },
+  "addEquipmentCostsScreenTitle": "Equipment cost entry",
+  "@addEquipmentCostsScreenTitle": {
+    "description": "App bar title for the add equipment cost form screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57406-17357"
+  },
+  "howToCalculateCostLabel": "How you want to calculate cost?",
+  "@howToCalculateCostLabel": {
+    "description": "Label above the manual/cost-file mode toggle on the cost item form screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-7186"
+  },
+  "fromCostFileMode": "From cost file",
+  "@fromCostFileMode": {
+    "description": "Label for the 'from cost file' mode toggle button on the cost item form screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57363-6582"
+  },
+  "manuallyMode": "Manually",
+  "@manuallyMode": {
+    "description": "Label for the 'manually' mode toggle button on the cost item form screen",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-7186"
+  },
+  "costItemTotalLabel": "Total:",
+  "@costItemTotalLabel": {
+    "description": "Label shown before the running total amount in the cost item form bottom bar",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-7186"
+  },
+  "addToCostButton": "Add to cost",
+  "@addToCostButton": {
+    "description": "Label for the submit button in the cost item form screen bottom bar",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-7186"
+  },
+  "fromCostFileModeSemanticLabel": "Switch to cost file mode",
+  "@fromCostFileModeSemanticLabel": {
+    "description": "Accessibility label for the 'from cost file' toggle button on the cost item form screen",
+    "context": "N/A"
+  },
+  "manuallyModeSemanticLabel": "Switch to manual mode",
+  "@manuallyModeSemanticLabel": {
+    "description": "Accessibility label for the 'manually' toggle button on the cost item form screen",
     "context": "N/A"
   },
   "globalSearchHint": "Search for Calculation and cost",
@@ -1610,6 +1650,46 @@
   "@createProjectScreenTitle": {
     "description": "Title for the project creation screen app bar",
     "context": "Project creation screen"
+  },
+  "addLabourCostButton": "Add labour cost",
+  "@addLabourCostButton": {
+    "description": "Label for the FAB on the cost estimation details page when the labours tab is active"
+  },
+  "addEquipmentCostButton": "Add equipment cost",
+  "@addEquipmentCostButton": {
+    "description": "Label for the FAB on the cost estimation details page when the equipments tab is active"
+  },
+  "costFilePlaceholder": "Select cost file",
+  "@costFilePlaceholder": {
+    "description": "Placeholder text for the cost file dropdown on cost item form screens"
+  },
+  "materialTypeLabel": "Material type*",
+  "@materialTypeLabel": {
+    "description": "Hint label for the material type field on the material cost form"
+  },
+  "quantityLabel": "Quantity*",
+  "@quantityLabel": {
+    "description": "Hint label for the quantity field on material and equipment cost forms"
+  },
+  "perUnitCostLabel": "Per unit cost*",
+  "@perUnitCostLabel": {
+    "description": "Hint label for the per-unit cost field on the material cost form (manually mode)"
+  },
+  "uomLabel": "Unit of measure*",
+  "@uomLabel": {
+    "description": "Hint label for the unit of measure dropdown on the material cost form (manually mode)"
+  },
+  "otherMaterialDetailsButton": "Other material details",
+  "@otherMaterialDetailsButton": {
+    "description": "Toggle button label that expands/collapses the brand and product link fields on the material cost form"
+  },
+  "brandLabel": "Brand",
+  "@brandLabel": {
+    "description": "Hint label for the brand dropdown in the other material details section"
+  },
+  "productLinkLabel": "Product link",
+  "@productLinkLabel": {
+    "description": "Hint label for the product link text field in the other material details section"
   }
 }
 
