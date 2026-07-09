@@ -1942,6 +1942,36 @@ abstract class AppLocalizations {
   /// **'Filter by modification date'**
   String get projectSearchFilterModifiedSemanticLabel;
 
+  /// Label for the Owner filter chip on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get projectSearchFilterOwner;
+
+  /// Accessibility label for the Owner filter chip on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by owner'**
+  String get projectSearchFilterOwnerSemanticLabel;
+
+  /// Accessibility label for the × button that removes a single active tag filter chip on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Clear tag filter {tag}'**
+  String projectSearchClearTagFilterSemanticLabel(String tag);
+
+  /// Accessibility label for the × button that removes a single active owner filter chip on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Clear owner filter {owner}'**
+  String projectSearchClearOwnerFilterSemanticLabel(String owner);
+
+  /// Accessibility label for the × button that removes the active modification-date filter on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Clear modification date filter'**
+  String get projectSearchClearDateFilterSemanticLabel;
+
   /// Title of the Tags filter bottom sheet on the project search screen
   ///
   /// In en, this message translates to:
@@ -2043,6 +2073,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not load tags.'**
   String get globalSearchTagsLoadErrorMessage;
+
+  /// Warning toast shown when fetching the available tags for the project search filter sheet fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load tags.'**
+  String get projectSearchTagsLoadErrorMessage;
+
+  /// Warning toast shown when fetching the available owners for the project search filter sheet fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load owners.'**
+  String get projectSearchOwnersLoadErrorMessage;
 
   /// Label for the project name text field
   ///

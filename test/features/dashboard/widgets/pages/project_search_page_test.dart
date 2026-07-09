@@ -5,8 +5,10 @@ import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_search_bloc/project_search_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/project_search_page.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/project_search_empty_recent_widget.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/project_search_owner_filter_sheet.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/project_search_recent_searches_list.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/project_search_suggestions_list.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/project_search_tags_filter_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -172,6 +174,144 @@ void main() {
 
       expect(find.text(l10n().projectSearchFilterModified), findsOneWidget);
     });
+
+    testWidgets('sees Owner filter chip', (tester) async {
+      await renderPage(tester);
+
+      expect(find.text(l10n().projectSearchFilterOwner), findsOneWidget);
+    });
+
+    testWidgets('tapping the Modified chip opens the date range sheet', (
+      tester,
+    ) async {
+      await renderPage(tester);
+
+      await tester.tap(
+        find.byKey(const Key('project_search_modified_filter_chip')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().dateRangeSheetTitle), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('date_range_apply_button')));
+      await tester.pumpAndSettle();
+
+      // Applying a range swaps the plain chip for the active pill.
+      expect(
+        find.byKey(const Key('project_search_active_modified_filter_chip')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'tapping the Tags chip opens the tags sheet; applying shows the '
+      'active pill and tapping the pill clears it',
+      (tester) async {
+        fakeSupabase.addTableData(DatabaseConstants.tagsTable, [
+          {
+            DatabaseConstants.idColumn: 'tag-Roofing',
+            DatabaseConstants.nameColumn: 'Roofing',
+          },
+        ]);
+        await renderPage(tester);
+
+        await tester.tap(
+          find.byKey(const Key('project_search_tags_filter_chip')),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(ProjectSearchTagsFilterSheet), findsOneWidget);
+
+        await tester.tap(
+          find.byKey(const Key('project_search_tag_filter_item_Roofing')),
+        );
+        await tester.pump();
+        await tester.tap(
+          find.byKey(const Key('project_search_tags_filter_apply_button')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('project_search_active_tag_chip_Roofing')),
+          findsOneWidget,
+        );
+        // The re-open chip stays available next to the active pill.
+        expect(
+          find.byKey(const Key('project_search_tags_filter_chip_active')),
+          findsOneWidget,
+        );
+
+        await tester.tap(
+          find.byKey(const Key('project_search_active_tag_chip_Roofing')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('project_search_active_tag_chip_Roofing')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const Key('project_search_tags_filter_chip')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'tapping the Owner chip opens the owner sheet; applying shows the '
+      'active pill with the owner name and tapping the pill clears it',
+      (tester) async {
+        fakeSupabase.setRpcResponse(
+          DatabaseConstants.projectOwnersRpcFunction,
+          [
+            {
+              DatabaseConstants.idColumn: 'owner-ada',
+              DatabaseConstants.credentialIdColumn: null,
+              DatabaseConstants.firstNameColumn: 'Ada',
+              DatabaseConstants.lastNameColumn: 'Lovelace',
+              DatabaseConstants.professionalRoleColumn: 'Engineer',
+              DatabaseConstants.profilePhotoUrlColumn: null,
+            },
+          ],
+        );
+        await renderPage(tester);
+
+        await tester.tap(
+          find.byKey(const Key('project_search_owner_filter_chip')),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(ProjectSearchOwnerFilterSheet), findsOneWidget);
+
+        await tester.tap(
+          find.byKey(const Key('project_search_owner_filter_item_owner-ada')),
+        );
+        await tester.pump();
+        await tester.tap(
+          find.byKey(const Key('project_search_owner_filter_apply_button')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('project_search_active_owner_chip_owner-ada')),
+          findsOneWidget,
+        );
+        // The active pill shows the owner's full name, not the raw id.
+        expect(find.text('Ada Lovelace'), findsOneWidget);
+
+        await tester.tap(
+          find.byKey(const Key('project_search_active_owner_chip_owner-ada')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('project_search_active_owner_chip_owner-ada')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const Key('project_search_owner_filter_chip')),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('sees empty state message when no recent searches', (
       tester,

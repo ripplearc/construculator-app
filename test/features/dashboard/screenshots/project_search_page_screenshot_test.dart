@@ -100,31 +100,30 @@ void main() {
       );
     });
 
-    testWidgets(
-      'renders with search text and clear button visible correctly',
-      (tester) async {
-        tester.view.physicalSize = size;
-        tester.view.devicePixelRatio = ratio;
-        addTearDown(tester.view.reset);
+    testWidgets('renders with search text and clear button visible correctly', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
-        await pumpProjectSearchPage(tester: tester);
+      await pumpProjectSearchPage(tester: tester);
 
-        final textFieldFinder = find.descendant(
-          of: find.byType(ProjectSearchPage),
-          matching: find.byType(TextFormField),
-        );
-        await tester.enterText(textFieldFinder, 'wall');
-        await tester.pumpAndSettle();
-        expect(find.text('wall'), findsOneWidget);
+      final textFieldFinder = find.descendant(
+        of: find.byType(ProjectSearchPage),
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(textFieldFinder, 'wall');
+      await tester.pumpAndSettle();
+      expect(find.text('wall'), findsOneWidget);
 
-        await expectLater(
-          find.byType(ProjectSearchPage),
-          matchesGoldenFile(
-            'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_text.png',
-          ),
-        );
-      },
-    );
+      await expectLater(
+        find.byType(ProjectSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_text.png',
+        ),
+      );
+    });
 
     testWidgets('renders with recent searches correctly', (tester) async {
       tester.view.physicalSize = size;
@@ -176,6 +175,46 @@ void main() {
         find.byType(ProjectSearchPage),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_with_suggestions.png',
+        ),
+      );
+    });
+
+    testWidgets('renders the chip row with an active tag filter correctly', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      fakeSupabase.addTableData(DatabaseConstants.tagsTable, [
+        {
+          DatabaseConstants.idColumn: 'tag-Roofing',
+          DatabaseConstants.nameColumn: 'Roofing',
+        },
+      ]);
+
+      await pumpProjectSearchPage(tester: tester);
+
+      // Drive the real flow: open the Tags sheet, select a tag, apply — so the
+      // golden captures the active-pill chip row users will actually see.
+      await tester.tap(
+        find.byKey(const Key('project_search_tags_filter_chip')),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const Key('project_search_tag_filter_item_Roofing')),
+      );
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const Key('project_search_tags_filter_apply_button')),
+      );
+      await tester.pumpAndSettle();
+      await tester.awaitImages();
+
+      await expectLater(
+        find.byType(ProjectSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_active_tag_filter.png',
         ),
       );
     });
