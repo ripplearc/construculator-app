@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_item_mode_toggle.dart';
+import 'package:construculator/features/estimation/presentation/widgets/labour_cost_form_fields.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -135,8 +136,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
   Widget _buildFormFields() {
     return switch (widget.type) {
       CostItemType.material => MaterialCostFormFields(fromCostFile: _fromCostFile),
-      // TODO: [CA-306] Add labour cost form fields
-      CostItemType.labor => const SizedBox.shrink(),
+      CostItemType.labor => LabourCostFormFields(fromCostFile: _fromCostFile),
       // TODO: [CA-306] Add equipment cost form fields
       CostItemType.equipment => const SizedBox.shrink(),
     };

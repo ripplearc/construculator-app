@@ -42,6 +42,19 @@ void main() {
   }
 
   group('CostItemFormScreen Screenshot Tests', () {
+    testWidgets('renders labour cost screen in manually mode', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpScreen(tester: tester, type: CostItemType.labor);
+
+      await expectLater(
+        find.byType(CostItemFormScreen),
+        matchesGoldenFile(
+          'goldens/cost_item_form_screen/${size.width}x${size.height}/labour_manually.png',
+        ),
+      );
+    });
+
     testWidgets('renders material cost screen in manually mode', (
       tester,
     ) async {

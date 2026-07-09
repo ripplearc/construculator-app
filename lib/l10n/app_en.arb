@@ -1700,6 +1700,38 @@
   "productLinkLabel": "Product link",
   "@productLinkLabel": {
     "description": "Hint label for the product link text field in the other material details section"
+  },
+  "labourTypeLabel": "Labour type*",
+  "@labourTypeLabel": {
+    "description": "Hint label for the labour type field on the labour cost form"
+  },
+  "calcMethodTitle": "Calculation method",
+  "@calcMethodTitle": {
+    "description": "Section title for the calculation method card on the labour cost form"
+  },
+  "perDayOption": "Per day",
+  "@perDayOption": {
+    "description": "Radio option label for the per-day calculation method on the labour cost form"
+  },
+  "perHoursOption": "Per hours",
+  "@perHoursOption": {
+    "description": "Radio option label for the per-hours calculation method on the labour cost form"
+  },
+  "noOfDaysLabel": "No. of days*",
+  "@noOfDaysLabel": {
+    "description": "Hint label for the number-of-days field when the per-day method is selected on the labour cost form"
+  },
+  "noOfHoursLabel": "No. of hours*",
+  "@noOfHoursLabel": {
+    "description": "Hint label for the number-of-hours field when the per-hours method is selected on the labour cost form"
+  },
+  "crewRateLabel": "Crew rate ($)*",
+  "@crewRateLabel": {
+    "description": "Hint label for the crew rate field on the labour cost form (manually mode)"
+  },
+  "crewSizeLabel": "Crew size*",
+  "@crewSizeLabel": {
+    "description": "Hint label for the crew size field on the labour cost form"
   }
 }
 
