@@ -1942,6 +1942,66 @@ abstract class AppLocalizations {
   /// **'Filter by modification date'**
   String get projectSearchFilterModifiedSemanticLabel;
 
+  /// Title of the Tags filter bottom sheet on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get projectSearchTagsSheetTitle;
+
+  /// Hint text for the tag search field inside the Tags filter sheet on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Search by tag name'**
+  String get projectSearchTagsSheetSearchHint;
+
+  /// Label for the button that deselects all tags in the Tags filter sheet on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get projectSearchTagsSheetClearAll;
+
+  /// Label for the button that applies the selected tag filters on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get projectSearchTagsSheetApply;
+
+  /// Message shown when no tags match the search query in the Tags filter sheet on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'No tags found.'**
+  String get projectSearchTagsSheetEmpty;
+
+  /// Title of the Owner filter bottom sheet on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Owner'**
+  String get projectSearchOwnerSheetTitle;
+
+  /// Hint text for the owner search field inside the Owner filter sheet on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Search by owner name'**
+  String get projectSearchOwnerSheetSearchHint;
+
+  /// Label for the button that deselects all owners in the Owner filter sheet on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get projectSearchOwnerSheetClearAll;
+
+  /// Label for the button that applies the selected owner filters on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get projectSearchOwnerSheetApply;
+
+  /// Message shown when no owners match the search query in the Owner filter sheet on the project search screen
+  ///
+  /// In en, this message translates to:
+  /// **'No owners found.'**
+  String get projectSearchOwnerSheetEmpty;
+
   /// Accessibility label for the × button that removes the active modification-date filter
   ///
   /// In en, this message translates to:

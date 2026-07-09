@@ -1638,6 +1638,56 @@
     "description": "Accessibility label for the Modified date filter chip on the project search screen",
     "context": "N/A"
   },
+  "projectSearchTagsSheetTitle": "Tags",
+  "@projectSearchTagsSheetTitle": {
+    "description": "Title of the Tags filter bottom sheet on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchTagsSheetSearchHint": "Search by tag name",
+  "@projectSearchTagsSheetSearchHint": {
+    "description": "Hint text for the tag search field inside the Tags filter sheet on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchTagsSheetClearAll": "Clear all",
+  "@projectSearchTagsSheetClearAll": {
+    "description": "Label for the button that deselects all tags in the Tags filter sheet on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchTagsSheetApply": "Apply",
+  "@projectSearchTagsSheetApply": {
+    "description": "Label for the button that applies the selected tag filters on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchTagsSheetEmpty": "No tags found.",
+  "@projectSearchTagsSheetEmpty": {
+    "description": "Message shown when no tags match the search query in the Tags filter sheet on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchOwnerSheetTitle": "Owner",
+  "@projectSearchOwnerSheetTitle": {
+    "description": "Title of the Owner filter bottom sheet on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchOwnerSheetSearchHint": "Search by owner name",
+  "@projectSearchOwnerSheetSearchHint": {
+    "description": "Hint text for the owner search field inside the Owner filter sheet on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchOwnerSheetClearAll": "Clear all",
+  "@projectSearchOwnerSheetClearAll": {
+    "description": "Label for the button that deselects all owners in the Owner filter sheet on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchOwnerSheetApply": "Apply",
+  "@projectSearchOwnerSheetApply": {
+    "description": "Label for the button that applies the selected owner filters on the project search screen",
+    "context": "N/A"
+  },
+  "projectSearchOwnerSheetEmpty": "No owners found.",
+  "@projectSearchOwnerSheetEmpty": {
+    "description": "Message shown when no owners match the search query in the Owner filter sheet on the project search screen",
+    "context": "N/A"
+  },
   "globalSearchClearDateFilterSemanticLabel": "Clear modification date filter",
   "@globalSearchClearDateFilterSemanticLabel": {
     "description": "Accessibility label for the × button that removes the active modification-date filter",
@@ -1955,4 +2005,3 @@
     "context": "Dashboard projects sheet"
   }
 }
-
