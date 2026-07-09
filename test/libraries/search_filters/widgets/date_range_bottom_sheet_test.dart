@@ -1,6 +1,6 @@
 // ignore_for_file: no_direct_instantiation
-import 'package:construculator/features/global_search/presentation/widgets/date_range_bottom_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/search_filters/presentation/widgets/date_range_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

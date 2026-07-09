@@ -1,14 +1,17 @@
-import 'package:construculator/features/global_search/presentation/widgets/date_range_bottom_sheet.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
+import 'package:construculator/libraries/search_filters/presentation/widgets/date_range_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-/// Filter chip for the global search screen's modification-date filter.
+/// A reusable filter chip for a search screen's modification-date filter.
 ///
 /// Renders a plain chip that opens [DateRangeBottomSheet] when no range is
 /// selected, or an active pill showing the selected range with a clear ×
-/// when one is.
+/// when one is. The chip is surface-agnostic: each caller supplies its own
+/// [label], accessibility labels, and widget [Key]s so the same widget can
+/// back both global and project search without hardcoding either surface's
+/// localization keys.
 class DateFilterChip extends StatelessWidget {
   /// The currently selected date range, or `null` if no filter is active.
   final DateRange? selectedDateRange;
@@ -19,11 +22,32 @@ class DateFilterChip extends StatelessWidget {
   /// Called when the user taps the × to clear the active filter.
   final VoidCallback onClear;
 
+  /// Label shown on the chip when no range is selected.
+  final String label;
+
+  /// Accessibility label for the chip when no range is selected.
+  final String semanticLabel;
+
+  /// Accessibility label for the active pill that clears the filter on tap.
+  final String clearSemanticLabel;
+
+  /// Key applied to the inactive chip (no range selected).
+  final Key? inactiveChipKey;
+
+  /// Key applied to the active pill (a range is selected).
+  final Key? activeChipKey;
+
+  /// Creates a [DateFilterChip].
   const DateFilterChip({
     super.key,
     required this.selectedDateRange,
     required this.onApply,
     required this.onClear,
+    required this.label,
+    required this.semanticLabel,
+    required this.clearSemanticLabel,
+    this.inactiveChipKey,
+    this.activeChipKey,
   });
 
   Future<void> _showSheet(BuildContext context) async {
@@ -47,25 +71,24 @@ class DateFilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colorTheme;
     final typography = context.textTheme;
-    final l10n = context.l10n;
     final range = selectedDateRange;
 
     if (range == null) {
       return Semantics(
-        label: l10n.globalSearchFilterModifiedSemanticLabel,
+        label: semanticLabel,
         child: CoreFilterChip(
-          key: const Key('global_search_date_filter_chip'),
-          label: l10n.globalSearchFilterModified,
+          key: inactiveChipKey,
+          label: label,
           onTap: () => _showSheet(context),
         ),
       );
     }
 
     return Semantics(
-      label: l10n.globalSearchClearDateFilterSemanticLabel,
+      label: clearSemanticLabel,
       button: true,
       child: InkWell(
-        key: const Key('active_date_filter_chip'),
+        key: activeChipKey,
         onTap: onClear,
         borderRadius: BorderRadius.circular(CoreSpacing.space3),
         child: Container(

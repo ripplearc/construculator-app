@@ -180,28 +180,29 @@ class _DateRangeBottomSheetState extends State<DateRangeBottomSheet> {
         children: options.entries.map((entry) {
           final range = entry.key;
           return RadioListTile<_PredefinedRange>(
-          key: Key('date_range_option_${range.name}'),
-          value: range,
-          groupValue: _selected,
-          title: Text(entry.value, style: typography.bodyLargeRegular),
-          controlAffinity: ListTileControlAffinity.leading,
-          onChanged: (_) {
-            if (range == _PredefinedRange.custom) {
-              // Only reopen the pickers when there is no complete custom range
-              // yet, or the user is switching back to Custom from another
-              // option. Re-tapping an already-complete Custom selection just
-              // keeps it instead of forcing the pickers open again.
-              if (_customStart == null ||
-                  _customEnd == null ||
-                  _selected != _PredefinedRange.custom) {
-                _pickCustomRange(l10n);
+            key: Key('date_range_option_${range.name}'),
+            value: range,
+            groupValue: _selected,
+            title: Text(entry.value, style: typography.bodyLargeRegular),
+            controlAffinity: ListTileControlAffinity.leading,
+            onChanged: (_) {
+              if (range == _PredefinedRange.custom) {
+                // Only reopen the pickers when there is no complete custom
+                // range yet, or the user is switching back to Custom from
+                // another option. Re-tapping an already-complete Custom
+                // selection just keeps it instead of forcing the pickers open
+                // again.
+                if (_customStart == null ||
+                    _customEnd == null ||
+                    _selected != _PredefinedRange.custom) {
+                  _pickCustomRange(l10n);
+                } else {
+                  setState(() => _selected = _PredefinedRange.custom);
+                }
               } else {
-                setState(() => _selected = _PredefinedRange.custom);
+                setState(() => _selected = range);
               }
-            } else {
-              setState(() => _selected = range);
-            }
-          },
+            },
           );
         }).toList(),
       ),
