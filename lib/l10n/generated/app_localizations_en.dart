@@ -1159,4 +1159,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get productLinkLabel => 'Product link';
+
+  @override
+  String get labourTypeLabel => 'Labour type*';
+
+  @override
+  String get calcMethodTitle => 'Calculation method';
+
+  @override
+  String get perDayOption => 'Per day';
+
+  @override
+  String get perHoursOption => 'Per hours';
+
+  @override
+  String get noOfDaysLabel => 'No. of days*';
+
+  @override
+  String get noOfHoursLabel => 'No. of hours*';
+
+  @override
+  String get crewRateLabel => 'Crew rate (\$)*';
+
+  @override
+  String get crewSizeLabel => 'Crew size*';
 }

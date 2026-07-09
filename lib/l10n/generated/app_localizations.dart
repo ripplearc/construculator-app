@@ -2193,6 +2193,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Product link'**
   String get productLinkLabel;
+
+  /// Hint label for the labour type field on the labour cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Labour type*'**
+  String get labourTypeLabel;
+
+  /// Section title for the calculation method card on the labour cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Calculation method'**
+  String get calcMethodTitle;
+
+  /// Radio option label for the per-day calculation method on the labour cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Per day'**
+  String get perDayOption;
+
+  /// Radio option label for the per-hours calculation method on the labour cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Per hours'**
+  String get perHoursOption;
+
+  /// Hint label for the number-of-days field when the per-day method is selected on the labour cost form
+  ///
+  /// In en, this message translates to:
+  /// **'No. of days*'**
+  String get noOfDaysLabel;
+
+  /// Hint label for the number-of-hours field when the per-hours method is selected on the labour cost form
+  ///
+  /// In en, this message translates to:
+  /// **'No. of hours*'**
+  String get noOfHoursLabel;
+
+  /// Hint label for the crew rate field on the labour cost form (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Crew rate (\$)*'**
+  String get crewRateLabel;
+
+  /// Hint label for the crew size field on the labour cost form
+  ///
+  /// In en, this message translates to:
+  /// **'Crew size*'**
+  String get crewSizeLabel;
 }
 
 class _AppLocalizationsDelegate

@@ -1,0 +1,84 @@
+import 'package:construculator/features/estimation/presentation/widgets/labour_cost_form_fields.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import '../../../utils/screenshot/font_loader.dart';
+
+void main() {
+  const size = Size(390.0, 600.0);
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() async {
+    await loadAppFontsAll();
+  });
+
+  Future<void> pumpWidget({
+    required WidgetTester tester,
+    bool fromCostFile = false,
+    ThemeData? theme,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme ?? createTestTheme(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: LabourCostFormFields(fromCostFile: fromCostFile),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  group('LabourCostFormFields Screenshot Tests', () {
+    testWidgets('renders manually mode in light theme', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester);
+      await expectLater(
+        find.byType(LabourCostFormFields),
+        matchesGoldenFile(
+          'goldens/labour_cost_form_fields/${size.width}x${size.height}/manually_light.png',
+        ),
+      );
+    });
+
+    testWidgets('renders from cost file mode in light theme', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester, fromCostFile: true);
+      await expectLater(
+        find.byType(LabourCostFormFields),
+        matchesGoldenFile(
+          'goldens/labour_cost_form_fields/${size.width}x${size.height}/from_cost_file_light.png',
+        ),
+      );
+    });
+
+    testWidgets('renders manually mode in dark theme', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester, theme: createTestThemeDark());
+      await expectLater(
+        find.byType(LabourCostFormFields),
+        matchesGoldenFile(
+          'goldens/labour_cost_form_fields/${size.width}x${size.height}/manually_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders from cost file mode in dark theme', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester, fromCostFile: true, theme: createTestThemeDark());
+      await expectLater(
+        find.byType(LabourCostFormFields),
+        matchesGoldenFile(
+          'goldens/labour_cost_form_fields/${size.width}x${size.height}/from_cost_file_dark.png',
+        ),
+      );
+    });
+  });
+}
