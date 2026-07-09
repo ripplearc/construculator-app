@@ -1031,6 +1031,36 @@ class AppLocalizationsEn extends AppLocalizations {
       'Filter by modification date';
 
   @override
+  String get projectSearchTagsSheetTitle => 'Tags';
+
+  @override
+  String get projectSearchTagsSheetSearchHint => 'Search by tag name';
+
+  @override
+  String get projectSearchTagsSheetClearAll => 'Clear all';
+
+  @override
+  String get projectSearchTagsSheetApply => 'Apply';
+
+  @override
+  String get projectSearchTagsSheetEmpty => 'No tags found.';
+
+  @override
+  String get projectSearchOwnerSheetTitle => 'Owner';
+
+  @override
+  String get projectSearchOwnerSheetSearchHint => 'Search by owner name';
+
+  @override
+  String get projectSearchOwnerSheetClearAll => 'Clear all';
+
+  @override
+  String get projectSearchOwnerSheetApply => 'Apply';
+
+  @override
+  String get projectSearchOwnerSheetEmpty => 'No owners found.';
+
+  @override
   String get globalSearchClearDateFilterSemanticLabel =>
       'Clear modification date filter';
 
