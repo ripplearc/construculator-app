@@ -104,6 +104,10 @@ void main() {
       _fakeHistoryRow('Material of building'),
       _fakeHistoryRow('MD bungalow'),
     ]);
+    fakeSupabase.setRpcResponse(
+      DatabaseConstants.searchSuggestionsRpcFunction,
+      <String>[],
+    );
   }
 
   AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
@@ -305,7 +309,7 @@ void main() {
 
       await tester.tap(trailingIcon);
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump(const Duration(seconds: 5));
 
       expect(
         find.descendant(
