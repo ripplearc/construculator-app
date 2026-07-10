@@ -1,26 +1,8 @@
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/search_filters/domain/entities/date_range.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
-
-/// An inclusive date range, truncated to whole calendar days.
-class DateRange {
-  /// The first day included in the range.
-  final DateTime start;
-
-  /// The last day included in the range.
-  final DateTime end;
-
-  /// Creates a [DateRange] spanning [start] to [end], inclusive.
-  const DateRange({required this.start, required this.end});
-
-  @override
-  bool operator ==(Object other) =>
-      other is DateRange && other.start == start && other.end == end;
-
-  @override
-  int get hashCode => Object.hash(start, end);
-}
 
 enum _PredefinedRange { today, last7Days, last30Days, thisMonth, custom }
 

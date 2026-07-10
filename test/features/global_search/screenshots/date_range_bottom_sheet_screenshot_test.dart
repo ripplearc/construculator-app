@@ -7,6 +7,7 @@ import 'package:construculator/features/global_search/presentation/pages/global_
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
+import 'package:construculator/libraries/search_filters/domain/entities/date_range.dart';
 import 'package:construculator/libraries/search_filters/presentation/widgets/date_range_bottom_sheet.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
