@@ -4,7 +4,9 @@ import 'package:construculator/features/estimation/data/data_source/interfaces/c
 import 'package:construculator/features/estimation/data/data_source/remote_cost_estimation_log_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/remote_cost_item_data_source.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_log_repository_impl.dart';
+import 'package:construculator/features/estimation/data/repositories/cost_item_repository_impl.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_log_repository.dart';
+import 'package:construculator/features/estimation/domain/repositories/cost_item_repository.dart';
 import 'package:construculator/features/estimation/domain/usecases/add_cost_estimation_usecase.dart';
 import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/change_lock_status_bloc/change_lock_status_bloc.dart';
@@ -92,6 +94,10 @@ class EstimationModule extends Module {
     i.addLazySingleton<CostEstimationLogRepository>(
       () => CostEstimationLogRepositoryImpl(dataSource: i.get()),
       config: BindConfig(onDispose: (repository) => repository.dispose()),
+    );
+
+    i.addLazySingleton<CostItemRepository>(
+      () => CostItemRepositoryImpl(dataSource: i.get()),
     );
 
     i.addLazySingleton<AddCostEstimationUseCase>(
