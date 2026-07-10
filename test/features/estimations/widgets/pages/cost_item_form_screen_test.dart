@@ -190,11 +190,35 @@ void main() {
       expect(semantics.hasFlag(SemanticsFlag.isSelected), isTrue);
     });
 
-    testWidgets('displays add to cost button disabled', (tester) async {
+    testWidgets('add to cost button is present and disabled initially', (
+      tester,
+    ) async {
       setUpAuthenticatedUser();
       await pumpAppAtRoute(tester, materialRoute);
 
       expect(find.byKey(const Key('add_to_cost_button')), findsOneWidget);
+      final semantics = tester.getSemantics(
+        find.byKey(const Key('add_to_cost_button')),
+      );
+      expect(semantics.hasFlag(SemanticsFlag.isEnabled), isFalse);
+    });
+
+    testWidgets('add to cost button enables after entering material type', (
+      tester,
+    ) async {
+      setUpAuthenticatedUser();
+      await pumpAppAtRoute(tester, materialRoute);
+
+      await tester.enterText(
+        find.byKey(const Key('material_type_field')),
+        'Lap Sealant',
+      );
+      await tester.pump();
+
+      final semantics = tester.getSemantics(
+        find.byKey(const Key('add_to_cost_button')),
+      );
+      expect(semantics.hasFlag(SemanticsFlag.isEnabled), isTrue);
     });
 
     testWidgets('displays total label', (tester) async {

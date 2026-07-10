@@ -12,6 +12,7 @@ void main() {
   Widget makeWidget({
     bool fromCostFile = false,
     ValueChanged<double>? onTotalChanged,
+    ValueChanged<bool>? onSaveEnabledChanged,
   }) {
     return MaterialApp(
       theme: CoreTheme.light(),
@@ -22,6 +23,7 @@ void main() {
         body: EquipmentCostFormFields(
           fromCostFile: fromCostFile,
           onTotalChanged: onTotalChanged,
+          onSaveEnabledChanged: onSaveEnabledChanged,
         ),
       ),
     );
@@ -98,6 +100,77 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('unit_price_field')), findsNothing);
+    });
+  });
+
+  group('EquipmentCostFormFields — save enabled', () {
+    testWidgets('calls onSaveEnabledChanged(false) initially', (tester) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
+
+      expect(captured, isNull);
+    });
+
+    testWidgets(
+        'calls onSaveEnabledChanged(true) when equipment name has text', (
+      tester,
+    ) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'Backhoe',
+      );
+      await tester.pump();
+
+      expect(captured, isTrue);
+    });
+
+    testWidgets(
+        'calls onSaveEnabledChanged(false) when equipment name is cleared', (
+      tester,
+    ) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'Backhoe',
+      );
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        '',
+      );
+      await tester.pump();
+
+      expect(captured, isFalse);
+    });
+
+    testWidgets(
+        'does not call onSaveEnabledChanged in from cost file mode', (
+      tester,
+    ) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(
+          fromCostFile: true,
+          onSaveEnabledChanged: (v) => captured = v,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(captured, isNull);
     });
   });
 

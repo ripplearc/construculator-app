@@ -7,11 +7,13 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 class LabourCostFormFields extends StatefulWidget {
   final bool fromCostFile;
   final ValueChanged<double>? onTotalChanged;
+  final ValueChanged<bool>? onSaveEnabledChanged;
 
   const LabourCostFormFields({
     super.key,
     required this.fromCostFile,
     this.onTotalChanged,
+    this.onSaveEnabledChanged,
   });
 
   @override
@@ -28,6 +30,7 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
   @override
   void initState() {
     super.initState();
+    _labourTypeController.addListener(_notifySaveEnabled);
     _crewRateController.addListener(_notifyTotal);
     _conditionalValueController.addListener(_notifyTotal);
     _crewSizeController.addListener(_notifyTotal);
@@ -49,6 +52,11 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
     _crewSizeController.dispose();
     super.dispose();
   }
+
+  void _notifySaveEnabled() =>
+      widget.onSaveEnabledChanged?.call(
+        _labourTypeController.text.trim().isNotEmpty,
+      );
 
   // TODO: [CA-355] Move total calculation into BLoC when submission is wired
   void _notifyTotal() {
