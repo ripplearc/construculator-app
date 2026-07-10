@@ -13,6 +13,9 @@ import 'package:construculator/features/estimation/presentation/bloc/change_lock
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_log_bloc/cost_estimation_log_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/labour_cost_form_bloc/labour_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
@@ -139,6 +142,15 @@ class EstimationModule extends Module {
     );
     i.add<CostEstimationLogBloc>(
       () => CostEstimationLogBloc(repository: i.get()),
+    );
+    i.add<MaterialCostFormBloc>(
+      () => MaterialCostFormBloc(repository: i.get()),
+    );
+    i.add<LabourCostFormBloc>(
+      () => LabourCostFormBloc(repository: i.get()),
+    );
+    i.add<EquipmentCostFormBloc>(
+      () => EquipmentCostFormBloc(repository: i.get()),
     );
     i.addSingleton<EstimationTileProvider>(
       () => const EstimationTileProviderImpl(),
