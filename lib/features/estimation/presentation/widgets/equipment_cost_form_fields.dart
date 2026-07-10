@@ -1,5 +1,7 @@
+import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class EquipmentCostFormFields extends StatefulWidget {
@@ -48,10 +50,13 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     super.dispose();
   }
 
-  void _notifySaveEnabled() =>
-      widget.onSaveEnabledChanged?.call(
-        _equipmentNameController.text.trim().isNotEmpty,
-      );
+  void _notifySaveEnabled() {
+    final value = _equipmentNameController.text;
+    widget.onSaveEnabledChanged?.call(value.trim().isNotEmpty);
+    context
+        .read<EquipmentCostFormBloc>()
+        .add(EquipmentCostItemTypeChanged(value));
+  }
 
   // TODO: [CA-355] Move total calculation into BLoC when submission is wired
   void _notifyTotal() {
@@ -126,10 +131,24 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     return [
-      CoreTextField(
-        key: const Key('equipment_name_field'),
-        hintText: l10n.equipmentNameLabel,
-        controller: _equipmentNameController,
+      BlocConsumer<EquipmentCostFormBloc, EquipmentCostFormState>(
+        listenWhen: (_, state) => state is EquipmentCostFormFailure,
+        listener: (_, state) {
+          if (state is EquipmentCostFormFailure) {
+            _equipmentNameController.text = state.equipmentName;
+          }
+        },
+        builder: (_, state) {
+          final error =
+              state is EquipmentCostFormEditing ? state.itemTypeError : null;
+          return CoreTextField(
+            key: const Key('equipment_name_field'),
+            hintText: l10n.equipmentNameLabel,
+            controller: _equipmentNameController,
+            errorTextList:
+                error != null ? [l10n.equipmentNameRequiredError] : null,
+          );
+        },
       ),
       const SizedBox(height: CoreSpacing.space5),
       CoreTextField(

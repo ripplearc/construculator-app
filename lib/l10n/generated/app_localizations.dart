@@ -2145,6 +2145,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rate/Hour:'**
   String get rateHourLabel;
+
+  /// Validation error shown below the material type field when it is submitted empty
+  ///
+  /// In en, this message translates to:
+  /// **'Material type is required'**
+  String get materialTypeRequiredError;
+
+  /// Validation error shown below the labour type field when it is submitted empty
+  ///
+  /// In en, this message translates to:
+  /// **'Labour type is required'**
+  String get labourTypeRequiredError;
+
+  /// Validation error shown below the equipment name field when it is submitted empty
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment name is required'**
+  String get equipmentNameRequiredError;
 }
 
 class _AppLocalizationsDelegate

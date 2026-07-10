@@ -1,12 +1,31 @@
+import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
+import '../../../../utils/fake_app_bootstrap_factory.dart';
 
 void main() {
+  setUpAll(() {
+    final fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
+    final bootstrap = FakeAppBootstrapFactory.create(
+      supabaseWrapper: fakeSupabase,
+    );
+    Modular.init(EstimationModule(bootstrap));
+  });
+
+  tearDownAll(() {
+    Modular.dispose();
+  });
+
   Widget makeWidget(ThemeData theme, {bool fromCostFile = false}) {
     return MaterialApp(
       theme: theme,
@@ -14,7 +33,10 @@ void main() {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: EquipmentCostFormFields(fromCostFile: fromCostFile),
+        body: BlocProvider<EquipmentCostFormBloc>(
+          create: (_) => Modular.get<EquipmentCostFormBloc>(),
+          child: EquipmentCostFormFields(fromCostFile: fromCostFile),
+        ),
       ),
     );
   }

@@ -1,7 +1,9 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/presentation/bloc/labour_cost_form_bloc/labour_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/calc_method_card.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 class LabourCostFormFields extends StatefulWidget {
@@ -53,10 +55,11 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
     super.dispose();
   }
 
-  void _notifySaveEnabled() =>
-      widget.onSaveEnabledChanged?.call(
-        _labourTypeController.text.trim().isNotEmpty,
-      );
+  void _notifySaveEnabled() {
+    final value = _labourTypeController.text;
+    widget.onSaveEnabledChanged?.call(value.trim().isNotEmpty);
+    context.read<LabourCostFormBloc>().add(LabourCostItemTypeChanged(value));
+  }
 
   // TODO: [CA-355] Move total calculation into BLoC when submission is wired
   void _notifyTotal() {
@@ -144,10 +147,24 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     return [
-      CoreTextField(
-        key: const Key('labour_type_field'),
-        hintText: l10n.labourTypeLabel,
-        controller: _labourTypeController,
+      BlocConsumer<LabourCostFormBloc, LabourCostFormState>(
+        listenWhen: (_, state) => state is LabourCostFormFailure,
+        listener: (_, state) {
+          if (state is LabourCostFormFailure) {
+            _labourTypeController.text = state.labourType;
+          }
+        },
+        builder: (_, state) {
+          final error =
+              state is LabourCostFormEditing ? state.itemTypeError : null;
+          return CoreTextField(
+            key: const Key('labour_type_field'),
+            hintText: l10n.labourTypeLabel,
+            controller: _labourTypeController,
+            errorTextList:
+                error != null ? [l10n.labourTypeRequiredError] : null,
+          );
+        },
       ),
       const SizedBox(height: CoreSpacing.space5),
       CalcMethodCard(

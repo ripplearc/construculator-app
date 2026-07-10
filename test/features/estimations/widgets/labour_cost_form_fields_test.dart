@@ -1,15 +1,37 @@
+import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/features/estimation/presentation/bloc/labour_cost_form_bloc/labour_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/labour_cost_form_fields.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+import '../../../utils/fake_app_bootstrap_factory.dart';
+
 void main() {
   late AppLocalizations l10n;
+  late FakeSupabaseWrapper fakeSupabase;
 
   setUpAll(() {
     l10n = lookupAppLocalizations(const Locale('en'));
+    fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
+    final bootstrap = FakeAppBootstrapFactory.create(
+      supabaseWrapper: fakeSupabase,
+    );
+    Modular.init(EstimationModule(bootstrap));
+  });
+
+  tearDownAll(() {
+    Modular.dispose();
+  });
+
+  setUp(() {
+    fakeSupabase.reset();
   });
 
   Widget makeWidget({
@@ -23,10 +45,13 @@ void main() {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: LabourCostFormFields(
-          fromCostFile: fromCostFile,
-          onTotalChanged: onTotalChanged,
-          onSaveEnabledChanged: onSaveEnabledChanged,
+        body: BlocProvider<LabourCostFormBloc>(
+          create: (_) => Modular.get<LabourCostFormBloc>(),
+          child: LabourCostFormFields(
+            fromCostFile: fromCostFile,
+            onTotalChanged: onTotalChanged,
+            onSaveEnabledChanged: onSaveEnabledChanged,
+          ),
         ),
       ),
     );
