@@ -2176,6 +2176,18 @@ abstract class AppLocalizations {
   /// **'Unit of measure*'**
   String get uomLabel;
 
+  /// Hint text shown inside the unit of measurement selector when no unit is selected
+  ///
+  /// In en, this message translates to:
+  /// **'UOM'**
+  String get unitOfMeasurementHint;
+
+  /// Title of the bottom sheet modal for selecting a unit of measurement
+  ///
+  /// In en, this message translates to:
+  /// **'Select unit'**
+  String get selectUnitTitle;
+
   /// Toggle button label that expands/collapses the brand and product link fields on the material cost form
   ///
   /// In en, this message translates to:

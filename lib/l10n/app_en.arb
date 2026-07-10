@@ -1817,6 +1817,14 @@
   "@uomLabel": {
     "description": "Hint label for the unit of measure dropdown on the material cost form (manually mode)"
   },
+  "unitOfMeasurementHint": "UOM",
+  "@unitOfMeasurementHint": {
+    "description": "Hint text shown inside the unit of measurement selector when no unit is selected"
+  },
+  "selectUnitTitle": "Select unit",
+  "@selectUnitTitle": {
+    "description": "Title of the bottom sheet modal for selecting a unit of measurement"
+  },
   "otherMaterialDetailsButton": "Other material details",
   "@otherMaterialDetailsButton": {
     "description": "Toggle button label that expands/collapses the brand and product link fields on the material cost form"

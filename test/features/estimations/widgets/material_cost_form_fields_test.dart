@@ -1,6 +1,8 @@
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
+import 'package:construculator/features/estimation/presentation/widgets/unit_of_measurement_field.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -71,11 +73,44 @@ void main() {
       expect(find.byKey(const Key('per_unit_cost_field')), findsOneWidget);
     });
 
-    testWidgets('shows UOM dropdown placeholder', (tester) async {
+    testWidgets('shows UOM dropdown in manual mode', (tester) async {
       await tester.pumpWidget(makeWidget());
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('uom_field')), findsOneWidget);
+    });
+
+    testWidgets('tapping UOM field opens unit selection bottom sheet', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('uom_field')));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.selectUnitTitle), findsOneWidget);
+    });
+
+    testWidgets('UOM bottom sheet lists all unit options', (tester) async {
+      // Tall viewport so FractionallySizedBox(0.4) gives 1200px — enough for all 13 ListView items
+      tester.view.physicalSize = const Size(390, 3000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('uom_field')));
+      await tester.pumpAndSettle();
+
+      for (final unit in Unit.values) {
+        expect(find.text(unit.displayName), findsOneWidget);
+      }
     });
 
     testWidgets('shows quantity field', (tester) async {

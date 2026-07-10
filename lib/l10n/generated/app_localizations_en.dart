@@ -1152,6 +1152,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uomLabel => 'Unit of measure*';
 
   @override
+  String get unitOfMeasurementHint => 'UOM';
+
+  @override
+  String get selectUnitTitle => 'Select unit';
+
+  @override
   String get otherMaterialDetailsButton => 'Other material details';
 
   @override
