@@ -7,7 +7,7 @@ import 'package:construculator/libraries/auth/domain/entities/user_profile_entit
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/owner/domain/repositories/owner_repository.dart';
-import 'package:construculator/libraries/search_filters/presentation/widgets/date_range_bottom_sheet.dart';
+import 'package:construculator/libraries/search_filters/domain/entities/date_range.dart';
 import 'package:construculator/libraries/tag/domain/repositories/tag_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
