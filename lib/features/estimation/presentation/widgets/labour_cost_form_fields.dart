@@ -1,7 +1,9 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/features/estimation/presentation/bloc/labour_cost_form_bloc/labour_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/calc_method_card.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// Form fields for adding a labour cost item.
@@ -65,9 +67,9 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
       widget.onSaveEnabledChanged?.call(false);
       return;
     }
-    widget.onSaveEnabledChanged?.call(
-      _labourTypeController.text.trim().isNotEmpty,
-    );
+    final value = _labourTypeController.text;
+    widget.onSaveEnabledChanged?.call(value.trim().isNotEmpty);
+    context.read<LabourCostFormBloc>().add(LabourCostItemTypeChanged(value));
   }
 
   // TODO: [CA-355] Move total calculation into BLoC when submission is wired
@@ -160,10 +162,18 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     return [
-      CoreTextField(
-        key: const Key('labour_type_field'),
-        hintText: l10n.labourTypeLabel,
-        controller: _labourTypeController,
+      BlocBuilder<LabourCostFormBloc, LabourCostFormState>(
+        builder: (_, state) {
+          final error =
+              state is LabourCostFormEditing ? state.itemTypeError : null;
+          return CoreTextField(
+            key: const Key('labour_type_field'),
+            hintText: l10n.labourTypeLabel,
+            controller: _labourTypeController,
+            errorTextList:
+                error != null ? [l10n.labourTypeRequiredError] : null,
+          );
+        },
       ),
       const SizedBox(height: CoreSpacing.space5),
       CalcMethodCard(

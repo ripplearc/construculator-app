@@ -1880,6 +1880,18 @@
   "rateHourLabel": "Rate/Hour:",
   "@rateHourLabel": {
     "description": "Rate label inside the calculation method card when per-hours method is selected (from cost file mode)"
+  },
+  "materialTypeRequiredError": "Material type is required",
+  "@materialTypeRequiredError": {
+    "description": "Validation error shown below the material type field when it is submitted empty"
+  },
+  "labourTypeRequiredError": "Labour type is required",
+  "@labourTypeRequiredError": {
+    "description": "Validation error shown below the labour type field when it is submitted empty"
+  },
+  "equipmentNameRequiredError": "Equipment name is required",
+  "@equipmentNameRequiredError": {
+    "description": "Validation error shown below the equipment name field when it is submitted empty"
   }
 }
 

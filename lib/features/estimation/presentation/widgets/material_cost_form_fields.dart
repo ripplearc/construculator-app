@@ -1,5 +1,7 @@
+import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// Form fields for adding a material cost item.
@@ -62,9 +64,9 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
       widget.onSaveEnabledChanged?.call(false);
       return;
     }
-    widget.onSaveEnabledChanged?.call(
-      _materialTypeController.text.trim().isNotEmpty,
-    );
+    final value = _materialTypeController.text;
+    widget.onSaveEnabledChanged?.call(value.trim().isNotEmpty);
+    context.read<MaterialCostFormBloc>().add(MaterialCostItemTypeChanged(value));
   }
 
   // TODO: [CA-355] Move total calculation into BLoC when submission is wired
@@ -143,10 +145,18 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     return [
-      CoreTextField(
-        key: const Key('material_type_field'),
-        label: l10n.materialTypeLabel,
-        controller: _materialTypeController,
+      BlocBuilder<MaterialCostFormBloc, MaterialCostFormState>(
+        builder: (_, state) {
+          final error =
+              state is MaterialCostFormEditing ? state.itemTypeError : null;
+          return CoreTextField(
+            key: const Key('material_type_field'),
+            label: l10n.materialTypeLabel,
+            controller: _materialTypeController,
+            errorTextList:
+                error != null ? [l10n.materialTypeRequiredError] : null,
+          );
+        },
       ),
       const SizedBox(height: CoreSpacing.space5),
       CoreTextField(
