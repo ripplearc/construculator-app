@@ -133,7 +133,6 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
   Widget _buildOtherMaterialDetails(BuildContext context) {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
-    final textTheme = context.textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -158,30 +157,12 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
           ),
           const SizedBox(height: CoreSpacing.space3),
         ],
-        Semantics(
+        CoreButton(
           key: const Key('other_material_details_button'),
           label: l10n.otherMaterialDetailsButton,
-          button: true,
-          child: GestureDetector(
-            onTap: () => setState(() => _showOtherDetails = !_showOtherDetails),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CoreIconWidget(
-                  icon: _showOtherDetails ? CoreIcons.arrowUp : CoreIcons.arrowDown,
-                  color: colorTheme.iconDark,
-                  size: 20,
-                ),
-                const SizedBox(width: CoreSpacing.space1),
-                Text(
-                  l10n.otherMaterialDetailsButton,
-                  style: textTheme.bodyMediumMedium.copyWith(
-                    color: colorTheme.iconDark,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          variant: CoreButtonVariant.secondary,
+          size: CoreButtonSize.medium,
+          onPressed: () => setState(() => _showOtherDetails = !_showOtherDetails),
         ),
       ],
     );
