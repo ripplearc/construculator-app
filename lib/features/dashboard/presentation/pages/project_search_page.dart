@@ -153,10 +153,13 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
           ),
           const SizedBox(width: CoreSpacing.space2),
         ],
-        CoreFilterChip(
-          key: const Key('project_search_tags_filter_chip_active'),
-          label: l10n.projectSearchFilterTags,
-          onTap: () => _showTagsSheet(context, selectedTags),
+        Semantics(
+          label: l10n.projectSearchFilterTagsSemanticLabel,
+          child: CoreFilterChip(
+            key: const Key('project_search_tags_filter_chip_active'),
+            label: l10n.projectSearchFilterTags,
+            onTap: () => _showTagsSheet(context, selectedTags),
+          ),
         ),
       ],
     );
@@ -196,10 +199,13 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
           ),
           const SizedBox(width: CoreSpacing.space2),
         ],
-        CoreFilterChip(
-          key: const Key('project_search_owner_filter_chip_active'),
-          label: l10n.projectSearchFilterOwner,
-          onTap: () => _showOwnerSheet(context, selectedOwnerIds),
+        Semantics(
+          label: l10n.projectSearchFilterOwnerSemanticLabel,
+          child: CoreFilterChip(
+            key: const Key('project_search_owner_filter_chip_active'),
+            label: l10n.projectSearchFilterOwner,
+            onTap: () => _showOwnerSheet(context, selectedOwnerIds),
+          ),
         ),
       ],
     );
