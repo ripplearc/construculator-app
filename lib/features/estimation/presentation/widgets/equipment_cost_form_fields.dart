@@ -7,11 +7,13 @@ class EquipmentCostFormFields extends StatefulWidget {
   /// When true, renders fields for selecting from a cost file; otherwise renders manual-entry fields.
   final bool fromCostFile;
   final ValueChanged<double>? onTotalChanged;
+  final ValueChanged<bool>? onSaveEnabledChanged;
 
   const EquipmentCostFormFields({
     super.key,
     required this.fromCostFile,
     this.onTotalChanged,
+    this.onSaveEnabledChanged,
   });
 
   @override
@@ -27,6 +29,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   @override
   void initState() {
     super.initState();
+    _equipmentNameController.addListener(_notifySaveEnabled);
     _unitPriceController.addListener(_notifyTotal);
     _quantityController.addListener(_notifyTotal);
   }
@@ -49,6 +52,11 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     _quantityController.dispose();
     super.dispose();
   }
+
+  void _notifySaveEnabled() =>
+      widget.onSaveEnabledChanged?.call(
+        _equipmentNameController.text.trim().isNotEmpty,
+      );
 
   // TODO: [CA-355] Move total calculation into BLoC when submission is wired
   void _notifyTotal() {

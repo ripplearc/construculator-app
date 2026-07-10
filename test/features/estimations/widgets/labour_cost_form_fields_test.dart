@@ -15,6 +15,7 @@ void main() {
   Widget makeWidget({
     bool fromCostFile = false,
     ValueChanged<double>? onTotalChanged,
+    ValueChanged<bool>? onSaveEnabledChanged,
   }) {
     return MaterialApp(
       theme: CoreTheme.light(),
@@ -25,6 +26,7 @@ void main() {
         body: LabourCostFormFields(
           fromCostFile: fromCostFile,
           onTotalChanged: onTotalChanged,
+          onSaveEnabledChanged: onSaveEnabledChanged,
         ),
       ),
     );
@@ -150,6 +152,73 @@ void main() {
       final perDay = tester.getSemantics(find.byKey(const Key('per_day_option')));
       expect(perHours.hasFlag(SemanticsFlag.isSelected), isTrue);
       expect(perDay.hasFlag(SemanticsFlag.isSelected), isFalse);
+    });
+  });
+
+  group('LabourCostFormFields — save enabled', () {
+    testWidgets('calls onSaveEnabledChanged(false) initially', (tester) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
+
+      expect(captured, isNull);
+    });
+
+    testWidgets('calls onSaveEnabledChanged(true) when labour type has text', (
+      tester,
+    ) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('labour_type_field')),
+        'Mason',
+      );
+      await tester.pump();
+
+      expect(captured, isTrue);
+    });
+
+    testWidgets(
+        'calls onSaveEnabledChanged(false) when labour type is cleared', (
+      tester,
+    ) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('labour_type_field')),
+        'Mason',
+      );
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('labour_type_field')), '');
+      await tester.pump();
+
+      expect(captured, isFalse);
+    });
+
+    testWidgets(
+        'does not call onSaveEnabledChanged in from cost file mode', (
+      tester,
+    ) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(
+          fromCostFile: true,
+          onSaveEnabledChanged: (v) => captured = v,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(captured, isNull);
     });
   });
 

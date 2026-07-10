@@ -27,6 +27,7 @@ class CostItemFormScreen extends StatefulWidget {
 class _CostItemFormScreenState extends State<CostItemFormScreen> {
   bool _fromCostFile = false;
   double _total = 0;
+  bool _canSave = false;
 
   @override
   Widget build(BuildContext context) {
@@ -138,15 +139,19 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
 
   Widget _buildFormFields() {
     void onTotalChanged(double total) => setState(() => _total = total);
+    void onSaveEnabledChanged(bool enabled) =>
+        setState(() => _canSave = enabled);
     return switch (widget.type) {
       CostItemType.material => MaterialCostFormFields(fromCostFile: _fromCostFile),
       CostItemType.labor => LabourCostFormFields(
           fromCostFile: _fromCostFile,
           onTotalChanged: onTotalChanged,
+          onSaveEnabledChanged: onSaveEnabledChanged,
         ),
       CostItemType.equipment => EquipmentCostFormFields(
           fromCostFile: _fromCostFile,
           onTotalChanged: onTotalChanged,
+          onSaveEnabledChanged: onSaveEnabledChanged,
         ),
     };
   }
@@ -198,7 +203,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
             CoreButton(
               key: const Key('add_to_cost_button'),
               label: l10n.addToCostButton,
-              isDisabled: true,
+              isDisabled: !_canSave,
               fullWidth: false,
               onPressed: () {},
             ),
