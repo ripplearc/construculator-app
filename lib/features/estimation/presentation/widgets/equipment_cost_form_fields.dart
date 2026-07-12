@@ -69,7 +69,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         .add(EquipmentCostItemTypeChanged(value));
   }
 
-  // TODO: [CA-355] Move total calculation into BLoC when submission is wired
+  // TODO: [CA-353] Move total calculation into BLoC when submission is wired
   void _notifyTotal() {
     if (widget.fromCostFile) {
       widget.onTotalChanged?.call(0);
