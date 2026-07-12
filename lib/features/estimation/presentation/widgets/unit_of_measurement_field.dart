@@ -135,12 +135,16 @@ class _UomSelectorSheetState extends State<_UomSelectorSheet> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
+        Container(
           padding: const EdgeInsets.fromLTRB(
             CoreSpacing.space4,
             CoreSpacing.space3,
             CoreSpacing.space4,
             CoreSpacing.space3,
+          ),
+          decoration: BoxDecoration(
+            color: Theme.of(context).coreColors.pageBackground,
+            boxShadow: CoreShadows.small,
           ),
           child: Text(
             l10n.uomSheetTitle,
@@ -232,7 +236,7 @@ class _UomSelectorSheetState extends State<_UomSelectorSheet> {
       decoration: BoxDecoration(
         color: colors.pageBackground,
         borderRadius: BorderRadius.circular(8),
-        boxShadow: CoreShadows.medium,
+        boxShadow: CoreShadows.small,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
