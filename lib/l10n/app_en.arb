@@ -1997,6 +1997,30 @@
   "@addUomButton": {
     "description": "Confirmation button label in the UOM selection bottom sheet"
   },
+  "uomCategoryLength": "Length",
+  "@uomCategoryLength": {
+    "description": "UOM category tab label for length units"
+  },
+  "uomCategoryArea": "Area",
+  "@uomCategoryArea": {
+    "description": "UOM category tab label for area units"
+  },
+  "uomCategoryVolume": "Volume",
+  "@uomCategoryVolume": {
+    "description": "UOM category tab label for volume units"
+  },
+  "uomCategoryWeight": "Weight",
+  "@uomCategoryWeight": {
+    "description": "UOM category tab label for weight units"
+  },
+  "uomCategoryCount": "Count",
+  "@uomCategoryCount": {
+    "description": "UOM category tab label for count/quantity units"
+  },
+  "uomCategoryTime": "Time",
+  "@uomCategoryTime": {
+    "description": "UOM category tab label for time units"
+  },
   "otherMaterialDetailsButton": "Other material details",
   "@otherMaterialDetailsButton": {
     "description": "Toggle button label that expands/collapses the brand and product link fields on the material cost form"

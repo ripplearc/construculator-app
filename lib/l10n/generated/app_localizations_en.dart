@@ -1269,6 +1269,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addUomButton => 'Add UOM';
 
   @override
+  String get uomCategoryLength => 'Length';
+
+  @override
+  String get uomCategoryArea => 'Area';
+
+  @override
+  String get uomCategoryVolume => 'Volume';
+
+  @override
+  String get uomCategoryWeight => 'Weight';
+
+  @override
+  String get uomCategoryCount => 'Count';
+
+  @override
+  String get uomCategoryTime => 'Time';
+
+  @override
   String get otherMaterialDetailsButton => 'Other material details';
 
   @override

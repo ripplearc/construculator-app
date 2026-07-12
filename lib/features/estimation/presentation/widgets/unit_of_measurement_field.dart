@@ -70,7 +70,13 @@ class UnitOfMeasurementField extends StatelessWidget {
     CoreQuickSheet.show(
       context: context,
       useSafeArea: true,
-      child: const _UomSelectorSheet(),
+      child: _UomSelectorSheet(
+        selectedUnit: selectedUnit,
+        onUnitSelected: (unit) {
+          Navigator.of(context).pop();
+          onUnitSelected(unit);
+        },
+      ),
     );
   }
 }
@@ -94,8 +100,23 @@ String _resolveUnitName(BuildContext context, Unit unit) {
   };
 }
 
+const _unitsByCategory = [
+  [Unit.meters],                              // Length
+  [Unit.squareMeters, Unit.sheets],           // Area
+  [Unit.cubicMeters, Unit.liters, Unit.bags], // Volume
+  [Unit.kilograms, Unit.tons],               // Weight
+  [Unit.pieces, Unit.boxes, Unit.rolls],     // Count
+  [Unit.hours, Unit.days],                   // Time
+];
+
 class _UomSelectorSheet extends StatefulWidget {
-  const _UomSelectorSheet();
+  final Unit? selectedUnit;
+  final ValueChanged<Unit?> onUnitSelected;
+
+  const _UomSelectorSheet({
+    required this.onUnitSelected,
+    this.selectedUnit,
+  });
 
   @override
   State<_UomSelectorSheet> createState() => _UomSelectorSheetState();
@@ -103,12 +124,12 @@ class _UomSelectorSheet extends StatefulWidget {
 
 class _UomSelectorSheetState extends State<_UomSelectorSheet> {
   _UomMode _mode = _UomMode.fromList;
+  int _tabIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final typography = Theme.of(context).coreTypography;
-    final colors = Theme.of(context).coreColors;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -129,17 +150,36 @@ class _UomSelectorSheetState extends State<_UomSelectorSheet> {
         const SizedBox(height: CoreSpacing.space4),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildModeCard(l10n, typography, colors),
-              if (_mode == _UomMode.manually) ...[
-                const SizedBox(height: CoreSpacing.space4),
-                CoreTextField(hintText: l10n.uomManualInputHint),
-              ],
-            ],
-          ),
+          child: _buildModeCard(l10n),
         ),
+        const SizedBox(height: CoreSpacing.space2),
+        if (_mode == _UomMode.fromList) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
+            child: CoreTabs(
+              tabs: [
+                l10n.uomCategoryLength,
+                l10n.uomCategoryArea,
+                l10n.uomCategoryVolume,
+                l10n.uomCategoryWeight,
+                l10n.uomCategoryCount,
+                l10n.uomCategoryTime,
+              ],
+              selectedIndex: _tabIndex,
+              onChanged: (i) => setState(() => _tabIndex = i),
+            ),
+          ),
+          const SizedBox(height: CoreSpacing.space2),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
+            child: _buildUnitList(),
+          ),
+        ] else ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
+            child: CoreTextField(hintText: l10n.uomManualInputHint),
+          ),
+        ],
         const SizedBox(height: CoreSpacing.space6),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
@@ -153,7 +193,40 @@ class _UomSelectorSheetState extends State<_UomSelectorSheet> {
     );
   }
 
-  Widget _buildModeCard(dynamic l10n, dynamic typography, dynamic colors) {
+  Widget _buildUnitList() {
+    final typography = Theme.of(context).coreTypography;
+    final colors = Theme.of(context).coreColors;
+    final units = _unitsByCategory[_tabIndex];
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final unit in units)
+          InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () {
+              Navigator.of(context).pop();
+              widget.onUnitSelected(unit);
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(CoreSpacing.space3),
+              child: Text(
+                _resolveUnitName(context, unit),
+                style: typography.bodyMediumRegular.copyWith(
+                  color: colors.textHeadline,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildModeCard(dynamic l10n) {
+    final typography = Theme.of(context).coreTypography;
+    final colors = Theme.of(context).coreColors;
+
     return Container(
       padding: const EdgeInsets.all(CoreSpacing.space3),
       decoration: BoxDecoration(
@@ -177,8 +250,6 @@ class _UomSelectorSheetState extends State<_UomSelectorSheet> {
                 child: _buildRadioOption(
                   label: l10n.uomFromListOption,
                   value: _UomMode.fromList,
-                  typography: typography,
-                  colors: colors,
                 ),
               ),
               const SizedBox(width: CoreSpacing.space8),
@@ -186,8 +257,6 @@ class _UomSelectorSheetState extends State<_UomSelectorSheet> {
                 child: _buildRadioOption(
                   label: l10n.uomManuallyOption,
                   value: _UomMode.manually,
-                  typography: typography,
-                  colors: colors,
                 ),
               ),
             ],
@@ -200,10 +269,11 @@ class _UomSelectorSheetState extends State<_UomSelectorSheet> {
   Widget _buildRadioOption({
     required String label,
     required _UomMode value,
-    required dynamic typography,
-    required dynamic colors,
   }) {
+    final typography = Theme.of(context).coreTypography;
+    final colors = Theme.of(context).coreColors;
     final isSelected = _mode == value;
+
     return GestureDetector(
       onTap: () => setState(() => _mode = value),
       child: Row(

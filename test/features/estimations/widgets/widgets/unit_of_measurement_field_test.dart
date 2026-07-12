@@ -34,6 +34,11 @@ void main() {
     );
   }
 
+  Future<void> openSheet(WidgetTester tester) async {
+    await tester.tap(find.byType(UnitOfMeasurementField));
+    await tester.pumpAndSettle();
+  }
+
   group('UnitOfMeasurementField — manual mode', () {
     testWidgets('shows hint when no unit is selected', (tester) async {
       await tester.pumpWidget(makeWidget());
@@ -52,9 +57,7 @@ void main() {
 
       await tester.pumpWidget(makeWidget());
       await tester.pumpAndSettle();
-
-      await tester.tap(find.byType(UnitOfMeasurementField));
-      await tester.pumpAndSettle();
+      await openSheet(tester);
 
       expect(find.text(l10n.uomAddModeQuestion), findsOneWidget);
     });
@@ -68,14 +71,90 @@ void main() {
 
       await tester.pumpWidget(makeWidget());
       await tester.pumpAndSettle();
-
-      await tester.tap(find.byType(UnitOfMeasurementField));
-      await tester.pumpAndSettle();
+      await openSheet(tester);
 
       expect(find.text(l10n.uomFromListOption), findsOneWidget);
       expect(find.text(l10n.uomManuallyOption), findsOneWidget);
     });
 
+    testWidgets('displays the selected unit display name', (tester) async {
+      await tester.pumpWidget(makeWidget(selectedUnit: Unit.kilograms));
+      await tester.pumpAndSettle();
+
+      expect(find.text(unitName(Unit.kilograms)), findsOneWidget);
+    });
+  });
+
+  group('UnitOfMeasurementField — From list mode', () {
+    testWidgets('shows all six category tabs', (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+      await openSheet(tester);
+
+      expect(find.text(l10n.uomCategoryLength), findsOneWidget);
+      expect(find.text(l10n.uomCategoryArea), findsOneWidget);
+      expect(find.text(l10n.uomCategoryVolume), findsOneWidget);
+      expect(find.text(l10n.uomCategoryWeight), findsOneWidget);
+      expect(find.text(l10n.uomCategoryCount), findsOneWidget);
+      expect(find.text(l10n.uomCategoryTime), findsOneWidget);
+    });
+
+    testWidgets('Length tab shows meters by default', (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+      await openSheet(tester);
+
+      expect(find.text(unitName(Unit.meters)), findsOneWidget);
+    });
+
+    testWidgets('tapping a unit fires onUnitSelected with the correct Unit', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      Unit? captured;
+      await tester.pumpWidget(makeWidget(onUnitSelected: (u) => captured = u));
+      await tester.pumpAndSettle();
+      await openSheet(tester);
+
+      await tester.tap(find.text(unitName(Unit.meters)));
+      await tester.pumpAndSettle();
+
+      expect(captured, Unit.meters);
+    });
+
+    testWidgets('switching to Weight tab shows kilograms and tons', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+      await openSheet(tester);
+
+      await tester.ensureVisible(find.text(l10n.uomCategoryWeight));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.uomCategoryWeight));
+      await tester.pumpAndSettle();
+
+      expect(find.text(unitName(Unit.kilograms)), findsOneWidget);
+      expect(find.text(unitName(Unit.tons)), findsOneWidget);
+    });
+  });
+
+  group('UnitOfMeasurementField — Manually mode', () {
     testWidgets('manual text field is hidden when From list is selected', (
       tester,
     ) async {
@@ -85,9 +164,7 @@ void main() {
 
       await tester.pumpWidget(makeWidget());
       await tester.pumpAndSettle();
-
-      await tester.tap(find.byType(UnitOfMeasurementField));
-      await tester.pumpAndSettle();
+      await openSheet(tester);
 
       expect(find.text(l10n.uomManualInputHint), findsNothing);
     });
@@ -101,9 +178,7 @@ void main() {
 
       await tester.pumpWidget(makeWidget());
       await tester.pumpAndSettle();
-
-      await tester.tap(find.byType(UnitOfMeasurementField));
-      await tester.pumpAndSettle();
+      await openSheet(tester);
 
       await tester.tap(find.text(l10n.uomManuallyOption));
       await tester.pumpAndSettle();
@@ -118,18 +193,9 @@ void main() {
 
       await tester.pumpWidget(makeWidget());
       await tester.pumpAndSettle();
-
-      await tester.tap(find.byType(UnitOfMeasurementField));
-      await tester.pumpAndSettle();
+      await openSheet(tester);
 
       expect(find.text(l10n.addUomButton), findsOneWidget);
-    });
-
-    testWidgets('displays the selected unit display name', (tester) async {
-      await tester.pumpWidget(makeWidget(selectedUnit: Unit.kilograms));
-      await tester.pumpAndSettle();
-
-      expect(find.text(unitDisplayName(Unit.kilograms, l10n)), findsOneWidget);
     });
   });
 
@@ -157,9 +223,7 @@ void main() {
 
       await tester.pumpWidget(makeWidget(fromCostFile: true));
       await tester.pumpAndSettle();
-
-      await tester.tap(find.byType(UnitOfMeasurementField));
-      await tester.pumpAndSettle();
+      await openSheet(tester);
 
       expect(find.text(l10n.uomAddModeQuestion), findsNothing);
     });

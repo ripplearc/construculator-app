@@ -2398,6 +2398,42 @@ abstract class AppLocalizations {
   /// **'Add UOM'**
   String get addUomButton;
 
+  /// UOM category tab label for length units
+  ///
+  /// In en, this message translates to:
+  /// **'Length'**
+  String get uomCategoryLength;
+
+  /// UOM category tab label for area units
+  ///
+  /// In en, this message translates to:
+  /// **'Area'**
+  String get uomCategoryArea;
+
+  /// UOM category tab label for volume units
+  ///
+  /// In en, this message translates to:
+  /// **'Volume'**
+  String get uomCategoryVolume;
+
+  /// UOM category tab label for weight units
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get uomCategoryWeight;
+
+  /// UOM category tab label for count/quantity units
+  ///
+  /// In en, this message translates to:
+  /// **'Count'**
+  String get uomCategoryCount;
+
+  /// UOM category tab label for time units
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get uomCategoryTime;
+
   /// Toggle button label that expands/collapses the brand and product link fields on the material cost form
   ///
   /// In en, this message translates to:
