@@ -26,25 +26,22 @@ class UnitOfMeasurementField extends StatelessWidget {
       items: Unit.values.toList(),
       onItemSelected: onUnitSelected,
       isDisabled: fromCostFile,
-      itemToString: (unit) => unit?.displayName ?? '',
+      itemToString: (unit) => switch (unit) {
+        Unit.pieces => l10n.unitPieces,
+        Unit.meters => l10n.unitMeters,
+        Unit.squareMeters => l10n.unitSquareMeters,
+        Unit.cubicMeters => l10n.unitCubicMeters,
+        Unit.kilograms => l10n.unitKilograms,
+        Unit.tons => l10n.unitTons,
+        Unit.liters => l10n.unitLiters,
+        Unit.hours => l10n.unitHours,
+        Unit.days => l10n.unitDays,
+        Unit.boxes => l10n.unitBoxes,
+        Unit.bags => l10n.unitBags,
+        Unit.rolls => l10n.unitRolls,
+        Unit.sheets => l10n.unitSheets,
+        null => '',
+      },
     );
   }
-}
-
-extension UnitDisplay on Unit {
-  String get displayName => switch (this) {
-    Unit.pieces => 'Pieces',
-    Unit.meters => 'Meters',
-    Unit.squareMeters => 'Square meters',
-    Unit.cubicMeters => 'Cubic meters',
-    Unit.kilograms => 'Kilograms',
-    Unit.tons => 'Tons',
-    Unit.liters => 'Liters',
-    Unit.hours => 'Hours',
-    Unit.days => 'Days',
-    Unit.boxes => 'Boxes',
-    Unit.bags => 'Bags',
-    Unit.rolls => 'Rolls',
-    Unit.sheets => 'Sheets',
-  };
 }

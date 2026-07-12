@@ -2,7 +2,6 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
-import 'package:construculator/features/estimation/presentation/widgets/unit_of_measurement_field.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -34,6 +33,22 @@ void main() {
   setUp(() {
     fakeSupabase.reset();
   });
+
+  String unitName(Unit unit) => switch (unit) {
+    Unit.pieces => l10n.unitPieces,
+    Unit.meters => l10n.unitMeters,
+    Unit.squareMeters => l10n.unitSquareMeters,
+    Unit.cubicMeters => l10n.unitCubicMeters,
+    Unit.kilograms => l10n.unitKilograms,
+    Unit.tons => l10n.unitTons,
+    Unit.liters => l10n.unitLiters,
+    Unit.hours => l10n.unitHours,
+    Unit.days => l10n.unitDays,
+    Unit.boxes => l10n.unitBoxes,
+    Unit.bags => l10n.unitBags,
+    Unit.rolls => l10n.unitRolls,
+    Unit.sheets => l10n.unitSheets,
+  };
 
   Widget makeWidget({
     bool fromCostFile = false,
@@ -109,7 +124,7 @@ void main() {
       await tester.pumpAndSettle();
 
       for (final unit in Unit.values) {
-        expect(find.text(unit.displayName), findsOneWidget);
+        expect(find.text(unitName(unit)), findsOneWidget);
       }
     });
 
