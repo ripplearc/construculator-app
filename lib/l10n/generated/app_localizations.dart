@@ -2362,6 +2362,42 @@ abstract class AppLocalizations {
   /// **'Sheets'**
   String get unitSheets;
 
+  /// Title of the UOM selection bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'UOM'**
+  String get uomSheetTitle;
+
+  /// Question asking the user how they want to add a unit of measurement
+  ///
+  /// In en, this message translates to:
+  /// **'How you want to add a UOM?'**
+  String get uomAddModeQuestion;
+
+  /// Radio option: select UOM from the predefined list
+  ///
+  /// In en, this message translates to:
+  /// **'From list'**
+  String get uomFromListOption;
+
+  /// Radio option: enter a custom UOM manually
+  ///
+  /// In en, this message translates to:
+  /// **'Manually'**
+  String get uomManuallyOption;
+
+  /// Placeholder for the manual UOM text field
+  ///
+  /// In en, this message translates to:
+  /// **'Input unit of measurement'**
+  String get uomManualInputHint;
+
+  /// Confirmation button label in the UOM selection bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Add UOM'**
+  String get addUomButton;
+
   /// Toggle button label that expands/collapses the brand and product link fields on the material cost form
   ///
   /// In en, this message translates to:

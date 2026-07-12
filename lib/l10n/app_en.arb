@@ -1973,6 +1973,30 @@
   "@unitSheets": {
     "description": "Unit of measurement: sheets"
   },
+  "uomSheetTitle": "UOM",
+  "@uomSheetTitle": {
+    "description": "Title of the UOM selection bottom sheet"
+  },
+  "uomAddModeQuestion": "How you want to add a UOM?",
+  "@uomAddModeQuestion": {
+    "description": "Question asking the user how they want to add a unit of measurement"
+  },
+  "uomFromListOption": "From list",
+  "@uomFromListOption": {
+    "description": "Radio option: select UOM from the predefined list"
+  },
+  "uomManuallyOption": "Manually",
+  "@uomManuallyOption": {
+    "description": "Radio option: enter a custom UOM manually"
+  },
+  "uomManualInputHint": "Input unit of measurement",
+  "@uomManualInputHint": {
+    "description": "Placeholder for the manual UOM text field"
+  },
+  "addUomButton": "Add UOM",
+  "@addUomButton": {
+    "description": "Confirmation button label in the UOM selection bottom sheet"
+  },
   "otherMaterialDetailsButton": "Other material details",
   "@otherMaterialDetailsButton": {
     "description": "Toggle button label that expands/collapses the brand and product link fields on the material cost form"

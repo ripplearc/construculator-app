@@ -43,56 +43,86 @@ void main() {
       expect(find.text(l10n.unitOfMeasurementHint), findsWidgets);
     });
 
-    testWidgets('tapping opens bottom sheet with unit options', (tester) async {
-      tester.view.physicalSize = const Size(390, 844);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byType(UnitOfMeasurementField));
-      await tester.pumpAndSettle();
-
-      expect(find.text(l10n.selectUnitTitle), findsOneWidget);
-    });
-
-    testWidgets('bottom sheet lists all 13 unit display names', (tester) async {
-      // Tall viewport so FractionallySizedBox(0.4) gives 1200px — enough for all 13 ListView items
-      tester.view.physicalSize = const Size(390, 3000);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-
-      await tester.pumpWidget(makeWidget());
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byType(UnitOfMeasurementField));
-      await tester.pumpAndSettle();
-
-      for (final unit in Unit.values) {
-        expect(find.text(unitDisplayName(unit, l10n)), findsOneWidget);
-      }
-    });
-
-    testWidgets('selecting a unit fires onUnitSelected with the correct Unit', (
+    testWidgets('tapping opens bottom sheet with mode question', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      Unit? captured;
-      await tester.pumpWidget(makeWidget(onUnitSelected: (u) => captured = u));
+      await tester.pumpWidget(makeWidget());
       await tester.pumpAndSettle();
 
       await tester.tap(find.byType(UnitOfMeasurementField));
       await tester.pumpAndSettle();
 
-      // Use meters (index 1) — always visible without scrolling in the bottom sheet
-      await tester.tap(find.text(unitDisplayName(Unit.meters, l10n)));
+      expect(find.text(l10n.uomAddModeQuestion), findsOneWidget);
+    });
+
+    testWidgets('bottom sheet shows From list and Manually radio options', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(makeWidget());
       await tester.pumpAndSettle();
 
-      expect(captured, Unit.meters);
+      await tester.tap(find.byType(UnitOfMeasurementField));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.uomFromListOption), findsOneWidget);
+      expect(find.text(l10n.uomManuallyOption), findsOneWidget);
+    });
+
+    testWidgets('manual text field is hidden when From list is selected', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(UnitOfMeasurementField));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.uomManualInputHint), findsNothing);
+    });
+
+    testWidgets('tapping Manually radio shows manual text field', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(UnitOfMeasurementField));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.uomManuallyOption));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.uomManualInputHint), findsOneWidget);
+    });
+
+    testWidgets('Add UOM button is always disabled', (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(UnitOfMeasurementField));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.addUomButton), findsOneWidget);
     });
 
     testWidgets('displays the selected unit display name', (tester) async {
@@ -108,7 +138,6 @@ void main() {
       await tester.pumpWidget(makeWidget(fromCostFile: true));
       await tester.pumpAndSettle();
 
-      // SingleItemSelector renders hint both in InputDecoration and child Text
       expect(find.text(l10n.unitOfMeasurementHint), findsWidgets);
     });
 
@@ -132,7 +161,7 @@ void main() {
       await tester.tap(find.byType(UnitOfMeasurementField));
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n.selectUnitTitle), findsNothing);
+      expect(find.text(l10n.uomAddModeQuestion), findsNothing);
     });
   });
 }

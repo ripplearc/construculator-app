@@ -1251,6 +1251,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unitSheets => 'Sheets';
 
   @override
+  String get uomSheetTitle => 'UOM';
+
+  @override
+  String get uomAddModeQuestion => 'How you want to add a UOM?';
+
+  @override
+  String get uomFromListOption => 'From list';
+
+  @override
+  String get uomManuallyOption => 'Manually';
+
+  @override
+  String get uomManualInputHint => 'Input unit of measurement';
+
+  @override
+  String get addUomButton => 'Add UOM';
+
+  @override
   String get otherMaterialDetailsButton => 'Other material details';
 
   @override
