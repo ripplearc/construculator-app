@@ -1,8 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/estimation/data/data_source/interfaces/cost_estimation_log_data_source.dart';
-import 'package:construculator/features/estimation/data/data_source/interfaces/cost_item_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/remote_cost_estimation_log_data_source.dart';
-import 'package:construculator/features/estimation/data/data_source/remote_cost_item_data_source.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_log_repository_impl.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_item_repository_impl.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_log_repository.dart';
@@ -13,6 +11,9 @@ import 'package:construculator/features/estimation/presentation/bloc/change_lock
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_log_bloc/cost_estimation_log_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/labour_cost_form_bloc/labour_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
@@ -80,11 +81,7 @@ class EstimationModule extends Module {
       ),
     );
 
-    i.addLazySingleton<CostItemDataSource>(
-      () => RemoteCostItemDataSource(
-        supabaseWrapper: appBootstrap.supabaseWrapper,
-      ),
-    );
+    // TODO(CA-294): bind CostItemDataSource and CostItemRepository here
 
     i.addLazySingleton<CostEstimationRepository>(
       () => CostEstimationRepositoryImpl(dataSource: i.get()),
@@ -140,6 +137,9 @@ class EstimationModule extends Module {
     i.add<CostEstimationLogBloc>(
       () => CostEstimationLogBloc(repository: i.get()),
     );
+    i.add<MaterialCostFormBloc>(() => MaterialCostFormBloc());
+    i.add<LabourCostFormBloc>(() => LabourCostFormBloc());
+    i.add<EquipmentCostFormBloc>(() => EquipmentCostFormBloc());
     i.addSingleton<EstimationTileProvider>(
       () => const EstimationTileProviderImpl(),
     );
