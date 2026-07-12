@@ -172,6 +172,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
         ),
       ),
       const SizedBox(height: CoreSpacing.space5),
+      // TODO: [CA-312] Wire selectedUnit and onUnitSelected to BLoC state
       UnitOfMeasurementField(
         key: const Key('uom_field'),
         fromCostFile: false,
