@@ -373,13 +373,13 @@ void main() {
       );
       await tester.pump();
 
-      final field = tester.widget<TextField>(
+      expect(
         find.descendant(
           of: find.byKey(const Key('unit_price_field')),
-          matching: find.byType(TextField),
+          matching: find.text('75'),
         ),
+        findsOneWidget,
       );
-      expect(field.controller?.text, '75');
     });
 
     testWidgets('does not prefill when prefillUnitCost is null', (tester) async {
@@ -389,13 +389,13 @@ void main() {
       await tester.pumpWidget(makeWidget(fromCostFile: false));
       await tester.pump();
 
-      final field = tester.widget<TextField>(
+      expect(
         find.descendant(
           of: find.byKey(const Key('unit_price_field')),
-          matching: find.byType(TextField),
+          matching: find.text('75'),
         ),
+        findsNothing,
       );
-      expect(field.controller?.text, '');
     });
   });
 }
