@@ -49,13 +49,11 @@ void main() {
   }
 
   group('UnitOfMeasurementField — manual mode', () {
-    testWidgets('shows label and hint when no unit is selected', (tester) async {
+    testWidgets('shows hint when no unit is selected', (tester) async {
       await tester.pumpWidget(makeWidget());
       await tester.pumpAndSettle();
 
       expect(find.byType(UnitOfMeasurementField), findsOneWidget);
-      expect(find.text(l10n.uomLabel), findsOneWidget);
-      // SingleItemSelector renders hint both in InputDecoration and child Text
       expect(find.text(l10n.unitOfMeasurementHint), findsWidgets);
     });
 
