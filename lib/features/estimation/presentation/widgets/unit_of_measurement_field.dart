@@ -19,7 +19,6 @@ class UnitOfMeasurementField extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return SingleItemSelector<Unit>(
-      labelText: l10n.uomLabel,
       hintText: l10n.unitOfMeasurementHint,
       modalTitle: l10n.selectUnitTitle,
       selectedItem: selectedUnit,
