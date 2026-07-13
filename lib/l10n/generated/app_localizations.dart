@@ -2565,6 +2565,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You don\'t have permission to view this project.'**
   String get projectSettingsPermissionError;
+
+  /// Validation error shown below the per unit cost field when it is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Per unit cost is required'**
+  String get perUnitCostRequiredError;
+
+  /// Validation error shown below the per unit cost field when value is zero or negative
+  ///
+  /// In en, this message translates to:
+  /// **'Per unit cost must be a positive number'**
+  String get perUnitCostInvalidError;
 }
 
 class _AppLocalizationsDelegate

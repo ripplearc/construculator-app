@@ -37,6 +37,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
   void initState() {
     super.initState();
     _materialTypeController.addListener(_notifySaveEnabled);
+    _perUnitCostController.addListener(_notifyUnitPrice);
     _perUnitCostController.addListener(_notifyTotal);
     _quantityController.addListener(_notifyTotal);
   }
@@ -77,9 +78,15 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
       widget.onSaveEnabledChanged?.call(false);
       return;
     }
-    final value = _materialTypeController.text;
-    widget.onSaveEnabledChanged?.call(value.trim().isNotEmpty);
-    context.read<MaterialCostFormBloc>().add(MaterialCostItemTypeChanged(value));
+    context.read<MaterialCostFormBloc>().add(
+      MaterialCostItemTypeChanged(_materialTypeController.text),
+    );
+  }
+
+  void _notifyUnitPrice() {
+    context.read<MaterialCostFormBloc>().add(
+      MaterialCostUnitPriceChanged(_perUnitCostController.text),
+    );
   }
 
   // TODO: [CA-353](https://ripplearc.youtrack.cloud/issue/CA-353) Move total calculation into BLoC when submission is wired
@@ -97,20 +104,31 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(CoreSpacing.space4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (widget.fromCostFile)
-            ..._fromCostFileFields(context)
-          else
-            ..._manuallyFields(context),
-          const SizedBox(height: CoreSpacing.space5),
-          _buildOtherMaterialDetails(context),
-          const SizedBox(height: CoreSpacing.space6),
-          // TODO: [CA-336] Add assign task section https://ripplearc.youtrack.cloud/issue/CA-336
-        ],
+    return BlocListener<MaterialCostFormBloc, MaterialCostFormState>(
+      listenWhen: (prev, curr) {
+        final a = prev is MaterialCostFormEditing ? prev.isValid : false;
+        final b = curr is MaterialCostFormEditing ? curr.isValid : false;
+        return a != b;
+      },
+      listener: (_, state) {
+        final valid = state is MaterialCostFormEditing ? state.isValid : false;
+        widget.onSaveEnabledChanged?.call(valid);
+      },
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(CoreSpacing.space4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (widget.fromCostFile)
+              ..._fromCostFileFields(context)
+            else
+              ..._manuallyFields(context),
+            const SizedBox(height: CoreSpacing.space5),
+            _buildOtherMaterialDetails(context),
+            const SizedBox(height: CoreSpacing.space6),
+            // TODO: [CA-336] Add assign task section https://ripplearc.youtrack.cloud/issue/CA-336
+          ],
+        ),
       ),
     );
   }
@@ -172,16 +190,33 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
         },
       ),
       const SizedBox(height: CoreSpacing.space5),
-      CoreTextField(
-        key: const Key('per_unit_cost_field'),
-        label: l10n.perUnitCostLabel,
-        controller: _perUnitCostController,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        suffix: CoreIconWidget(
-          icon: CoreIcons.dollar,
-          color: colorTheme.textHeadline,
-          size: 24,
-        ),
+      BlocBuilder<MaterialCostFormBloc, MaterialCostFormState>(
+        buildWhen: (prev, curr) {
+          if (prev is MaterialCostFormEditing && curr is MaterialCostFormEditing) {
+            return prev.unitPriceError != curr.unitPriceError;
+          }
+          return true;
+        },
+        builder: (_, state) {
+          final error =
+              state is MaterialCostFormEditing ? state.unitPriceError : null;
+          return CoreTextField(
+            key: const Key('per_unit_cost_field'),
+            label: l10n.perUnitCostLabel,
+            controller: _perUnitCostController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            suffix: CoreIconWidget(
+              icon: CoreIcons.dollar,
+              color: colorTheme.textHeadline,
+              size: 24,
+            ),
+            errorTextList: error == 'perUnitCostRequiredError'
+                ? [l10n.perUnitCostRequiredError]
+                : error != null
+                    ? [l10n.perUnitCostInvalidError]
+                    : null,
+          );
+        },
       ),
       const SizedBox(height: CoreSpacing.space5),
       // TODO: [CA-312] Wire selectedUnit and onUnitSelected to BLoC state
