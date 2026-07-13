@@ -95,9 +95,8 @@ class DatabaseConstants {
       '$userIdColumn,$searchTermColumn';
 
   /// Maximum number of recent project-search entries returned by
-  /// [ProjectSearchDataSource.getRecentProjectSearches]. Caps the in-memory
-  /// result size; row-count bounding at the DB level is delegated to a future
-  /// `limit` parameter on [SupabaseWrapper.selectMatch].
+  /// [ProjectSearchDataSource.getRecentProjectSearches]. Rows are bounded at
+  /// the DB level via the `limit` parameter on [SupabaseWrapper.selectMatch].
   static const int recentProjectSearchesMaxResults = 50;
 
   // User profile columns (id field uses the shared idColumn above)
