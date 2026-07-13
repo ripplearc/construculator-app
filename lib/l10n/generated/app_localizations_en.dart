@@ -848,6 +848,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get globalSearchFilterType => 'Type';
 
   @override
+  String get globalSearchSuggestionsTitle => 'Search suggestions';
+
+  @override
+  String globalSearchSuggestionFillSemanticLabel(String term) {
+    return 'Fill search field with $term';
+  }
+
+  @override
   String get globalSearchEmptyRecentMessage => 'No recent searches available';
 
   @override
