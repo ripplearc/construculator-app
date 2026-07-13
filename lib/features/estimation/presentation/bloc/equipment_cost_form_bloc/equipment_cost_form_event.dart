@@ -13,4 +13,10 @@ class EquipmentCostItemTypeChanged extends EquipmentCostFormEvent {
   final String value;
 }
 
+class EquipmentCostUnitPriceChanged extends EquipmentCostFormEvent {
+  const EquipmentCostUnitPriceChanged(this.value);
+
+  final String value;
+}
+
 // TODO(CA-294): add EquipmentCostFormSubmitted event with estimateId and other field values

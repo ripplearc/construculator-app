@@ -57,6 +57,42 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  group('EquipmentCostFormFields — unit price error state', () {
+    testWidgets('renders unit price error in light theme', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester);
+      await tester.enterText(
+        find.byKey(const Key('unit_price_field')),
+        '0',
+      );
+      await tester.pump();
+      await expectLater(
+        find.byType(EquipmentCostFormFields),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/unit_price_error_light.png',
+        ),
+      );
+    });
+
+    testWidgets('renders unit price error in dark theme', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester, theme: createTestThemeDark());
+      await tester.enterText(
+        find.byKey(const Key('unit_price_field')),
+        '0',
+      );
+      await tester.pump();
+      await expectLater(
+        find.byType(EquipmentCostFormFields),
+        matchesGoldenFile(
+          'goldens/equipment_cost_form_fields/${size.width}x${size.height}/unit_price_error_dark.png',
+        ),
+      );
+    });
+  });
+
   group('EquipmentCostFormFields Screenshot Tests', () {
     testWidgets('renders manually mode in light theme', (tester) async {
       tester.view.physicalSize = size;

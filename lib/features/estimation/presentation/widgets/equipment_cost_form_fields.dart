@@ -35,6 +35,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   void initState() {
     super.initState();
     _equipmentNameController.addListener(_notifySaveEnabled);
+    _unitPriceController.addListener(_notifyUnitPrice);
     _unitPriceController.addListener(_notifyTotal);
     _quantityController.addListener(_notifyTotal);
   }
@@ -74,11 +75,15 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       widget.onSaveEnabledChanged?.call(false);
       return;
     }
-    final value = _equipmentNameController.text;
-    widget.onSaveEnabledChanged?.call(value.trim().isNotEmpty);
-    context
-        .read<EquipmentCostFormBloc>()
-        .add(EquipmentCostItemTypeChanged(value));
+    context.read<EquipmentCostFormBloc>().add(
+      EquipmentCostItemTypeChanged(_equipmentNameController.text),
+    );
+  }
+
+  void _notifyUnitPrice() {
+    context.read<EquipmentCostFormBloc>().add(
+      EquipmentCostUnitPriceChanged(_unitPriceController.text),
+    );
   }
 
   // TODO: [CA-353](https://ripplearc.youtrack.cloud/issue/CA-353) Move total calculation into BLoC when submission is wired
@@ -96,19 +101,30 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(CoreSpacing.space4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (widget.fromCostFile)
-            ..._fromCostFileFields(context)
-          else
-            ..._manuallyFields(context),
-          const SizedBox(height: CoreSpacing.space6),
-          // TODO: [CA-336](https://ripplearc.youtrack.cloud/issue/CA-336) Add assign task section
-          // TODO: [CA-349] Build Preview Cost File UI (fromCostFile mode only)
-        ],
+    return BlocListener<EquipmentCostFormBloc, EquipmentCostFormState>(
+      listenWhen: (prev, curr) {
+        final a = prev is EquipmentCostFormEditing ? prev.isValid : false;
+        final b = curr is EquipmentCostFormEditing ? curr.isValid : false;
+        return a != b;
+      },
+      listener: (_, state) {
+        final valid = state is EquipmentCostFormEditing ? state.isValid : false;
+        widget.onSaveEnabledChanged?.call(valid);
+      },
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(CoreSpacing.space4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (widget.fromCostFile)
+              ..._fromCostFileFields(context)
+            else
+              ..._manuallyFields(context),
+            const SizedBox(height: CoreSpacing.space6),
+            // TODO: [CA-336](https://ripplearc.youtrack.cloud/issue/CA-336) Add assign task section
+            // TODO: [CA-349] Build Preview Cost File UI (fromCostFile mode only)
+          ],
+        ),
       ),
     );
   }
@@ -170,16 +186,34 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         },
       ),
       const SizedBox(height: CoreSpacing.space5),
-      CoreTextField(
-        key: const Key('unit_price_field'),
-        label: l10n.unitPriceLabel,
-        controller: _unitPriceController,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        suffix: CoreIconWidget(
-          icon: CoreIcons.dollar,
-          color: colorTheme.textHeadline,
-          size: 24,
-        ),
+      BlocBuilder<EquipmentCostFormBloc, EquipmentCostFormState>(
+        buildWhen: (prev, curr) {
+          if (prev is EquipmentCostFormEditing &&
+              curr is EquipmentCostFormEditing) {
+            return prev.unitPriceError != curr.unitPriceError;
+          }
+          return true;
+        },
+        builder: (_, state) {
+          final error =
+              state is EquipmentCostFormEditing ? state.unitPriceError : null;
+          return CoreTextField(
+            key: const Key('unit_price_field'),
+            hintText: l10n.unitPriceLabel,
+            controller: _unitPriceController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            suffix: CoreIconWidget(
+              icon: CoreIcons.dollar,
+              color: colorTheme.textHeadline,
+              size: 24,
+            ),
+            errorTextList: error == 'unitPriceRequiredError'
+                ? [l10n.unitPriceRequiredError]
+                : error != null
+                    ? [l10n.unitPriceInvalidError]
+                    : null,
+          );
+        },
       ),
       const SizedBox(height: CoreSpacing.space5),
       CoreTextField(

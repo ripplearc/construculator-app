@@ -2577,6 +2577,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Per unit cost must be a positive number'**
   String get perUnitCostInvalidError;
+
+  /// Validation error shown below the unit price field when it is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Unit price is required'**
+  String get unitPriceRequiredError;
+
+  /// Validation error shown below the unit price field when value is zero or negative
+  ///
+  /// In en, this message translates to:
+  /// **'Unit price must be a positive number'**
+  String get unitPriceInvalidError;
 }
 
 class _AppLocalizationsDelegate
