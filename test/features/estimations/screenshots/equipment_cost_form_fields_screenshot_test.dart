@@ -66,7 +66,7 @@ void main() {
         find.byKey(const Key('unit_price_field')),
         '0',
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
       await expectLater(
         find.byType(EquipmentCostFormFields),
         matchesGoldenFile(
@@ -83,7 +83,7 @@ void main() {
         find.byKey(const Key('unit_price_field')),
         '0',
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
       await expectLater(
         find.byType(EquipmentCostFormFields),
         matchesGoldenFile(
