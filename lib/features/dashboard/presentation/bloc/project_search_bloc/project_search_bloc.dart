@@ -237,12 +237,13 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
       },
       (projects) {
         emit(ProjectSearchResultsLoaded(results: projects, query: query));
-        lastSaveCompleted = _saveSearchToHistory(
+        final saveCompleted = _saveSearchToHistory(
           userId: userId,
           query: query,
           hasResults: projects.isNotEmpty,
         );
-        unawaited(lastSaveCompleted!);
+        lastSaveCompleted = saveCompleted;
+        unawaited(saveCompleted);
       },
     );
   }

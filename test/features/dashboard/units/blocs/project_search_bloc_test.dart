@@ -229,6 +229,54 @@ void main() {
           );
         },
       );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'stops loading with empty suggestions when the fetch fails and '
+        're-fetches on the next query update',
+        setUp: () {
+          fakeSupabase.shouldThrowOnRpc = true;
+          fakeSupabase.rpcExceptionType = SupabaseExceptionType.timeout;
+          fakeSupabase.rpcErrorMessage = 'Timeout';
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchQueryUpdatedEvent(query: 'foundation'));
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && !s.suggestionsLoading,
+          );
+          // The failed fetch must not latch the fetched flag — the next
+          // keystroke retries against a now-healthy backend.
+          fakeSupabase.shouldThrowOnRpc = false;
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.projectSearchSuggestionsRpcFunction,
+            ['foundation'],
+          );
+          bloc.add(const ProjectSearchQueryUpdatedEvent(query: 'found'));
+        },
+        wait: const Duration(milliseconds: 700),
+        expect: () => [
+          isA<ProjectSearchInitial>()
+              .having((s) => s.query, 'query', 'foundation')
+              .having((s) => s.suggestionsLoading, 'loading', isTrue),
+          isA<ProjectSearchInitial>()
+              .having((s) => s.suggestionsLoading, 'loading', isFalse)
+              .having(
+                (s) => s.suggestions,
+                'suggestions after failure',
+                isEmpty,
+              ),
+          isA<ProjectSearchInitial>()
+              .having((s) => s.query, 'query', 'found')
+              .having((s) => s.suggestionsLoading, 'loading', isTrue),
+          isA<ProjectSearchInitial>()
+              .having((s) => s.suggestionsLoading, 'loading', isFalse)
+              .having(
+                (s) => s.suggestions,
+                'suggestions after retry',
+                ['foundation'],
+              ),
+        ],
+      );
     });
 
     // -------------------------------------------------------------------------
@@ -495,6 +543,42 @@ void main() {
           const ProjectSearchInitial(recentSearches: ['foundation']),
         ],
       );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'keeps previously cached recents when the history fetch fails',
+        setUp: () {
+          fakeSupabase.addTableData(
+            DatabaseConstants.projectSearchHistoryTable,
+            [
+              {
+                DatabaseConstants.userIdColumn: _testUserId,
+                DatabaseConstants.searchTermColumn: 'foundation',
+                DatabaseConstants.updatedAtColumn: '2024-06-01T00:00:00.000Z',
+              },
+            ],
+          );
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchHistoryRequestedEvent());
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && !s.isLoadingHistory,
+          );
+          fakeSupabase.shouldThrowOnSelectMatch = true;
+          fakeSupabase.selectMatchExceptionType = SupabaseExceptionType.timeout;
+          fakeSupabase.selectMatchErrorMessage = 'Timeout';
+          bloc.add(const ProjectSearchHistoryRequestedEvent());
+        },
+        expect: () => [
+          const ProjectSearchInitial(isLoadingHistory: true),
+          const ProjectSearchInitial(recentSearches: ['foundation']),
+          const ProjectSearchInitial(
+            recentSearches: ['foundation'],
+            isLoadingHistory: true,
+          ),
+          const ProjectSearchInitial(recentSearches: ['foundation']),
+        ],
+      );
     });
 
     // -------------------------------------------------------------------------
@@ -732,6 +816,97 @@ void main() {
               .toList();
           expect(upserts, isEmpty);
         },
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'keeps cached recents unchanged when the history save fails',
+        setUp: () {
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {
+              'projects': [_fakeProjectData(id: 'p-1')],
+              'estimations': [],
+              'members': [],
+            },
+          );
+          fakeSupabase.shouldThrowOnUpsert = true;
+          fakeSupabase.upsertExceptionType = SupabaseExceptionType.timeout;
+          fakeSupabase.upsertErrorMessage = 'Timeout';
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchPerformedEvent(query: 'wall'));
+          await bloc.stream.firstWhere((s) => s is ProjectSearchResultsLoaded);
+          await bloc.lastSaveCompleted;
+          // Clearing the query surfaces the recents cache — the failed save
+          // must not have added the search term to it.
+          bloc.add(const ProjectSearchQueryUpdatedEvent(query: ''));
+        },
+        wait: const Duration(milliseconds: 500),
+        expect: () => [
+          isA<ProjectSearchLoading>(),
+          isA<ProjectSearchResultsLoaded>(),
+          const ProjectSearchInitial(),
+        ],
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'caps cached recents at 20 terms after a successful save',
+        setUp: () {
+          fakeSupabase.addTableData(
+            DatabaseConstants.projectSearchHistoryTable,
+            List.generate(
+              20,
+              (i) => {
+                DatabaseConstants.userIdColumn: _testUserId,
+                DatabaseConstants.searchTermColumn:
+                    'term-${(i + 1).toString().padLeft(2, '0')}',
+                DatabaseConstants.updatedAtColumn:
+                    '2024-06-${(20 - i).toString().padLeft(2, '0')}'
+                        'T00:00:00.000Z',
+              },
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {
+              'projects': [_fakeProjectData(id: 'p-1')],
+              'estimations': [],
+              'members': [],
+            },
+          );
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchHistoryRequestedEvent());
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && !s.isLoadingHistory,
+          );
+          bloc.add(const ProjectSearchPerformedEvent(query: 'newest'));
+          await bloc.stream.firstWhere((s) => s is ProjectSearchResultsLoaded);
+          await bloc.lastSaveCompleted;
+          // Clearing the query surfaces the recents cache with the new term.
+          bloc.add(const ProjectSearchQueryUpdatedEvent(query: ''));
+        },
+        wait: const Duration(milliseconds: 500),
+        expect: () => [
+          const ProjectSearchInitial(isLoadingHistory: true),
+          isA<ProjectSearchInitial>().having(
+            (s) => s.recentSearches.length,
+            'fetched recents count',
+            20,
+          ),
+          isA<ProjectSearchLoading>(),
+          isA<ProjectSearchResultsLoaded>(),
+          isA<ProjectSearchInitial>()
+              .having((s) => s.recentSearches.length, 'capped length', 20)
+              .having((s) => s.recentSearches.first, 'newest first', 'newest')
+              .having(
+                (s) => s.recentSearches,
+                'oldest term evicted',
+                isNot(contains('term-20')),
+              ),
+        ],
       );
     });
   });
