@@ -140,7 +140,7 @@ void main() {
         find.byKey(const Key('per_unit_cost_field')),
         '0',
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
       await expectLater(
         find.byType(MaterialCostFormFields),
         matchesGoldenFile(
@@ -157,7 +157,7 @@ void main() {
         find.byKey(const Key('per_unit_cost_field')),
         '0',
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
       await expectLater(
         find.byType(MaterialCostFormFields),
         matchesGoldenFile(
