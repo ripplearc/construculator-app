@@ -1353,4 +1353,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get projectSettingsPermissionError =>
       'You don\'t have permission to view this project.';
+
+  @override
+  String get uomRequiredError =>
+      'Please select or enter a unit of measurement.';
 }
