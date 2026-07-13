@@ -1,3 +1,4 @@
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
@@ -35,6 +36,7 @@ void main() {
 
   Widget makeWidget({
     bool fromCostFile = false,
+    Money? prefillUnitCost,
     ValueChanged<double>? onTotalChanged,
     ValueChanged<bool>? onSaveEnabledChanged,
   }) {
@@ -48,6 +50,7 @@ void main() {
           create: (_) => Modular.get<EquipmentCostFormBloc>(),
           child: EquipmentCostFormFields(
             fromCostFile: fromCostFile,
+            prefillUnitCost: prefillUnitCost,
             onTotalChanged: onTotalChanged,
             onSaveEnabledChanged: onSaveEnabledChanged,
           ),
@@ -352,6 +355,47 @@ void main() {
       await tester.pump();
 
       expect(capturedTotal, 0.0);
+    });
+  });
+
+  group('EquipmentCostFormFields — auto-fill behaviour', () {
+    testWidgets('prefills unit price when switching to manually mode',
+        (tester) async {
+      const prefill = Money(amount: 75, currency: 'USD');
+
+      await tester.pumpWidget(
+        makeWidget(fromCostFile: true, prefillUnitCost: prefill),
+      );
+      await tester.pump();
+
+      await tester.pumpWidget(
+        makeWidget(fromCostFile: false, prefillUnitCost: prefill),
+      );
+      await tester.pump();
+
+      final field = tester.widget<TextField>(
+        find.descendant(
+          of: find.byKey(const Key('unit_price_field')),
+          matching: find.byType(TextField),
+        ),
+      );
+      expect(field.controller?.text, '75');
+    });
+
+    testWidgets('does not prefill when prefillUnitCost is null', (tester) async {
+      await tester.pumpWidget(makeWidget(fromCostFile: true));
+      await tester.pump();
+
+      await tester.pumpWidget(makeWidget(fromCostFile: false));
+      await tester.pump();
+
+      final field = tester.widget<TextField>(
+        find.descendant(
+          of: find.byKey(const Key('unit_price_field')),
+          matching: find.byType(TextField),
+        ),
+      );
+      expect(field.controller?.text, '');
     });
   });
 }

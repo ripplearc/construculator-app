@@ -142,6 +142,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     void onSaveEnabledChanged(bool enabled) =>
         setState(() => _canSave = enabled);
     return switch (widget.type) {
+      // TODO: [CA-298] Pass prefillUnitCost from selected cost file
       CostItemType.material => MaterialCostFormFields(
           fromCostFile: _fromCostFile,
           onTotalChanged: onTotalChanged,
@@ -152,6 +153,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
           onTotalChanged: onTotalChanged,
           onSaveEnabledChanged: onSaveEnabledChanged,
         ),
+      // TODO: [CA-298] Pass prefillUnitCost from selected cost file
       CostItemType.equipment => EquipmentCostFormFields(
           fromCostFile: _fromCostFile,
           onTotalChanged: onTotalChanged,

@@ -36,6 +36,7 @@ void main() {
 
   Widget makeWidget({
     bool fromCostFile = false,
+    Money? prefillUnitCost,
     ValueChanged<double>? onTotalChanged,
     ValueChanged<bool>? onSaveEnabledChanged,
   }) {
@@ -49,6 +50,7 @@ void main() {
           create: (_) => Modular.get<MaterialCostFormBloc>(),
           child: MaterialCostFormFields(
             fromCostFile: fromCostFile,
+            prefillUnitCost: prefillUnitCost,
             onTotalChanged: onTotalChanged,
             onSaveEnabledChanged: onSaveEnabledChanged,
           ),
@@ -434,6 +436,47 @@ void main() {
         find.byKey(const Key('other_material_details_button')),
       );
       expect(semantics.label, contains(l10n.otherMaterialDetailsButton));
+    });
+  });
+
+  group('MaterialCostFormFields — auto-fill behaviour', () {
+    testWidgets('prefills per unit cost when switching to manually mode',
+        (tester) async {
+      const prefill = Money(amount: 150, currency: 'USD');
+
+      await tester.pumpWidget(
+        makeWidget(fromCostFile: true, prefillUnitCost: prefill),
+      );
+      await tester.pump();
+
+      await tester.pumpWidget(
+        makeWidget(fromCostFile: false, prefillUnitCost: prefill),
+      );
+      await tester.pump();
+
+      final field = tester.widget<TextField>(
+        find.descendant(
+          of: find.byKey(const Key('per_unit_cost_field')),
+          matching: find.byType(TextField),
+        ),
+      );
+      expect(field.controller?.text, '150');
+    });
+
+    testWidgets('does not prefill when prefillUnitCost is null', (tester) async {
+      await tester.pumpWidget(makeWidget(fromCostFile: true));
+      await tester.pump();
+
+      await tester.pumpWidget(makeWidget(fromCostFile: false));
+      await tester.pump();
+
+      final field = tester.widget<TextField>(
+        find.descendant(
+          of: find.byKey(const Key('per_unit_cost_field')),
+          matching: find.byType(TextField),
+        ),
+      );
+      expect(field.controller?.text, '');
     });
   });
 }

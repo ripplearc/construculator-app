@@ -1,3 +1,4 @@
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
@@ -8,12 +9,14 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 class EquipmentCostFormFields extends StatefulWidget {
   /// When true, renders fields for selecting from a cost file; otherwise renders manual-entry fields.
   final bool fromCostFile;
+  final Money? prefillUnitCost;
   final ValueChanged<double>? onTotalChanged;
   final ValueChanged<bool>? onSaveEnabledChanged;
 
   const EquipmentCostFormFields({
     super.key,
     required this.fromCostFile,
+    this.prefillUnitCost,
     this.onTotalChanged,
     this.onSaveEnabledChanged,
   });
@@ -40,6 +43,15 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   void didUpdateWidget(covariant EquipmentCostFormFields oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.fromCostFile != widget.fromCostFile) {
+      if (!widget.fromCostFile) {
+        final prefill = widget.prefillUnitCost;
+        if (prefill != null) {
+          final amount = prefill.amount;
+          _unitPriceController.text = amount.truncateToDouble() == amount
+              ? amount.toInt().toString()
+              : amount.toString();
+        }
+      }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _notifyTotal();
