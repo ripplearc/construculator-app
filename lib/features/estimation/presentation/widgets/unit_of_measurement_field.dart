@@ -16,12 +16,14 @@ class UnitOfMeasurementField extends StatefulWidget {
 
   /// Called with the chosen [Unit] when the user makes a selection.
   final ValueChanged<Unit?> onUnitSelected;
+  final String? errorText;
 
   const UnitOfMeasurementField({
     super.key,
     required this.fromCostFile,
     required this.selectedUnit,
     required this.onUnitSelected,
+    this.errorText,
   });
 
   @override
@@ -68,6 +70,7 @@ class _UnitOfMeasurementFieldState extends State<UnitOfMeasurementField> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final error = widget.errorText;
     return GestureDetector(
       onTap: widget.fromCostFile ? null : () => _openSheet(context),
       child: AbsorbPointer(
@@ -76,6 +79,7 @@ class _UnitOfMeasurementFieldState extends State<UnitOfMeasurementField> {
           controller: _controller,
           readOnly: true,
           enabled: !widget.fromCostFile,
+          errorTextList: error != null ? [error] : null,
           suffix: CoreIconWidget(
             icon: CoreIcons.arrowDropDown,
             color: Theme.of(context).coreColors.iconGrayMid,

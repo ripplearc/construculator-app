@@ -2110,6 +2110,10 @@
   "@projectSettingsPermissionError": {
     "description": "Toast shown when the user lacks the view_project permission for a project",
     "context": "Dashboard projects sheet"
+  },
+  "uomRequiredError": "Please select or enter a unit of measurement.",
+  "@uomRequiredError": {
+    "description": "Validation error shown below the UOM field when no unit has been selected"
   }
 }
 

@@ -13,4 +13,10 @@ class MaterialCostItemTypeChanged extends MaterialCostFormEvent {
   final String value;
 }
 
+class MaterialCostItemUnitChanged extends MaterialCostFormEvent {
+  const MaterialCostItemUnitChanged(this.unit);
+
+  final Unit? unit;
+}
+
 // TODO(CA-294): add MaterialCostFormSubmitted event with estimateId and other field values
