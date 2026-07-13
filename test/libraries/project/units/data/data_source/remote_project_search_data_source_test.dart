@@ -668,7 +668,7 @@ void main() {
         final calls = supabaseWrapper.getMethodCallsFor('rpc');
         expect(calls, hasLength(1));
         expect(
-          calls.first['functionName'] ?? calls.first['function'],
+          calls.first['functionName'],
           equals(DatabaseConstants.projectSearchSuggestionsRpcFunction),
         );
         final params = calls.first['params'] as Map<String, dynamic>?;
