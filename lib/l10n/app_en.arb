@@ -1813,10 +1813,6 @@
   "@perUnitCostLabel": {
     "description": "Hint label for the per-unit cost field on the material cost form (manually mode)"
   },
-  "uomLabel": "Unit of measure*",
-  "@uomLabel": {
-    "description": "Hint label for the unit of measure dropdown on the material cost form (manually mode)"
-  },
   "unitOfMeasurementHint": "UOM",
   "@unitOfMeasurementHint": {
     "description": "Hint text shown inside the unit of measurement selector when no unit is selected"

@@ -2170,12 +2170,6 @@ abstract class AppLocalizations {
   /// **'Per unit cost*'**
   String get perUnitCostLabel;
 
-  /// Hint label for the unit of measure dropdown on the material cost form (manually mode)
-  ///
-  /// In en, this message translates to:
-  /// **'Unit of measure*'**
-  String get uomLabel;
-
   /// Hint text shown inside the unit of measurement selector when no unit is selected
   ///
   /// In en, this message translates to:
