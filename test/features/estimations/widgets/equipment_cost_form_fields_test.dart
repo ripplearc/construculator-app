@@ -94,6 +94,13 @@ void main() {
 
       expect(find.byKey(const Key('equipment_type_field')), findsNothing);
     });
+
+    testWidgets('hides calc method card', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('calc_method_card')), findsNothing);
+    });
   });
 
   group('EquipmentCostFormFields — from cost file mode', () {
