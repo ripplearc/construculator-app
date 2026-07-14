@@ -27,6 +27,12 @@ const int _kMaxDisplayedSuggestions = 5;
 EventTransformer<E> _debounce<E>(Duration duration) =>
     (events, mapper) => events.debounceTime(duration).switchMap(mapper);
 
+// Restartable semantics: a re-dispatch cancels the in-flight handler, so
+// rapidly reopening a filter sheet cannot fire two concurrent fetches whose
+// interleaved results would surface a stray failure toast after a success.
+EventTransformer<E> _restartable<E>() =>
+    (events, mapper) => events.switchMap(mapper);
+
 /// BLoC for managing project search state on the dashboard.
 ///
 /// Handles debounced query updates and explicit search submissions, plus the
@@ -108,13 +114,19 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     on<ProjectSearchHistoryItemDismissedEvent>(_onHistoryItemDismissed);
     on<ProjectSearchTagFiltersAppliedEvent>(_onTagFiltersApplied);
     on<ProjectSearchTagFilterClearedEvent>(_onTagFilterCleared);
-    on<ProjectSearchAvailableTagsRequestedEvent>(_onAvailableTagsRequested);
+    on<ProjectSearchAvailableTagsRequestedEvent>(
+      _onAvailableTagsRequested,
+      transformer: _restartable(),
+    );
     // Intentionally not debounced: tag filtering is in-memory (no network
     // call), so instant per-keystroke feedback is cheap and preferable.
     on<ProjectSearchTagSearchQueryUpdatedEvent>(_onTagSearchQueryUpdated);
     on<ProjectSearchOwnerFiltersAppliedEvent>(_onOwnerFiltersApplied);
     on<ProjectSearchOwnerFilterClearedEvent>(_onOwnerFilterCleared);
-    on<ProjectSearchAvailableOwnersRequestedEvent>(_onAvailableOwnersRequested);
+    on<ProjectSearchAvailableOwnersRequestedEvent>(
+      _onAvailableOwnersRequested,
+      transformer: _restartable(),
+    );
     // Intentionally not debounced: owner filtering is in-memory (no network
     // call), so instant per-keystroke feedback is cheap and preferable.
     on<ProjectSearchOwnerSearchQueryUpdatedEvent>(_onOwnerSearchQueryUpdated);
@@ -304,6 +316,22 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
 
     emit(ProjectSearchLoading(query: query));
 
+    // The RPC accepts a single tag/owner, so a multi-selection is silently
+    // truncated to the alphabetically-first value; log it until the RPC
+    // supports multi-value filters.
+    if (_selectedTags.length > 1) {
+      _logger.warning(
+        'Tag filter truncated: ${_selectedTags.length} tags selected, only '
+        'the alphabetically-first is sent to the RPC',
+      );
+    }
+    if (_selectedOwnerIds.length > 1) {
+      _logger.warning(
+        'Owner filter truncated: ${_selectedOwnerIds.length} owners selected, '
+        'only the alphabetically-first is sent to the RPC',
+      );
+    }
+
     final result = await _repository.searchProjects(
       userId: userId,
       query: query,
@@ -377,6 +405,10 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     );
   }
 
+  // TODO: [CA-797] Track the loading flags as bloc instance fields consulted
+  // here (like _availableTagsFetched) instead of caller-supplied parameters,
+  // so a concurrently-handled event cannot reset an in-flight flag to false.
+  // https://ripplearc.youtrack.cloud/issue/CA-797
   ProjectSearchInitial _initialFromCache({
     bool availableTagsLoading = false,
     bool availableOwnersLoading = false,
