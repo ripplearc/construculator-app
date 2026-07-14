@@ -13,6 +13,13 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// [label], accessibility labels, and widget [Key]s so the same widget can
 /// back both global and project search without hardcoding either surface's
 /// localization keys.
+///
+/// Callers that intend to widget-test the chip should supply both
+/// [inactiveChipKey] and [activeChipKey]; without them the two chip variants
+/// have no stable finder targets.
+// TODO: [CA-796] Promote to CoreUI — the chip is domain-agnostic and any list
+// screen with a date field could reuse it.
+// https://ripplearc.youtrack.cloud/issue/CA-796
 class DateFilterChip extends StatelessWidget {
   /// The currently selected date range, or `null` if no filter is active.
   final DateRange? selectedDateRange;

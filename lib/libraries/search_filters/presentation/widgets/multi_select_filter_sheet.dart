@@ -40,6 +40,9 @@ class MultiSelectFilterListData {
 /// item without dismissing the sheet. Passing a null [listData] renders the
 /// title, search field, and action buttons with an empty list area, for
 /// callers whose state cannot provide a list yet.
+// TODO: [CA-796] Promote to CoreUI — "pick multiple items from a searchable
+// list" is domain-agnostic and broadly reusable beyond search filters.
+// https://ripplearc.youtrack.cloud/issue/CA-796
 class MultiSelectFilterSheet extends StatefulWidget {
   /// Title shown at the top of the sheet, already localized.
   final String title;
