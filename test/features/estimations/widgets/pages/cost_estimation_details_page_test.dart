@@ -66,6 +66,7 @@ void main() {
 
   setUp(() {
     fakeSupabase.reset();
+    (Modular.get<AppRouter>() as FakeAppRouter).reset();
   });
 
   Widget makeApp() {
