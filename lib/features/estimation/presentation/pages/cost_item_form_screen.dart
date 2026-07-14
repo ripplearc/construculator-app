@@ -133,7 +133,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
   }
 
   Widget _buildFormFields() {
-    // TODO: [CA-306] Add form fields for material, labour, and equipment modes
+    // TODO: [CA-306] Add form fields for material, labour, and equipment modes https://ripplearc.youtrack.cloud/issue/CA-306
     return const SizedBox.shrink();
   }
 
