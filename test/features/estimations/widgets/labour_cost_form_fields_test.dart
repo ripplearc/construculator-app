@@ -223,6 +223,68 @@ void main() {
       expect(find.text(l10n.noOfHoursLabel), findsOneWidget);
       expect(find.text(l10n.noOfDaysLabel), findsNothing);
     });
+
+    testWidgets(
+        'tapping per day after switching to per hours restores "No. of days" label',
+        (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('per_hours_option')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('per_day_option')));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.noOfDaysLabel), findsOneWidget);
+      expect(find.text(l10n.noOfHoursLabel), findsNothing);
+    });
+
+    testWidgets('per day option is re-selected after switching from per hours',
+        (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('per_hours_option')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('per_day_option')));
+      await tester.pumpAndSettle();
+
+      final perDay =
+          tester.getSemantics(find.byKey(const Key('per_day_option')));
+      final perHours =
+          tester.getSemantics(find.byKey(const Key('per_hours_option')));
+      expect(perDay.hasFlag(SemanticsFlag.isSelected), isTrue);
+      expect(perHours.hasFlag(SemanticsFlag.isSelected), isFalse);
+    });
+
+    testWidgets(
+        'shows crew size field when per day is re-selected after per hours',
+        (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('per_hours_option')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('per_day_option')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('crew_size_field')), findsOneWidget);
+    });
+
+    testWidgets(
+        'tapping per day in from cost file mode after per hours restores "No. of days" label',
+        (tester) async {
+      await tester.pumpWidget(makeWidget(fromCostFile: true));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('per_hours_option')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('per_day_option')));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.noOfDaysLabel), findsOneWidget);
+      expect(find.text(l10n.noOfHoursLabel), findsNothing);
+    });
   });
 
   group('LabourCostFormFields — save enabled', () {
