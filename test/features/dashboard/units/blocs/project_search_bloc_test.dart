@@ -1198,9 +1198,14 @@ void main() {
           fakeSupabase.selectErrorMessage = 'Timeout';
         },
         build: () => Modular.get<ProjectSearchBloc>(),
-        act: (bloc) =>
-            bloc.add(const ProjectSearchAvailableTagsRequestedEvent()),
-        wait: const Duration(milliseconds: 100),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchAvailableTagsRequestedEvent());
+          // Gate on the recovery state landing instead of a wall-clock wait,
+          // so a slow CI runner cannot cut the observation window short.
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && !s.availableTagsLoading,
+          );
+        },
         expect: () => [
           isA<ProjectSearchInitial>().having(
             (s) => s.availableTagsLoading,
@@ -1368,9 +1373,14 @@ void main() {
           fakeSupabase.rpcErrorMessage = 'Timeout';
         },
         build: () => Modular.get<ProjectSearchBloc>(),
-        act: (bloc) =>
-            bloc.add(const ProjectSearchAvailableOwnersRequestedEvent()),
-        wait: const Duration(milliseconds: 100),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchAvailableOwnersRequestedEvent());
+          // Gate on the recovery state landing instead of a wall-clock wait,
+          // so a slow CI runner cannot cut the observation window short.
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && !s.availableOwnersLoading,
+          );
+        },
         expect: () => [
           isA<ProjectSearchInitial>().having(
             (s) => s.availableOwnersLoading,
@@ -1460,8 +1470,9 @@ void main() {
           await bloc.stream.firstWhere((s) => s is ProjectSearchResultsLoaded);
         },
         verify: (_) {
-          // Selection is sorted for determinism → 'owner-1' wins.
-          expect(lastSearchRpcParams()['filter_by_owner'], 'owner-1');
+          // The RPC takes an owner-id array; the single-owner selection is
+          // wrapped, and sorted for determinism → 'owner-1' wins.
+          expect(lastSearchRpcParams()['filter_by_owners'], ['owner-1']);
         },
       );
     });
@@ -1564,6 +1575,40 @@ void main() {
           expect(state.selectedTags, isEmpty);
           expect(state.selectedOwnerIds, isEmpty);
           expect(state.selectedDateRange, isNull);
+        },
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'keeps the fetched tag catalog across a page reopen — only selections reset',
+        setUp: () => seedTags(['Concrete', 'Steel']),
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchAvailableTagsRequestedEvent());
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && s.availableTags.isNotEmpty,
+          );
+          // Reopening the page resets selections but intentionally reuses the
+          // already-fetched catalog (it rarely changes mid-session).
+          bloc.add(const ProjectSearchHistoryRequestedEvent());
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && !s.isLoadingHistory,
+          );
+          // The cached catalog means the second request emits no loading state,
+          // so drain the event queue rather than awaiting a (deduplicated)
+          // state transition.
+          bloc.add(const ProjectSearchAvailableTagsRequestedEvent());
+          await pumpEventQueue();
+        },
+        verify: (_) {
+          final tagReads = fakeSupabase
+              .getMethodCallsFor('selectMatch')
+              .where((call) => call['table'] == DatabaseConstants.tagsTable)
+              .toList();
+          expect(
+            tagReads,
+            hasLength(1),
+            reason: 'the reopened page must serve the cached tag catalog',
+          );
         },
       );
     });
