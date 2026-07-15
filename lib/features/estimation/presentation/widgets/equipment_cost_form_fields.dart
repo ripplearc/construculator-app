@@ -150,7 +150,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
               state is EquipmentCostFormEditing ? state.itemTypeError : null;
           return CoreTextField(
             key: const Key('equipment_name_field'),
-            hintText: l10n.equipmentNameLabel,
+            label: l10n.equipmentNameLabel,
             controller: _equipmentNameController,
             errorTextList:
                 error != null ? [l10n.equipmentNameRequiredError] : null,

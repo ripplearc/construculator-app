@@ -168,7 +168,7 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
               state is LabourCostFormEditing ? state.itemTypeError : null;
           return CoreTextField(
             key: const Key('labour_type_field'),
-            hintText: l10n.labourTypeLabel,
+            label: l10n.labourTypeLabel,
             controller: _labourTypeController,
             errorTextList:
                 error != null ? [l10n.labourTypeRequiredError] : null,
