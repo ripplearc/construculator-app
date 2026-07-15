@@ -56,6 +56,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     super.dispose();
   }
 
+  // TODO: [CA-800] Fold into shared mixin/base alongside _notifyTotal
   void _notifySaveEnabled() {
     if (widget.fromCostFile) {
       widget.onSaveEnabledChanged?.call(false);

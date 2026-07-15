@@ -54,6 +54,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     super.dispose();
   }
 
+  // TODO: [CA-800] Fold into shared mixin/base alongside _notifyTotal
   void _notifySaveEnabled() {
     if (widget.fromCostFile) {
       widget.onSaveEnabledChanged?.call(false);
