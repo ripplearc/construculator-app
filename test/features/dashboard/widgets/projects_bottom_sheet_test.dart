@@ -1,7 +1,6 @@
 // ignore_for_file: no_direct_instantiation
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/project_list_item.dart';
-import 'package:construculator/features/dashboard/presentation/widgets/view_project_details_button.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
