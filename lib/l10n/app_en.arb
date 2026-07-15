@@ -1841,7 +1841,7 @@
   "@perDayOption": {
     "description": "Radio option label for the per-day calculation method on the labour cost form"
   },
-  "perHoursOption": "Per hours",
+  "perHoursOption": "Per hour",
   "@perHoursOption": {
     "description": "Radio option label for the per-hours calculation method on the labour cost form"
   },
