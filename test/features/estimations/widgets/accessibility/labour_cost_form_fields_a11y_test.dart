@@ -44,7 +44,6 @@ void main() {
           tester,
           makeWidget,
           find.byKey(const Key('per_day_option')),
-          checkTapTargetSize: false,
         );
       },
     );

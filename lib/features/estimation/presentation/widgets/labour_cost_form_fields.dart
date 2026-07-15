@@ -236,24 +236,28 @@ class _CalcMethodRadioOption extends StatelessWidget {
       label: label,
       child: GestureDetector(
         onTap: onTap,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CoreIconWidget(
-              icon: isSelected ? CoreIcons.radioChecked : CoreIcons.radio,
-              color: isSelected ? colorTheme.iconDark : colorTheme.iconGrayMid,
-              size: 24,
-            ),
-            const SizedBox(width: CoreSpacing.space2),
-            Text(
-              label,
-              style: textTheme.bodyMediumRegular.copyWith(
-                color: isSelected
-                    ? colorTheme.textHeadline
-                    : colorTheme.textBody,
+        behavior: HitTestBehavior.opaque,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CoreIconWidget(
+                icon: isSelected ? CoreIcons.radioChecked : CoreIcons.radio,
+                color: isSelected ? colorTheme.iconDark : colorTheme.iconGrayMid,
+                size: 24,
               ),
-            ),
-          ],
+              const SizedBox(width: CoreSpacing.space2),
+              Text(
+                label,
+                style: textTheme.bodyMediumRegular.copyWith(
+                  color: isSelected
+                      ? colorTheme.textHeadline
+                      : colorTheme.textBody,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
