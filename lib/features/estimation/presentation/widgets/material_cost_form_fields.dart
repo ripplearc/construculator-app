@@ -41,7 +41,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
           const SizedBox(height: CoreSpacing.space5),
           _buildOtherMaterialDetails(context),
           const SizedBox(height: CoreSpacing.space6),
-          // TODO: [CA-336] Add assign task section
+          // TODO: [CA-336] Add assign task section https://ripplearc.youtrack.cloud/issue/CA-336
         ],
       ),
     );
@@ -51,7 +51,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     return [
-      // TODO: [CA-298] Wire cost file dropdown to CostFileDataSource
+      // TODO: [CA-298] Wire cost file dropdown to CostFileDataSource https://ripplearc.youtrack.cloud/issue/CA-298
       CoreTextField(
         key: const Key('cost_file_field'),
         hintText: l10n.costFilePlaceholder,
@@ -64,7 +64,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
         ),
       ),
       const SizedBox(height: CoreSpacing.space5),
-      // TODO: [CA-298] Populate material type from selected cost file
+      // TODO: [CA-298] Populate material type from selected cost file https://ripplearc.youtrack.cloud/issue/CA-298
       CoreTextField(
         key: const Key('material_type_field'),
         hintText: l10n.materialTypeLabel,
@@ -108,7 +108,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
         ),
       ),
       const SizedBox(height: CoreSpacing.space5),
-      // TODO: [CA-311] Add UOM dropdown
+      // TODO: [CA-311] Add UOM dropdown https://ripplearc.youtrack.cloud/issue/CA-311
       CoreTextField(
         key: const Key('uom_field'),
         hintText: l10n.uomLabel,
@@ -137,7 +137,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (_showOtherDetails) ...[
-          // TODO: [CA-332] Add brand dropdown to other material details
+          // TODO: [CA-332] Add brand dropdown to other material details https://ripplearc.youtrack.cloud/issue/CA-332
           CoreTextField(
             key: const Key('brand_field'),
             hintText: l10n.brandLabel,

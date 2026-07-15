@@ -81,12 +81,9 @@ void main() {
   Future<void> pumpAppAtRoute(WidgetTester tester, String route) async {
     await tester.pumpWidget(makeApp());
     await tester.pumpAndSettle();
-    await tester.runAsync(() async {
-      Modular.to.navigate(route);
-      await Future.delayed(const Duration(milliseconds: 600));
-    });
+    Modular.to.navigate(route);
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
-    await tester.pump(const Duration(seconds: 1));
   }
 
   void setUpAuthenticatedUser() {

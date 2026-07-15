@@ -161,24 +161,29 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Row(
-              key: const Key('cost_item_total_label'),
-              spacing: CoreSpacing.space1,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  l10n.costItemTotalLabel,
-                  style: textTheme.bodyLargeRegular.copyWith(
-                    color: colorTheme.textBody,
+            Flexible(
+              child: Row(
+                key: const Key('cost_item_total_label'),
+                spacing: CoreSpacing.space1,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    l10n.costItemTotalLabel,
+                    style: textTheme.bodyLargeRegular.copyWith(
+                      color: colorTheme.textBody,
+                    ),
                   ),
-                ),
-                Text(
-                  '\$0',
-                  style: textTheme.titleLargeSemiBold.copyWith(
-                    color: colorTheme.textHeadline,
+                  Flexible(
+                    child: Text(
+                      '\$0.00',
+                      style: textTheme.titleLargeSemiBold.copyWith(
+                        color: colorTheme.textHeadline,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             // TODO: [CA-355] [Cost Estimation] Implement Add To Cost Button Logic https://ripplearc.youtrack.cloud/issue/CA-355/Cost-Estimation-Implement-Add-To-Cost-Button-Logic
             CoreButton(
