@@ -220,6 +220,31 @@ void main() {
 
       expect(captured, isNull);
     });
+
+    testWidgets(
+        'calls onSaveEnabledChanged(false) when switching to from cost file mode after typing', (
+      tester,
+    ) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('labour_type_field')),
+        'Mason',
+      );
+      await tester.pump();
+      expect(captured, isTrue);
+
+      await tester.pumpWidget(
+        makeWidget(fromCostFile: true, onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pump();
+
+      expect(captured, isFalse);
+    });
   });
 
   group('LabourCostFormFields — real-time total', () {
