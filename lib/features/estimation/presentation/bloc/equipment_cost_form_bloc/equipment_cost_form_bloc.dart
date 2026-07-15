@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 part 'equipment_cost_form_event.dart';
 part 'equipment_cost_form_state.dart';
 
+/// BLoC for managing equipment cost item type input and validation.
 class EquipmentCostFormBloc
     extends Bloc<EquipmentCostFormEvent, EquipmentCostFormState> {
   EquipmentCostFormBloc() : super(const EquipmentCostFormInitial()) {
@@ -19,7 +20,7 @@ class EquipmentCostFormBloc
         : const EquipmentCostFormEditing();
     emit(
       current.copyWith(
-        equipmentName: event.value,
+        equipmentType: event.value,
         itemTypeError: event.value.trim().isEmpty ? 'itemTypeRequired' : null,
       ),
     );

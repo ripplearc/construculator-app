@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 part 'material_cost_form_event.dart';
 part 'material_cost_form_state.dart';
 
+/// BLoC for managing material cost item type input and validation.
 class MaterialCostFormBloc
     extends Bloc<MaterialCostFormEvent, MaterialCostFormState> {
   MaterialCostFormBloc() : super(const MaterialCostFormInitial()) {

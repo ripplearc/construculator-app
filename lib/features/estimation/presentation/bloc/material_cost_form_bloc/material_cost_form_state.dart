@@ -1,13 +1,16 @@
 part of 'material_cost_form_bloc.dart';
 
+/// Base sealed class for all material cost form states.
 sealed class MaterialCostFormState {
   const MaterialCostFormState();
 }
 
+/// Initial state before the user has interacted with the form.
 class MaterialCostFormInitial extends MaterialCostFormState {
   const MaterialCostFormInitial();
 }
 
+/// State while the user is filling in the material cost form.
 class MaterialCostFormEditing extends MaterialCostFormState {
   const MaterialCostFormEditing({this.materialType = '', this.itemTypeError});
 

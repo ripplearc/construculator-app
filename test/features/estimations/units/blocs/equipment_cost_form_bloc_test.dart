@@ -56,8 +56,8 @@ void main() {
         expect: () => [
           isA<EquipmentCostFormEditing>()
               .having(
-                (s) => s.equipmentName,
-                'equipmentName',
+                (s) => s.equipmentType,
+                'equipmentType',
                 testEquipmentName,
               )
               .having((s) => s.itemTypeError, 'itemTypeError', isNull)

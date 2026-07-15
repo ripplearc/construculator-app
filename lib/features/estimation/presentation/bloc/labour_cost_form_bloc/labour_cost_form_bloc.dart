@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 part 'labour_cost_form_event.dart';
 part 'labour_cost_form_state.dart';
 
+/// BLoC for managing labour cost item type input and validation.
 class LabourCostFormBloc
     extends Bloc<LabourCostFormEvent, LabourCostFormState> {
   LabourCostFormBloc() : super(const LabourCostFormInitial()) {

@@ -1,13 +1,16 @@
 part of 'labour_cost_form_bloc.dart';
 
+/// Base sealed class for all labour cost form states.
 sealed class LabourCostFormState {
   const LabourCostFormState();
 }
 
+/// Initial state before the user has interacted with the form.
 class LabourCostFormInitial extends LabourCostFormState {
   const LabourCostFormInitial();
 }
 
+/// State while the user is filling in the labour cost form.
 class LabourCostFormEditing extends LabourCostFormState {
   const LabourCostFormEditing({this.labourType = '', this.itemTypeError});
 
