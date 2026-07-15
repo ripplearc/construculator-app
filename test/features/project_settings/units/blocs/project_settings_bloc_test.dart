@@ -1,7 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/project_settings/presentation/bloc/project_settings_bloc/project_settings_bloc.dart';
-import 'package:construculator/features/project_settings/project_settings_module.dart';
+import 'package:construculator/features/project_settings/project_settings_routes_module.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
@@ -335,5 +335,5 @@ class _ProjectSettingsBlocTestModule extends Module {
   _ProjectSettingsBlocTestModule(this.bootstrap);
 
   @override
-  List<Module> get imports => [ProjectSettingsModule(bootstrap)];
+  List<Module> get imports => [ProjectSettingsRoutesModule(bootstrap)];
 }
