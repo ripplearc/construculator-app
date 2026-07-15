@@ -81,14 +81,14 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
       const SizedBox(height: CoreSpacing.space5),
       CoreTextField(
         key: const Key('conditional_value_field'),
-        hintText: _conditionalFieldLabel(context),
+        label: _conditionalFieldLabel(context),
         controller: _conditionalValueController,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
       ),
       const SizedBox(height: CoreSpacing.space5),
       CoreTextField(
         key: const Key('crew_size_field'),
-        hintText: l10n.crewSizeLabel,
+        label: l10n.crewSizeLabel,
         controller: _crewSizeController,
         keyboardType: TextInputType.number,
       ),
@@ -109,7 +109,7 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
       const SizedBox(height: CoreSpacing.space5),
       CoreTextField(
         key: const Key('crew_rate_field'),
-        hintText: l10n.crewRateLabel,
+        label: l10n.crewRateLabel,
         controller: _crewRateController,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         suffix: CoreIconWidget(
@@ -121,14 +121,14 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
       const SizedBox(height: CoreSpacing.space5),
       CoreTextField(
         key: const Key('conditional_value_field'),
-        hintText: _conditionalFieldLabel(context),
+        label: _conditionalFieldLabel(context),
         controller: _conditionalValueController,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
       ),
       const SizedBox(height: CoreSpacing.space5),
       CoreTextField(
         key: const Key('crew_size_field'),
-        hintText: l10n.crewSizeLabel,
+        label: l10n.crewSizeLabel,
         controller: _crewSizeController,
         keyboardType: TextInputType.number,
       ),
