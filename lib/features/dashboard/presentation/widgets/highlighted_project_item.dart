@@ -7,6 +7,9 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 const double _kHighlightedProjectItemMetaIconSize = CoreSpacing.space4;
 const double _kHighlightedProjectItemSettingsHitTarget = CoreSpacing.space12;
+const double _kHighlightedProjectItemSettingsVisual = CoreSpacing.space10;
+const double _kHighlightedProjectItemSettingsPadding = CoreSpacing.space2;
+const double _kHighlightedProjectItemSettingsIconSize = CoreSpacing.space6;
 
 /// The selected-state variant of a project card, rendered when the user's
 /// current working project matches this item.
@@ -119,10 +122,17 @@ class HighlightedProjectItem extends StatelessWidget {
         onTap: onSettingsTap,
         behavior: HitTestBehavior.opaque,
         child: Center(
-          child: CoreIconWidget(
-            icon: CoreIcons.settings,
-            size: _kHighlightedProjectItemMetaIconSize,
-            color: colors.iconGrayMid,
+          child: SizedBox(
+            width: _kHighlightedProjectItemSettingsVisual,
+            height: _kHighlightedProjectItemSettingsVisual,
+            child: Padding(
+              padding: const EdgeInsets.all(_kHighlightedProjectItemSettingsPadding),
+              child: CoreIconWidget(
+                icon: CoreIcons.settings,
+                size: _kHighlightedProjectItemSettingsIconSize,
+                color: colors.iconDark,
+              ),
+            ),
           ),
         ),
       ),

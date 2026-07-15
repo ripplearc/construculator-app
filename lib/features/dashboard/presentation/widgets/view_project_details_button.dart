@@ -67,7 +67,7 @@ class _ViewProjectDetailsButtonState extends State<ViewProjectDetailsButton> {
                       key: _kSettingsIconKey,
                       icon: CoreIcons.settings,
                       size: _kIconSize,
-                      color: colors.iconGrayMid,
+                      color: colors.iconDark,
                     ),
             ),
           ),
