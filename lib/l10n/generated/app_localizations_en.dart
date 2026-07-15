@@ -1170,7 +1170,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get perDayOption => 'Per day';
 
   @override
-  String get perHoursOption => 'Per hours';
+  String get perHoursOption => 'Per hour';
 
   @override
   String get noOfDaysLabel => 'No. of days*';
