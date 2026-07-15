@@ -76,7 +76,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       const SizedBox(height: CoreSpacing.space5),
       CoreTextField(
         key: const Key('quantity_field'),
-        hintText: l10n.quantityLabel,
+        label: l10n.quantityLabel,
         controller: _quantityController,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
       ),
@@ -95,7 +95,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       const SizedBox(height: CoreSpacing.space5),
       CoreTextField(
         key: const Key('unit_price_field'),
-        hintText: l10n.unitPriceLabel,
+        label: l10n.unitPriceLabel,
         controller: _unitPriceController,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         suffix: CoreIconWidget(
@@ -107,7 +107,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       const SizedBox(height: CoreSpacing.space5),
       CoreTextField(
         key: const Key('quantity_field'),
-        hintText: l10n.quantityLabel,
+        label: l10n.quantityLabel,
         controller: _quantityController,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
       ),
