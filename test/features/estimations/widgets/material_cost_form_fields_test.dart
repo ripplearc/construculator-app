@@ -177,6 +177,43 @@ void main() {
     });
   });
 
+  group('MaterialCostFormFields — item type error', () {
+    testWidgets('shows error text when material type is cleared after typing', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('material_type_field')),
+        'Lap Sealant',
+      );
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('material_type_field')),
+        '',
+      );
+      await tester.pump();
+
+      expect(find.text(l10n.materialTypeRequiredError), findsOneWidget);
+    });
+
+    testWidgets('hides error text when material type is non-empty', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('material_type_field')),
+        'Lap Sealant',
+      );
+      await tester.pump();
+
+      expect(find.text(l10n.materialTypeRequiredError), findsNothing);
+    });
+  });
+
   group('MaterialCostFormFields — real-time total', () {
     testWidgets('calls onTotalChanged with perUnitCost × quantity', (
       tester,

@@ -272,6 +272,40 @@ void main() {
     });
   });
 
+  group('LabourCostFormFields — item type error', () {
+    testWidgets('shows error text when labour type is cleared after typing', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('labour_type_field')),
+        'Mason',
+      );
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('labour_type_field')), '');
+      await tester.pump();
+
+      expect(find.text(l10n.labourTypeRequiredError), findsOneWidget);
+    });
+
+    testWidgets('hides error text when labour type is non-empty', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('labour_type_field')),
+        'Mason',
+      );
+      await tester.pump();
+
+      expect(find.text(l10n.labourTypeRequiredError), findsNothing);
+    });
+  });
+
   group('LabourCostFormFields — real-time total', () {
     testWidgets('calls onTotalChanged with crewRate × value × crewSize', (
       tester,

@@ -105,5 +105,41 @@ void main() {
         ),
       );
     });
+
+    testWidgets('renders manually mode with item type error in light theme', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester);
+      await tester.enterText(find.byKey(const Key('labour_type_field')), 'x');
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('labour_type_field')), '');
+      await tester.pump();
+      await expectLater(
+        find.byType(LabourCostFormFields),
+        matchesGoldenFile(
+          'goldens/labour_cost_form_fields/${size.width}x${size.height}/manually_error_light.png',
+        ),
+      );
+    });
+
+    testWidgets('renders manually mode with item type error in dark theme', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester, theme: createTestThemeDark());
+      await tester.enterText(find.byKey(const Key('labour_type_field')), 'x');
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('labour_type_field')), '');
+      await tester.pump();
+      await expectLater(
+        find.byType(LabourCostFormFields),
+        matchesGoldenFile(
+          'goldens/labour_cost_form_fields/${size.width}x${size.height}/manually_error_dark.png',
+        ),
+      );
+    });
   });
 }

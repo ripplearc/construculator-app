@@ -13,10 +13,11 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import '../../../utils/fake_app_bootstrap_factory.dart';
 
 void main() {
+  late AppLocalizations l10n;
   late FakeSupabaseWrapper fakeSupabase;
 
   setUpAll(() {
-    lookupAppLocalizations(const Locale('en'));
+    l10n = lookupAppLocalizations(const Locale('en'));
     fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
     final bootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabase,
@@ -222,6 +223,43 @@ void main() {
       await tester.pump();
 
       expect(captured, isFalse);
+    });
+  });
+
+  group('EquipmentCostFormFields — item type error', () {
+    testWidgets('shows error text when equipment name is cleared after typing', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'Backhoe',
+      );
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        '',
+      );
+      await tester.pump();
+
+      expect(find.text(l10n.equipmentNameRequiredError), findsOneWidget);
+    });
+
+    testWidgets('hides error text when equipment name is non-empty', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'Backhoe',
+      );
+      await tester.pump();
+
+      expect(find.text(l10n.equipmentNameRequiredError), findsNothing);
     });
   });
 
