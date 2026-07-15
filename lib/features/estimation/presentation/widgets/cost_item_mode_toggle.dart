@@ -2,9 +2,16 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+// TODO: [CA-???] Replace with a compact variant of CoreSelectButton once available.
+/// Two-pill segmented toggle for selecting between "From cost file" and "Manually" modes.
 class CostItemModeToggle extends StatelessWidget {
+  /// Whether the "From cost file" pill is active; false means "Manually" is active.
   final bool fromCostFile;
+
+  /// Called when the user taps the "From cost file" pill while it is not already active.
   final VoidCallback onFromCostFile;
+
+  /// Called when the user taps the "Manually" pill while it is not already active.
   final VoidCallback onManually;
 
   const CostItemModeToggle({
@@ -23,7 +30,7 @@ class CostItemModeToggle extends StatelessWidget {
       padding: const EdgeInsets.all(CoreSpacing.space1),
       decoration: BoxDecoration(
         color: colorTheme.pageBackground,
-        borderRadius: BorderRadius.circular(48),
+        borderRadius: BorderRadius.circular(CoreSpacing.space12),
         boxShadow: [BoxShadow(color: colorTheme.shadowGrey10, blurRadius: 8)],
       ),
       child: Row(
@@ -70,7 +77,7 @@ class CostItemModeToggle extends StatelessWidget {
       selected: isActive,
       button: true,
       child: GestureDetector(
-        onTap: onTap,
+        onTap: isActive ? null : onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           alignment: Alignment.center,

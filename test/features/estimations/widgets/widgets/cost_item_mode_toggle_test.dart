@@ -90,5 +90,26 @@ void main() {
 
       expect(called, isTrue);
     });
+
+    testWidgets('tapping already-active pill does not fire its callback', (
+      tester,
+    ) async {
+      var fromCostFileCalled = false;
+      var manuallyCalled = false;
+      await tester.pumpWidget(
+        makeToggle(
+          fromCostFile: false,
+          onFromCostFile: () => fromCostFileCalled = true,
+          onManually: () => manuallyCalled = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('manually_pill')));
+      await tester.pump();
+
+      expect(manuallyCalled, isFalse);
+      expect(fromCostFileCalled, isFalse);
+    });
   });
 }
