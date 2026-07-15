@@ -7,10 +7,14 @@ import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/routes/project_settings_routes.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
-/// Modular module owning Tier-1 routes and shared bindings for the Project Settings feature.
+/// DI-binding module for the Project Settings feature used by test harnesses.
 ///
-/// Registers [ProjectDetailScreen] behind an [AuthGuard] and provides
-/// [ProjectSettingsBloc] for downstream screens.
+/// **Production note:** this class is NOT mounted by [ShellModule]. The live
+/// route registrations live in [ProjectSettingsRoutesModule], which [ShellModule]
+/// mounts instead. The [routes] override below mirrors those registrations so
+/// that test harnesses importing this module can navigate to
+/// [ProjectDetailScreen] without blowing up. If [ProjectSettingsRoutesModule]
+/// changes its route definitions, update [routes] here to stay in sync.
 class ProjectSettingsModule extends Module {
   final AppBootstrap appBootstrap;
 

@@ -2,6 +2,10 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 
 // TODO: [CA-180] Implement project details content. https://ripplearc.youtrack.cloud/issue/CA-180
+/// Placeholder screen for the project details view.
+///
+/// Full content is deferred to CA-180; currently renders an empty scaffold
+/// with a localised app-bar title so the navigation flow is end-to-end testable.
 class ProjectDetailScreen extends StatelessWidget {
   const ProjectDetailScreen({super.key});
 

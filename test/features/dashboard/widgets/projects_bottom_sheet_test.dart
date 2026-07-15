@@ -174,7 +174,11 @@ void main() {
 
     await harness.pumpSheet(tester);
 
-    await tester.tap(find.byType(ViewProjectDetailsButton).first);
+    // The BLoC auto-selects the first project, so HighlightedProjectItem is
+    // rendered (not ProjectListItem), which uses a VoidCallback-based settings
+    // button rather than ViewProjectDetailsButton. Use the shared semantics
+    // label to tap whichever settings button variant is visible.
+    await tester.tap(find.bySemanticsLabel(l10n.projectSettingsSemanticLabel));
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.projectDetailsNavigationError), findsOneWidget);
