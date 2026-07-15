@@ -13,6 +13,9 @@ enum _PredefinedRange { today, last7Days, last30Days, thisMonth, custom }
 /// start date, once for the end date — since [CoreDatePicker] only selects a
 /// single date. The sheet owns no BLoC state: it resolves with the chosen
 /// [DateRange], or `null` if the user cancels/dismisses.
+// TODO: [CA-796] Promote to CoreUI — the predefined-range-or-custom date
+// picker sheet is domain-agnostic and reusable beyond search filters.
+// https://ripplearc.youtrack.cloud/issue/CA-796
 class DateRangeBottomSheet extends StatefulWidget {
   /// The range already applied when the sheet opens, if any.
   final DateRange? initialRange;
