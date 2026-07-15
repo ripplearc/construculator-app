@@ -45,7 +45,7 @@ class CostItemModeToggle extends StatelessWidget {
               onTap: onFromCostFile,
             ),
           ),
-          const SizedBox(width: 2),
+          const SizedBox(width: CoreSpacing.space1 / 2),
           Expanded(
             child: _buildPill(
               context,
@@ -82,7 +82,7 @@ class CostItemModeToggle extends StatelessWidget {
           duration: const Duration(milliseconds: 150),
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(
-            vertical: 6,
+            vertical: CoreSpacing.space3 / 2,
             horizontal: CoreSpacing.space4,
           ),
           decoration: BoxDecoration(
