@@ -1,3 +1,5 @@
+import 'package:construculator/features/estimation/data/data_source/interfaces/cost_item_data_source.dart';
+import 'package:construculator/features/estimation/data/models/cost_item_dto.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_item_repository_impl.dart';
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_item_repository.dart';
@@ -10,10 +12,19 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../../../utils/fake_app_bootstrap_factory.dart';
 
+class _MockCostItemDataSource extends Mock implements CostItemDataSource {}
+
+class _FakeCostItemDto extends Fake implements CostItemDto {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_FakeCostItemDto());
+  });
+
   group('CostItemRepositoryImpl', () {
     late CostItemRepositoryImpl repository;
     late FakeSupabaseWrapper fakeSupabaseWrapper;
@@ -137,6 +148,28 @@ void main() {
               (f) => f.errorType,
               'errorType',
               EstimationErrorType.unexpectedError,
+            ),
+          );
+        },
+      );
+
+      test(
+        'maps FormatException to parsingError failure',
+        () async {
+          final mockDataSource = _MockCostItemDataSource();
+          when(() => mockDataSource.createCostItem(any()))
+              .thenThrow(const FormatException('bad format'));
+          final directRepo = CostItemRepositoryImpl(dataSource: mockDataSource);
+
+          final result = await directRepo.createCostItem(testItem);
+
+          expect(result.isLeft(), true);
+          expect(
+            result.getLeftOrNull(),
+            isA<EstimationFailure>().having(
+              (f) => f.errorType,
+              'errorType',
+              EstimationErrorType.parsingError,
             ),
           );
         },
