@@ -2215,7 +2215,7 @@ abstract class AppLocalizations {
   /// Radio option label for the per-hours calculation method on the labour cost form
   ///
   /// In en, this message translates to:
-  /// **'Per hours'**
+  /// **'Per hour'**
   String get perHoursOption;
 
   /// Hint label for the number-of-days field when the per-day method is selected on the labour cost form
