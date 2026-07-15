@@ -29,7 +29,7 @@ void main() {
     required Project project,
     bool isSelected = false,
     VoidCallback? onTap,
-    VoidCallback? onSettingsTap,
+    Future<void> Function()? onSettingsTap,
   }) {
     return MaterialApp(
       theme: createTestTheme(),
@@ -86,7 +86,7 @@ void main() {
       buildTestApp(
         project: buildProject(),
         onTap: () => tapped = true,
-        onSettingsTap: () => settingsTapped = true,
+        onSettingsTap: () async { settingsTapped = true; },
       ),
     );
     await tester.pump();

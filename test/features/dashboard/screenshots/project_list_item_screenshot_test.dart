@@ -50,7 +50,7 @@ void main() {
                 project: project,
                 isSelected: isSelected,
                 onTap: () {},
-                onSettingsTap: () {},
+                onSettingsTap: () async {},
               ),
             ),
           ),

@@ -50,7 +50,7 @@ void main() {
           child: ProjectListItem(
             project: buildProject(),
             onTap: () {},
-            onSettingsTap: () {},
+            onSettingsTap: () async {},
           ),
         ),
         find.bySemanticsLabel('Project settings'),
@@ -69,7 +69,7 @@ void main() {
           child: ProjectListItem(
             project: buildProject(),
             onTap: () {},
-            onSettingsTap: () {},
+            onSettingsTap: () async {},
           ),
         ),
         find.text('My project'),

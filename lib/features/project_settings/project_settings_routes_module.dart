@@ -1,6 +1,7 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/project_settings/presentation/bloc/project_settings_bloc/project_settings_bloc.dart';
 import 'package:construculator/features/project_settings/presentation/pages/project_creation_screen.dart';
+import 'package:construculator/features/project_settings/presentation/pages/project_detail_screen.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
@@ -12,7 +13,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 /// Modular module owning routes for the Project Settings feature.
 ///
 /// Imports [ProjectLibraryModule] for shared data-layer bindings, and registers
-/// the [ProjectCreationScreen] route behind an [AuthGuard].
+/// [ProjectCreationScreen] and [ProjectDetailScreen] routes behind [AuthGuard].
 class ProjectSettingsRoutesModule extends Module {
   final AppBootstrap appBootstrap;
   ProjectSettingsRoutesModule(this.appBootstrap);
@@ -41,6 +42,11 @@ class ProjectSettingsRoutesModule extends Module {
           authManager: Modular.get<AuthManager>(),
         ),
       ),
+    );
+    r.child(
+      viewProjectRoute,
+      guards: [AuthGuard(() => Modular.get<AuthManager>())],
+      child: (_) => const ProjectDetailScreen(),
     );
   }
 }

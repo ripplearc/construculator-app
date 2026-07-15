@@ -8,6 +8,7 @@ import 'package:construculator/libraries/router/routes/project_search_routes.dar
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../projects_bottom_sheet_test_harness.dart';
 
@@ -32,6 +33,11 @@ void main() {
 
   setUpAll(() async {
     await harness.setUpAll();
+    CoreToast.disableTimers();
+  });
+
+  tearDownAll(() {
+    CoreToast.enableTimers();
   });
 
   setUp(() {
@@ -39,6 +45,7 @@ void main() {
   });
 
   tearDown(() {
+    harness.router.reset();
     harness.tearDown();
   });
 
@@ -157,4 +164,22 @@ void main() {
       );
     },
   );
+
+  testWidgets('shows error toast when navigation throws', (tester) async {
+    harness.router.pushError = Exception('nav failed');
+    harness.fakeRepository.setAccessibleProjects([
+      buildProject(id: 'project-1', projectName: 'My project'),
+    ]);
+
+    await harness.pumpSheet(tester);
+
+    // The BLoC auto-selects the first project, so HighlightedProjectItem is
+    // rendered (not ProjectListItem), which uses a VoidCallback-based settings
+    // button rather than ViewProjectDetailsButton. Use the shared semantics
+    // label to tap whichever settings button variant is visible.
+    await tester.tap(find.bySemanticsLabel(l10n.projectSettingsSemanticLabel));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.projectDetailsNavigationError), findsOneWidget);
+  });
 }
