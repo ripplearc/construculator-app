@@ -79,7 +79,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
       const SizedBox(height: CoreSpacing.space5),
       CoreTextField(
         key: const Key('quantity_field'),
-        hintText: l10n.quantityLabel,
+        label: l10n.quantityLabel,
         controller: _quantityController,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
       ),
@@ -98,7 +98,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
       const SizedBox(height: CoreSpacing.space5),
       CoreTextField(
         key: const Key('per_unit_cost_field'),
-        hintText: l10n.perUnitCostLabel,
+        label: l10n.perUnitCostLabel,
         controller: _perUnitCostController,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         suffix: CoreIconWidget(
@@ -123,7 +123,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
       const SizedBox(height: CoreSpacing.space5),
       CoreTextField(
         key: const Key('quantity_field'),
-        hintText: l10n.quantityLabel,
+        label: l10n.quantityLabel,
         controller: _quantityController,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
       ),
@@ -152,7 +152,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
           const SizedBox(height: CoreSpacing.space3),
           CoreTextField(
             key: const Key('product_link_field'),
-            hintText: l10n.productLinkLabel,
+            label: l10n.productLinkLabel,
             controller: _productLinkController,
           ),
           const SizedBox(height: CoreSpacing.space3),
