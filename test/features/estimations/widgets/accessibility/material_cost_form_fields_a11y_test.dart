@@ -55,5 +55,32 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'a11y: material type error text meets contrast guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          makeWidget,
+          find.byKey(const Key('material_type_field')),
+          checkTapTargetSize: false,
+          checkLabeledTapTarget: false,
+          setupAfterPump: (tester) async {
+            await tester.enterText(
+              find.byKey(const Key('material_type_field')),
+              'x',
+            );
+            await tester.pump();
+            await tester.enterText(
+              find.byKey(const Key('material_type_field')),
+              '',
+            );
+            await tester.pump();
+          },
+        );
+      },
+    );
   });
 }

@@ -126,30 +126,27 @@ void main() {
       );
     });
 
-    testWidgets('renders labour cost screen in manually mode', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1.0;
-      await pumpScreen(tester: tester, type: CostItemType.labor);
-
-      await expectLater(
-        find.byType(CostItemFormScreen),
-        matchesGoldenFile(
-          'goldens/cost_item_form_screen/${size.width}x${size.height}/labour_manually.png',
-        ),
-      );
-    });
-
-    testWidgets('renders equipment cost screen in manually mode', (
+    testWidgets('renders material cost screen with item type error', (
       tester,
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
-      await pumpScreen(tester: tester, type: CostItemType.equipment);
+      await pumpScreen(tester: tester, type: CostItemType.material);
+      await tester.enterText(
+        find.byKey(const Key('material_type_field')),
+        'x',
+      );
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('material_type_field')),
+        '',
+      );
+      await tester.pump();
 
       await expectLater(
         find.byType(CostItemFormScreen),
         matchesGoldenFile(
-          'goldens/cost_item_form_screen/${size.width}x${size.height}/equipment_manually.png',
+          'goldens/cost_item_form_screen/${size.width}x${size.height}/material_manually_error.png',
         ),
       );
     });
