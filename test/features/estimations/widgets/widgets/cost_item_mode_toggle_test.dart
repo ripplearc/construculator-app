@@ -45,8 +45,8 @@ void main() {
       await tester.pumpWidget(makeToggle());
       await tester.pumpAndSettle();
 
-      final manually = tester.getSemantics(find.byKey(const Key('manually_pill')));
-      final fromFile = tester.getSemantics(find.byKey(const Key('from_cost_file_pill')));
+      final manually = tester.getSemantics(find.text(l10n.manuallyMode));
+      final fromFile = tester.getSemantics(find.text(l10n.fromCostFileMode));
 
       expect(manually.hasFlag(SemanticsFlag.isSelected), isTrue);
       expect(fromFile.hasFlag(SemanticsFlag.isSelected), isFalse);
@@ -58,8 +58,8 @@ void main() {
       await tester.pumpWidget(makeToggle(fromCostFile: true));
       await tester.pumpAndSettle();
 
-      final fromFile = tester.getSemantics(find.byKey(const Key('from_cost_file_pill')));
-      final manually = tester.getSemantics(find.byKey(const Key('manually_pill')));
+      final fromFile = tester.getSemantics(find.text(l10n.fromCostFileMode));
+      final manually = tester.getSemantics(find.text(l10n.manuallyMode));
 
       expect(fromFile.hasFlag(SemanticsFlag.isSelected), isTrue);
       expect(manually.hasFlag(SemanticsFlag.isSelected), isFalse);
@@ -72,7 +72,7 @@ void main() {
       await tester.pumpWidget(makeToggle(onFromCostFile: () => called = true));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('from_cost_file_pill')));
+      await tester.tap(find.text(l10n.fromCostFileMode));
       await tester.pump();
 
       expect(called, isTrue);
@@ -85,7 +85,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('manually_pill')));
+      await tester.tap(find.text(l10n.manuallyMode));
       await tester.pump();
 
       expect(called, isTrue);
@@ -105,7 +105,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('manually_pill')));
+      await tester.tap(find.text(l10n.manuallyMode));
       await tester.pump();
 
       expect(manuallyCalled, isFalse);
