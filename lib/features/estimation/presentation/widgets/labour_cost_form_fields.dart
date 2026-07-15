@@ -76,7 +76,8 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
         ),
       ),
       const SizedBox(height: CoreSpacing.space5),
-      _buildCalcMethodCard(context, showRateRow: true),
+      // TODO: [CA-298] Pass showRateRow: true once a cost file is selected and rate is wired from CostFileDataSource
+      _buildCalcMethodCard(context, showRateRow: false),
       const SizedBox(height: CoreSpacing.space5),
       CoreTextField(
         key: const Key('conditional_value_field'),
