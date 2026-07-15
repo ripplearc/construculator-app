@@ -92,6 +92,36 @@ The existing CI platform is Codemagic, which handles unit, widget, and screensho
 
 The E2E tests themselves are platform-agnostic. The same Patrol binary runs on any of these platforms, so the platform decision can be deferred until Phase 2 without affecting Phase 1 work.
 
+### Nightly run cost estimate
+
+Rough monthly cost of the proposed nightly run, to inform the platform decision. Rates are current as of July 2026.
+
+**Per-platform rates:**
+
+| Platform | Rate |
+|---|---|
+| Firebase Test Lab — virtual (emulated) | $1/device-hr (~$0.017/min) |
+| Firebase Test Lab — physical device | $5/device-hr (~$0.083/min) |
+| GitHub Actions | Linux $0.006/min, macOS $0.062/min |
+| Codemagic | pay-as-you-go macOS $0.095/min, or $299/mo unlimited |
+| Bitrise | macOS ~$0.007–0.019/min + device-testing add-on |
+
+Most platforms charge by **device time** (per device-hour). The estimate below assumes an average of **3 minutes per test** (assumptions: 30 nightly runs/month, ~10 min orchestration overhead per run; tiers sized at the upper bound — 10, 50, and 100 tests):
+
+| Suite size | GitHub Actions + FTL virtual | GitHub Actions + FTL physical | Codemagic (pay-as-you-go) |
+|---|---|---|---|
+| 1–10 tests | ~$15/mo | ~$75/mo | ~$115/mo |
+| 10–50 tests | ~$77/mo | ~$375/mo | ~$455/mo |
+| > 50 tests | ~$155/mo | ~$745/mo | ~$885/mo |
+
+Takeaways:
+- **GitHub Actions + Firebase Test Lab on virtual devices** is by far the cheapest option; physical devices cost ~5× more but give real-hardware coverage.
+- Codemagic's flat **$299/mo unlimited** plan becomes the better deal once the suite grows past the mid tier, where pay-as-you-go device time overtakes it.
+- Free tiers (FTL's daily free minutes, GitHub's included minutes) offset only the smallest suites and are negligible past tier 1.
+- These figures scale linearly with per-test runtime — the model uses 3 min/test; at the 10 min/test upper end from ["When tests run"](#when-tests-run) above, every figure is roughly 3×.
+
+Sources: [Firebase Test Lab pricing](https://firebase.google.com/docs/test-lab/usage-quotas-pricing), [GitHub Actions runner pricing](https://docs.github.com/en/billing/reference/actions-runner-pricing), [Codemagic pricing](https://codemagic.io/pricing/), [Bitrise pricing](https://bitrise.io/pricing).
+
 ---
 
 ## Phased Rollout
