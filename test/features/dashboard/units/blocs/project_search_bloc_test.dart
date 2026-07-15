@@ -27,6 +27,20 @@ import '../../../../utils/fake_app_bootstrap_factory.dart';
 const String _testUserId = 'user-search-test';
 const String _testUserEmail = 'search@test.com';
 
+// Yields microtasks until [condition] holds, bounded by [maxTurns]. Unlike
+// pumpEventQueue this uses no wall-clock Future.delayed: bloc event dispatch
+// settles within a few microtask turns, so this is a deterministic gate for
+// handlers whose only observable effect is an Equatable-suppressed re-emit.
+Future<void> _untilHandlerRuns(
+  bool Function() condition, {
+  int maxTurns = 100,
+}) async {
+  for (var turn = 0; turn < maxTurns; turn++) {
+    if (condition()) return;
+    await Future<void>.microtask(() {});
+  }
+}
+
 Map<String, dynamic> _fakeProjectData({String? id, String? projectName}) {
   return {
     DatabaseConstants.idColumn: id ?? 'project-1',
@@ -1191,6 +1205,36 @@ void main() {
       );
 
       blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'restartable transformer collapses a rapid double tag request into one fetch',
+        setUp: () => seedTags(['Concrete', 'Steel']),
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          // Two requests dispatched before the first fetch resolves. The
+          // restartable() (switchMap) transformer must cancel the stale first
+          // handler so only a single tag catalog read reaches the datasource —
+          // guarding against the duplicate-fetch/stray-failure-toast race. If
+          // the transformer were dropped, both handlers would run and fetch.
+          bloc
+            ..add(const ProjectSearchAvailableTagsRequestedEvent())
+            ..add(const ProjectSearchAvailableTagsRequestedEvent());
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && !s.availableTagsLoading,
+          );
+        },
+        verify: (_) {
+          final tagReads = fakeSupabase
+              .getMethodCallsFor('selectMatch')
+              .where((call) => call['table'] == DatabaseConstants.tagsTable)
+              .toList();
+          expect(
+            tagReads,
+            hasLength(1),
+            reason: 'restartable() must cancel the stale in-flight tag fetch',
+          );
+        },
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
         'emits ProjectSearchTagsLoadFailure then recovers to initial on fetch error',
         setUp: () {
           fakeSupabase.shouldThrowOnSelectMatch = true;
@@ -1362,6 +1406,40 @@ void main() {
               )
               .toList();
           expect(ownerCalls, hasLength(1));
+        },
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'restartable transformer collapses a rapid double owner request into one fetch',
+        setUp: () => seedOwners([
+          (id: 'owner-1', firstName: 'Ada', lastName: 'Lovelace'),
+          (id: 'owner-2', firstName: 'Alan', lastName: 'Turing'),
+        ]),
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          // See the tag equivalent: the restartable() (switchMap) transformer
+          // must cancel the stale first handler so only one owner RPC fires.
+          bloc
+            ..add(const ProjectSearchAvailableOwnersRequestedEvent())
+            ..add(const ProjectSearchAvailableOwnersRequestedEvent());
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && !s.availableOwnersLoading,
+          );
+        },
+        verify: (_) {
+          final ownerCalls = fakeSupabase
+              .getMethodCallsFor('rpc')
+              .where(
+                (call) =>
+                    call['functionName'] ==
+                    DatabaseConstants.projectOwnersRpcFunction,
+              )
+              .toList();
+          expect(
+            ownerCalls,
+            hasLength(1),
+            reason: 'restartable() must cancel the stale in-flight owner fetch',
+          );
         },
       );
 
@@ -1593,13 +1671,17 @@ void main() {
           await bloc.stream.firstWhere(
             (s) => s is ProjectSearchInitial && !s.isLoadingHistory,
           );
-          // The cached catalog means the second request emits no loading state,
-          // so drain the event queue rather than awaiting a (deduplicated)
-          // state transition.
+          // The cached catalog re-emits an Equatable-equal state that `emit`
+          // suppresses, so there is no state transition to await. Gate on the
+          // handler-run counter — it increments synchronously on the cache-hit
+          // path, giving a deterministic signal instead of a wall-clock wait.
+          final runsBefore = bloc.availableTagsHandlerRuns;
           bloc.add(const ProjectSearchAvailableTagsRequestedEvent());
-          await pumpEventQueue();
+          await _untilHandlerRuns(
+            () => bloc.availableTagsHandlerRuns > runsBefore,
+          );
         },
-        verify: (_) {
+        verify: (bloc) {
           final tagReads = fakeSupabase
               .getMethodCallsFor('selectMatch')
               .where((call) => call['table'] == DatabaseConstants.tagsTable)
@@ -1608,6 +1690,12 @@ void main() {
             tagReads,
             hasLength(1),
             reason: 'the reopened page must serve the cached tag catalog',
+          );
+          expect(
+            bloc.availableTagsHandlerRuns,
+            2,
+            reason:
+                'both requests reached the handler; the second was a cache hit',
           );
         },
       );

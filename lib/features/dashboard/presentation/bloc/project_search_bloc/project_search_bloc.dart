@@ -93,6 +93,19 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
   @visibleForTesting
   Future<void>? lastSaveCompleted;
 
+  /// Exposed for testing only — increments each time the available-tags
+  /// handler finishes (cache hit or fetch). A cache-hit re-emits an
+  /// `Equatable`-equal [ProjectSearchInitial] that `emit` suppresses, so this
+  /// counter gives tests a deterministic completion signal to await instead of
+  /// draining the event queue on a wall clock.
+  @visibleForTesting
+  int availableTagsHandlerRuns = 0;
+
+  /// Exposed for testing only — the owner equivalent of
+  /// [availableTagsHandlerRuns].
+  @visibleForTesting
+  int availableOwnersHandlerRuns = 0;
+
   /// Creates a [ProjectSearchBloc] with the given [repository], [authManager],
   /// [tagRepository], and [ownerRepository].
   ProjectSearchBloc({
@@ -452,6 +465,7 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     _tagSearchQuery = '';
     if (_availableTagsFetched) {
       emit(_initialFromCache());
+      availableTagsHandlerRuns++;
       return;
     }
 
@@ -471,6 +485,7 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
         emit(_initialFromCache());
       },
     );
+    availableTagsHandlerRuns++;
   }
 
   void _onTagSearchQueryUpdated(
@@ -506,6 +521,7 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     _ownerSearchQuery = '';
     if (_availableOwnersFetched) {
       emit(_initialFromCache());
+      availableOwnersHandlerRuns++;
       return;
     }
 
@@ -525,6 +541,7 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
         emit(_initialFromCache());
       },
     );
+    availableOwnersHandlerRuns++;
   }
 
   void _onOwnerSearchQueryUpdated(
