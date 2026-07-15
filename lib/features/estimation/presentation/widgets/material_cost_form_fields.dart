@@ -42,6 +42,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _notifyTotal();
+        _notifySaveEnabled();
       });
     }
   }
@@ -55,10 +56,15 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     super.dispose();
   }
 
-  void _notifySaveEnabled() =>
-      widget.onSaveEnabledChanged?.call(
-        _materialTypeController.text.trim().isNotEmpty,
-      );
+  void _notifySaveEnabled() {
+    if (widget.fromCostFile) {
+      widget.onSaveEnabledChanged?.call(false);
+      return;
+    }
+    widget.onSaveEnabledChanged?.call(
+      _materialTypeController.text.trim().isNotEmpty,
+    );
+  }
 
   // TODO: [CA-355] Move total calculation into BLoC when submission is wired
   void _notifyTotal() {

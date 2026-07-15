@@ -219,6 +219,29 @@ void main() {
       expect(semantics.hasFlag(SemanticsFlag.isEnabled), isTrue);
     });
 
+    testWidgets(
+        'add to cost button disables after typing then switching to from cost file mode', (
+      tester,
+    ) async {
+      setUpAuthenticatedUser();
+      await pumpAppAtRoute(tester, materialRoute);
+
+      await tester.enterText(
+        find.byKey(const Key('material_type_field')),
+        'Lap Sealant',
+      );
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('from_cost_file_pill')));
+      await tester.pump();
+      await tester.pump();
+
+      final semantics = tester.getSemantics(
+        find.byKey(const Key('add_to_cost_button')),
+      );
+      expect(semantics.hasFlag(SemanticsFlag.isEnabled), isFalse);
+    });
+
     testWidgets('displays total label', (tester) async {
       setUpAuthenticatedUser();
       await pumpAppAtRoute(tester, makeApp(), materialRoute);

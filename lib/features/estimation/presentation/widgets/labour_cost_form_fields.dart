@@ -45,6 +45,7 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _notifyTotal();
+        _notifySaveEnabled();
       });
     }
   }
@@ -58,10 +59,15 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
     super.dispose();
   }
 
-  void _notifySaveEnabled() =>
-      widget.onSaveEnabledChanged?.call(
-        _labourTypeController.text.trim().isNotEmpty,
-      );
+  void _notifySaveEnabled() {
+    if (widget.fromCostFile) {
+      widget.onSaveEnabledChanged?.call(false);
+      return;
+    }
+    widget.onSaveEnabledChanged?.call(
+      _labourTypeController.text.trim().isNotEmpty,
+    );
+  }
 
   // TODO: [CA-355] Move total calculation into BLoC when submission is wired
   void _notifyTotal() {

@@ -41,6 +41,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _notifyTotal();
+        _notifySaveEnabled();
       });
     }
   }
@@ -53,10 +54,15 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     super.dispose();
   }
 
-  void _notifySaveEnabled() =>
-      widget.onSaveEnabledChanged?.call(
-        _equipmentNameController.text.trim().isNotEmpty,
-      );
+  void _notifySaveEnabled() {
+    if (widget.fromCostFile) {
+      widget.onSaveEnabledChanged?.call(false);
+      return;
+    }
+    widget.onSaveEnabledChanged?.call(
+      _equipmentNameController.text.trim().isNotEmpty,
+    );
+  }
 
   // TODO: [CA-355] Move total calculation into BLoC when submission is wired
   void _notifyTotal() {
