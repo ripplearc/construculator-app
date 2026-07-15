@@ -56,7 +56,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     super.dispose();
   }
 
-  // TODO: [CA-800] Fold into shared mixin/base alongside _notifyTotal
+  // TODO: [CA-800] Fold into shared mixin/base alongside _notifyTotal https://ripplearc.youtrack.cloud/issue/CA-800
   void _notifySaveEnabled() {
     if (widget.fromCostFile) {
       widget.onSaveEnabledChanged?.call(false);
