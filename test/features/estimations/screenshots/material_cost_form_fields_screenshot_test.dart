@@ -92,12 +92,12 @@ void main() {
         find.byKey(const Key('material_type_field')),
         'x',
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const Key('material_type_field')),
         '',
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
       await expectLater(
         find.byType(MaterialCostFormFields),
         matchesGoldenFile(
@@ -116,12 +116,12 @@ void main() {
         find.byKey(const Key('material_type_field')),
         'x',
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const Key('material_type_field')),
         '',
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
       await expectLater(
         find.byType(MaterialCostFormFields),
         matchesGoldenFile(

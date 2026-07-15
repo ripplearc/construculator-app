@@ -113,9 +113,9 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       await pumpWidget(tester: tester);
       await tester.enterText(find.byKey(const Key('labour_type_field')), 'x');
-      await tester.pump();
+      await tester.pumpAndSettle();
       await tester.enterText(find.byKey(const Key('labour_type_field')), '');
-      await tester.pump();
+      await tester.pumpAndSettle();
       await expectLater(
         find.byType(LabourCostFormFields),
         matchesGoldenFile(
@@ -131,9 +131,9 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       await pumpWidget(tester: tester, theme: createTestThemeDark());
       await tester.enterText(find.byKey(const Key('labour_type_field')), 'x');
-      await tester.pump();
+      await tester.pumpAndSettle();
       await tester.enterText(find.byKey(const Key('labour_type_field')), '');
-      await tester.pump();
+      await tester.pumpAndSettle();
       await expectLater(
         find.byType(LabourCostFormFields),
         matchesGoldenFile(
