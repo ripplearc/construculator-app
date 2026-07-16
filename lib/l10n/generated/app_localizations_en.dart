@@ -839,6 +839,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commentLabel => 'Comment';
 
   @override
+  String get fromCostFileMode => 'From cost file';
+
+  @override
+  String get manuallyMode => 'Manually';
+
+  @override
+  String get fromCostFileModeSemanticLabel => 'Switch to cost file mode';
+
+  @override
+  String get manuallyModeSemanticLabel => 'Switch to manual mode';
+
+  @override
   String get globalSearchHint => 'Search for Calculation and cost';
 
   @override
