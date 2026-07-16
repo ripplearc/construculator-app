@@ -1,7 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/project_settings/presentation/bloc/project_settings_bloc/project_settings_bloc.dart';
-import 'package:construculator/features/project_settings/project_settings_module.dart';
+import 'package:construculator/features/project_settings/project_settings_routes_module.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
@@ -126,7 +126,7 @@ void main() {
 
     group('ProjectSettingsUpdateSubmitted', () {
       blocTest<ProjectSettingsBloc, ProjectSettingsState>(
-        'emits [Saving, Loaded] on update success',
+        'emits [Saving, Edited] on update success',
         build: () => Modular.get<ProjectSettingsBloc>(),
         seed: () => ProjectSettingsEditing(
           project: tProject,
@@ -136,7 +136,7 @@ void main() {
         expect: () => [
           isA<ProjectSettingsSaving>()
               .having((s) => s.project.id, 'project.id', testProjectId),
-          isA<ProjectSettingsLoaded>()
+          isA<ProjectSettingsEdited>()
               .having((s) => s.project.id, 'project.id', testProjectId),
         ],
       );
@@ -246,6 +246,30 @@ void main() {
       );
     });
 
+    group('ProjectSettingsEditingCancelled', () {
+      blocTest<ProjectSettingsBloc, ProjectSettingsState>(
+        'emits [Loaded(originalProject)] when state is Editing',
+        build: () => Modular.get<ProjectSettingsBloc>(),
+        seed: () => ProjectSettingsEditing(
+          project: tProject,
+          originalProject: tProject,
+        ),
+        act: (bloc) => bloc.add(const ProjectSettingsEditingCancelled()),
+        expect: () => [
+          isA<ProjectSettingsLoaded>()
+              .having((s) => s.project.id, 'project.id', testProjectId),
+        ],
+      );
+
+      blocTest<ProjectSettingsBloc, ProjectSettingsState>(
+        'is ignored when state is not Editing',
+        build: () => Modular.get<ProjectSettingsBloc>(),
+        seed: () => const ProjectSettingsLoading(),
+        act: (bloc) => bloc.add(const ProjectSettingsEditingCancelled()),
+        expect: () => [],
+      );
+    });
+
     group('ProjectSettingsDeleteRequested', () {
       blocTest<ProjectSettingsBloc, ProjectSettingsState>(
         'emits [DeleteInProgress, Initial] on delete success',
@@ -311,5 +335,5 @@ class _ProjectSettingsBlocTestModule extends Module {
   _ProjectSettingsBlocTestModule(this.bootstrap);
 
   @override
-  List<Module> get imports => [ProjectSettingsModule(bootstrap)];
+  List<Module> get imports => [ProjectSettingsRoutesModule(bootstrap)];
 }

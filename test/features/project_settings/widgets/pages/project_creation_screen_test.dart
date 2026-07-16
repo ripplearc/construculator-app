@@ -2,7 +2,7 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/project_settings/presentation/bloc/project_settings_bloc/project_settings_bloc.dart';
 import 'package:construculator/features/project_settings/presentation/pages/project_creation_screen.dart';
 import 'package:construculator/features/project_settings/presentation/widgets/project_name_text_field.dart';
-import 'package:construculator/features/project_settings/project_settings_module.dart';
+import 'package:construculator/features/project_settings/project_settings_routes_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
@@ -273,5 +273,5 @@ class _ProjectCreationScreenTestModule extends Module {
   _ProjectCreationScreenTestModule(this.appBootstrap);
 
   @override
-  List<Module> get imports => [ProjectSettingsModule(appBootstrap)];
+  List<Module> get imports => [ProjectSettingsRoutesModule(appBootstrap)];
 }
