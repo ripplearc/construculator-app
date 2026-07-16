@@ -5,28 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+import '../../helpers/unit_display_name_helper.dart';
+
 void main() {
   late AppLocalizations l10n;
 
   setUpAll(() {
     l10n = lookupAppLocalizations(const Locale('en'));
   });
-
-  String unitName(Unit unit) => switch (unit) {
-    Unit.pieces => l10n.unitPieces,
-    Unit.meters => l10n.unitMeters,
-    Unit.squareMeters => l10n.unitSquareMeters,
-    Unit.cubicMeters => l10n.unitCubicMeters,
-    Unit.kilograms => l10n.unitKilograms,
-    Unit.tons => l10n.unitTons,
-    Unit.liters => l10n.unitLiters,
-    Unit.hours => l10n.unitHours,
-    Unit.days => l10n.unitDays,
-    Unit.boxes => l10n.unitBoxes,
-    Unit.bags => l10n.unitBags,
-    Unit.rolls => l10n.unitRolls,
-    Unit.sheets => l10n.unitSheets,
-  };
 
   Widget makeWidget({
     bool fromCostFile = false,
@@ -84,7 +70,7 @@ void main() {
       await tester.pumpAndSettle();
 
       for (final unit in Unit.values) {
-        expect(find.text(unitName(unit)), findsOneWidget);
+        expect(find.text(unitDisplayName(unit, l10n)), findsOneWidget);
       }
     });
 
@@ -103,7 +89,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Use meters (index 1) — always visible without scrolling in the bottom sheet
-      await tester.tap(find.text(unitName(Unit.meters)));
+      await tester.tap(find.text(unitDisplayName(Unit.meters, l10n)));
       await tester.pumpAndSettle();
 
       expect(captured, Unit.meters);
@@ -113,7 +99,7 @@ void main() {
       await tester.pumpWidget(makeWidget(selectedUnit: Unit.kilograms));
       await tester.pumpAndSettle();
 
-      expect(find.text(unitName(Unit.kilograms)), findsOneWidget);
+      expect(find.text(unitDisplayName(Unit.kilograms, l10n)), findsOneWidget);
     });
   });
 
@@ -132,7 +118,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text(unitName(Unit.meters)), findsOneWidget);
+      expect(find.text(unitDisplayName(Unit.meters, l10n)), findsOneWidget);
     });
 
     testWidgets('does not open bottom sheet when disabled', (tester) async {

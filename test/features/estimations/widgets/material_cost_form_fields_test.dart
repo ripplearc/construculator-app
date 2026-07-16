@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
+import '../helpers/unit_display_name_helper.dart';
 
 void main() {
   late AppLocalizations l10n;
@@ -33,22 +34,6 @@ void main() {
   setUp(() {
     fakeSupabase.reset();
   });
-
-  String unitName(Unit unit) => switch (unit) {
-    Unit.pieces => l10n.unitPieces,
-    Unit.meters => l10n.unitMeters,
-    Unit.squareMeters => l10n.unitSquareMeters,
-    Unit.cubicMeters => l10n.unitCubicMeters,
-    Unit.kilograms => l10n.unitKilograms,
-    Unit.tons => l10n.unitTons,
-    Unit.liters => l10n.unitLiters,
-    Unit.hours => l10n.unitHours,
-    Unit.days => l10n.unitDays,
-    Unit.boxes => l10n.unitBoxes,
-    Unit.bags => l10n.unitBags,
-    Unit.rolls => l10n.unitRolls,
-    Unit.sheets => l10n.unitSheets,
-  };
 
   Widget makeWidget({
     bool fromCostFile = false,
@@ -124,7 +109,7 @@ void main() {
       await tester.pumpAndSettle();
 
       for (final unit in Unit.values) {
-        expect(find.text(unitName(unit)), findsOneWidget);
+        expect(find.text(unitDisplayName(unit, l10n)), findsOneWidget);
       }
     });
 

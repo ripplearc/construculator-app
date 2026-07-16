@@ -3,9 +3,16 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+/// A tappable selector field that opens a [SingleItemSelector] bottom sheet
+/// for choosing a [Unit] of measurement.
 class UnitOfMeasurementField extends StatelessWidget {
+  /// When `true`, the field is read-only (unit is pre-filled from a cost file).
   final bool fromCostFile;
+
+  /// The currently selected unit, or `null` when no unit has been chosen.
   final Unit? selectedUnit;
+
+  /// Called with the chosen [Unit] when the user makes a selection.
   final ValueChanged<Unit?> onUnitSelected;
 
   const UnitOfMeasurementField({
