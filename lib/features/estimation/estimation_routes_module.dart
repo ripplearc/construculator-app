@@ -1,6 +1,8 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_details_page.dart';
+import 'package:construculator/features/estimation/presentation/pages/cost_item_form_screen.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
@@ -38,6 +40,63 @@ class EstimationRoutesModule extends Module {
         }
 
         return CostEstimationDetailsPage(
+          estimationId: estimationId,
+          router: Modular.get<AppRouter>(),
+        );
+      },
+    );
+
+    r.child(
+      addMaterialCostRoute,
+      guards: [AuthGuard(() => Modular.get<AuthManager>())],
+      child: (context) {
+        final estimationId = Modular.args.params['estimationId'];
+        if (estimationId == null || estimationId.isEmpty) {
+          throw ArgumentError(
+            'estimationId is required for CostItemFormScreen. '
+            'Ensure the route includes a valid estimationId parameter.',
+          );
+        }
+        return CostItemFormScreen(
+          type: CostItemType.material,
+          estimationId: estimationId,
+          router: Modular.get<AppRouter>(),
+        );
+      },
+    );
+
+    r.child(
+      addLabourCostRoute,
+      guards: [AuthGuard(() => Modular.get<AuthManager>())],
+      child: (context) {
+        final estimationId = Modular.args.params['estimationId'];
+        if (estimationId == null || estimationId.isEmpty) {
+          throw ArgumentError(
+            'estimationId is required for CostItemFormScreen. '
+            'Ensure the route includes a valid estimationId parameter.',
+          );
+        }
+        return CostItemFormScreen(
+          type: CostItemType.labor,
+          estimationId: estimationId,
+          router: Modular.get<AppRouter>(),
+        );
+      },
+    );
+
+    r.child(
+      addEquipmentCostRoute,
+      guards: [AuthGuard(() => Modular.get<AuthManager>())],
+      child: (context) {
+        final estimationId = Modular.args.params['estimationId'];
+        if (estimationId == null || estimationId.isEmpty) {
+          throw ArgumentError(
+            'estimationId is required for CostItemFormScreen. '
+            'Ensure the route includes a valid estimationId parameter.',
+          );
+        }
+        return CostItemFormScreen(
+          type: CostItemType.equipment,
           estimationId: estimationId,
           router: Modular.get<AppRouter>(),
         );
