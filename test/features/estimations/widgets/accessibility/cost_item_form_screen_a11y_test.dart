@@ -17,6 +17,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/modular_pump_utils.dart';
 
 class _CostItemFormScreenA11yTestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -78,14 +79,6 @@ void main() {
     );
   }
 
-  Future<void> pumpAppAtRoute(WidgetTester tester, String route) async {
-    await tester.pumpWidget(makeApp());
-    await tester.pumpAndSettle();
-    Modular.to.navigate(route);
-    await tester.pump(const Duration(milliseconds: 300));
-    await tester.pumpAndSettle();
-  }
-
   void setUpAuthenticatedUser() {
     fakeSupabase.setCurrentUser(
       FakeUser(
@@ -118,7 +111,7 @@ void main() {
       setUpAuthenticatedUser();
 
       await setupA11yTest(tester);
-      await pumpAppAtRoute(tester, materialRoute);
+      await pumpAppAtRoute(tester, makeApp(), materialRoute);
 
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
@@ -141,7 +134,7 @@ void main() {
       setUpAuthenticatedUser();
 
       await setupA11yTest(tester);
-      await pumpAppAtRoute(tester, materialRoute);
+      await pumpAppAtRoute(tester, makeApp(), materialRoute);
 
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,

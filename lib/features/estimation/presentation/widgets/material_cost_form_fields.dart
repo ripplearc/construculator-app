@@ -92,7 +92,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     return [
       CoreTextField(
         key: const Key('material_type_field'),
-        hintText: l10n.materialTypeLabel,
+        label: l10n.materialTypeLabel,
         controller: _materialTypeController,
       ),
       const SizedBox(height: CoreSpacing.space5),
