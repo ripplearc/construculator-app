@@ -38,6 +38,8 @@ class UnitOfMeasurementField extends StatelessWidget {
     return InkWell(
       onTap: fromCostFile ? null : () => _openSheet(context),
       child: InputDecorator(
+        // No labelText per Figma spec — the hint doubles as the field label for
+        // this selector (unlike the text inputs alongside it).
         decoration: InputDecoration(
           hintText: l10n.unitOfMeasurementHint,
           enabled: !fromCostFile,

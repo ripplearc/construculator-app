@@ -81,7 +81,7 @@ void main() {
       await tester.pumpWidget(makeWidget(selectedUnit: Unit.kilograms));
       await tester.pumpAndSettle();
 
-      expect(find.text(unitName(Unit.kilograms)), findsOneWidget);
+      expect(find.text(unitDisplayName(Unit.kilograms, l10n)), findsOneWidget);
     });
   });
 
@@ -112,7 +112,7 @@ void main() {
       await tester.pumpAndSettle();
       await openSheet(tester);
 
-      expect(find.text(unitName(Unit.meters)), findsOneWidget);
+      expect(find.text(unitDisplayName(Unit.meters, l10n)), findsOneWidget);
     });
 
     testWidgets('tapping a unit fires onUnitSelected with the correct Unit', (
@@ -127,7 +127,7 @@ void main() {
       await tester.pumpAndSettle();
       await openSheet(tester);
 
-      await tester.tap(find.text(unitName(Unit.meters)));
+      await tester.tap(find.text(unitDisplayName(Unit.meters, l10n)));
       await tester.pumpAndSettle();
 
       expect(captured, Unit.meters);
@@ -149,8 +149,8 @@ void main() {
       await tester.tap(find.text(l10n.uomCategoryWeight));
       await tester.pumpAndSettle();
 
-      expect(find.text(unitName(Unit.kilograms)), findsOneWidget);
-      expect(find.text(unitName(Unit.tons)), findsOneWidget);
+      expect(find.text(unitDisplayName(Unit.kilograms, l10n)), findsOneWidget);
+      expect(find.text(unitDisplayName(Unit.tons, l10n)), findsOneWidget);
     });
   });
 
@@ -195,7 +195,10 @@ void main() {
       await tester.pumpAndSettle();
       await openSheet(tester);
 
-      expect(find.text(l10n.addUomButton), findsOneWidget);
+      expect(
+        tester.widget<CoreButton>(find.byType(CoreButton)).isDisabled,
+        isTrue,
+      );
     });
   });
 

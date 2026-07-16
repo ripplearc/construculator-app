@@ -78,6 +78,16 @@ void main() {
         await tester.pumpAndSettle();
       }
 
+      Future<void> pumpAndOpenSheetInManuallyMode({
+        required WidgetTester tester,
+        ThemeData? theme,
+      }) async {
+        await pumpAndOpenSheet(tester: tester, theme: theme);
+        final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+        await tester.tap(find.text(l10n.uomManuallyOption));
+        await tester.pumpAndSettle();
+      }
+
       testWidgets('bottom sheet open in light theme', (tester) async {
         await pumpAndOpenSheet(tester: tester);
         await expectLater(
@@ -94,6 +104,33 @@ void main() {
           find.byType(MaterialApp),
           matchesGoldenFile(
             'goldens/unit_of_measurement_field/${openedSize.width}x${openedSize.height}/bottom_sheet_open_dark.png',
+          ),
+        );
+      });
+
+      testWidgets('bottom sheet open in manually mode light theme', (
+        tester,
+      ) async {
+        await pumpAndOpenSheetInManuallyMode(tester: tester);
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile(
+            'goldens/unit_of_measurement_field/${openedSize.width}x${openedSize.height}/bottom_sheet_open_manually_light.png',
+          ),
+        );
+      });
+
+      testWidgets('bottom sheet open in manually mode dark theme', (
+        tester,
+      ) async {
+        await pumpAndOpenSheetInManuallyMode(
+          tester: tester,
+          theme: createTestThemeDark(),
+        );
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile(
+            'goldens/unit_of_measurement_field/${openedSize.width}x${openedSize.height}/bottom_sheet_open_manually_dark.png',
           ),
         );
       });
