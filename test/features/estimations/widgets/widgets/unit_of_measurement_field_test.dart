@@ -40,12 +40,12 @@ void main() {
   }
 
   group('UnitOfMeasurementField — manual mode', () {
-    testWidgets('shows hint when no unit is selected', (tester) async {
+    testWidgets('shows label when no unit is selected', (tester) async {
       await tester.pumpWidget(makeWidget());
       await tester.pumpAndSettle();
 
       expect(find.byType(UnitOfMeasurementField), findsOneWidget);
-      expect(find.text(l10n.unitOfMeasurementHint), findsWidgets);
+      expect(find.text(l10n.unitOfMeasurementLabel), findsOneWidget);
     });
 
     testWidgets('tapping opens bottom sheet with mode question', (
@@ -203,11 +203,11 @@ void main() {
   });
 
   group('UnitOfMeasurementField — from cost file mode', () {
-    testWidgets('shows hint text when no unit is prefilled', (tester) async {
+    testWidgets('shows label when no unit is prefilled', (tester) async {
       await tester.pumpWidget(makeWidget(fromCostFile: true));
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n.unitOfMeasurementHint), findsWidgets);
+      expect(find.text(l10n.unitOfMeasurementLabel), findsOneWidget);
     });
 
     testWidgets('shows prefilled unit display name', (tester) async {

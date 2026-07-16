@@ -1,4 +1,5 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -8,7 +9,7 @@ enum _UomMode { fromList, manually }
 /// A tappable selector field that opens a custom bottom sheet for choosing
 /// a [Unit] of measurement.
 
-class UnitOfMeasurementField extends StatelessWidget {
+class UnitOfMeasurementField extends StatefulWidget {
   /// When `true`, the field is read-only (unit is pre-filled from a cost file).
   final bool fromCostFile;
 
@@ -26,43 +27,62 @@ class UnitOfMeasurementField extends StatelessWidget {
   });
 
   @override
+  State<UnitOfMeasurementField> createState() => _UnitOfMeasurementFieldState();
+}
+
+class _UnitOfMeasurementFieldState extends State<UnitOfMeasurementField> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncController();
+  }
+
+  @override
+  void didUpdateWidget(UnitOfMeasurementField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedUnit != widget.selectedUnit) {
+      _syncController();
+    }
+  }
+
+  void _syncController() {
+    final unit = widget.selectedUnit;
+    final text = unit != null ? _resolveUnitName(context, unit) : '';
+    if (_controller.text != text) {
+      _controller.text = text;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final typography = Theme.of(context).coreTypography;
-    final colors = Theme.of(context).coreColors;
-    final unit = selectedUnit;
-    final displayText = unit != null
-        ? _resolveUnitName(context, unit)
-        : l10n.unitOfMeasurementHint;
-
-    return InkWell(
-      onTap: fromCostFile ? null : () => _openSheet(context),
-      child: InputDecorator(
-        // No labelText per Figma spec — the hint doubles as the field label for
-        // this selector (unlike the text inputs alongside it).
-        decoration: InputDecoration(
-          hintText: l10n.unitOfMeasurementHint,
-          enabled: !fromCostFile,
-          hintStyle: typography.bodyLargeSemiBold.copyWith(
-            color: fromCostFile ? colors.textDisable : colors.outlineFocus,
+    return GestureDetector(
+      onTap: widget.fromCostFile ? null : () => _openSheet(context),
+      child: AbsorbPointer(
+        child: CoreTextField(
+          label: l10n.unitOfMeasurementLabel,
+          controller: _controller,
+          readOnly: true,
+          enabled: !widget.fromCostFile,
+          suffix: CoreIconWidget(
+            icon: CoreIcons.arrowDropDown,
+            color: Theme.of(context).coreColors.iconGrayMid,
+            size: 24,
           ),
-          border: const OutlineInputBorder(),
-          suffixIcon: const Icon(Icons.arrow_drop_down),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                displayText,
-                style: typography.bodyLargeRegular.copyWith(
-                  color: (selectedUnit == null || fromCostFile)
-                      ? Theme.of(context).hintColor
-                      : null,
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -73,10 +93,10 @@ class UnitOfMeasurementField extends StatelessWidget {
       context: context,
       useSafeArea: true,
       child: _UomSelectorSheet(
-        selectedUnit: selectedUnit,
+        selectedUnit: widget.selectedUnit,
         onUnitSelected: (unit) {
           Navigator.of(context).pop();
-          onUnitSelected(unit);
+          widget.onUnitSelected(unit);
         },
       ),
     );
@@ -229,7 +249,7 @@ class _UomSelectorSheetState extends State<_UomSelectorSheet> {
     );
   }
 
-  Widget _buildModeCard(dynamic l10n) {
+  Widget _buildModeCard(AppLocalizations l10n) {
     final typography = Theme.of(context).coreTypography;
     final colors = Theme.of(context).coreColors;
 

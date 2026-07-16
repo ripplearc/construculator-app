@@ -1206,6 +1206,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get perUnitCostLabel => 'Per unit cost*';
 
   @override
+  String get unitOfMeasurementLabel => 'UOM';
+
+  @override
   String get unitOfMeasurementHint => 'UOM';
 
   @override

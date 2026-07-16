@@ -2272,6 +2272,12 @@ abstract class AppLocalizations {
   /// **'Per unit cost*'**
   String get perUnitCostLabel;
 
+  /// Floating label for the unit of measurement selector field
+  ///
+  /// In en, this message translates to:
+  /// **'UOM'**
+  String get unitOfMeasurementLabel;
+
   /// Hint text shown inside the unit of measurement selector when no unit is selected
   ///
   /// In en, this message translates to:
