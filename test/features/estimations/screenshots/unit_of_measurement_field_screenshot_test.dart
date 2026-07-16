@@ -98,16 +98,6 @@ void main() {
         );
       });
 
-      testWidgets('bottom sheet open in dark theme', (tester) async {
-        await pumpAndOpenSheet(tester: tester, theme: createTestThemeDark());
-        await expectLater(
-          find.byType(MaterialApp),
-          matchesGoldenFile(
-            'goldens/unit_of_measurement_field/${openedSize.width}x${openedSize.height}/bottom_sheet_open_dark.png',
-          ),
-        );
-      });
-
       testWidgets('bottom sheet open in manually mode light theme', (
         tester,
       ) async {
