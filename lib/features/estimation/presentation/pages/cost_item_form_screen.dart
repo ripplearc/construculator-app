@@ -1,6 +1,5 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_item_mode_toggle.dart';
-import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
@@ -68,7 +67,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
             children: [
               Flexible(
                 child: Text(
-                  _screenTitle(l10n),
+                  _screenTitle(context),
                   style: textTheme.titleMediumSemiBold.copyWith(
                     color: colorTheme.textHeadline,
                   ),
@@ -91,10 +90,10 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     );
   }
 
-  String _screenTitle(AppLocalizations l10n) => switch (widget.type) {
-    CostItemType.material => l10n.addMaterialCostsScreenTitle,
-    CostItemType.labor => l10n.addLabourCostsScreenTitle,
-    CostItemType.equipment => l10n.addEquipmentCostsScreenTitle,
+  String _screenTitle(BuildContext context) => switch (widget.type) {
+    CostItemType.material => context.l10n.addMaterialCostsScreenTitle,
+    CostItemType.labor => context.l10n.addLabourCostsScreenTitle,
+    CostItemType.equipment => context.l10n.addEquipmentCostsScreenTitle,
   };
 
   Widget _buildBody(BuildContext context) {
@@ -128,9 +127,14 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
             ),
           ),
         ),
-        // TODO: [CA-306] [Cost Estimation] Build Manual Cost Calculation Form UI https://ripplearc.youtrack.cloud/issue/CA-306/Cost-Estimation-Build-Manual-Cost-Calculation-Form-UI
+        Expanded(child: _buildFormFields()),
       ],
     );
+  }
+
+  Widget _buildFormFields() {
+    // TODO: [CA-306] Add form fields for material, labour, and equipment modes https://ripplearc.youtrack.cloud/issue/CA-306
+    return const SizedBox.shrink();
   }
 
   Widget _buildBottomBar(BuildContext context) {

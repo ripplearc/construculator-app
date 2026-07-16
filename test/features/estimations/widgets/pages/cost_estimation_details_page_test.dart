@@ -231,5 +231,101 @@ void main() {
 
       expect(find.byKey(const Key('lock_icon')), findsOneWidget);
     });
+
+    testWidgets('FAB shows add labour cost after switching to labours tab', (
+      WidgetTester tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      await tester.tap(find.text(l10n.laboursTab));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('add_labour_cost_button')), findsOneWidget);
+      expect(find.text(l10n.addLabourCostButton), findsOneWidget);
+    });
+
+    testWidgets('FAB shows add equipment cost after switching to equipments tab', (
+      WidgetTester tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      await tester.tap(find.text(l10n.equipmentsTab));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('add_equipment_cost_button')), findsOneWidget);
+      expect(find.text(l10n.addEquipmentCostButton), findsOneWidget);
+    });
+
+    testWidgets('FAB returns to material after switching back to materials tab', (
+      WidgetTester tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      await tester.tap(find.text(l10n.laboursTab));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.materialsTab));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('add_material_cost_button')), findsOneWidget);
+    });
+
+    testWidgets('tapping add labour cost button navigates to labour cost form', (
+      WidgetTester tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      await tester.tap(find.text(l10n.laboursTab));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('add_labour_cost_button')));
+      await tester.pump();
+
+      final fakeRouter = Modular.get<AppRouter>() as FakeAppRouter;
+      expect(
+        fakeRouter.navigationHistory,
+        contains(RouteCall('$fullAddLabourCostRoute/$testEstimationId', null)),
+      );
+    });
+
+    testWidgets('tapping add equipment cost button navigates to equipment cost form', (
+      WidgetTester tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      await tester.tap(find.text(l10n.equipmentsTab));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('add_equipment_cost_button')));
+      await tester.pump();
+
+      final fakeRouter = Modular.get<AppRouter>() as FakeAppRouter;
+      expect(
+        fakeRouter.navigationHistory,
+        contains(RouteCall('$fullAddEquipmentCostRoute/$testEstimationId', null)),
+      );
+    });
   });
 }

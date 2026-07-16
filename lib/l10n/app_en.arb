@@ -1765,6 +1765,16 @@
   "@projectDetailScreenTitle": {
     "description": "Title shown in the app bar of the project details screen",
     "context": "Project settings"
+  },
+  "addLabourCostButton": "Add labour cost",
+  "@addLabourCostButton": {
+    "description": "Label for the FAB on the cost estimation details page when the labours tab is active",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57363-12305"
+  },
+  "addEquipmentCostButton": "Add equipment cost",
+  "@addEquipmentCostButton": {
+    "description": "Label for the FAB on the cost estimation details page when the equipments tab is active",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57406-17357"
   }
 }
 
