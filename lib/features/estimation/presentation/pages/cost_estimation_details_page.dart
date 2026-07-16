@@ -1,4 +1,5 @@
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
@@ -28,7 +29,7 @@ class CostEstimationDetailsPage extends StatefulWidget {
 }
 
 class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
-  int _selectedTabIndex = 0;
+  CostEstimationTab _selectedTab = CostEstimationTab.material;
 
   @override
   Widget build(BuildContext context) {
@@ -94,9 +95,9 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
         ),
       ),
       body: CostEstimationDetailsTabView(
-        onTabChanged: (index) => setState(() => _selectedTabIndex = index),
+        onTabChanged: (tab) => setState(() => _selectedTab = tab),
       ),
-      floatingActionButton: _buildFab(),
+      floatingActionButton: _buildFab(l10n),
       bottomNavigationBar: SafeArea(
         child: Container(
           padding: const EdgeInsets.symmetric(
@@ -139,10 +140,9 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
     );
   }
 
-  Widget _buildFab() {
-    final l10n = context.l10n;
-    return switch (_selectedTabIndex) {
-      1 => CoreButton(
+  Widget _buildFab(AppLocalizations l10n) {
+    return switch (_selectedTab) {
+      CostEstimationTab.labour => CoreButton(
         key: const Key('add_labour_cost_button'),
         label: l10n.addLabourCostButton,
         variant: CoreButtonVariant.secondary,
@@ -153,7 +153,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
           '$fullAddLabourCostRoute/${widget.estimationId}',
         ),
       ),
-      2 => CoreButton(
+      CostEstimationTab.equipment => CoreButton(
         key: const Key('add_equipment_cost_button'),
         label: l10n.addEquipmentCostButton,
         variant: CoreButtonVariant.secondary,
@@ -164,7 +164,7 @@ class _CostEstimationDetailsPageState extends State<CostEstimationDetailsPage> {
           '$fullAddEquipmentCostRoute/${widget.estimationId}',
         ),
       ),
-      _ => CoreButton(
+      CostEstimationTab.material => CoreButton(
         key: const Key('add_material_cost_button'),
         label: l10n.addMaterialCostButton,
         variant: CoreButtonVariant.secondary,

@@ -2,11 +2,15 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+/// The active tab on the cost estimation details screen.
+enum CostEstimationTab { material, labour, equipment }
+
 /// A tabbed view displaying cost estimation details for Materials, Labours, and Equipments.
 ///
 /// Shows empty states with appropriate messages when no costs have been added for each category.
 class CostEstimationDetailsTabView extends StatefulWidget {
-  final ValueChanged<int>? onTabChanged;
+  /// Called when the user switches tabs, passing the newly active [CostEstimationTab].
+  final ValueChanged<CostEstimationTab>? onTabChanged;
 
   const CostEstimationDetailsTabView({super.key, this.onTabChanged});
 
@@ -38,7 +42,7 @@ class _CostEstimationDetailsTabViewState
                   setState(() {
                     _selectedIndex = index;
                   });
-                  widget.onTabChanged?.call(index);
+                  widget.onTabChanged?.call(CostEstimationTab.values[index]);
                 },
               ),
             ),
