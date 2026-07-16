@@ -1310,6 +1310,11 @@
     "description": "Accessibility label for the edit icon shown next to the estimation title",
     "context": "N/A"
   },
+  "editCostItemNameLabel": "Edit cost item name",
+  "@editCostItemNameLabel": {
+    "description": "Accessibility label for the edit icon shown next to the cost item title in the form screen",
+    "context": "N/A"
+  },
   "moreOptionsLabel": "More options",
   "@moreOptionsLabel": {
     "description": "Accessibility label for the more-options (overflow) icon in the app bar",

@@ -1588,6 +1588,12 @@ abstract class AppLocalizations {
   /// **'Edit estimation name'**
   String get editEstimationNameLabel;
 
+  /// Accessibility label for the edit icon shown next to the cost item title in the form screen
+  ///
+  /// In en, this message translates to:
+  /// **'Edit cost item name'**
+  String get editCostItemNameLabel;
+
   /// Accessibility label for the more-options (overflow) icon in the app bar
   ///
   /// In en, this message translates to:

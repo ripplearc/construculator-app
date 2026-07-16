@@ -833,6 +833,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editEstimationNameLabel => 'Edit estimation name';
 
   @override
+  String get editCostItemNameLabel => 'Edit cost item name';
+
+  @override
   String get moreOptionsLabel => 'More options';
 
   @override

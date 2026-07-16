@@ -194,7 +194,17 @@ void main() {
       setUpAuthenticatedUser();
       await pumpAppAtRoute(tester, materialRoute);
 
-      expect(find.byKey(const Key('add_to_cost_button')), findsOneWidget);
+      final button = tester.widget<CoreButton>(
+        find.byKey(const Key('add_to_cost_button')),
+      );
+      expect(button.isDisabled, isTrue);
+    });
+
+    testWidgets('displays edit title button', (tester) async {
+      setUpAuthenticatedUser();
+      await pumpAppAtRoute(tester, materialRoute);
+
+      expect(find.byKey(const Key('edit_title_button')), findsOneWidget);
     });
 
     testWidgets('displays total label', (tester) async {

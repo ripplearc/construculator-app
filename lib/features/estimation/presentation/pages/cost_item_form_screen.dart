@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_item_mode_toggle.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
@@ -74,13 +75,14 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              // TODO: [CA-356] [Cost Estimation] Build Edit Cost Item Screen UI https://ripplearc.youtrack.cloud/issue/CA-356/Cost-Estimation-Build-Edit-Cost-Item-Screen-UI
               CoreIconWidget(
                 key: const Key('edit_title_button'),
                 icon: CoreIcons.edit,
                 color: colorTheme.iconDark,
                 padding: EdgeInsets.all(CoreSpacing.space2),
                 size: 24,
-                semanticLabel: l10n.editEstimationNameLabel,
+                semanticLabel: l10n.editCostItemNameLabel,
               ),
             ],
           ),
@@ -89,7 +91,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     );
   }
 
-  String _screenTitle(dynamic l10n) => switch (widget.type) {
+  String _screenTitle(AppLocalizations l10n) => switch (widget.type) {
     CostItemType.material => l10n.addMaterialCostsScreenTitle,
     CostItemType.labor => l10n.addLabourCostsScreenTitle,
     CostItemType.equipment => l10n.addEquipmentCostsScreenTitle,
@@ -126,7 +128,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
             ),
           ),
         ),
-        // TODO: [CA-306] Add form fields for cost item entry
+        // TODO: [CA-306] [Cost Estimation] Build Manual Cost Calculation Form UI https://ripplearc.youtrack.cloud/issue/CA-306/Cost-Estimation-Build-Manual-Cost-Calculation-Form-UI
       ],
     );
   }
@@ -168,7 +170,7 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
                 ),
               ],
             ),
-            // TODO: [CA-355] Wire submission logic for cost item
+            // TODO: [CA-355] [Cost Estimation] Implement Add To Cost Button Logic https://ripplearc.youtrack.cloud/issue/CA-355/Cost-Estimation-Implement-Add-To-Cost-Button-Logic
             CoreButton(
               key: const Key('add_to_cost_button'),
               label: l10n.addToCostButton,

@@ -49,31 +49,58 @@ class EstimationRoutesModule extends Module {
     r.child(
       addMaterialCostRoute,
       guards: [AuthGuard(() => Modular.get<AuthManager>())],
-      child: (context) => CostItemFormScreen(
-        type: CostItemType.material,
-        estimationId: Modular.args.params['estimationId'] ?? '',
-        router: Modular.get<AppRouter>(),
-      ),
+      child: (context) {
+        final estimationId = Modular.args.params['estimationId'];
+        if (estimationId == null || estimationId.isEmpty) {
+          throw ArgumentError(
+            'estimationId is required for CostItemFormScreen. '
+            'Ensure the route includes a valid estimationId parameter.',
+          );
+        }
+        return CostItemFormScreen(
+          type: CostItemType.material,
+          estimationId: estimationId,
+          router: Modular.get<AppRouter>(),
+        );
+      },
     );
 
     r.child(
       addLabourCostRoute,
       guards: [AuthGuard(() => Modular.get<AuthManager>())],
-      child: (context) => CostItemFormScreen(
-        type: CostItemType.labor,
-        estimationId: Modular.args.params['estimationId'] ?? '',
-        router: Modular.get<AppRouter>(),
-      ),
+      child: (context) {
+        final estimationId = Modular.args.params['estimationId'];
+        if (estimationId == null || estimationId.isEmpty) {
+          throw ArgumentError(
+            'estimationId is required for CostItemFormScreen. '
+            'Ensure the route includes a valid estimationId parameter.',
+          );
+        }
+        return CostItemFormScreen(
+          type: CostItemType.labor,
+          estimationId: estimationId,
+          router: Modular.get<AppRouter>(),
+        );
+      },
     );
 
     r.child(
       addEquipmentCostRoute,
       guards: [AuthGuard(() => Modular.get<AuthManager>())],
-      child: (context) => CostItemFormScreen(
-        type: CostItemType.equipment,
-        estimationId: Modular.args.params['estimationId'] ?? '',
-        router: Modular.get<AppRouter>(),
-      ),
+      child: (context) {
+        final estimationId = Modular.args.params['estimationId'];
+        if (estimationId == null || estimationId.isEmpty) {
+          throw ArgumentError(
+            'estimationId is required for CostItemFormScreen. '
+            'Ensure the route includes a valid estimationId parameter.',
+          );
+        }
+        return CostItemFormScreen(
+          type: CostItemType.equipment,
+          estimationId: estimationId,
+          router: Modular.get<AppRouter>(),
+        );
+      },
     );
   }
 }
