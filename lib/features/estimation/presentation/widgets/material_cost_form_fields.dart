@@ -176,26 +176,21 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
         buildWhen: (prev, curr) {
           if (prev is MaterialCostFormEditing &&
               curr is MaterialCostFormEditing) {
-            return prev.selectedUnit != curr.selectedUnit ||
-                prev.unitError != curr.unitError;
+            return prev.selectedUnit != curr.selectedUnit;
           }
           return true;
         },
         builder: (context, state) {
           final editing =
               state is MaterialCostFormEditing ? state : null;
-          final unitError = editing?.unitError;
           return UnitOfMeasurementField(
             key: const Key('uom_field'),
             fromCostFile: false,
             selectedUnit: editing?.selectedUnit,
-            errorText:
-                unitError != null ? l10n.uomRequiredError : null,
             onUnitSelected: (unit) {
               context
                   .read<MaterialCostFormBloc>()
                   .add(MaterialCostItemUnitChanged(unit));
-              _notifyTotal();
             },
           );
         },

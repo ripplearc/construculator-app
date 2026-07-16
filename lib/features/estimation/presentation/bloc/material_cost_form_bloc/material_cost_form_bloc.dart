@@ -35,11 +35,6 @@ class MaterialCostFormBloc
     final current = state is MaterialCostFormEditing
         ? state as MaterialCostFormEditing
         : const MaterialCostFormEditing();
-    emit(
-      current.copyWith(
-        selectedUnit: event.unit,
-        unitError: event.unit == null ? 'uomRequiredError' : null,
-      ),
-    );
+    emit(current.copyWith(selectedUnit: event.unit));
   }
 }

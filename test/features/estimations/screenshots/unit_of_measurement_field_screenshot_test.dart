@@ -195,20 +195,5 @@ void main() {
       );
     });
 
-    testWidgets('error state in dark theme', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1.0;
-      await pumpWidget(
-        tester: tester,
-        errorText: 'Please select or enter a unit of measurement.',
-        theme: createTestThemeDark(),
-      );
-      await expectLater(
-        find.byType(UnitOfMeasurementField),
-        matchesGoldenFile(
-          'goldens/unit_of_measurement_field/${size.width}x${size.height}/manual_error_dark.png',
-        ),
-      );
-    });
   });
 }
