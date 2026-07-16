@@ -6,7 +6,7 @@ workflows:
       groups:
         - notification_emails
       # See https://docs.flutter.dev/install/archive#stable-channel for mapping between Dart and Flutter SDK versions
-      flutter: 3.32.0
+      flutter: 3.44.4
     cache:
       cache_paths:
         - .fvm/
@@ -225,7 +225,7 @@ workflows:
         - notification_emails
         - ripple_arc
         - construculator_dev
-      flutter: 3.32.0
+      flutter: 3.44.4
     cache:
       cache_paths:
         - .fvm/
@@ -407,7 +407,7 @@ workflows:
         - notification_emails
         - ripple_arc
         - construculator_dev
-      flutter: 3.32.0
+      flutter: 3.44.4
       ubuntu: 24.04
     cache:
       cache_paths:
@@ -576,7 +576,7 @@ workflows:
         - notification_emails
         - ripple_arc
         - construculator_dev
-      flutter: 3.32.0
+      flutter: 3.44.4
     cache:
       cache_paths:
         - .fvm/
@@ -648,7 +648,7 @@ workflows:
         - construculator_qa
         - notification_emails
         - ripple_arc
-      flutter: 3.32.0
+      flutter: 3.44.4
       ubuntu: 24.04
     cache:
       cache_paths:

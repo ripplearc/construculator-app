@@ -2,7 +2,7 @@
 FROM ubuntu:24.04
 
 # Set Flutter version as build argument (can be overridden at build time)
-ARG FLUTTER_VERSION=3.32.0
+ARG FLUTTER_VERSION=3.44.4
 
 # Set environment variables
 ENV ANDROID_HOME="/home/flutter/android-sdk"
@@ -70,7 +70,7 @@ COPY --chown=flutter:flutter .fvmrc ./
 RUN fvm install && \
     fvm global ${FLUTTER_VERSION}
 
-# Re-activate fvm using the Flutter-bundled Dart (3.8.0) to avoid kernel binary mismatch
+# Re-activate fvm using the Flutter-bundled Dart (3.12.2) to avoid kernel binary mismatch
 RUN /home/flutter/fvm/default/bin/dart pub global activate fvm
 
 # Ensure PATH and SSH alias are exported in interactive shells

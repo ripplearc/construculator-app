@@ -249,7 +249,7 @@ MacOS developers should always verify iOS builds pass locally before creating PR
 
 ### Toolchain
 
-- Flutter: `3.32.0` (via Codemagic environment + FVM).
+- Flutter: `3.44.4` (via Codemagic environment + FVM).
 - FVM is the standard entrypoint for local and CI commands.
 
 ### Required tools (local)

@@ -3,7 +3,7 @@
 > A construction cost estimation and collaboration platform built with Flutter and Supabase
 
 **Version:** 1.0.0+1
-**Flutter:** 3.32.0 (via FVM)
+**Flutter:** 3.44.4 (via FVM)
 **Platform:** iOS & Android
 
 ---
@@ -32,7 +32,7 @@ Construculator is a mobile application designed for construction professionals t
 
 ### Tech Stack
 
-- **Flutter 3.32.0** (managed via FVM)
+- **Flutter 3.44.4** (managed via FVM)
 - **Supabase** - Backend as a Service (PostgreSQL + Auth + API)
 - **BLoC Pattern** - State management with flutter_bloc
 - **Clean Architecture** - Feature-based modules with clear layer separation
@@ -94,7 +94,7 @@ Before starting, ensure you have the following installed:
 |------|---------|--------------|
 | **Docker** | Runs Supabase local services | [Get Docker](https://docs.docker.com/get-docker/) |
 | **FVM** | Flutter Version Manager | `dart pub global activate fvm` |
-| **Flutter 3.32.0** | Via FVM | `fvm install 3.32.0` |
+| **Flutter 3.44.4** | Via FVM | `fvm install 3.44.4` |
 
 ---
 
@@ -128,11 +128,11 @@ Refer to the [Prerequisites](#prerequisites) section to install **FVM** and the 
 # Install FVM globally (if not already installed)
 dart pub global activate fvm
 
-# Install Flutter 3.32.0 via FVM
-fvm install 3.32.0
+# Install Flutter 3.44.4 via FVM
+fvm install 3.44.4
 
 # Set as global default (optional)
-fvm global 3.32.0
+fvm global 3.44.4
 
 # Verify installation
 fvm flutter --version
