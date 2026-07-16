@@ -33,7 +33,6 @@ void main() {
           tester,
           makeWidget,
           find.byType(UnitOfMeasurementField),
-          checkTextContrast: false,
         );
       },
     );
