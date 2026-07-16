@@ -390,12 +390,45 @@ void main() {
       await tester.pump();
 
       expect(
-        find.descendant(
-          of: find.byKey(const Key('unit_price_field')),
-          matching: find.text('75'),
-        ),
-        findsNothing,
+        tester
+            .firstWidget<EditableText>(
+              find.descendant(
+                of: find.byKey(const Key('unit_price_field')),
+                matching: find.byType(EditableText),
+              ),
+            )
+            .controller
+            .text,
+        isEmpty,
       );
     });
+
+    testWidgets(
+      'fires onTotalChanged without crashing when switching to manually mode with prefill',
+      (tester) async {
+        double? capturedTotal;
+        const prefill = Money(amount: 75, currency: 'USD');
+
+        await tester.pumpWidget(
+          makeWidget(
+            fromCostFile: true,
+            prefillUnitCost: prefill,
+            onTotalChanged: (total) => capturedTotal = total,
+          ),
+        );
+        await tester.pump();
+
+        await tester.pumpWidget(
+          makeWidget(
+            fromCostFile: false,
+            prefillUnitCost: prefill,
+            onTotalChanged: (total) => capturedTotal = total,
+          ),
+        );
+        await tester.pump();
+
+        expect(capturedTotal, 0.0);
+      },
+    );
   });
 }

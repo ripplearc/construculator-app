@@ -43,17 +43,17 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   void didUpdateWidget(covariant EquipmentCostFormFields oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.fromCostFile != widget.fromCostFile) {
-      if (!widget.fromCostFile) {
-        final prefill = widget.prefillUnitCost;
-        if (prefill != null) {
-          final amount = prefill.amount;
-          _unitPriceController.text = amount.truncateToDouble() == amount
-              ? amount.toInt().toString()
-              : amount.toString();
-        }
-      }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
+        if (!widget.fromCostFile) {
+          final prefill = widget.prefillUnitCost;
+          if (prefill != null) {
+            final amount = prefill.amount;
+            _unitPriceController.text = amount.truncateToDouble() == amount
+                ? amount.toInt().toString()
+                : amount.toString();
+          }
+        }
         _notifyTotal();
         _notifySaveEnabled();
       });
