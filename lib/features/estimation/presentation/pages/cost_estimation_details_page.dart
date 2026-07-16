@@ -1,6 +1,7 @@
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_details_tab_view.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -85,7 +86,6 @@ class CostEstimationDetailsPage extends StatelessWidget {
         ),
       ),
       body: const CostEstimationDetailsTabView(),
-      // TODO: [CA-155] [Cost Estimation] Implement Add Material Cost Logic https://ripplearc.youtrack.cloud/issue/CA-155/Cost-Estimation-Implement-Add-Material-Cost-Logic
       floatingActionButton: CoreButton(
         key: const Key('add_material_cost_button'),
         label: l10n.addMaterialCostButton,
@@ -93,7 +93,9 @@ class CostEstimationDetailsPage extends StatelessWidget {
         icon: CoreIconWidget(icon: CoreIcons.add),
         size: CoreButtonSize.medium,
         fullWidth: false,
-        onPressed: () {},
+        onPressed: () => router.pushNamed(
+          '$fullAddMaterialCostRoute/$estimationId',
+        ),
       ),
       bottomNavigationBar: SafeArea(
         child: Container(

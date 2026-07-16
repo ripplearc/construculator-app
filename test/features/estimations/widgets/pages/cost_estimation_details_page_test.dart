@@ -4,8 +4,9 @@ import 'package:construculator/features/estimation/presentation/widgets/cost_est
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
-
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
+import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -65,6 +66,7 @@ void main() {
 
   setUp(() {
     fakeSupabase.reset();
+    (Modular.get<AppRouter>() as FakeAppRouter).reset();
   });
 
   Widget makeApp() {
@@ -181,6 +183,26 @@ void main() {
 
       expect(find.byKey(const Key('add_material_cost_button')), findsOneWidget);
       expect(find.text(l10n.addMaterialCostButton), findsOneWidget);
+    });
+
+    testWidgets('tapping add material cost button navigates to cost item form', (
+      WidgetTester tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      await tester.tap(find.byKey(const Key('add_material_cost_button')));
+      await tester.pump();
+
+      final fakeRouter = Modular.get<AppRouter>() as FakeAppRouter;
+      expect(
+        fakeRouter.navigationHistory,
+        contains(RouteCall('$fullAddMaterialCostRoute/$testEstimationId', null)),
+      );
     });
 
     testWidgets('displays preview button in bottom bar', (
