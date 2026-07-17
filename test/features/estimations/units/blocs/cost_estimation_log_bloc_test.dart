@@ -77,7 +77,6 @@ void main() {
     }) {
       const defaultUser = UserProfile(
         id: 'user-default',
-        credentialId: 'cred-default',
         firstName: 'John',
         lastName: 'Doe',
         professionalRole: 'Engineer',

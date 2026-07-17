@@ -49,7 +49,6 @@ void main() {
     }) {
       return UserProfile(
         id: 'user-123',
-        credentialId: 'cred-123',
         firstName: firstName,
         lastName: lastName,
         professionalRole: 'Project Manager',

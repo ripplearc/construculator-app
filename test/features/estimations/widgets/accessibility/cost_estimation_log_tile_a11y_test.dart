@@ -20,7 +20,6 @@ void main() {
         activity: CostEstimationActivityType.costEstimationCreated,
         user: UserProfile(
           id: 'user-123',
-          credentialId: 'cred-123',
           firstName: 'John',
           lastName: 'Doe',
           professionalRole: 'Project Manager',
@@ -192,7 +191,6 @@ void main() {
       final log = testLog.copyWith(
         user: UserProfile(
           id: 'user-123',
-          credentialId: 'cred-123',
           firstName: 'Christopher',
           lastName: 'Montgomery-Wellington',
           professionalRole: 'Project Manager',
