@@ -41,6 +41,16 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
 
   bool _suggestionsFetched = false;
 
+  // Whether a suggestions fetch is in flight. Tracked as instance state (not
+  // a _readyState parameter) so a concurrently-handled event emitting
+  // _readyState() cannot reset an in-flight loading flag prematurely.
+  bool _suggestionsLoading = false;
+
+  // Monotonic id of the latest suggestions fetch. A superseded fetch (e.g.
+  // cancelled by the switchMap transformer when a newer query arrives) must
+  // not clear _suggestionsLoading on completion — the newest fetch owns it.
+  int _suggestionsFetchGeneration = 0;
+
   String _currentQuery = '';
 
   Set<String> _selectedTags = const {};
@@ -52,6 +62,10 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   // sheet openings reuse the cached list instead of refetching.
   bool _availableTagsFetched = false;
 
+  // Whether the available-tags fetch is in flight; instance state for the
+  // same stomp-protection reason as _suggestionsLoading.
+  bool _availableTagsLoading = false;
+
   String _tagSearchQuery = '';
 
   Set<String> _selectedOwnerIds = const {};
@@ -62,6 +76,10 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   // Whether _availableOwners has been fetched at least once, so subsequent
   // sheet openings reuse the cached list instead of refetching.
   bool _availableOwnersFetched = false;
+
+  // Whether the available-owners fetch is in flight; instance state for the
+  // same stomp-protection reason as _suggestionsLoading.
+  bool _availableOwnersLoading = false;
 
   String _ownerSearchQuery = '';
 
@@ -120,23 +138,20 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
         .toList();
   }
 
-  // Builds a GlobalSearchReady from the current internal fields.
-  GlobalSearchReady _readyState({
-    bool suggestionsLoading = false,
-    bool availableTagsLoading = false,
-    bool availableOwnersLoading = false,
-  }) {
+  // Builds a GlobalSearchReady from the current internal fields, including
+  // the in-flight loading flags tracked as instance state.
+  GlobalSearchReady _readyState() {
     return GlobalSearchReady(
       recentSearches: _recentSearches,
       query: _currentQuery,
       suggestions: _filterSuggestions(_currentQuery),
-      suggestionsLoading: suggestionsLoading,
+      suggestionsLoading: _suggestionsLoading,
       selectedTags: _selectedTags,
       availableTags: _filterAvailableTags(),
-      availableTagsLoading: availableTagsLoading,
+      availableTagsLoading: _availableTagsLoading,
       selectedOwnerIds: _selectedOwnerIds,
       availableOwners: _filterAvailableOwners(),
-      availableOwnersLoading: availableOwnersLoading,
+      availableOwnersLoading: _availableOwnersLoading,
       selectedDateRange: _selectedDateRange,
     );
   }
@@ -146,14 +161,19 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     Emitter<GlobalSearchState> emit,
   ) async {
     _tagSearchQuery = '';
-    if (_availableTagsFetched) {
+    // _availableTagsLoading also gates: a request arriving while a fetch is
+    // in flight must not start a duplicate fetch, whose earlier completion
+    // would clear the loading flag while the later fetch is still running.
+    if (_availableTagsFetched || _availableTagsLoading) {
       emit(_readyState());
       return;
     }
 
-    emit(_readyState(availableTagsLoading: true));
+    _availableTagsLoading = true;
+    emit(_readyState());
 
     final result = await _tagRepository.getTags();
+    _availableTagsLoading = false;
 
     result.fold(
       (failure) {
@@ -187,11 +207,17 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       _recentSearches = recentSearches;
       _rawSuggestions = const [];
       _suggestionsFetched = false;
+      _suggestionsLoading = false;
+      // Disown any in-flight suggestions fetch: its completion must not
+      // resurrect the pre-reset cache or mark suggestions as fetched.
+      _suggestionsFetchGeneration++;
       _currentQuery = '';
       _selectedTags = const {};
       _tagSearchQuery = '';
+      _availableTagsLoading = false;
       _selectedOwnerIds = const {};
       _ownerSearchQuery = '';
+      _availableOwnersLoading = false;
       _selectedDateRange = null;
       emit(_readyState());
     });
@@ -205,6 +231,11 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     _currentQuery = trimmedQuery;
 
     if (trimmedQuery.isEmpty) {
+      // Clearing the query cancels any same-pipeline suggestions fetch via
+      // the switchMap transformer, so that handler can no longer emit its
+      // completion. Reset the flag here so this emission doesn't report a
+      // loading fetch that will never complete visibly.
+      _suggestionsLoading = false;
       emit(_readyState());
       return;
     }
@@ -312,9 +343,13 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   Future<void> _fetchAndEmitSuggestions(
     Emitter<GlobalSearchState> emit,
   ) async {
-    emit(_readyState(suggestionsLoading: true));
+    final generation = ++_suggestionsFetchGeneration;
+    _suggestionsLoading = true;
+    emit(_readyState());
 
     final result = await _repository.getSearchSuggestions();
+    if (generation != _suggestionsFetchGeneration) return;
+    _suggestionsLoading = false;
 
     result.fold(
       (failure) {
@@ -361,14 +396,19 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     Emitter<GlobalSearchState> emit,
   ) async {
     _ownerSearchQuery = '';
-    if (_availableOwnersFetched) {
+    // _availableOwnersLoading also gates: a request arriving while a fetch is
+    // in flight must not start a duplicate fetch, whose earlier completion
+    // would clear the loading flag while the later fetch is still running.
+    if (_availableOwnersFetched || _availableOwnersLoading) {
       emit(_readyState());
       return;
     }
 
-    emit(_readyState(availableOwnersLoading: true));
+    _availableOwnersLoading = true;
+    emit(_readyState());
 
     final result = await _ownerRepository.getOwners();
+    _availableOwnersLoading = false;
 
     result.fold(
       (failure) {

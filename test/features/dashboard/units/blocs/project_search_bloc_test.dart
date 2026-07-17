@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
@@ -197,6 +199,201 @@ void main() {
             'suggestions capped at 5',
             ['C1', 'C2', 'C3', 'C4', 'C5'],
           ),
+        ],
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'keeps suggestionsLoading true when a concurrent handler emits '
+        'while the suggestions fetch is in flight',
+        setUp: () {
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.projectSearchSuggestionsRpcFunction,
+            ['foundation'],
+          );
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchQueryUpdatedEvent(query: 'foundation'));
+          // Wait for the in-flight loading emission, then dispatch an event
+          // whose handler emits _initialFromCache() while the fetch is still
+          // pending. It must not reset the loading flag — with the flag held
+          // as instance state, the emission is identical to the current state
+          // and is deduplicated instead of stomping the spinner.
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && s.suggestionsLoading,
+          );
+          bloc.add(const ProjectSearchPerformedEvent(query: '   '));
+          fakeSupabase.completer!.complete();
+        },
+        wait: const Duration(milliseconds: 500),
+        expect: () => [
+          isA<ProjectSearchInitial>()
+              .having((s) => s.query, 'query', 'foundation')
+              .having((s) => s.suggestionsLoading, 'loading', isTrue),
+          isA<ProjectSearchInitial>()
+              .having(
+                (s) => s.suggestionsLoading,
+                'loading cleared only after fetch completes',
+                isFalse,
+              )
+              .having((s) => s.suggestions, 'suggestions', ['foundation']),
+        ],
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'clears suggestionsLoading when clearing the query cancels the '
+        'in-flight fetch',
+        setUp: () {
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.projectSearchSuggestionsRpcFunction,
+            ['foundation'],
+          );
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchQueryUpdatedEvent(query: 'foundation'));
+          // Wait for the fetch to be in flight, then clear the query — the
+          // switchMap transformer cancels the fetch handler, so its
+          // completion can never emit. The empty-query emission must not
+          // report a loading fetch.
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && s.suggestionsLoading,
+          );
+          bloc.add(const ProjectSearchQueryUpdatedEvent(query: ''));
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && s.query.isEmpty,
+          );
+          fakeSupabase.completer!.complete();
+        },
+        wait: const Duration(milliseconds: 700),
+        expect: () => [
+          isA<ProjectSearchInitial>()
+              .having((s) => s.query, 'query', 'foundation')
+              .having((s) => s.suggestionsLoading, 'loading', isTrue),
+          isA<ProjectSearchInitial>()
+              .having((s) => s.query, 'query', isEmpty)
+              .having(
+                (s) => s.suggestionsLoading,
+                'loading reset with the cancelled fetch',
+                isFalse,
+              ),
+        ],
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'stale cancelled fetch does not clear the loading flag owned by a '
+        'newer fetch',
+        setUp: () {
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.projectSearchSuggestionsRpcFunction,
+            ['foundation'],
+          );
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          final firstFetchGate = fakeSupabase.completer!;
+          bloc.add(const ProjectSearchQueryUpdatedEvent(query: 'fo'));
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && s.suggestionsLoading,
+          );
+          // The second fetch awaits its own gate so the first one can be
+          // released while the second is still in flight.
+          final secondFetchGate = Completer<void>();
+          fakeSupabase.completer = secondFetchGate;
+          bloc.add(const ProjectSearchQueryUpdatedEvent(query: 'found'));
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && s.query == 'found',
+          );
+          // Release the superseded first fetch; its continuation must return
+          // without touching the newer fetch's loading flag.
+          firstFetchGate.complete();
+          for (var i = 0; i < 10; i++) {
+            await Future<void>.value();
+          }
+          secondFetchGate.complete();
+        },
+        wait: const Duration(milliseconds: 700),
+        expect: () => [
+          isA<ProjectSearchInitial>()
+              .having((s) => s.query, 'query', 'fo')
+              .having((s) => s.suggestionsLoading, 'loading', isTrue),
+          isA<ProjectSearchInitial>()
+              .having((s) => s.query, 'query', 'found')
+              .having((s) => s.suggestionsLoading, 'loading', isTrue),
+          isA<ProjectSearchInitial>()
+              .having((s) => s.query, 'query', 'found')
+              .having((s) => s.suggestionsLoading, 'loading', isFalse)
+              .having((s) => s.suggestions, 'suggestions', ['foundation']),
+        ],
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'a fetch surviving a history-request reset does not mark suggestions '
+        'as fetched — the next keystroke refetches',
+        setUp: () {
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.projectSearchSuggestionsRpcFunction,
+            ['foundation'],
+          );
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          final suggestionsFetchGate = fakeSupabase.completer!;
+          bloc.add(const ProjectSearchQueryUpdatedEvent(query: 'fo'));
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && s.suggestionsLoading,
+          );
+          // Later operations run ungated; only the in-flight suggestions
+          // fetch stays parked on the gate.
+          fakeSupabase.shouldDelayOperations = false;
+          bloc.add(const ProjectSearchHistoryRequestedEvent());
+          await bloc.stream.firstWhere(
+            (s) =>
+                s is ProjectSearchInitial &&
+                !s.isLoadingHistory &&
+                !s.suggestionsLoading &&
+                s.query.isEmpty,
+          );
+          // Release the pre-reset fetch; the reset disowned it, so it must
+          // not resurrect the cache or mark suggestions as fetched.
+          suggestionsFetchGate.complete();
+          for (var i = 0; i < 10; i++) {
+            await Future<void>.value();
+          }
+          bloc.add(const ProjectSearchQueryUpdatedEvent(query: 'found'));
+        },
+        wait: const Duration(milliseconds: 700),
+        expect: () => [
+          isA<ProjectSearchInitial>()
+              .having((s) => s.query, 'query', 'fo')
+              .having((s) => s.suggestionsLoading, 'loading', isTrue),
+          isA<ProjectSearchInitial>().having(
+            (s) => s.isLoadingHistory,
+            'isLoadingHistory',
+            isTrue,
+          ),
+          isA<ProjectSearchInitial>()
+              .having((s) => s.query, 'query after reset', isEmpty)
+              .having((s) => s.isLoadingHistory, 'isLoadingHistory', isFalse),
+          isA<ProjectSearchInitial>()
+              .having((s) => s.query, 'query', 'found')
+              .having(
+                (s) => s.suggestionsLoading,
+                'post-reset keystroke starts a fresh fetch',
+                isTrue,
+              ),
+          isA<ProjectSearchInitial>()
+              .having((s) => s.query, 'query', 'found')
+              .having((s) => s.suggestionsLoading, 'loading', isFalse)
+              .having((s) => s.suggestions, 'suggestions', ['foundation']),
         ],
       );
 
