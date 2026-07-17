@@ -7,6 +7,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// Displays a single cost file as a card row showing the file name,
 /// size, and upload date.
 class CostFileItem extends StatelessWidget {
+  /// The cost file to display.
   final CostFile file;
 
   const CostFileItem({super.key, required this.file});
