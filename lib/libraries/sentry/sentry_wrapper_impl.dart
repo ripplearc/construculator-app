@@ -1,22 +1,24 @@
-// coverage:ignore-file
-// Sentry SDK relies on native platform channels and a running host app,
-// making it impossible to unit test without a full integration environment.
-
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
+import 'package:construculator/libraries/sentry/interfaces/sentry_sdk.dart';
 import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 class SentryWrapperImpl implements SentryWrapper {
   final EnvLoader _envLoader;
   final Config _config;
+  final SentrySdk _sentrySdk;
   // Guarded by _isInitialized; all callers are expected to call initialize() first.
   bool _isInitialized = false;
 
-  SentryWrapperImpl({required EnvLoader envLoader, required Config config})
-    : _envLoader = envLoader,
-      _config = config;
+  SentryWrapperImpl({
+    required EnvLoader envLoader,
+    required Config config,
+    required SentrySdk sentrySdk,
+  }) : _envLoader = envLoader,
+       _config = config,
+       _sentrySdk = sentrySdk;
 
   @override
   Future<void> initialize(void Function() appRunner) async {
@@ -30,7 +32,7 @@ class SentryWrapperImpl implements SentryWrapper {
       return;
     }
 
-    await SentryFlutter.init((options) {
+    await _sentrySdk.init((options) {
       options.dsn = dsn;
       options.environment = _config.getEnvironmentName(_config.environment);
 
@@ -53,7 +55,7 @@ class SentryWrapperImpl implements SentryWrapper {
   }) async {
     if (!_isInitialized) return;
 
-    await Sentry.addBreadcrumb(
+    await _sentrySdk.addBreadcrumb(
       Breadcrumb(
         message: message,
         level: _getSentryLevel(level),
@@ -72,7 +74,7 @@ class SentryWrapperImpl implements SentryWrapper {
   }) async {
     if (!_isInitialized) return;
 
-    await Sentry.captureException(
+    await _sentrySdk.captureException(
       exception,
       stackTrace: stackTrace,
       withScope: (scope) {
@@ -94,7 +96,7 @@ class SentryWrapperImpl implements SentryWrapper {
   }) async {
     if (!_isInitialized) return;
 
-    await Sentry.captureMessage(
+    await _sentrySdk.captureMessage(
       message,
       level: _getSentryLevel(level),
       withScope: (scope) {
@@ -114,7 +116,7 @@ class SentryWrapperImpl implements SentryWrapper {
   Future<void> setUser(String? userId) async {
     if (!_isInitialized) return;
 
-    await Sentry.configureScope((scope) {
+    await _sentrySdk.configureScope((scope) {
       if (userId != null) {
         scope.setUser(SentryUser(id: userId));
       } else {
