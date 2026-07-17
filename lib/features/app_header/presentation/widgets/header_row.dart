@@ -1,5 +1,5 @@
-import 'package:construculator/app/shell/widgets/notification_icon.dart';
-import 'package:construculator/app/shell/widgets/profile_avatar.dart';
+import 'package:construculator/features/app_header/presentation/widgets/notification_icon.dart';
+import 'package:construculator/features/app_header/presentation/widgets/profile_avatar.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';

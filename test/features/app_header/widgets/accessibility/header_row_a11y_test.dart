@@ -1,4 +1,4 @@
-import 'package:construculator/app/shell/widgets/notification_icon.dart';
+import 'package:construculator/features/app_header/presentation/widgets/header_row.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,14 +18,27 @@ void main() {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: Center(child: NotificationIcon(unreadCount: unreadCount)),
+        appBar: HeaderRow(unreadNotificationCount: unreadCount),
+        body: const SizedBox.shrink(),
       ),
     );
   }
 
-  group('NotificationIcon – accessibility', () {
+  group('HeaderRow – accessibility', () {
     testWidgets(
-      'meets tap target and label guidelines without badge in both themes',
+      'search button meets tap target and label guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme),
+          find.byKey(const Key('header_row_search_button')),
+        );
+      },
+    );
+
+    testWidgets(
+      'notification icon meets tap target and label guidelines in both themes',
       (tester) async {
         await setupA11yTest(tester);
         await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
@@ -37,7 +50,7 @@ void main() {
     );
 
     testWidgets(
-      'meets tap target and label guidelines with badge in both themes',
+      'notification icon with badge meets tap target and label guidelines in both themes',
       (tester) async {
         await setupA11yTest(tester);
         // Text contrast is disabled: textInverse on statusError achieves ~3.57:1,
@@ -48,6 +61,21 @@ void main() {
           (theme) => makeTestableWidget(theme: theme, unreadCount: 5),
           find.byKey(const Key('notification_icon_button')),
           checkTextContrast: false,
+        );
+      },
+    );
+
+    testWidgets(
+      'profile avatar meets label guideline in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        // Tap target size check is disabled: Figma specifies 40×40 for the
+        // profile avatar, which is below the 48dp Android / 44pt iOS minimum.
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme),
+          find.byKey(const Key('profile_avatar_button')),
+          checkTapTargetSize: false,
         );
       },
     );

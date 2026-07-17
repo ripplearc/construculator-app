@@ -1,4 +1,4 @@
-import 'package:construculator/app/shell/widgets/notification_icon.dart';
+import 'package:construculator/features/app_header/presentation/widgets/profile_avatar.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,15 +9,15 @@ import '../../../utils/screenshot/font_loader.dart';
 void main() {
   const size = Size(56, 56);
   const ratio = 1.0;
-  const testName = 'notification_icon';
+  const testName = 'profile_avatar';
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
     await loadAppFontsAll();
   });
 
-  group('NotificationIcon Screenshot Tests', () {
-    testWidgets('renders without badge when unreadCount is zero', (
+  group('ProfileAvatar Screenshot Tests', () {
+    testWidgets('renders letter avatar for name starting with J', (
       tester,
     ) async {
       tester.view.physicalSize = size;
@@ -30,7 +30,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: const Scaffold(
-            body: Center(child: NotificationIcon(unreadCount: 0)),
+            body: Center(child: ProfileAvatar(name: 'John')),
           ),
         ),
       );
@@ -38,14 +38,14 @@ void main() {
       await tester.awaitImages();
 
       await expectLater(
-        find.byType(NotificationIcon),
+        find.byType(ProfileAvatar),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_no_badge.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_letter_j.png',
         ),
       );
     });
 
-    testWidgets('renders with badge when unreadCount is greater than zero', (
+    testWidgets('renders letter avatar for name starting with A', (
       tester,
     ) async {
       tester.view.physicalSize = size;
@@ -58,7 +58,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: const Scaffold(
-            body: Center(child: NotificationIcon(unreadCount: 3)),
+            body: Center(child: ProfileAvatar(name: 'Alice')),
           ),
         ),
       );
@@ -66,14 +66,14 @@ void main() {
       await tester.awaitImages();
 
       await expectLater(
-        find.byType(NotificationIcon),
+        find.byType(ProfileAvatar),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_badge.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_letter_a.png',
         ),
       );
     });
 
-    testWidgets('renders 99+ badge when unreadCount exceeds 99', (
+    testWidgets('renders letter avatar when imageUrl is empty', (
       tester,
     ) async {
       tester.view.physicalSize = size;
@@ -86,7 +86,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: const Scaffold(
-            body: Center(child: NotificationIcon(unreadCount: 123)),
+            body: Center(child: ProfileAvatar(name: 'Bob', imageUrl: '')),
           ),
         ),
       );
@@ -94,9 +94,9 @@ void main() {
       await tester.awaitImages();
 
       await expectLater(
-        find.byType(NotificationIcon),
+        find.byType(ProfileAvatar),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_overflow_badge.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_empty_url.png',
         ),
       );
     });

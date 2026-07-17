@@ -1,7 +1,7 @@
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/module_model.dart';
-import 'package:construculator/app/shell/widgets/header_row.dart';
 import 'package:construculator/app/shell/widgets/tab_navigator.dart';
+import 'package:construculator/features/app_header/app_header_module.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
@@ -9,9 +9,7 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
-import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
-import 'package:construculator/libraries/router/routes/global_search_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -23,13 +21,11 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// tab navigation using [AppShellBloc]. Module lazy-loading is orchestrated
 /// inside the BLoC, keeping this Page a pure presentation concern.
 class AppShellPage extends StatefulWidget {
-  final ProjectUIProvider projectUIProvider;
   final CurrentProjectNotifier currentProjectNotifier;
   final AppRouter router;
 
   const AppShellPage({
     super.key,
-    required this.projectUIProvider,
     required this.currentProjectNotifier,
     required this.router,
   });
@@ -83,51 +79,6 @@ class _AppShellPageState extends State<AppShellPage> {
     }
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context, AppShellState state) {
-    final projectId = widget.currentProjectNotifier.currentProjectId;
-    final coreColors = Theme.of(context).coreColors;
-    if (projectId == null || projectId.isEmpty) {
-      if (state.selectedTabIndex == ShellTab.home.index) {
-        return HeaderRow(
-          onSearchTap: () => widget.router.pushNamed(fullGlobalSearchRoute),
-          // TODO: [CA-731] Wire NotificationBloc when NotificationModule is ready.
-          // https://ripplearc.youtrack.cloud/issue/CA-731
-          // TODO: [CA-732] Wire ProfileBloc when ProfileModule is ready.
-          // https://ripplearc.youtrack.cloud/issue/CA-732
-        );
-      }
-      return PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: Container(
-          decoration: BoxDecoration(
-            color: coreColors.pageBackground,
-            boxShadow: CoreShadows.medium,
-          ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: CoreSpacing.space4,
-            vertical: CoreSpacing.space2,
-          ),
-          child: AppBar(
-            backgroundColor: coreColors.pageBackground,
-            elevation: 0,
-            centerTitle: true,
-            titleSpacing: 0,
-            title: Text(context.l10n.appTitle),
-            actions: [
-              CoreIconWidget(
-                icon: CoreIcons.search,
-                semanticLabel: context.l10n.dashboardSearchSemanticLabel,
-                onTap: () => widget.router.pushNamed(fullGlobalSearchRoute),
-              ),
-              const SizedBox(width: CoreSpacing.space4),
-            ],
-          ),
-        ),
-      );
-    }
-    return widget.projectUIProvider.buildProjectHeaderAppbar();
-  }
-
   @override
   Widget build(BuildContext context) {
     return BlocListener<ProjectDropdownBloc, ProjectDropdownState>(
@@ -145,7 +96,9 @@ class _AppShellPageState extends State<AppShellPage> {
           canPop: false,
           onPopInvokedWithResult: (didPop, _) => _onPopInvoked(didPop),
           child: Scaffold(
-            appBar: _buildAppBar(context, state),
+            appBar: AppHeaderModule.buildHeader(
+              isHomeTab: state.selectedTabIndex == ShellTab.home.index,
+            ),
             body: Stack(
               children: List.generate(ShellTab.values.length, (index) {
                 final tab = ShellTab.values[index];
