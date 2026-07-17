@@ -39,6 +39,16 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
 
   bool _suggestionsFetched = false;
 
+  // Whether a suggestions fetch is in flight. Tracked as instance state (not
+  // an _initialFromCache parameter) so a concurrently-handled event emitting
+  // _initialFromCache() cannot reset an in-flight loading flag prematurely.
+  bool _suggestionsLoading = false;
+
+  // Monotonic id of the latest suggestions fetch. A superseded fetch (e.g.
+  // cancelled by the switchMap transformer when a newer query arrives) must
+  // not clear _suggestionsLoading on completion — the newest fetch owns it.
+  int _suggestionsFetchGeneration = 0;
+
   /// Exposed for testing only — resolves when the last save-after-search
   /// completes, allowing tests to await it instead of using wall-clock waits.
   @visibleForTesting
@@ -67,7 +77,12 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     _currentQuery = query;
 
     if (query.isEmpty) {
-      // Clearing the field restores the history surface rather than blanking it.
+      // Clearing the field restores the history surface rather than blanking
+      // it. It also cancels any same-pipeline suggestions fetch via the
+      // switchMap transformer, so that handler can no longer emit its
+      // completion — reset the flag here so this emission doesn't report a
+      // loading fetch that will never complete visibly.
+      _suggestionsLoading = false;
       emit(_initialFromCache());
       return;
     }
@@ -90,11 +105,15 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
       return;
     }
 
-    emit(_initialFromCache(suggestionsLoading: true));
+    final generation = ++_suggestionsFetchGeneration;
+    _suggestionsLoading = true;
+    emit(_initialFromCache());
 
     final result = await _repository.getProjectSearchSuggestions(
       userId: userId,
     );
+    if (generation != _suggestionsFetchGeneration) return;
+    _suggestionsLoading = false;
     result.fold(
       (failure) => _logger.warning(
         'Failed to load project search suggestions: $failure',
@@ -140,6 +159,11 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     _currentQuery = '';
     _cachedSuggestions = const [];
     _suggestionsFetched = false;
+    _suggestionsLoading = false;
+    // Disown any in-flight suggestions fetch: its completion must not
+    // resurrect the pre-reset cache, mark suggestions as fetched, or emit
+    // over the isLoadingHistory state emitted below.
+    _suggestionsFetchGeneration++;
 
     final userId = _authManager.getCurrentCredentials().data?.id;
     if (userId == null || userId.isEmpty) {
@@ -283,11 +307,12 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     );
   }
 
-  ProjectSearchInitial _initialFromCache({bool suggestionsLoading = false}) =>
-      ProjectSearchInitial(
-        recentSearches: _cachedRecents,
-        suggestions: _filterSuggestions(_currentQuery),
-        query: _currentQuery,
-        suggestionsLoading: suggestionsLoading,
-      );
+  // Reads the in-flight loading flag from instance state so no handler can
+  // stomp another handler's in-flight flag.
+  ProjectSearchInitial _initialFromCache() => ProjectSearchInitial(
+    recentSearches: _cachedRecents,
+    suggestions: _filterSuggestions(_currentQuery),
+    query: _currentQuery,
+    suggestionsLoading: _suggestionsLoading,
+  );
 }
