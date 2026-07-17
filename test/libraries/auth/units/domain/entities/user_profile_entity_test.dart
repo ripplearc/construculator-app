@@ -5,7 +5,6 @@ void main() {
   group('UserProfile', () {
     const testUserProfile = UserProfile(
       id: 'user-123',
-      credentialId: 'cred-456',
       firstName: 'John',
       lastName: 'Doe',
       professionalRole: 'Project Manager',
@@ -21,7 +20,6 @@ void main() {
           professionalRole: 'Engineer',
         );
 
-        expect(userProfile.credentialId, isNull);
         expect(userProfile.profilePhotoUrl, isNull);
       });
     });
@@ -86,7 +84,6 @@ void main() {
       test('returns new instance with updated fields', () {
         const expected = UserProfile(
           id: 'user-123',
-          credentialId: 'cred-456',
           firstName: 'Jane',
           lastName: 'Doe',
           professionalRole: 'Senior Project Manager',
@@ -110,7 +107,6 @@ void main() {
       test('can update all fields at once', () {
         const expected = UserProfile(
           id: 'new-id',
-          credentialId: 'new-cred',
           firstName: 'Jane',
           lastName: 'Smith',
           professionalRole: 'Engineer',
@@ -119,7 +115,6 @@ void main() {
 
         final updated = testUserProfile.copyWith(
           id: 'new-id',
-          credentialId: 'new-cred',
           firstName: 'Jane',
           lastName: 'Smith',
           professionalRole: 'Engineer',
@@ -134,7 +129,6 @@ void main() {
       test('two instances with same values are equal', () {
         const userProfile1 = UserProfile(
           id: 'user-123',
-          credentialId: 'cred-456',
           firstName: 'John',
           lastName: 'Doe',
           professionalRole: 'Project Manager',
@@ -143,7 +137,6 @@ void main() {
 
         const userProfile2 = UserProfile(
           id: 'user-123',
-          credentialId: 'cred-456',
           firstName: 'John',
           lastName: 'Doe',
           professionalRole: 'Project Manager',
@@ -174,18 +167,18 @@ void main() {
       test('instances with different optional field values are not equal', () {
         const userProfile1 = UserProfile(
           id: 'user-123',
-          credentialId: 'cred-456',
           firstName: 'John',
           lastName: 'Doe',
           professionalRole: 'Project Manager',
+          profilePhotoUrl: 'https://example.com/photo.jpg',
         );
 
         const userProfile2 = UserProfile(
           id: 'user-123',
-          credentialId: 'cred-789',
           firstName: 'John',
           lastName: 'Doe',
           professionalRole: 'Project Manager',
+          profilePhotoUrl: 'https://example.com/other-photo.jpg',
         );
 
         expect(userProfile1, isNot(equals(userProfile2)));
