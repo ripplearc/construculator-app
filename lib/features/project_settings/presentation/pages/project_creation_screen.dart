@@ -149,11 +149,9 @@ class _ProjectCreationScreenState extends State<ProjectCreationScreen> {
           isDisabled: isCreating,
           onPressed: _onSubmit,
           child: isCreating
-              ? const SizedBox(
+              ? const CoreLoadingIndicator(
                   key: Key('create_project_button_loading'),
-                  width: CoreSpacing.space8,
-                  height: CoreSpacing.space8,
-                  child: CoreLoadingIndicator(size: CoreSpacing.space8),
+                  size: CoreSpacing.space8,
                 )
               : null,
         ),

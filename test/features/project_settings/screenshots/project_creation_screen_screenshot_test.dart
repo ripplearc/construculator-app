@@ -159,10 +159,12 @@ void main() {
       // renders its loading indicator from the initial frame.
       bloc.emit(const ProjectSettingsCreating());
       await tester.pumpWidget(buildScreen());
-      // Let the Lottie composition load on the real event loop, then pump a
-      // fixed frame; pumpAndSettle would hang on the looping animation.
-      await tester.runAsync(() async {});
-      await tester.pump(const Duration(milliseconds: 750));
+      // A single pump freezes the indicator's deterministic pre-load frame —
+      // the Lottie composition loads asynchronously and never resolves inside
+      // the fake-async zone, matching the search_results_list loading golden
+      // pattern. runAsync + a timed pump would capture a wall-clock-dependent
+      // animation frame that renders differently across CPU architectures.
+      await tester.pump();
 
       await expectLater(
         find.byType(ProjectCreationScreen),
@@ -181,10 +183,12 @@ void main() {
       // renders its loading indicator from the initial frame.
       bloc.emit(const ProjectSettingsCreating());
       await tester.pumpWidget(buildScreen(theme: createTestThemeDark()));
-      // Let the Lottie composition load on the real event loop, then pump a
-      // fixed frame; pumpAndSettle would hang on the looping animation.
-      await tester.runAsync(() async {});
-      await tester.pump(const Duration(milliseconds: 750));
+      // A single pump freezes the indicator's deterministic pre-load frame —
+      // the Lottie composition loads asynchronously and never resolves inside
+      // the fake-async zone, matching the search_results_list loading golden
+      // pattern. runAsync + a timed pump would capture a wall-clock-dependent
+      // animation frame that renders differently across CPU architectures.
+      await tester.pump();
 
       await expectLater(
         find.byType(ProjectCreationScreen),
