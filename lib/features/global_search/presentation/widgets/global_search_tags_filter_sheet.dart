@@ -1,6 +1,7 @@
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/search_filters/presentation/widgets/multi_select_filter_sheet.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -28,7 +29,19 @@ class GlobalSearchTagsFilterSheet extends StatelessWidget {
     final l10n = context.l10n;
 
     return BlocBuilder<GlobalSearchBloc, GlobalSearchState>(
-      buildWhen: (prev, curr) => curr is GlobalSearchReady,
+      // Only the tag list is derived from BLoC state; skip emissions that do
+      // not change it so the title, search field, and action buttons are not
+      // rebuilt on unrelated GlobalSearchReady updates.
+      buildWhen: (prev, curr) {
+        if (curr is! GlobalSearchReady) {
+          return false;
+        }
+        if (prev is! GlobalSearchReady) {
+          return true;
+        }
+        return prev.availableTagsLoading != curr.availableTagsLoading ||
+            !listEquals(prev.availableTags, curr.availableTags);
+      },
       builder: (context, state) {
         return MultiSelectFilterSheet(
           title: l10n.globalSearchTagsSheetTitle,
