@@ -53,6 +53,8 @@ custom_lint:
         - 'CancelableOperation'
         - 'AppLocalizationsEn'
         - 'Breadcrumb'
+        - 'SentryFlutterOptions'
+        - 'SentryId'
         - 'LogEvent'
         - 'AppLogFilter'
         - 'SentryUser'

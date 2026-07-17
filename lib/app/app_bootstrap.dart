@@ -54,7 +54,11 @@ import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.da
 /// final supabaseWrapper = SupabaseWrapperImpl(envLoader: envLoader);
 /// await supabaseWrapper.initialize();
 ///
-/// final sentryWrapper = SentryWrapperImpl(envLoader: envLoader, config: config);
+/// final sentryWrapper = SentryWrapperImpl(
+///   envLoader: envLoader,
+///   config: config,
+///   sentrySdk: SentrySdkImpl(),
+/// );
 ///
 /// final bootstrap = AppBootstrap(
 ///   config: config,
