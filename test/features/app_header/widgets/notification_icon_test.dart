@@ -1,4 +1,4 @@
-import 'package:construculator/app/shell/widgets/notification_icon.dart';
+import 'package:construculator/features/app_header/presentation/widgets/notification_icon.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

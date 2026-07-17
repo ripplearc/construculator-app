@@ -2,6 +2,7 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
+import 'package:construculator/features/app_header/app_header_module.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/domain/usecases/watch_recent_estimations_usecase.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/dashboard_bloc/dashboard_bloc.dart';
@@ -16,7 +17,6 @@ import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
-import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -38,6 +38,7 @@ class ShellModule extends Module {
     ProjectLibraryModule(appBootstrap),
     EstimationLibraryModule(appBootstrap),
     DashboardModule(appBootstrap),
+    AppHeaderModule(),
   ];
 
   @override
@@ -84,7 +85,6 @@ class ShellModule extends Module {
           ),
         ],
         child: AppShellPage(
-          projectUIProvider: Modular.get<ProjectUIProvider>(),
           currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
           router: Modular.get<AppRouter>(),
         ),

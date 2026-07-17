@@ -1,4 +1,4 @@
-import 'package:construculator/app/shell/widgets/header_row.dart';
+import 'package:construculator/features/app_header/presentation/widgets/notification_icon.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,17 +7,17 @@ import '../../../utils/screenshot/await_images_extension.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
-  const size = Size(390, 64);
+  const size = Size(56, 56);
   const ratio = 1.0;
-  const testName = 'header_row';
+  const testName = 'notification_icon';
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
     await loadAppFontsAll();
   });
 
-  group('HeaderRow Screenshot Tests', () {
-    testWidgets('renders default state with no notifications and no user', (
+  group('NotificationIcon Screenshot Tests', () {
+    testWidgets('renders without badge when unreadCount is zero', (
       tester,
     ) async {
       tester.view.physicalSize = size;
@@ -29,9 +29,8 @@ void main() {
           locale: const Locale('en'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            appBar: HeaderRow(),
-            body: const SizedBox.shrink(),
+          home: const Scaffold(
+            body: Center(child: NotificationIcon(unreadCount: 0)),
           ),
         ),
       );
@@ -39,14 +38,16 @@ void main() {
       await tester.awaitImages();
 
       await expectLater(
-        find.byType(HeaderRow),
+        find.byType(NotificationIcon),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_default.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_no_badge.png',
         ),
       );
     });
 
-    testWidgets('renders with unread notification badge', (tester) async {
+    testWidgets('renders with badge when unreadCount is greater than zero', (
+      tester,
+    ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
 
@@ -56,9 +57,8 @@ void main() {
           locale: const Locale('en'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            appBar: HeaderRow(unreadNotificationCount: 5),
-            body: const SizedBox.shrink(),
+          home: const Scaffold(
+            body: Center(child: NotificationIcon(unreadCount: 3)),
           ),
         ),
       );
@@ -66,14 +66,14 @@ void main() {
       await tester.awaitImages();
 
       await expectLater(
-        find.byType(HeaderRow),
+        find.byType(NotificationIcon),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_with_badge.png',
         ),
       );
     });
 
-    testWidgets('renders with username for profile letter avatar', (
+    testWidgets('renders 99+ badge when unreadCount exceeds 99', (
       tester,
     ) async {
       tester.view.physicalSize = size;
@@ -85,9 +85,8 @@ void main() {
           locale: const Locale('en'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            appBar: HeaderRow(userName: 'John Doe'),
-            body: const SizedBox.shrink(),
+          home: const Scaffold(
+            body: Center(child: NotificationIcon(unreadCount: 123)),
           ),
         ),
       );
@@ -95,9 +94,9 @@ void main() {
       await tester.awaitImages();
 
       await expectLater(
-        find.byType(HeaderRow),
+        find.byType(NotificationIcon),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_username.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_overflow_badge.png',
         ),
       );
     });
