@@ -891,7 +891,9 @@ void main() {
               searchTerm: 'foundation',
             ),
           );
-          await pumpEventQueue();
+          await _untilHandlerRuns(
+            () => fakeSupabase.getMethodCallsFor('deleteMatch').isNotEmpty,
+          );
         },
         skip: 4,
         expect: () => <ProjectSearchState>[],
