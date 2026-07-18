@@ -4,6 +4,8 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+/// Card that displays labour calculation method radio options and, optionally,
+/// the current cost-file rate. Set [showRateRow] to reveal the rate display.
 class CalcMethodCard extends StatelessWidget {
   final LaborCalculationMethodType calcMethod;
   final bool showRateRow;
@@ -25,7 +27,7 @@ class CalcMethodCard extends StatelessWidget {
       key: const Key('calc_method_card'),
       decoration: BoxDecoration(
         color: colorTheme.pageBackground,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(CoreSpacing.space2),
         boxShadow: CoreShadows.small,
       ),
       padding: const EdgeInsets.all(CoreSpacing.space3),

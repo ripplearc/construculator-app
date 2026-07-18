@@ -2,6 +2,7 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+/// A single radio option row used inside [CalcMethodCard].
 class CalcMethodRadioOption extends StatelessWidget {
   final String label;
   final bool isSelected;
