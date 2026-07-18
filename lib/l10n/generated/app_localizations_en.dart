@@ -1135,4 +1135,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addEquipmentCostButton => 'Add equipment cost';
+
+  @override
+  String get costFilePlaceholder => 'Select cost file';
+
+  @override
+  String get materialTypeLabel => 'Material type*';
+
+  @override
+  String get quantityLabel => 'Quantity*';
+
+  @override
+  String get perUnitCostLabel => 'Per unit cost*';
+
+  @override
+  String get uomLabel => 'Unit of measure*';
+
+  @override
+  String get otherMaterialDetailsButton => 'Other material details';
+
+  @override
+  String get brandLabel => 'Brand';
+
+  @override
+  String get productLinkLabel => 'Product link';
 }

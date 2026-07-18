@@ -1,5 +1,6 @@
 import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_item_mode_toggle.dart';
+import 'package:construculator/features/estimation/presentation/widgets/material_cost_form_fields.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
@@ -133,8 +134,13 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
   }
 
   Widget _buildFormFields() {
-    // TODO: [CA-306] Add form fields for material, labour, and equipment modes https://ripplearc.youtrack.cloud/issue/CA-306
-    return const SizedBox.shrink();
+    return switch (widget.type) {
+      CostItemType.material => MaterialCostFormFields(fromCostFile: _fromCostFile),
+      // TODO: [CA-306] Add labour cost form fields https://ripplearc.youtrack.cloud/issue/CA-306
+      CostItemType.labor => const SizedBox.shrink(),
+      // TODO: [CA-306] Add equipment cost form fields https://ripplearc.youtrack.cloud/issue/CA-306
+      CostItemType.equipment => const SizedBox.shrink(),
+    };
   }
 
   Widget _buildBottomBar(BuildContext context) {
@@ -155,24 +161,29 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Row(
-              key: const Key('cost_item_total_label'),
-              spacing: CoreSpacing.space1,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  l10n.costItemTotalLabel,
-                  style: textTheme.bodyLargeRegular.copyWith(
-                    color: colorTheme.textBody,
+            Flexible(
+              child: Row(
+                key: const Key('cost_item_total_label'),
+                spacing: CoreSpacing.space1,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    l10n.costItemTotalLabel,
+                    style: textTheme.bodyLargeRegular.copyWith(
+                      color: colorTheme.textBody,
+                    ),
                   ),
-                ),
-                Text(
-                  '\$0',
-                  style: textTheme.titleLargeSemiBold.copyWith(
-                    color: colorTheme.textHeadline,
+                  Flexible(
+                    child: Text(
+                      '\$0.00',
+                      style: textTheme.titleLargeSemiBold.copyWith(
+                        color: colorTheme.textHeadline,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             // TODO: [CA-355] [Cost Estimation] Implement Add To Cost Button Logic https://ripplearc.youtrack.cloud/issue/CA-355/Cost-Estimation-Implement-Add-To-Cost-Button-Logic
             CoreButton(
