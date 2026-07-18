@@ -1860,6 +1860,18 @@
   "crewSizeLabel": "Crew size*",
   "@crewSizeLabel": {
     "description": "Hint label for the crew size field on the labour cost form"
+  },
+  "equipmentTypeLabel": "Equipment type*",
+  "@equipmentTypeLabel": {
+    "description": "Hint label for the equipment type dropdown on the equipment cost form (from cost file mode)"
+  },
+  "equipmentNameLabel": "Equipment name*",
+  "@equipmentNameLabel": {
+    "description": "Hint label for the equipment name field on the equipment cost form (manually mode)"
+  },
+  "unitPriceLabel": "Unit price*",
+  "@unitPriceLabel": {
+    "description": "Hint label for the unit price field on the equipment cost form (manually mode)"
   }
 }
 

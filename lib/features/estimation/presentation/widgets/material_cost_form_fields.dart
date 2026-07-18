@@ -2,7 +2,9 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+/// Form fields for adding a material cost item.
 class MaterialCostFormFields extends StatefulWidget {
+  /// When true, renders fields for selecting from a cost file; otherwise renders manual-entry fields.
   final bool fromCostFile;
 
   const MaterialCostFormFields({super.key, required this.fromCostFile});

@@ -2241,6 +2241,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Crew size*'**
   String get crewSizeLabel;
+
+  /// Hint label for the equipment type dropdown on the equipment cost form (from cost file mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment type*'**
+  String get equipmentTypeLabel;
+
+  /// Hint label for the equipment name field on the equipment cost form (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment name*'**
+  String get equipmentNameLabel;
+
+  /// Hint label for the unit price field on the equipment cost form (manually mode)
+  ///
+  /// In en, this message translates to:
+  /// **'Unit price*'**
+  String get unitPriceLabel;
 }
 
 class _AppLocalizationsDelegate
