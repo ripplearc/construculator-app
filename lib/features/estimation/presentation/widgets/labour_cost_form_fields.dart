@@ -40,7 +40,7 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
           else
             ..._manuallyFields(context),
           const SizedBox(height: CoreSpacing.space6),
-          // TODO: [CA-336] Add assign task section
+          // TODO: [CA-336] Add assign task section https://ripplearc.youtrack.cloud/issue/CA-336
         ],
       ),
     );
@@ -50,7 +50,7 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     return [
-      // TODO: [CA-298] Wire cost file dropdown to CostFileDataSource
+      // TODO: [CA-298] Wire cost file dropdown to CostFileDataSource https://ripplearc.youtrack.cloud/issue/CA-298
       CoreTextField(
         key: const Key('cost_file_field'),
         hintText: l10n.costFilePlaceholder,
@@ -63,7 +63,7 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
         ),
       ),
       const SizedBox(height: CoreSpacing.space5),
-      // TODO: [CA-298] Populate labour type from selected cost file
+      // TODO: [CA-298] Populate labour type from selected cost file https://ripplearc.youtrack.cloud/issue/CA-298
       CoreTextField(
         key: const Key('labour_type_field'),
         hintText: l10n.labourTypeLabel,
@@ -76,7 +76,7 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
         ),
       ),
       const SizedBox(height: CoreSpacing.space5),
-      // TODO: [CA-298] Pass showRateRow: true once a cost file is selected and rate is wired from CostFileDataSource
+      // TODO: [CA-298] Pass showRateRow: true once a cost file is selected and rate is wired from CostFileDataSource https://ripplearc.youtrack.cloud/issue/CA-298
       _buildCalcMethodCard(context, showRateRow: false),
       const SizedBox(height: CoreSpacing.space5),
       CoreTextField(
@@ -138,7 +138,7 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
   String _conditionalFieldLabel(BuildContext context) => switch (_calcMethod) {
     LaborCalculationMethodType.perDay => context.l10n.noOfDaysLabel,
     LaborCalculationMethodType.perHour => context.l10n.noOfHoursLabel,
-    // TODO: [CA-319] Add Per Unit calculation option
+    // TODO: [CA-319] Add Per Unit calculation option https://ripplearc.youtrack.cloud/issue/CA-319
     LaborCalculationMethodType.perUnit => context.l10n.noOfDaysLabel,
   };
 
@@ -184,12 +184,12 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
                   () => _calcMethod = LaborCalculationMethodType.perHour,
                 ),
               ),
-              // TODO: [CA-319] Add Per Unit calculation option
+              // TODO: [CA-319] Add Per Unit calculation option https://ripplearc.youtrack.cloud/issue/CA-319
             ],
           ),
           if (showRateRow) ...[
             const SizedBox(height: CoreSpacing.space3),
-            // TODO: [CA-298] Wire rate label to CostFileDataSource
+            // TODO: [CA-298] Wire rate label to CostFileDataSource https://ripplearc.youtrack.cloud/issue/CA-298
             Row(
               key: const Key('rate_row'),
               children: [
