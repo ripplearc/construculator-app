@@ -166,5 +166,30 @@ void main() {
 
       expect(capturedTotal, 0.0);
     });
+
+    testWidgets('resets total to 0 when fromCostFile flips on a mounted widget', (
+      tester,
+    ) async {
+      double? capturedTotal;
+      await tester.pumpWidget(
+        makeWidget(onTotalChanged: (total) => capturedTotal = total),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('unit_price_field')), '200');
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('quantity_field')), '3');
+      await tester.pump();
+
+      await tester.pumpWidget(
+        makeWidget(
+          fromCostFile: true,
+          onTotalChanged: (total) => capturedTotal = total,
+        ),
+      );
+      await tester.pump();
+
+      expect(capturedTotal, 0.0);
+    });
   });
 }

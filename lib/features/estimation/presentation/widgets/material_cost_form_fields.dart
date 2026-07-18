@@ -36,7 +36,10 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
   void didUpdateWidget(covariant MaterialCostFormFields oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.fromCostFile != widget.fromCostFile) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _notifyTotal());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _notifyTotal();
+      });
     }
   }
 
@@ -55,8 +58,10 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
       widget.onTotalChanged?.call(0);
       return;
     }
-    final price = double.tryParse(_perUnitCostController.text) ?? 0;
-    final qty = double.tryParse(_quantityController.text) ?? 0;
+    final rawPrice = double.tryParse(_perUnitCostController.text) ?? 0;
+    final rawQty = double.tryParse(_quantityController.text) ?? 0;
+    final price = rawPrice.isFinite ? rawPrice : 0.0;
+    final qty = rawQty.isFinite ? rawQty : 0.0;
     widget.onTotalChanged?.call(price * qty);
   }
 

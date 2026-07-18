@@ -35,7 +35,10 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   void didUpdateWidget(covariant EquipmentCostFormFields oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.fromCostFile != widget.fromCostFile) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _notifyTotal());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _notifyTotal();
+      });
     }
   }
 
@@ -53,8 +56,10 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       widget.onTotalChanged?.call(0);
       return;
     }
-    final price = double.tryParse(_unitPriceController.text) ?? 0;
-    final qty = double.tryParse(_quantityController.text) ?? 0;
+    final rawPrice = double.tryParse(_unitPriceController.text) ?? 0;
+    final rawQty = double.tryParse(_quantityController.text) ?? 0;
+    final price = rawPrice.isFinite ? rawPrice : 0.0;
+    final qty = rawQty.isFinite ? rawQty : 0.0;
     widget.onTotalChanged?.call(price * qty);
   }
 

@@ -39,7 +39,10 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
   void didUpdateWidget(covariant LabourCostFormFields oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.fromCostFile != widget.fromCostFile) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _notifyTotal());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _notifyTotal();
+      });
     }
   }
 
@@ -58,9 +61,12 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
       widget.onTotalChanged?.call(0);
       return;
     }
-    final crewRate = double.tryParse(_crewRateController.text) ?? 0;
-    final conditionalValue = double.tryParse(_conditionalValueController.text) ?? 0;
-    final crewSize = double.tryParse(_crewSizeController.text) ?? 0;
+    final rawCrewRate = double.tryParse(_crewRateController.text) ?? 0;
+    final rawConditionalValue = double.tryParse(_conditionalValueController.text) ?? 0;
+    final rawCrewSize = double.tryParse(_crewSizeController.text) ?? 0;
+    final crewRate = rawCrewRate.isFinite ? rawCrewRate : 0.0;
+    final conditionalValue = rawConditionalValue.isFinite ? rawConditionalValue : 0.0;
+    final crewSize = rawCrewSize.isFinite ? rawCrewSize : 0.0;
     widget.onTotalChanged?.call(crewRate * conditionalValue * crewSize);
   }
 
