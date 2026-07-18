@@ -1872,6 +1872,14 @@
   "unitPriceLabel": "Unit price*",
   "@unitPriceLabel": {
     "description": "Hint label for the unit price field on the equipment cost form (manually mode)"
+  },
+  "rateDayLabel": "Rate/Day:",
+  "@rateDayLabel": {
+    "description": "Rate label inside the calculation method card when per-day method is selected (from cost file mode)"
+  },
+  "rateHourLabel": "Rate/Hour:",
+  "@rateHourLabel": {
+    "description": "Rate label inside the calculation method card when per-hours method is selected (from cost file mode)"
   }
 }
 
