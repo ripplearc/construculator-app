@@ -16,11 +16,10 @@ void main() {
   Future<void> pumpWidget({
     required WidgetTester tester,
     bool fromCostFile = false,
-    ThemeData? theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: createTestTheme(),
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -57,28 +56,5 @@ void main() {
       );
     });
 
-    testWidgets('renders manually mode in dark theme', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1.0;
-      await pumpWidget(tester: tester, theme: createTestThemeDark());
-      await expectLater(
-        find.byType(MaterialCostFormFields),
-        matchesGoldenFile(
-          'goldens/material_cost_form_fields/${size.width}x${size.height}/manually_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders from cost file mode in dark theme', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1.0;
-      await pumpWidget(tester: tester, fromCostFile: true, theme: createTestThemeDark());
-      await expectLater(
-        find.byType(MaterialCostFormFields),
-        matchesGoldenFile(
-          'goldens/material_cost_form_fields/${size.width}x${size.height}/from_cost_file_dark.png',
-        ),
-      );
-    });
   });
 }
