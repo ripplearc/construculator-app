@@ -75,6 +75,7 @@ void main() {
   Future<void> pumpPageAndOpenTagsSheet({
     required WidgetTester tester,
     Set<String> activeTagsBeforeOpen = const {},
+    ThemeData? theme,
   }) async {
     seedTags(const [
       'Roofing',
@@ -88,7 +89,7 @@ void main() {
     ]);
     await tester.pumpWidget(
       MaterialApp(
-        theme: createTestTheme(),
+        theme: theme ?? createTestTheme(),
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -127,7 +128,7 @@ void main() {
     await tester.awaitImages();
   }
 
-  group('GlobalSearchTagsFilterSheet Screenshot Tests', () {
+  group('GlobalSearchTagsFilterSheet Screenshot Tests - Light', () {
     testWidgets('renders default state with no tags selected', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
@@ -185,6 +186,74 @@ void main() {
         find.byType(MaterialApp),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_query.png',
+        ),
+      );
+    });
+  });
+
+  group('GlobalSearchTagsFilterSheet Screenshot Tests - Dark', () {
+    testWidgets('renders default state with no tags selected', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpPageAndOpenTagsSheet(
+        tester: tester,
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_default_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders with pre-selected tags checked', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpPageAndOpenTagsSheet(
+        tester: tester,
+        activeTagsBeforeOpen: const {'Bed room wall', 'Carpeting'},
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_selected_tags_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders with search query filtering the tag list', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpPageAndOpenTagsSheet(
+        tester: tester,
+        theme: createTestThemeDark(),
+      );
+
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(GlobalSearchTagsFilterSheet),
+          matching: find.byType(TextFormField),
+        ),
+        'ing',
+      );
+      await tester.pump();
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_query_dark.png',
         ),
       );
     });

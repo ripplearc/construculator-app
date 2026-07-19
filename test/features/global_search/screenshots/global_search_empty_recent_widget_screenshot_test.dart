@@ -16,26 +16,30 @@ void main() {
     await loadAppFontsAll();
   });
 
-  group('GlobalSearchEmptyRecentWidget Screenshot Tests', () {
-    Future<void> pumpEmptyRecentWidget({required WidgetTester tester}) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const Scaffold(
-            body: GlobalSearchEmptyRecentWidget(),
-          ),
+  Future<void> pumpEmptyRecentWidget({
+    required WidgetTester tester,
+    ThemeData? theme,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme ?? createTestTheme(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const Scaffold(
+          body: GlobalSearchEmptyRecentWidget(),
         ),
-      );
-      await tester.pumpAndSettle();
-      await tester.awaitImages();
-    }
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.awaitImages();
+  }
 
+  group('GlobalSearchEmptyRecentWidget Screenshot Tests - Light', () {
     testWidgets('renders empty recent state correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       await pumpEmptyRecentWidget(tester: tester);
 
@@ -43,6 +47,23 @@ void main() {
         find.byType(GlobalSearchEmptyRecentWidget),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_default.png',
+        ),
+      );
+    });
+  });
+
+  group('GlobalSearchEmptyRecentWidget Screenshot Tests - Dark', () {
+    testWidgets('renders empty recent state correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpEmptyRecentWidget(tester: tester, theme: createTestThemeDark());
+
+      await expectLater(
+        find.byType(GlobalSearchEmptyRecentWidget),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_default_dark.png',
         ),
       );
     });
