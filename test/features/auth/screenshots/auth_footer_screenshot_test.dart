@@ -13,30 +13,32 @@ void main() {
     await loadAppFonts();
   });
 
-  group('AuthFooter Screenshot Tests', () {
-    Future<void> pumpAuthFooter({
-      required WidgetTester tester,
-      required String text,
-      required String actionText,
-    }) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          home: Material(
-            child: AuthFooter(
-              text: text,
-              actionText: actionText,
-              onPressed: () {},
-            ),
+  Future<void> pumpAuthFooter({
+    required WidgetTester tester,
+    required String text,
+    required String actionText,
+    ThemeData? theme,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme ?? createTestTheme(),
+        home: Material(
+          child: AuthFooter(
+            text: text,
+            actionText: actionText,
+            onPressed: () {},
           ),
         ),
-      );
-      await tester.pumpAndSettle();
-    }
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
 
+  group('AuthFooter Screenshot Tests - Light', () {
     testWidgets('renders register footer correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
       await pumpAuthFooter(
         tester: tester,
         text: "Don't have an account?",
@@ -54,6 +56,7 @@ void main() {
     testWidgets('renders login footer correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
       await pumpAuthFooter(
         tester: tester,
         text: 'Already have an account?',
@@ -64,6 +67,46 @@ void main() {
         find.byType(AuthFooter),
         matchesGoldenFile(
           'goldens/auth_footer/${size.width}x${size.height}/auth_footer_login.png',
+        ),
+      );
+    });
+  });
+
+  group('AuthFooter Screenshot Tests - Dark', () {
+    testWidgets('renders register footer correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+      await pumpAuthFooter(
+        tester: tester,
+        text: "Don't have an account?",
+        actionText: 'Register',
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(AuthFooter),
+        matchesGoldenFile(
+          'goldens/auth_footer/${size.width}x${size.height}/auth_footer_register_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders login footer correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+      await pumpAuthFooter(
+        tester: tester,
+        text: 'Already have an account?',
+        actionText: 'Login',
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(AuthFooter),
+        matchesGoldenFile(
+          'goldens/auth_footer/${size.width}x${size.height}/auth_footer_login_dark.png',
         ),
       );
     });
