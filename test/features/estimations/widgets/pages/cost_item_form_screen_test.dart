@@ -181,14 +181,17 @@ void main() {
       expect(semantics.hasFlag(SemanticsFlag.isSelected), isTrue);
     });
 
-    testWidgets('displays add to cost button disabled', (tester) async {
+    testWidgets('add to cost button is present and disabled initially', (
+      tester,
+    ) async {
       setUpAuthenticatedUser();
       await pumpAppAtRoute(tester, makeApp(), materialRoute);
 
-      final button = tester.widget<CoreButton>(
+      expect(find.byKey(const Key('add_to_cost_button')), findsOneWidget);
+      final semantics = tester.getSemantics(
         find.byKey(const Key('add_to_cost_button')),
       );
-      expect(button.isDisabled, isTrue);
+      expect(semantics.hasFlag(SemanticsFlag.isEnabled), isFalse);
     });
 
     testWidgets('displays edit title button', (tester) async {
@@ -196,6 +199,47 @@ void main() {
       await pumpAppAtRoute(tester, makeApp(), materialRoute);
 
       expect(find.byKey(const Key('edit_title_button')), findsOneWidget);
+    });
+
+    testWidgets('add to cost button enables after entering material type', (
+      tester,
+    ) async {
+      setUpAuthenticatedUser();
+      await pumpAppAtRoute(tester, makeApp(), materialRoute);
+
+      await tester.enterText(
+        find.byKey(const Key('material_type_field')),
+        'Lap Sealant',
+      );
+      await tester.pump();
+
+      final semantics = tester.getSemantics(
+        find.byKey(const Key('add_to_cost_button')),
+      );
+      expect(semantics.hasFlag(SemanticsFlag.isEnabled), isTrue);
+    });
+
+    testWidgets(
+        'add to cost button disables after typing then switching to from cost file mode', (
+      tester,
+    ) async {
+      setUpAuthenticatedUser();
+      await pumpAppAtRoute(tester, makeApp(), materialRoute);
+
+      await tester.enterText(
+        find.byKey(const Key('material_type_field')),
+        'Lap Sealant',
+      );
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('from_cost_file_pill')));
+      await tester.pump();
+      await tester.pump();
+
+      final semantics = tester.getSemantics(
+        find.byKey(const Key('add_to_cost_button')),
+      );
+      expect(semantics.hasFlag(SemanticsFlag.isEnabled), isFalse);
     });
 
     testWidgets('displays total label', (tester) async {

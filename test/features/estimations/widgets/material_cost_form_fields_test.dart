@@ -14,6 +14,7 @@ void main() {
   Widget makeWidget({
     bool fromCostFile = false,
     ValueChanged<double>? onTotalChanged,
+    ValueChanged<bool>? onSaveEnabledChanged,
   }) {
     return MaterialApp(
       theme: CoreTheme.light(),
@@ -24,6 +25,7 @@ void main() {
         body: MaterialCostFormFields(
           fromCostFile: fromCostFile,
           onTotalChanged: onTotalChanged,
+          onSaveEnabledChanged: onSaveEnabledChanged,
         ),
       ),
     );
@@ -251,6 +253,98 @@ void main() {
       await tester.pump();
 
       expect(capturedTotal, 0.0);
+    });
+  });
+
+  group('MaterialCostFormFields — save enabled', () {
+    testWidgets('calls onSaveEnabledChanged(false) initially', (tester) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
+
+      expect(captured, isNull);
+    });
+
+    testWidgets('calls onSaveEnabledChanged(true) when material type has text', (
+      tester,
+    ) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('material_type_field')),
+        'Lap Sealant',
+      );
+      await tester.pump();
+
+      expect(captured, isTrue);
+    });
+
+    testWidgets(
+        'calls onSaveEnabledChanged(false) when material type is cleared', (
+      tester,
+    ) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('material_type_field')),
+        'Lap Sealant',
+      );
+      await tester.pump();
+      await tester.enterText(find.byKey(const Key('material_type_field')), '');
+      await tester.pump();
+
+      expect(captured, isFalse);
+    });
+
+    testWidgets(
+        'does not call onSaveEnabledChanged in from cost file mode', (
+      tester,
+    ) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(
+          fromCostFile: true,
+          onSaveEnabledChanged: (v) => captured = v,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(captured, isNull);
+    });
+
+    testWidgets(
+        'calls onSaveEnabledChanged(false) when switching to from cost file mode after typing', (
+      tester,
+    ) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('material_type_field')),
+        'Lap Sealant',
+      );
+      await tester.pump();
+      expect(captured, isTrue);
+
+      await tester.pumpWidget(
+        makeWidget(fromCostFile: true, onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pump();
+
+      expect(captured, isFalse);
     });
   });
 

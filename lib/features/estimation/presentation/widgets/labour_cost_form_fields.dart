@@ -9,11 +9,13 @@ class LabourCostFormFields extends StatefulWidget {
   /// When true, renders fields for selecting from a cost file; otherwise renders manual-entry fields.
   final bool fromCostFile;
   final ValueChanged<double>? onTotalChanged;
+  final ValueChanged<bool>? onSaveEnabledChanged;
 
   const LabourCostFormFields({
     super.key,
     required this.fromCostFile,
     this.onTotalChanged,
+    this.onSaveEnabledChanged,
   });
 
   @override
@@ -30,6 +32,7 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
   @override
   void initState() {
     super.initState();
+    _labourTypeController.addListener(_notifySaveEnabled);
     _crewRateController.addListener(_notifyTotal);
     _conditionalValueController.addListener(_notifyTotal);
     _crewSizeController.addListener(_notifyTotal);
@@ -42,6 +45,7 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _notifyTotal();
+        _notifySaveEnabled();
       });
     }
   }
@@ -53,6 +57,17 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
     _conditionalValueController.dispose();
     _crewSizeController.dispose();
     super.dispose();
+  }
+
+  // TODO: [CA-800] Fold into shared mixin/base alongside _notifyTotal https://ripplearc.youtrack.cloud/issue/CA-800
+  void _notifySaveEnabled() {
+    if (widget.fromCostFile) {
+      widget.onSaveEnabledChanged?.call(false);
+      return;
+    }
+    widget.onSaveEnabledChanged?.call(
+      _labourTypeController.text.trim().isNotEmpty,
+    );
   }
 
   // TODO: [CA-355] Move total calculation into BLoC when submission is wired
