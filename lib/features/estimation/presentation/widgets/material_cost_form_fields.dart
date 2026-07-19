@@ -69,7 +69,7 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     context.read<MaterialCostFormBloc>().add(MaterialCostItemTypeChanged(value));
   }
 
-  // TODO: [CA-353] Move total calculation into BLoC when submission is wired
+  // TODO: [CA-353](https://ripplearc.youtrack.cloud/issue/CA-353) Move total calculation into BLoC when submission is wired
   void _notifyTotal() {
     if (widget.fromCostFile) {
       widget.onTotalChanged?.call(0);

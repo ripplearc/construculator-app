@@ -69,7 +69,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
         .add(EquipmentCostItemTypeChanged(value));
   }
 
-  // TODO: [CA-353] Move total calculation into BLoC when submission is wired
+  // TODO: [CA-353](https://ripplearc.youtrack.cloud/issue/CA-353) Move total calculation into BLoC when submission is wired
   void _notifyTotal() {
     if (widget.fromCostFile) {
       widget.onTotalChanged?.call(0);
@@ -94,7 +94,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
           else
             ..._manuallyFields(context),
           const SizedBox(height: CoreSpacing.space6),
-          // TODO: [CA-336] Add assign task section
+          // TODO: [CA-336](https://ripplearc.youtrack.cloud/issue/CA-336) Add assign task section
           // TODO: [CA-349] Build Preview Cost File UI (fromCostFile mode only)
         ],
       ),
