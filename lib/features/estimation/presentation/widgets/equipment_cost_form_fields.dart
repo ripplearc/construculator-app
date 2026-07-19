@@ -6,8 +6,13 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 class EquipmentCostFormFields extends StatefulWidget {
   /// When true, renders fields for selecting from a cost file; otherwise renders manual-entry fields.
   final bool fromCostFile;
+  final ValueChanged<double>? onTotalChanged;
 
-  const EquipmentCostFormFields({super.key, required this.fromCostFile});
+  const EquipmentCostFormFields({
+    super.key,
+    required this.fromCostFile,
+    this.onTotalChanged,
+  });
 
   @override
   State<EquipmentCostFormFields> createState() =>
@@ -20,11 +25,42 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
   final _quantityController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _unitPriceController.addListener(_notifyTotal);
+    _quantityController.addListener(_notifyTotal);
+  }
+
+  @override
+  void didUpdateWidget(covariant EquipmentCostFormFields oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.fromCostFile != widget.fromCostFile) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _notifyTotal();
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _equipmentNameController.dispose();
     _unitPriceController.dispose();
     _quantityController.dispose();
     super.dispose();
+  }
+
+  // TODO: [CA-355] Move total calculation into BLoC when submission is wired
+  void _notifyTotal() {
+    if (widget.fromCostFile) {
+      widget.onTotalChanged?.call(0);
+      return;
+    }
+    final rawPrice = double.tryParse(_unitPriceController.text) ?? 0;
+    final rawQty = double.tryParse(_quantityController.text) ?? 0;
+    final price = rawPrice.isFinite ? rawPrice : 0.0;
+    final qty = rawQty.isFinite ? rawQty : 0.0;
+    widget.onTotalChanged?.call(price * qty);
   }
 
   @override

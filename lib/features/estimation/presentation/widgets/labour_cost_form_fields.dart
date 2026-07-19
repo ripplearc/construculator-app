@@ -8,8 +8,13 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 class LabourCostFormFields extends StatefulWidget {
   /// When true, renders fields for selecting from a cost file; otherwise renders manual-entry fields.
   final bool fromCostFile;
+  final ValueChanged<double>? onTotalChanged;
 
-  const LabourCostFormFields({super.key, required this.fromCostFile});
+  const LabourCostFormFields({
+    super.key,
+    required this.fromCostFile,
+    this.onTotalChanged,
+  });
 
   @override
   State<LabourCostFormFields> createState() => _LabourCostFormFieldsState();
@@ -23,12 +28,46 @@ class _LabourCostFormFieldsState extends State<LabourCostFormFields> {
   final _crewSizeController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _crewRateController.addListener(_notifyTotal);
+    _conditionalValueController.addListener(_notifyTotal);
+    _crewSizeController.addListener(_notifyTotal);
+  }
+
+  @override
+  void didUpdateWidget(covariant LabourCostFormFields oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.fromCostFile != widget.fromCostFile) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _notifyTotal();
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _labourTypeController.dispose();
     _crewRateController.dispose();
     _conditionalValueController.dispose();
     _crewSizeController.dispose();
     super.dispose();
+  }
+
+  // TODO: [CA-355] Move total calculation into BLoC when submission is wired
+  void _notifyTotal() {
+    if (widget.fromCostFile) {
+      widget.onTotalChanged?.call(0);
+      return;
+    }
+    final rawCrewRate = double.tryParse(_crewRateController.text) ?? 0;
+    final rawConditionalValue = double.tryParse(_conditionalValueController.text) ?? 0;
+    final rawCrewSize = double.tryParse(_crewSizeController.text) ?? 0;
+    final crewRate = rawCrewRate.isFinite ? rawCrewRate : 0.0;
+    final conditionalValue = rawConditionalValue.isFinite ? rawConditionalValue : 0.0;
+    final crewSize = rawCrewSize.isFinite ? rawCrewSize : 0.0;
+    widget.onTotalChanged?.call(crewRate * conditionalValue * crewSize);
   }
 
   @override
