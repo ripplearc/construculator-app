@@ -4,13 +4,18 @@ import 'package:construculator/features/estimation/data/data_source/interfaces/c
 import 'package:construculator/features/estimation/data/data_source/remote_cost_estimation_log_data_source.dart';
 import 'package:construculator/features/estimation/data/data_source/remote_cost_item_data_source.dart';
 import 'package:construculator/features/estimation/data/repositories/cost_estimation_log_repository_impl.dart';
+import 'package:construculator/features/estimation/data/repositories/cost_item_repository_impl.dart';
 import 'package:construculator/features/estimation/domain/repositories/cost_estimation_log_repository.dart';
+import 'package:construculator/features/estimation/domain/repositories/cost_item_repository.dart';
 import 'package:construculator/features/estimation/domain/usecases/add_cost_estimation_usecase.dart';
 import 'package:construculator/features/estimation/presentation/bloc/add_cost_estimation_bloc/add_cost_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/change_lock_status_bloc/change_lock_status_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_list_bloc/cost_estimation_list_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_log_bloc/cost_estimation_log_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/delete_cost_estimation_bloc/delete_cost_estimation_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/labour_cost_form_bloc/labour_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/bloc/rename_estimation_bloc/rename_estimation_bloc.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
@@ -94,6 +99,10 @@ class EstimationModule extends Module {
       config: BindConfig(onDispose: (repository) => repository.dispose()),
     );
 
+    i.addLazySingleton<CostItemRepository>(
+      () => CostItemRepositoryImpl(dataSource: i.get()),
+    );
+
     i.addLazySingleton<AddCostEstimationUseCase>(
       () => AddCostEstimationUseCase(
         repository: i.get(),
@@ -134,6 +143,9 @@ class EstimationModule extends Module {
     i.add<CostEstimationLogBloc>(
       () => CostEstimationLogBloc(repository: i.get()),
     );
+    i.add<MaterialCostFormBloc>(() => MaterialCostFormBloc());
+    i.add<LabourCostFormBloc>(() => LabourCostFormBloc());
+    i.add<EquipmentCostFormBloc>(() => EquipmentCostFormBloc());
     i.addSingleton<EstimationTileProvider>(
       () => const EstimationTileProviderImpl(),
     );
