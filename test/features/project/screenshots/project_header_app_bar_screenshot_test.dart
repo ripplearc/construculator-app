@@ -51,54 +51,56 @@ void main() {
     fakeCurrentProjectNotifier.reset();
   });
 
-  group('ProjectHeaderAppBar Screenshot Tests', () {
-    Future<void> pumpProjectHeaderAppBar({
-      required WidgetTester tester,
-      required String projectId,
-      required String projectName,
-      VoidCallback? onProjectTap,
-      VoidCallback? onSearchTap,
-      VoidCallback? onNotificationTap,
-    }) async {
-      final project = Project(
-        id: projectId,
-        projectName: projectName,
-        creatorUserId: 'user-id',
-        createdAt: clock.now(),
-        updatedAt: clock.now(),
-        status: ProjectStatus.active,
-      );
+  Future<void> pumpProjectHeaderAppBar({
+    required WidgetTester tester,
+    required String projectId,
+    required String projectName,
+    VoidCallback? onProjectTap,
+    VoidCallback? onSearchTap,
+    VoidCallback? onNotificationTap,
+    ThemeData? theme,
+  }) async {
+    final project = Project(
+      id: projectId,
+      projectName: projectName,
+      creatorUserId: 'user-id',
+      createdAt: clock.now(),
+      updatedAt: clock.now(),
+      status: ProjectStatus.active,
+    );
 
-      fakeProjectRepository.addProject(projectId, project);
-      fakeCurrentProjectNotifier.setCurrentProjectId(projectId);
+    fakeProjectRepository.addProject(projectId, project);
+    fakeCurrentProjectNotifier.setCurrentProjectId(projectId);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            appBar: ProjectHeaderAppBar(
-              getProjectBlocFactory: () => Modular.get<GetProjectBloc>(),
-              onProjectTap: onProjectTap,
-              onSearchTap: onSearchTap,
-              onNotificationTap: onNotificationTap,
-            ),
-            body: const SizedBox.shrink(),
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme ?? createTestTheme(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          appBar: ProjectHeaderAppBar(
+            getProjectBlocFactory: () => Modular.get<GetProjectBloc>(),
+            onProjectTap: onProjectTap,
+            onSearchTap: onSearchTap,
+            onNotificationTap: onNotificationTap,
           ),
+          body: const SizedBox.shrink(),
         ),
-      );
-      await tester.pumpAndSettle();
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      await tester.awaitImages();
-    }
+    await tester.awaitImages();
+  }
 
+  group('ProjectHeaderAppBar Screenshot Tests - Light', () {
     testWidgets('renders project header app bar with normal name correctly', (
       tester,
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       await pumpProjectHeaderAppBar(
         tester: tester,
@@ -122,6 +124,7 @@ void main() {
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       await pumpProjectHeaderAppBar(
         tester: tester,
@@ -145,6 +148,7 @@ void main() {
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       await pumpProjectHeaderAppBar(
         tester: tester,
@@ -159,6 +163,83 @@ void main() {
         find.byType(ProjectHeaderAppBar),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_no_avatar.png',
+        ),
+      );
+    });
+  });
+
+  group('ProjectHeaderAppBar Screenshot Tests - Dark', () {
+    testWidgets('renders project header app bar with normal name correctly', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpProjectHeaderAppBar(
+        tester: tester,
+        projectId: 'project-id-dark-1',
+        projectName: 'Kitchen Renovation',
+        onProjectTap: () {},
+        onSearchTap: () {},
+        onNotificationTap: () {},
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(ProjectHeaderAppBar),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_normal_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders project header app bar with long name correctly', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpProjectHeaderAppBar(
+        tester: tester,
+        projectId: 'project-id-dark-2',
+        projectName: 'Complete Home Renovation and Extension Project',
+        onProjectTap: () {},
+        onSearchTap: () {},
+        onNotificationTap: () {},
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(ProjectHeaderAppBar),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_long_name_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders project header app bar without avatar correctly', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpProjectHeaderAppBar(
+        tester: tester,
+        projectId: 'project-id-dark-3',
+        projectName: 'Bathroom Remodel',
+        onProjectTap: () {},
+        onSearchTap: () {},
+        onNotificationTap: () {},
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(ProjectHeaderAppBar),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_no_avatar_dark.png',
         ),
       );
     });

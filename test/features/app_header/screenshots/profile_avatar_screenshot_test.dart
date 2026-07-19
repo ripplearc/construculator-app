@@ -16,26 +16,38 @@ void main() {
     await loadAppFontsAll();
   });
 
-  group('ProfileAvatar Screenshot Tests', () {
+  Future<void> pumpProfileAvatar({
+    required WidgetTester tester,
+    required String name,
+    String? imageUrl,
+    ThemeData? theme,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme ?? createTestTheme(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Center(
+            child: ProfileAvatar(name: name, imageUrl: imageUrl),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.awaitImages();
+  }
+
+  group('ProfileAvatar Screenshot Tests - Light', () {
     testWidgets('renders letter avatar for name starting with J', (
       tester,
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const Scaffold(
-            body: Center(child: ProfileAvatar(name: 'John')),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.awaitImages();
+      await pumpProfileAvatar(tester: tester, name: 'John');
 
       await expectLater(
         find.byType(ProfileAvatar),
@@ -50,20 +62,9 @@ void main() {
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const Scaffold(
-            body: Center(child: ProfileAvatar(name: 'Alice')),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.awaitImages();
+      await pumpProfileAvatar(tester: tester, name: 'Alice');
 
       await expectLater(
         find.byType(ProfileAvatar),
@@ -78,25 +79,80 @@ void main() {
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const Scaffold(
-            body: Center(child: ProfileAvatar(name: 'Bob', imageUrl: '')),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.awaitImages();
+      await pumpProfileAvatar(tester: tester, name: 'Bob', imageUrl: '');
 
       await expectLater(
         find.byType(ProfileAvatar),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_empty_url.png',
+        ),
+      );
+    });
+  });
+
+  group('ProfileAvatar Screenshot Tests - Dark', () {
+    testWidgets('renders letter avatar for name starting with J', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpProfileAvatar(
+        tester: tester,
+        name: 'John',
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(ProfileAvatar),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_letter_j_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders letter avatar for name starting with A', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpProfileAvatar(
+        tester: tester,
+        name: 'Alice',
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(ProfileAvatar),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_letter_a_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders letter avatar when imageUrl is empty', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpProfileAvatar(
+        tester: tester,
+        name: 'Bob',
+        imageUrl: '',
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(ProfileAvatar),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_empty_url_dark.png',
         ),
       );
     });

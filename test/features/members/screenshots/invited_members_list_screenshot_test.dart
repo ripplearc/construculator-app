@@ -15,13 +15,18 @@ void main() {
     await loadAppFonts();
   });
 
-  Future<void> pumpWidget(WidgetTester tester, Widget widget) async {
+  Future<void> pumpWidget(
+    WidgetTester tester,
+    Widget widget, {
+    ThemeData? theme,
+  }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = ratio;
+    addTearDown(tester.view.reset);
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: createTestTheme(),
+        theme: theme ?? createTestTheme(),
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -35,7 +40,7 @@ void main() {
 
   const goldenDir = 'goldens/member_invitation';
 
-  group('InvitedMembersList Screenshot Tests', () {
+  group('InvitedMembersList Screenshot Tests - Light', () {
     testWidgets('renders list with two invited members', (tester) async {
       await pumpWidget(
         tester,
@@ -50,6 +55,26 @@ void main() {
       await expectLater(
         find.byType(InvitedMembersList),
         matchesGoldenFile('$goldenDir/${size.width}x${size.height}/invited_members_list.png'),
+      );
+    });
+  });
+
+  group('InvitedMembersList Screenshot Tests - Dark', () {
+    testWidgets('renders list with two invited members', (tester) async {
+      await pumpWidget(
+        tester,
+        const InvitedMembersList(
+          members: [
+            InvitedMember(email: 'alice@example.com', name: 'Alice Example'),
+            InvitedMember(email: 'bob@example.com', name: 'Bob Example'),
+          ],
+        ),
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(InvitedMembersList),
+        matchesGoldenFile('$goldenDir/${size.width}x${size.height}/invited_members_list_dark.png'),
       );
     });
   });

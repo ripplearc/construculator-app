@@ -16,26 +16,35 @@ void main() {
     await loadAppFontsAll();
   });
 
-  group('NotificationIcon Screenshot Tests', () {
+  Future<void> pumpNotificationIcon({
+    required WidgetTester tester,
+    required int unreadCount,
+    ThemeData? theme,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme ?? createTestTheme(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Center(child: NotificationIcon(unreadCount: unreadCount)),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.awaitImages();
+  }
+
+  group('NotificationIcon Screenshot Tests - Light', () {
     testWidgets('renders without badge when unreadCount is zero', (
       tester,
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const Scaffold(
-            body: Center(child: NotificationIcon(unreadCount: 0)),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.awaitImages();
+      await pumpNotificationIcon(tester: tester, unreadCount: 0);
 
       await expectLater(
         find.byType(NotificationIcon),
@@ -50,20 +59,9 @@ void main() {
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const Scaffold(
-            body: Center(child: NotificationIcon(unreadCount: 3)),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.awaitImages();
+      await pumpNotificationIcon(tester: tester, unreadCount: 3);
 
       await expectLater(
         find.byType(NotificationIcon),
@@ -78,25 +76,79 @@ void main() {
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const Scaffold(
-            body: Center(child: NotificationIcon(unreadCount: 123)),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.awaitImages();
+      await pumpNotificationIcon(tester: tester, unreadCount: 123);
 
       await expectLater(
         find.byType(NotificationIcon),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_overflow_badge.png',
+        ),
+      );
+    });
+  });
+
+  group('NotificationIcon Screenshot Tests - Dark', () {
+    testWidgets('renders without badge when unreadCount is zero', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpNotificationIcon(
+        tester: tester,
+        unreadCount: 0,
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(NotificationIcon),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_no_badge_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders with badge when unreadCount is greater than zero', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpNotificationIcon(
+        tester: tester,
+        unreadCount: 3,
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(NotificationIcon),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_badge_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders 99+ badge when unreadCount exceeds 99', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpNotificationIcon(
+        tester: tester,
+        unreadCount: 123,
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(NotificationIcon),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_overflow_badge_dark.png',
         ),
       );
     });
