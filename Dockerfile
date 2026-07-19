@@ -2,7 +2,7 @@
 FROM ubuntu:24.04
 
 # Set Flutter version as build argument (can be overridden at build time)
-ARG FLUTTER_VERSION=3.32.0
+ARG FLUTTER_VERSION=3.44.4
 
 # Set environment variables
 ENV ANDROID_HOME="/home/flutter/android-sdk"

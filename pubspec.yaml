@@ -6,7 +6,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: "3.8.0"
+  sdk: "3.12.2"
 
 dependencies:
   flutter:
@@ -14,43 +14,38 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  cupertino_icons: 1.0.8
-  flutter_bloc: 9.1.0
+  cupertino_icons: ^1.0.9
+  flutter_bloc: ^9.1.1
   flutter_modular: 6.3.4
-  supabase_flutter: 2.9.0
-  flutter_dotenv: 5.2.1
-  logger: 2.5.0
+  supabase_flutter: ^2.16.0
+  flutter_dotenv: ^6.0.1
+  logger: ^2.7.0
   stack_trace: 1.12.1
-  equatable: 2.0.7
+  equatable: ^2.1.0
   rxdart: 0.28.0
-  freezed_annotation: 3.0.0
+  freezed_annotation: ^3.1.0
   json_annotation: 4.9.0
   ripplearc_coreui: ^0.7.1
-  pinput: 5.0.1
+  pinput: ^6.0.2
   ripplearc_linter: ^0.4.0
-  async: 2.13.0
+  async: ^2.13.1
   intl: 0.20.2
   sentry_flutter: ^9.15.0
-  powersync: 1.17.0
+  powersync: ^1.18.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_lints: 5.0.0
-  flutter_launcher_icons: 0.14.3
-  flutter_native_splash: 2.4.6
-  build_runner: 2.4.15
-  mutation_test: 1.7.0
-  freezed: 3.0.6
-  json_serializable: 6.9.5
-  custom_lint: 0.7.5
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.8
+  build_runner: ^2.15.1
+  mutation_test: ^1.8.0
+  freezed: ^3.2.3
+  json_serializable: ^6.11.2
+  custom_lint: ^0.8.1
   bloc_test: 10.0.0
-
-# powersync_core 1.8.0 uses `Deprecated.subclass` (requires Dart 3.9+),
-# but its SDK constraint wrongly claims ^3.4.3. Pin to 1.7.0 for Dart 3.8.0.
-dependency_overrides:
-  powersync_core: 1.7.0
 
 flutter:
   uses-material-design: true
