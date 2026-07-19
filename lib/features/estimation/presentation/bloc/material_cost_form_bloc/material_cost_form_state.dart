@@ -14,11 +14,16 @@ class MaterialCostFormInitial extends MaterialCostFormState {
 class MaterialCostFormEditing extends MaterialCostFormState {
   const MaterialCostFormEditing({this.materialType = '', this.itemTypeError});
 
+  /// The material type value entered by the user.
   final String materialType;
+
+  /// Validation error key for the item type field, or null when valid.
   final String? itemTypeError;
 
+  /// Whether the item type field contains a non-empty value.
   bool get isItemTypeValid => materialType.trim().isNotEmpty;
 
+  /// Returns a copy of this state with the given fields replaced.
   MaterialCostFormEditing copyWith({
     String? materialType,
     Object? itemTypeError = _keep,

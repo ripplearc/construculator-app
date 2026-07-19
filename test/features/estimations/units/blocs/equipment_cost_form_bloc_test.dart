@@ -12,7 +12,7 @@ void main() {
   group('EquipmentCostFormBloc', () {
     late EquipmentCostFormBloc bloc;
 
-    const testEquipmentName = 'Excavator';
+    const testEquipmentType = 'Excavator';
 
     setUpAll(() {
       Modular.init(
@@ -52,13 +52,13 @@ void main() {
         'emits Editing with no error when value is non-empty',
         build: () => bloc,
         act: (bloc) =>
-            bloc.add(const EquipmentCostItemTypeChanged(testEquipmentName)),
+            bloc.add(const EquipmentCostItemTypeChanged(testEquipmentType)),
         expect: () => [
           isA<EquipmentCostFormEditing>()
               .having(
                 (s) => s.equipmentType,
                 'equipmentType',
-                testEquipmentName,
+                testEquipmentType,
               )
               .having((s) => s.itemTypeError, 'itemTypeError', isNull)
               .having((s) => s.isItemTypeValid, 'isItemTypeValid', true),
