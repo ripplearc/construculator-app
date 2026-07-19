@@ -14,8 +14,8 @@ void main() {
     await loadAppFontsAll();
   });
 
-  Widget wrap(Widget child) => MaterialApp(
-        theme: createTestTheme(),
+  Widget wrap(Widget child, {ThemeData? theme}) => MaterialApp(
+        theme: theme ?? createTestTheme(),
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -29,7 +29,7 @@ void main() {
         ),
       );
 
-  group('ExportSettingsDisplay screenshot tests', () {
+  group('ExportSettingsDisplay screenshot tests - Light', () {
     testWidgets('google drive state', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
@@ -146,6 +146,133 @@ void main() {
         find.byType(ExportSettingsDisplay),
         matchesGoldenFile(
           'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_no_export.png',
+        ),
+      );
+    });
+  });
+
+  group('ExportSettingsDisplay screenshot tests - Dark', () {
+    testWidgets('google drive state', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        wrap(
+          const ExportSettingsDisplay(
+            storageProvider: StorageProvider.googleDrive,
+            folderName: 'Cost estimation',
+          ),
+          theme: createTestThemeDark(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(ExportSettingsDisplay),
+        matchesGoldenFile(
+          'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_google_drive_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('dropbox state', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        wrap(
+          const ExportSettingsDisplay(
+            storageProvider: StorageProvider.dropbox,
+            folderName: 'Cost estimation',
+          ),
+          theme: createTestThemeDark(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(ExportSettingsDisplay),
+        matchesGoldenFile(
+          'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_dropbox_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('one drive state', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        wrap(
+          const ExportSettingsDisplay(
+            storageProvider: StorageProvider.oneDrive,
+            folderName: 'Cost estimation',
+          ),
+          theme: createTestThemeDark(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(ExportSettingsDisplay),
+        matchesGoldenFile(
+          'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_one_drive_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('provider set, no folder name', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        wrap(
+          const ExportSettingsDisplay(
+            storageProvider: StorageProvider.googleDrive,
+            folderName: null,
+          ),
+          theme: createTestThemeDark(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(ExportSettingsDisplay),
+        matchesGoldenFile(
+          'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_no_folder_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('no export configured state', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        wrap(
+          const ExportSettingsDisplay(
+            storageProvider: null,
+            folderName: null,
+          ),
+          theme: createTestThemeDark(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(ExportSettingsDisplay),
+        matchesGoldenFile(
+          'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_no_export_dark.png',
         ),
       );
     });

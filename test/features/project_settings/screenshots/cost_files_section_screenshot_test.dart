@@ -17,6 +17,7 @@ void main() {
   Future<void> pumpCostFilesSection({
     required WidgetTester tester,
     required List<CostFile> files,
+    ThemeData? theme,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = ratio;
@@ -24,7 +25,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: createTestTheme(),
+        theme: theme ?? createTestTheme(),
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -39,7 +40,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('CostFilesSection Screenshot Tests', () {
+  group('CostFilesSection Screenshot Tests - Light', () {
     testWidgets('renders with files correctly', (tester) async {
       await pumpCostFilesSection(
         tester: tester,
@@ -74,6 +75,51 @@ void main() {
         find.byType(CostFilesSection),
         matchesGoldenFile(
           'goldens/cost_files_section/${size.width}x${size.height}/empty.png',
+        ),
+      );
+    });
+  });
+
+  group('CostFilesSection Screenshot Tests - Dark', () {
+    testWidgets('renders with files correctly', (tester) async {
+      await pumpCostFilesSection(
+        tester: tester,
+        files: [
+          CostFile(
+            id: 'file-1',
+            fileName: 'Major Material Cost.xls',
+            fileSizeInBytes: 204800,
+            uploadedAt: DateTime(2024, 4, 23),
+          ),
+          CostFile(
+            id: 'file-2',
+            fileName: 'Foundation Budget.xlsx',
+            fileSizeInBytes: 1572864,
+            uploadedAt: DateTime(2024, 3, 10),
+          ),
+        ],
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(CostFilesSection),
+        matchesGoldenFile(
+          'goldens/cost_files_section/${size.width}x${size.height}/with_files_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders empty state correctly', (tester) async {
+      await pumpCostFilesSection(
+        tester: tester,
+        files: [],
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(CostFilesSection),
+        matchesGoldenFile(
+          'goldens/cost_files_section/${size.width}x${size.height}/empty_dark.png',
         ),
       );
     });

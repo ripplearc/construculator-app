@@ -6,45 +6,45 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
+  const size = Size(390, 80);
+  const ratio = 1.0;
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() async {
     await loadAppFonts();
   });
 
-  group('DeleteProjectButton Screenshot Tests', () {
-    const size = Size(390, 80);
-    const ratio = 1.0;
+  Future<void> pumpButton({
+    required WidgetTester tester,
+    bool isDeleting = false,
+    ThemeData? theme,
+  }) async {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = ratio;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
 
-    Future<void> pumpButton({
-      required WidgetTester tester,
-      bool isDeleting = false,
-    }) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: Center(
-              child: DeleteProjectButton(
-                projectName: 'Material of Building',
-                canDelete: true,
-                isDeleting: isDeleting,
-              ),
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme ?? createTestTheme(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Center(
+            child: DeleteProjectButton(
+              projectName: 'Material of Building',
+              canDelete: true,
+              isDeleting: isDeleting,
             ),
           ),
         ),
-      );
-      await tester.pumpAndSettle();
-    }
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
 
+  group('DeleteProjectButton Screenshot Tests - Light', () {
     testWidgets('renders enabled state', (tester) async {
       await pumpButton(tester: tester);
 
@@ -63,6 +63,34 @@ void main() {
         find.byType(DeleteProjectButton),
         matchesGoldenFile(
           'goldens/delete_project_button/${size.width.toInt()}x${size.height.toInt()}/disabled_deleting.png',
+        ),
+      );
+    });
+  });
+
+  group('DeleteProjectButton Screenshot Tests - Dark', () {
+    testWidgets('renders enabled state', (tester) async {
+      await pumpButton(tester: tester, theme: createTestThemeDark());
+
+      await expectLater(
+        find.byType(DeleteProjectButton),
+        matchesGoldenFile(
+          'goldens/delete_project_button/${size.width.toInt()}x${size.height.toInt()}/enabled_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders disabled state during deletion', (tester) async {
+      await pumpButton(
+        tester: tester,
+        isDeleting: true,
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(DeleteProjectButton),
+        matchesGoldenFile(
+          'goldens/delete_project_button/${size.width.toInt()}x${size.height.toInt()}/disabled_deleting_dark.png',
         ),
       );
     });
