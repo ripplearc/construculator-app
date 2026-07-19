@@ -205,7 +205,7 @@ void main() {
       tester,
     ) async {
       setUpAuthenticatedUser();
-      await pumpAppAtRoute(tester, materialRoute);
+      await pumpAppAtRoute(tester, makeApp(), materialRoute);
 
       await tester.enterText(
         find.byKey(const Key('material_type_field')),
@@ -224,7 +224,7 @@ void main() {
       tester,
     ) async {
       setUpAuthenticatedUser();
-      await pumpAppAtRoute(tester, materialRoute);
+      await pumpAppAtRoute(tester, makeApp(), materialRoute);
 
       await tester.enterText(
         find.byKey(const Key('material_type_field')),

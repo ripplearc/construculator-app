@@ -142,7 +142,11 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     void onSaveEnabledChanged(bool enabled) =>
         setState(() => _canSave = enabled);
     return switch (widget.type) {
-      CostItemType.material => MaterialCostFormFields(fromCostFile: _fromCostFile),
+      CostItemType.material => MaterialCostFormFields(
+          fromCostFile: _fromCostFile,
+          onTotalChanged: onTotalChanged,
+          onSaveEnabledChanged: onSaveEnabledChanged,
+        ),
       CostItemType.labor => LabourCostFormFields(
           fromCostFile: _fromCostFile,
           onTotalChanged: onTotalChanged,
