@@ -5,6 +5,7 @@ import 'package:construculator/libraries/project/domain/entities/project_entity.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../utils/screenshot/font_loader.dart';
 import '../projects_bottom_sheet_test_harness.dart';
 
 void main() {
@@ -37,7 +38,7 @@ void main() {
     harness.tearDown();
   });
 
-  group('ProjectsBottomSheet Screenshot Tests', () {
+  group('ProjectsBottomSheet Screenshot Tests - Light', () {
     testWidgets('renders loaded project list', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
@@ -79,6 +80,54 @@ void main() {
         find.byType(ProjectsBottomSheet),
         matchesGoldenFile(
           'goldens/projects_bottom_sheet/${size.width}x${size.height}/projects_bottom_sheet_empty.png',
+        ),
+      );
+    });
+  });
+
+  group('ProjectsBottomSheet Screenshot Tests - Dark', () {
+    testWidgets('renders loaded project list', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      harness.fakeRepository.setAccessibleProjects([
+        buildProject(id: 'project-1', projectName: 'My project'),
+        buildProject(id: 'project-2', projectName: 'Material of building'),
+        buildProject(id: 'project-3', projectName: 'MD bungalow'),
+      ]);
+
+      await harness.pumpSheet(
+        tester,
+        extraPump: const Duration(milliseconds: 100),
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(ProjectsBottomSheet),
+        matchesGoldenFile(
+          'goldens/projects_bottom_sheet/${size.width}x${size.height}/projects_bottom_sheet_loaded_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders empty state', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      harness.fakeRepository.setAccessibleProjects([]);
+
+      await harness.pumpSheet(
+        tester,
+        extraPump: const Duration(milliseconds: 100),
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(ProjectsBottomSheet),
+        matchesGoldenFile(
+          'goldens/projects_bottom_sheet/${size.width}x${size.height}/projects_bottom_sheet_empty_dark.png',
         ),
       );
     });

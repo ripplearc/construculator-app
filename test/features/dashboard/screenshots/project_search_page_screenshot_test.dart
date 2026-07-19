@@ -67,10 +67,13 @@ void main() {
     );
   });
 
-  Future<void> pumpProjectSearchPage({required WidgetTester tester}) async {
+  Future<void> pumpProjectSearchPage({
+    required WidgetTester tester,
+    ThemeData? theme,
+  }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: createTestTheme(),
+        theme: theme ?? createTestTheme(),
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -84,7 +87,7 @@ void main() {
     await tester.awaitImages();
   }
 
-  group('ProjectSearchPage Screenshot Tests', () {
+  group('ProjectSearchPage Screenshot Tests - Light', () {
     testWidgets('renders default state correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
@@ -215,6 +218,103 @@ void main() {
         find.byType(ProjectSearchPage),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_with_active_tag_filter.png',
+        ),
+      );
+    });
+  });
+
+  group('ProjectSearchPage Screenshot Tests - Dark', () {
+    testWidgets('renders default state correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpProjectSearchPage(tester: tester, theme: createTestThemeDark());
+
+      await expectLater(
+        find.byType(ProjectSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_default_dark.png',
+        ),
+      );
+    });
+
+    testWidgets(
+      'renders with search text and clear button visible correctly',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = ratio;
+        addTearDown(tester.view.reset);
+
+        await pumpProjectSearchPage(tester: tester, theme: createTestThemeDark());
+
+        final textFieldFinder = find.descendant(
+          of: find.byType(ProjectSearchPage),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(textFieldFinder, 'wall');
+        await tester.pumpAndSettle();
+        expect(find.text('wall'), findsOneWidget);
+
+        await expectLater(
+          find.byType(ProjectSearchPage),
+          matchesGoldenFile(
+            'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_text_dark.png',
+          ),
+        );
+      },
+    );
+
+    testWidgets('renders with recent searches correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      fakeSupabase.addTableData(DatabaseConstants.projectSearchHistoryTable, [
+        {
+          DatabaseConstants.userIdColumn: _testUserId,
+          DatabaseConstants.searchTermColumn: 'foundation',
+          DatabaseConstants.updatedAtColumn: '2024-06-01T00:00:00.000Z',
+        },
+        {
+          DatabaseConstants.userIdColumn: _testUserId,
+          DatabaseConstants.searchTermColumn: 'wall',
+          DatabaseConstants.updatedAtColumn: '2024-05-01T00:00:00.000Z',
+        },
+      ]);
+
+      await pumpProjectSearchPage(tester: tester, theme: createTestThemeDark());
+
+      await expectLater(
+        find.byType(ProjectSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_recent_searches_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders with suggestions correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      fakeSupabase.setRpcResponse(
+        DatabaseConstants.projectSearchSuggestionsRpcFunction,
+        ['Carpentry', 'Carparking cost', 'Plumbing'],
+      );
+
+      await pumpProjectSearchPage(tester: tester, theme: createTestThemeDark());
+
+      final searchField = find.byType(TextFormField);
+      await tester.enterText(searchField, 'Car');
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+      await tester.awaitImages();
+
+      await expectLater(
+        find.byType(ProjectSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_suggestions_dark.png',
         ),
       );
     });
