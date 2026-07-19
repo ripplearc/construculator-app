@@ -14,33 +14,35 @@ void main() {
     await loadAppFontsAll();
   });
 
-  group('SharedEstimationTile Screenshot Tests', () {
-    Future<void> pumpTile({
-      required WidgetTester tester,
-      required EstimationTileData data,
-      VoidCallback? onMenuTap,
-    }) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
+  Future<void> pumpTile({
+    required WidgetTester tester,
+    required EstimationTileData data,
+    VoidCallback? onMenuTap,
+    ThemeData? theme,
+  }) async {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = ratio;
+    addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Material(
-            child: SharedEstimationTile(
-              data: data,
-              onTap: () {},
-              onMenuTap: onMenuTap,
-            ),
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme ?? createTestTheme(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Material(
+          child: SharedEstimationTile(
+            data: data,
+            onTap: () {},
+            onMenuTap: onMenuTap,
           ),
         ),
-      );
-      await tester.pumpAndSettle();
-    }
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
 
+  group('SharedEstimationTile Screenshot Tests - Light', () {
     testWidgets('renders base tile correctly', (tester) async {
       await pumpTile(
         tester: tester,
@@ -113,6 +115,88 @@ void main() {
         find.byType(SharedEstimationTile),
         matchesGoldenFile(
           'goldens/shared_estimation_tile/${size.width}x${size.height}/shared_estimation_tile_no_cost.png',
+        ),
+      );
+    });
+  });
+
+  group('SharedEstimationTile Screenshot Tests - Dark', () {
+    testWidgets('renders base tile correctly', (tester) async {
+      await pumpTile(
+        tester: tester,
+        data: _FakeData(
+          estimateName: 'Base Estimate',
+          totalCost: 50000.0,
+          displayDate: DateTime(2024, 1, 1, 8, 30),
+        ),
+        onMenuTap: () {},
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(SharedEstimationTile),
+        matchesGoldenFile(
+          'goldens/shared_estimation_tile/${size.width}x${size.height}/shared_estimation_tile_base_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders tile with long name correctly', (tester) async {
+      await pumpTile(
+        tester: tester,
+        data: _FakeData(
+          estimateName: 'Complete Home Renovation and Extension Project',
+          totalCost: 125000.75,
+          displayDate: DateTime(2024, 3, 10, 16, 45),
+        ),
+        onMenuTap: () {},
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(SharedEstimationTile),
+        matchesGoldenFile(
+          'goldens/shared_estimation_tile/${size.width}x${size.height}/shared_estimation_tile_long_name_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders tile without menu tap (menu icon excluded from a11y)', (tester) async {
+      await pumpTile(
+        tester: tester,
+        data: _FakeData(
+          estimateName: 'Read-Only Estimate',
+          totalCost: 8500.0,
+          displayDate: DateTime(2024, 2, 14, 12, 0),
+        ),
+        onMenuTap: null,
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(SharedEstimationTile),
+        matchesGoldenFile(
+          'goldens/shared_estimation_tile/${size.width}x${size.height}/shared_estimation_tile_no_menu_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders tile with null cost showing dash', (tester) async {
+      await pumpTile(
+        tester: tester,
+        data: _FakeData(
+          estimateName: 'Pending Estimate',
+          totalCost: null,
+          displayDate: DateTime(2024, 7, 4, 9, 0),
+        ),
+        onMenuTap: () {},
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(SharedEstimationTile),
+        matchesGoldenFile(
+          'goldens/shared_estimation_tile/${size.width}x${size.height}/shared_estimation_tile_no_cost_dark.png',
         ),
       );
     });

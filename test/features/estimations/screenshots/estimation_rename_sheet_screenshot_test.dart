@@ -34,38 +34,40 @@ void main() {
     Modular.destroy();
   });
 
-  group('EstimationRenameSheet Screenshot Tests', () {
-    Future<void> pumpRenameSheet({
-      required WidgetTester tester,
-      required String estimationId,
-      required String initialName,
-    }) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: BlocProvider<RenameEstimationBloc>.value(
-              value: Modular.get<RenameEstimationBloc>(),
-              child: EstimationRenameSheet(
-                estimationId: estimationId,
-                currentName: initialName,
-                router: FakeAppRouter(),
-              ),
+  Future<void> pumpRenameSheet({
+    required WidgetTester tester,
+    required String estimationId,
+    required String initialName,
+    ThemeData? theme,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme ?? createTestTheme(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: BlocProvider<RenameEstimationBloc>.value(
+            value: Modular.get<RenameEstimationBloc>(),
+            child: EstimationRenameSheet(
+              estimationId: estimationId,
+              currentName: initialName,
+              router: FakeAppRouter(),
             ),
           ),
         ),
-      );
-      await tester.pumpAndSettle();
-    }
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
 
+  group('EstimationRenameSheet Screenshot Tests - Light', () {
     testWidgets('displays rename sheet with pre-populated text field', (
       tester,
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       await pumpRenameSheet(
         tester: tester,
@@ -86,6 +88,7 @@ void main() {
       (tester) async {
         tester.view.physicalSize = size;
         tester.view.devicePixelRatio = ratio;
+        addTearDown(tester.view.reset);
 
         await pumpRenameSheet(
           tester: tester,
@@ -103,6 +106,59 @@ void main() {
           find.byType(EstimationRenameSheet),
           matchesGoldenFile(
             'goldens/estimation_rename_sheet/${size.width}x${size.height}/estimation_rename_sheet_name_filled.png',
+          ),
+        );
+      },
+    );
+  });
+
+  group('EstimationRenameSheet Screenshot Tests - Dark', () {
+    testWidgets('displays rename sheet with pre-populated text field', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpRenameSheet(
+        tester: tester,
+        estimationId: 'test-estimation-123',
+        initialName: 'Existing Estimation Name',
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(EstimationRenameSheet),
+        matchesGoldenFile(
+          'goldens/estimation_rename_sheet/${size.width}x${size.height}/estimation_rename_sheet_default_dark.png',
+        ),
+      );
+    });
+
+    testWidgets(
+      'displays rename sheet with estimation name text filled in and enabled save button',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = ratio;
+        addTearDown(tester.view.reset);
+
+        await pumpRenameSheet(
+          tester: tester,
+          estimationId: 'test-estimation-123',
+          initialName: 'Old Name',
+          theme: createTestThemeDark(),
+        );
+
+        await tester.enterText(
+          find.byType(CoreTextField),
+          'New Estimation Name',
+        );
+        await tester.pumpAndSettle();
+
+        await expectLater(
+          find.byType(EstimationRenameSheet),
+          matchesGoldenFile(
+            'goldens/estimation_rename_sheet/${size.width}x${size.height}/estimation_rename_sheet_name_filled_dark.png',
           ),
         );
       },
