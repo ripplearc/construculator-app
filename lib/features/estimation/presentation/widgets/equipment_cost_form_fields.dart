@@ -1,5 +1,7 @@
+import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// Form fields for adding an equipment cost item.
@@ -60,12 +62,14 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
       widget.onSaveEnabledChanged?.call(false);
       return;
     }
-    widget.onSaveEnabledChanged?.call(
-      _equipmentNameController.text.trim().isNotEmpty,
-    );
+    final value = _equipmentNameController.text;
+    widget.onSaveEnabledChanged?.call(value.trim().isNotEmpty);
+    context
+        .read<EquipmentCostFormBloc>()
+        .add(EquipmentCostItemTypeChanged(value));
   }
 
-  // TODO: [CA-355] Move total calculation into BLoC when submission is wired
+  // TODO: [CA-353](https://ripplearc.youtrack.cloud/issue/CA-353) Move total calculation into BLoC when submission is wired
   void _notifyTotal() {
     if (widget.fromCostFile) {
       widget.onTotalChanged?.call(0);
@@ -90,7 +94,7 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
           else
             ..._manuallyFields(context),
           const SizedBox(height: CoreSpacing.space6),
-          // TODO: [CA-336] Add assign task section
+          // TODO: [CA-336](https://ripplearc.youtrack.cloud/issue/CA-336) Add assign task section
           // TODO: [CA-349] Build Preview Cost File UI (fromCostFile mode only)
         ],
       ),
@@ -140,10 +144,18 @@ class _EquipmentCostFormFieldsState extends State<EquipmentCostFormFields> {
     final l10n = context.l10n;
     final colorTheme = context.colorTheme;
     return [
-      CoreTextField(
-        key: const Key('equipment_name_field'),
-        hintText: l10n.equipmentNameLabel,
-        controller: _equipmentNameController,
+      BlocBuilder<EquipmentCostFormBloc, EquipmentCostFormState>(
+        builder: (_, state) {
+          final error =
+              state is EquipmentCostFormEditing ? state.itemTypeError : null;
+          return CoreTextField(
+            key: const Key('equipment_name_field'),
+            label: l10n.equipmentNameLabel,
+            controller: _equipmentNameController,
+            errorTextList:
+                error != null ? [l10n.equipmentNameRequiredError] : null,
+          );
+        },
       ),
       const SizedBox(height: CoreSpacing.space5),
       CoreTextField(

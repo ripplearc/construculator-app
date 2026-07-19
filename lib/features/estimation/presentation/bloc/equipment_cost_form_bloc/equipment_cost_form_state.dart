@@ -14,11 +14,16 @@ class EquipmentCostFormInitial extends EquipmentCostFormState {
 class EquipmentCostFormEditing extends EquipmentCostFormState {
   const EquipmentCostFormEditing({this.equipmentType = '', this.itemTypeError});
 
+  /// The equipment type value entered by the user.
   final String equipmentType;
+
+  /// Validation error key for the item type field, or null when valid.
   final String? itemTypeError;
 
+  /// Whether the item type field contains a non-empty value.
   bool get isItemTypeValid => equipmentType.trim().isNotEmpty;
 
+  /// Returns a copy of this state with the given fields replaced.
   EquipmentCostFormEditing copyWith({
     String? equipmentType,
     Object? itemTypeError = _keep,

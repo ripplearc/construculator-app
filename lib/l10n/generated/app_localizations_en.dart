@@ -1198,4 +1198,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rateHourLabel => 'Rate/Hour:';
+
+  @override
+  String get materialTypeRequiredError => 'Material type is required';
+
+  @override
+  String get labourTypeRequiredError => 'Labour type is required';
+
+  @override
+  String get equipmentNameRequiredError => 'Equipment name is required';
 }

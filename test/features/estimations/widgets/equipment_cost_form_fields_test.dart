@@ -1,12 +1,36 @@
+import 'package:construculator/features/estimation/estimation_module.dart';
+import 'package:construculator/features/estimation/presentation/bloc/equipment_cost_form_bloc/equipment_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/equipment_cost_form_fields.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
+import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+import '../../../utils/fake_app_bootstrap_factory.dart';
+
 void main() {
+  late AppLocalizations l10n;
+  late FakeSupabaseWrapper fakeSupabase;
+
   setUpAll(() {
-    lookupAppLocalizations(const Locale('en'));
+    l10n = lookupAppLocalizations(const Locale('en'));
+    fakeSupabase = FakeSupabaseWrapper(clock: FakeClockImpl());
+    final bootstrap = FakeAppBootstrapFactory.create(
+      supabaseWrapper: fakeSupabase,
+    );
+    Modular.init(EstimationModule(bootstrap));
+  });
+
+  tearDownAll(() {
+    Modular.dispose();
+  });
+
+  setUp(() {
+    fakeSupabase.reset();
   });
 
   Widget makeWidget({
@@ -20,10 +44,13 @@ void main() {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: EquipmentCostFormFields(
-          fromCostFile: fromCostFile,
-          onTotalChanged: onTotalChanged,
-          onSaveEnabledChanged: onSaveEnabledChanged,
+        body: BlocProvider<EquipmentCostFormBloc>(
+          create: (_) => Modular.get<EquipmentCostFormBloc>(),
+          child: EquipmentCostFormFields(
+            fromCostFile: fromCostFile,
+            onTotalChanged: onTotalChanged,
+            onSaveEnabledChanged: onSaveEnabledChanged,
+          ),
         ),
       ),
     );
@@ -196,6 +223,43 @@ void main() {
       await tester.pump();
 
       expect(captured, isFalse);
+    });
+  });
+
+  group('EquipmentCostFormFields — item type error', () {
+    testWidgets('shows error text when equipment name is cleared after typing', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'Backhoe',
+      );
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        '',
+      );
+      await tester.pump();
+
+      expect(find.text(l10n.equipmentNameRequiredError), findsOneWidget);
+    });
+
+    testWidgets('hides error text when equipment name is non-empty', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('equipment_name_field')),
+        'Backhoe',
+      );
+      await tester.pump();
+
+      expect(find.text(l10n.equipmentNameRequiredError), findsNothing);
     });
   });
 
