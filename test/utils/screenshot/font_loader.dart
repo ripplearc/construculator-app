@@ -110,8 +110,10 @@ ThemeData createTestThemeDark() {
 
   return ThemeData(
     fontFamily: 'Roboto',
+    brightness: Brightness.dark,
     materialTapTargetSize: MaterialTapTargetSize.padded,
     primaryColor: colors.backgroundDarkOrient,
+    scaffoldBackgroundColor: colors.pageBackground,
     extensions: [colors, typography],
   );
 }
