@@ -14,6 +14,7 @@ analyzer:
     - custom_lint
   errors:
     invalid_annotation_target: ignore
+    deprecated_member_use: ignore # TODO: [CA-825] [Chore] Migrate all deprecated_member_use sites surfaced by Flutter 3.44.4 upgrade https://ripplearc.youtrack.cloud/issue/CA-825/Chore-Migrate-all-deprecated-member-use-sites-surfaced-by-Flutter-3.44.4-upgrade
   exclude:
     - lib/generated/**
     - lib/**.g.dart
