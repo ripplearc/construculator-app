@@ -173,11 +173,13 @@ class _DateRangeBottomSheetState extends State<DateRangeBottomSheet> {
       _PredefinedRange.custom: l10n.dateRangeSheetCustomRange,
     };
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: options.entries.map((entry) {
-        final range = entry.key;
-        return RadioListTile<_PredefinedRange>(
+    return Material(
+      type: MaterialType.transparency,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: options.entries.map((entry) {
+          final range = entry.key;
+          return RadioListTile<_PredefinedRange>(
           key: Key('date_range_option_${range.name}'),
           value: range,
           groupValue: _selected,
@@ -200,8 +202,9 @@ class _DateRangeBottomSheetState extends State<DateRangeBottomSheet> {
               setState(() => _selected = range);
             }
           },
-        );
-      }).toList(),
+          );
+        }).toList(),
+      ),
     );
   }
 
