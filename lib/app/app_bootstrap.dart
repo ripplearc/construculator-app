@@ -3,6 +3,7 @@ import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
+import 'package:powersync/powersync.dart';
 
 /// The application requires that certain services—such as the Supabase client—are fully
 /// initialized before the [AppModule] is loaded. This is critical for features like
@@ -91,10 +92,19 @@ class AppBootstrap {
   /// Its [initialize] method must be called with the app runner to enable error tracking.
   final SentryWrapper sentryWrapper;
 
+  /// The opened local PowerSync database.
+  ///
+  /// Opened during bootstrap because resolving its on-device path is
+  /// asynchronous and must complete before the module graph is built. It is
+  /// usable offline immediately; syncing starts once `PowerSyncManager`
+  /// connects after authentication.
+  final PowerSyncDatabase powerSyncDatabase;
+
   AppBootstrap({
     required this.envLoader,
     required this.config,
     required this.supabaseWrapper,
     required this.sentryWrapper,
+    required this.powerSyncDatabase,
   });
 }
