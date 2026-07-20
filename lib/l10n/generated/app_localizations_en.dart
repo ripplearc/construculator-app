@@ -1149,7 +1149,49 @@ class AppLocalizationsEn extends AppLocalizations {
   String get perUnitCostLabel => 'Per unit cost*';
 
   @override
-  String get uomLabel => 'Unit of measure*';
+  String get unitOfMeasurementHint => 'UOM';
+
+  @override
+  String get selectUnitTitle => 'Select unit';
+
+  @override
+  String get unitPieces => 'Pieces';
+
+  @override
+  String get unitMeters => 'Meters';
+
+  @override
+  String get unitSquareMeters => 'Square meters';
+
+  @override
+  String get unitCubicMeters => 'Cubic meters';
+
+  @override
+  String get unitKilograms => 'Kilograms';
+
+  @override
+  String get unitTons => 'Tons';
+
+  @override
+  String get unitLiters => 'Liters';
+
+  @override
+  String get unitHours => 'Hours';
+
+  @override
+  String get unitDays => 'Days';
+
+  @override
+  String get unitBoxes => 'Boxes';
+
+  @override
+  String get unitBags => 'Bags';
+
+  @override
+  String get unitRolls => 'Rolls';
+
+  @override
+  String get unitSheets => 'Sheets';
 
   @override
   String get otherMaterialDetailsButton => 'Other material details';

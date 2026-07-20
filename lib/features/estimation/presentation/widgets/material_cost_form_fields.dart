@@ -1,4 +1,5 @@
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
+import 'package:construculator/features/estimation/presentation/widgets/unit_of_measurement_field.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -171,17 +172,12 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
         ),
       ),
       const SizedBox(height: CoreSpacing.space5),
-      // TODO: [CA-311] Add UOM dropdown https://ripplearc.youtrack.cloud/issue/CA-311
-      CoreTextField(
+      // TODO: [CA-312] Wire selectedUnit and onUnitSelected to BLoC state
+      UnitOfMeasurementField(
         key: const Key('uom_field'),
-        hintText: l10n.uomLabel,
-        readOnly: true,
-        enabled: false,
-        suffix: CoreIconWidget(
-          icon: CoreIcons.arrowDropDown,
-          color: colorTheme.iconGrayMid,
-          size: 24,
-        ),
+        fromCostFile: false,
+        selectedUnit: null,
+        onUnitSelected: (_) {},
       ),
       const SizedBox(height: CoreSpacing.space5),
       CoreTextField(

@@ -2170,11 +2170,95 @@ abstract class AppLocalizations {
   /// **'Per unit cost*'**
   String get perUnitCostLabel;
 
-  /// Hint label for the unit of measure dropdown on the material cost form (manually mode)
+  /// Hint text shown inside the unit of measurement selector when no unit is selected
   ///
   /// In en, this message translates to:
-  /// **'Unit of measure*'**
-  String get uomLabel;
+  /// **'UOM'**
+  String get unitOfMeasurementHint;
+
+  /// Title of the bottom sheet modal for selecting a unit of measurement
+  ///
+  /// In en, this message translates to:
+  /// **'Select unit'**
+  String get selectUnitTitle;
+
+  /// Unit of measurement: pieces
+  ///
+  /// In en, this message translates to:
+  /// **'Pieces'**
+  String get unitPieces;
+
+  /// Unit of measurement: meters
+  ///
+  /// In en, this message translates to:
+  /// **'Meters'**
+  String get unitMeters;
+
+  /// Unit of measurement: square meters
+  ///
+  /// In en, this message translates to:
+  /// **'Square meters'**
+  String get unitSquareMeters;
+
+  /// Unit of measurement: cubic meters
+  ///
+  /// In en, this message translates to:
+  /// **'Cubic meters'**
+  String get unitCubicMeters;
+
+  /// Unit of measurement: kilograms
+  ///
+  /// In en, this message translates to:
+  /// **'Kilograms'**
+  String get unitKilograms;
+
+  /// Unit of measurement: tons
+  ///
+  /// In en, this message translates to:
+  /// **'Tons'**
+  String get unitTons;
+
+  /// Unit of measurement: liters
+  ///
+  /// In en, this message translates to:
+  /// **'Liters'**
+  String get unitLiters;
+
+  /// Unit of measurement: hours
+  ///
+  /// In en, this message translates to:
+  /// **'Hours'**
+  String get unitHours;
+
+  /// Unit of measurement: days
+  ///
+  /// In en, this message translates to:
+  /// **'Days'**
+  String get unitDays;
+
+  /// Unit of measurement: boxes
+  ///
+  /// In en, this message translates to:
+  /// **'Boxes'**
+  String get unitBoxes;
+
+  /// Unit of measurement: bags
+  ///
+  /// In en, this message translates to:
+  /// **'Bags'**
+  String get unitBags;
+
+  /// Unit of measurement: rolls
+  ///
+  /// In en, this message translates to:
+  /// **'Rolls'**
+  String get unitRolls;
+
+  /// Unit of measurement: sheets
+  ///
+  /// In en, this message translates to:
+  /// **'Sheets'**
+  String get unitSheets;
 
   /// Toggle button label that expands/collapses the brand and product link fields on the material cost form
   ///

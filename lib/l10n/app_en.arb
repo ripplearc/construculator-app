@@ -1813,9 +1813,65 @@
   "@perUnitCostLabel": {
     "description": "Hint label for the per-unit cost field on the material cost form (manually mode)"
   },
-  "uomLabel": "Unit of measure*",
-  "@uomLabel": {
-    "description": "Hint label for the unit of measure dropdown on the material cost form (manually mode)"
+  "unitOfMeasurementHint": "UOM",
+  "@unitOfMeasurementHint": {
+    "description": "Hint text shown inside the unit of measurement selector when no unit is selected"
+  },
+  "selectUnitTitle": "Select unit",
+  "@selectUnitTitle": {
+    "description": "Title of the bottom sheet modal for selecting a unit of measurement"
+  },
+  "unitPieces": "Pieces",
+  "@unitPieces": {
+    "description": "Unit of measurement: pieces"
+  },
+  "unitMeters": "Meters",
+  "@unitMeters": {
+    "description": "Unit of measurement: meters"
+  },
+  "unitSquareMeters": "Square meters",
+  "@unitSquareMeters": {
+    "description": "Unit of measurement: square meters"
+  },
+  "unitCubicMeters": "Cubic meters",
+  "@unitCubicMeters": {
+    "description": "Unit of measurement: cubic meters"
+  },
+  "unitKilograms": "Kilograms",
+  "@unitKilograms": {
+    "description": "Unit of measurement: kilograms"
+  },
+  "unitTons": "Tons",
+  "@unitTons": {
+    "description": "Unit of measurement: tons"
+  },
+  "unitLiters": "Liters",
+  "@unitLiters": {
+    "description": "Unit of measurement: liters"
+  },
+  "unitHours": "Hours",
+  "@unitHours": {
+    "description": "Unit of measurement: hours"
+  },
+  "unitDays": "Days",
+  "@unitDays": {
+    "description": "Unit of measurement: days"
+  },
+  "unitBoxes": "Boxes",
+  "@unitBoxes": {
+    "description": "Unit of measurement: boxes"
+  },
+  "unitBags": "Bags",
+  "@unitBags": {
+    "description": "Unit of measurement: bags"
+  },
+  "unitRolls": "Rolls",
+  "@unitRolls": {
+    "description": "Unit of measurement: rolls"
+  },
+  "unitSheets": "Sheets",
+  "@unitSheets": {
+    "description": "Unit of measurement: sheets"
   },
   "otherMaterialDetailsButton": "Other material details",
   "@otherMaterialDetailsButton": {
