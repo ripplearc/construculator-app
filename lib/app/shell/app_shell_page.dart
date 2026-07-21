@@ -9,6 +9,7 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -21,11 +22,13 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// tab navigation using [AppShellBloc]. Module lazy-loading is orchestrated
 /// inside the BLoC, keeping this Page a pure presentation concern.
 class AppShellPage extends StatefulWidget {
+  final ProjectUIProvider projectUIProvider;
   final CurrentProjectNotifier currentProjectNotifier;
   final AppRouter router;
 
   const AppShellPage({
     super.key,
+    required this.projectUIProvider,
     required this.currentProjectNotifier,
     required this.router,
   });
@@ -98,6 +101,9 @@ class _AppShellPageState extends State<AppShellPage> {
           child: Scaffold(
             appBar: AppHeaderModule.buildHeader(
               isHomeTab: state.selectedTabIndex == ShellTab.home.index,
+              currentProjectNotifier: widget.currentProjectNotifier,
+              router: widget.router,
+              projectUIProvider: widget.projectUIProvider,
             ),
             body: Stack(
               children: List.generate(ShellTab.values.length, (index) {

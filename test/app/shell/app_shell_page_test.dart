@@ -121,6 +121,7 @@ void main() {
           ),
         ],
         child: AppShellPage(
+          projectUIProvider: Modular.get<ProjectUIProvider>(),
           currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
           router: Modular.get<AppRouter>(),
         ),

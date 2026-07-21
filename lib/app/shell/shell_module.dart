@@ -17,6 +17,7 @@ import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
+import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -85,6 +86,7 @@ class ShellModule extends Module {
           ),
         ],
         child: AppShellPage(
+          projectUIProvider: Modular.get<ProjectUIProvider>(),
           currentProjectNotifier: Modular.get<CurrentProjectNotifier>(),
           router: Modular.get<AppRouter>(),
         ),
