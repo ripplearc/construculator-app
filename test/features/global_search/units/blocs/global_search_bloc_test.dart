@@ -795,9 +795,10 @@ void main() {
           await bloc.stream.firstWhere(
             (state) => state is GlobalSearchReady && state.query.isEmpty,
           );
+          // Release the cancelled fetch; its generation-guarded continuation
+          // runs to completion during bloc.close() without emitting.
           fakeSupabase.completer!.complete();
         },
-        wait: const Duration(milliseconds: 700),
         expect: () => [
           isA<GlobalSearchReady>()
               .having((s) => s.query, 'query', 'foundation')
@@ -845,14 +846,10 @@ void main() {
           await bloc.stream.firstWhere(
             (state) => state is GlobalSearchReady && state.query == 'found',
           );
-          // Release the superseded first fetch and let its continuation run
-          // through the repository chain; it must not touch the flag.
+          // Release the superseded first fetch; its continuation must not
+          // touch the flag. A concurrently-handled event emitting afterwards
+          // must still see the newer fetch's loading flag.
           firstFetchGate.complete();
-          for (var i = 0; i < 10; i++) {
-            await Future<void>.value();
-          }
-          // A concurrently-handled event emitting now must still see the
-          // newer fetch's loading flag.
           bloc.add(
             const GlobalSearchOwnerFiltersApplied(ownerIds: {'owner-1'}),
           );
@@ -862,8 +859,10 @@ void main() {
                 state.selectedOwnerIds.contains('owner-1'),
           );
           secondFetchGate.complete();
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchReady && !state.suggestionsLoading,
+          );
         },
-        wait: const Duration(milliseconds: 700),
         expect: () => [
           isA<GlobalSearchReady>()
               .having((s) => s.query, 'query', 'fo')
@@ -919,14 +918,18 @@ void main() {
             (state) => state is GlobalSearchReady && !state.suggestionsLoading,
           );
           // Release the pre-reset fetch; the reset disowned it, so it must
-          // not resurrect the cache or mark suggestions as fetched.
+          // not resurrect the cache or mark suggestions as fetched. Its
+          // pure-microtask continuation drains before the debounce timer
+          // delivers the next keystroke, so no pump loop is needed.
           suggestionsFetchGate.complete();
-          for (var i = 0; i < 10; i++) {
-            await Future<void>.value();
-          }
           bloc.add(const GlobalSearchQueryUpdated(query: 'found'));
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.query == 'found' &&
+                !state.suggestionsLoading,
+          );
         },
-        wait: const Duration(milliseconds: 700),
         expect: () => [
           isA<GlobalSearchReady>()
               .having((s) => s.query, 'query', 'fo')
@@ -1519,7 +1522,16 @@ void main() {
           bloc.add(
             const GlobalSearchOwnerFiltersApplied(ownerIds: {'owner-1'}),
           );
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.selectedOwnerIds.contains('owner-1'),
+          );
           fakeSupabase.completer!.complete();
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableTagsLoading,
+          );
         },
         expect: () => [
           isA<GlobalSearchReady>()
@@ -1567,6 +1579,10 @@ void main() {
           );
           bloc.add(const GlobalSearchAvailableTagsRequested());
           fakeSupabase.completer!.complete();
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableTagsLoading,
+          );
         },
         expect: () => [
           isA<GlobalSearchReady>().having(
@@ -1589,6 +1605,80 @@ void main() {
                 (call) => call['table'] == DatabaseConstants.tagsTable,
               );
           expect(tagFetches, hasLength(1));
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'a tags fetch surviving a GlobalSearchStarted reset neither stomps '
+        'the reset flag nor marks tags as fetched — the next sheet open '
+        'refetches',
+        setUp: () {
+          fakeSupabase.setCurrentUser(null);
+          seedTags(['Roofing']);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          final tagsFetchGate = fakeSupabase.completer!;
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchReady && state.availableTagsLoading,
+          );
+          // Later operations run ungated; only the in-flight tags fetch
+          // stays parked on the gate.
+          fakeSupabase.shouldDelayOperations = false;
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableTagsLoading,
+          );
+          // Release the pre-reset fetch; the reset disowned it, so it must
+          // not mark tags as fetched or emit over the reset state.
+          tagsFetchGate.complete();
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                !state.availableTagsLoading &&
+                state.availableTags.isNotEmpty,
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTagsLoading,
+            'availableTagsLoading',
+            isTrue,
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableTagsLoading,
+                'availableTagsLoading reset on restart',
+                isFalse,
+              )
+              .having((s) => s.availableTags, 'availableTags', isEmpty),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableTagsLoading,
+                'post-reset sheet open starts a fresh fetch',
+                isTrue,
+              )
+              .having((s) => s.availableTags, 'availableTags', isEmpty),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableTagsLoading,
+                'availableTagsLoading',
+                isFalse,
+              )
+              .having((s) => s.availableTags, 'availableTags', ['Roofing']),
+        ],
+        verify: (_) {
+          final tagFetches = fakeSupabase
+              .getMethodCallsFor('selectMatch')
+              .where(
+                (call) => call['table'] == DatabaseConstants.tagsTable,
+              );
+          expect(tagFetches, hasLength(2));
         },
       );
     });
@@ -2104,6 +2194,10 @@ void main() {
           );
           bloc.add(const GlobalSearchAvailableOwnersRequested());
           fakeSupabase.completer!.complete();
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableOwnersLoading,
+          );
         },
         expect: () => [
           isA<GlobalSearchReady>().having(
@@ -2130,6 +2224,85 @@ void main() {
                     DatabaseConstants.projectOwnersRpcFunction,
               );
           expect(ownerFetches, hasLength(1));
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'an owners fetch surviving a GlobalSearchStarted reset neither '
+        'stomps the reset flag nor marks owners as fetched — the next sheet '
+        'open refetches',
+        setUp: () {
+          fakeSupabase.setCurrentUser(null);
+          seedOwners([(id: 'owner-1', firstName: 'John')]);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          final ownersFetchGate = fakeSupabase.completer!;
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && state.availableOwnersLoading,
+          );
+          // Later operations run ungated; only the in-flight owners fetch
+          // stays parked on the gate.
+          fakeSupabase.shouldDelayOperations = false;
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableOwnersLoading,
+          );
+          // Release the pre-reset fetch; the reset disowned it, so it must
+          // not mark owners as fetched or emit over the reset state.
+          ownersFetchGate.complete();
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                !state.availableOwnersLoading &&
+                state.availableOwners.isNotEmpty,
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableOwnersLoading,
+            'availableOwnersLoading',
+            isTrue,
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableOwnersLoading,
+                'availableOwnersLoading reset on restart',
+                isFalse,
+              )
+              .having((s) => s.availableOwners, 'availableOwners', isEmpty),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableOwnersLoading,
+                'post-reset sheet open starts a fresh fetch',
+                isTrue,
+              )
+              .having((s) => s.availableOwners, 'availableOwners', isEmpty),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableOwnersLoading,
+                'availableOwnersLoading',
+                isFalse,
+              )
+              .having(
+                (s) => s.availableOwners.map((o) => o.id).toList(),
+                'availableOwners',
+                ['owner-1'],
+              ),
+        ],
+        verify: (_) {
+          final ownerFetches = fakeSupabase.getMethodCallsFor('rpc').where(
+                (call) =>
+                    call['functionName'] ==
+                    DatabaseConstants.projectOwnersRpcFunction,
+              );
+          expect(ownerFetches, hasLength(2));
         },
       );
     });
