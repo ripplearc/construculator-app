@@ -2,34 +2,13 @@ import 'package:construculator/features/app_header/app_header_module.dart';
 import 'package:construculator/features/app_header/presentation/widgets/header_row.dart';
 import 'package:construculator/features/app_header/presentation/widgets/title_search_app_bar.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
-import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
-import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_project_ui_provider.dart';
-import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/global_search_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
-
-class _AppHeaderTestModule extends Module {
-  final FakeCurrentProjectNotifier notifier;
-  final FakeAppRouter router;
-
-  _AppHeaderTestModule(this.notifier, this.router);
-
-  @override
-  List<Module> get imports => [AppHeaderModule()];
-
-  @override
-  void binds(Injector i) {
-    i.addInstance<CurrentProjectNotifier>(notifier);
-    i.addInstance<ProjectUIProvider>(FakeProjectUIProvider());
-    i.addInstance<AppRouter>(router);
-  }
-}
 
 void main() {
   group('AppHeaderModule.buildHeader', () {
@@ -39,10 +18,7 @@ void main() {
     setUp(() {
       fakeNotifier = FakeCurrentProjectNotifier();
       fakeRouter = FakeAppRouter();
-      Modular.init(_AppHeaderTestModule(fakeNotifier, fakeRouter));
     });
-
-    tearDown(() => Modular.destroy());
 
     Widget makeApp({required bool isHomeTab}) {
       return MaterialApp(
@@ -51,7 +27,12 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
-          appBar: AppHeaderModule.buildHeader(isHomeTab: isHomeTab),
+          appBar: AppHeaderModule.buildHeader(
+            isHomeTab: isHomeTab,
+            currentProjectNotifier: fakeNotifier,
+            router: fakeRouter,
+            projectUIProvider: FakeProjectUIProvider(),
+          ),
         ),
       );
     }

@@ -21,17 +21,26 @@ class AppHeaderModule extends Module {
 
   /// Builds the shell's app bar for the current header context.
   ///
-  /// When a project is selected, delegates to the project header provided by
-  /// [ProjectUIProvider]. Otherwise shows the [HeaderRow] home header on the
-  /// home tab ([isHomeTab] true) or a [TitleSearchAppBar] on other tabs, with
-  /// search navigation wired to the global search route in both cases.
-  static PreferredSizeWidget buildHeader({required bool isHomeTab}) {
-    final projectId = Modular.get<CurrentProjectNotifier>().currentProjectId;
+  /// When [currentProjectNotifier] reports a selected project, delegates to
+  /// the project header provided by [projectUIProvider]. Otherwise shows the
+  /// [HeaderRow] home header on the home tab ([isHomeTab] true) or a
+  /// [TitleSearchAppBar] on other tabs, with search navigation wired through
+  /// [router] to the global search route in both cases.
+  ///
+  /// Dependencies are passed in by the caller (resolved once at
+  /// field-initialisation time) rather than looked up via `Modular.get()`
+  /// here, since this runs inside `build()` on every shell rebuild.
+  static PreferredSizeWidget buildHeader({
+    required bool isHomeTab,
+    required CurrentProjectNotifier currentProjectNotifier,
+    required AppRouter router,
+    required ProjectUIProvider projectUIProvider,
+  }) {
+    final projectId = currentProjectNotifier.currentProjectId;
     if (projectId != null && projectId.isNotEmpty) {
-      return Modular.get<ProjectUIProvider>().buildProjectHeaderAppbar();
+      return projectUIProvider.buildProjectHeaderAppbar();
     }
 
-    final router = Modular.get<AppRouter>();
     void onSearchTap() => router.pushNamed(fullGlobalSearchRoute);
 
     if (isHomeTab) {
