@@ -28,6 +28,13 @@ EventTransformer<E> _debounce<E>(Duration duration) =>
 /// Handles debounced query updates and explicit search submissions, plus the
 /// recent-searches and suggestions surfaces shown on the idle state.
 /// Delegates to [ProjectSearchRepository] and maps results to typed states.
+///
+/// The in-flight suggestions loading flag is tracked as private instance
+/// state rather than a state-builder parameter, so a concurrently-handled
+/// event rebuilding the state cannot stomp it. A fetch-generation counter
+/// lets a superseded fetch (cancelled by the switchMap transformer or
+/// disowned by a history-request reset) bail out on completion instead of
+/// clearing a newer fetch's flag or resurrecting pre-reset data.
 class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
   final ProjectSearchRepository _repository;
   final AuthManager _authManager;
@@ -39,14 +46,8 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
 
   bool _suggestionsFetched = false;
 
-  // Whether a suggestions fetch is in flight. Tracked as instance state (not
-  // an _initialFromCache parameter) so a concurrently-handled event emitting
-  // _initialFromCache() cannot reset an in-flight loading flag prematurely.
   bool _suggestionsLoading = false;
 
-  // Monotonic id of the latest suggestions fetch. A superseded fetch (e.g.
-  // cancelled by the switchMap transformer when a newer query arrives) must
-  // not clear _suggestionsLoading on completion — the newest fetch owns it.
   int _suggestionsFetchGeneration = 0;
 
   /// Exposed for testing only — resolves when the last save-after-search
@@ -307,8 +308,6 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     );
   }
 
-  // Reads the in-flight loading flag from instance state so no handler can
-  // stomp another handler's in-flight flag.
   ProjectSearchInitial _initialFromCache() => ProjectSearchInitial(
     recentSearches: _cachedRecents,
     suggestions: _filterSuggestions(_currentQuery),

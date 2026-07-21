@@ -28,7 +28,15 @@ const int _kMaxDisplayedSuggestions = 5;
 EventTransformer<E> _debounce<E>(Duration duration) =>
     (events, mapper) => events.debounceTime(duration).switchMap(mapper);
 
-/// Bloc for managing global search state across projects, estimations, and members
+/// Bloc for managing global search state across projects, estimations, and members.
+///
+/// In-flight loading flags are tracked as private instance state rather than
+/// state-builder parameters, so a concurrently-handled event rebuilding the
+/// state cannot stomp another handler's in-flight flag. Each fetch records a
+/// generation counter; a superseded fetch (cancelled by the switchMap
+/// transformer, deduplicated while in flight, or disowned by a
+/// [GlobalSearchStarted] reset) bails out on completion so it can neither
+/// clear a newer fetch's flag nor resurrect pre-reset data.
 class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   static final _logger = AppLogger().tag('GlobalSearchBloc');
   final GlobalSearchRepository _repository;
@@ -41,14 +49,8 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
 
   bool _suggestionsFetched = false;
 
-  // Whether a suggestions fetch is in flight. Tracked as instance state (not
-  // a _readyState parameter) so a concurrently-handled event emitting
-  // _readyState() cannot reset an in-flight loading flag prematurely.
   bool _suggestionsLoading = false;
 
-  // Monotonic id of the latest suggestions fetch. A superseded fetch (e.g.
-  // cancelled by the switchMap transformer when a newer query arrives) must
-  // not clear _suggestionsLoading on completion — the newest fetch owns it.
   int _suggestionsFetchGeneration = 0;
 
   String _currentQuery = '';
@@ -62,9 +64,9 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   // sheet openings reuse the cached list instead of refetching.
   bool _availableTagsFetched = false;
 
-  // Whether the available-tags fetch is in flight; instance state for the
-  // same stomp-protection reason as _suggestionsLoading.
   bool _availableTagsLoading = false;
+
+  int _availableTagsFetchGeneration = 0;
 
   String _tagSearchQuery = '';
 
@@ -77,9 +79,9 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   // sheet openings reuse the cached list instead of refetching.
   bool _availableOwnersFetched = false;
 
-  // Whether the available-owners fetch is in flight; instance state for the
-  // same stomp-protection reason as _suggestionsLoading.
   bool _availableOwnersLoading = false;
+
+  int _availableOwnersFetchGeneration = 0;
 
   String _ownerSearchQuery = '';
 
@@ -138,8 +140,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
         .toList();
   }
 
-  // Builds a GlobalSearchReady from the current internal fields, including
-  // the in-flight loading flags tracked as instance state.
+  // Builds a GlobalSearchReady from the current internal fields.
   GlobalSearchReady _readyState() {
     return GlobalSearchReady(
       recentSearches: _recentSearches,
@@ -169,10 +170,14 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       return;
     }
 
+    final generation = ++_availableTagsFetchGeneration;
     _availableTagsLoading = true;
     emit(_readyState());
 
     final result = await _tagRepository.getTags();
+    // A GlobalSearchStarted reset disowned this fetch while it was in
+    // flight; the reset handler owns the loading flag now.
+    if (generation != _availableTagsFetchGeneration) return;
     _availableTagsLoading = false;
 
     result.fold(
@@ -208,16 +213,21 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       _rawSuggestions = const [];
       _suggestionsFetched = false;
       _suggestionsLoading = false;
-      // Disown any in-flight suggestions fetch: its completion must not
-      // resurrect the pre-reset cache or mark suggestions as fetched.
+      // Disown any in-flight fetch: its completion must not resurrect the
+      // pre-reset cache, mark data as fetched, or touch a loading flag the
+      // reset now owns.
       _suggestionsFetchGeneration++;
       _currentQuery = '';
       _selectedTags = const {};
       _tagSearchQuery = '';
+      _availableTagsFetched = false;
       _availableTagsLoading = false;
+      _availableTagsFetchGeneration++;
       _selectedOwnerIds = const {};
       _ownerSearchQuery = '';
+      _availableOwnersFetched = false;
       _availableOwnersLoading = false;
+      _availableOwnersFetchGeneration++;
       _selectedDateRange = null;
       emit(_readyState());
     });
@@ -404,10 +414,14 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       return;
     }
 
+    final generation = ++_availableOwnersFetchGeneration;
     _availableOwnersLoading = true;
     emit(_readyState());
 
     final result = await _ownerRepository.getOwners();
+    // A GlobalSearchStarted reset disowned this fetch while it was in
+    // flight; the reset handler owns the loading flag now.
+    if (generation != _availableOwnersFetchGeneration) return;
     _availableOwnersLoading = false;
 
     result.fold(

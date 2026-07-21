@@ -226,8 +226,10 @@ void main() {
           );
           bloc.add(const ProjectSearchPerformedEvent(query: '   '));
           fakeSupabase.completer!.complete();
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && !s.suggestionsLoading,
+          );
         },
-        wait: const Duration(milliseconds: 500),
         expect: () => [
           isA<ProjectSearchInitial>()
               .having((s) => s.query, 'query', 'foundation')
@@ -267,9 +269,10 @@ void main() {
           await bloc.stream.firstWhere(
             (s) => s is ProjectSearchInitial && s.query.isEmpty,
           );
+          // Release the cancelled fetch; its generation-guarded continuation
+          // runs to completion during bloc.close() without emitting.
           fakeSupabase.completer!.complete();
         },
-        wait: const Duration(milliseconds: 700),
         expect: () => [
           isA<ProjectSearchInitial>()
               .having((s) => s.query, 'query', 'foundation')
@@ -310,15 +313,16 @@ void main() {
           await bloc.stream.firstWhere(
             (s) => s is ProjectSearchInitial && s.query == 'found',
           );
-          // Release the superseded first fetch; its continuation must return
-          // without touching the newer fetch's loading flag.
+          // Release the superseded fetch, then the newer one. The stale
+          // continuation resumes first (completed first, identical async
+          // path), so it runs its generation check while the newer fetch is
+          // still in flight — it must not touch the newer fetch's flag.
           firstFetchGate.complete();
-          for (var i = 0; i < 10; i++) {
-            await Future<void>.value();
-          }
           secondFetchGate.complete();
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && !s.suggestionsLoading,
+          );
         },
-        wait: const Duration(milliseconds: 700),
         expect: () => [
           isA<ProjectSearchInitial>()
               .having((s) => s.query, 'query', 'fo')
@@ -363,14 +367,18 @@ void main() {
                 s.query.isEmpty,
           );
           // Release the pre-reset fetch; the reset disowned it, so it must
-          // not resurrect the cache or mark suggestions as fetched.
+          // not resurrect the cache or mark suggestions as fetched. Its
+          // pure-microtask continuation drains before the debounce timer
+          // delivers the next keystroke, so no pump loop is needed.
           suggestionsFetchGate.complete();
-          for (var i = 0; i < 10; i++) {
-            await Future<void>.value();
-          }
           bloc.add(const ProjectSearchQueryUpdatedEvent(query: 'found'));
+          await bloc.stream.firstWhere(
+            (s) =>
+                s is ProjectSearchInitial &&
+                s.query == 'found' &&
+                !s.suggestionsLoading,
+          );
         },
-        wait: const Duration(milliseconds: 700),
         expect: () => [
           isA<ProjectSearchInitial>()
               .having((s) => s.query, 'query', 'fo')
