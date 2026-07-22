@@ -10,7 +10,8 @@ abstract class ProjectSearchRepository {
   /// Searches projects accessible to [userId] that match [query].
   ///
   /// Optional filters:
-  /// - [filterByDate]: only projects created on or after this date.
+  /// - [filterByDateFrom]/[filterByDateTo]: inclusive modification-date
+  ///   range; either bound may be omitted for an open-ended range.
   /// - [filterByTag]: only projects tagged with this value.
   /// - [filterByOwner]: only projects owned by this user id.
   ///
@@ -18,7 +19,8 @@ abstract class ProjectSearchRepository {
   Future<Either<Failure, List<Project>>> searchProjects({
     required String userId,
     required String query,
-    DateTime? filterByDate,
+    DateTime? filterByDateFrom,
+    DateTime? filterByDateTo,
     String? filterByTag,
     String? filterByOwner,
   });
