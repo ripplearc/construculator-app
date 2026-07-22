@@ -1782,11 +1782,6 @@
     "description": "Title for the project creation screen app bar",
     "context": "Project creation screen"
   },
-  "projectDetailsNavigationError": "Unable to open project details. Please try again.",
-  "@projectDetailsNavigationError": {
-    "description": "Error toast shown when navigation to the project details screen fails",
-    "context": "Dashboard projects sheet"
-  },
   "addLabourCostButton": "Add labour cost",
   "@addLabourCostButton": {
     "description": "Label for the FAB on the cost estimation details page when the labours tab is active",
@@ -1954,9 +1949,9 @@
     "description": "Toast shown when navigation to project settings fails",
     "context": "Dashboard projects sheet"
   },
-  "projectSettingsPermissionError": "You don't have permission to view this project's settings.",
+  "projectSettingsPermissionError": "You don't have permission to view this project.",
   "@projectSettingsPermissionError": {
-    "description": "Toast shown when the user lacks permission to view project settings",
+    "description": "Toast shown when the user lacks the view_project permission for a project",
     "context": "Dashboard projects sheet"
   }
 }

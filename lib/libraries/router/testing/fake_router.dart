@@ -36,7 +36,6 @@ class FakeAppRouter implements AppRouter {
   /// letting tests observe in-flight navigation state.
   Completer<void>? pushNamedCompleter;
 
-
   @override
   Future<void> pushNamed(String route, {Object? arguments}) async {
     navigationHistory.add(RouteCall(route, arguments));

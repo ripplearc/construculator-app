@@ -1127,10 +1127,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createProjectScreenTitle => 'Create a project';
 
   @override
-  String get projectDetailsNavigationError =>
-      'Unable to open project details. Please try again.';
-
-  @override
   String get addLabourCostButton => 'Add labour cost';
 
   @override
@@ -1256,5 +1252,5 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get projectSettingsPermissionError =>
-      'You don\'t have permission to view this project\'s settings.';
+      'You don\'t have permission to view this project.';
 }
