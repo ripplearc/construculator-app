@@ -205,10 +205,39 @@ void main() {
 
         expect(find.byKey(const Key('email_chip_bob@example.com')), findsOneWidget);
 
-        await tester.tap(find.byKey(const Key('remove_chip_bob@example.com')));
+        await tester.tap(
+          find.descendant(
+            of: find.byKey(const Key('email_chip_bob@example.com')),
+            matching: find.byKey(CoreInputChip.removeButtonKey),
+          ),
+        );
         await tester.pump();
 
         expect(find.byKey(const Key('email_chip_bob@example.com')), findsNothing);
+      });
+
+      testWidgets('remove button announces a localized label naming the email', (
+        tester,
+      ) async {
+        final handle = tester.ensureSemantics();
+        await pumpWidget(tester);
+
+        await tester.enterText(
+          find.byKey(const Key('member_invitation_email_input')),
+          'bob@example.com',
+        );
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pump();
+
+        final node = tester.getSemantics(
+          find.descendant(
+            of: find.byKey(const Key('email_chip_bob@example.com')),
+            matching: find.byKey(CoreInputChip.removeButtonKey),
+          ),
+        );
+        expect(node.label, contains('Remove bob@example.com'));
+
+        handle.dispose();
       });
     });
   });

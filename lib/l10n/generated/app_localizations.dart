@@ -1000,6 +1000,12 @@ abstract class AppLocalizations {
   /// **'Remove'**
   String get removeAction;
 
+  /// Screen-reader label for the remove button on an email chip in the member invitation sheet; includes the email so each chip announces distinctly
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {email}'**
+  String removeChipLabel(String email);
+
   /// Label for copy estimation action item
   ///
   /// In en, this message translates to:

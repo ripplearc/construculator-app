@@ -216,9 +216,12 @@ class _EmailInputRow extends StatelessWidget {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     for (final email in emails)
-                      _EmailChip(
-                        email: email,
+                      CoreInputChip(
+                        key: Key('email_chip_$email'),
+                        label: email,
                         onRemove: () => onRemove(email),
+                        removeSemanticLabel:
+                            context.l10n.removeChipLabel(email),
                       ),
                     IntrinsicWidth(
                       child: TextField(
@@ -247,58 +250,6 @@ class _EmailInputRow extends StatelessWidget {
           ),
           const SizedBox(width: CoreSpacing.space3),
           const _ContributorBadge(),
-        ],
-      ),
-    );
-  }
-}
-
-// TODO: [CA-753] Contribute _EmailChip to CoreUI as CoreInputChip (non-toggleable
-//   chip with remove button). https://ripplearc.youtrack.cloud/issue/CA-753
-class _EmailChip extends StatelessWidget {
-  final String email;
-  final VoidCallback onRemove;
-
-  const _EmailChip({required this.email, required this.onRemove});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colorTheme;
-    final typography = context.textTheme;
-
-    return Container(
-      key: Key('email_chip_$email'),
-      padding: const EdgeInsets.symmetric(
-        horizontal: CoreSpacing.space3,
-        vertical: CoreSpacing.space1,
-      ),
-      decoration: BoxDecoration(
-        color: colors.chipGrey,
-        borderRadius: BorderRadius.circular(CoreSpacing.space5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            email,
-            style: typography.bodyMediumSemiBold.copyWith(
-              color: colors.textDark,
-            ),
-          ),
-          const SizedBox(width: CoreSpacing.space2),
-          Semantics(
-            label: context.l10n.removeAction,
-            button: true,
-            child: GestureDetector(
-              key: Key('remove_chip_$email'),
-              onTap: onRemove,
-              child: CoreIconWidget(
-                icon: CoreIcons.close,
-                color: colors.iconGrayMid,
-                size: CoreIconSize.size20,
-              ),
-            ),
-          ),
         ],
       ),
     );

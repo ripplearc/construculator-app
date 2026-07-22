@@ -2,6 +2,7 @@ import 'package:construculator/features/members/presentation/widgets/member_invi
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/screenshot/font_loader.dart';
@@ -59,8 +60,13 @@ void main() {
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
         buildWidget,
-        // Key pattern: 'remove_chip_$email' — must match the email entered in setupAfterPump
-        find.byKey(const Key('remove_chip_a@b.com')),
+        // Chip key pattern: 'email_chip_$email' — must match the email entered
+        // in setupAfterPump; the remove button inside the chip carries the
+        // shared CoreInputChip.removeButtonKey.
+        find.descendant(
+          of: find.byKey(const Key('email_chip_a@b.com')),
+          matching: find.byKey(CoreInputChip.removeButtonKey),
+        ),
         setupAfterPump: (t) async {
           await t.enterText(
             find.byKey(const Key('member_invitation_email_input')),
