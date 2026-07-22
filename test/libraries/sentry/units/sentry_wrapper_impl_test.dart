@@ -256,7 +256,10 @@ void main() {
 
         final scope = Scope(SentryFlutterOptions());
         await fakeSentrySdk.configureScopeCallbacks.single(scope);
-        expect(scope.user?.id, 'user-1');
+        expect(
+          scope.user,
+          isA<SentryUser>().having((user) => user.id, 'id', 'user-1'),
+        );
       });
 
       test('clears the scope user when passed null', () async {
