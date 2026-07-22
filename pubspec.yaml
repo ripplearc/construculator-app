@@ -50,6 +50,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true
+  # TODO: [CA-831] [Chore] Migrate iOS build from CocoaPods to Swift Package Manager https://ripplearc.youtrack.cloud/issue/CA-831/Chore-Migrate-iOS-build-from-CocoaPods-to-Swift-Package-Manager
+  config:
+    enable-swift-package-manager: false
 
   assets:
     # Environment files
