@@ -233,6 +233,19 @@ void main() {
         await fakeSentrySdk.capturedMessageScopeCallbacks.single!(scope);
         expect(scope.tags, {'feature': 'search'});
       });
+
+      test('leaves the event scope untouched when tags are omitted', () async {
+        await initializeWithDsn();
+
+        await sentryWrapper.captureMessage(
+          'something happened',
+          level: SentryEventLevel.warning,
+        );
+
+        final scope = Scope(SentryFlutterOptions());
+        await fakeSentrySdk.capturedMessageScopeCallbacks.single!(scope);
+        expect(scope.tags, isEmpty);
+      });
     });
 
     group('setUser', () {
