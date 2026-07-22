@@ -179,23 +179,37 @@ void main() {
         expect(params['offset'], equals(DatabaseConstants.globalSearchDefaultOffset));
       });
 
-      test('passes filterByDate as ISO8601 string in RPC params', () async {
-        supabaseWrapper.setRpcResponse(
-          DatabaseConstants.globalSearchRpcFunction,
-          {'projects': [], 'estimations': [], 'members': []},
-        );
+      test(
+        'passes both modification-date range bounds as ISO8601 strings in '
+        'RPC params',
+        () async {
+          supabaseWrapper.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {'projects': [], 'estimations': [], 'members': []},
+          );
 
-        final filterDate = DateTime(2024, 6, 1);
-        await dataSource.fetchProjectsBySearchQuery(
-          userId: 'user-1',
-          query: 'wall',
-          filterByDate: filterDate,
-        );
+          final filterFrom = DateTime(2024, 6, 1);
+          final filterTo = DateTime(2024, 6, 30);
+          await dataSource.fetchProjectsBySearchQuery(
+            userId: 'user-1',
+            query: 'wall',
+            filterByDateFrom: filterFrom,
+            filterByDateTo: filterTo,
+          );
 
-        final params = supabaseWrapper.getMethodCallsFor('rpc').first['params']
-            as Map<String, dynamic>?;
-        expect(params!['filter_by_date'], equals(filterDate.toIso8601String()));
-      });
+          final params =
+              supabaseWrapper.getMethodCallsFor('rpc').first['params']
+                  as Map<String, dynamic>?;
+          expect(
+            params!['filter_by_date_from'],
+            equals(filterFrom.toIso8601String()),
+          );
+          expect(
+            params['filter_by_date_to'],
+            equals(filterTo.toIso8601String()),
+          );
+        },
+      );
 
       test('passes filterByTag and filterByOwner in RPC params', () async {
         supabaseWrapper.setRpcResponse(

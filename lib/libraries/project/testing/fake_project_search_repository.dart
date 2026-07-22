@@ -70,7 +70,8 @@ class FakeProjectSearchRepository implements ProjectSearchRepository {
   Future<Either<Failure, List<Project>>> searchProjects({
     required String userId,
     required String query,
-    DateTime? filterByDate,
+    DateTime? filterByDateFrom,
+    DateTime? filterByDateTo,
     String? filterByTag,
     String? filterByOwner,
   }) async {
@@ -82,7 +83,8 @@ class FakeProjectSearchRepository implements ProjectSearchRepository {
       'method': 'searchProjects',
       'userId': userId,
       'query': query,
-      'filterByDate': filterByDate,
+      'filterByDateFrom': filterByDateFrom,
+      'filterByDateTo': filterByDateTo,
       'filterByTag': filterByTag,
       'filterByOwner': filterByOwner,
     });

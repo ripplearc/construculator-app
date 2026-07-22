@@ -1183,10 +1183,16 @@ void main() {
           await bloc.stream.firstWhere(
             (s) => s is ProjectSearchInitial && !s.availableTagsLoading,
           );
-          // Second request must serve the cache — no extra table query.
+          // Second request must serve the cache — no extra table query. Its
+          // re-emit is Equatable-suppressed, so gate on the handler-run
+          // counter instead of a wall-clock wait: a timer could elapse before
+          // the event is even dequeued, letting a broken cache pass.
+          final runsBefore = bloc.availableTagsHandlerRuns;
           bloc.add(const ProjectSearchAvailableTagsRequestedEvent());
+          await _untilHandlerRuns(
+            () => bloc.availableTagsHandlerRuns > runsBefore,
+          );
         },
-        wait: const Duration(milliseconds: 100),
         expect: () => [
           isA<ProjectSearchInitial>().having(
             (s) => s.availableTagsLoading,
@@ -1207,18 +1213,29 @@ void main() {
       );
 
       blocTest<ProjectSearchBloc, ProjectSearchState>(
-        'restartable transformer collapses a rapid double tag request into one fetch',
-        setUp: () => seedTags(['Concrete', 'Steel']),
+        'does not start a duplicate tags fetch when one is already in flight',
+        setUp: () {
+          seedTags(['Concrete', 'Steel']);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
         build: () => Modular.get<ProjectSearchBloc>(),
         act: (bloc) async {
-          // Two requests dispatched before the first fetch resolves. The
-          // restartable() (switchMap) transformer must cancel the stale first
-          // handler so only a single tag catalog read reaches the datasource —
-          // guarding against the duplicate-fetch/stray-failure-toast race. If
-          // the transformer were dropped, both handlers would run and fetch.
-          bloc
-            ..add(const ProjectSearchAvailableTagsRequestedEvent())
-            ..add(const ProjectSearchAvailableTagsRequestedEvent());
+          bloc.add(const ProjectSearchAvailableTagsRequestedEvent());
+          // Wait for the in-flight loading emission, then request tags again
+          // while the first fetch is still parked on the completer — the
+          // second request must reuse the in-flight fetch (loading-flag gate)
+          // instead of starting another, guarding against the
+          // duplicate-fetch/stray-failure-toast race.
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && s.availableTagsLoading,
+          );
+          final runsBefore = bloc.availableTagsHandlerRuns;
+          bloc.add(const ProjectSearchAvailableTagsRequestedEvent());
+          await _untilHandlerRuns(
+            () => bloc.availableTagsHandlerRuns > runsBefore,
+          );
+          fakeSupabase.completer!.complete();
           await bloc.stream.firstWhere(
             (s) => s is ProjectSearchInitial && !s.availableTagsLoading,
           );
@@ -1231,9 +1248,58 @@ void main() {
           expect(
             tagReads,
             hasLength(1),
-            reason: 'restartable() must cancel the stale in-flight tag fetch',
+            reason: 'the in-flight gate must absorb the duplicate request',
           );
         },
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'keeps availableTagsLoading true when a concurrent handler emits '
+        'while the tags fetch is in flight',
+        setUp: () {
+          seedTags(['Concrete']);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchAvailableTagsRequestedEvent());
+          // Wait for the in-flight loading emission, then dispatch an event
+          // whose handler rebuilds the state while the fetch is still
+          // pending — it must not reset the loading flag.
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && s.availableTagsLoading,
+          );
+          bloc.add(
+            const ProjectSearchOwnerFiltersAppliedEvent(ownerIds: {'owner-1'}),
+          );
+          await bloc.stream.firstWhere(
+            (s) =>
+                s is ProjectSearchInitial &&
+                s.selectedOwnerIds.contains('owner-1'),
+          );
+          fakeSupabase.completer!.complete();
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && !s.availableTagsLoading,
+          );
+        },
+        expect: () => [
+          isA<ProjectSearchInitial>()
+              .having((s) => s.availableTagsLoading, 'loading', isTrue)
+              .having((s) => s.selectedOwnerIds, 'selectedOwnerIds', isEmpty),
+          isA<ProjectSearchInitial>()
+              .having(
+                (s) => s.availableTagsLoading,
+                'loading survives concurrent emission',
+                isTrue,
+              )
+              .having((s) => s.selectedOwnerIds, 'selectedOwnerIds', {
+                'owner-1',
+              }),
+          isA<ProjectSearchInitial>()
+              .having((s) => s.availableTagsLoading, 'loading', isFalse)
+              .having((s) => s.availableTags, 'tags', ['Concrete']),
+        ],
       );
 
       blocTest<ProjectSearchBloc, ProjectSearchState>(
@@ -1381,9 +1447,14 @@ void main() {
           await bloc.stream.firstWhere(
             (s) => s is ProjectSearchInitial && !s.availableOwnersLoading,
           );
+          // Cache-hit re-emit is Equatable-suppressed — gate on the counter,
+          // not a wall clock (see the tag equivalent above).
+          final runsBefore = bloc.availableOwnersHandlerRuns;
           bloc.add(const ProjectSearchAvailableOwnersRequestedEvent());
+          await _untilHandlerRuns(
+            () => bloc.availableOwnersHandlerRuns > runsBefore,
+          );
         },
-        wait: const Duration(milliseconds: 100),
         expect: () => [
           isA<ProjectSearchInitial>().having(
             (s) => s.availableOwnersLoading,
@@ -1412,18 +1483,29 @@ void main() {
       );
 
       blocTest<ProjectSearchBloc, ProjectSearchState>(
-        'restartable transformer collapses a rapid double owner request into one fetch',
-        setUp: () => seedOwners([
-          (id: 'owner-1', firstName: 'Ada', lastName: 'Lovelace'),
-          (id: 'owner-2', firstName: 'Alan', lastName: 'Turing'),
-        ]),
+        'does not start a duplicate owners fetch when one is already in flight',
+        setUp: () {
+          seedOwners([
+            (id: 'owner-1', firstName: 'Ada', lastName: 'Lovelace'),
+            (id: 'owner-2', firstName: 'Alan', lastName: 'Turing'),
+          ]);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
         build: () => Modular.get<ProjectSearchBloc>(),
         act: (bloc) async {
-          // See the tag equivalent: the restartable() (switchMap) transformer
-          // must cancel the stale first handler so only one owner RPC fires.
-          bloc
-            ..add(const ProjectSearchAvailableOwnersRequestedEvent())
-            ..add(const ProjectSearchAvailableOwnersRequestedEvent());
+          // See the tag equivalent: the second request arriving mid-fetch
+          // must be absorbed by the loading-flag gate, not fetch again.
+          bloc.add(const ProjectSearchAvailableOwnersRequestedEvent());
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && s.availableOwnersLoading,
+          );
+          final runsBefore = bloc.availableOwnersHandlerRuns;
+          bloc.add(const ProjectSearchAvailableOwnersRequestedEvent());
+          await _untilHandlerRuns(
+            () => bloc.availableOwnersHandlerRuns > runsBefore,
+          );
+          fakeSupabase.completer!.complete();
           await bloc.stream.firstWhere(
             (s) => s is ProjectSearchInitial && !s.availableOwnersLoading,
           );
@@ -1440,9 +1522,58 @@ void main() {
           expect(
             ownerCalls,
             hasLength(1),
-            reason: 'restartable() must cancel the stale in-flight owner fetch',
+            reason: 'the in-flight gate must absorb the duplicate request',
           );
         },
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'keeps availableOwnersLoading true when a concurrent handler emits '
+        'while the owners fetch is in flight',
+        setUp: () {
+          seedOwners([
+            (id: 'owner-1', firstName: 'Ada', lastName: 'Lovelace'),
+          ]);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchAvailableOwnersRequestedEvent());
+          // See the tag equivalent: a concurrent handler rebuilding the
+          // state must not reset the in-flight owners loading flag.
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && s.availableOwnersLoading,
+          );
+          bloc.add(
+            const ProjectSearchTagFiltersAppliedEvent(tags: {'Concrete'}),
+          );
+          await bloc.stream.firstWhere(
+            (s) =>
+                s is ProjectSearchInitial &&
+                s.selectedTags.contains('Concrete'),
+          );
+          fakeSupabase.completer!.complete();
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && !s.availableOwnersLoading,
+          );
+        },
+        expect: () => [
+          isA<ProjectSearchInitial>()
+              .having((s) => s.availableOwnersLoading, 'loading', isTrue)
+              .having((s) => s.selectedTags, 'selectedTags', isEmpty),
+          isA<ProjectSearchInitial>()
+              .having(
+                (s) => s.availableOwnersLoading,
+                'loading survives concurrent emission',
+                isTrue,
+              )
+              .having((s) => s.selectedTags, 'selectedTags', {'Concrete'}),
+          isA<ProjectSearchInitial>()
+              .having((s) => s.availableOwnersLoading, 'loading', isFalse)
+              .having((s) => s.availableOwners.map((o) => o.fullName).toList(),
+                  'owners', ['Ada Lovelace']),
+        ],
       );
 
       blocTest<ProjectSearchBloc, ProjectSearchState>(
@@ -1590,7 +1721,7 @@ void main() {
       );
 
       blocTest<ProjectSearchBloc, ProjectSearchState>(
-        'threads the range start into filter_by_date on the search RPC',
+        'threads both date range bounds into the search RPC',
         setUp: () {
           fakeSupabase.setRpcResponse(
             DatabaseConstants.globalSearchRpcFunction,
@@ -1614,9 +1745,14 @@ void main() {
           await bloc.stream.firstWhere((s) => s is ProjectSearchResultsLoaded);
         },
         verify: (_) {
+          final params = lastSearchRpcParams();
           expect(
-            lastSearchRpcParams()['filter_by_date'],
+            params['filter_by_date_from'],
             DateTime(2026, 1, 1).toIso8601String(),
+          );
+          expect(
+            params['filter_by_date_to'],
+            DateTime(2026, 1, 31).toIso8601String(),
           );
         },
       );
@@ -1659,7 +1795,8 @@ void main() {
       );
 
       blocTest<ProjectSearchBloc, ProjectSearchState>(
-        'keeps the fetched tag catalog across a page reopen — only selections reset',
+        'clears the fetched tag catalog on page reopen — a fresh open '
+        'refetches instead of serving a stale cache',
         setUp: () => seedTags(['Concrete', 'Steel']),
         build: () => Modular.get<ProjectSearchBloc>(),
         act: (bloc) async {
@@ -1667,20 +1804,18 @@ void main() {
           await bloc.stream.firstWhere(
             (s) => s is ProjectSearchInitial && s.availableTags.isNotEmpty,
           );
-          // Reopening the page resets selections but intentionally reuses the
-          // already-fetched catalog (it rarely changes mid-session).
+          // Reopening the page resets catalogs along with selections,
+          // mirroring GlobalSearchStarted — a fresh session refetches.
           bloc.add(const ProjectSearchHistoryRequestedEvent());
           await bloc.stream.firstWhere(
-            (s) => s is ProjectSearchInitial && !s.isLoadingHistory,
+            (s) =>
+                s is ProjectSearchInitial &&
+                !s.isLoadingHistory &&
+                s.availableTags.isEmpty,
           );
-          // The cached catalog re-emits an Equatable-equal state that `emit`
-          // suppresses, so there is no state transition to await. Gate on the
-          // handler-run counter — it increments synchronously on the cache-hit
-          // path, giving a deterministic signal instead of a wall-clock wait.
-          final runsBefore = bloc.availableTagsHandlerRuns;
           bloc.add(const ProjectSearchAvailableTagsRequestedEvent());
-          await _untilHandlerRuns(
-            () => bloc.availableTagsHandlerRuns > runsBefore,
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && s.availableTags.isNotEmpty,
           );
         },
         verify: (bloc) {
@@ -1690,14 +1825,120 @@ void main() {
               .toList();
           expect(
             tagReads,
-            hasLength(1),
-            reason: 'the reopened page must serve the cached tag catalog',
+            hasLength(2),
+            reason: 'the reopened page must refetch the cleared tag catalog',
           );
+        },
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'a tags fetch surviving a page reopen neither stomps the reset '
+        'loading flag nor resurrects the pre-reset catalog',
+        setUp: () {
+          seedTags(['Concrete', 'Steel']);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          final tagsFetchGate = fakeSupabase.completer!;
+          bloc.add(const ProjectSearchAvailableTagsRequestedEvent());
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && s.availableTagsLoading,
+          );
+          // Later operations run ungated; only the in-flight tags fetch
+          // stays parked on the gate.
+          fakeSupabase.shouldDelayOperations = false;
+          bloc.add(const ProjectSearchHistoryRequestedEvent());
+          await bloc.stream.firstWhere(
+            (s) =>
+                s is ProjectSearchInitial &&
+                !s.isLoadingHistory &&
+                !s.availableTagsLoading,
+          );
+          // Release the pre-reset fetch; the reset disowned it, so it must
+          // not mark tags as fetched or emit over the reset state.
+          final runsBefore = bloc.availableTagsHandlerRuns;
+          tagsFetchGate.complete();
+          await _untilHandlerRuns(
+            () => bloc.availableTagsHandlerRuns > runsBefore,
+          );
+          bloc.add(const ProjectSearchAvailableTagsRequestedEvent());
+          await bloc.stream.firstWhere(
+            (s) =>
+                s is ProjectSearchInitial &&
+                !s.availableTagsLoading &&
+                s.availableTags.isNotEmpty,
+          );
+        },
+        verify: (bloc) {
+          final tagReads = fakeSupabase
+              .getMethodCallsFor('selectMatch')
+              .where((call) => call['table'] == DatabaseConstants.tagsTable)
+              .toList();
           expect(
-            bloc.availableTagsHandlerRuns,
-            2,
+            tagReads,
+            hasLength(2),
             reason:
-                'both requests reached the handler; the second was a cache hit',
+                'the disowned fetch must not count as fetched — the next '
+                'sheet open starts a fresh fetch',
+          );
+        },
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'an owners fetch surviving a page reopen neither stomps the reset '
+        'loading flag nor resurrects the pre-reset catalog',
+        setUp: () {
+          seedOwners([
+            (id: 'owner-1', firstName: 'Ada', lastName: 'Lovelace'),
+          ]);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          final ownersFetchGate = fakeSupabase.completer!;
+          bloc.add(const ProjectSearchAvailableOwnersRequestedEvent());
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && s.availableOwnersLoading,
+          );
+          fakeSupabase.shouldDelayOperations = false;
+          bloc.add(const ProjectSearchHistoryRequestedEvent());
+          await bloc.stream.firstWhere(
+            (s) =>
+                s is ProjectSearchInitial &&
+                !s.isLoadingHistory &&
+                !s.availableOwnersLoading,
+          );
+          final runsBefore = bloc.availableOwnersHandlerRuns;
+          ownersFetchGate.complete();
+          await _untilHandlerRuns(
+            () => bloc.availableOwnersHandlerRuns > runsBefore,
+          );
+          bloc.add(const ProjectSearchAvailableOwnersRequestedEvent());
+          await bloc.stream.firstWhere(
+            (s) =>
+                s is ProjectSearchInitial &&
+                !s.availableOwnersLoading &&
+                s.availableOwners.isNotEmpty,
+          );
+        },
+        verify: (bloc) {
+          final ownerCalls = fakeSupabase
+              .getMethodCallsFor('rpc')
+              .where(
+                (call) =>
+                    call['functionName'] ==
+                    DatabaseConstants.projectOwnersRpcFunction,
+              )
+              .toList();
+          expect(
+            ownerCalls,
+            hasLength(2),
+            reason:
+                'the disowned fetch must not count as fetched — the next '
+                'sheet open starts a fresh fetch',
           );
         },
       );

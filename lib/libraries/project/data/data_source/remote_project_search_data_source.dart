@@ -26,7 +26,8 @@ class RemoteProjectSearchDataSource implements ProjectSearchDataSource {
   Future<List<ProjectDto>> fetchProjectsBySearchQuery({
     required String userId,
     required String query,
-    DateTime? filterByDate,
+    DateTime? filterByDateFrom,
+    DateTime? filterByDateTo,
     String? filterByTag,
     String? filterByOwner,
   }) async {
@@ -43,7 +44,8 @@ class RemoteProjectSearchDataSource implements ProjectSearchDataSource {
         params: {
           'query': query,
           'filter_by_tag': filterByTag,
-          'filter_by_date': filterByDate?.toIso8601String(),
+          'filter_by_date_from': filterByDateFrom?.toIso8601String(),
+          'filter_by_date_to': filterByDateTo?.toIso8601String(),
           // The RPC takes an owner-id array; this data source still exposes a
           // single-owner filter, so wrap it. Widening this interface to
           // multiple owners is tracked in CA-771.

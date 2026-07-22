@@ -204,11 +204,13 @@ void main() {
           {'projects': [], 'estimations': [], 'members': []},
         );
 
-        final filterDate = DateTime(2024, 6, 1);
+        final filterFrom = DateTime(2024, 6, 1);
+        final filterTo = DateTime(2024, 6, 30);
         await repository.searchProjects(
           userId: testUserId,
           query: 'wall',
-          filterByDate: filterDate,
+          filterByDateFrom: filterFrom,
+          filterByDateTo: filterTo,
           filterByTag: 'structural',
           filterByOwner: 'owner-42',
         );
@@ -219,8 +221,12 @@ void main() {
         expect(params, isNotNull);
         expect(params!['query'], equals('wall'));
         expect(
-          params['filter_by_date'],
-          equals(filterDate.toIso8601String()),
+          params['filter_by_date_from'],
+          equals(filterFrom.toIso8601String()),
+        );
+        expect(
+          params['filter_by_date_to'],
+          equals(filterTo.toIso8601String()),
         );
         expect(params['filter_by_tag'], equals('structural'));
         expect(

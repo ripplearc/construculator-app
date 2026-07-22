@@ -27,12 +27,6 @@ const int _kMaxDisplayedSuggestions = 5;
 EventTransformer<E> _debounce<E>(Duration duration) =>
     (events, mapper) => events.debounceTime(duration).switchMap(mapper);
 
-// Restartable semantics: a re-dispatch cancels the in-flight handler, so
-// rapidly reopening a filter sheet cannot fire two concurrent fetches whose
-// interleaved results would surface a stray failure toast after a success.
-EventTransformer<E> _restartable<E>() =>
-    (events, mapper) => events.switchMap(mapper);
-
 /// BLoC for managing project search state on the dashboard.
 ///
 /// Handles debounced query updates and explicit search submissions, plus the
@@ -41,12 +35,14 @@ EventTransformer<E> _restartable<E>() =>
 /// into [ProjectSearchRepository.searchProjects] on the next search.
 /// Delegates to [ProjectSearchRepository] and maps results to typed states.
 ///
-/// The in-flight suggestions loading flag is tracked as private instance
-/// state rather than a state-builder parameter, so a concurrently-handled
-/// event rebuilding the state cannot stomp it. A fetch-generation counter
-/// lets a superseded fetch (cancelled by the switchMap transformer or
-/// disowned by a history-request reset) bail out on completion instead of
-/// clearing a newer fetch's flag or resurrecting pre-reset data.
+/// The in-flight loading flags (suggestions, tags, owners) are tracked as
+/// private instance state rather than state-builder parameters, so a
+/// concurrently-handled event rebuilding the state cannot stomp them. The
+/// loading flag also gates its own fetch handler, so a request arriving while
+/// a fetch is in flight reuses it instead of starting a duplicate. Per-fetch
+/// generation counters let a superseded fetch (cancelled by the switchMap
+/// transformer or disowned by a history-request reset) bail out on completion
+/// instead of clearing a newer fetch's flag or resurrecting pre-reset data.
 class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
   final ProjectSearchRepository _repository;
   final AuthManager _authManager;
@@ -73,6 +69,10 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
   // sheet openings reuse the cached list instead of refetching.
   bool _availableTagsFetched = false;
 
+  bool _availableTagsLoading = false;
+
+  int _availableTagsFetchGeneration = 0;
+
   String _tagSearchQuery = '';
 
   Set<String> _selectedOwnerIds = const {};
@@ -83,6 +83,10 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
   // Whether _availableOwners has been fetched at least once, so subsequent
   // sheet openings reuse the cached list instead of refetching.
   bool _availableOwnersFetched = false;
+
+  bool _availableOwnersLoading = false;
+
+  int _availableOwnersFetchGeneration = 0;
 
   String _ownerSearchQuery = '';
 
@@ -127,19 +131,18 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     on<ProjectSearchHistoryItemDismissedEvent>(_onHistoryItemDismissed);
     on<ProjectSearchTagFiltersAppliedEvent>(_onTagFiltersApplied);
     on<ProjectSearchTagFilterClearedEvent>(_onTagFilterCleared);
-    on<ProjectSearchAvailableTagsRequestedEvent>(
-      _onAvailableTagsRequested,
-      transformer: _restartable(),
-    );
+    // No transformer: the handler's _availableTagsLoading gate collapses a
+    // request arriving mid-fetch into the in-flight one, mirroring
+    // GlobalSearchBloc. A cancelling transformer would instead suppress the
+    // in-flight handler's completion emit, stranding the sheet on a spinner.
+    on<ProjectSearchAvailableTagsRequestedEvent>(_onAvailableTagsRequested);
     // Intentionally not debounced: tag filtering is in-memory (no network
     // call), so instant per-keystroke feedback is cheap and preferable.
     on<ProjectSearchTagSearchQueryUpdatedEvent>(_onTagSearchQueryUpdated);
     on<ProjectSearchOwnerFiltersAppliedEvent>(_onOwnerFiltersApplied);
     on<ProjectSearchOwnerFilterClearedEvent>(_onOwnerFilterCleared);
-    on<ProjectSearchAvailableOwnersRequestedEvent>(
-      _onAvailableOwnersRequested,
-      transformer: _restartable(),
-    );
+    // No transformer — see the tags registration above.
+    on<ProjectSearchAvailableOwnersRequestedEvent>(_onAvailableOwnersRequested);
     // Intentionally not debounced: owner filtering is in-memory (no network
     // call), so instant per-keystroke feedback is cheap and preferable.
     on<ProjectSearchOwnerSearchQueryUpdatedEvent>(_onOwnerSearchQueryUpdated);
@@ -246,8 +249,16 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     _suggestionsFetchGeneration++;
     _selectedTags = const {};
     _tagSearchQuery = '';
+    _availableTags = const [];
+    _availableTagsFetched = false;
+    _availableTagsLoading = false;
+    _availableTagsFetchGeneration++;
     _selectedOwnerIds = const {};
     _ownerSearchQuery = '';
+    _availableOwners = const [];
+    _availableOwnersFetched = false;
+    _availableOwnersLoading = false;
+    _availableOwnersFetchGeneration++;
     _selectedDateRange = null;
 
     final userId = _authManager.getCurrentCredentials().data?.id;
@@ -358,9 +369,10 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
       filterByOwner: _selectedOwnerIds.isEmpty
           ? null
           : (_selectedOwnerIds.toList()..sort()).first,
-      // filter_by_date is a lower bound ("created on or after"); pass the
-      // range start.
-      filterByDate: _selectedDateRange?.start,
+      // The RPC's date filter is an inclusive modification-date range;
+      // thread both bounds, mirroring GlobalSearchBloc.
+      filterByDateFrom: _selectedDateRange?.start,
+      filterByDateTo: _selectedDateRange?.end,
     );
 
     result.fold(
@@ -418,24 +430,17 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     );
   }
 
-  // TODO: [CA-797] Track the loading flags as bloc instance fields consulted
-  // here (like _availableTagsFetched) instead of caller-supplied parameters,
-  // so a concurrently-handled event cannot reset an in-flight flag to false.
-  // https://ripplearc.youtrack.cloud/issue/CA-797
-  ProjectSearchInitial _initialFromCache({
-    bool availableTagsLoading = false,
-    bool availableOwnersLoading = false,
-  }) => ProjectSearchInitial(
+  ProjectSearchInitial _initialFromCache() => ProjectSearchInitial(
     recentSearches: _cachedRecents,
     suggestions: _filterSuggestions(_currentQuery),
     query: _currentQuery,
     suggestionsLoading: _suggestionsLoading,
     selectedTags: _selectedTags,
     availableTags: _filterAvailableTags(),
-    availableTagsLoading: availableTagsLoading,
+    availableTagsLoading: _availableTagsLoading,
     selectedOwnerIds: _selectedOwnerIds,
     availableOwners: _filterAvailableOwners(),
-    availableOwnersLoading: availableOwnersLoading,
+    availableOwnersLoading: _availableOwnersLoading,
     selectedDateRange: _selectedDateRange,
   );
 
@@ -463,15 +468,27 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     Emitter<ProjectSearchState> emit,
   ) async {
     _tagSearchQuery = '';
-    if (_availableTagsFetched) {
+    // _availableTagsLoading also gates: a request arriving while a fetch is
+    // in flight must not start a duplicate fetch, whose earlier completion
+    // would clear the loading flag while the later fetch is still running.
+    if (_availableTagsFetched || _availableTagsLoading) {
       emit(_initialFromCache());
       availableTagsHandlerRuns++;
       return;
     }
 
-    emit(_initialFromCache(availableTagsLoading: true));
+    final generation = ++_availableTagsFetchGeneration;
+    _availableTagsLoading = true;
+    emit(_initialFromCache());
 
     final result = await _tagRepository.getTags();
+    // A history-request reset disowned this fetch while it was in flight;
+    // the reset handler owns the loading flag and caches now.
+    if (generation != _availableTagsFetchGeneration) {
+      availableTagsHandlerRuns++;
+      return;
+    }
+    _availableTagsLoading = false;
 
     result.fold(
       (failure) {
@@ -519,15 +536,27 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     Emitter<ProjectSearchState> emit,
   ) async {
     _ownerSearchQuery = '';
-    if (_availableOwnersFetched) {
+    // _availableOwnersLoading also gates: a request arriving while a fetch is
+    // in flight must not start a duplicate fetch, whose earlier completion
+    // would clear the loading flag while the later fetch is still running.
+    if (_availableOwnersFetched || _availableOwnersLoading) {
       emit(_initialFromCache());
       availableOwnersHandlerRuns++;
       return;
     }
 
-    emit(_initialFromCache(availableOwnersLoading: true));
+    final generation = ++_availableOwnersFetchGeneration;
+    _availableOwnersLoading = true;
+    emit(_initialFromCache());
 
     final result = await _ownerRepository.getOwners();
+    // A history-request reset disowned this fetch while it was in flight;
+    // the reset handler owns the loading flag and caches now.
+    if (generation != _availableOwnersFetchGeneration) {
+      availableOwnersHandlerRuns++;
+      return;
+    }
+    _availableOwnersLoading = false;
 
     result.fold(
       (failure) {

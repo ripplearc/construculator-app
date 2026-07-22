@@ -11,10 +11,15 @@ abstract class ProjectSearchDataSource {
   /// the remote API. [userId] may be used as an early-exit guard; backend user
   /// scoping is implementation-specific and not required to be forwarded as an
   /// explicit parameter.
+  ///
+  /// [filterByDateFrom]/[filterByDateTo] bound the inclusive
+  /// modification-date range filter; either may be omitted for an
+  /// open-ended range.
   Future<List<ProjectDto>> fetchProjectsBySearchQuery({
     required String userId,
     required String query,
-    DateTime? filterByDate,
+    DateTime? filterByDateFrom,
+    DateTime? filterByDateTo,
     String? filterByTag,
     String? filterByOwner,
   });
