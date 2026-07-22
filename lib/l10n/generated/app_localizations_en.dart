@@ -489,6 +489,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get removeAction => 'Remove';
 
   @override
+  String removeChipLabel(String email) {
+    return 'Remove $email';
+  }
+
+  @override
   String get copyEstimationAction => 'Copy cost estimation';
 
   @override

@@ -748,6 +748,16 @@
     "description": "Label for remove action button",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=58002-53150&t=wjWHI4P6ds90viit-4"
   },
+  "removeChipLabel": "Remove {email}",
+  "@removeChipLabel": {
+    "description": "Screen-reader label for the remove button on an email chip in the member invitation sheet; includes the email so each chip announces distinctly",
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "alice@example.com"
+      }
+    }
+  },
   "copyEstimationAction": "Copy cost estimation",
   "@copyEstimationAction": {
     "description": "Label for copy estimation action item"
