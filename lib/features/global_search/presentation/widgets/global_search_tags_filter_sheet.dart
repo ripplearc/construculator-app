@@ -129,9 +129,11 @@ class _GlobalSearchTagsFilterSheetState
               ),
             );
           }
-          return ListView.builder(
-            shrinkWrap: true,
-            itemCount: tags.length,
+          return Material(
+            type: MaterialType.transparency,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: tags.length,
             itemBuilder: (_, index) {
               final tag = tags[index];
               final isSelected = _localSelected.contains(tag);
@@ -151,6 +153,7 @@ class _GlobalSearchTagsFilterSheetState
                 controlAffinity: ListTileControlAffinity.leading,
               );
             },
+            ),
           );
         },
       ),

@@ -4,6 +4,9 @@ platform :ios, '13.0'
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
+# TODO: [CA-831] [Chore] Migrate iOS build from CocoaPods to Swift Package Manager https://ripplearc.youtrack.cloud/issue/CA-831/Chore-Migrate-iOS-build-from-CocoaPods-to-Swift-Package-Manager
+ENV['FLUTTER_DISABLE_SWIFT_PACKAGE_MANAGER'] = '1'
+
 project 'Runner', {
   'Debug' => :debug,
   'Profile' => :release,
