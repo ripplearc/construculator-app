@@ -2128,12 +2128,6 @@ abstract class AppLocalizations {
   /// **'Create a project'**
   String get createProjectScreenTitle;
 
-  /// Error toast shown when navigation to the project details screen fails
-  ///
-  /// In en, this message translates to:
-  /// **'Unable to open project details. Please try again.'**
-  String get projectDetailsNavigationError;
-
   /// Label for the FAB on the cost estimation details page when the labours tab is active
   ///
   /// In en, this message translates to:
@@ -2380,10 +2374,10 @@ abstract class AppLocalizations {
   /// **'Unable to open project settings. Please try again.'**
   String get projectSettingsNavigationError;
 
-  /// Toast shown when the user lacks permission to view project settings
+  /// Toast shown when the user lacks the view_project permission for a project
   ///
   /// In en, this message translates to:
-  /// **'You don\'t have permission to view this project\'s settings.'**
+  /// **'You don\'t have permission to view this project.'**
   String get projectSettingsPermissionError;
 }
 

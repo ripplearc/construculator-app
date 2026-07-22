@@ -56,7 +56,6 @@ class ProjectsBottomSheet extends StatefulWidget {
 class _ProjectsBottomSheetState extends State<ProjectsBottomSheet> {
   static final _logger = AppLogger().tag('ProjectsBottomSheet');
 
-
   late final ProjectDropdownBloc _bloc;
   final TextEditingController _searchController = TextEditingController();
 
