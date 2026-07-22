@@ -220,11 +220,13 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       _currentQuery = '';
       _selectedTags = const {};
       _tagSearchQuery = '';
+      _availableTags = const [];
       _availableTagsFetched = false;
       _availableTagsLoading = false;
       _availableTagsFetchGeneration++;
       _selectedOwnerIds = const {};
       _ownerSearchQuery = '';
+      _availableOwners = const [];
       _availableOwnersFetched = false;
       _availableOwnersLoading = false;
       _availableOwnersFetchGeneration++;

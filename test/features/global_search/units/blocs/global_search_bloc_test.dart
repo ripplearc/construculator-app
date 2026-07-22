@@ -1424,6 +1424,51 @@ void main() {
           ),
         ],
       );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'clears availableTags when GlobalSearchStarted is dispatched after '
+        'tags were fetched',
+        setUp: () {
+          fakeSupabase.setCurrentUser(null);
+          seedTags(['Roofing']);
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableTagsLoading,
+          );
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && state.availableTags.isEmpty,
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTagsLoading,
+            'availableTagsLoading',
+            isTrue,
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTags,
+            'availableTags',
+            ['Roofing'],
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableTags,
+                'availableTags cleared on restart',
+                isEmpty,
+              )
+              .having(
+                (s) => s.availableTagsLoading,
+                'availableTagsLoading',
+                isFalse,
+              ),
+        ],
+      );
     });
 
     group('GlobalSearchAvailableTagsRequested', () {
@@ -1871,6 +1916,51 @@ void main() {
             'owners reset on restart',
             isEmpty,
           ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'clears availableOwners when GlobalSearchStarted is dispatched after '
+        'owners were fetched',
+        setUp: () {
+          fakeSupabase.setCurrentUser(null);
+          seedOwners([(id: 'owner-1', firstName: 'John')]);
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchAvailableOwnersRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.availableOwnersLoading,
+          );
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && state.availableOwners.isEmpty,
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableOwnersLoading,
+            'availableOwnersLoading',
+            isTrue,
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableOwners.map((owner) => owner.id),
+            'availableOwners',
+            ['owner-1'],
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableOwners,
+                'availableOwners cleared on restart',
+                isEmpty,
+              )
+              .having(
+                (s) => s.availableOwnersLoading,
+                'availableOwnersLoading',
+                isFalse,
+              ),
         ],
       );
     });
