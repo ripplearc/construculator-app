@@ -152,7 +152,7 @@ class ProjectSearchOwnerSearchQueryUpdatedEvent extends ProjectSearchEvent {
   List<Object?> get props => [query];
 }
 
-/// Dispatched when the user taps Apply in [DateRangeBottomSheet].
+/// Dispatched when the user taps Apply in [CoreDateRangeSheet].
 class ProjectSearchDateFilterAppliedEvent extends ProjectSearchEvent {
   /// The modification-date range selected by the user.
   final DateRange range;

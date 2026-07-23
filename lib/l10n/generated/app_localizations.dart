@@ -2194,6 +2194,12 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get dateRangeSheetCancel;
 
+  /// Confirm (OK) button label of the custom-range date pickers opened from the Date range filter bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get dateRangeSheetConfirm;
+
   /// Label for the button that toggles the project description text area
   ///
   /// In en, this message translates to:
