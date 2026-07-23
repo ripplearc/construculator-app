@@ -161,6 +161,7 @@ class _DateRangeBottomSheetState extends State<DateRangeBottomSheet> {
     return Material(
       type: MaterialType.transparency,
       child: RadioGroup<_PredefinedRange>(
+        key: const Key('date_range_radio_group'),
         groupValue: _selected,
         onChanged: (range) {
           if (range == null) return;

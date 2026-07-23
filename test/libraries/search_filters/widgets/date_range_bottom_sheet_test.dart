@@ -14,9 +14,9 @@ class _ResultHolder {
   bool resolved = false;
 }
 
-Object? _groupValue(WidgetTester tester) => (tester.firstWidget(
-      find.byWidgetPredicate((w) => w is RadioGroup<Object?>),
-    ) as RadioGroup<Object?>)
+Object? _groupValue(WidgetTester tester) =>
+    (tester.widget(find.byKey(const Key('date_range_radio_group')))
+            as RadioGroup<Object?>)
         .groupValue;
 
 void main() {
