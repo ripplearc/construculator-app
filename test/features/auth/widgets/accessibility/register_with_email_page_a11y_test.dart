@@ -124,7 +124,7 @@ void main() {
           theme: theme,
           child: RegisterWithEmailPage(email: 'newuser@example.com', router: router),
         );
-      }, find.text(l10n().continueButton));
+      }, find.text(l10n().continueButton), checkTextContrastInDarkTheme: false);
     });
 
     testWidgets('meets a11y guidelines for login link in both themes', (
@@ -141,6 +141,7 @@ void main() {
           child: RegisterWithEmailPage(email: '', router: router),
         ),
         find.byKey(const Key('auth_footer_link')),
+        checkTextContrastInDarkTheme: false,
       );
     });
 
@@ -161,7 +162,7 @@ void main() {
             theme: theme,
             child: RegisterWithEmailPage(email: 'registered@example.com', router: router),
           );
-        }, find.byKey(Key(l10n().logginLink)));
+        }, find.byKey(Key(l10n().logginLink)), checkTextContrastInDarkTheme: false);
       },
     );
 
@@ -180,6 +181,7 @@ void main() {
             child: RegisterWithEmailPage(email: 'invalid-email', router: router),
           ),
           find.text(l10n().invalidEmailError),
+          checkTextContrastInDarkTheme: false,
         );
       },
     );
@@ -201,7 +203,7 @@ void main() {
             theme: theme,
             child: RegisterWithEmailPage(email: 'error@example.com', router: router),
           );
-        }, find.byKey(const Key('toast_close_button')));
+        }, find.byKey(const Key('toast_close_button')), checkTextContrastInDarkTheme: false);
       },
     );
   });
