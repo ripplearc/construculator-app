@@ -1,5 +1,6 @@
 import 'package:construculator/features/project_settings/presentation/widgets/deletion_confirmation_bottom_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -34,12 +35,15 @@ void main() {
             locale: const Locale('en'),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: DeletionConfirmationBottomSheet(
-                projectName: projectName,
-                onConfirm: () {},
-                onCancel: () {},
-                imagesAttachedCount: imagesAttachedCount,
+            home: Builder(
+              builder: (ctx) => Scaffold(
+                backgroundColor: ctx.colorTheme.pageBackground,
+                body: DeletionConfirmationBottomSheet(
+                  projectName: projectName,
+                  onConfirm: () {},
+                  onCancel: () {},
+                  imagesAttachedCount: imagesAttachedCount,
+                ),
               ),
             ),
           ),
@@ -51,7 +55,7 @@ void main() {
         await pumpSheet(tester: tester);
 
         await expectLater(
-          find.byType(DeletionConfirmationBottomSheet),
+          find.byType(Scaffold),
           matchesGoldenFile(
             'goldens/deletion_confirmation_bottom_sheet/${size.width.toInt()}x${size.height.toInt()}/default_no_images.png',
           ),
@@ -62,7 +66,7 @@ void main() {
         await pumpSheet(tester: tester, imagesAttachedCount: 25);
 
         await expectLater(
-          find.byType(DeletionConfirmationBottomSheet),
+          find.byType(Scaffold),
           matchesGoldenFile(
             'goldens/deletion_confirmation_bottom_sheet/${size.width.toInt()}x${size.height.toInt()}/with_images_attached.png',
           ),
@@ -79,7 +83,7 @@ void main() {
         );
 
         await expectLater(
-          find.byType(DeletionConfirmationBottomSheet),
+          find.byType(Scaffold),
           matchesGoldenFile(
             'goldens/deletion_confirmation_bottom_sheet/390x500/long_project_name.png',
           ),
@@ -143,12 +147,15 @@ void main() {
             locale: const Locale('en'),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: DeletionConfirmationBottomSheet(
-                projectName: projectName,
-                onConfirm: () {},
-                onCancel: () {},
-                imagesAttachedCount: imagesAttachedCount,
+            home: Builder(
+              builder: (ctx) => Scaffold(
+                backgroundColor: ctx.colorTheme.pageBackground,
+                body: DeletionConfirmationBottomSheet(
+                  projectName: projectName,
+                  onConfirm: () {},
+                  onCancel: () {},
+                  imagesAttachedCount: imagesAttachedCount,
+                ),
               ),
             ),
           ),
@@ -160,7 +167,7 @@ void main() {
         await pumpSheet(tester: tester, theme: createTestThemeDark());
 
         await expectLater(
-          find.byType(DeletionConfirmationBottomSheet),
+          find.byType(Scaffold),
           matchesGoldenFile(
             'goldens/deletion_confirmation_bottom_sheet/${size.width.toInt()}x${size.height.toInt()}/default_no_images_dark.png',
           ),
@@ -175,7 +182,7 @@ void main() {
         );
 
         await expectLater(
-          find.byType(DeletionConfirmationBottomSheet),
+          find.byType(Scaffold),
           matchesGoldenFile(
             'goldens/deletion_confirmation_bottom_sheet/${size.width.toInt()}x${size.height.toInt()}/with_images_attached_dark.png',
           ),
@@ -193,7 +200,7 @@ void main() {
         );
 
         await expectLater(
-          find.byType(DeletionConfirmationBottomSheet),
+          find.byType(Scaffold),
           matchesGoldenFile(
             'goldens/deletion_confirmation_bottom_sheet/390x500/long_project_name_dark.png',
           ),

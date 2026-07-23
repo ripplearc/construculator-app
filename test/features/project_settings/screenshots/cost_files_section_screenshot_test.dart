@@ -1,6 +1,7 @@
 import 'package:construculator/features/project_settings/domain/entities/cost_file_entity.dart';
 import 'package:construculator/features/project_settings/presentation/widgets/cost_files_section.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -29,10 +30,13 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: Padding(
-            padding: const EdgeInsets.all(16),
-            child: CostFilesSection(files: files),
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: CostFilesSection(files: files),
+            ),
           ),
         ),
       ),
@@ -61,7 +65,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(CostFilesSection),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/cost_files_section/${size.width}x${size.height}/with_files.png',
         ),
@@ -72,7 +76,7 @@ void main() {
       await pumpCostFilesSection(tester: tester, files: []);
 
       await expectLater(
-        find.byType(CostFilesSection),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/cost_files_section/${size.width}x${size.height}/empty.png',
         ),
@@ -102,7 +106,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(CostFilesSection),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/cost_files_section/${size.width}x${size.height}/with_files_dark.png',
         ),
@@ -117,7 +121,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(CostFilesSection),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/cost_files_section/${size.width}x${size.height}/empty_dark.png',
         ),

@@ -1,5 +1,6 @@
 import 'package:construculator/features/project_settings/presentation/widgets/project_stats_cards.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -27,10 +28,13 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Material(
-          child: ProjectStatsCards(
-            estimationCount: estimationCount,
-            memberCount: memberCount,
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: ProjectStatsCards(
+              estimationCount: estimationCount,
+              memberCount: memberCount,
+            ),
           ),
         ),
       ),
@@ -51,7 +55,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(ProjectStatsCards),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_typical_counts.png',
         ),
@@ -70,7 +74,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(ProjectStatsCards),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_zero_counts.png',
         ),
@@ -89,7 +93,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(ProjectStatsCards),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_large_counts.png',
         ),
@@ -110,7 +114,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(ProjectStatsCards),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_overflow_counts.png',
         ),
@@ -132,7 +136,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(ProjectStatsCards),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_typical_counts_dark.png',
         ),
@@ -152,7 +156,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(ProjectStatsCards),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_zero_counts_dark.png',
         ),
@@ -172,7 +176,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(ProjectStatsCards),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_large_counts_dark.png',
         ),
@@ -194,7 +198,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(ProjectStatsCards),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_overflow_counts_dark.png',
         ),

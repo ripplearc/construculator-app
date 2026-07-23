@@ -1,5 +1,6 @@
 import 'package:construculator/features/project_settings/presentation/widgets/project_description_text_field.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -18,11 +19,14 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Material(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Align(alignment: Alignment.topCenter, child: child),
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Align(alignment: Alignment.topCenter, child: child),
+              ),
             ),
           ),
         ),
@@ -44,7 +48,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(ProjectDescriptionTextField),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/project_description_text_field/${size.width}x${size.height}/project_description_text_field_empty.png',
         ),
@@ -66,7 +70,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(ProjectDescriptionTextField),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/project_description_text_field/${size.width}x${size.height}/project_description_text_field_with_value.png',
         ),
@@ -94,7 +98,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(ProjectDescriptionTextField),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/project_description_text_field/${size.width}x${size.height}/project_description_text_field_error_too_long.png',
         ),
@@ -121,7 +125,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(ProjectDescriptionTextField),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/project_description_text_field/${size.width}x${size.height}/project_description_text_field_empty_dark.png',
         ),
@@ -146,7 +150,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(ProjectDescriptionTextField),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/project_description_text_field/${size.width}x${size.height}/project_description_text_field_with_value_dark.png',
         ),
@@ -177,7 +181,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(ProjectDescriptionTextField),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/project_description_text_field/${size.width}x${size.height}/project_description_text_field_error_too_long_dark.png',
         ),

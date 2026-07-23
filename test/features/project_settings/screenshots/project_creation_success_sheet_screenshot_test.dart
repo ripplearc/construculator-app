@@ -1,5 +1,6 @@
 import 'package:construculator/features/project_settings/presentation/widgets/project_creation_success_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -22,9 +23,12 @@ void main() {
         theme: theme ?? createTestTheme(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: ProjectCreationSuccessSheetContent(
-            onContinue: () {},
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: ProjectCreationSuccessSheetContent(
+              onContinue: () {},
+            ),
           ),
         ),
       ),
@@ -46,7 +50,7 @@ void main() {
       await pumpSuccessSheet(tester: tester);
 
       await expectLater(
-        find.byType(ProjectCreationSuccessSheetContent),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/project_creation_success_sheet/${size.width}x${size.height}/project_creation_success_sheet.png',
         ),
@@ -116,7 +120,7 @@ void main() {
       await pumpSuccessSheet(tester: tester, theme: createTestThemeDark());
 
       await expectLater(
-        find.byType(ProjectCreationSuccessSheetContent),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/project_creation_success_sheet/${size.width}x${size.height}/project_creation_success_sheet_dark.png',
         ),

@@ -1,5 +1,6 @@
 import 'package:construculator/features/project_settings/presentation/widgets/export_settings_display.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/domain/entities/enums.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,11 +20,14 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Material(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Align(alignment: Alignment.topCenter, child: child),
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Align(alignment: Alignment.topCenter, child: child),
+              ),
             ),
           ),
         ),
@@ -47,7 +51,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(ExportSettingsDisplay),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_google_drive.png',
         ),
@@ -71,7 +75,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(ExportSettingsDisplay),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_dropbox.png',
         ),
@@ -95,7 +99,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(ExportSettingsDisplay),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_one_drive.png',
         ),
@@ -119,7 +123,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(ExportSettingsDisplay),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_no_folder.png',
         ),
@@ -143,7 +147,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(ExportSettingsDisplay),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_no_export.png',
         ),
@@ -170,7 +174,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(ExportSettingsDisplay),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_google_drive_dark.png',
         ),
@@ -195,7 +199,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(ExportSettingsDisplay),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_dropbox_dark.png',
         ),
@@ -220,7 +224,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(ExportSettingsDisplay),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_one_drive_dark.png',
         ),
@@ -245,7 +249,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(ExportSettingsDisplay),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_no_folder_dark.png',
         ),
@@ -270,7 +274,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(ExportSettingsDisplay),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_no_export_dark.png',
         ),
