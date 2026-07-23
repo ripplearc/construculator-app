@@ -3,6 +3,7 @@ import 'package:construculator/features/global_search/presentation/widgets/searc
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/estimation/testing/testing.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -53,12 +54,15 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Material(
-          child: SearchResultsList(
-            results: results,
-            onEstimationTap: (_) {},
-            onEstimationMenuTap: (_) {},
-            estimationTileProvider: const FakeEstimationTileProvider(),
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: SearchResultsList(
+              results: results,
+              onEstimationTap: (_) {},
+              onEstimationMenuTap: (_) {},
+              estimationTileProvider: const FakeEstimationTileProvider(),
+            ),
           ),
         ),
       ),
@@ -83,7 +87,12 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Material(child: SearchResultsEmptyView(query: query)),
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: SearchResultsEmptyView(query: query),
+          ),
+        ),
       ),
     );
     await tester.pump();
@@ -102,7 +111,12 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: theme ?? createTestTheme(),
-        home: const Material(child: SearchResultsLoadingView()),
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: const SearchResultsLoadingView(),
+          ),
+        ),
       ),
     );
     await tester.pump();
@@ -125,7 +139,7 @@ void main() {
       await pumpSearchResultsList(tester: tester, size: listSize, results: results);
 
       await expectLater(
-        find.byType(SearchResultsList),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/search_results_list/${listSize.width}x${listSize.height}/two_estimation_cards.png',
         ),
@@ -142,7 +156,7 @@ void main() {
       await pumpSearchResultsList(tester: tester, size: singleCardSize, results: results);
 
       await expectLater(
-        find.byType(SearchResultsList),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/search_results_list/${singleCardSize.width}x${singleCardSize.height}/single_estimation_card.png',
         ),
@@ -155,7 +169,7 @@ void main() {
       await pumpEmptyView(tester: tester, size: emptySize, query: 'Wall');
 
       await expectLater(
-        find.byType(SearchResultsEmptyView),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/search_results_list/${emptySize.width}x${emptySize.height}/empty_state.png',
         ),
@@ -168,7 +182,7 @@ void main() {
       await pumpLoadingView(tester: tester, size: loadingSize);
 
       await expectLater(
-        find.byType(SearchResultsLoadingView),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/search_results_list/${loadingSize.width}x${loadingSize.height}/loading_state.png',
         ),
@@ -198,7 +212,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(SearchResultsList),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/search_results_list/${listSize.width}x${listSize.height}/two_estimation_cards_dark.png',
         ),
@@ -220,7 +234,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(SearchResultsList),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/search_results_list/${singleCardSize.width}x${singleCardSize.height}/single_estimation_card_dark.png',
         ),
@@ -238,7 +252,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(SearchResultsEmptyView),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/search_results_list/${emptySize.width}x${emptySize.height}/empty_state_dark.png',
         ),
@@ -255,7 +269,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(SearchResultsLoadingView),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/search_results_list/${loadingSize.width}x${loadingSize.height}/loading_state_dark.png',
         ),

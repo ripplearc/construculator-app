@@ -1,5 +1,6 @@
 import 'package:construculator/features/global_search/presentation/widgets/global_search_empty_recent_widget.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -26,8 +27,11 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const Scaffold(
-          body: GlobalSearchEmptyRecentWidget(),
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: const GlobalSearchEmptyRecentWidget(),
+          ),
         ),
       ),
     );
@@ -44,7 +48,7 @@ void main() {
       await pumpEmptyRecentWidget(tester: tester);
 
       await expectLater(
-        find.byType(GlobalSearchEmptyRecentWidget),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_default.png',
         ),
@@ -61,7 +65,7 @@ void main() {
       await pumpEmptyRecentWidget(tester: tester, theme: createTestThemeDark());
 
       await expectLater(
-        find.byType(GlobalSearchEmptyRecentWidget),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_default_dark.png',
         ),
