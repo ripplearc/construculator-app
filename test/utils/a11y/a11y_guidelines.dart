@@ -125,7 +125,7 @@ Future<void> expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
       targetFinder,
       checkTapTargetSize: checkTapTargetSize,
       checkLabeledTapTarget: checkLabeledTapTarget,
-      checkTextContrast: isDark ? checkTextContrastInDarkTheme : checkTextContrast,
+      checkTextContrast: isDark ? (checkTextContrast && checkTextContrastInDarkTheme) : checkTextContrast,
     );
   }
 }
