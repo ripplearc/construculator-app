@@ -8,11 +8,11 @@ import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/owner/domain/repositories/owner_repository.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/project/domain/repositories/project_search_repository.dart';
-import 'package:construculator/libraries/search_filters/domain/entities/date_range.dart';
 import 'package:construculator/libraries/tag/domain/repositories/tag_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:rxdart/rxdart.dart';
 
 part 'project_search_event.dart';

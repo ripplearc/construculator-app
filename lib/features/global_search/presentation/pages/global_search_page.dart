@@ -4,8 +4,8 @@ import 'package:construculator/features/global_search/presentation/widgets/globa
 import 'package:construculator/features/global_search/presentation/widgets/global_search_suggestions_list.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_tags_filter_sheet.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
-import 'package:construculator/libraries/search_filters/presentation/widgets/date_filter_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -312,13 +312,25 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
                       children: [
                         _buildTagsFilterChips(context, effectiveTags),
                         const SizedBox(width: CoreSpacing.space2),
-                        DateFilterChip(
+                        CoreDateFilterChip(
                           selectedDateRange: effectiveDateRange,
                           label: l10n.globalSearchFilterModified,
                           semanticLabel:
                               l10n.globalSearchFilterModifiedSemanticLabel,
                           clearSemanticLabel:
                               l10n.globalSearchClearDateFilterSemanticLabel,
+                          dateLabelBuilder: DisplayFormatter.formatDate,
+                          sheetTitle: l10n.dateRangeSheetTitle,
+                          todayLabel: l10n.dateRangeSheetToday,
+                          last7DaysLabel: l10n.dateRangeSheetLast7Days,
+                          last30DaysLabel: l10n.dateRangeSheetLast30Days,
+                          thisMonthLabel: l10n.dateRangeSheetThisMonth,
+                          customRangeLabel: l10n.dateRangeSheetCustomRange,
+                          startDateLabel: l10n.dateRangeSheetStartDateLabel,
+                          endDateLabel: l10n.dateRangeSheetEndDateLabel,
+                          cancelLabel: l10n.dateRangeSheetCancel,
+                          applyLabel: l10n.dateRangeSheetApply,
+                          confirmLabel: l10n.dateRangeSheetConfirm,
                           inactiveChipKey: const Key(
                             'global_search_date_filter_chip',
                           ),

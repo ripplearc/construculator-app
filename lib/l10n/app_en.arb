@@ -1856,6 +1856,11 @@
     "description": "Label for the Cancel button in the Date range filter bottom sheet",
     "context": "N/A"
   },
+  "dateRangeSheetConfirm": "OK",
+  "@dateRangeSheetConfirm": {
+    "description": "Confirm (OK) button label of the custom-range date pickers opened from the Date range filter bottom sheet",
+    "context": "N/A"
+  },
   "addDescriptionButton": "Add description",
   "@addDescriptionButton": {
     "description": "Label for the button that toggles the project description text area",

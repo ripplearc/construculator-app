@@ -171,7 +171,7 @@ class GlobalSearchOwnerSearchQueryUpdated extends GlobalSearchEvent {
 
 /// Applies (or replaces) the active modification-date range filter.
 ///
-/// Dispatched when the user taps Apply in [DateRangeBottomSheet].
+/// Dispatched when the user taps Apply in [CoreDateRangeSheet].
 class GlobalSearchDateFilterApplied extends GlobalSearchEvent {
   /// The date range to apply as the active filter.
   final DateRange range;

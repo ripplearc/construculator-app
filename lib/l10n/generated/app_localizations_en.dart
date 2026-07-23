@@ -1167,6 +1167,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dateRangeSheetCancel => 'Cancel';
 
   @override
+  String get dateRangeSheetConfirm => 'OK';
+
+  @override
   String get addDescriptionButton => 'Add description';
 
   @override

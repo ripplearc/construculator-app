@@ -5,16 +5,16 @@ import 'package:construculator/features/global_search/global_search_module.dart'
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
-import 'package:construculator/libraries/search_filters/domain/entities/date_range.dart';
-import 'package:construculator/libraries/search_filters/presentation/widgets/date_range_bottom_sheet.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/screenshot/await_images_extension.dart';
@@ -59,9 +59,10 @@ void main() {
     fakeSupabase.reset();
   });
 
-  // GlobalSearchPage doesn't yet expose a date filter chip (CA-170 wires that
-  // up); until then this opens DateRangeBottomSheet directly over the real
-  // page so the golden's backdrop matches what users will actually see.
+  // Opens CoreDateRangeSheet directly over the real page — with the same
+  // labels GlobalSearchPage's CoreDateFilterChip passes — so the golden's
+  // backdrop matches what users actually see while the pre-selected custom
+  // range stays controllable without driving bloc state through the chip.
   Future<void> pumpPageAndOpenDateRangeSheet({
     required WidgetTester tester,
     DateRange? initialRange,
@@ -84,10 +85,22 @@ void main() {
     await tester.awaitImages();
 
     final pageContext = tester.element(find.byType(GlobalSearchPage));
+    final l10n = pageContext.l10n;
     unawaited(
-      DateRangeBottomSheet.show(
+      CoreDateRangeSheet.show(
         context: pageContext,
         initialRange: initialRange,
+        title: l10n.dateRangeSheetTitle,
+        todayLabel: l10n.dateRangeSheetToday,
+        last7DaysLabel: l10n.dateRangeSheetLast7Days,
+        last30DaysLabel: l10n.dateRangeSheetLast30Days,
+        thisMonthLabel: l10n.dateRangeSheetThisMonth,
+        customRangeLabel: l10n.dateRangeSheetCustomRange,
+        startDateLabel: l10n.dateRangeSheetStartDateLabel,
+        endDateLabel: l10n.dateRangeSheetEndDateLabel,
+        cancelLabel: l10n.dateRangeSheetCancel,
+        applyLabel: l10n.dateRangeSheetApply,
+        confirmLabel: l10n.dateRangeSheetConfirm,
       ),
     );
     await tester.pumpAndSettle();

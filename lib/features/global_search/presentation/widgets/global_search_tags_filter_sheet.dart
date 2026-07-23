@@ -1,13 +1,13 @@
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
-import 'package:construculator/libraries/search_filters/presentation/widgets/multi_select_filter_sheet.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// A modal bottom sheet for selecting tag filters in the global search screen.
 ///
-/// A thin wrapper around the shared [MultiSelectFilterSheet]: the available
+/// A thin wrapper around CoreUI's [CoreMultiSelectSheet]: the available
 /// tags and search filtering are owned by [GlobalSearchBloc]. The sheet
 /// dispatches [GlobalSearchTagSearchQueryUpdated] as the user types and
 /// renders [GlobalSearchReady.availableTags]. Tag selection is kept local
@@ -43,7 +43,7 @@ class GlobalSearchTagsFilterSheet extends StatelessWidget {
             !listEquals(prev.availableTags, curr.availableTags);
       },
       builder: (context, state) {
-        return MultiSelectFilterSheet(
+        return CoreMultiSelectSheet(
           title: l10n.globalSearchTagsSheetTitle,
           searchHint: l10n.globalSearchTagsSheetSearchHint,
           emptyLabel: l10n.globalSearchTagsSheetEmpty,
@@ -51,11 +51,11 @@ class GlobalSearchTagsFilterSheet extends StatelessWidget {
           applyLabel: l10n.globalSearchTagsSheetApply,
           initialSelectedIds: initialSelectedTags,
           listData: state is GlobalSearchReady
-              ? MultiSelectFilterListData(
+              ? CoreMultiSelectListData(
                   isLoading: state.availableTagsLoading,
                   items: [
                     for (final tag in state.availableTags)
-                      MultiSelectFilterItem(id: tag, label: tag),
+                      CoreMultiSelectItem(id: tag, label: tag),
                   ],
                 )
               : null,
