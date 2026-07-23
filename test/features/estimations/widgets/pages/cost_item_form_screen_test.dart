@@ -12,7 +12,6 @@ import 'package:construculator/libraries/time/interfaces/clock.dart';
 import 'package:construculator/libraries/time/testing/clock_test_module.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -178,7 +177,7 @@ void main() {
       final semantics = tester.getSemantics(
         find.byKey(const Key('from_cost_file_pill')),
       );
-      expect(semantics.hasFlag(SemanticsFlag.isSelected), isTrue);
+      expect(semantics.flagsCollection.isSelected.toBoolOrNull(), isTrue);
     });
 
     testWidgets('add to cost button is present and disabled initially', (
@@ -191,7 +190,7 @@ void main() {
       final semantics = tester.getSemantics(
         find.byKey(const Key('add_to_cost_button')),
       );
-      expect(semantics.hasFlag(SemanticsFlag.isEnabled), isFalse);
+      expect(semantics.flagsCollection.isEnabled.toBoolOrNull(), isFalse);
     });
 
     testWidgets('displays edit title button', (tester) async {
@@ -216,7 +215,7 @@ void main() {
       final semantics = tester.getSemantics(
         find.byKey(const Key('add_to_cost_button')),
       );
-      expect(semantics.hasFlag(SemanticsFlag.isEnabled), isTrue);
+      expect(semantics.flagsCollection.isEnabled.toBoolOrNull(), isTrue);
     });
 
     testWidgets(
@@ -239,7 +238,7 @@ void main() {
       final semantics = tester.getSemantics(
         find.byKey(const Key('add_to_cost_button')),
       );
-      expect(semantics.hasFlag(SemanticsFlag.isEnabled), isFalse);
+      expect(semantics.flagsCollection.isEnabled.toBoolOrNull(), isFalse);
     });
 
     testWidgets('displays total label', (tester) async {

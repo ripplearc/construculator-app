@@ -22,7 +22,7 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
     if (supabaseUrl != null && supabaseAnonKey != null) {
       await supabase.Supabase.initialize(
         url: supabaseUrl,
-        anonKey: supabaseAnonKey,
+        publishableKey: supabaseAnonKey,
         debug: _envLoader.get('DEBUG_MODE') == 'true',
       );
       _supabaseClient = supabase.Supabase.instance.client;
