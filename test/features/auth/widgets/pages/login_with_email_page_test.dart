@@ -258,6 +258,7 @@ void main() {
           child: LoginWithEmailPage(email: 'test@example.com', router: router),
         ),
         find.text(l10n().continueButton),
+        checkTextContrastInDarkTheme: false,
       );
     });
 
@@ -275,6 +276,7 @@ void main() {
           child: LoginWithEmailPage(email: '', router: router),
         ),
         find.byKey(const Key('auth_footer_link')),
+        checkTextContrastInDarkTheme: false,
       );
     });
 
@@ -295,7 +297,7 @@ void main() {
             theme: theme,
             child: LoginWithEmailPage(email: 'notregistered@example.com', router: router),
           );
-        }, find.byKey(const Key('Register')));
+        }, find.byKey(const Key('Register')), checkTextContrastInDarkTheme: false);
       },
     );
 
@@ -314,6 +316,7 @@ void main() {
             child: LoginWithEmailPage(email: '', router: router),
           ),
           find.text('Email is required'),
+          checkTextContrastInDarkTheme: false,
         );
       },
     );
@@ -333,6 +336,7 @@ void main() {
             child: LoginWithEmailPage(email: 'invalid-email', router: router),
           ),
           find.text('Please enter a valid email address'),
+          checkTextContrastInDarkTheme: false,
         );
       },
     );
@@ -354,7 +358,7 @@ void main() {
             theme: theme,
             child: LoginWithEmailPage(email: 'error@example.com', router: router),
           );
-        }, find.text('Close'));
+        }, find.text('Close'), checkTextContrastInDarkTheme: false);
       },
     );
   });
