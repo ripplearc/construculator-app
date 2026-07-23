@@ -14,9 +14,8 @@ class LoginWithEmailBloc
   final CheckEmailAvailabilityUseCase _checkEmailAvailabilityUseCase;
 
   LoginWithEmailBloc({
-    required CheckEmailAvailabilityUseCase checkEmailAvailabilityUseCase,
-  }) : _checkEmailAvailabilityUseCase = checkEmailAvailabilityUseCase,
-       super(LoginWithEmailInitial()) {
+    required this._checkEmailAvailabilityUseCase,
+  }) : super(LoginWithEmailInitial()) {
     on<LoginEmailAvailabilityCheckRequested>(_onEmailChanged);
     on<LoginWithEmailFormFieldChanged>(_onFormFieldChanged);
   }

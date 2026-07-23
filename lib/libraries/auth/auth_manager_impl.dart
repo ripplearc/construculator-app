@@ -22,14 +22,11 @@ class AuthManagerImpl implements AuthManager {
   final _logger = AppLogger().tag('AuthManagerImpl');
 
   AuthManagerImpl({
-    required SupabaseWrapper wrapper,
-    required AuthRepository authRepository,
-    required AuthNotifierController authNotifier,
-    required SentryWrapper sentryWrapper,
-  }) : _wrapper = wrapper,
-       _authRepository = authRepository,
-       _authNotifier = authNotifier,
-       _sentryWrapper = sentryWrapper {
+    required this._wrapper,
+    required this._authRepository,
+    required this._authNotifier,
+    required this._sentryWrapper,
+  }) {
     _initAuthListener();
   }
 

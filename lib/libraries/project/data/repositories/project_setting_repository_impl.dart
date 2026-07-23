@@ -15,10 +15,9 @@ class ProjectSettingRepositoryImpl implements ProjectSettingRepository {
   final ProjectPermissionDataSource _permissionDataSource;
 
   ProjectSettingRepositoryImpl({
-    required ProjectSettingDataSource dataSource,
-    required ProjectPermissionDataSource permissionDataSource,
-  }) : _dataSource = dataSource,
-       _permissionDataSource = permissionDataSource;
+    required this._dataSource,
+    required this._permissionDataSource,
+  });
 
   @override
   Future<Either<Failure, Project>> createProject(Project project) async {

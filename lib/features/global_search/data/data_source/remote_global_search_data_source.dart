@@ -18,8 +18,7 @@ class RemoteGlobalSearchDataSource implements GlobalSearchDataSource {
   final SupabaseWrapper _supabaseWrapper;
   static final _logger = AppLogger().tag('RemoteGlobalSearchDataSource');
 
-  const RemoteGlobalSearchDataSource({required SupabaseWrapper supabaseWrapper})
-    : _supabaseWrapper = supabaseWrapper;
+  const RemoteGlobalSearchDataSource({required this._supabaseWrapper});
 
   @override
   Future<SearchResultsDto> search(SearchParamsDto params) async {

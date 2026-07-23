@@ -88,13 +88,10 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   DateRange? _selectedDateRange;
 
   GlobalSearchBloc({
-    required GlobalSearchRepository repository,
-    required TagRepository tagRepository,
-    required OwnerRepository ownerRepository,
-  }) : _repository = repository,
-       _tagRepository = tagRepository,
-       _ownerRepository = ownerRepository,
-       super(const GlobalSearchInitial()) {
+    required this._repository,
+    required this._tagRepository,
+    required this._ownerRepository,
+  }) : super(const GlobalSearchInitial()) {
     on<GlobalSearchStarted>(_onStarted);
     on<GlobalSearchQueryUpdated>(
       _onQueryUpdated,
