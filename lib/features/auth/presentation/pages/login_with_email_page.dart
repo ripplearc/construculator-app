@@ -31,7 +31,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
   List<String>? _emailErrorList;
   List<Widget>? _emailErrorWidgetList;
 
-  _getContinueButtonText(LoginWithEmailState state) {
+  String _getContinueButtonText(LoginWithEmailState state) {
     final l10n = context.l10n;
     if (state is LoginWithEmailLoading) {
       return l10n.loggingInButton;
@@ -42,7 +42,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
     return l10n.continueButton;
   }
 
-  _handleFailure(Failure failure) {
+  void _handleFailure(Failure failure) {
     final l10n = context.l10n;
     if (failure is AuthFailure) {
       CoreToast.showError(

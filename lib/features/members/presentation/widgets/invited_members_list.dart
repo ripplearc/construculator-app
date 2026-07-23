@@ -24,7 +24,7 @@ class InvitedMembersList extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: members.length,
-      separatorBuilder: (_, __) => const SizedBox(height: CoreSpacing.space2),
+      separatorBuilder: (_, _) => const SizedBox(height: CoreSpacing.space2),
       itemBuilder: (context, index) {
         final member = members[index];
         return _MemberTile(
