@@ -1,5 +1,6 @@
 import 'package:construculator/features/members/presentation/widgets/invited_members_list.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/members/domain/invited_member.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,8 +31,11 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: widget,
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: widget,
+          ),
         ),
       ),
     );
@@ -53,7 +57,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(InvitedMembersList),
+        find.byType(Scaffold),
         matchesGoldenFile('$goldenDir/${size.width}x${size.height}/invited_members_list.png'),
       );
     });
@@ -73,7 +77,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(InvitedMembersList),
+        find.byType(Scaffold),
         matchesGoldenFile('$goldenDir/${size.width}x${size.height}/invited_members_list_dark.png'),
       );
     });

@@ -1,5 +1,6 @@
 import 'package:construculator/features/app_header/presentation/widgets/profile_avatar.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -28,9 +29,12 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: Center(
-            child: ProfileAvatar(name: name, imageUrl: imageUrl),
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: Center(
+              child: ProfileAvatar(name: name, imageUrl: imageUrl),
+            ),
           ),
         ),
       ),
@@ -50,7 +54,7 @@ void main() {
       await pumpProfileAvatar(tester: tester, name: 'John');
 
       await expectLater(
-        find.byType(ProfileAvatar),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_letter_j.png',
         ),
@@ -67,7 +71,7 @@ void main() {
       await pumpProfileAvatar(tester: tester, name: 'Alice');
 
       await expectLater(
-        find.byType(ProfileAvatar),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_letter_a.png',
         ),
@@ -84,7 +88,7 @@ void main() {
       await pumpProfileAvatar(tester: tester, name: 'Bob', imageUrl: '');
 
       await expectLater(
-        find.byType(ProfileAvatar),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_empty_url.png',
         ),
@@ -107,7 +111,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(ProfileAvatar),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_letter_j_dark.png',
         ),
@@ -128,7 +132,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(ProfileAvatar),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_letter_a_dark.png',
         ),
@@ -150,7 +154,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(ProfileAvatar),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_empty_url_dark.png',
         ),

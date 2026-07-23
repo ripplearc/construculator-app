@@ -1,5 +1,6 @@
 import 'package:construculator/features/app_header/presentation/widgets/notification_icon.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -27,8 +28,11 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: Center(child: NotificationIcon(unreadCount: unreadCount)),
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: Center(child: NotificationIcon(unreadCount: unreadCount)),
+          ),
         ),
       ),
     );
@@ -47,7 +51,7 @@ void main() {
       await pumpNotificationIcon(tester: tester, unreadCount: 0);
 
       await expectLater(
-        find.byType(NotificationIcon),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_no_badge.png',
         ),
@@ -64,7 +68,7 @@ void main() {
       await pumpNotificationIcon(tester: tester, unreadCount: 3);
 
       await expectLater(
-        find.byType(NotificationIcon),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_with_badge.png',
         ),
@@ -81,7 +85,7 @@ void main() {
       await pumpNotificationIcon(tester: tester, unreadCount: 123);
 
       await expectLater(
-        find.byType(NotificationIcon),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_overflow_badge.png',
         ),
@@ -104,7 +108,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(NotificationIcon),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_no_badge_dark.png',
         ),
@@ -125,7 +129,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(NotificationIcon),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_with_badge_dark.png',
         ),
@@ -146,7 +150,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(NotificationIcon),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_overflow_badge_dark.png',
         ),
