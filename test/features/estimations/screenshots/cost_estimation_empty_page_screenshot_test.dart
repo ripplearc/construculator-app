@@ -1,4 +1,5 @@
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -17,11 +18,14 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: theme ?? createTestTheme(),
-        home: Scaffold(
-          body: CostEstimationEmptyWidget(
-            message:
-                message ??
-                'No estimation added To add an estimation please click on add button',
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: CostEstimationEmptyWidget(
+              message:
+                  message ??
+                  'No estimation added To add an estimation please click on add button',
+            ),
           ),
         ),
       ),
@@ -44,7 +48,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(CostEstimationEmptyWidget),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/cost_estimation_empty_widget/${size.width}x${size.height}/cost_estimation_empty_widget_custom_message.png',
         ),
@@ -62,7 +66,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(CostEstimationEmptyWidget),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/cost_estimation_empty_widget/${size.width}x${size.height}/cost_estimation_empty_widget_long_message.png',
         ),
@@ -82,7 +86,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(CostEstimationEmptyWidget),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/cost_estimation_empty_widget/${size.width}x${size.height}/cost_estimation_empty_widget_custom_message_dark.png',
         ),
@@ -101,7 +105,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(CostEstimationEmptyWidget),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/cost_estimation_empty_widget/${size.width}x${size.height}/cost_estimation_empty_widget_long_message_dark.png',
         ),

@@ -4,6 +4,7 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_log_bloc/cost_estimation_log_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_logs_list.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -65,12 +66,15 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: BlocProvider<CostEstimationLogBloc>.value(
-            value: bloc,
-            child: const CostEstimationLogsList(
-              estimateId: estimateId,
-              estimateName: 'Kitchen Remodel',
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: BlocProvider<CostEstimationLogBloc>.value(
+              value: bloc,
+              child: const CostEstimationLogsList(
+                estimateId: estimateId,
+                estimateName: 'Kitchen Remodel',
+              ),
             ),
           ),
         ),
@@ -88,7 +92,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(CostEstimationLogsList),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_empty.png',
         ),
@@ -121,7 +125,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(CostEstimationLogsList),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_loaded.png',
         ),
@@ -161,7 +165,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(CostEstimationLogsList),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_load_more_error.png',
         ),
@@ -179,7 +183,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(CostEstimationLogsList),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_empty_dark.png',
         ),
@@ -212,7 +216,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(CostEstimationLogsList),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_loaded_dark.png',
         ),
@@ -252,7 +256,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(CostEstimationLogsList),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_load_more_error_dark.png',
         ),
