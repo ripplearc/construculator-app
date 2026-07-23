@@ -1,4 +1,5 @@
 import 'package:construculator/features/auth/presentation/widgets/forgot_password_header.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -22,12 +23,15 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: theme ?? createTestTheme(),
-        home: Material(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ForgotPasswordHeader(
-              title: title,
-              description: description,
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ForgotPasswordHeader(
+                title: title,
+                description: description,
+              ),
             ),
           ),
         ),
@@ -50,7 +54,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(ForgotPasswordHeader),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/forgot_password_header/${size.width}x${size.height}/forgot_password_header.png',
         ),
@@ -73,7 +77,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(ForgotPasswordHeader),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/forgot_password_header/${size.width}x${size.height}/forgot_password_header_dark.png',
         ),

@@ -1,4 +1,5 @@
 import 'package:construculator/features/auth/presentation/widgets/auth_header.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -24,14 +25,17 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: theme ?? createTestTheme(),
-        home: Material(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: AuthHeader(
-              title: title,
-              description: description,
-              contact: contact,
-              onContactPressed: onContactPressed,
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: AuthHeader(
+                title: title,
+                description: description,
+                contact: contact,
+                onContactPressed: onContactPressed,
+              ),
             ),
           ),
         ),
@@ -55,7 +59,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(AuthHeader),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/auth_header/${size.width}x${size.height}/auth_header_no_contact.png',
         ),
@@ -76,7 +80,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(AuthHeader),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/auth_header/${size.width}x${size.height}/auth_header_with_contact.png',
         ),
@@ -100,7 +104,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(AuthHeader),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/auth_header/${size.width}x${size.height}/auth_header_no_contact_dark.png',
         ),
@@ -122,7 +126,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(AuthHeader),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/auth_header/${size.width}x${size.height}/auth_header_with_contact_dark.png',
         ),

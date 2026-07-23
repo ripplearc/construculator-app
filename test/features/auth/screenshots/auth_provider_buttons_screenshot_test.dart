@@ -1,5 +1,6 @@
 import 'package:construculator/features/auth/presentation/widgets/auth_provider_buttons.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -24,12 +25,15 @@ void main() {
         theme: theme ?? createTestTheme(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: Container(
-            margin: const EdgeInsets.only(top: 16),
-            child: AuthProviderButtons(
-              onPressed: (_) {},
-              isEmailAuth: isEmailAuth,
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: Container(
+              margin: const EdgeInsets.only(top: 16),
+              child: AuthProviderButtons(
+                onPressed: (_) {},
+                isEmailAuth: isEmailAuth,
+              ),
             ),
           ),
         ),
@@ -46,7 +50,7 @@ void main() {
       await pumpAuthProviderButtons(tester: tester, isEmailAuth: true);
 
       await expectLater(
-        find.byType(AuthProviderButtons),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/auth_provider_buttons/${size.width}x${size.height}/auth_provider_buttons_email_auth.png',
         ),
@@ -60,7 +64,7 @@ void main() {
       await pumpAuthProviderButtons(tester: tester, isEmailAuth: false);
 
       await expectLater(
-        find.byType(AuthProviderButtons),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/auth_provider_buttons/${size.width}x${size.height}/auth_provider_buttons_phone_auth.png',
         ),
@@ -80,7 +84,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(AuthProviderButtons),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/auth_provider_buttons/${size.width}x${size.height}/auth_provider_buttons_email_auth_dark.png',
         ),
@@ -98,7 +102,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(AuthProviderButtons),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/auth_provider_buttons/${size.width}x${size.height}/auth_provider_buttons_phone_auth_dark.png',
         ),

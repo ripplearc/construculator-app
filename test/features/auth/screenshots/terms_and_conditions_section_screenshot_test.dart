@@ -1,4 +1,5 @@
 import 'package:construculator/features/auth/presentation/widgets/terms_and_conditions_section.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -24,16 +25,19 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: theme ?? createTestTheme(),
-        home: Material(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TermsAndConditionsSection(
-              termsAndConditionsText: termsAndConditionsText,
-              termsAndServicesLink: termsAndServicesLink,
-              privacyPolicyLink: privacyPolicyLink,
-              andAcknowledge: andAcknowledge,
-              onTermsAndConditionsLinkPressed: () {},
-              onPrivacyPolicyLinkPressed: () {},
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: TermsAndConditionsSection(
+                termsAndConditionsText: termsAndConditionsText,
+                termsAndServicesLink: termsAndServicesLink,
+                privacyPolicyLink: privacyPolicyLink,
+                andAcknowledge: andAcknowledge,
+                onTermsAndConditionsLinkPressed: () {},
+                onPrivacyPolicyLinkPressed: () {},
+              ),
             ),
           ),
         ),
@@ -58,7 +62,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(TermsAndConditionsSection),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/terms_and_conditions/${size.width}x${size.height}/terms_and_conditions_agreement.png',
         ),
@@ -83,7 +87,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(TermsAndConditionsSection),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/terms_and_conditions/${size.width}x${size.height}/terms_and_conditions_agreement_dark.png',
         ),

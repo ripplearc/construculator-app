@@ -1,4 +1,5 @@
 import 'package:construculator/features/auth/presentation/widgets/auth_footer.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -22,11 +23,14 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: theme ?? createTestTheme(),
-        home: Material(
-          child: AuthFooter(
-            text: text,
-            actionText: actionText,
-            onPressed: () {},
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: AuthFooter(
+              text: text,
+              actionText: actionText,
+              onPressed: () {},
+            ),
           ),
         ),
       ),
@@ -46,7 +50,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(AuthFooter),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/auth_footer/${size.width}x${size.height}/auth_footer_register.png',
         ),
@@ -64,7 +68,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(AuthFooter),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/auth_footer/${size.width}x${size.height}/auth_footer_login.png',
         ),
@@ -85,7 +89,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(AuthFooter),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/auth_footer/${size.width}x${size.height}/auth_footer_register_dark.png',
         ),
@@ -104,7 +108,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(AuthFooter),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/auth_footer/${size.width}x${size.height}/auth_footer_login_dark.png',
         ),
