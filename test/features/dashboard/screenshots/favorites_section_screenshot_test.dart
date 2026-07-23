@@ -4,6 +4,7 @@ import 'package:construculator/features/dashboard/domain/entities/favourite_filt
 import 'package:construculator/features/dashboard/presentation/widgets/favorites_section.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/favourite_sort_bottom_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -33,16 +34,19 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: FavoritesSection(
-              calculations: calculations,
-              estimations: estimations,
-              onViewAll: () {},
-              onCalculationTap: (_) {},
-              onEstimationTap: (_) {},
-              onFilterChanged: (_) {},
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: FavoritesSection(
+                calculations: calculations,
+                estimations: estimations,
+                onViewAll: () {},
+                onCalculationTap: (_) {},
+                onEstimationTap: (_) {},
+                onFilterChanged: (_) {},
+              ),
             ),
           ),
         ),
@@ -66,10 +70,13 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: FavouriteSortBottomSheet(
-            selectedFilter: selectedFilter,
-            onFilterSelected: (_) {},
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: FavouriteSortBottomSheet(
+              selectedFilter: selectedFilter,
+              onFilterSelected: (_) {},
+            ),
           ),
         ),
       ),
@@ -113,7 +120,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(FavoritesSection),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favorites_section_loaded.png',
         ),
@@ -124,7 +131,7 @@ void main() {
       await pumpFavoritesSection(tester: tester);
 
       await expectLater(
-        find.byType(FavoritesSection),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favorites_section_empty.png',
         ),
@@ -137,7 +144,7 @@ void main() {
       await pumpBottomSheet(tester: tester);
 
       await expectLater(
-        find.byType(FavouriteSortBottomSheet),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favourite_sort_sheet_all.png',
         ),
@@ -153,7 +160,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(FavouriteSortBottomSheet),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favourite_sort_sheet_cost_estimations.png',
         ),
@@ -169,7 +176,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(FavouriteSortBottomSheet),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favourite_sort_sheet_calculations.png',
         ),
@@ -214,7 +221,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(FavoritesSection),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favorites_section_loaded_dark.png',
         ),
@@ -228,7 +235,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(FavoritesSection),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favorites_section_empty_dark.png',
         ),
@@ -241,7 +248,7 @@ void main() {
       await pumpBottomSheet(tester: tester, theme: createTestThemeDark());
 
       await expectLater(
-        find.byType(FavouriteSortBottomSheet),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favourite_sort_sheet_all_dark.png',
         ),
@@ -258,7 +265,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(FavouriteSortBottomSheet),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favourite_sort_sheet_cost_estimations_dark.png',
         ),
@@ -275,7 +282,7 @@ void main() {
       );
 
       await expectLater(
-        find.byType(FavouriteSortBottomSheet),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favourite_sort_sheet_calculations_dark.png',
         ),
