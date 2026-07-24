@@ -4,6 +4,7 @@ import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/cost_estimation_log_bloc/cost_estimation_log_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_logs_list.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -55,22 +56,25 @@ void main() {
     fakeSupabase.addTableData(DatabaseConstants.costEstimationLogsTable, rows);
   }
 
-  Future<void> pumpLogsList(WidgetTester tester) async {
+  Future<void> pumpLogsList(WidgetTester tester, {ThemeData? theme}) async {
     final bloc = Modular.get<CostEstimationLogBloc>();
     addTearDown(bloc.close);
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: createTestTheme(),
+        theme: theme ?? createTestTheme(),
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: BlocProvider<CostEstimationLogBloc>.value(
-            value: bloc,
-            child: const CostEstimationLogsList(
-              estimateId: estimateId,
-              estimateName: 'Kitchen Remodel',
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: BlocProvider<CostEstimationLogBloc>.value(
+              value: bloc,
+              child: const CostEstimationLogsList(
+                estimateId: estimateId,
+                estimateName: 'Kitchen Remodel',
+              ),
             ),
           ),
         ),
@@ -78,16 +82,17 @@ void main() {
     );
   }
 
-  group('CostEstimationLogsList Screenshot Tests', () {
+  group('CostEstimationLogsList Screenshot Tests - Light', () {
     testWidgets('empty state', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       await pumpLogsList(tester);
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(CostEstimationLogsList),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_empty.png',
         ),
@@ -97,6 +102,7 @@ void main() {
     testWidgets('loaded state', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       seedLogs([
         LogTestDataFactory.createLogData(
@@ -119,7 +125,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(CostEstimationLogsList),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_loaded.png',
         ),
@@ -129,6 +135,7 @@ void main() {
     testWidgets('load-more error with retry', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       final pageSize = CostEstimationLogRepositoryImpl.defaultPageSize;
       seedLogs(
@@ -158,9 +165,100 @@ void main() {
       await tester.pumpAndSettle();
 
       await expectLater(
-        find.byType(CostEstimationLogsList),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_load_more_error.png',
+        ),
+      );
+    });
+  });
+
+  group('CostEstimationLogsList Screenshot Tests - Dark', () {
+    testWidgets('empty state', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpLogsList(tester, theme: createTestThemeDark());
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_empty_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('loaded state', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      seedLogs([
+        LogTestDataFactory.createLogData(
+          id: 'log-1',
+          estimateId: estimateId,
+          activity: 'costEstimationCreated',
+          firstName: 'Liam',
+        ),
+        LogTestDataFactory.createLogData(
+          id: 'log-2',
+          estimateId: estimateId,
+          activity: 'costFileUploaded',
+          activityDetails: {'fileName': 'materials.xlsx'},
+          firstName: 'Ava',
+          loggedAt: '2025-03-01T10:00:00.000Z',
+        ),
+      ]);
+
+      await pumpLogsList(tester, theme: createTestThemeDark());
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_loaded_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('load-more error with retry', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      final pageSize = CostEstimationLogRepositoryImpl.defaultPageSize;
+      seedLogs(
+        LogTestDataFactory.createLogDataList(
+          count: pageSize + 1,
+          estimateId: estimateId,
+        ),
+      );
+
+      await pumpLogsList(tester, theme: createTestThemeDark());
+      await tester.pumpAndSettle();
+
+      fakeSupabase.shouldThrowOnSelectPaginated = true;
+      fakeSupabase.selectPaginatedExceptionType = SupabaseExceptionType.timeout;
+
+      await tester.drag(
+        find.byType(CustomScrollView).first,
+        const Offset(0, -1800),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.text('Retry'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/cost_estimation_logs_list/${size.width}x${size.height}/logs_list_load_more_error_dark.png',
         ),
       );
     });

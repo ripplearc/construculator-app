@@ -1,4 +1,5 @@
 import 'package:construculator/features/estimation/presentation/widgets/cost_estimation_empty_widget.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -12,16 +13,19 @@ void main() {
   Future<void> pumpCostEstimationEmptyPage({
     required WidgetTester tester,
     String? message,
-    double? textWidthFactor,
+    ThemeData? theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: createTestTheme(),
-        home: Scaffold(
-          body: CostEstimationEmptyWidget(
-            message:
-                message ??
-                'No estimation added To add an estimation please click on add button',
+        theme: theme ?? createTestTheme(),
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: CostEstimationEmptyWidget(
+              message:
+                  message ??
+                  'No estimation added To add an estimation please click on add button',
+            ),
           ),
         ),
       ),
@@ -33,17 +37,18 @@ void main() {
     await loadAppFontsAll();
   });
 
-  group('CostEstimationEmptyPage Screenshot Tests', () {
+  group('CostEstimationEmptyPage Screenshot Tests - Light', () {
     testWidgets('renders with custom message correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
       await pumpCostEstimationEmptyPage(
         tester: tester,
         message: 'No data available. Please add some content to get started.',
       );
 
       await expectLater(
-        find.byType(CostEstimationEmptyWidget),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/cost_estimation_empty_widget/${size.width}x${size.height}/cost_estimation_empty_widget_custom_message.png',
         ),
@@ -53,6 +58,7 @@ void main() {
     testWidgets('renders with long message correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
       await pumpCostEstimationEmptyPage(
         tester: tester,
         message:
@@ -60,9 +66,48 @@ void main() {
       );
 
       await expectLater(
-        find.byType(CostEstimationEmptyWidget),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/cost_estimation_empty_widget/${size.width}x${size.height}/cost_estimation_empty_widget_long_message.png',
+        ),
+      );
+    });
+  });
+
+  group('CostEstimationEmptyPage Screenshot Tests - Dark', () {
+    testWidgets('renders with custom message correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+      await pumpCostEstimationEmptyPage(
+        tester: tester,
+        message: 'No data available. Please add some content to get started.',
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/cost_estimation_empty_widget/${size.width}x${size.height}/cost_estimation_empty_widget_custom_message_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders with long message correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+      await pumpCostEstimationEmptyPage(
+        tester: tester,
+        message:
+            'This is a very long message that should wrap to multiple lines and demonstrate how the widget handles text overflow and proper spacing between elements.',
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/cost_estimation_empty_widget/${size.width}x${size.height}/cost_estimation_empty_widget_long_message_dark.png',
         ),
       );
     });

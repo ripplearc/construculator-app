@@ -27,47 +27,49 @@ void main() {
     await loadAppFontsAll();
   });
 
-  group('CostEstimationTile Screenshot Tests', () {
-    Future<void> pumpCostEstimationTile({
-      required WidgetTester tester,
-      required CostEstimate estimation,
-      required VoidCallback onTap,
-      VoidCallback? onMenuTap,
-    }) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Material(
-            child: CostEstimationTile(
-              estimation: estimation,
-              onTap: onTap,
-              onMenuTap: onMenuTap,
-              provider: Modular.get<EstimationTileProvider>(),
-            ),
+  Future<void> pumpCostEstimationTile({
+    required WidgetTester tester,
+    required CostEstimate estimation,
+    required VoidCallback onTap,
+    VoidCallback? onMenuTap,
+    ThemeData? theme,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme ?? createTestTheme(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Material(
+          child: CostEstimationTile(
+            estimation: estimation,
+            onTap: onTap,
+            onMenuTap: onMenuTap,
+            provider: Modular.get<EstimationTileProvider>(),
           ),
         ),
-      );
-      await tester.pumpAndSettle();
-    }
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
 
-    CostEstimate createTestEstimation({
-      required String estimateName,
-      double? totalCost,
-      required DateTime createdAt,
-    }) {
-      return CostEstimate.defaultEstimate(
-        estimateName: estimateName,
-        totalCost: totalCost,
-        createdAt: createdAt,
-      );
-    }
+  CostEstimate createTestEstimation({
+    required String estimateName,
+    double? totalCost,
+    required DateTime createdAt,
+  }) {
+    return CostEstimate.defaultEstimate(
+      estimateName: estimateName,
+      totalCost: totalCost,
+      createdAt: createdAt,
+    );
+  }
 
+  group('CostEstimationTile Screenshot Tests - Light', () {
     testWidgets('renders base cost estimation tile correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       final estimation = createTestEstimation(
         estimateName: 'Base Estimate',
@@ -95,6 +97,7 @@ void main() {
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       final estimation = createTestEstimation(
         estimateName: 'Complete Home Renovation and Extension Project',
@@ -113,6 +116,64 @@ void main() {
         find.byType(CostEstimationTile),
         matchesGoldenFile(
           'goldens/cost_estimation_tile/${size.width}x${size.height}/cost_estimation_tile_long_name.png',
+        ),
+      );
+    });
+  });
+
+  group('CostEstimationTile Screenshot Tests - Dark', () {
+    testWidgets('renders base cost estimation tile correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      final estimation = createTestEstimation(
+        estimateName: 'Base Estimate',
+        totalCost: 50000.0,
+        createdAt: DateTime(2024, 1, 1, 8, 30),
+      );
+
+      await pumpCostEstimationTile(
+        tester: tester,
+        estimation: estimation,
+        onTap: () {},
+        onMenuTap: () {},
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(CostEstimationTile),
+        matchesGoldenFile(
+          'goldens/cost_estimation_tile/${size.width}x${size.height}/cost_estimation_tile_base_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders cost estimation tile with long name correctly', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      final estimation = createTestEstimation(
+        estimateName: 'Complete Home Renovation and Extension Project',
+        totalCost: 125000.75,
+        createdAt: DateTime(2024, 3, 10, 16, 45),
+      );
+
+      await pumpCostEstimationTile(
+        tester: tester,
+        estimation: estimation,
+        onTap: () {},
+        onMenuTap: () {},
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(CostEstimationTile),
+        matchesGoldenFile(
+          'goldens/cost_estimation_tile/${size.width}x${size.height}/cost_estimation_tile_long_name_dark.png',
         ),
       );
     });

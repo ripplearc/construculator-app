@@ -43,10 +43,11 @@ void main() {
     required WidgetTester tester,
     required CostItemType type,
     bool fromCostFile = false,
+    ThemeData? theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: createTestTheme(),
+        theme: theme ?? createTestTheme(),
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -78,10 +79,11 @@ void main() {
     }
   }
 
-  group('CostItemFormScreen Screenshot Tests', () {
+  group('CostItemFormScreen Screenshot Tests - Light', () {
     testWidgets('renders labour cost screen in manually mode', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
       await pumpScreen(tester: tester, type: CostItemType.labor);
 
       await expectLater(
@@ -97,6 +99,7 @@ void main() {
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
       await pumpScreen(tester: tester, type: CostItemType.material);
 
       await expectLater(
@@ -112,6 +115,7 @@ void main() {
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
       await pumpScreen(
         tester: tester,
         type: CostItemType.material,
@@ -131,6 +135,7 @@ void main() {
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
       await pumpScreen(tester: tester, type: CostItemType.material);
       await tester.enterText(
         find.byKey(const Key('material_type_field')),
@@ -147,6 +152,97 @@ void main() {
         find.byType(CostItemFormScreen),
         matchesGoldenFile(
           'goldens/cost_item_form_screen/${size.width}x${size.height}/material_manually_error.png',
+        ),
+      );
+    });
+  });
+
+  group('CostItemFormScreen Screenshot Tests - Dark', () {
+    testWidgets('renders labour cost screen in manually mode', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await pumpScreen(
+        tester: tester,
+        type: CostItemType.labor,
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(CostItemFormScreen),
+        matchesGoldenFile(
+          'goldens/cost_item_form_screen/${size.width}x${size.height}/labour_manually_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders material cost screen in manually mode', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await pumpScreen(
+        tester: tester,
+        type: CostItemType.material,
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(CostItemFormScreen),
+        matchesGoldenFile(
+          'goldens/cost_item_form_screen/${size.width}x${size.height}/material_manually_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders material cost screen in from cost file mode', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await pumpScreen(
+        tester: tester,
+        type: CostItemType.material,
+        fromCostFile: true,
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(CostItemFormScreen),
+        matchesGoldenFile(
+          'goldens/cost_item_form_screen/${size.width}x${size.height}/material_from_cost_file_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders material cost screen with item type error', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await pumpScreen(
+        tester: tester,
+        type: CostItemType.material,
+        theme: createTestThemeDark(),
+      );
+      await tester.enterText(
+        find.byKey(const Key('material_type_field')),
+        'x',
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('material_type_field')),
+        '',
+      );
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(CostItemFormScreen),
+        matchesGoldenFile(
+          'goldens/cost_item_form_screen/${size.width}x${size.height}/material_manually_error_dark.png',
         ),
       );
     });

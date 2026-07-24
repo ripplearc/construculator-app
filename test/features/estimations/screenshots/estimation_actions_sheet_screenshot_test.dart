@@ -10,48 +10,50 @@ void main() {
   final ratio = 1.0;
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  late ValueNotifier<bool> lockStatusNotifier;
+
   setUp(() async {
     await loadAppFontsAll();
   });
 
-  group('EstimationActionsSheet Screenshot Tests', () {
-    late ValueNotifier<bool> lockStatusNotifier;
+  Future<void> pumpActionsSheet({
+    required WidgetTester tester,
+    required String estimationName,
+    bool isLocked = false,
+    ThemeData? theme,
+  }) async {
+    lockStatusNotifier = ValueNotifier<bool>(isLocked);
 
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme ?? createTestTheme(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: EstimationActionsSheet(
+            estimationName: estimationName,
+            lockStatusNotifier: lockStatusNotifier,
+            onRename: () {},
+            onFavourite: () {},
+            onRemove: () {},
+            onLockToggle: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  group('EstimationActionsSheet Screenshot Tests - Light', () {
     tearDown(() {
       lockStatusNotifier.dispose();
     });
 
-    Future<void> pumpActionsSheet({
-      required WidgetTester tester,
-      required String estimationName,
-      bool isLocked = false,
-    }) async {
-      lockStatusNotifier = ValueNotifier<bool>(isLocked);
-
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: EstimationActionsSheet(
-              estimationName: estimationName,
-              lockStatusNotifier: lockStatusNotifier,
-              onRename: () {},
-              onFavourite: () {},
-              onRemove: () {},
-              onLockToggle: (_) {},
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-    }
-
     testWidgets('renders with default state', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       await pumpActionsSheet(tester: tester, estimationName: 'Estimation 1');
 
@@ -66,6 +68,7 @@ void main() {
     testWidgets('renders with long estimation name', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       await pumpActionsSheet(
         tester: tester,
@@ -84,6 +87,7 @@ void main() {
     testWidgets('renders with locked state', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       await pumpActionsSheet(
         tester: tester,
@@ -95,6 +99,71 @@ void main() {
         find.byType(EstimationActionsSheet),
         matchesGoldenFile(
           'goldens/estimation_actions_sheet/${size.width}x${size.height}/estimation_actions_sheet_locked.png',
+        ),
+      );
+    });
+  });
+
+  group('EstimationActionsSheet Screenshot Tests - Dark', () {
+    tearDown(() {
+      lockStatusNotifier.dispose();
+    });
+
+    testWidgets('renders with default state', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpActionsSheet(
+        tester: tester,
+        estimationName: 'Estimation 1',
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(EstimationActionsSheet),
+        matchesGoldenFile(
+          'goldens/estimation_actions_sheet/${size.width}x${size.height}/estimation_actions_sheet_default_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders with long estimation name', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpActionsSheet(
+        tester: tester,
+        estimationName:
+            'This is a very very long long long estimation name that should be truncated to best fit the screen',
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(EstimationActionsSheet),
+        matchesGoldenFile(
+          'goldens/estimation_actions_sheet/${size.width}x${size.height}/estimation_actions_sheet_long_name_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders with locked state', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpActionsSheet(
+        tester: tester,
+        estimationName: 'Estimation 1',
+        isLocked: true,
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(EstimationActionsSheet),
+        matchesGoldenFile(
+          'goldens/estimation_actions_sheet/${size.width}x${size.height}/estimation_actions_sheet_locked_dark.png',
         ),
       );
     });
