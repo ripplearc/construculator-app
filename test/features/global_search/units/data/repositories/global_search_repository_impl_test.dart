@@ -236,7 +236,9 @@ void main() {
             equals(['owner-42', 'owner-7']),
           );
           expect(rpcParams['scope'], equals('estimation'));
-          expect(rpcParams['offset'], equals(5));
+          expect(rpcParams['projects_offset'], equals(5));
+          expect(rpcParams['estimations_offset'], equals(5));
+          expect(rpcParams['members_offset'], equals(5));
           expect(rpcParams['limit'], equals(10));
         },
       );

@@ -189,7 +189,11 @@ class RemoteGlobalSearchDataSource implements GlobalSearchDataSource {
       'filter_by_date_to': params.filterByDateTo?.toIso8601String(),
       'filter_by_owners': params.filterByOwners,
       'scope': params.scope?.name,
-      'offset': params.pagination.offset,
+      // The RPC paginates each result domain independently; the app-side
+      // pagination offset applies to all three.
+      'projects_offset': params.pagination.offset,
+      'estimations_offset': params.pagination.offset,
+      'members_offset': params.pagination.offset,
       'limit': params.pagination.limit,
     };
   }
