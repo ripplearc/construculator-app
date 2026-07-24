@@ -29,9 +29,10 @@ void main() {
         tester.view.physicalSize = pumpSize;
         tester.view.devicePixelRatio = ratio;
 
+        final resolvedTheme = theme != null ? theme : createTestTheme();
         await tester.pumpWidget(
           MaterialApp(
-            theme: theme ?? createTestTheme(),
+            theme: resolvedTheme,
             locale: const Locale('en'),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -141,9 +142,10 @@ void main() {
         tester.view.physicalSize = pumpSize;
         tester.view.devicePixelRatio = ratio;
 
+        final resolvedTheme = theme != null ? theme : createTestThemeDark();
         await tester.pumpWidget(
           MaterialApp(
-            theme: theme ?? createTestTheme(),
+            theme: resolvedTheme,
             locale: const Locale('en'),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
