@@ -1,4 +1,5 @@
 import 'package:construculator/features/auth/presentation/widgets/forgot_password_header.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -13,17 +14,19 @@ void main() {
     await loadAppFonts();
   });
 
-  group('ForgotPasswordHeader Screenshot Tests', () {
-    Future<void> pumpForgotPasswordHeader({
-      required WidgetTester tester,
-      required String title,
-      required String description,
-    }) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          home: Material(
-            child: Padding(
+  Future<void> pumpForgotPasswordHeader({
+    required WidgetTester tester,
+    required String title,
+    required String description,
+    ThemeData? theme,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme ?? createTestTheme(),
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
+            body: Padding(
               padding: const EdgeInsets.all(16.0),
               child: ForgotPasswordHeader(
                 title: title,
@@ -32,13 +35,16 @@ void main() {
             ),
           ),
         ),
-      );
-      await tester.pumpAndSettle();
-    }
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
 
+  group('ForgotPasswordHeader Screenshot Tests - Light', () {
     testWidgets('renders forgot password header correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       await pumpForgotPasswordHeader(
         tester: tester,
@@ -48,9 +54,32 @@ void main() {
       );
 
       await expectLater(
-        find.byType(ForgotPasswordHeader),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/forgot_password_header/${size.width}x${size.height}/forgot_password_header.png',
+        ),
+      );
+    });
+  });
+
+  group('ForgotPasswordHeader Screenshot Tests - Dark', () {
+    testWidgets('renders forgot password header correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpForgotPasswordHeader(
+        tester: tester,
+        title: 'Forgot Password?',
+        description:
+            'An OTP will be sent to your registered email ID to reset your password',
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/forgot_password_header/${size.width}x${size.height}/forgot_password_header_dark.png',
         ),
       );
     });

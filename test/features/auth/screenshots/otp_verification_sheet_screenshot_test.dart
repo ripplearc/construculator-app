@@ -14,39 +14,41 @@ void main() {
     await loadAppFonts();
   });
 
-  group('OtpVerificationQuickSheet Screenshot Tests', () {
-    Future<void> pumpOtpSheet({
-      required WidgetTester tester,
-      bool verifyButtonDisabled = false,
-      bool isVerifying = false,
-      bool isResending = false,
-    }) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: OtpVerificationQuickSheet(
-              note: 'Enter 6 digit code we just texted to your email ID ',
-              contact: 'johndoe@gmail.com',
-              onChanged: (_) {},
-              onVerify: () {},
-              onResend: () {},
-              onEdit: () {},
-              verifyButtonDisabled: verifyButtonDisabled,
-              isVerifying: isVerifying,
-              isResending: isResending,
-            ),
+  Future<void> pumpOtpSheet({
+    required WidgetTester tester,
+    bool verifyButtonDisabled = false,
+    bool isVerifying = false,
+    bool isResending = false,
+    ThemeData? theme,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme ?? createTestTheme(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: OtpVerificationQuickSheet(
+            note: 'Enter 6 digit code we just texted to your email ID ',
+            contact: 'johndoe@gmail.com',
+            onChanged: (_) {},
+            onVerify: () {},
+            onResend: () {},
+            onEdit: () {},
+            verifyButtonDisabled: verifyButtonDisabled,
+            isVerifying: isVerifying,
+            isResending: isResending,
           ),
         ),
-      );
-      await tester.pumpAndSettle();
-    }
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
 
+  group('OtpVerificationQuickSheet Screenshot Tests - Light', () {
     testWidgets('renders with verify button disabled', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
       await pumpOtpSheet(tester: tester, verifyButtonDisabled: true);
 
       await expectLater(
@@ -60,12 +62,12 @@ void main() {
     testWidgets('renders with verify button enabled', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       await pumpOtpSheet(tester: tester);
 
       final pinInput = find.byKey(const Key('pin_input'));
       expect(pinInput, findsOneWidget);
-      // Type a 6-digit code
       await tester.enterText(pinInput, '123456');
       await tester.pumpAndSettle();
 
@@ -80,6 +82,7 @@ void main() {
     testWidgets('renders with resending state', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
       await pumpOtpSheet(
         tester: tester,
         isResending: true,
@@ -97,19 +100,15 @@ void main() {
     testWidgets('renders with verifying state', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
-      // First pump with enabled state to get the input field
       await pumpOtpSheet(tester: tester);
 
-      // Find and fill the OTP input field
       final pinInput = find.byKey(const Key('pin_input'));
       expect(pinInput, findsOneWidget);
-
-      // Type a 6-digit code
       await tester.enterText(pinInput, '123456');
       await tester.pump();
 
-      // Now pump with verifying state to show the loading state
       await pumpOtpSheet(
         tester: tester,
         isVerifying: true,
@@ -120,6 +119,92 @@ void main() {
         find.byType(OtpVerificationQuickSheet),
         matchesGoldenFile(
           'goldens/otp_verification_sheet/${size.width}x${size.height}/otp_verification_sheet_verifying.png',
+        ),
+      );
+    });
+  });
+
+  group('OtpVerificationQuickSheet Screenshot Tests - Dark', () {
+    testWidgets('renders with verify button disabled', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+      await pumpOtpSheet(
+        tester: tester,
+        verifyButtonDisabled: true,
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(OtpVerificationQuickSheet),
+        matchesGoldenFile(
+          'goldens/otp_verification_sheet/${size.width}x${size.height}/otp_verification_sheet_verify_disabled_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders with verify button enabled', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpOtpSheet(tester: tester, theme: createTestThemeDark());
+
+      final pinInput = find.byKey(const Key('pin_input'));
+      expect(pinInput, findsOneWidget);
+      await tester.enterText(pinInput, '123456');
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(OtpVerificationQuickSheet),
+        matchesGoldenFile(
+          'goldens/otp_verification_sheet/${size.width}x${size.height}/otp_verification_sheet_verify_enabled_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders with resending state', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+      await pumpOtpSheet(
+        tester: tester,
+        isResending: true,
+        verifyButtonDisabled: true,
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(OtpVerificationQuickSheet),
+        matchesGoldenFile(
+          'goldens/otp_verification_sheet/${size.width}x${size.height}/otp_verification_sheet_resending_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders with verifying state', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpOtpSheet(tester: tester, theme: createTestThemeDark());
+
+      final pinInput = find.byKey(const Key('pin_input'));
+      expect(pinInput, findsOneWidget);
+      await tester.enterText(pinInput, '123456');
+      await tester.pump();
+
+      await pumpOtpSheet(
+        tester: tester,
+        isVerifying: true,
+        verifyButtonDisabled: true,
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(OtpVerificationQuickSheet),
+        matchesGoldenFile(
+          'goldens/otp_verification_sheet/${size.width}x${size.height}/otp_verification_sheet_verifying_dark.png',
         ),
       );
     });

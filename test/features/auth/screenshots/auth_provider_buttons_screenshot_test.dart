@@ -1,5 +1,6 @@
 import 'package:construculator/features/auth/presentation/widgets/auth_provider_buttons.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -14,17 +15,19 @@ void main() {
     await loadAppFonts();
   });
 
-  group('AuthProviderButtons Screenshot Tests', () {
-    Future<void> pumpAuthProviderButtons({
-      required WidgetTester tester,
-      required bool isEmailAuth,
-    }) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
+  Future<void> pumpAuthProviderButtons({
+    required WidgetTester tester,
+    required bool isEmailAuth,
+    ThemeData? theme,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme ?? createTestTheme(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (ctx) => Scaffold(
+            backgroundColor: ctx.colorTheme.pageBackground,
             body: Container(
               margin: const EdgeInsets.only(top: 16),
               child: AuthProviderButtons(
@@ -34,17 +37,20 @@ void main() {
             ),
           ),
         ),
-      );
-      await tester.pumpAndSettle();
-    }
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
 
+  group('AuthProviderButtons Screenshot Tests - Light', () {
     testWidgets('renders email auth mode correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
       await pumpAuthProviderButtons(tester: tester, isEmailAuth: true);
 
       await expectLater(
-        find.byType(AuthProviderButtons),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/auth_provider_buttons/${size.width}x${size.height}/auth_provider_buttons_email_auth.png',
         ),
@@ -54,12 +60,51 @@ void main() {
     testWidgets('renders phone auth mode correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
       await pumpAuthProviderButtons(tester: tester, isEmailAuth: false);
 
       await expectLater(
-        find.byType(AuthProviderButtons),
+        find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/auth_provider_buttons/${size.width}x${size.height}/auth_provider_buttons_phone_auth.png',
+        ),
+      );
+    });
+  });
+
+  group('AuthProviderButtons Screenshot Tests - Dark', () {
+    testWidgets('renders email auth mode correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+      await pumpAuthProviderButtons(
+        tester: tester,
+        isEmailAuth: true,
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/auth_provider_buttons/${size.width}x${size.height}/auth_provider_buttons_email_auth_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders phone auth mode correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+      await pumpAuthProviderButtons(
+        tester: tester,
+        isEmailAuth: false,
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/auth_provider_buttons/${size.width}x${size.height}/auth_provider_buttons_phone_auth_dark.png',
         ),
       );
     });
