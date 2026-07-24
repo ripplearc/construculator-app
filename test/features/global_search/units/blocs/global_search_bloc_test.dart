@@ -179,7 +179,7 @@ void main() {
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
-        'emits GlobalSearchLoadFailure when Supabase throws on getRecentSearches',
+        'emits GlobalSearchRecentsLoadFailure when Supabase throws on getRecentSearches',
         setUp: () {
           fakeSupabase.setCurrentUser(
             FakeUser(
@@ -194,7 +194,7 @@ void main() {
         build: () => Modular.get<GlobalSearchBloc>(),
         act: (bloc) => bloc.add(const GlobalSearchStarted()),
         expect: () => [
-          isA<GlobalSearchLoadFailure>().having(
+          isA<GlobalSearchRecentsLoadFailure>().having(
             (s) => s.failure,
             'failure',
             SearchFailure(errorType: SearchErrorType.timeoutError),
@@ -408,11 +408,13 @@ void main() {
         act: (bloc) => bloc.add(const GlobalSearchPerformed(query: 'test')),
         expect: () => [
           const GlobalSearchLoadInProgress(query: 'test'),
-          isA<GlobalSearchLoadFailure>().having(
-            (s) => s.failure,
-            'failure',
-            SearchFailure(errorType: SearchErrorType.timeoutError),
-          ),
+          isA<GlobalSearchLoadFailure>()
+              .having(
+                (s) => s.failure,
+                'failure',
+                SearchFailure(errorType: SearchErrorType.timeoutError),
+              )
+              .having((s) => s.query, 'query', 'test'),
         ],
       );
 

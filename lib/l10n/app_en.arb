@@ -1546,6 +1546,21 @@
     "description": "Error toast shown when loading recent searches fails",
     "context": "N/A"
   },
+  "searchPerformErrorMessage": "Search failed. Please try again.",
+  "@searchPerformErrorMessage": {
+    "description": "Error toast shown on the search pages when performing a search fails",
+    "context": "N/A"
+  },
+  "searchFailureBodyMessage": "Something went wrong while searching.",
+  "@searchFailureBodyMessage": {
+    "description": "Message shown in the persistent failure state of the search results body when a search fails",
+    "context": "N/A"
+  },
+  "searchFailureRetryLabel": "Retry",
+  "@searchFailureRetryLabel": {
+    "description": "Label for the retry button on the search failure state that re-runs the failed search",
+    "context": "N/A"
+  },
   "globalSearchDeleteErrorMessage": "Failed to remove recent search. Please try again.",
   "@globalSearchDeleteErrorMessage": {
     "description": "Error toast shown when deleting a recent search fails",

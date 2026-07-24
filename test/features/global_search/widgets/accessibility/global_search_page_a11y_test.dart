@@ -288,5 +288,44 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'meets a11y guidelines for search failure retry button in both themes',
+      (tester) async {
+        fakeSupabase.setCurrentUser(
+          FakeUser(
+            id: _testUserId,
+            email: _testUserEmail,
+            createdAt: '2024-01-01T00:00:00.000Z',
+          ),
+        );
+        // Suggestions succeed; global_search stays unconfigured so the
+        // performed search fails and the retryable failure body renders.
+        fakeSupabase.setRpcResponse(
+          DatabaseConstants.searchSuggestionsRpcFunction,
+          <String>[],
+        );
+
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme),
+          find.byKey(const Key('searchFailureRetryButton')),
+          checkTapTargetSize: true,
+          checkLabeledTapTarget: true,
+          setupAfterPump: (t) async {
+            await t.enterText(find.byType(TextFormField), 'concrete');
+            await t.pump(const Duration(milliseconds: 400));
+            await t.testTextInput.receiveAction(TextInputAction.search);
+            await t.pump();
+            await t.pump();
+            // Flush the failure toast's auto-dismiss timer so no timer is
+            // pending when the theme pass completes.
+            await t.pump(const Duration(seconds: 4));
+          },
+        );
+      },
+    );
   });
 }

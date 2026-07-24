@@ -11,6 +11,7 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -579,6 +580,112 @@ void main() {
         );
 
         await tester.pump(const Duration(seconds: 5));
+      },
+    );
+  });
+
+  group('User on GlobalSearchPage with a failed search', () {
+    void seedUser() {
+      fakeSupabase.setCurrentUser(
+        FakeUser(
+          id: _testUserId,
+          email: _testUserEmail,
+          createdAt: '2024-01-01T00:00:00.000Z',
+        ),
+      );
+      // Suggestions succeed; global_search stays unconfigured so only the
+      // performed search fails (the fake throws for unconfigured RPCs).
+      fakeSupabase.setRpcResponse(
+        DatabaseConstants.searchSuggestionsRpcFunction,
+        <String>[],
+      );
+    }
+
+    Future<void> submitSearch(WidgetTester tester, String query) async {
+      final searchField = find.ancestor(
+        of: find.text(l10n().globalSearchHint),
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(searchField, query);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets(
+      'sees the search-failure toast and the persistent failure body with '
+      'a retry button',
+      (tester) async {
+        seedUser();
+        await renderPage(tester);
+
+        await submitSearch(tester, 'office');
+
+        expect(find.text(l10n().searchPerformErrorMessage), findsOneWidget);
+        expect(find.text(l10n().searchFailureBodyMessage), findsOneWidget);
+        expect(
+          find.byKey(const Key('searchFailureRetryButton')),
+          findsOneWidget,
+        );
+
+        await tester.pump(_kToastDismissDuration);
+        // The toast dismisses; the failure body stays.
+        expect(find.text(l10n().searchFailureBodyMessage), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tapping retry re-runs the failed search and clears the failure body '
+      'on success',
+      (tester) async {
+        seedUser();
+        await renderPage(tester);
+
+        await submitSearch(tester, 'office');
+        expect(find.text(l10n().searchFailureBodyMessage), findsOneWidget);
+        await tester.pump(_kToastDismissDuration);
+
+        fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
+          'projects': <Map<String, dynamic>>[],
+          'estimations': <Map<String, dynamic>>[],
+          'members': <Map<String, dynamic>>[],
+        });
+
+        await tester.tap(find.byKey(const Key('searchFailureRetryButton')));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n().searchFailureBodyMessage), findsNothing);
+      },
+    );
+  });
+
+  group('User on GlobalSearchPage with a failed history fetch', () {
+    testWidgets(
+      'sees the recents-load error toast when fetching recent searches fails',
+      (tester) async {
+        fakeSupabase.setCurrentUser(
+          FakeUser(
+            id: _testUserId,
+            email: _testUserEmail,
+            createdAt: '2024-01-01T00:00:00.000Z',
+          ),
+        );
+        fakeSupabase.setRpcResponse(
+          DatabaseConstants.searchSuggestionsRpcFunction,
+          <String>[],
+        );
+        fakeSupabase.shouldThrowOnSelectMatch = true;
+        fakeSupabase.selectMatchExceptionType = SupabaseExceptionType.timeout;
+
+        await renderPage(tester);
+
+        expect(find.text(l10n().globalSearchLoadErrorMessage), findsOneWidget);
+        // The history failure keeps the body on the empty-recents surface;
+        // the retryable search-failure body is reserved for failed searches.
+        expect(find.text(l10n().searchFailureBodyMessage), findsNothing);
+
+        await tester.pump(_kToastDismissDuration);
       },
     );
   });
