@@ -1783,6 +1783,46 @@
     "description": "Warning toast shown when fetching the available tags for the filter sheet fails",
     "context": "N/A"
   },
+  "globalSearchFilterTypeSemanticLabel": "Filter by type",
+  "@globalSearchFilterTypeSemanticLabel": {
+    "description": "Semantic label of the Type filter chip on the global search screen",
+    "context": "N/A"
+  },
+  "globalSearchClearTypeFilterSemanticLabel": "Clear type filter {type}",
+  "@globalSearchClearTypeFilterSemanticLabel": {
+    "description": "Semantic label of the active type filter pill that resets the search scope when tapped",
+    "context": "N/A",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "globalSearchTypeSheetTitle": "Select Filter by cost or calculation",
+  "@globalSearchTypeSheetTitle": {
+    "description": "Title of the Type filter bottom sheet on the global search screen",
+    "context": "N/A"
+  },
+  "globalSearchTypeCostLabel": "Cost",
+  "@globalSearchTypeCostLabel": {
+    "description": "Type filter option that limits the search to cost estimations",
+    "context": "N/A"
+  },
+  "globalSearchTypeCalculationLabel": "Calculation",
+  "@globalSearchTypeCalculationLabel": {
+    "description": "Type filter option for calculations; disabled until the global_search RPC supports the calculation scope",
+    "context": "N/A"
+  },
+  "globalSearchTypeSheetClearAll": "Clear all",
+  "@globalSearchTypeSheetClearAll": {
+    "description": "Label for the Clear all button in the Type filter bottom sheet on the global search screen",
+    "context": "N/A"
+  },
+  "globalSearchTypeSheetApply": "Apply",
+  "@globalSearchTypeSheetApply": {
+    "description": "Label for the Apply button in the Type filter bottom sheet on the global search screen",
+    "context": "N/A"
+  },
   "projectSearchTagsLoadErrorMessage": "Could not load tags.",
   "@projectSearchTagsLoadErrorMessage": {
     "description": "Warning toast shown when fetching the available tags for the project search filter sheet fails",

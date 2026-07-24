@@ -55,6 +55,11 @@ class GlobalSearchReady extends GlobalSearchState {
   /// The modification-date range currently applied as a filter, if any.
   final DateRange? selectedDateRange;
 
+  /// The scope (Type filter) the search currently operates within.
+  /// [SearchScope.dashboard] means all domains and renders as no active
+  /// Type filter.
+  final SearchScope selectedScope;
+
   const GlobalSearchReady({
     this.recentSearches = const [],
     this.query = '',
@@ -67,6 +72,7 @@ class GlobalSearchReady extends GlobalSearchState {
     this.availableOwners = const [],
     this.availableOwnersLoading = false,
     this.selectedDateRange,
+    this.selectedScope = SearchScope.dashboard,
   });
 
   /// Returns a copy of this state with the given fields replaced.
@@ -82,6 +88,7 @@ class GlobalSearchReady extends GlobalSearchState {
     List<UserProfile>? availableOwners,
     bool? availableOwnersLoading,
     DateRange? selectedDateRange,
+    SearchScope? selectedScope,
   }) {
     return GlobalSearchReady(
       recentSearches: recentSearches ?? this.recentSearches,
@@ -96,6 +103,7 @@ class GlobalSearchReady extends GlobalSearchState {
       availableOwnersLoading:
           availableOwnersLoading ?? this.availableOwnersLoading,
       selectedDateRange: selectedDateRange ?? this.selectedDateRange,
+      selectedScope: selectedScope ?? this.selectedScope,
     );
   }
 
@@ -112,6 +120,7 @@ class GlobalSearchReady extends GlobalSearchState {
     availableOwners,
     availableOwnersLoading,
     selectedDateRange,
+    selectedScope,
   ];
 }
 

@@ -460,7 +460,8 @@ void main() {
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
-        'uses supplied scope — emits correct states when scope is estimation',
+        'uses the selected scope — forwards estimation to the RPC after a '
+        'GlobalSearchScopeChanged',
         setUp: () {
           fakeSupabase.setCurrentUser(
             FakeUser(
@@ -469,6 +470,13 @@ void main() {
               createdAt: fakeClock.now().toIso8601String(),
             ),
           );
+          fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
+            _fakeSearchHistoryData(
+              userId: _testUserId,
+              searchTerm: 'girder',
+              scope: SearchScope.estimation,
+            ),
+          ]);
           fakeSupabase.setRpcResponse(
             DatabaseConstants.globalSearchRpcFunction,
             {
@@ -479,13 +487,30 @@ void main() {
           );
         },
         build: () => Modular.get<GlobalSearchBloc>(),
-        act: (bloc) => bloc.add(
-          const GlobalSearchPerformed(
-            query: 'steel',
-            scope: SearchScope.estimation,
-          ),
-        ),
+        act: (bloc) async {
+          bloc.add(
+            const GlobalSearchScopeChanged(scope: SearchScope.estimation),
+          );
+          // Wait for the scope's history reload to land before performing, so
+          // its Ready emission cannot interleave with the search states.
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('girder'),
+          );
+          bloc.add(const GlobalSearchPerformed(query: 'steel'));
+        },
         expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedScope,
+            'selectedScope',
+            SearchScope.estimation,
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.recentSearches,
+            'recentSearches',
+            ['girder'],
+          ),
           const GlobalSearchLoadInProgress(query: 'steel'),
           isA<GlobalSearchLoadSuccess>(),
         ],
@@ -500,7 +525,7 @@ void main() {
           expect(
             rpcParams['scope'],
             equals(SearchScope.estimation.name),
-            reason: 'scope must be forwarded to the RPC',
+            reason: 'the bloc-selected scope must be forwarded to the RPC',
           );
         },
       );
@@ -2477,6 +2502,221 @@ void main() {
             ['owner-1', 'owner-2'],
           ),
         ],
+      );
+    });
+
+    group('GlobalSearchScopeChanged', () {
+      void seedUserWithScopedHistory() {
+        fakeSupabase.setCurrentUser(
+          FakeUser(
+            id: _testUserId,
+            email: _testUserEmail,
+            createdAt: fakeClock.now().toIso8601String(),
+          ),
+        );
+        fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
+          _fakeSearchHistoryData(userId: _testUserId, searchTerm: 'foundation'),
+          _fakeSearchHistoryData(
+            userId: _testUserId,
+            searchTerm: 'girder',
+            scope: SearchScope.estimation,
+          ),
+          _fakeSearchHistoryData(
+            userId: _testUserId,
+            searchTerm: 'alice',
+            scope: SearchScope.member,
+          ),
+        ]);
+      }
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'emits the new scope immediately, then the reloaded history for it',
+        setUp: seedUserWithScopedHistory,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('foundation'),
+          );
+          bloc.add(
+            const GlobalSearchScopeChanged(scope: SearchScope.estimation),
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.recentSearches,
+            'dashboard history',
+            ['foundation'],
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedScope,
+                'selectedScope',
+                SearchScope.estimation,
+              )
+              .having(
+                (s) => s.recentSearches,
+                'history kept until the reload lands',
+                ['foundation'],
+              ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedScope,
+                'selectedScope',
+                SearchScope.estimation,
+              )
+              .having(
+                (s) => s.recentSearches,
+                'estimation history',
+                ['girder'],
+              ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'ignores a change to the already selected scope',
+        setUp: seedUserWithScopedHistory,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(
+          const GlobalSearchScopeChanged(scope: SearchScope.dashboard),
+        ),
+        expect: () => <GlobalSearchState>[],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'keeps the previous history and surfaces '
+        'GlobalSearchRecentsLoadFailure when the reload fails',
+        setUp: seedUserWithScopedHistory,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('foundation'),
+          );
+          fakeSupabase.shouldThrowOnSelectMatch = true;
+          fakeSupabase.selectMatchExceptionType = SupabaseExceptionType.timeout;
+          bloc.add(
+            const GlobalSearchScopeChanged(scope: SearchScope.estimation),
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.recentSearches,
+            'dashboard history',
+            ['foundation'],
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedScope,
+            'selectedScope',
+            SearchScope.estimation,
+          ),
+          isA<GlobalSearchRecentsLoadFailure>().having(
+            (s) => s.failure,
+            'failure',
+            SearchFailure(errorType: SearchErrorType.timeoutError),
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.recentSearches,
+            'previous history preserved',
+            ['foundation'],
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'a newer scope change disowns the older in-flight history reload',
+        setUp: seedUserWithScopedHistory,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('foundation'),
+          );
+          // Gate the history reloads so the estimation reload is still in
+          // flight when the member scope change supersedes it. Completing the
+          // gate resumes both reloads FIFO; only the newest may publish.
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          bloc.add(
+            const GlobalSearchScopeChanged(scope: SearchScope.estimation),
+          );
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.selectedScope == SearchScope.estimation,
+          );
+          bloc.add(const GlobalSearchScopeChanged(scope: SearchScope.member));
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.selectedScope == SearchScope.member,
+          );
+          fakeSupabase.completer!.complete();
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('alice'),
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.recentSearches,
+            'dashboard history',
+            ['foundation'],
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedScope,
+            'selectedScope',
+            SearchScope.estimation,
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedScope,
+            'selectedScope',
+            SearchScope.member,
+          ),
+          // The estimation reload's ['girder'] result never publishes: the
+          // member change disowned it via the generation guard.
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedScope,
+                'selectedScope',
+                SearchScope.member,
+              )
+              .having((s) => s.recentSearches, 'member history', ['alice']),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'GlobalSearchStarted resets the selected scope to its own scope',
+        setUp: seedUserWithScopedHistory,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            const GlobalSearchScopeChanged(scope: SearchScope.estimation),
+          );
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('girder'),
+          );
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('foundation'),
+          );
+        },
+        verify: (bloc) {
+          final state = bloc.state as GlobalSearchReady;
+          expect(state.selectedScope, SearchScope.dashboard);
+          expect(state.recentSearches, ['foundation']);
+        },
       );
     });
   });

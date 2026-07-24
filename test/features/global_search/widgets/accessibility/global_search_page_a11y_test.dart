@@ -1,4 +1,5 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/global_search/domain/entities/search_scope_entity.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
@@ -196,6 +197,21 @@ void main() {
     );
 
     testWidgets(
+      'meets a11y guidelines for Type filter chip in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme),
+          find.byKey(const Key('global_search_type_filter_chip')),
+          checkTapTargetSize: true,
+          checkLabeledTapTarget: true,
+        );
+      },
+    );
+
+    testWidgets(
       'meets a11y guidelines for Modified date filter chip in both themes',
       (tester) async {
         await setupA11yTest(tester);
@@ -283,6 +299,38 @@ void main() {
             await t.tap(find.byKey(const Key('tag_filter_item_Roofing')));
             await t.pump();
             await t.tap(find.byKey(const Key('tags_filter_apply_button')));
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
+
+    testWidgets(
+      'meets a11y guidelines for active type dismiss chip in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme),
+          find.byKey(const Key('active_type_chip_estimation')),
+          checkTapTargetSize: true,
+          checkLabeledTapTarget: true,
+          setupAfterPump: (t) async {
+            // Switch the scope on the in-tree BLoC so the active Type pill
+            // renders (see the date-filter test above for why the BLoC is
+            // read from a descendant element).
+            final element = t.element(
+              find.descendant(
+                of: find.byType(GlobalSearchPage),
+                matching: find.byType(
+                  BlocConsumer<GlobalSearchBloc, GlobalSearchState>,
+                ),
+              ),
+            );
+            BlocProvider.of<GlobalSearchBloc>(element).add(
+              const GlobalSearchScopeChanged(scope: SearchScope.estimation),
+            );
             await t.pumpAndSettle();
           },
         );

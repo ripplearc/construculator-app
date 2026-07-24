@@ -34,21 +34,34 @@ class GlobalSearchQueryUpdated extends GlobalSearchEvent {
   List<Object?> get props => [query];
 }
 
-/// Event for submitting a search query
+/// Event for submitting a search query.
+///
+/// The search runs within the BLoC's currently selected scope — set by
+/// [GlobalSearchStarted] and changed via [GlobalSearchScopeChanged] — so
+/// callers only supply the query.
 class GlobalSearchPerformed extends GlobalSearchEvent {
   /// The search query entered by the user
   final String query;
 
-  /// The scope to search within, defaults to [SearchScope.dashboard]
-  final SearchScope scope;
-
-  const GlobalSearchPerformed({
-    required this.query,
-    this.scope = SearchScope.dashboard,
-  });
+  const GlobalSearchPerformed({required this.query});
 
   @override
-  List<Object?> get props => [query, scope];
+  List<Object?> get props => [query];
+}
+
+/// Changes the scope (Type filter) the search operates within.
+///
+/// Dispatched when the user picks a type in the Type filter sheet or clears
+/// the active Type chip. The BLoC reloads the recent-search history for the
+/// new scope and applies it to subsequent [GlobalSearchPerformed] searches.
+class GlobalSearchScopeChanged extends GlobalSearchEvent {
+  /// The scope to switch the search to.
+  final SearchScope scope;
+
+  const GlobalSearchScopeChanged({required this.scope});
+
+  @override
+  List<Object?> get props => [scope];
 }
 
 /// Event for removing a term from the user's recent search history
