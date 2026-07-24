@@ -969,6 +969,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Failed to load recent searches. Please try again.';
 
   @override
+  String get searchPerformErrorMessage => 'Search failed. Please try again.';
+
+  @override
+  String get searchFailureBodyMessage =>
+      'Something went wrong while searching.';
+
+  @override
+  String get searchFailureRetryLabel => 'Retry';
+
+  @override
   String get globalSearchDeleteErrorMessage =>
       'Failed to remove recent search. Please try again.';
 

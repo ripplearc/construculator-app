@@ -5,6 +5,7 @@ import 'package:construculator/features/global_search/presentation/widgets/globa
 import 'package:construculator/features/global_search/presentation/widgets/global_search_tags_filter_sheet.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
+import 'package:construculator/libraries/global_search/presentation/widgets/search_load_failure_widget.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -187,6 +188,13 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
     if (state is GlobalSearchInitial) {
       return const Center(child: CoreLoadingIndicator());
     }
+    if (state is GlobalSearchLoadFailure) {
+      return SearchLoadFailureWidget(
+        onRetry: () => context.read<GlobalSearchBloc>().add(
+              GlobalSearchPerformed(query: state.query),
+            ),
+      );
+    }
     final effectiveReady = _effectiveReady(state);
     if (effectiveReady == null) {
       return const GlobalSearchEmptyRecentWidget();
@@ -358,6 +366,12 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
                   listener: (context, state) {
                     final l10n = context.l10n;
                     if (state is GlobalSearchLoadFailure) {
+                      CoreToast.showError(
+                        context,
+                        l10n.searchPerformErrorMessage,
+                        l10n.closeLabel,
+                      );
+                    } else if (state is GlobalSearchRecentsLoadFailure) {
                       CoreToast.showError(
                         context,
                         l10n.globalSearchLoadErrorMessage,

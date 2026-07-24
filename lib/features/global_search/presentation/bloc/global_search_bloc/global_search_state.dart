@@ -148,12 +148,27 @@ class GlobalSearchLoadEmpty extends GlobalSearchState {
   List<Object?> get props => [query];
 }
 
-/// Emitted when a search or history fetch fails.
+/// Emitted when a performed search fails.
 class GlobalSearchLoadFailure extends GlobalSearchState {
   /// The failure describing why the search request failed.
   final Failure failure;
 
-  const GlobalSearchLoadFailure({required this.failure});
+  /// The query that was being searched when the failure occurred; used by
+  /// the retry affordance to re-run the failed search.
+  final String query;
+
+  const GlobalSearchLoadFailure({required this.failure, required this.query});
+
+  @override
+  List<Object?> get props => [failure, query];
+}
+
+/// Emitted when fetching the recent-search history fails.
+class GlobalSearchRecentsLoadFailure extends GlobalSearchState {
+  /// The failure describing why the history fetch failed.
+  final Failure failure;
+
+  const GlobalSearchRecentsLoadFailure({required this.failure});
 
   @override
   List<Object?> get props => [failure];

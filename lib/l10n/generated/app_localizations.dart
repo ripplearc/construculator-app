@@ -1834,6 +1834,24 @@ abstract class AppLocalizations {
   /// **'Failed to load recent searches. Please try again.'**
   String get globalSearchLoadErrorMessage;
 
+  /// Error toast shown on the search pages when performing a search fails
+  ///
+  /// In en, this message translates to:
+  /// **'Search failed. Please try again.'**
+  String get searchPerformErrorMessage;
+
+  /// Message shown in the persistent failure state of the search results body when a search fails
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong while searching.'**
+  String get searchFailureBodyMessage;
+
+  /// Label for the retry button on the search failure state that re-runs the failed search
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get searchFailureRetryLabel;
+
   /// Error toast shown when deleting a recent search fails
   ///
   /// In en, this message translates to:

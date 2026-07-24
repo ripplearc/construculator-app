@@ -203,7 +203,8 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     Emitter<GlobalSearchState> emit,
   ) async {
     final result = await _repository.getRecentSearches(event.scope);
-    result.fold((failure) => emit(GlobalSearchLoadFailure(failure: failure)), (
+    result.fold(
+        (failure) => emit(GlobalSearchRecentsLoadFailure(failure: failure)), (
       recentSearches,
     ) {
       _recentSearches = recentSearches;
@@ -287,7 +288,10 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       ),
     );
 
-    result.fold((failure) => emit(GlobalSearchLoadFailure(failure: failure)), (
+    result.fold(
+        (failure) => emit(
+              GlobalSearchLoadFailure(failure: failure, query: trimmedQuery),
+            ), (
       searchResults,
     ) {
       final hasResults =

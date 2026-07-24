@@ -7,6 +7,7 @@ import 'package:construculator/features/dashboard/presentation/widgets/project_s
 import 'package:construculator/libraries/auth/domain/entities/user_profile_entity.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
+import 'package:construculator/libraries/global_search/presentation/widgets/search_load_failure_widget.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -253,8 +254,15 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
   }
 
   Widget _buildBody(BuildContext context, ProjectSearchState state) {
+    if (state is ProjectSearchFailureState) {
+      return SearchLoadFailureWidget(
+        onRetry: () => BlocProvider.of<ProjectSearchBloc>(
+          context,
+        ).add(ProjectSearchPerformedEvent(query: state.query)),
+      );
+    }
     if (state is! ProjectSearchInitial) {
-      // Loading/results/failure surfaces are not part of CA-690/CA-689 scope
+      // Loading/results surfaces are not part of CA-690/CA-689 scope
       // (history + suggestions only); render nothing rather than the last
       // history view.
       return const SizedBox.shrink();
@@ -351,11 +359,18 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
           ),
           body: BlocListener<ProjectSearchBloc, ProjectSearchState>(
             listenWhen: (prev, curr) =>
+                curr is ProjectSearchFailureState ||
                 curr is ProjectSearchTagsLoadFailure ||
                 curr is ProjectSearchOwnersLoadFailure,
             listener: (context, state) {
               final l10n = context.l10n;
-              if (state is ProjectSearchTagsLoadFailure) {
+              if (state is ProjectSearchFailureState) {
+                CoreToast.showError(
+                  context,
+                  l10n.searchPerformErrorMessage,
+                  l10n.closeLabel,
+                );
+              } else if (state is ProjectSearchTagsLoadFailure) {
                 CoreToast.showWarning(
                   context,
                   l10n.projectSearchTagsLoadErrorMessage,

@@ -29,6 +29,11 @@ import '../../../../utils/screenshot/font_loader.dart';
 const String _testUserId = 'user-project-search-page-test';
 const String _testUserEmail = 'project-search-page@test.com';
 
+/// CoreToast displays for 3 seconds by default (the package does not export
+/// the duration as a constant); pump just past it to flush the auto-dismiss
+/// timer before the test ends.
+const Duration _kToastDismissDuration = Duration(seconds: 4);
+
 class _ProjectSearchPageTestModule extends Module {
   final AppBootstrap appBootstrap;
 
@@ -614,5 +619,117 @@ void main() {
         findsOneWidget,
       );
     });
+  });
+
+  group('User on ProjectSearchPage with a failed search', () {
+    Future<void> submitSearch(WidgetTester tester, String query) async {
+      final searchField = find.ancestor(
+        of: find.text(l10n().searchProjectsHint),
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(searchField, query);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets(
+      'sees the search-failure toast and the persistent failure body with '
+      'a retry button',
+      (tester) async {
+        // Suggestions succeed; global_search stays unconfigured so only the
+        // performed search fails (the fake throws for unconfigured RPCs).
+        seedSuggestions(const []);
+        await renderPage(tester);
+
+        await submitSearch(tester, 'office');
+
+        expect(find.text(l10n().searchPerformErrorMessage), findsOneWidget);
+        expect(find.text(l10n().searchFailureBodyMessage), findsOneWidget);
+        expect(
+          find.byKey(const Key('searchFailureRetryButton')),
+          findsOneWidget,
+        );
+
+        await tester.pump(_kToastDismissDuration);
+        // The toast dismisses; the failure body stays.
+        expect(find.text(l10n().searchFailureBodyMessage), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tapping retry re-runs the failed search and clears the failure body '
+      'on success',
+      (tester) async {
+        seedSuggestions(const []);
+        await renderPage(tester);
+
+        await submitSearch(tester, 'office');
+        expect(find.text(l10n().searchFailureBodyMessage), findsOneWidget);
+        await tester.pump(_kToastDismissDuration);
+
+        fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
+          'projects': <Map<String, dynamic>>[],
+          'estimations': <Map<String, dynamic>>[],
+          'members': <Map<String, dynamic>>[],
+        });
+
+        await tester.tap(find.byKey(const Key('searchFailureRetryButton')));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n().searchFailureBodyMessage), findsNothing);
+      },
+    );
+  });
+
+  group('User on ProjectSearchPage with failing filter fetches', () {
+    testWidgets(
+      'sees the tags-load warning toast when fetching tags fails',
+      (tester) async {
+        seedSuggestions(const []);
+        await renderPage(tester);
+
+        // History load already succeeded during render; only the tags fetch
+        // triggered by opening the sheet hits the failing select.
+        fakeSupabase.shouldThrowOnSelectMatch = true;
+
+        await tester.tap(
+          find.byKey(const Key('project_search_tags_filter_chip')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n().projectSearchTagsLoadErrorMessage),
+          findsOneWidget,
+        );
+
+        await tester.pump(_kToastDismissDuration);
+      },
+    );
+
+    testWidgets(
+      'sees the owners-load warning toast when fetching owners fails',
+      (tester) async {
+        seedSuggestions(const []);
+        await renderPage(tester);
+
+        // Only the owners RPC fires after this point, so the global flag
+        // fails exactly the fetch under test.
+        fakeSupabase.shouldThrowOnRpc = true;
+
+        await tester.tap(
+          find.byKey(const Key('project_search_owner_filter_chip')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n().projectSearchOwnersLoadErrorMessage),
+          findsOneWidget,
+        );
+
+        await tester.pump(_kToastDismissDuration);
+      },
+    );
   });
 }
