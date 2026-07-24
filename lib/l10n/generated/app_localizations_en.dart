@@ -1118,6 +1118,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get globalSearchTagsLoadErrorMessage => 'Could not load tags.';
 
   @override
+  String get globalSearchFilterTypeSemanticLabel => 'Filter by type';
+
+  @override
+  String globalSearchClearTypeFilterSemanticLabel(String type) {
+    return 'Clear type filter $type';
+  }
+
+  @override
+  String get globalSearchTypeSheetTitle =>
+      'Select Filter by cost or calculation';
+
+  @override
+  String get globalSearchTypeCostLabel => 'Cost';
+
+  @override
+  String get globalSearchTypeCalculationLabel => 'Calculation';
+
+  @override
+  String get globalSearchTypeSheetClearAll => 'Clear all';
+
+  @override
+  String get globalSearchTypeSheetApply => 'Apply';
+
+  @override
   String get projectSearchTagsLoadErrorMessage => 'Could not load tags.';
 
   @override

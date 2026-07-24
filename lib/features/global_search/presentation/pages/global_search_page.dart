@@ -1,8 +1,10 @@
+import 'package:construculator/features/global_search/domain/entities/search_scope_entity.dart';
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_empty_recent_widget.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_recent_searches_list.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_suggestions_list.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_tags_filter_sheet.dart';
+import 'package:construculator/features/global_search/presentation/widgets/global_search_type_filter_sheet.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/global_search/presentation/widgets/search_load_failure_widget.dart';
@@ -69,6 +71,17 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
     );
   }
 
+  Future<void> _showTypeSheet(BuildContext context, SearchScope selectedScope) {
+    final bloc = BlocProvider.of<GlobalSearchBloc>(context);
+    return CoreQuickSheet.show(
+      context: context,
+      child: GlobalSearchTypeFilterSheet(
+        selectedScope: selectedScope,
+        onApply: (scope) => bloc.add(GlobalSearchScopeChanged(scope: scope)),
+      ),
+    );
+  }
+
   Widget _buildBackButton(BuildContext context) {
     final colors = context.colorTheme;
     final l10n = context.l10n;
@@ -101,8 +114,6 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
   }
 
   Widget _buildTagsFilterChips(BuildContext context, Set<String> selectedTags) {
-    final colors = context.colorTheme;
-    final typography = context.textTheme;
     final l10n = context.l10n;
 
     if (selectedTags.isEmpty) {
@@ -120,47 +131,13 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
       mainAxisSize: MainAxisSize.min,
       children: [
         for (final tag in selectedTags) ...[
-          Semantics(
-            label: l10n.globalSearchClearTagFilterSemanticLabel(tag),
-            button: true,
-            child: InkWell(
-              key: Key('active_tag_chip_$tag'),
-              onTap: () => BlocProvider.of<GlobalSearchBloc>(
-                context,
-              ).add(GlobalSearchTagFilterCleared(tag: tag)),
-              borderRadius: BorderRadius.circular(CoreSpacing.space3),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: CoreSpacing.space3,
-                  vertical: CoreSpacing.space2,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(CoreSpacing.space3),
-                  color: colors.backgroundGrayMid,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ExcludeSemantics(
-                      child: Text(
-                        tag,
-                        style: typography.bodyMediumRegular.copyWith(
-                          color: colors.textDark,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: CoreSpacing.space2),
-                    ExcludeSemantics(
-                      child: CoreIconWidget(
-                        icon: CoreIcons.close,
-                        color: colors.iconDark,
-                        size: CoreSpacing.space4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          _ActiveFilterPill(
+            key: Key('active_tag_chip_$tag'),
+            label: tag,
+            semanticLabel: l10n.globalSearchClearTagFilterSemanticLabel(tag),
+            onTap: () => BlocProvider.of<GlobalSearchBloc>(
+              context,
+            ).add(GlobalSearchTagFilterCleared(tag: tag)),
           ),
           const SizedBox(width: CoreSpacing.space2),
         ],
@@ -171,6 +148,58 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
         ),
       ],
     );
+  }
+
+  Widget _buildTypeFilterChip(BuildContext context, SearchScope selectedScope) {
+    final l10n = context.l10n;
+
+    if (selectedScope == SearchScope.dashboard) {
+      return Semantics(
+        label: l10n.globalSearchFilterTypeSemanticLabel,
+        child: CoreFilterChip(
+          key: const Key('global_search_type_filter_chip'),
+          label: l10n.globalSearchFilterType,
+          onTap: () => _showTypeSheet(context, selectedScope),
+        ),
+      );
+    }
+
+    final typeLabel = _typeLabel(context, selectedScope);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _ActiveFilterPill(
+          key: Key('active_type_chip_${selectedScope.name}'),
+          label: typeLabel,
+          semanticLabel: l10n.globalSearchClearTypeFilterSemanticLabel(
+            typeLabel,
+          ),
+          onTap: () => BlocProvider.of<GlobalSearchBloc>(context).add(
+            const GlobalSearchScopeChanged(scope: SearchScope.dashboard),
+          ),
+        ),
+        const SizedBox(width: CoreSpacing.space2),
+        CoreFilterChip(
+          key: const Key('global_search_type_filter_chip_active'),
+          label: l10n.globalSearchFilterType,
+          onTap: () => _showTypeSheet(context, selectedScope),
+        ),
+      ],
+    );
+  }
+
+  // Maps a scope to its user-facing Type label. The dashboard arm is
+  // unreachable (no pill renders for the default scope) and member is not
+  // offered by the Type sheet; both fall back to the Cost label for
+  // exhaustiveness.
+  String _typeLabel(BuildContext context, SearchScope scope) {
+    final l10n = context.l10n;
+    return switch (scope) {
+      SearchScope.estimation ||
+      SearchScope.dashboard ||
+      SearchScope.member => l10n.globalSearchTypeCostLabel,
+      SearchScope.calculation => l10n.globalSearchTypeCalculationLabel,
+    };
   }
 
   GlobalSearchReady? _effectiveReady(GlobalSearchState state) {
@@ -297,28 +326,21 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
                 child: BlocBuilder<GlobalSearchBloc, GlobalSearchState>(
                   buildWhen: (prev, curr) {
                     // Reference equality is sufficient: each emit creates a new Set.unmodifiable.
-                    final prevTags = prev is GlobalSearchReady
-                        ? prev.selectedTags
-                        : null;
-                    final currTags = curr is GlobalSearchReady
-                        ? curr.selectedTags
-                        : null;
-                    final prevDateRange = prev is GlobalSearchReady
-                        ? prev.selectedDateRange
-                        : null;
-                    final currDateRange = curr is GlobalSearchReady
-                        ? curr.selectedDateRange
-                        : null;
-                    return prevTags != currTags ||
-                        prevDateRange != currDateRange;
+                    final prevReady = prev is GlobalSearchReady ? prev : null;
+                    final currReady = curr is GlobalSearchReady ? curr : null;
+                    return prevReady?.selectedTags != currReady?.selectedTags ||
+                        prevReady?.selectedDateRange !=
+                            currReady?.selectedDateRange ||
+                        prevReady?.selectedScope != currReady?.selectedScope;
                   },
                   builder: (context, state) {
-                    final effectiveTags = state is GlobalSearchReady
-                        ? state.selectedTags
-                        : _lastReady?.selectedTags ?? const {};
-                    final effectiveDateRange = state is GlobalSearchReady
-                        ? state.selectedDateRange
-                        : _lastReady?.selectedDateRange;
+                    final ready = state is GlobalSearchReady
+                        ? state
+                        : _lastReady;
+                    final effectiveTags = ready?.selectedTags ?? const {};
+                    final effectiveDateRange = ready?.selectedDateRange;
+                    final effectiveScope =
+                        ready?.selectedScope ?? SearchScope.dashboard;
                     return Row(
                       children: [
                         _buildTagsFilterChips(context, effectiveTags),
@@ -354,8 +376,7 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
                               .add(const GlobalSearchDateFilterCleared()),
                         ),
                         const SizedBox(width: CoreSpacing.space2),
-                        // TODO: [CA-638] Wire Type chip. https://ripplearc.youtrack.cloud/issue/CA-638/DashboardGlobalSearch-Wire-CoreFilterChip.onTap-to-GlobalSearchBloc-filter-state
-                        CoreFilterChip(label: l10n.globalSearchFilterType),
+                        _buildTypeFilterChip(context, effectiveScope),
                       ],
                     );
                   },
@@ -414,6 +435,67 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
                     }
                   },
                   builder: (context, state) => _buildBody(context, state),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Dismissible pill representing one active filter value (tag or type).
+/// Tapping the pill clears that filter via [onTap].
+class _ActiveFilterPill extends StatelessWidget {
+  final String label;
+  final String semanticLabel;
+  final VoidCallback onTap;
+
+  const _ActiveFilterPill({
+    super.key,
+    required this.label,
+    required this.semanticLabel,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colorTheme;
+    final typography = context.textTheme;
+
+    return Semantics(
+      label: semanticLabel,
+      button: true,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(CoreSpacing.space3),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: CoreSpacing.space3,
+            vertical: CoreSpacing.space2,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(CoreSpacing.space3),
+            color: colors.backgroundGrayMid,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ExcludeSemantics(
+                child: Text(
+                  label,
+                  style: typography.bodyMediumRegular.copyWith(
+                    color: colors.textDark,
+                  ),
+                ),
+              ),
+              const SizedBox(width: CoreSpacing.space2),
+              ExcludeSemantics(
+                child: CoreIconWidget(
+                  icon: CoreIcons.close,
+                  color: colors.iconDark,
+                  size: CoreSpacing.space4,
                 ),
               ),
             ],

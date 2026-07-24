@@ -87,6 +87,14 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
 
   DateRange? _selectedDateRange;
 
+  SearchScope _selectedScope = SearchScope.dashboard;
+
+  // Guards the recents reload triggered by a scope change: a
+  // [GlobalSearchStarted] reset (or a newer scope change) disowns an
+  // in-flight reload so its completion cannot stomp the newer scope's
+  // history.
+  int _recentsFetchGeneration = 0;
+
   GlobalSearchBloc({
     required this._repository,
     required this._tagRepository,
@@ -116,6 +124,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     on<GlobalSearchOwnerSearchQueryUpdated>(_onOwnerSearchQueryUpdated);
     on<GlobalSearchDateFilterApplied>(_onDateFilterApplied);
     on<GlobalSearchDateFilterCleared>(_onDateFilterCleared);
+    on<GlobalSearchScopeChanged>(_onScopeChanged);
   }
 
   // Returns _availableTags filtered by the current tag search query.
@@ -151,6 +160,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       availableOwners: _filterAvailableOwners(),
       availableOwnersLoading: _availableOwnersLoading,
       selectedDateRange: _selectedDateRange,
+      selectedScope: _selectedScope,
     );
   }
 
@@ -229,8 +239,39 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       _availableOwnersLoading = false;
       _availableOwnersFetchGeneration++;
       _selectedDateRange = null;
+      _selectedScope = event.scope;
+      _recentsFetchGeneration++;
       emit(_readyState());
     });
+  }
+
+  Future<void> _onScopeChanged(
+    GlobalSearchScopeChanged event,
+    Emitter<GlobalSearchState> emit,
+  ) async {
+    if (event.scope == _selectedScope) return;
+    _selectedScope = event.scope;
+    emit(_readyState());
+
+    // Recent searches are stored per scope, so switching scope reloads the
+    // history for the newly selected one.
+    final generation = ++_recentsFetchGeneration;
+    final result = await _repository.getRecentSearches(event.scope);
+    // A reset or a newer scope change disowned this reload while it was in
+    // flight; its owner will populate the history.
+    if (generation != _recentsFetchGeneration) return;
+    result.fold(
+      (failure) {
+        // Keep the previous scope's history visible rather than blanking the
+        // list; the toast surfaces the failure.
+        emit(GlobalSearchRecentsLoadFailure(failure: failure));
+        emit(_readyState());
+      },
+      (recentSearches) {
+        _recentSearches = recentSearches;
+        emit(_readyState());
+      },
+    );
   }
 
   Future<void> _onQueryUpdated(
@@ -273,7 +314,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     final result = await _repository.search(
       SearchParams(
         query: trimmedQuery,
-        scope: event.scope,
+        scope: _selectedScope,
         // SearchParams accepts a single tag; sort for deterministic selection
         // until CA-638 extends the API to support multi-tag filtering.
         filterByTag: _selectedTags.isEmpty
@@ -314,7 +355,11 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       // closed when _onPerformed returns.
       unawaited(
         _repository
-            .saveRecentSearch(trimmedQuery, event.scope, hasResults: hasResults)
+            .saveRecentSearch(
+              trimmedQuery,
+              _selectedScope,
+              hasResults: hasResults,
+            )
             .then(
               (saveResult) => saveResult.fold(
                 (_) => _logger.warning(

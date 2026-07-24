@@ -7,6 +7,7 @@ import 'package:construculator/features/global_search/presentation/pages/global_
 import 'package:construculator/features/global_search/presentation/widgets/global_search_empty_recent_widget.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_recent_searches_list.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_suggestions_list.dart';
+import 'package:construculator/features/global_search/presentation/widgets/global_search_type_filter_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -719,6 +720,189 @@ void main() {
         expect(find.text(l10n().searchFailureBodyMessage), findsNothing);
 
         await tester.pump(kToastDismissDuration);
+      },
+    );
+  });
+
+  group('User on GlobalSearchPage filtering by type', () {
+    void seedScopedHistory() {
+      fakeSupabase.setCurrentUser(
+        FakeUser(
+          id: _testUserId,
+          email: _testUserEmail,
+          createdAt: '2024-01-01T00:00:00.000Z',
+        ),
+      );
+      fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
+        _fakeHistoryRow('Material of building'),
+        {
+          DatabaseConstants.idColumn: 'estimation-history-row',
+          DatabaseConstants.userIdColumn: _testUserId,
+          DatabaseConstants.searchTermColumn: 'Roofing estimate',
+          DatabaseConstants.scopeColumn: 'estimation',
+          DatabaseConstants.searchCountColumn: 1,
+          DatabaseConstants.createdAtColumn: '2024-01-01T00:00:00.000Z',
+        },
+      ]);
+      fakeSupabase.setRpcResponse(
+        DatabaseConstants.searchSuggestionsRpcFunction,
+        <String>[],
+      );
+    }
+
+    Future<void> applyCostFilter(WidgetTester tester) async {
+      await tester.tap(find.byKey(const Key('global_search_type_filter_chip')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('type_filter_option_cost')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('type_filter_apply_button')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'tapping the Type chip opens the type sheet; applying Cost shows the '
+      'active pill and reloads the estimation-scope history',
+      (tester) async {
+        seedScopedHistory();
+        await renderPage(tester);
+        expect(find.text('Material of building'), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('global_search_type_filter_chip')));
+        await tester.pumpAndSettle();
+        expect(find.byType(GlobalSearchTypeFilterSheet), findsOneWidget);
+        expect(find.text(l10n().globalSearchTypeCostLabel), findsOneWidget);
+        expect(
+          find.text(l10n().globalSearchTypeCalculationLabel),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byKey(const Key('type_filter_option_cost')));
+        await tester.pump();
+        await tester.tap(find.byKey(const Key('type_filter_apply_button')));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('active_type_chip_estimation')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('global_search_type_filter_chip_active')),
+          findsOneWidget,
+        );
+        // The history list now shows the estimation scope's terms.
+        expect(find.text('Roofing estimate'), findsOneWidget);
+        expect(find.text('Material of building'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'the Calculation option is disabled and cannot be applied',
+      (tester) async {
+        seedScopedHistory();
+        await renderPage(tester);
+
+        await tester.tap(find.byKey(const Key('global_search_type_filter_chip')));
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.byKey(const Key('type_filter_option_calculation')),
+        );
+        await tester.pump();
+        await tester.tap(find.byKey(const Key('type_filter_apply_button')));
+        await tester.pumpAndSettle();
+
+        // Applying with only the disabled option tapped keeps the default
+        // scope: no active pill renders.
+        expect(find.byKey(const Key('global_search_type_filter_chip')), findsOneWidget);
+        expect(find.byKey(const Key('active_type_chip_estimation')), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Clear all deselects Cost inside the sheet without dismissing it',
+      (tester) async {
+        seedScopedHistory();
+        await renderPage(tester);
+
+        await tester.tap(find.byKey(const Key('global_search_type_filter_chip')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('type_filter_option_cost')));
+        await tester.pump();
+
+        await tester.tap(find.byKey(const Key('type_filter_clear_all_button')));
+        await tester.pump();
+        expect(find.byType(GlobalSearchTypeFilterSheet), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('type_filter_apply_button')));
+        await tester.pumpAndSettle();
+
+        // Cleared selection applies the default scope: no active pill.
+        expect(find.byKey(const Key('global_search_type_filter_chip')), findsOneWidget);
+        expect(find.byKey(const Key('active_type_chip_estimation')), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping the active type pill resets the scope and restores the '
+      'inactive chip with the dashboard history',
+      (tester) async {
+        seedScopedHistory();
+        await renderPage(tester);
+
+        await applyCostFilter(tester);
+        expect(
+          find.byKey(const Key('active_type_chip_estimation')),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byKey(const Key('active_type_chip_estimation')));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('global_search_type_filter_chip')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('active_type_chip_estimation')),
+          findsNothing,
+        );
+        expect(find.text('Material of building'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'performing a search after applying Cost forwards the estimation '
+      'scope to the global_search RPC',
+      (tester) async {
+        seedScopedHistory();
+        fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
+          'projects': <Map<String, dynamic>>[],
+          'estimations': <Map<String, dynamic>>[],
+          'members': <Map<String, dynamic>>[],
+        });
+        await renderPage(tester);
+
+        await applyCostFilter(tester);
+
+        final searchField = find.ancestor(
+          of: find.text(l10n().globalSearchHint),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(searchField, 'roof');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.testTextInput.receiveAction(TextInputAction.search);
+        await tester.pumpAndSettle();
+
+        final searchCalls = fakeSupabase
+            .getMethodCallsFor('rpc')
+            .where(
+              (call) =>
+                  call['functionName'] ==
+                  DatabaseConstants.globalSearchRpcFunction,
+            );
+        expect(searchCalls, hasLength(1));
+        final params = searchCalls.first['params'] as Map<String, dynamic>;
+        expect(params['scope'], 'estimation');
       },
     );
   });

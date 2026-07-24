@@ -2098,6 +2098,48 @@ abstract class AppLocalizations {
   /// **'Could not load tags.'**
   String get globalSearchTagsLoadErrorMessage;
 
+  /// Semantic label of the Type filter chip on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by type'**
+  String get globalSearchFilterTypeSemanticLabel;
+
+  /// Semantic label of the active type filter pill that resets the search scope when tapped
+  ///
+  /// In en, this message translates to:
+  /// **'Clear type filter {type}'**
+  String globalSearchClearTypeFilterSemanticLabel(String type);
+
+  /// Title of the Type filter bottom sheet on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Select Filter by cost or calculation'**
+  String get globalSearchTypeSheetTitle;
+
+  /// Type filter option that limits the search to cost estimations
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get globalSearchTypeCostLabel;
+
+  /// Type filter option for calculations; disabled until the global_search RPC supports the calculation scope
+  ///
+  /// In en, this message translates to:
+  /// **'Calculation'**
+  String get globalSearchTypeCalculationLabel;
+
+  /// Label for the Clear all button in the Type filter bottom sheet on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get globalSearchTypeSheetClearAll;
+
+  /// Label for the Apply button in the Type filter bottom sheet on the global search screen
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get globalSearchTypeSheetApply;
+
   /// Warning toast shown when fetching the available tags for the project search filter sheet fails
   ///
   /// In en, this message translates to:
