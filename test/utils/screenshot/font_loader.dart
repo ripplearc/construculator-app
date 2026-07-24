@@ -118,6 +118,14 @@ ThemeData createTestThemeDark() {
   );
 }
 
+void screenshotThemeGroups(
+  String description,
+  void Function(ThemeData theme, String goldenSuffix) body,
+) {
+  group('$description - Light', () => body(createTestTheme(), ''));
+  group('$description - Dark', () => body(createTestThemeDark(), '_dark'));
+}
+
 String derivedFontFamily(Map<String, dynamic> fontDefinition) {
   if (!fontDefinition.containsKey('family')) return '';
 
