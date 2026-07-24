@@ -164,7 +164,7 @@ void main() {
         expect(params!.containsKey('user_id'), isFalse);
       });
 
-      test('passes limit and offset constants in RPC params', () async {
+      test('passes limit and projects_offset constants in RPC params', () async {
         supabaseWrapper.setRpcResponse(
           DatabaseConstants.globalSearchRpcFunction,
           {'projects': [], 'estimations': [], 'members': []},
@@ -176,8 +176,45 @@ void main() {
             as Map<String, dynamic>?;
         expect(params, isNotNull);
         expect(params!['limit'], equals(DatabaseConstants.globalSearchDefaultLimit));
-        expect(params['offset'], equals(DatabaseConstants.globalSearchDefaultOffset));
+        expect(
+          params['projects_offset'],
+          equals(DatabaseConstants.globalSearchDefaultOffset),
+        );
       });
+
+      test(
+        'sends exactly the param names declared by the global_search RPC — '
+        'PostgREST resolves functions by named arguments, so an undeclared '
+        'name fails every call with PGRST202 (CA-838)',
+        () async {
+          supabaseWrapper.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {'projects': [], 'estimations': [], 'members': []},
+          );
+
+          await dataSource.fetchProjectsBySearchQuery(
+            userId: 'user-1',
+            query: 'wall',
+          );
+
+          final params =
+              supabaseWrapper.getMethodCallsFor('rpc').first['params']
+                  as Map<String, dynamic>;
+          expect(
+            params.keys,
+            unorderedEquals(const [
+              'query',
+              'filter_by_tag',
+              'filter_by_date_from',
+              'filter_by_date_to',
+              'filter_by_owners',
+              'scope',
+              'projects_offset',
+              'limit',
+            ]),
+          );
+        },
+      );
 
       test(
         'passes both modification-date range bounds as ISO8601 strings in '

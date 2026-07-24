@@ -50,7 +50,9 @@ class RemoteProjectSearchDataSource implements ProjectSearchDataSource {
           // multiple owners is tracked in CA-771.
           'filter_by_owners': filterByOwner == null ? null : [filterByOwner],
           'scope': DatabaseConstants.globalSearchDashboardScope,
-          'offset': DatabaseConstants.globalSearchDefaultOffset,
+          // Only the projects domain is consumed here; the RPC's other
+          // per-domain offsets keep their defaults.
+          'projects_offset': DatabaseConstants.globalSearchDefaultOffset,
           'limit': DatabaseConstants.globalSearchDefaultLimit,
         },
       );

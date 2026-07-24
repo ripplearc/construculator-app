@@ -164,7 +164,9 @@ void main() {
           final paramsMap =
               methodCalls.first['params'] as Map<String, dynamic>?;
           expect(paramsMap, isNotNull);
-          expect(paramsMap!['offset'], equals(0));
+          expect(paramsMap!['projects_offset'], equals(0));
+          expect(paramsMap['estimations_offset'], equals(0));
+          expect(paramsMap['members_offset'], equals(0));
           expect(paramsMap['limit'], equals(20));
         },
       );
@@ -217,8 +219,43 @@ void main() {
             equals(['owner-1', 'owner-2']),
           );
           expect(paramsMap['scope'], equals('estimation'));
-          expect(paramsMap['offset'], equals(10));
+          expect(paramsMap['projects_offset'], equals(10));
+          expect(paramsMap['estimations_offset'], equals(10));
+          expect(paramsMap['members_offset'], equals(10));
           expect(paramsMap['limit'], equals(25));
+        },
+      );
+
+      test(
+        'should send exactly the param names declared by the global_search '
+        'RPC — PostgREST resolves functions by named arguments, so an '
+        'undeclared name fails every call with PGRST202 (CA-838)',
+        () async {
+          fakeSupabaseWrapper.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {'projects': [], 'estimations': [], 'members': []},
+          );
+
+          await dataSource.search(const SearchParamsDto(query: 'test'));
+
+          final paramsMap =
+              fakeSupabaseWrapper.getMethodCallsFor('rpc').first['params']
+                  as Map<String, dynamic>;
+          expect(
+            paramsMap.keys,
+            unorderedEquals(const [
+              'query',
+              'filter_by_tag',
+              'filter_by_date_from',
+              'filter_by_date_to',
+              'filter_by_owners',
+              'scope',
+              'projects_offset',
+              'estimations_offset',
+              'members_offset',
+              'limit',
+            ]),
+          );
         },
       );
 
