@@ -25,6 +25,8 @@ import 'package:construculator/libraries/project/testing/fake_current_project_no
 import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/project/testing/fake_project_ui_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/routes/calculator_routes.dart';
+import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -306,6 +308,26 @@ void main() {
       await tester.pump();
 
       expect(find.byType(HeaderRow), findsOneWidget);
+    });
+  });
+
+  group('Calculator action button', () {
+    testWidgets('tapping the trailing button pushes the calculator route',
+        (tester) async {
+      final fakeRouter = FakeAppRouter();
+      Modular.replaceInstance<AppRouter>(fakeRouter);
+
+      await tester.pumpWidget(makeApp());
+      await tester.pumpAndSettle();
+
+      final trailingIcon = find.byType(CoreIconWidget).last;
+      await tester.tap(trailingIcon);
+      await tester.pump();
+
+      expect(
+        fakeRouter.navigationHistory,
+        contains(const RouteCall(calculatorBaseRoute, null)),
+      );
     });
   });
 
