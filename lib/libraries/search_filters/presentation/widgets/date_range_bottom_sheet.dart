@@ -2,7 +2,7 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/search_filters/domain/entities/date_range.dart';
 import 'package:flutter/material.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart' hide DateRange;
 
 enum _PredefinedRange { today, last7Days, last30Days, thisMonth, custom }
 
