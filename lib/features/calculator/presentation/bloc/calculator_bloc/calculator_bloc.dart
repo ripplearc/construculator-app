@@ -9,26 +9,26 @@ part 'calculator_state.dart';
 class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   static const List<({String name, List<String> keys})> functionGroups = [
     (
-      name: 'Basic Geometry',
+      name: 'basicGeometry',
       keys: ['Width', 'Length', 'Height', 'Pitch', 'Circle', 'Rise', 'Run', 'Radius'],
     ),
     (
-      name: 'Materials',
+      name: 'materials',
       keys: ['Lbs', 'Kg', 'Tons', 'Drywall', 'Fence'],
     ),
     (
-      name: 'Trigonometry',
+      name: 'trigonometry',
       keys: ['SIN', 'COS', 'TAN'],
     ),
   ];
 
   static const String _riseLabel = 'Rise';
   static const String _runLabel = 'Run';
-  static const String _pitchLabel = 'Pitch-rise per 12in run';
+  static const String _pitchResultKey = 'pitchResult';
   static const String _lengthLabel = 'Length';
   static const String _fenceLabel = 'Fence';
-  static const String _fenceResultLabel = 'Posts';
-  static const String _ocLabel = 'O.C';
+  static const String _postsResultKey = 'postsResult';
+  static const String _ocKey = 'oc';
   static const double _fenceOcSpacing = 6.0;
 
   CalculatorBloc() : super(CalculatorState.initial()) {
@@ -197,10 +197,10 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
           double.parse(pitchDecimal.toStringAsFixed(2)).toString();
 
       return currentState.copyWith(
-        resultLabel: () => _pitchLabel,
+        resultLabel: () => _pitchResultKey,
         resultValue: () => pitchString,
         resultChip: () => CoreCalculatorChip(
-          label: _pitchLabel,
+          label: _pitchResultKey,
           value: pitchString,
           type: CoreCalculatorChipType.disabled,
         ),
@@ -221,14 +221,14 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     return currentState.copyWith(
       isTyping: false,
       activeInputLabel: () => null,
-      resultLabel: () => _fenceResultLabel,
+      resultLabel: () => _postsResultKey,
       resultValue: () => postsString,
       resultChip: () => CoreCalculatorChip(
         label: _fenceLabel,
         value: postsString,
         type: CoreCalculatorChipType.disabled,
       ),
-      dependentKeyLabel: () => _ocLabel,
+      dependentKeyLabel: () => _ocKey,
       dependentKeyValue: () => ocValueString,
     );
   }

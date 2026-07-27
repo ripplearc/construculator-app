@@ -2118,6 +2118,30 @@
   "@projectSettingsPermissionError": {
     "description": "Toast shown when the user lacks the view_project permission for a project",
     "context": "Dashboard projects sheet"
+  },
+  "calculatorPitchResultLabel": "Pitch-rise per 12in run",
+  "@calculatorPitchResultLabel": {
+    "description": "Label for the computed pitch result chip in the calculator display area"
+  },
+  "calculatorPostsResultLabel": "Posts",
+  "@calculatorPostsResultLabel": {
+    "description": "Label for the computed fence posts result chip in the calculator display area"
+  },
+  "calculatorOcLabel": "O.C",
+  "@calculatorOcLabel": {
+    "description": "Label for the on-centre spacing dependent key shown alongside the fence posts result"
+  },
+  "calculatorGroupBasicGeometry": "Basic Geometry",
+  "@calculatorGroupBasicGeometry": {
+    "description": "Label for the Basic Geometry function group tab in the calculator"
+  },
+  "calculatorGroupMaterials": "Materials",
+  "@calculatorGroupMaterials": {
+    "description": "Label for the Materials function group tab in the calculator"
+  },
+  "calculatorGroupTrigonometry": "Trigonometry",
+  "@calculatorGroupTrigonometry": {
+    "description": "Label for the Trigonometry function group tab in the calculator"
   }
 }
 
