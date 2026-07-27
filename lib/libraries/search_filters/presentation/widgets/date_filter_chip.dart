@@ -3,7 +3,7 @@ import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/search_filters/domain/entities/date_range.dart';
 import 'package:construculator/libraries/search_filters/presentation/widgets/date_range_bottom_sheet.dart';
 import 'package:flutter/material.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart' hide DateRange;
 
 /// A reusable filter chip for a search screen's modification-date filter.
 ///

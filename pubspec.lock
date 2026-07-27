@@ -953,10 +953,10 @@ packages:
     dependency: "direct main"
     description:
       name: ripplearc_coreui
-      sha256: d7ac8aa4bef4028e12e0cdeb29af369614a61e050943ed740dd6fb59c69f47ee
+      sha256: "0656337141788c24ebd7fe3dad861e5dc5521cb795c1752054cbb8ded36fa598"
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.1"
+    version: "0.10.2"
   ripplearc_linter:
     dependency: "direct main"
     description:
