@@ -92,7 +92,7 @@ void main() {
         ),
         act: (bloc) => bloc.add(const CalculatorOperatorPressed('=')),
         verify: (bloc) {
-          expect(bloc.state.resultLabel, 'Pitch-rise per 12in run');
+          expect(bloc.state.resultLabel, 'pitchResult');
           expect(bloc.state.resultValue, '0.5');
           expect(bloc.state.resultChip, isNotNull);
           expect(bloc.state.finalizedValues['Run'], 12.0);
@@ -109,9 +109,9 @@ void main() {
         ),
         act: (bloc) => bloc.add(const CalculatorKeySelected('Fence')),
         verify: (bloc) {
-          expect(bloc.state.resultLabel, 'Posts');
+          expect(bloc.state.resultLabel, 'postsResult');
           expect(bloc.state.resultValue, '5');
-          expect(bloc.state.dependentKeyLabel, 'O.C');
+          expect(bloc.state.dependentKeyLabel, 'oc');
           expect(bloc.state.dependentKeyValue, '6ft');
         },
       );
@@ -274,18 +274,18 @@ void main() {
         expect(CalculatorBloc.functionGroups.length, 3);
       });
 
-      test('first group is Basic Geometry with 8 keys', () {
-        expect(CalculatorBloc.functionGroups[0].name, 'Basic Geometry');
+      test('first group is basicGeometry with 8 keys', () {
+        expect(CalculatorBloc.functionGroups[0].name, 'basicGeometry');
         expect(CalculatorBloc.functionGroups[0].keys.length, 8);
       });
 
-      test('second group is Materials with 5 keys', () {
-        expect(CalculatorBloc.functionGroups[1].name, 'Materials');
+      test('second group is materials with 5 keys', () {
+        expect(CalculatorBloc.functionGroups[1].name, 'materials');
         expect(CalculatorBloc.functionGroups[1].keys.length, 5);
       });
 
-      test('third group is Trigonometry with 3 keys', () {
-        expect(CalculatorBloc.functionGroups[2].name, 'Trigonometry');
+      test('third group is trigonometry with 3 keys', () {
+        expect(CalculatorBloc.functionGroups[2].name, 'trigonometry');
         expect(CalculatorBloc.functionGroups[2].keys.length, 3);
       });
     });
