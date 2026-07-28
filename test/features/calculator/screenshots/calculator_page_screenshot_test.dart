@@ -1,4 +1,5 @@
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -16,6 +17,9 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: theme ?? createTestTheme(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: const CalculatorPage(),
       ),
     );
