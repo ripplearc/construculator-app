@@ -11,8 +11,10 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dar
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/screenshot/await_images_extension.dart';
@@ -218,6 +220,41 @@ void main() {
         find.byType(ProjectSearchPage),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_with_active_tag_filter.png',
+        ),
+      );
+    });
+
+    testWidgets('renders the chip row with an active date filter correctly', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpProjectSearchPage(tester: tester);
+
+      // The date sheet derives its presets from the wall clock and
+      // CoreDateFilterChip exposes no `today` override, so drive the bloc
+      // with a fixed range instead of tapping through the sheet to keep the
+      // active pill's label deterministic.
+      final chipContext = tester.element(
+        find.byKey(const Key('project_search_modified_filter_chip')),
+      );
+      BlocProvider.of<ProjectSearchBloc>(chipContext).add(
+        ProjectSearchDateFilterAppliedEvent(
+          range: DateRange(
+            start: DateTime(2026, 1, 1),
+            end: DateTime(2026, 1, 5),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.awaitImages();
+
+      await expectLater(
+        find.byType(ProjectSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_active_date_filter.png',
         ),
       );
     });
