@@ -136,9 +136,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                       onGroupSelected: (groupName) {
                         final index =
                             _groups.indexWhere((g) => g.name == groupName);
-                        if (index != -1) {
-                          bloc.add(CalculatorGroupSelected(index));
-                        }
+                        bloc.add(CalculatorGroupSelected(index));
                       },
                       onKeyTapped: (key) =>
                           bloc.add(CalculatorKeySelected(key.label)),

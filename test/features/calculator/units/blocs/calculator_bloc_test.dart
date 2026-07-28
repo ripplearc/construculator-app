@@ -1,7 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
-import 'package:construculator/features/calculator/calculator_module.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
-import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -9,13 +7,11 @@ void main() {
   late CalculatorBloc bloc;
 
   setUp(() {
-    Modular.init(CalculatorModule());
-    bloc = Modular.get<CalculatorBloc>();
+    bloc = CalculatorBloc();
   });
 
   tearDown(() {
     bloc.close();
-    Modular.destroy();
   });
 
   group('CalculatorBloc', () {
