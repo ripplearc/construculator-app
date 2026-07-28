@@ -176,6 +176,34 @@ void main() {
       },
     );
 
+    testWidgets(
+      'choosing Custom range opens the start and end date pickers with the '
+      'localized confirm label',
+      (tester) async {
+        await renderPage(tester);
+
+        await tester.tap(
+          find.byKey(const Key('global_search_date_filter_chip')),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('date_range_option_custom')));
+        await tester.pumpAndSettle();
+
+        // Start-date picker: the confirm button must carry the app's l10n
+        // value, not CoreDatePicker's built-in default.
+        expect(find.text(l10n().dateRangeSheetStartDateLabel), findsOneWidget);
+        expect(find.text(l10n().dateRangeSheetConfirm), findsOneWidget);
+
+        await tester.tap(find.text(l10n().dateRangeSheetConfirm));
+        await tester.pumpAndSettle();
+
+        // End-date picker renders the same localized confirm label.
+        expect(find.text(l10n().dateRangeSheetEndDateLabel), findsOneWidget);
+        expect(find.text(l10n().dateRangeSheetConfirm), findsOneWidget);
+      },
+    );
+
     testWidgets('clearing the active date filter restores the inactive chip', (
       tester,
     ) async {
