@@ -10,6 +10,10 @@ Future<void> pumpAppAtRoute(
   await tester.pumpWidget(app);
   await tester.pumpAndSettle();
   Modular.to.navigate(route);
-  await tester.pump(const Duration(milliseconds: 300));
+  // ModularRouterDelegate.navigate debounces calls made within 500ms of the
+  // previous one (measured on the wall clock) by scheduling a
+  // Future.delayed(500 - diff) before routing; pump past the full 500ms so the
+  // timer always fires regardless of how fast the previous test ran.
+  await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
 }
