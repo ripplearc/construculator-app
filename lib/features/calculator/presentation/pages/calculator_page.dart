@@ -1,4 +1,5 @@
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
+import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -53,7 +54,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).coreColors;
+    final colors = context.colorTheme;
     final Map<GroupNameType, Color> groupAccentColors = {
       _basicGeometryGroup: colors.keyboardFunctions,
       _materialsGroup: colors.keyboardUnits,
