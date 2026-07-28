@@ -32,28 +32,23 @@ void main() {
 
       group('ensureTabModuleLoaded', () {
         test('loads each tab only once', () async {
-          await manager.ensureTabModuleLoaded(ShellTab.home);
-          expect(manager.isLoaded(ShellTab.home), isTrue);
-          await manager.ensureTabModuleLoaded(ShellTab.home);
-          expect(manager.isLoaded(ShellTab.home), isTrue);
+          await manager.ensureTabModuleLoaded(ShellTab.calculations);
+          expect(manager.isLoaded(ShellTab.calculations), isTrue);
+          await manager.ensureTabModuleLoaded(ShellTab.calculations);
+          expect(manager.isLoaded(ShellTab.calculations), isTrue);
         });
       });
 
       group('isLoaded', () {
         test('returns false for unaccessed tabs', () {
-          expect(manager.isLoaded(ShellTab.calculations), isFalse);
-          expect(manager.isLoaded(ShellTab.estimation), isFalse);
-          expect(manager.isLoaded(ShellTab.members), isFalse);
+          expect(manager.isLoaded(ShellTab.estimates), isFalse);
         });
         test('returns true after loading each tab', () async {
           await manager.ensureTabModuleLoaded(ShellTab.calculations);
           expect(manager.isLoaded(ShellTab.calculations), isTrue);
 
-          await manager.ensureTabModuleLoaded(ShellTab.estimation);
-          expect(manager.isLoaded(ShellTab.estimation), isTrue);
-
-          await manager.ensureTabModuleLoaded(ShellTab.members);
-          expect(manager.isLoaded(ShellTab.members), isTrue);
+          await manager.ensureTabModuleLoaded(ShellTab.estimates);
+          expect(manager.isLoaded(ShellTab.estimates), isTrue);
         });
       });
     });
@@ -79,8 +74,8 @@ void main() {
       });
 
       test('calls provider.load() exactly once per tab', () async {
-        await customManager.ensureTabModuleLoaded(ShellTab.home);
-        await customManager.ensureTabModuleLoaded(ShellTab.home);
+        await customManager.ensureTabModuleLoaded(ShellTab.calculations);
+        await customManager.ensureTabModuleLoaded(ShellTab.calculations);
         expect(fakeProvider.loadCallCount, 1);
       });
     });
@@ -104,7 +99,7 @@ class _TestShellModule extends Module {
     i.addSingleton<TabModuleManager>(
       () => TabModuleManager(
         appBootstrap,
-        providers: {ShellTab.home: i.get<_FakeTabModuleProvider>()},
+        providers: {ShellTab.calculations: i.get<_FakeTabModuleProvider>()},
       ),
     );
   }

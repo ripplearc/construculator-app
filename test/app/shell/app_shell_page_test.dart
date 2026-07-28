@@ -2,16 +2,14 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
 import 'package:construculator/app/shell/shell_module.dart';
-import 'package:construculator/features/app_header/presentation/widgets/header_row.dart';
+import 'package:construculator/features/app_header/presentation/widgets/title_search_app_bar.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/dashboard_bloc/dashboard_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
-import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/projects_bottom_sheet.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
-import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
@@ -145,13 +143,10 @@ void main() {
       await tester.pumpWidget(makeApp());
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n().homeTab), findsAtLeastNWidgets(1));
-
-      await tapTabByLabel(tester, l10n().calculationsTab);
       expect(find.text(l10n().calculationsTab), findsAtLeastNWidgets(1));
 
-      await tapTabByLabel(tester, l10n().membersTab);
-      expect(find.text(l10n().membersTab), findsAtLeastNWidgets(1));
+      await tapTabByLabel(tester, l10n().estimatesTab);
+      expect(find.text(l10n().estimatesTab), findsAtLeastNWidgets(1));
     });
 
     testWidgets('bottom navigation bar is always visible', (tester) async {
@@ -160,24 +155,21 @@ void main() {
 
       expect(find.byType(CoreBottomNavBar), findsOneWidget);
 
-      for (final tabLabel in [l10n().calculationsTab, l10n().membersTab]) {
-        await tapTabByLabel(tester, tabLabel);
-        expect(find.byType(CoreBottomNavBar), findsOneWidget);
-      }
+      await tapTabByLabel(tester, l10n().estimatesTab);
+      expect(find.byType(CoreBottomNavBar), findsOneWidget);
     });
 
     testWidgets('lazy loads tabs on first access', (tester) async {
       await tester.pumpWidget(makeApp());
       await tester.pumpAndSettle();
 
-      expect(find.byType(DashboardPage), findsOneWidget);
-      expect(find.byType(CalculationsPage), findsNothing);
-      expect(find.byType(MembersPage), findsNothing);
-
-      await tapTabByLabel(tester, l10n().calculationsTab);
       expect(find.byType(CalculationsPage), findsOneWidget);
+      expect(find.byType(CostEstimationLandingPage), findsNothing);
 
-      expect(find.byType(DashboardPage, skipOffstage: false), findsOneWidget);
+      await tapTabByLabel(tester, l10n().estimatesTab);
+      expect(find.byType(CostEstimationLandingPage), findsOneWidget);
+
+      expect(find.byType(CalculationsPage, skipOffstage: false), findsOneWidget);
     });
   });
 
@@ -188,27 +180,16 @@ void main() {
       await tester.pumpWidget(makeApp());
       await tester.pumpAndSettle();
 
-      expect(find.byType(DashboardPage, skipOffstage: false), findsOneWidget);
-      expect(find.byType(CalculationsPage, skipOffstage: false), findsNothing);
-      expect(find.byType(MembersPage, skipOffstage: false), findsNothing);
+      expect(find.byType(CalculationsPage, skipOffstage: false), findsOneWidget);
+      expect(find.byType(CostEstimationLandingPage, skipOffstage: false), findsNothing);
 
-      await tapTabByLabel(tester, l10n().calculationsTab);
+      await tapTabByLabel(tester, l10n().estimatesTab);
 
-      expect(find.byType(DashboardPage, skipOffstage: false), findsOneWidget);
+      expect(find.byType(CalculationsPage, skipOffstage: false), findsOneWidget);
       expect(
-        find.byType(CalculationsPage, skipOffstage: false),
+        find.byType(CostEstimationLandingPage, skipOffstage: false),
         findsOneWidget,
       );
-      expect(find.byType(MembersPage, skipOffstage: false), findsNothing);
-
-      await tapTabByLabel(tester, l10n().membersTab);
-
-      expect(find.byType(DashboardPage, skipOffstage: false), findsOneWidget);
-      expect(
-        find.byType(CalculationsPage, skipOffstage: false),
-        findsOneWidget,
-      );
-      expect(find.byType(MembersPage, skipOffstage: false), findsOneWidget);
     });
 
     testWidgets('preserves tab widget tree when switching away (no rebuild)', (
@@ -217,18 +198,18 @@ void main() {
       await tester.pumpWidget(makeApp());
       await tester.pumpAndSettle();
 
-      final dashboardElementBefore = tester.element(find.byType(DashboardPage));
+      final calculationsElementBefore = tester.element(find.byType(CalculationsPage));
+
+      await tapTabByLabel(tester, l10n().estimatesTab);
+
+      expect(find.byType(CalculationsPage), findsNothing);
+      expect(find.byType(CalculationsPage, skipOffstage: false), findsOneWidget);
 
       await tapTabByLabel(tester, l10n().calculationsTab);
 
-      expect(find.byType(DashboardPage), findsNothing);
-      expect(find.byType(DashboardPage, skipOffstage: false), findsOneWidget);
+      final calculationsElementAfter = tester.element(find.byType(CalculationsPage));
 
-      await tapTabByLabel(tester, l10n().homeTab);
-
-      final dashboardElementAfter = tester.element(find.byType(DashboardPage));
-
-      expect(dashboardElementAfter, same(dashboardElementBefore));
+      expect(calculationsElementAfter, same(calculationsElementBefore));
     });
 
     testWidgets('all visited tabs remain mounted when switching between them', (
@@ -237,65 +218,47 @@ void main() {
       await tester.pumpWidget(makeApp());
       await tester.pumpAndSettle();
 
-      await tapTabByLabel(tester, l10n().calculationsTab);
-      await tapTabByLabel(tester, l10n().membersTab);
+      await tapTabByLabel(tester, l10n().estimatesTab);
 
-      final dashboardElement = tester.element(
-        find.byType(DashboardPage, skipOffstage: false),
-      );
       final calculationsElement = tester.element(
         find.byType(CalculationsPage, skipOffstage: false),
       );
-      final membersElement = tester.element(
-        find.byType(MembersPage, skipOffstage: false),
+      final estimatesElement = tester.element(
+        find.byType(CostEstimationLandingPage, skipOffstage: false),
       );
 
-      await tapTabByLabel(tester, l10n().homeTab);
       await tapTabByLabel(tester, l10n().calculationsTab);
-      await tapTabByLabel(tester, l10n().membersTab);
+      await tapTabByLabel(tester, l10n().estimatesTab);
 
-      expect(
-        tester.element(find.byType(DashboardPage, skipOffstage: false)),
-        same(dashboardElement),
-      );
       expect(
         tester.element(find.byType(CalculationsPage, skipOffstage: false)),
         same(calculationsElement),
       );
       expect(
-        tester.element(find.byType(MembersPage, skipOffstage: false)),
-        same(membersElement),
+        tester.element(find.byType(CostEstimationLandingPage, skipOffstage: false)),
+        same(estimatesElement),
       );
     });
 
-    testWidgets('unvisited tabs remain unloaded after multiple switches', (
+    testWidgets('estimates tab remains unloaded until first access', (
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
       await tester.pumpAndSettle();
 
-      await tapTabByLabel(tester, l10n().calculationsTab);
-      await tapTabByLabel(tester, l10n().homeTab);
-      await tapTabByLabel(tester, l10n().calculationsTab);
-      await tapTabByLabel(tester, l10n().homeTab);
-
-      expect(find.byType(MembersPage, skipOffstage: false), findsNothing);
-      expect(find.byType(DashboardPage, skipOffstage: false), findsOneWidget);
-      expect(
-        find.byType(CalculationsPage, skipOffstage: false),
-        findsOneWidget,
-      );
+      expect(find.byType(CostEstimationLandingPage, skipOffstage: false), findsNothing);
+      expect(find.byType(CalculationsPage, skipOffstage: false), findsOneWidget);
     });
   });
 
-  group('Cost Estimation Tab', () {
+  group('Estimates Tab', () {
     testWidgets(
-      'shows CostEstimationLandingPage when estimation tab is tapped',
+      'shows CostEstimationLandingPage when estimates tab is tapped',
       (tester) async {
         await tester.pumpWidget(makeApp());
         await tester.pumpAndSettle();
 
-        await tapTabByLabel(tester, l10n().costEstimation);
+        await tapTabByLabel(tester, l10n().estimatesTab);
 
         expect(find.byType(CostEstimationLandingPage), findsOneWidget);
       },
@@ -303,13 +266,13 @@ void main() {
   });
 
   group('App Bar', () {
-    testWidgets('renders HeaderRow on home tab when no project is selected', (
+    testWidgets('renders TitleSearchAppBar on calculations tab when no project is selected', (
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
       await tester.pump();
 
-      expect(find.byType(HeaderRow), findsOneWidget);
+      expect(find.byType(TitleSearchAppBar), findsOneWidget);
     });
   });
 

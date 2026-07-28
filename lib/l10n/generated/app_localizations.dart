@@ -1546,11 +1546,11 @@ abstract class AppLocalizations {
   /// **'Calculations'**
   String get calculationsTab;
 
-  /// Label for members tab in bottom navigation
+  /// Bottom nav tab label for the cost estimates feature
   ///
   /// In en, this message translates to:
-  /// **'Members'**
-  String get membersTab;
+  /// **'Estimates'**
+  String get estimatesTab;
 
   /// Error message shown when user lacks permission for an operation
   ///
