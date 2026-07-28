@@ -96,7 +96,6 @@ class _AppShellPageState extends State<AppShellPage> {
           onPopInvokedWithResult: (didPop, _) => _onPopInvoked(didPop),
           child: Scaffold(
             appBar: AppHeaderModule.buildHeader(
-              isHomeTab: false,
               currentProjectNotifier: widget.currentProjectNotifier,
               router: widget.router,
               projectUIProvider: widget.projectUIProvider,

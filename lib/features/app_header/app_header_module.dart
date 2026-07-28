@@ -1,4 +1,3 @@
-import 'package:construculator/features/app_header/presentation/widgets/header_row.dart';
 import 'package:construculator/features/app_header/presentation/widgets/title_search_app_bar.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
@@ -22,17 +21,14 @@ class AppHeaderModule extends Module {
   /// Builds the shell's app bar for the current header context.
   ///
   /// When [currentProjectNotifier] reports a selected project, delegates to
-  /// the project header provided by [projectUIProvider]. Otherwise shows the
-  /// [HeaderRow] home header on the home tab ([isHomeTab] true) or a
-  /// [TitleSearchAppBar] on other tabs, with search navigation wired through
-  /// [router] to the global search route in both cases. [onProjectTap] is
-  /// forwarded to the home header's project selector.
+  /// the project header provided by [projectUIProvider]. Otherwise shows a
+  /// [TitleSearchAppBar] with search navigation wired through [router] to the
+  /// global search route.
   ///
   /// Dependencies are passed in by the caller (resolved once at
   /// field-initialisation time) rather than looked up via `Modular.get()`
   /// here, since this runs inside `build()` on every shell rebuild.
   static PreferredSizeWidget buildHeader({
-    required bool isHomeTab,
     required CurrentProjectNotifier currentProjectNotifier,
     required AppRouter router,
     required ProjectUIProvider projectUIProvider,
@@ -45,16 +41,6 @@ class AppHeaderModule extends Module {
 
     void onSearchTap() => router.pushNamed(fullGlobalSearchRoute);
 
-    if (isHomeTab) {
-      return HeaderRow(
-        onSearchTap: onSearchTap,
-        onProjectTap: onProjectTap,
-        // TODO: [CA-731] Wire NotificationBloc when NotificationModule is ready.
-        // https://ripplearc.youtrack.cloud/issue/CA-731
-        // TODO: [CA-732] Wire ProfileBloc when ProfileModule is ready.
-        // https://ripplearc.youtrack.cloud/issue/CA-732
-      );
-    }
     return TitleSearchAppBar(onSearchTap: onSearchTap);
   }
 }
