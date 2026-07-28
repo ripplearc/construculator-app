@@ -235,7 +235,8 @@ void main() {
             matching: find.byKey(CoreInputChip.removeButtonKey),
           ),
         );
-        expect(node.label, contains('Remove bob@example.com'));
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(node.label, contains(l10n.removeChipLabel('bob@example.com')));
 
         handle.dispose();
       });
