@@ -24,10 +24,9 @@ class TitleSearchAppBar extends StatelessWidget implements PreferredSizeWidget {
         color: coreColors.pageBackground,
         boxShadow: CoreShadows.medium,
       ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: CoreSpacing.space4,
-        vertical: CoreSpacing.space2,
-      ),
+      // No vertical padding: the icon needs the full [kToolbarHeight] so its
+      // tap target can reach 48x48 (CA-822).
+      padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
       child: AppBar(
         backgroundColor: coreColors.pageBackground,
         elevation: 0,
@@ -41,6 +40,8 @@ class TitleSearchAppBar extends StatelessWidget implements PreferredSizeWidget {
           CoreIconWidget(
             key: const Key('title_search_app_bar_search_button'),
             icon: CoreIcons.search,
+            size: CoreIconSize.size24,
+            padding: const EdgeInsets.all(CoreSpacing.space3),
             semanticLabel: context.l10n.dashboardSearchSemanticLabel,
             onTap: onSearchTap,
           ),
