@@ -1,7 +1,7 @@
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
 import 'package:construculator/app/shell/shell_module.dart';
-import 'package:construculator/features/app_header/presentation/widgets/header_row.dart';
+import 'package:construculator/features/app_header/presentation/widgets/title_search_app_bar.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/dashboard_bloc/dashboard_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
@@ -107,25 +107,25 @@ void main() {
   AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
 
   group('App bar selection', () {
-    testWidgets('shows HeaderRow on home tab when no project is selected', (
+    testWidgets('shows TitleSearchAppBar on calculations tab when no project is selected', (
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
       await tester.pump();
 
-      expect(find.byType(HeaderRow), findsOneWidget);
+      expect(find.byType(TitleSearchAppBar), findsOneWidget);
     });
 
-    testWidgets('hides HeaderRow on non-home tab when no project is selected', (
+    testWidgets('shows TitleSearchAppBar on estimates tab when no project is selected', (
       tester,
     ) async {
       await tester.pumpWidget(makeApp());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.bySemanticsLabel(l10n().calculationsTab));
+      await tester.tap(find.bySemanticsLabel(l10n().estimatesTab));
       await tester.pumpAndSettle();
 
-      expect(find.byType(HeaderRow), findsNothing);
+      expect(find.byType(TitleSearchAppBar), findsOneWidget);
     });
 
     testWidgets('shows project UI provider app bar when a project is selected', (

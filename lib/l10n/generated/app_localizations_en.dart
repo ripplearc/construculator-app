@@ -812,7 +812,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calculationsTab => 'Calculations';
 
   @override
-  String get membersTab => 'Members';
+  String get estimatesTab => 'Estimates';
 
   @override
   String get permissionDenied =>

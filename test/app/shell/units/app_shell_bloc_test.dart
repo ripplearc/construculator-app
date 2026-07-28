@@ -24,23 +24,23 @@ void main() {
 
   group('AppShellBloc', () {
     blocTest<AppShellBloc, AppShellState>(
-      'emits home tab loaded after AppShellInitialized',
+      'emits calculations tab loaded after AppShellInitialized',
       build: () => Modular.get<AppShellBloc>(),
       act: (b) => b.add(const AppShellInitialized()),
       expect: () => [
         const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {0}),
       ],
-      verify: (_) => expect(tabModuleManager.isLoaded(ShellTab.home), isTrue),
+      verify: (_) => expect(tabModuleManager.isLoaded(ShellTab.calculations), isTrue),
     );
 
     test('events expose value equality through props', () {
       expect(
-        const AppShellTabSelected(ShellTab.estimation).props,
-        const AppShellTabSelected(ShellTab.estimation).props,
+        const AppShellTabSelected(ShellTab.estimates).props,
+        const AppShellTabSelected(ShellTab.estimates).props,
       );
       expect(
-        const AppShellTabSelected(ShellTab.estimation),
-        equals(const AppShellTabSelected(ShellTab.estimation)),
+        const AppShellTabSelected(ShellTab.estimates),
+        equals(const AppShellTabSelected(ShellTab.estimates)),
       );
       expect(const AppShellInitialized().props, isEmpty);
       expect(const AppShellInitialized(), equals(const AppShellInitialized()));
@@ -61,24 +61,24 @@ void main() {
     });
 
     blocTest<AppShellBloc, AppShellState>(
-      'processes AppShellTabSelected then AppShellInitialized: loads the selected tab, then initializes home',
+      'processes AppShellTabSelected then AppShellInitialized: loads the selected tab, then initializes calculations',
       build: () => bloc,
       act: (bloc) {
-        bloc.add(const AppShellTabSelected(ShellTab.calculations));
+        bloc.add(const AppShellTabSelected(ShellTab.estimates));
         bloc.add(const AppShellInitialized());
       },
       expect: () => [
         AppShellState(
-          selectedTabIndex: ShellTab.calculations.index,
-          loadedTabIndexes: {ShellTab.home.index, ShellTab.calculations.index},
+          selectedTabIndex: ShellTab.estimates.index,
+          loadedTabIndexes: {ShellTab.calculations.index, ShellTab.estimates.index},
         ),
         AppShellState(
-          selectedTabIndex: ShellTab.home.index,
-          loadedTabIndexes: {ShellTab.home.index},
+          selectedTabIndex: ShellTab.calculations.index,
+          loadedTabIndexes: {ShellTab.calculations.index},
         ),
       ],
       verify: (bloc) {
-        expect(tabModuleManager.isLoaded(ShellTab.home), isTrue);
+        expect(tabModuleManager.isLoaded(ShellTab.calculations), isTrue);
       },
     );
 
@@ -86,35 +86,24 @@ void main() {
       'updates selected tab and tracks lazy-loaded tabs',
       build: () => bloc,
       act: (bloc) {
-        bloc.add(const AppShellTabSelected(ShellTab.calculations));
-        bloc.add(const AppShellTabSelected(ShellTab.members));
+        bloc.add(const AppShellTabSelected(ShellTab.estimates));
       },
       expect: () => [
         AppShellState(
-          selectedTabIndex: ShellTab.calculations.index,
-          loadedTabIndexes: {ShellTab.home.index, ShellTab.calculations.index},
-        ),
-        AppShellState(
-          selectedTabIndex: ShellTab.members.index,
-          loadedTabIndexes: {
-            ShellTab.home.index,
-            ShellTab.calculations.index,
-            ShellTab.members.index,
-          },
+          selectedTabIndex: ShellTab.estimates.index,
+          loadedTabIndexes: {ShellTab.calculations.index, ShellTab.estimates.index},
         ),
       ],
       verify: (bloc) {
-        expect(tabModuleManager.isLoaded(ShellTab.home), isTrue);
         expect(tabModuleManager.isLoaded(ShellTab.calculations), isTrue);
-        expect(tabModuleManager.isLoaded(ShellTab.estimation), isFalse);
-        expect(tabModuleManager.isLoaded(ShellTab.members), isTrue);
+        expect(tabModuleManager.isLoaded(ShellTab.estimates), isTrue);
       },
     );
 
     blocTest<AppShellBloc, AppShellState>(
       'does not emit when selecting current tab',
       build: () => bloc,
-      act: (bloc) => bloc.add(const AppShellTabSelected(ShellTab.home)),
+      act: (bloc) => bloc.add(const AppShellTabSelected(ShellTab.calculations)),
       expect: () => <AppShellState>[],
     );
   });

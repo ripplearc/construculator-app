@@ -1286,9 +1286,9 @@
     "description": "Label for calculations tab in bottom navigation",
     "context": "AppShellPage"
   },
-  "membersTab": "Members",
-  "@membersTab": {
-    "description": "Label for members tab in bottom navigation",
+  "estimatesTab": "Estimates",
+  "@estimatesTab": {
+    "description": "Bottom nav tab label for the cost estimates feature",
     "context": "AppShellPage"
   },
   "permissionDenied": "You don't have permission to perform this action",

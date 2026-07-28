@@ -130,7 +130,7 @@ class RecentEstimationsSection extends StatelessWidget {
       return;
     }
 
-    context.read<AppShellBloc>().add(const AppShellTabSelected(ShellTab.estimation));
+    context.read<AppShellBloc>().add(const AppShellTabSelected(ShellTab.estimates));
   }
 
   void _openEstimationDetails(String estimationId) {
