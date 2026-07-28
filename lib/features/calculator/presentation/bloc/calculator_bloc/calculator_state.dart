@@ -1,4 +1,3 @@
-// coverage:ignore-file
 part of 'calculator_bloc.dart';
 
 /// Represents the current state of the calculator display area.

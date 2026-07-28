@@ -108,7 +108,7 @@ void main() {
         ),
         act: (bloc) => bloc.add(const CalculatorOperatorPressed('=')),
         verify: (bloc) {
-          expect(bloc.state.resultLabel, 'pitchResult');
+          expect(bloc.state.resultLabel, 'Pitch');
           expect(bloc.state.resultValue, '0.5');
           expect(bloc.state.resultChip, isNotNull);
           expect(bloc.state.finalizedValues['Run'], 12.0);
@@ -173,7 +173,7 @@ void main() {
         ),
         act: (bloc) => bloc.add(const CalculatorKeySelected('Fence')),
         verify: (bloc) {
-          expect(bloc.state.resultLabel, 'postsResult');
+          expect(bloc.state.resultLabel, 'Posts');
           expect(bloc.state.resultValue, '5');
           expect(bloc.state.dependentKeyLabel, 'oc');
           expect(bloc.state.dependentKeyValue, '6ft');
@@ -186,7 +186,7 @@ void main() {
         seed: () => const CalculatorState(finalizedValues: {'Length': 25.0}),
         act: (bloc) => bloc.add(const CalculatorKeySelected('Fence')),
         verify: (bloc) {
-          expect(bloc.state.resultLabel, 'postsResult');
+          expect(bloc.state.resultLabel, 'Posts');
           expect(bloc.state.resultValue, '6');
         },
       );
@@ -351,6 +351,49 @@ void main() {
           ),
         ],
       );
+    });
+
+    group('CalculatorState.chipsList', () {
+      test('is empty in initial state', () {
+        expect(CalculatorState.initial().chipsList, isEmpty);
+      });
+
+      test('contains active chip while typing with a label', () {
+        const state = CalculatorState(
+          isTyping: true,
+          activeInputLabel: 'Rise',
+          currentInputValue: '6',
+        );
+        expect(state.chipsList.length, 1);
+        expect(state.chipsList.single.label, 'Rise');
+        expect(state.chipsList.single.value, '6');
+        expect(state.chipsList.single.type, CoreCalculatorChipType.active);
+      });
+
+      test('omits active chip when not typing', () {
+        const state = CalculatorState(isTyping: false, activeInputLabel: 'Rise');
+        expect(state.chipsList, isEmpty);
+      });
+
+      test('appends result chip after completed chips', () {
+        final resultChip = CoreCalculatorChip(
+          label: 'Pitch',
+          value: '0.5',
+          type: CoreCalculatorChipType.disabled,
+        );
+        final completedChip = CoreCalculatorChip(
+          label: 'Rise',
+          value: '6',
+          type: CoreCalculatorChipType.editable,
+        );
+        final state = CalculatorState(
+          completedChips: [completedChip],
+          resultChip: resultChip,
+        );
+        expect(state.chipsList.length, 2);
+        expect(state.chipsList.first, completedChip);
+        expect(state.chipsList.last, resultChip);
+      });
     });
 
     group('functionGroups', () {
