@@ -10,6 +10,6 @@ Future<void> pumpAppAtRoute(
   await tester.pumpWidget(app);
   await tester.pumpAndSettle();
   Modular.to.navigate(route);
-  await tester.pump(const Duration(milliseconds: 300));
+  await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
 }
