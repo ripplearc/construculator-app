@@ -224,6 +224,9 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
   }
 
   Widget _buildSectionTitle(BuildContext context, GlobalSearchState state) {
+    if (state is GlobalSearchLoadFailure) {
+      return const SizedBox.shrink();
+    }
     final l10n = context.l10n;
     final typography = context.textTheme;
     final effectiveReady = _effectiveReady(state);
@@ -363,6 +366,13 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
               ),
               Expanded(
                 child: BlocConsumer<GlobalSearchBloc, GlobalSearchState>(
+                  listenWhen: (prev, curr) =>
+                      curr is GlobalSearchLoadFailure ||
+                      curr is GlobalSearchRecentsLoadFailure ||
+                      curr is GlobalSearchRecentDeleteFailure ||
+                      curr is GlobalSearchSuggestionsLoadFailure ||
+                      curr is GlobalSearchTagsLoadFailure ||
+                      curr is GlobalSearchEmptyQuery,
                   listener: (context, state) {
                     final l10n = context.l10n;
                     if (state is GlobalSearchLoadFailure) {
