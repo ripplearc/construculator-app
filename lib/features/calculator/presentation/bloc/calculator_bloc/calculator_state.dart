@@ -108,6 +108,18 @@ class CalculatorState extends Equatable {
     );
   }
 
+  List<CoreCalculatorChip> get chipsList => [
+        ...completedChips,
+        if (isTyping)
+          if (activeInputLabel case final label?)
+            CoreCalculatorChip(
+              label: label,
+              value: currentInputValue,
+              type: CoreCalculatorChipType.active,
+            ),
+        if (resultChip case final chip?) chip,
+      ];
+
   @override
   List<Object?> get props => [
         activeInputLabel,
