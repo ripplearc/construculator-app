@@ -806,9 +806,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'Construculator';
 
   @override
-  String get homeTab => 'Home';
-
-  @override
   String get calculationsTab => 'Calculations';
 
   @override

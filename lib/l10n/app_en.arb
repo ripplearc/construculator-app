@@ -1276,11 +1276,6 @@
     "description": "Application title displayed in app bar",
     "context": "AppShellPage"
   },
-  "homeTab": "Home",
-  "@homeTab": {
-    "description": "Label for home tab in bottom navigation",
-    "context": "AppShellPage"
-  },
   "calculationsTab": "Calculations",
   "@calculationsTab": {
     "description": "Label for calculations tab in bottom navigation",
