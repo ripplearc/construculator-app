@@ -69,17 +69,6 @@ class _CalculatorPageState extends State<CalculatorPage> {
           child: BlocBuilder<CalculatorBloc, CalculatorState>(
             builder: (context, state) {
               final bloc = context.read<CalculatorBloc>();
-              final chips = [
-                ...state.completedChips,
-                if (state.isTyping)
-                  if (state.activeInputLabel case final label?)
-                    CoreCalculatorChip(
-                      label: label,
-                      value: state.currentInputValue,
-                      type: CoreCalculatorChipType.active,
-                    ),
-                if (state.resultChip case final chip?) chip,
-              ];
 
               return Column(
                 children: [
@@ -92,7 +81,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                         label: state.resultLabel ?? state.activeInputLabel,
                         value: state.resultValue ?? state.currentInputValue,
                         isTyping: state.isTyping,
-                        chipsList: chips,
+                        chipsList: state.chipsList,
                         dependentKeyLabel: state.dependentKeyLabel,
                         dependentKeyValue: state.dependentKeyValue,
                         onPressedDependentKey: () {},
