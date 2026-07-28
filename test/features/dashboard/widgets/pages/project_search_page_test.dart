@@ -25,14 +25,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
+import '../../../../utils/toast_test_utils.dart';
 
 const String _testUserId = 'user-project-search-page-test';
 const String _testUserEmail = 'project-search-page@test.com';
-
-/// CoreToast displays for 3 seconds by default (the package does not export
-/// the duration as a constant); pump just past it to flush the auto-dismiss
-/// timer before the test ends.
-const Duration _kToastDismissDuration = Duration(seconds: 4);
 
 class _ProjectSearchPageTestModule extends Module {
   final AppBootstrap appBootstrap;
@@ -652,7 +648,7 @@ void main() {
           findsOneWidget,
         );
 
-        await tester.pump(_kToastDismissDuration);
+        await tester.pump(kToastDismissDuration);
         // The toast dismisses; the failure body stays.
         expect(find.text(l10n().searchFailureBodyMessage), findsOneWidget);
       },
@@ -667,7 +663,7 @@ void main() {
 
         await submitSearch(tester, 'office');
         expect(find.text(l10n().searchFailureBodyMessage), findsOneWidget);
-        await tester.pump(_kToastDismissDuration);
+        await tester.pump(kToastDismissDuration);
 
         fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
           'projects': <Map<String, dynamic>>[],
@@ -704,7 +700,7 @@ void main() {
           findsOneWidget,
         );
 
-        await tester.pump(_kToastDismissDuration);
+        await tester.pump(kToastDismissDuration);
       },
     );
 
@@ -728,7 +724,7 @@ void main() {
           findsOneWidget,
         );
 
-        await tester.pump(_kToastDismissDuration);
+        await tester.pump(kToastDismissDuration);
       },
     );
   });

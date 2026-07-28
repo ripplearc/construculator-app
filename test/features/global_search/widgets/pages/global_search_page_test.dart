@@ -23,14 +23,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
+import '../../../../utils/toast_test_utils.dart';
 
 const String _testUserId = 'user-page-test';
 const String _testUserEmail = 'page@test.com';
-
-/// CoreToast displays for 3 seconds by default (the package does not export
-/// the duration as a constant); pump just past it to flush the auto-dismiss
-/// timer before the test ends.
-const Duration _kToastDismissDuration = Duration(seconds: 4);
 
 Map<String, dynamic> _fakeHistoryRow(String term) => {
   DatabaseConstants.idColumn: term,
@@ -296,7 +292,7 @@ void main() {
 
       expect(find.text(l10n().globalSearchEmptyQueryMessage), findsOneWidget);
 
-      await tester.pump(_kToastDismissDuration);
+      await tester.pump(kToastDismissDuration);
     });
 
     testWidgets(
@@ -315,7 +311,7 @@ void main() {
 
         expect(find.text(l10n().globalSearchEmptyQueryMessage), findsOneWidget);
 
-        await tester.pump(_kToastDismissDuration);
+        await tester.pump(kToastDismissDuration);
       },
     );
   });
@@ -516,7 +512,7 @@ void main() {
           findsNothing,
         );
 
-        await tester.pump(_kToastDismissDuration);
+        await tester.pump(kToastDismissDuration);
       },
     );
 
@@ -629,9 +625,46 @@ void main() {
           findsOneWidget,
         );
 
-        await tester.pump(_kToastDismissDuration);
+        await tester.pump(kToastDismissDuration);
         // The toast dismisses; the failure body stays.
         expect(find.text(l10n().searchFailureBodyMessage), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'does not float a stale Suggestions header above the failure body '
+      'when suggestions were cached before the search failed',
+      (tester) async {
+        seedUser();
+        // Non-empty suggestions prime the page's _lastReady cache before the
+        // performed search fails; the section title must not fall back to it.
+        fakeSupabase.setRpcResponse(
+          DatabaseConstants.searchSuggestionsRpcFunction,
+          ['office renovation'],
+        );
+        await renderPage(tester);
+
+        final searchField = find.ancestor(
+          of: find.text(l10n().globalSearchHint),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(searchField, 'office');
+        await tester.pump(const Duration(milliseconds: 400));
+        // Sanity check that the cache is genuinely primed: the suggestions
+        // header is visible before the search is submitted.
+        expect(
+          find.text(l10n().globalSearchSuggestionsTitle),
+          findsOneWidget,
+        );
+
+        await tester.testTextInput.receiveAction(TextInputAction.search);
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text(l10n().searchFailureBodyMessage), findsOneWidget);
+        expect(find.text(l10n().globalSearchSuggestionsTitle), findsNothing);
+
+        await tester.pump(kToastDismissDuration);
       },
     );
 
@@ -644,7 +677,7 @@ void main() {
 
         await submitSearch(tester, 'office');
         expect(find.text(l10n().searchFailureBodyMessage), findsOneWidget);
-        await tester.pump(_kToastDismissDuration);
+        await tester.pump(kToastDismissDuration);
 
         fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
           'projects': <Map<String, dynamic>>[],
@@ -685,7 +718,7 @@ void main() {
         // the retryable search-failure body is reserved for failed searches.
         expect(find.text(l10n().searchFailureBodyMessage), findsNothing);
 
-        await tester.pump(_kToastDismissDuration);
+        await tester.pump(kToastDismissDuration);
       },
     );
   });
