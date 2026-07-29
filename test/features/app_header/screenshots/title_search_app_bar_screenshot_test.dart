@@ -5,25 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../utils/screenshot/font_loader.dart';
 
-Future<void> pumpTitleSearchAppBar({
-  required WidgetTester tester,
-  required ThemeData theme,
-}) async {
-  await tester.pumpWidget(
-    MaterialApp(
-      theme: theme,
-      locale: const Locale('en'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: const Scaffold(
-        appBar: TitleSearchAppBar(),
-        body: SizedBox.shrink(),
-      ),
-    ),
-  );
-  await tester.pumpAndSettle();
-}
-
 void main() {
   const size = Size(390, 100);
   const ratio = 1.0;
@@ -32,6 +13,25 @@ void main() {
   setUpAll(() async {
     await loadAppFonts();
   });
+
+  Future<void> pumpTitleSearchAppBar({
+    required WidgetTester tester,
+    required ThemeData theme,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme,
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const Scaffold(
+          appBar: TitleSearchAppBar(),
+          body: SizedBox.shrink(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
 
   screenshotThemeGroups('TitleSearchAppBar Screenshot Tests', (theme, suffix) {
     testWidgets('renders correctly', (tester) async {

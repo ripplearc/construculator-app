@@ -118,6 +118,9 @@ ThemeData createTestThemeDark() {
   );
 }
 
+/// Runs [body] twice — once in light theme and once in dark — each inside its
+/// own named [group]. Eliminates the need for a nullable [ThemeData?] pump
+/// parameter and a hand-typed `_dark.png` golden suffix.
 void screenshotThemeGroups(
   String description,
   void Function(ThemeData theme, String goldenSuffix) body,
