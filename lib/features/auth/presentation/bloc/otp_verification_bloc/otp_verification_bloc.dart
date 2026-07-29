@@ -16,11 +16,9 @@ class OtpVerificationBloc
   final SendOtpUseCase _sendOtpUseCase;
 
   OtpVerificationBloc({
-    required VerifyOtpUseCase verifyOtpUseCase,
-    required SendOtpUseCase sendOtpUseCase,
-  }) : _verifyOtpUseCase = verifyOtpUseCase,
-       _sendOtpUseCase = sendOtpUseCase,
-       super(OtpVerificationInitial()) {
+    required this._verifyOtpUseCase,
+    required this._sendOtpUseCase,
+  }) : super(OtpVerificationInitial()) {
     on<OtpVerificationOtpChanged>(_onOtpChanged);
     on<OtpVerificationSubmitted>(_onOtpSubmitted);
     on<OtpVerificationResendRequested>(_onResendRequested);

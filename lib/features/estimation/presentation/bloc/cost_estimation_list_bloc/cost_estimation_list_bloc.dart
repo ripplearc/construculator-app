@@ -24,11 +24,9 @@ class CostEstimationListBloc
   static final _logger = AppLogger().tag('CostEstimationListBloc');
 
   CostEstimationListBloc({
-    required CostEstimationRepository repository,
-    required CurrentProjectNotifier currentProjectNotifier,
-  }) : _repository = repository,
-       _currentProjectNotifier = currentProjectNotifier,
-       super(const CostEstimationListInitial()) {
+    required this._repository,
+    required this._currentProjectNotifier,
+  }) : super(const CostEstimationListInitial()) {
     on<CostEstimationListStartWatching>(_onStartWatching);
     on<CostEstimationListLoadMore>(_onLoadMore);
     on<CostEstimationListRefresh>(_onRefreshed);

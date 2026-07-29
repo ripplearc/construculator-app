@@ -23,8 +23,7 @@ class OwnerRepositoryImpl implements OwnerRepository {
   static final _logger = AppLogger().tag('OwnerRepositoryImpl');
 
   /// Creates an [OwnerRepositoryImpl].
-  OwnerRepositoryImpl({required OwnerDataSource dataSource})
-    : _dataSource = dataSource;
+  OwnerRepositoryImpl({required this._dataSource});
 
   Failure _handleError(Object error, String operation) {
     if (error is TimeoutException) {

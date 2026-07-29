@@ -14,9 +14,8 @@ class ProjectSettingsBloc
     extends Bloc<ProjectSettingsEvent, ProjectSettingsState> {
   final ProjectSettingRepository _repository;
 
-  ProjectSettingsBloc({required ProjectSettingRepository repository})
-      : _repository = repository,
-        super(const ProjectSettingsInitial()) {
+  ProjectSettingsBloc({required this._repository})
+      : super(const ProjectSettingsInitial()) {
     on<ProjectSettingsLoadRequested>(_onLoadRequested);
     on<ProjectSettingsEditingStarted>(_onEditingStarted);
     on<ProjectSettingsUpdateSubmitted>(_onUpdateSubmitted);

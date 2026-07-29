@@ -25,8 +25,8 @@ class EstimationCard extends StatelessWidget {
     required this.estimation,
     required this.onTap,
     this.onMenuTap,
-    required EstimationTileProvider provider,
-  }) : _provider = provider;
+    required this._provider,
+  });
 
   @override
   Widget build(BuildContext context) {

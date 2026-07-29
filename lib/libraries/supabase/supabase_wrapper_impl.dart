@@ -13,7 +13,7 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
   final EnvLoader _envLoader;
   static final _logger = AppLogger().tag('SupabaseWrapperImpl');
 
-  SupabaseWrapperImpl({required EnvLoader envLoader}) : _envLoader = envLoader;
+  SupabaseWrapperImpl({required this._envLoader});
 
   @override
   Future<void> initialize() async {

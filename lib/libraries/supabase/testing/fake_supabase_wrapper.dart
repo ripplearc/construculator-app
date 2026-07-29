@@ -239,7 +239,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   final Clock _clock;
 
   /// Constructor for fake supabase wrapper
-  FakeSupabaseWrapper({required Clock clock}) : _clock = clock;
+  FakeSupabaseWrapper({required this._clock});
 
   /// Sets the current user
   void setCurrentUser(FakeUser? user) {

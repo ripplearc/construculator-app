@@ -25,11 +25,9 @@ class RecentEstimationsBloc
 
   /// Defines constructor that takes a usecase as an injected dependency.
   RecentEstimationsBloc({
-    required WatchRecentEstimationsUseCase watchRecentEstimationsUseCase,
-    required CurrentProjectNotifier currentProjectNotifier,
-  }) : _watchRecentEstimationsUseCase = watchRecentEstimationsUseCase,
-       _currentProjectNotifier = currentProjectNotifier,
-       super(const RecentEstimationsLoading()) {
+    required this._watchRecentEstimationsUseCase,
+    required this._currentProjectNotifier,
+  }) : super(const RecentEstimationsLoading()) {
     on<RecentEstimationsWatchStarted>(_onWatchStarted);
     on<_RecentEstimationsProjectChanged>(_onProjectChanged);
     on<_RecentEstimationsUpdated>(_onUpdated);
