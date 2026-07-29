@@ -15,34 +15,36 @@ void main() {
     await loadAppFontsAll();
   });
 
-  group('EstimationCard Screenshot Tests', () {
-    Future<void> pumpEstimationCard({
-      required WidgetTester tester,
-      required CostEstimate estimation,
-      required VoidCallback onTap,
-    }) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Material(
-            child: Center(
-              child: EstimationCard(
-                estimation: estimation,
-                onTap: onTap,
-              ),
+  Future<void> pumpEstimationCard({
+    required WidgetTester tester,
+    required CostEstimate estimation,
+    required VoidCallback onTap,
+    ThemeData? theme,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme ?? createTestTheme(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Material(
+          child: Center(
+            child: EstimationCard(
+              estimation: estimation,
+              onTap: onTap,
             ),
           ),
         ),
-      );
-      await tester.pumpAndSettle();
-    }
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
 
+  group('EstimationCard Screenshot Tests - Light', () {
     testWidgets('renders base estimation card correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       final estimation = CostEstimate.defaultEstimate(
         estimateName: 'Base Estimate',
@@ -67,6 +69,7 @@ void main() {
     testWidgets('renders estimation card with long name correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
       final estimation = CostEstimate.defaultEstimate(
         estimateName: 'Complete Home Renovation and Extension Project',
@@ -88,5 +91,58 @@ void main() {
       );
     });
   });
-}
 
+  group('EstimationCard Screenshot Tests - Dark', () {
+    testWidgets('renders base estimation card correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      final estimation = CostEstimate.defaultEstimate(
+        estimateName: 'Base Estimate',
+        updatedAt: DateTime(2024, 1, 1, 8, 30),
+        createdAt: DateTime(2024, 1, 1, 8, 30),
+      );
+
+      await pumpEstimationCard(
+        tester: tester,
+        estimation: estimation,
+        onTap: () {},
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(EstimationCard),
+        matchesGoldenFile(
+          'goldens/estimation_card/${size.width}x${size.height}/estimation_card_base_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders estimation card with long name correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      final estimation = CostEstimate.defaultEstimate(
+        estimateName: 'Complete Home Renovation and Extension Project',
+        updatedAt: DateTime(2024, 3, 10, 16, 45),
+        createdAt: DateTime(2024, 3, 10, 16, 45),
+      );
+
+      await pumpEstimationCard(
+        tester: tester,
+        estimation: estimation,
+        onTap: () {},
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(EstimationCard),
+        matchesGoldenFile(
+          'goldens/estimation_card/${size.width}x${size.height}/estimation_card_long_name_dark.png',
+        ),
+      );
+    });
+  });
+}

@@ -28,9 +28,9 @@ class ProjectsBottomSheetTestHarness {
   late ProjectDropdownBloc bloc;
   late FakeAppRouter router;
 
-  Widget buildTestApp() {
+  Widget buildTestApp({ThemeData? theme}) {
     return MaterialApp(
-      theme: createTestTheme(),
+      theme: theme ?? createTestTheme(),
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -45,8 +45,9 @@ class ProjectsBottomSheetTestHarness {
   Future<void> pumpSheet(
     WidgetTester tester, {
     Duration? extraPump,
+    ThemeData? theme,
   }) async {
-    await tester.pumpWidget(buildTestApp());
+    await tester.pumpWidget(buildTestApp(theme: theme));
     await tester.pump();
     await tester.runAsync(() async {
       await bloc.stream.firstWhere(
