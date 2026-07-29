@@ -6,7 +6,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
-  const size = Size(390, 80);
+  const size = Size(390, 104);
   const ratio = 1.0;
   const testName = 'app_shell_bottom_nav';
 
