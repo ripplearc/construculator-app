@@ -1,7 +1,6 @@
 import 'package:construculator/features/project_settings/presentation/widgets/project_stats_cards.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -154,13 +153,13 @@ void main() {
       expect(
         tester
             .getSemantics(find.byKey(const Key('project_stats_estimations_card')))
-            .hasFlag(SemanticsFlag.isButton),
+            .flagsCollection.isButton,
         isTrue,
       );
       expect(
         tester
             .getSemantics(find.byKey(const Key('project_stats_members_card')))
-            .hasFlag(SemanticsFlag.isButton),
+            .flagsCollection.isButton,
         isTrue,
       );
 

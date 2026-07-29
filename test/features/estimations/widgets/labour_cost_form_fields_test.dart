@@ -5,7 +5,6 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -148,7 +147,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final perDay = tester.getSemantics(find.byKey(const Key('per_day_option')));
-      expect(perDay.hasFlag(SemanticsFlag.isSelected), isTrue);
+      expect(perDay.flagsCollection.isSelected.toBoolOrNull(), isTrue);
     });
 
     testWidgets('tapping per hours changes conditional field label', (
@@ -175,8 +174,8 @@ void main() {
         find.byKey(const Key('per_hours_option')),
       );
       final perDay = tester.getSemantics(find.byKey(const Key('per_day_option')));
-      expect(perHours.hasFlag(SemanticsFlag.isSelected), isTrue);
-      expect(perDay.hasFlag(SemanticsFlag.isSelected), isFalse);
+      expect(perHours.flagsCollection.isSelected.toBoolOrNull(), isTrue);
+      expect(perDay.flagsCollection.isSelected.toBoolOrNull(), isFalse);
     });
   });
 

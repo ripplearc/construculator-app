@@ -1,7 +1,6 @@
 import 'package:construculator/features/estimation/presentation/widgets/cost_item_mode_toggle.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -48,8 +47,8 @@ void main() {
       final manually = tester.getSemantics(find.byKey(const Key('manually_pill')));
       final fromFile = tester.getSemantics(find.byKey(const Key('from_cost_file_pill')));
 
-      expect(manually.hasFlag(SemanticsFlag.isSelected), isTrue);
-      expect(fromFile.hasFlag(SemanticsFlag.isSelected), isFalse);
+      expect(manually.flagsCollection.isSelected.toBoolOrNull(), isTrue);
+      expect(fromFile.flagsCollection.isSelected.toBoolOrNull(), isFalse);
     });
 
     testWidgets('from cost file pill is selected when fromCostFile is true', (
@@ -61,8 +60,8 @@ void main() {
       final fromFile = tester.getSemantics(find.byKey(const Key('from_cost_file_pill')));
       final manually = tester.getSemantics(find.byKey(const Key('manually_pill')));
 
-      expect(fromFile.hasFlag(SemanticsFlag.isSelected), isTrue);
-      expect(manually.hasFlag(SemanticsFlag.isSelected), isFalse);
+      expect(fromFile.flagsCollection.isSelected.toBoolOrNull(), isTrue);
+      expect(manually.flagsCollection.isSelected.toBoolOrNull(), isFalse);
     });
 
     testWidgets('tapping from cost file pill calls onFromCostFile', (

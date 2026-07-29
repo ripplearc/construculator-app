@@ -2,7 +2,6 @@ import 'package:construculator/features/estimation/domain/entities/cost_item_ent
 import 'package:construculator/features/estimation/presentation/widgets/calc_method_card.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -47,7 +46,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final perDay = tester.getSemantics(find.byKey(const Key('per_day_option')));
-      expect(perDay.hasFlag(SemanticsFlag.isSelected), isTrue);
+      expect(perDay.flagsCollection.isSelected.toBoolOrNull(), isTrue);
     });
 
     testWidgets('per hours is selected when calcMethod is perHour', (tester) async {
@@ -59,7 +58,7 @@ void main() {
       final perHours = tester.getSemantics(
         find.byKey(const Key('per_hours_option')),
       );
-      expect(perHours.hasFlag(SemanticsFlag.isSelected), isTrue);
+      expect(perHours.flagsCollection.isSelected.toBoolOrNull(), isTrue);
     });
 
     testWidgets('calls onMethodChanged with perHour when per hours tapped', (
