@@ -39,7 +39,7 @@ void main() {
               child: CoreBottomNavBar(
                 tabs: [
                   BottomNavTab(
-                    icon: CoreIcons.calculate,
+                    icon: CoreIcons.calculation,
                     label: AppLocalizations.of(context)!.calculationsTab,
                   ),
                   BottomNavTab(
