@@ -17,9 +17,10 @@ class SupabasePowerSyncConnector extends PowerSyncBackendConnector {
 
   /// Creates a connector for syncing PowerSync with Supabase.
   SupabasePowerSyncConnector({
-    required this._supabaseWrapper,
-    required this._envLoader,
-  });
+    required SupabaseWrapper supabaseWrapper,
+    required EnvLoader envLoader,
+  }) : _supabaseWrapper = supabaseWrapper,
+       _envLoader = envLoader;
 
   /// Fetches the current PowerSync credentials from Supabase.
   @override

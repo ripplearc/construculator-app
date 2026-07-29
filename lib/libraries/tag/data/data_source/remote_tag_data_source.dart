@@ -10,7 +10,8 @@ class RemoteTagDataSource implements TagDataSource {
   static final _logger = AppLogger().tag('RemoteTagDataSource');
 
   /// Creates a [RemoteTagDataSource].
-  const RemoteTagDataSource({required this._supabaseWrapper});
+  const RemoteTagDataSource({required SupabaseWrapper supabaseWrapper})
+    : _supabaseWrapper = supabaseWrapper;
 
   @override
   Future<List<TagDto>> getTags() async {

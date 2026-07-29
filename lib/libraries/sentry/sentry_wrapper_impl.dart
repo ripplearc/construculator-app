@@ -13,10 +13,12 @@ class SentryWrapperImpl implements SentryWrapper {
   bool _isInitialized = false;
 
   SentryWrapperImpl({
-    required this._envLoader,
-    required this._config,
-    required this._sentrySdk,
-  });
+    required EnvLoader envLoader,
+    required Config config,
+    required SentrySdk sentrySdk,
+  }) : _envLoader = envLoader,
+       _config = config,
+       _sentrySdk = sentrySdk;
 
   @override
   Future<void> initialize(void Function() appRunner) async {

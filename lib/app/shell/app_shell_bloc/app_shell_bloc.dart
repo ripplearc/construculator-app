@@ -12,8 +12,9 @@ part 'app_shell_state.dart';
 class AppShellBloc extends Bloc<AppShellEvent, AppShellState> {
   final TabModuleManager _moduleLoader;
 
-  AppShellBloc({required this._moduleLoader})
-    : super(
+  AppShellBloc({required TabModuleManager moduleLoader})
+    : _moduleLoader = moduleLoader,
+      super(
         const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {}),
       ) {
     on<AppShellInitialized>(_onInitialized);

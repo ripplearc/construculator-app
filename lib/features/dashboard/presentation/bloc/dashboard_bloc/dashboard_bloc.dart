@@ -24,11 +24,15 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   String _userDisplayName = '...';
 
   DashboardBloc({
-    required this._projectRepository,
-    required this._currentProjectNotifier,
-    required this._authNotifier,
-    required this._authManager,
-  })  : super(const DashboardInitial()) {
+    required ProjectRepository projectRepository,
+    required CurrentProjectNotifier currentProjectNotifier,
+    required AuthNotifier authNotifier,
+    required AuthManager authManager,
+  })  : _projectRepository = projectRepository,
+        _currentProjectNotifier = currentProjectNotifier,
+        _authNotifier = authNotifier,
+        _authManager = authManager,
+        super(const DashboardInitial()) {
     on<DashboardStarted>(_onDashboardStarted);
     on<DashboardLoadedEvent>(_onDashboardLoaded);
     on<DashboardRefreshedEvent>(_onDashboardRefreshed);

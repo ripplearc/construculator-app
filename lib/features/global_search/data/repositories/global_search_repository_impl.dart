@@ -24,7 +24,8 @@ class GlobalSearchRepositoryImpl implements GlobalSearchRepository {
   final GlobalSearchDataSource _dataSource;
   static final _logger = AppLogger().tag('GlobalSearchRepositoryImpl');
 
-  GlobalSearchRepositoryImpl({required this._dataSource});
+  GlobalSearchRepositoryImpl({required GlobalSearchDataSource dataSource})
+    : _dataSource = dataSource;
 
   SearchScopeDto _toDataScope(SearchScope entity) {
     switch (entity) {

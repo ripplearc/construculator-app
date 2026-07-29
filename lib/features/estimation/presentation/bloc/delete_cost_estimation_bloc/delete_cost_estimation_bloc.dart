@@ -16,9 +16,11 @@ class DeleteCostEstimationBloc
   static final _logger = AppLogger().tag('DeleteCostEstimationBloc');
 
   DeleteCostEstimationBloc({
-    required this._costEstimationRepository,
-    required this._currentProjectNotifier,
-  }) : super(const DeleteCostEstimationInitial()) {
+    required CostEstimationRepository costEstimationRepository,
+    required CurrentProjectNotifier currentProjectNotifier,
+  }) : _costEstimationRepository = costEstimationRepository,
+       _currentProjectNotifier = currentProjectNotifier,
+       super(const DeleteCostEstimationInitial()) {
     on<DeleteCostEstimationRequested>(_onRequested);
   }
 

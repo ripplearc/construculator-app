@@ -10,8 +10,8 @@ class LocalJwtProjectPermissionDataSource
   final SupabaseWrapper _supabaseWrapper;
 
   LocalJwtProjectPermissionDataSource({
-    required this._supabaseWrapper,
-  });
+    required SupabaseWrapper supabaseWrapper,
+  }) : _supabaseWrapper = supabaseWrapper;
 
   @override
   List<String> getProjectPermissions(String projectId) {

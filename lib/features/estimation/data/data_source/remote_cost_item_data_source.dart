@@ -15,7 +15,8 @@ class RemoteCostItemDataSource implements CostItemDataSource {
   final SupabaseWrapper _supabaseWrapper;
   static final _logger = AppLogger().tag('RemoteCostItemDataSource');
 
-  RemoteCostItemDataSource({required this._supabaseWrapper});
+  RemoteCostItemDataSource({required SupabaseWrapper supabaseWrapper})
+      : _supabaseWrapper = supabaseWrapper;
 
   @override
   Future<List<CostItemDto>> fetchCostItemsByEstimateId({

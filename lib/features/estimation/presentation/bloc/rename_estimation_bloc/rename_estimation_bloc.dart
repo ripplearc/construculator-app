@@ -17,10 +17,13 @@ class RenameEstimationBloc
   final CurrentProjectNotifier _currentProjectNotifier;
 
   RenameEstimationBloc({
-    required this._repository,
-    required this._projectRepository,
-    required this._currentProjectNotifier,
-  }) : super(const RenameEstimationInitial()) {
+    required CostEstimationRepository repository,
+    required ProjectRepository projectRepository,
+    required CurrentProjectNotifier currentProjectNotifier,
+  }) : _repository = repository,
+       _projectRepository = projectRepository,
+       _currentProjectNotifier = currentProjectNotifier,
+       super(const RenameEstimationInitial()) {
     on<RenameEstimationReset>(_onReset);
     on<RenameEstimationTextChanged>(_onTextChanged);
     on<RenameEstimationRequested>(_onRenameEstimationRequested);

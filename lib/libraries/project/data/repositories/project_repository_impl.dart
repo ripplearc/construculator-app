@@ -28,15 +28,18 @@ class ProjectRepositoryImpl implements ProjectRepository {
 
   /// Creates a [ProjectRepositoryImpl].
   ///
-  /// [_projectDataSource] provides remote project data.
-  /// [_permissionDataSource] provides JWT-based permission checks.
-  /// [_currentProjectNotifier] is read in [findCurrentProjectForUser] to resolve the selected project id.
+  /// [projectDataSource] provides remote project data.
+  /// [permissionDataSource] provides JWT-based permission checks.
+  /// [currentProjectNotifier] is read in [findCurrentProjectForUser] to resolve the selected project id.
   ProjectRepositoryImpl({
-    required this._projectDataSource,
-    required this._permissionDataSource,
-    required this._currentProjectNotifier,
-    required this._clock,
-  });
+    required ProjectDataSource projectDataSource,
+    required ProjectPermissionDataSource permissionDataSource,
+    required CurrentProjectNotifier currentProjectNotifier,
+    required Clock clock,
+  }) : _projectDataSource = projectDataSource,
+       _permissionDataSource = permissionDataSource,
+       _currentProjectNotifier = currentProjectNotifier,
+       _clock = clock;
 
   @override
   Future<Project> getProject(String id) async {

@@ -23,7 +23,8 @@ class TagRepositoryImpl implements TagRepository {
   static final _logger = AppLogger().tag('TagRepositoryImpl');
 
   /// Creates a [TagRepositoryImpl].
-  TagRepositoryImpl({required this._dataSource});
+  TagRepositoryImpl({required TagDataSource dataSource})
+    : _dataSource = dataSource;
 
   Failure _handleError(Object error, String operation) {
     if (error is TimeoutException) {

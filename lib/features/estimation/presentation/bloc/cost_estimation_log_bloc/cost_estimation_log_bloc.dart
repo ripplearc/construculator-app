@@ -25,8 +25,9 @@ class CostEstimationLogBloc
   CancelableOperation<Either<Failure, List<CostEstimationLog>>>?
   _inFlightLoadMore;
 
-  CostEstimationLogBloc({required this._repository})
-    : super(const CostEstimationLogInitial()) {
+  CostEstimationLogBloc({required CostEstimationLogRepository repository})
+    : _repository = repository,
+      super(const CostEstimationLogInitial()) {
     on<CostEstimationLogFetchInitial>(_onFetchInitial);
     on<CostEstimationLogLoadMore>(_onLoadMore);
   }

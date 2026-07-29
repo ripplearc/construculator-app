@@ -19,9 +19,11 @@ class RegisterWithEmailBloc
   final SendOtpUseCase _sendOtpUseCase;
 
   RegisterWithEmailBloc({
-    required this._checkEmailAvailabilityUseCase,
-    required this._sendOtpUseCase,
-  }) : super(RegisterWithEmailInitial()) {
+    required CheckEmailAvailabilityUseCase checkEmailAvailabilityUseCase,
+    required SendOtpUseCase sendOtpUseCase,
+  }) : _checkEmailAvailabilityUseCase = checkEmailAvailabilityUseCase,
+       _sendOtpUseCase = sendOtpUseCase,
+       super(RegisterWithEmailInitial()) {
     on<RegisterWithEmailEmailChanged>(
       _onEmailChanged,
       transformer: (events, mapper) {

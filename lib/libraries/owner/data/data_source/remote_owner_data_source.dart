@@ -15,7 +15,8 @@ class RemoteOwnerDataSource implements OwnerDataSource {
   static final _logger = AppLogger().tag('RemoteOwnerDataSource');
 
   /// Creates a [RemoteOwnerDataSource].
-  const RemoteOwnerDataSource({required this._supabaseWrapper});
+  const RemoteOwnerDataSource({required SupabaseWrapper supabaseWrapper})
+    : _supabaseWrapper = supabaseWrapper;
 
   @override
   Future<List<UserProfileDto>> fetchOwners() async {

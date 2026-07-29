@@ -18,8 +18,9 @@ class RemoteProjectSearchDataSource implements ProjectSearchDataSource {
   final SupabaseWrapper _supabaseWrapper;
   static final _logger = AppLogger().tag('RemoteProjectSearchDataSource');
 
-  /// Creates a [RemoteProjectSearchDataSource] with the given [_supabaseWrapper].
-  const RemoteProjectSearchDataSource({required this._supabaseWrapper});
+  /// Creates a [RemoteProjectSearchDataSource] with the given [supabaseWrapper].
+  const RemoteProjectSearchDataSource({required SupabaseWrapper supabaseWrapper})
+    : _supabaseWrapper = supabaseWrapper;
 
   @override
   Future<List<ProjectDto>> fetchProjectsBySearchQuery({

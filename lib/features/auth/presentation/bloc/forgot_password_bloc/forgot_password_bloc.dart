@@ -14,8 +14,9 @@ class ForgotPasswordBloc
     extends Bloc<ForgotPasswordEvent, ForgotPasswordState> {
   final ResetPasswordUseCase _resetPasswordUseCase;
 
-  ForgotPasswordBloc({required this._resetPasswordUseCase})
-    : super(ForgotPasswordInitial()) {
+  ForgotPasswordBloc({required ResetPasswordUseCase resetPasswordUseCase})
+    : _resetPasswordUseCase = resetPasswordUseCase,
+      super(ForgotPasswordInitial()) {
     on<ForgotPasswordSubmitted>(_onSubmitted);
     on<ForgotPasswordEditEmailRequested>(_onEditEmail);
     on<ForgotPasswordFormFieldChanged>(_onFormFieldChanged);

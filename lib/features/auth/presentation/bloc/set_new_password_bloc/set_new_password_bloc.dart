@@ -14,8 +14,9 @@ class SetNewPasswordBloc
     extends Bloc<SetNewPasswordEvent, SetNewPasswordState> {
   final SetNewPasswordUseCase _setNewPasswordUseCase;
 
-  SetNewPasswordBloc({required this._setNewPasswordUseCase})
-    : super(SetNewPasswordInitial()) {
+  SetNewPasswordBloc({required SetNewPasswordUseCase setNewPasswordUseCase})
+    : _setNewPasswordUseCase = setNewPasswordUseCase,
+      super(SetNewPasswordInitial()) {
     on<SetNewPasswordSubmitted>(_onSubmitted);
     on<SetNewPasswordPasswordValidationRequested>(
       _onPasswordValidationRequested,

@@ -21,8 +21,8 @@ class RemoteProjectSettingDataSource implements ProjectSettingDataSource {
 
   /// Creates a remote project setting data source.
   const RemoteProjectSettingDataSource({
-    required this._supabaseWrapper,
-  });
+    required SupabaseWrapper supabaseWrapper,
+  }) : _supabaseWrapper = supabaseWrapper;
 
   /// Creates a new project row from [projectDto] and returns the persisted row.
   ///

@@ -25,8 +25,8 @@ class CostEstimationTile extends StatelessWidget {
     required this.estimation,
     required this.onTap,
     this.onMenuTap,
-    required this._provider,
-  });
+    required EstimationTileProvider provider,
+  }) : _provider = provider;
 
   @override
   Widget build(BuildContext context) {

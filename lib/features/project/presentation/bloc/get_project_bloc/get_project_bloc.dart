@@ -18,9 +18,11 @@ class GetProjectBloc extends Bloc<GetProjectEvent, GetProjectState> {
   StreamSubscription<String?>? _projectSubscription;
 
   GetProjectBloc({
-    required this._getProjectHeaderUseCase,
-    required this._currentProjectNotifier,
-  }) : super(GetProjectInitial()) {
+    required GetProjectHeaderUseCase getProjectHeaderUseCase,
+    required CurrentProjectNotifier currentProjectNotifier,
+  }) : _getProjectHeaderUseCase = getProjectHeaderUseCase,
+       _currentProjectNotifier = currentProjectNotifier,
+       super(GetProjectInitial()) {
     on<GetProjectWatchStarted>(_onWatchStarted);
     on<GetProjectByIdLoadRequested>(_onProjectLoadRequested);
     on<GetProjectByIdRefreshRequested>(_onProjectRefreshRequested);

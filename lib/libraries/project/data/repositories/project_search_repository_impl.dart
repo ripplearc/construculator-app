@@ -19,8 +19,9 @@ class ProjectSearchRepositoryImpl implements ProjectSearchRepository {
   final ProjectSearchDataSource _dataSource;
   static final _logger = AppLogger().tag('ProjectSearchRepositoryImpl');
 
-  /// Creates a [ProjectSearchRepositoryImpl] with the given [_dataSource].
-  ProjectSearchRepositoryImpl({required this._dataSource});
+  /// Creates a [ProjectSearchRepositoryImpl] with the given [dataSource].
+  ProjectSearchRepositoryImpl({required ProjectSearchDataSource dataSource})
+    : _dataSource = dataSource;
 
   Failure _handleError(Object error, String operation) {
     if (error is TimeoutException) {

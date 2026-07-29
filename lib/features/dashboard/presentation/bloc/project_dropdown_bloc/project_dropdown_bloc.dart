@@ -24,12 +24,14 @@ class ProjectDropdownBloc
 
   /// Creates a [ProjectDropdownBloc].
   ///
-  /// [_projectRepository] provides the project list stream.
-  /// [_authManager] supplies the authenticated user identity.
+  /// [projectRepository] provides the project list stream.
+  /// [authManager] supplies the authenticated user identity.
   ProjectDropdownBloc({
-    required this._projectRepository,
-    required this._authManager,
-  }) : super(const ProjectDropdownInitial()) {
+    required ProjectRepository projectRepository,
+    required AuthManager authManager,
+  }) : _projectRepository = projectRepository,
+       _authManager = authManager,
+       super(const ProjectDropdownInitial()) {
     on<ProjectDropdownStarted>(_onStarted);
     on<ProjectDropdownSelected>(_onSelected);
     on<ProjectDropdownSearchChanged>(_onSearchChanged);

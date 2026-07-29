@@ -22,10 +22,13 @@ class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
   final SendOtpUseCase _sendOtpUseCase;
 
   CreateAccountBloc({
-    required this._createAccountUseCase,
-    required this._getProfessionalRolesUseCase,
-    required this._sendOtpUseCase,
-  }) : super(CreateAccountInitial()) {
+    required CreateAccountUseCase createAccountUseCase,
+    required GetProfessionalRolesUseCase getProfessionalRolesUseCase,
+    required SendOtpUseCase sendOtpUseCase,
+  }) : _createAccountUseCase = createAccountUseCase,
+       _getProfessionalRolesUseCase = getProfessionalRolesUseCase,
+       _sendOtpUseCase = sendOtpUseCase,
+       super(CreateAccountInitial()) {
     on<CreateAccountSubmitted>(_onSubmitted);
     on<CreateAccountGetProfessionalRolesRequested>(_onLoadProfessionalRoles);
     on<CreateAccountSendOtpRequested>(_onSendOtp);

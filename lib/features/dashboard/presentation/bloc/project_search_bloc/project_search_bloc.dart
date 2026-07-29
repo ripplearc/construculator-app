@@ -110,14 +110,18 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
   @visibleForTesting
   int availableOwnersHandlerRuns = 0;
 
-  /// Creates a [ProjectSearchBloc] with the given [_repository], [_authManager],
-  /// [_tagRepository], and [_ownerRepository].
+  /// Creates a [ProjectSearchBloc] with the given [repository], [authManager],
+  /// [tagRepository], and [ownerRepository].
   ProjectSearchBloc({
-    required this._repository,
-    required this._authManager,
-    required this._tagRepository,
-    required this._ownerRepository,
-  }) : super(const ProjectSearchInitial()) {
+    required ProjectSearchRepository repository,
+    required AuthManager authManager,
+    required TagRepository tagRepository,
+    required OwnerRepository ownerRepository,
+  }) : _repository = repository,
+       _authManager = authManager,
+       _tagRepository = tagRepository,
+       _ownerRepository = ownerRepository,
+       super(const ProjectSearchInitial()) {
     on<ProjectSearchQueryUpdatedEvent>(
       (event, emit) => _handleQuery(event.query, emit),
       transformer: _debounce(_kQueryDebounceDuration),
