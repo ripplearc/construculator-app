@@ -9,7 +9,9 @@ import 'package:construculator/features/global_search/presentation/widgets/globa
 import 'package:construculator/features/global_search/presentation/widgets/global_search_suggestions_list.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_type_filter_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
@@ -22,6 +24,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
+import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart'
+    as estimation_factory;
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 import '../../../../utils/toast_test_utils.dart';
@@ -120,6 +124,7 @@ void main() {
         child: GlobalSearchPage(
           router: router,
           blocFactory: () => Modular.get<GlobalSearchBloc>(),
+          estimationTileProvider: Modular.get<EstimationTileProvider>(),
         ),
       ),
     );
@@ -903,6 +908,170 @@ void main() {
         expect(searchCalls, hasLength(1));
         final params = searchCalls.first['params'] as Map<String, dynamic>;
         expect(params['scope'], 'estimation');
+      },
+    );
+  });
+
+  group('User on GlobalSearchPage viewing search results', () {
+    void seedUser() {
+      fakeSupabase.setCurrentUser(
+        FakeUser(
+          id: _testUserId,
+          email: _testUserEmail,
+          createdAt: '2024-01-01T00:00:00.000Z',
+        ),
+      );
+      fakeSupabase.setRpcResponse(
+        DatabaseConstants.searchSuggestionsRpcFunction,
+        <String>[],
+      );
+    }
+
+    List<Map<String, dynamic>> defaultEstimationRows() => [
+      estimation_factory
+          .EstimationTestDataMapFactory.createFakeEstimationData(),
+    ];
+
+    void seedSearchResults({
+      required List<Map<String, dynamic>> estimations,
+    }) {
+      fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
+        'projects': <Map<String, dynamic>>[],
+        'estimations': estimations,
+        'members': <Map<String, dynamic>>[],
+      });
+    }
+
+    Future<void> submitSearch(WidgetTester tester, String query) async {
+      final searchField = find.ancestor(
+        of: find.text(l10n().globalSearchHint),
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(searchField, query);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'sees the results list with an estimation card after a successful search',
+      (tester) async {
+        seedUser();
+        seedSearchResults(estimations: defaultEstimationRows());
+        await renderPage(tester);
+
+        await submitSearch(tester, 'steel');
+
+        expect(find.byKey(const Key('searchResultsListView')), findsOneWidget);
+        expect(
+          find.text(l10n().searchResultsMostRelevant),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(
+            ValueKey('estimationCard_${estimation_factory.estimateIdDefault}'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'sees the loading indicator while the search request is in flight',
+      (tester) async {
+        seedUser();
+        seedSearchResults(estimations: defaultEstimationRows());
+        await renderPage(tester);
+
+        final searchField = find.ancestor(
+          of: find.text(l10n().globalSearchHint),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(searchField, 'steel');
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // Gate the RPC so the in-flight state stays observable.
+        fakeSupabase.shouldDelayOperations = true;
+        fakeSupabase.completer = Completer<void>();
+        await tester.testTextInput.receiveAction(TextInputAction.search);
+        await tester.pump();
+
+        expect(
+          find.byKey(const Key('searchResultsLoadingView')),
+          findsOneWidget,
+        );
+
+        fakeSupabase.completer!.complete();
+        fakeSupabase.shouldDelayOperations = false;
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('searchResultsListView')), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'sees the no-results message when the search matches nothing',
+      (tester) async {
+        seedUser();
+        seedSearchResults(estimations: const []);
+        await renderPage(tester);
+
+        await submitSearch(tester, 'nonexistent');
+
+        expect(find.byKey(const Key('searchResultsEmptyView')), findsOneWidget);
+        expect(
+          find.text(l10n().searchResultsEmpty('nonexistent')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'tapping an estimation card navigates to the estimation details route',
+      (tester) async {
+        seedUser();
+        seedSearchResults(estimations: defaultEstimationRows());
+        await renderPage(tester);
+
+        await submitSearch(tester, 'steel');
+
+        // The tile's GestureDetector defers to its children, so tap the
+        // estimate name rather than the card's center (which is a layout gap).
+        await tester.tap(find.text(estimation_factory.estimateNameDefault));
+        await tester.pump();
+
+        expect(router.navigationHistory, hasLength(1));
+        expect(
+          router.navigationHistory.single.route,
+          '$fullEstimationDetailsRoute/${estimation_factory.estimateIdDefault}',
+        );
+      },
+    );
+
+    testWidgets(
+      'does not float the stale recents title above the results list',
+      (tester) async {
+        // Non-empty recents prime the page's _lastReady cache before the
+        // search succeeds; the section title must not fall back to it.
+        seedRecentSearches();
+        seedSearchResults(estimations: defaultEstimationRows());
+        await renderPage(tester);
+        expect(
+          find.text(l10n().globalSearchRecentSearchesTitle),
+          findsOneWidget,
+        );
+
+        await submitSearch(tester, 'steel');
+
+        expect(find.byKey(const Key('searchResultsListView')), findsOneWidget);
+        expect(
+          find.text(l10n().globalSearchRecentSearchesTitle),
+          findsNothing,
+        );
+        expect(
+          find.text(l10n().globalSearchSuggestionsTitle),
+          findsNothing,
+        );
       },
     );
   });

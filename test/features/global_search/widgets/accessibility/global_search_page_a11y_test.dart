@@ -4,6 +4,7 @@ import 'package:construculator/features/global_search/global_search_module.dart'
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -17,6 +18,8 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart'
+    as estimation_factory;
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
@@ -76,6 +79,7 @@ void main() {
           return GlobalSearchPage(
             router: Modular.get<AppRouter>(),
             blocFactory: () => Modular.get<GlobalSearchBloc>(),
+            estimationTileProvider: Modular.get<EstimationTileProvider>(),
           );
         },
       ),
@@ -418,6 +422,91 @@ void main() {
             );
             await t.pumpAndSettle();
             await t.tap(find.byKey(const Key('global_search_type_filter_chip')));
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
+
+    testWidgets(
+      'meets a11y guidelines for an estimation result card in both themes',
+      (tester) async {
+        fakeSupabase.setCurrentUser(
+          FakeUser(
+            id: _testUserId,
+            email: _testUserEmail,
+            createdAt: '2024-01-01T00:00:00.000Z',
+          ),
+        );
+        fakeSupabase.setRpcResponse(
+          DatabaseConstants.searchSuggestionsRpcFunction,
+          <String>[],
+        );
+        fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
+          'projects': <Map<String, dynamic>>[],
+          'estimations': [
+            estimation_factory
+                .EstimationTestDataMapFactory.createFakeEstimationData(),
+          ],
+          'members': <Map<String, dynamic>>[],
+        });
+
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme),
+          find.byKey(
+            ValueKey('estimationCard_${estimation_factory.estimateIdDefault}'),
+          ),
+          checkTapTargetSize: true,
+          checkLabeledTapTarget: true,
+          setupAfterPump: (t) async {
+            await t.enterText(find.byType(TextFormField), 'estimate');
+            await t.pump(const Duration(milliseconds: 400));
+            await t.testTextInput.receiveAction(TextInputAction.search);
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
+
+    testWidgets(
+      'meets a11y text contrast for the no-results message in both themes',
+      (tester) async {
+        fakeSupabase.setCurrentUser(
+          FakeUser(
+            id: _testUserId,
+            email: _testUserEmail,
+            createdAt: '2024-01-01T00:00:00.000Z',
+          ),
+        );
+        fakeSupabase.setRpcResponse(
+          DatabaseConstants.searchSuggestionsRpcFunction,
+          <String>[],
+        );
+        fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
+          'projects': <Map<String, dynamic>>[],
+          'estimations': <Map<String, dynamic>>[],
+          'members': <Map<String, dynamic>>[],
+        });
+
+        await setupA11yTest(tester);
+
+        await tester.pumpWidget(makeTestableWidget());
+        await tester.pumpAndSettle();
+        final emptyResultsText = l10n().searchResultsEmpty('nonexistent');
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme),
+          find.text(emptyResultsText),
+          checkTapTargetSize: false,
+          checkLabeledTapTarget: false,
+          setupAfterPump: (t) async {
+            await t.enterText(find.byType(TextFormField), 'nonexistent');
+            await t.pump(const Duration(milliseconds: 400));
+            await t.testTextInput.receiveAction(TextInputAction.search);
             await t.pumpAndSettle();
           },
         );

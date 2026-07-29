@@ -5,10 +5,13 @@ import 'package:construculator/features/global_search/presentation/widgets/globa
 import 'package:construculator/features/global_search/presentation/widgets/global_search_suggestions_list.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_tags_filter_sheet.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_type_filter_sheet.dart';
+import 'package:construculator/features/global_search/presentation/widgets/search_results_views.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/global_search/presentation/widgets/search_load_failure_widget.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -24,10 +27,14 @@ class GlobalSearchPage extends StatefulWidget {
   /// Factory that produces a fresh [GlobalSearchBloc] instance for each navigation.
   final GlobalSearchBloc Function() blocFactory;
 
+  /// Supplies display data for the estimation result cards.
+  final EstimationTileProvider estimationTileProvider;
+
   const GlobalSearchPage({
     super.key,
     required this.router,
     required this.blocFactory,
+    required this.estimationTileProvider,
   });
 
   @override
@@ -225,6 +232,21 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
             ),
       );
     }
+    if (state is GlobalSearchLoadInProgress) {
+      return const SearchResultsLoadingView();
+    }
+    if (state is GlobalSearchLoadSuccess) {
+      return SearchResultsList(
+        results: state.results,
+        onEstimationTap: (estimation) => widget.router.pushNamed(
+          '$fullEstimationDetailsRoute/${estimation.id}',
+        ),
+        estimationTileProvider: widget.estimationTileProvider,
+      );
+    }
+    if (state is GlobalSearchLoadEmpty) {
+      return SearchResultsEmptyView(query: state.query);
+    }
     final effectiveReady = _effectiveReady(state);
     if (effectiveReady == null) {
       return const GlobalSearchEmptyRecentWidget();
@@ -254,7 +276,13 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
   }
 
   Widget _buildSectionTitle(BuildContext context, GlobalSearchState state) {
-    if (state is GlobalSearchLoadFailure) {
+    // Result states render their own header inside the results surface
+    // ("Most relevant") or none at all, so the recents/suggestions title
+    // must not linger above them.
+    if (state is GlobalSearchLoadFailure ||
+        state is GlobalSearchLoadInProgress ||
+        state is GlobalSearchLoadSuccess ||
+        state is GlobalSearchLoadEmpty) {
       return const SizedBox.shrink();
     }
     final l10n = context.l10n;
