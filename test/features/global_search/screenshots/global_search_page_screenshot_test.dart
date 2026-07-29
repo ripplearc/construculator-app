@@ -3,6 +3,7 @@ import 'package:construculator/features/global_search/global_search_module.dart'
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -16,6 +17,8 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+import '../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart'
+    as estimation_factory;
 import '../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../utils/screenshot/await_images_extension.dart';
 import '../../../utils/screenshot/font_loader.dart';
@@ -84,6 +87,7 @@ void main() {
         home: GlobalSearchPage(
           router: Modular.get<AppRouter>(),
           blocFactory: () => Modular.get<GlobalSearchBloc>(),
+          estimationTileProvider: Modular.get<EstimationTileProvider>(),
         ),
       ),
     );
@@ -219,6 +223,61 @@ void main() {
         find.byType(GlobalSearchPage),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_with_active_date_filter.png',
+        ),
+      );
+    });
+
+    testWidgets('renders search results correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      fakeSupabase.setCurrentUser(
+        FakeUser(
+          id: _testUserId,
+          email: _testUserEmail,
+          createdAt: '2024-01-01T00:00:00.000Z',
+        ),
+      );
+      fakeSupabase.setRpcResponse(
+        DatabaseConstants.searchSuggestionsRpcFunction,
+        <String>[],
+      );
+      fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
+        'projects': <Map<String, dynamic>>[],
+        'estimations': [
+          estimation_factory
+              .EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimate-results-1',
+            estimateName: '2nd Wall Cost Estimate',
+            totalCost: 12343.88,
+          ),
+          estimation_factory
+              .EstimationTestDataMapFactory.createFakeEstimationData(
+            id: 'estimate-results-2',
+            estimateName: 'Steel Frame Estimate',
+            totalCost: 250000.0,
+          ),
+        ],
+        'members': <Map<String, dynamic>>[],
+      });
+
+      await pumpGlobalSearchPage(tester: tester);
+
+      final textFieldFinder = find.descendant(
+        of: find.byType(GlobalSearchPage),
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(textFieldFinder, 'estimate');
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+      await tester.awaitImages();
+
+      await expectLater(
+        find.byType(GlobalSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_results.png',
         ),
       );
     });

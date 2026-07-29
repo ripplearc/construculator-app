@@ -4,6 +4,7 @@ import 'package:construculator/features/global_search/presentation/bloc/global_s
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_tags_filter_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -84,6 +85,7 @@ void main() {
             return GlobalSearchPage(
               router: Modular.get<AppRouter>(),
               blocFactory: () => Modular.get<GlobalSearchBloc>(),
+              estimationTileProvider: Modular.get<EstimationTileProvider>(),
             );
           },
         ),

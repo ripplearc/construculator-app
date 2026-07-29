@@ -62,6 +62,7 @@ class GlobalSearchModule extends Module {
       child: (_) => GlobalSearchPage(
         router: Modular.get<AppRouter>(),
         blocFactory: () => Modular.get<GlobalSearchBloc>(),
+        estimationTileProvider: Modular.get<EstimationTileProvider>(),
       ),
     );
   }
