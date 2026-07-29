@@ -130,7 +130,7 @@ class _AppShellPageState extends State<AppShellPage> {
               child: CoreBottomNavBar(
                 tabs: [
                   BottomNavTab(
-                    icon: CoreIcons.calculate,
+                    icon: CoreIcons.calculation,
                     label: context.l10n.calculationsTab,
                   ),
                   BottomNavTab(
