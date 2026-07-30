@@ -350,6 +350,10 @@ void main() {
           // GlobalSearchTagFiltersApplied echoes the bloc's current query in
           // GlobalSearchReady, exposing any mutation from the empty submission.
           bloc.add(const GlobalSearchTagFiltersApplied(tags: {'Roofing'}));
+          // The results surface was still active (the empty submission
+          // returned early without deactivating it), so applying the tag
+          // re-runs the preserved 'foundation' query (CA-901).
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadEmpty);
         },
         expect: () => [
           const GlobalSearchLoadInProgress(query: 'foundation'),
@@ -360,6 +364,8 @@ void main() {
             'query unchanged by the empty submission',
             'foundation',
           ),
+          const GlobalSearchLoadInProgress(query: 'foundation'),
+          const GlobalSearchLoadEmpty(query: 'foundation'),
         ],
       );
 
@@ -2774,6 +2780,201 @@ void main() {
           final state = bloc.state as GlobalSearchReady;
           expect(state.selectedScope, SearchScope.dashboard);
           expect(state.recentSearches, ['foundation']);
+        },
+      );
+    });
+
+    group('Filter changes re-run the active search', () {
+      List<Map<String, dynamic>> searchCalls() => fakeSupabase
+          .getMethodCallsFor('rpc')
+          .where(
+            (call) =>
+                call['functionName'] ==
+                DatabaseConstants.globalSearchRpcFunction,
+          )
+          .toList();
+
+      void seedOneProjectResult() {
+        fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
+          'projects': [_fakeProjectData()],
+          'estimations': <Map<String, dynamic>>[],
+          'members': <Map<String, dynamic>>[],
+        });
+      }
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'applying a date filter while results are shown re-runs the search '
+        'with the new range',
+        setUp: seedOneProjectResult,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchPerformed(query: 'foundation'));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+          bloc.add(
+            GlobalSearchDateFilterApplied(
+              range: DateRange(
+                start: DateTime(2026, 1, 1),
+                end: DateTime(2026, 1, 5),
+              ),
+            ),
+          );
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+        },
+        verify: (bloc) {
+          final calls = searchCalls();
+          expect(calls, hasLength(2));
+          final params = calls.last['params'] as Map<String, dynamic>;
+          expect(
+            params['filter_by_date_from'],
+            DateTime(2026, 1, 1).toIso8601String(),
+          );
+          expect(
+            params['filter_by_date_to'],
+            DateTime(2026, 1, 5).toIso8601String(),
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'applying a tag filter while results are shown re-runs the search '
+        'with the tag',
+        setUp: seedOneProjectResult,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchPerformed(query: 'foundation'));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+          bloc.add(const GlobalSearchTagFiltersApplied(tags: {'Roofing'}));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+        },
+        verify: (bloc) {
+          final calls = searchCalls();
+          expect(calls, hasLength(2));
+          final params = calls.last['params'] as Map<String, dynamic>;
+          expect(params['filter_by_tag'], 'Roofing');
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'clearing a tag filter while results are shown re-runs the search '
+        'without the tag',
+        setUp: seedOneProjectResult,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchTagFiltersApplied(tags: {'Roofing'}));
+          bloc.add(const GlobalSearchPerformed(query: 'foundation'));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+          bloc.add(const GlobalSearchTagFilterCleared(tag: 'Roofing'));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+        },
+        verify: (bloc) {
+          final calls = searchCalls();
+          expect(calls, hasLength(2));
+          final params = calls.last['params'] as Map<String, dynamic>;
+          expect(params['filter_by_tag'], isNull);
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'changing the scope while results are shown re-runs the search '
+        'with the new scope',
+        setUp: seedOneProjectResult,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchPerformed(query: 'foundation'));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+          bloc.add(
+            const GlobalSearchScopeChanged(scope: SearchScope.estimation),
+          );
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+        },
+        verify: (bloc) {
+          final calls = searchCalls();
+          expect(calls, hasLength(2));
+          final params = calls.last['params'] as Map<String, dynamic>;
+          expect(params['scope'], 'estimation');
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'applying a date filter with no active search emits only the ready '
+        'state and performs no search',
+        setUp: seedOneProjectResult,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(
+          GlobalSearchDateFilterApplied(
+            range: DateRange(
+              start: DateTime(2026, 1, 1),
+              end: DateTime(2026, 1, 5),
+            ),
+          ),
+        ),
+        expect: () => [isA<GlobalSearchReady>()],
+        verify: (bloc) {
+          expect(searchCalls(), isEmpty);
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        're-runs the search when a filter is applied after the filter sheet '
+        'was opened (which emits the ready state)',
+        setUp: () {
+          seedOneProjectResult();
+          fakeSupabase.addTableData(DatabaseConstants.tagsTable, [
+            {
+              DatabaseConstants.idColumn: 'tag-Roofing',
+              DatabaseConstants.nameColumn: 'Roofing',
+            },
+          ]);
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchPerformed(query: 'foundation'));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+          // Opening the tags sheet emits the ready state — this must not
+          // clear the active-search signal used by the re-run.
+          bloc.add(const GlobalSearchAvailableTagsRequested());
+          await bloc.stream.firstWhere((s) => s is GlobalSearchReady);
+          bloc.add(const GlobalSearchTagFiltersApplied(tags: {'Roofing'}));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+        },
+        verify: (bloc) {
+          final calls = searchCalls();
+          expect(calls, hasLength(2));
+          final params = calls.last['params'] as Map<String, dynamic>;
+          expect(params['filter_by_tag'], 'Roofing');
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'editing the query back to suggestions stops filter changes from '
+        're-running the stale search',
+        setUp: () {
+          seedOneProjectResult();
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.searchSuggestionsRpcFunction,
+            <String>[],
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchPerformed(query: 'foundation'));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+          bloc.add(const GlobalSearchQueryUpdated(query: 'found'));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchReady);
+          bloc.add(
+            GlobalSearchDateFilterApplied(
+              range: DateRange(
+                start: DateTime(2026, 1, 1),
+                end: DateTime(2026, 1, 5),
+              ),
+            ),
+          );
+          await bloc.stream.firstWhere((s) => s is GlobalSearchReady);
+        },
+        verify: (bloc) {
+          // Only the original search ran; the filter change on the
+          // suggestions surface must not resurrect the dismissed results.
+          expect(searchCalls(), hasLength(1));
         },
       );
     });

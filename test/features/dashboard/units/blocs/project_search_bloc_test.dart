@@ -1943,6 +1943,152 @@ void main() {
         },
       );
     });
+
+    group('Filter changes re-run the active search', () {
+      List<Map<String, dynamic>> searchCalls() => fakeSupabase
+          .getMethodCallsFor('rpc')
+          .where(
+            (call) =>
+                call['functionName'] ==
+                DatabaseConstants.globalSearchRpcFunction,
+          )
+          .toList();
+
+      void seedOneProjectResult() {
+        fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
+          'projects': [_fakeProjectData(id: 'p-1', projectName: 'Wall')],
+          'estimations': <Map<String, dynamic>>[],
+          'members': <Map<String, dynamic>>[],
+        });
+      }
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'applying a date filter while results are shown re-runs the search '
+        'with the new range',
+        setUp: seedOneProjectResult,
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchPerformedEvent(query: 'wall'));
+          await bloc.stream.firstWhere((s) => s is ProjectSearchResultsLoaded);
+          bloc.add(
+            ProjectSearchDateFilterAppliedEvent(
+              range: DateRange(
+                start: DateTime(2026, 1, 1),
+                end: DateTime(2026, 1, 5),
+              ),
+            ),
+          );
+          await bloc.stream.firstWhere((s) => s is ProjectSearchResultsLoaded);
+        },
+        verify: (_) {
+          final calls = searchCalls();
+          expect(calls, hasLength(2));
+          final params = calls.last['params'] as Map<String, dynamic>;
+          expect(
+            params['filter_by_date_from'],
+            DateTime(2026, 1, 1).toIso8601String(),
+          );
+          expect(
+            params['filter_by_date_to'],
+            DateTime(2026, 1, 5).toIso8601String(),
+          );
+        },
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'applying an owner filter while results are shown re-runs the '
+        'search with the owner',
+        setUp: seedOneProjectResult,
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchPerformedEvent(query: 'wall'));
+          await bloc.stream.firstWhere((s) => s is ProjectSearchResultsLoaded);
+          bloc.add(
+            const ProjectSearchOwnerFiltersAppliedEvent(ownerIds: {'owner-1'}),
+          );
+          await bloc.stream.firstWhere((s) => s is ProjectSearchResultsLoaded);
+        },
+        verify: (_) {
+          final calls = searchCalls();
+          expect(calls, hasLength(2));
+          final params = calls.last['params'] as Map<String, dynamic>;
+          expect(params['filter_by_owners'], ['owner-1']);
+        },
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'clearing a tag filter while results are shown re-runs the search '
+        'without the tag',
+        setUp: seedOneProjectResult,
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(
+            const ProjectSearchTagFiltersAppliedEvent(tags: {'Roofing'}),
+          );
+          bloc.add(const ProjectSearchPerformedEvent(query: 'wall'));
+          await bloc.stream.firstWhere((s) => s is ProjectSearchResultsLoaded);
+          bloc.add(const ProjectSearchTagFilterClearedEvent(tag: 'Roofing'));
+          await bloc.stream.firstWhere((s) => s is ProjectSearchResultsLoaded);
+        },
+        verify: (_) {
+          final calls = searchCalls();
+          expect(calls, hasLength(2));
+          final params = calls.last['params'] as Map<String, dynamic>;
+          expect(params['filter_by_tag'], isNull);
+        },
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        're-runs the search when an owner filter is applied after the owner '
+        'sheet was opened (which emits the idle state)',
+        setUp: () {
+          seedOneProjectResult();
+          seedOwners([
+            (id: 'owner-1', firstName: 'Ada', lastName: 'Lovelace'),
+          ]);
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchPerformedEvent(query: 'wall'));
+          await bloc.stream.firstWhere((s) => s is ProjectSearchResultsLoaded);
+          // Opening the owner sheet emits the idle state — this must not
+          // clear the active-search signal used by the re-run.
+          bloc.add(const ProjectSearchAvailableOwnersRequestedEvent());
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchInitial && !s.availableOwnersLoading,
+          );
+          bloc.add(
+            const ProjectSearchOwnerFiltersAppliedEvent(ownerIds: {'owner-1'}),
+          );
+          await bloc.stream.firstWhere((s) => s is ProjectSearchResultsLoaded);
+        },
+        verify: (_) {
+          final calls = searchCalls();
+          expect(calls, hasLength(2));
+          final params = calls.last['params'] as Map<String, dynamic>;
+          expect(params['filter_by_owners'], ['owner-1']);
+        },
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'applying a date filter with no active search emits only the idle '
+        'state and performs no search',
+        setUp: seedOneProjectResult,
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) => bloc.add(
+          ProjectSearchDateFilterAppliedEvent(
+            range: DateRange(
+              start: DateTime(2026, 1, 1),
+              end: DateTime(2026, 1, 5),
+            ),
+          ),
+        ),
+        expect: () => [isA<ProjectSearchInitial>()],
+        verify: (_) {
+          expect(searchCalls(), isEmpty);
+        },
+      );
+    });
   });
 }
 
