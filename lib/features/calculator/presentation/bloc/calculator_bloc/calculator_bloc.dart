@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 part 'calculator_event.dart';
+part 'calculator_math.dart';
 part 'calculator_state.dart';
 
 class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
@@ -21,15 +22,6 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
       keys: ['SIN', 'COS', 'TAN'],
     ),
   ];
-
-  static const String _riseLabel = 'Rise';
-  static const String _runLabel = 'Run';
-  static const String _pitchResultKey = 'pitchResult';
-  static const String _lengthLabel = 'Length';
-  static const String _fenceLabel = 'Fence';
-  static const String _postsResultKey = 'postsResult';
-  static const String _ocKey = 'oc';
-  static const double _fenceOcSpacing = 6.0;
 
   CalculatorBloc() : super(CalculatorState.initial()) {
     on<CalculatorKeySelected>(_onKeySelected);
@@ -185,51 +177,5 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
       return newState;
     }
     return currentState;
-  }
-
-  CalculatorState _computePitch(CalculatorState currentState) {
-    final riseValue = currentState.finalizedValues[_riseLabel];
-    final runValue = currentState.finalizedValues[_runLabel];
-
-    if (riseValue != null && runValue != null && runValue != 0) {
-      final pitchDecimal = riseValue / runValue;
-      final pitchString =
-          double.parse(pitchDecimal.toStringAsFixed(2)).toString();
-
-      return currentState.copyWith(
-        resultLabel: () => _pitchResultKey,
-        resultValue: () => pitchString,
-        resultChip: () => CoreCalculatorChip(
-          label: _pitchResultKey,
-          value: pitchString,
-          type: CoreCalculatorChipType.disabled,
-        ),
-      );
-    }
-
-    return currentState;
-  }
-
-  CalculatorState _computeFence(CalculatorState currentState) {
-    final length = currentState.finalizedValues[_lengthLabel];
-    if (length == null) return currentState;
-
-    final posts = (length / _fenceOcSpacing).ceil() + 1;
-    final postsString = posts.toString();
-    final ocValueString = '${_fenceOcSpacing.toInt()}ft';
-
-    return currentState.copyWith(
-      isTyping: false,
-      activeInputLabel: () => null,
-      resultLabel: () => _postsResultKey,
-      resultValue: () => postsString,
-      resultChip: () => CoreCalculatorChip(
-        label: _postsResultKey,
-        value: postsString,
-        type: CoreCalculatorChipType.disabled,
-      ),
-      dependentKeyLabel: () => _ocKey,
-      dependentKeyValue: () => ocValueString,
-    );
   }
 }
