@@ -9,6 +9,7 @@ import 'package:construculator/features/dashboard/presentation/bloc/dashboard_bl
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/projects_bottom_sheet.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -26,6 +27,7 @@ import 'package:construculator/libraries/project/testing/fake_project_repository
 import 'package:construculator/libraries/project/testing/fake_project_ui_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/calculator_routes.dart';
+import 'package:construculator/libraries/router/routes/project_search_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -329,6 +331,55 @@ void main() {
         contains(const RouteCall(calculatorBaseRoute, null)),
       );
     });
+  });
+
+  group('Project Search Entry', () {
+    // The sheet's full content needs more height than the default 800x600
+    // test view; width stays at 800 so the dashboard behind the sheet lays
+    // out as in the other tests.
+    void useTallSurface(WidgetTester tester) {
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+    }
+
+    testWidgets(
+      'tapping the header project selector opens the projects bottom sheet',
+      (tester) async {
+        useTallSurface(tester);
+        await tester.pumpWidget(makeApp());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(l10n().appTitle));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ProjectsBottomSheet), findsOneWidget);
+        expect(find.text(l10n().projectsSheetTitle), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tapping the sheet search field dismisses the sheet and navigates to '
+      'project search',
+      (tester) async {
+        final fakeRouter = FakeAppRouter();
+        Modular.replaceInstance<AppRouter>(fakeRouter);
+
+        useTallSurface(tester);
+        await tester.pumpWidget(makeApp());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(l10n().appTitle));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('projects_search_field')));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ProjectsBottomSheet), findsNothing);
+        expect(fakeRouter.navigationHistory, hasLength(1));
+        expect(fakeRouter.navigationHistory.single.route, projectSearchRoute);
+      },
+    );
   });
 
   group('Project Selection Wiring', () {
