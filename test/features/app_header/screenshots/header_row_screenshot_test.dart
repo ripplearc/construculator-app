@@ -16,27 +16,40 @@ void main() {
     await loadAppFontsAll();
   });
 
-  group('HeaderRow Screenshot Tests', () {
+  Future<void> pumpHeaderRow({
+    required WidgetTester tester,
+    ThemeData? theme,
+    int? unreadNotificationCount,
+    String? userName,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme ?? createTestTheme(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          appBar: HeaderRow(
+            unreadNotificationCount: unreadNotificationCount ?? 0,
+            userName: userName ?? '',
+          ),
+          body: const SizedBox.shrink(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.awaitImages();
+  }
+
+  group('HeaderRow Screenshot Tests - Light', () {
     testWidgets('renders default state with no notifications and no user', (
       tester,
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            appBar: HeaderRow(),
-            body: const SizedBox.shrink(),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.awaitImages();
+      await pumpHeaderRow(tester: tester);
 
       await expectLater(
         find.byType(HeaderRow),
@@ -49,21 +62,9 @@ void main() {
     testWidgets('renders with unread notification badge', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            appBar: HeaderRow(unreadNotificationCount: 5),
-            body: const SizedBox.shrink(),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.awaitImages();
+      await pumpHeaderRow(tester: tester, unreadNotificationCount: 5);
 
       await expectLater(
         find.byType(HeaderRow),
@@ -78,26 +79,73 @@ void main() {
     ) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: createTestTheme(),
-          locale: const Locale('en'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            appBar: HeaderRow(userName: 'John Doe'),
-            body: const SizedBox.shrink(),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.awaitImages();
+      await pumpHeaderRow(tester: tester, userName: 'John Doe');
 
       await expectLater(
         find.byType(HeaderRow),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_with_username.png',
+        ),
+      );
+    });
+  });
+
+  group('HeaderRow Screenshot Tests - Dark', () {
+    testWidgets('renders default state with no notifications and no user', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpHeaderRow(tester: tester, theme: createTestThemeDark());
+
+      await expectLater(
+        find.byType(HeaderRow),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_default_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders with unread notification badge', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpHeaderRow(
+        tester: tester,
+        unreadNotificationCount: 5,
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(HeaderRow),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_badge_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders with username for profile letter avatar', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpHeaderRow(
+        tester: tester,
+        userName: 'John Doe',
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(HeaderRow),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_username_dark.png',
         ),
       );
     });
