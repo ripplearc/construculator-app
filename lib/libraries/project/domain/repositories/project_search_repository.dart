@@ -13,7 +13,7 @@ abstract class ProjectSearchRepository {
   /// - [filterByDateFrom]/[filterByDateTo]: inclusive modification-date
   ///   range; either bound may be omitted for an open-ended range.
   /// - [filterByTag]: only projects tagged with this value.
-  /// - [filterByOwner]: only projects owned by this user id.
+  /// - [filterByOwners]: only projects owned by one of these user ids.
   ///
   /// Returns an empty list when [query] or [userId] is empty.
   Future<Either<Failure, List<Project>>> searchProjects({
@@ -22,7 +22,7 @@ abstract class ProjectSearchRepository {
     DateTime? filterByDateFrom,
     DateTime? filterByDateTo,
     String? filterByTag,
-    String? filterByOwner,
+    List<String>? filterByOwners,
   });
 
   /// Persists [searchTerm] as a recent project-search entry for [userId].

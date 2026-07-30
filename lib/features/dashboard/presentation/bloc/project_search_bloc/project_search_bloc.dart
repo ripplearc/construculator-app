@@ -372,19 +372,13 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     final generation = ++_searchExecutionGeneration;
     emit(ProjectSearchLoading(query: query));
 
-    // The RPC accepts a single tag/owner, so a multi-selection is silently
-    // truncated to the alphabetically-first value; log it until the RPC
-    // supports multi-value filters.
+    // The RPC accepts a single tag, so a multi-selection is silently
+    // truncated to the alphabetically-first value; log it until CA-846
+    // extends the tag param to an array.
     if (_selectedTags.length > 1) {
       _logger.warning(
         'Tag filter truncated: ${_selectedTags.length} tags selected, only '
         'the alphabetically-first is sent to the RPC',
-      );
-    }
-    if (_selectedOwnerIds.length > 1) {
-      _logger.warning(
-        'Owner filter truncated: ${_selectedOwnerIds.length} owners selected, '
-        'only the alphabetically-first is sent to the RPC',
       );
     }
 
@@ -392,15 +386,14 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
       userId: userId,
       query: query,
       // The repository accepts a single tag; sort for deterministic selection
-      // until the RPC is extended to support multi-tag filtering.
+      // until CA-846 extends the RPC to support multi-tag filtering.
       filterByTag: _selectedTags.isEmpty
           ? null
           : (_selectedTags.toList()..sort()).first,
-      // The repository accepts a single owner; sort for deterministic
-      // selection until the RPC is extended to support multi-owner filtering.
-      filterByOwner: _selectedOwnerIds.isEmpty
+      // Sorted so equal selections always produce the same RPC payload.
+      filterByOwners: _selectedOwnerIds.isEmpty
           ? null
-          : (_selectedOwnerIds.toList()..sort()).first,
+          : (_selectedOwnerIds.toList()..sort()),
       // The RPC's date filter is an inclusive modification-date range;
       // thread both bounds, mirroring GlobalSearchBloc.
       filterByDateFrom: _selectedDateRange?.start,

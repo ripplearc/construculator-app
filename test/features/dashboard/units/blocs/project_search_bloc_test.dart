@@ -1660,7 +1660,7 @@ void main() {
       );
 
       blocTest<ProjectSearchBloc, ProjectSearchState>(
-        'threads the selected owner into the search RPC',
+        'threads all selected owners into the search RPC (sorted)',
         setUp: () {
           fakeSupabase.setRpcResponse(
             DatabaseConstants.globalSearchRpcFunction,
@@ -1681,9 +1681,12 @@ void main() {
           await bloc.stream.firstWhere((s) => s is ProjectSearchResultsLoaded);
         },
         verify: (_) {
-          // The RPC takes an owner-id array; the single-owner selection is
-          // wrapped, and sorted for determinism → 'owner-1' wins.
-          expect(lastSearchRpcParams()['filter_by_owners'], ['owner-1']);
+          // The RPC takes an owner-id array; every selected owner is sent,
+          // sorted for a deterministic payload.
+          expect(
+            lastSearchRpcParams()['filter_by_owners'],
+            ['owner-1', 'owner-2'],
+          );
         },
       );
     });

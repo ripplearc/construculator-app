@@ -89,7 +89,7 @@ class ProjectSearchRepositoryImpl implements ProjectSearchRepository {
     DateTime? filterByDateFrom,
     DateTime? filterByDateTo,
     String? filterByTag,
-    String? filterByOwner,
+    List<String>? filterByOwners,
   }) async {
     if (query.trim().isEmpty || userId.trim().isEmpty) {
       return Right([]);
@@ -103,7 +103,7 @@ class ProjectSearchRepositoryImpl implements ProjectSearchRepository {
         filterByDateFrom: filterByDateFrom,
         filterByDateTo: filterByDateTo,
         filterByTag: filterByTag,
-        filterByOwner: filterByOwner,
+        filterByOwners: filterByOwners,
       );
       _logger.debug('Search completed: ${dtos.length} projects found');
       return Right(dtos.map((dto) => dto.toDomain()).toList());

@@ -212,7 +212,7 @@ void main() {
           filterByDateFrom: filterFrom,
           filterByDateTo: filterTo,
           filterByTag: 'structural',
-          filterByOwner: 'owner-42',
+          filterByOwners: const ['owner-42', 'owner-7'],
         );
 
         final rpcCalls = fakeSupabaseWrapper.getMethodCallsFor('rpc');
@@ -231,8 +231,8 @@ void main() {
         expect(params['filter_by_tag'], equals('structural'));
         expect(
           params['filter_by_owners'],
-          equals(['owner-42']),
-          reason: 'a single owner must be wrapped in the RPC owner-id array',
+          equals(['owner-42', 'owner-7']),
+          reason: 'all selected owners must reach the RPC owner-id array',
         );
         expect(params['scope'], equals('dashboard'));
       });

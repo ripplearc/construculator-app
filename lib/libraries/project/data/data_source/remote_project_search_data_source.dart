@@ -28,7 +28,7 @@ class RemoteProjectSearchDataSource implements ProjectSearchDataSource {
     DateTime? filterByDateFrom,
     DateTime? filterByDateTo,
     String? filterByTag,
-    String? filterByOwner,
+    List<String>? filterByOwners,
   }) async {
     if (query.trim().isEmpty || userId.trim().isEmpty) {
       _logger.debug('Empty query or userId — skipping RPC call');
@@ -45,10 +45,9 @@ class RemoteProjectSearchDataSource implements ProjectSearchDataSource {
           'filter_by_tag': filterByTag,
           'filter_by_date_from': filterByDateFrom?.toIso8601String(),
           'filter_by_date_to': filterByDateTo?.toIso8601String(),
-          // The RPC takes an owner-id array; this data source still exposes a
-          // single-owner filter, so wrap it. Widening this interface to
-          // multiple owners is tracked in CA-771.
-          'filter_by_owners': filterByOwner == null ? null : [filterByOwner],
+          'filter_by_owners': (filterByOwners == null || filterByOwners.isEmpty)
+              ? null
+              : filterByOwners,
           'scope': DatabaseConstants.globalSearchDashboardScope,
           // Only the projects domain is consumed here; the RPC's other
           // per-domain offsets keep their defaults.
