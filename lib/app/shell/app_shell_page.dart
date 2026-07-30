@@ -5,6 +5,7 @@ import 'package:construculator/features/app_header/app_header_module.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/projects_bottom_sheet.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
@@ -105,6 +106,11 @@ class _AppShellPageState extends State<AppShellPage> {
               currentProjectNotifier: widget.currentProjectNotifier,
               router: widget.router,
               projectUIProvider: widget.projectUIProvider,
+              onProjectTap: () => ProjectsBottomSheet.show(
+                context,
+                BlocProvider.of<ProjectDropdownBloc>(context),
+                widget.router,
+              ),
             ),
             body: Stack(
               children: List.generate(ShellTab.values.length, (index) {

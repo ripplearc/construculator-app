@@ -61,6 +61,7 @@ class HeaderRow extends StatelessWidget implements PreferredSizeWidget {
                   label: context.l10n.projectDropdownSemanticLabel,
                   button: true,
                   child: InkWell(
+                    key: const Key('header_row_project_selector'),
                     onTap: onProjectTap,
                     child: SizedBox(
                       height: CoreSpacing.space12,

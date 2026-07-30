@@ -11,20 +11,41 @@ void main() {
     await loadAppFontsAll();
   });
 
-  Widget makeTestableWidget({ThemeData? theme, int unreadCount = 0}) {
+  Widget makeTestableWidget({
+    ThemeData? theme,
+    int unreadCount = 0,
+    VoidCallback? onProjectTap,
+  }) {
     return MaterialApp(
       theme: theme ?? createTestTheme(),
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        appBar: HeaderRow(unreadNotificationCount: unreadCount),
+        appBar: HeaderRow(
+          unreadNotificationCount: unreadCount,
+          onProjectTap: onProjectTap,
+        ),
         body: const SizedBox.shrink(),
       ),
     );
   }
 
   group('HeaderRow – accessibility', () {
+    testWidgets(
+      'project selector meets tap target and label guidelines in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme, onProjectTap: () {}),
+          find.byKey(const Key('header_row_project_selector')),
+          checkTapTargetSize: true,
+          checkLabeledTapTarget: true,
+        );
+      },
+    );
+
     testWidgets(
       'search button meets tap target and label guidelines in both themes',
       (tester) async {

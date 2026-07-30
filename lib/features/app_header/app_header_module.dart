@@ -25,7 +25,8 @@ class AppHeaderModule extends Module {
   /// the project header provided by [projectUIProvider]. Otherwise shows the
   /// [HeaderRow] home header on the home tab ([isHomeTab] true) or a
   /// [TitleSearchAppBar] on other tabs, with search navigation wired through
-  /// [router] to the global search route in both cases.
+  /// [router] to the global search route in both cases. [onProjectTap] is
+  /// forwarded to the home header's project selector.
   ///
   /// Dependencies are passed in by the caller (resolved once at
   /// field-initialisation time) rather than looked up via `Modular.get()`
@@ -35,6 +36,7 @@ class AppHeaderModule extends Module {
     required CurrentProjectNotifier currentProjectNotifier,
     required AppRouter router,
     required ProjectUIProvider projectUIProvider,
+    VoidCallback? onProjectTap,
   }) {
     final projectId = currentProjectNotifier.currentProjectId;
     if (projectId != null && projectId.isNotEmpty) {
@@ -46,6 +48,7 @@ class AppHeaderModule extends Module {
     if (isHomeTab) {
       return HeaderRow(
         onSearchTap: onSearchTap,
+        onProjectTap: onProjectTap,
         // TODO: [CA-731] Wire NotificationBloc when NotificationModule is ready.
         // https://ripplearc.youtrack.cloud/issue/CA-731
         // TODO: [CA-732] Wire ProfileBloc when ProfileModule is ready.
