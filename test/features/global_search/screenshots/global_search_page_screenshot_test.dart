@@ -71,10 +71,13 @@ void main() {
     fakeSupabase.reset();
   });
 
-  Future<void> pumpGlobalSearchPage({required WidgetTester tester}) async {
+  Future<void> pumpGlobalSearchPage({
+    required WidgetTester tester,
+    ThemeData? theme,
+  }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: createTestTheme(),
+        theme: theme ?? createTestTheme(),
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -88,7 +91,7 @@ void main() {
     await tester.awaitImages();
   }
 
-  group('GlobalSearchPage Screenshot Tests', () {
+  group('GlobalSearchPage Screenshot Tests - Light', () {
     testWidgets('renders default state correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
@@ -216,6 +219,133 @@ void main() {
         find.byType(GlobalSearchPage),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_with_active_date_filter.png',
+        ),
+      );
+    });
+  });
+
+  group('GlobalSearchPage Screenshot Tests - Dark', () {
+    testWidgets('renders default state correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpGlobalSearchPage(tester: tester, theme: createTestThemeDark());
+
+      await expectLater(
+        find.byType(GlobalSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_default_dark.png',
+        ),
+      );
+    });
+
+    testWidgets(
+      'renders with search text and clear button visible correctly',
+      (tester) async {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = ratio;
+        addTearDown(tester.view.reset);
+
+        await pumpGlobalSearchPage(tester: tester, theme: createTestThemeDark());
+
+        final textFieldFinder = find.descendant(
+          of: find.byType(GlobalSearchPage),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(textFieldFinder, 'concrete');
+        await tester.pumpAndSettle();
+        expect(find.text('concrete'), findsOneWidget);
+
+        await expectLater(
+          find.byType(GlobalSearchPage),
+          matchesGoldenFile(
+            'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_text_dark.png',
+          ),
+        );
+      },
+    );
+
+    testWidgets('renders with recent searches correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      fakeSupabase.setCurrentUser(
+        FakeUser(
+          id: _testUserId,
+          email: _testUserEmail,
+          createdAt: '2024-01-01T00:00:00.000Z',
+        ),
+      );
+      fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
+        _fakeHistoryRow('Material of building'),
+        _fakeHistoryRow('MD bungalow'),
+      ]);
+
+      await pumpGlobalSearchPage(tester: tester, theme: createTestThemeDark());
+
+      await expectLater(
+        find.byType(GlobalSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_recent_searches_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders with active tag filter chips correctly', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpGlobalSearchPage(tester: tester, theme: createTestThemeDark());
+
+      Modular.get<GlobalSearchBloc>().add(
+        const GlobalSearchTagFiltersApplied(tags: {'Roofing', 'Wall'}),
+      );
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(GlobalSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_active_tags_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders with active date filter chip correctly', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      await pumpGlobalSearchPage(tester: tester, theme: createTestThemeDark());
+
+      final element = tester.element(
+        find.descendant(
+          of: find.byType(GlobalSearchPage),
+          matching: find.byType(
+            BlocConsumer<GlobalSearchBloc, GlobalSearchState>,
+          ),
+        ),
+      );
+      BlocProvider.of<GlobalSearchBloc>(element).add(
+        GlobalSearchDateFilterApplied(
+          range: DateRange(
+            start: DateTime(2026, 1, 5),
+            end: DateTime(2026, 1, 12),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(GlobalSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_active_date_filter_dark.png',
         ),
       );
     });
