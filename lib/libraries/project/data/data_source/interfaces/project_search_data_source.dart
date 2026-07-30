@@ -21,7 +21,7 @@ abstract class ProjectSearchDataSource {
     DateTime? filterByDateFrom,
     DateTime? filterByDateTo,
     String? filterByTag,
-    String? filterByOwner,
+    List<String>? filterByOwners,
   });
 
   /// Persists [searchTerm] as a recent project-search entry for [userId].

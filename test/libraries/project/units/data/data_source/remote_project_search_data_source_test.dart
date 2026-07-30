@@ -248,7 +248,7 @@ void main() {
         },
       );
 
-      test('passes filterByTag and filterByOwner in RPC params', () async {
+      test('passes filterByTag and filterByOwners in RPC params', () async {
         supabaseWrapper.setRpcResponse(
           DatabaseConstants.globalSearchRpcFunction,
           {'projects': [], 'estimations': [], 'members': []},
@@ -258,7 +258,7 @@ void main() {
           userId: 'user-1',
           query: 'wall',
           filterByTag: 'structural',
-          filterByOwner: 'owner-42',
+          filterByOwners: const ['owner-42', 'owner-7'],
         );
 
         final params = supabaseWrapper.getMethodCallsFor('rpc').first['params']
@@ -266,9 +266,26 @@ void main() {
         expect(params!['filter_by_tag'], equals('structural'));
         expect(
           params['filter_by_owners'],
-          equals(['owner-42']),
-          reason: 'a single owner must be wrapped in the RPC owner-id array',
+          equals(['owner-42', 'owner-7']),
+          reason: 'all selected owners must reach the RPC owner-id array',
         );
+      });
+
+      test('sends a null owner array when no owners are selected', () async {
+        supabaseWrapper.setRpcResponse(
+          DatabaseConstants.globalSearchRpcFunction,
+          {'projects': [], 'estimations': [], 'members': []},
+        );
+
+        await dataSource.fetchProjectsBySearchQuery(
+          userId: 'user-1',
+          query: 'wall',
+          filterByOwners: const [],
+        );
+
+        final params = supabaseWrapper.getMethodCallsFor('rpc').first['params']
+            as Map<String, dynamic>?;
+        expect(params!['filter_by_owners'], isNull);
       });
 
       test('ignores estimations and members in RPC response', () async {

@@ -73,7 +73,7 @@ class FakeProjectSearchRepository implements ProjectSearchRepository {
     DateTime? filterByDateFrom,
     DateTime? filterByDateTo,
     String? filterByTag,
-    String? filterByOwner,
+    List<String>? filterByOwners,
   }) async {
     if (shouldDelayOperations) {
       await completer?.future;
@@ -86,7 +86,7 @@ class FakeProjectSearchRepository implements ProjectSearchRepository {
       'filterByDateFrom': filterByDateFrom,
       'filterByDateTo': filterByDateTo,
       'filterByTag': filterByTag,
-      'filterByOwner': filterByOwner,
+      'filterByOwners': filterByOwners,
     });
 
     if (query.trim().isEmpty || userId.trim().isEmpty) {
