@@ -54,6 +54,16 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
   List<String> _cachedSuggestions = const [];
   String _currentQuery = '';
 
+  // The last query a search actually executed for; used to re-run the
+  // search when a filter changes while results own the body.
+  String? _lastPerformedQuery;
+
+  // Whether a performed search currently owns the body surface. Tracked as a
+  // durable flag rather than derived from the current state, because opening
+  // a filter sheet emits the idle state (to render the sheet's option list)
+  // and would otherwise clear the signal before the user applies the filter.
+  bool _searchIsActive = false;
+
   bool _suggestionsFetched = false;
 
   bool _suggestionsLoading = false;
@@ -151,6 +161,9 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     Emitter<ProjectSearchState> emit,
   ) async {
     _currentQuery = query;
+    // Editing the query returns to the suggestions/recents surface; a filter
+    // change must no longer resurrect the previous results.
+    _searchIsActive = false;
 
     if (query.isEmpty) {
       // Clearing the field restores the history surface rather than blanking
@@ -243,6 +256,8 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     // resurrect the pre-reset cache, mark suggestions as fetched, or emit
     // over the isLoadingHistory state emitted below.
     _suggestionsFetchGeneration++;
+    _lastPerformedQuery = null;
+    _searchIsActive = false;
     _selectedTags = const {};
     _tagSearchQuery = '';
     _availableTags = const [];
@@ -334,6 +349,8 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
       return;
     }
 
+    _lastPerformedQuery = query;
+    _searchIsActive = true;
     emit(ProjectSearchLoading(query: query));
 
     // The RPC accepts a single tag/owner, so a multi-selection is silently
@@ -509,12 +526,21 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     emit(_initialFromCache());
   }
 
+  // Re-dispatches the last performed search so a filter change is
+  // reflected in the visible results instead of leaving them stale.
+  void _reRunActiveSearch() {
+    final query = _lastPerformedQuery;
+    if (!_searchIsActive || query == null) return;
+    add(ProjectSearchPerformedEvent(query: query));
+  }
+
   void _onTagFiltersApplied(
     ProjectSearchTagFiltersAppliedEvent event,
     Emitter<ProjectSearchState> emit,
   ) {
     _selectedTags = Set.unmodifiable(event.tags);
     emit(_initialFromCache());
+    _reRunActiveSearch();
   }
 
   void _onTagFilterCleared(
@@ -525,6 +551,7 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
       _selectedTags.where((t) => t != event.tag),
     );
     emit(_initialFromCache());
+    _reRunActiveSearch();
   }
 
   Future<void> _onAvailableOwnersRequested(
@@ -583,6 +610,7 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
   ) {
     _selectedOwnerIds = Set.unmodifiable(event.ownerIds);
     emit(_initialFromCache());
+    _reRunActiveSearch();
   }
 
   void _onOwnerFilterCleared(
@@ -593,6 +621,7 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
       _selectedOwnerIds.where((id) => id != event.ownerId),
     );
     emit(_initialFromCache());
+    _reRunActiveSearch();
   }
 
   void _onDateFilterApplied(
@@ -601,6 +630,7 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
   ) {
     _selectedDateRange = event.range;
     emit(_initialFromCache());
+    _reRunActiveSearch();
   }
 
   void _onDateFilterCleared(
@@ -609,5 +639,6 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
   ) {
     _selectedDateRange = null;
     emit(_initialFromCache());
+    _reRunActiveSearch();
   }
 }

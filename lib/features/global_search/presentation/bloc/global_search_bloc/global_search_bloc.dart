@@ -55,6 +55,16 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
 
   String _currentQuery = '';
 
+  // The last successfully dispatched (non-empty) search query; used to
+  // re-run the search when a filter changes while results own the body.
+  String? _lastPerformedQuery;
+
+  // Whether a performed search currently owns the body surface. Tracked as a
+  // durable flag rather than derived from the current state, because opening
+  // a filter sheet emits the ready state (to render the sheet's option list)
+  // and would otherwise clear the signal before the user applies the filter.
+  bool _searchIsActive = false;
+
   Set<String> _selectedTags = const {};
 
   // Full list of available tag names fetched from TagRepository.
@@ -246,6 +256,8 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       _availableTagsFetched = false;
       _availableTagsLoading = false;
       _availableTagsFetchGeneration++;
+      _lastPerformedQuery = null;
+      _searchIsActive = false;
       _selectedOwnerIds = const {};
       _ownerSearchQuery = '';
       _availableOwners = const [];
@@ -264,6 +276,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     if (event.scope == _selectedScope) return;
     _selectedScope = event.scope;
     emit(_readyState());
+    _reRunActiveSearch();
 
     // Recent searches are stored per scope, so switching scope reloads the
     // history for the newly selected one.
@@ -292,6 +305,9 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   ) async {
     final trimmedQuery = event.query.trim();
     _currentQuery = trimmedQuery;
+    // Editing the query returns to the suggestions/recents surface; a filter
+    // change must no longer resurrect the previous results.
+    _searchIsActive = false;
 
     if (trimmedQuery.isEmpty) {
       // Clearing the query cancels any same-pipeline suggestions fetch via
@@ -321,6 +337,8 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       return;
     }
     _currentQuery = trimmedQuery;
+    _lastPerformedQuery = trimmedQuery;
+    _searchIsActive = true;
     emit(GlobalSearchLoadInProgress(query: trimmedQuery));
 
     final result = await _repository.search(
@@ -443,12 +461,21 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
         .toList();
   }
 
+  // Re-dispatches the last performed search so a filter change is
+  // reflected in the visible results instead of leaving them stale.
+  void _reRunActiveSearch() {
+    final query = _lastPerformedQuery;
+    if (!_searchIsActive || query == null) return;
+    add(GlobalSearchPerformed(query: query));
+  }
+
   void _onTagFiltersApplied(
     GlobalSearchTagFiltersApplied event,
     Emitter<GlobalSearchState> emit,
   ) {
     _selectedTags = Set.unmodifiable(event.tags);
     emit(_readyState());
+    _reRunActiveSearch();
   }
 
   void _onTagFilterCleared(
@@ -459,6 +486,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       _selectedTags.where((t) => t != event.tag),
     );
     emit(_readyState());
+    _reRunActiveSearch();
   }
 
   Future<void> _onAvailableOwnersRequested(
@@ -511,6 +539,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   ) {
     _selectedOwnerIds = Set.unmodifiable(event.ownerIds);
     emit(_readyState());
+    _reRunActiveSearch();
   }
 
   void _onOwnerFilterCleared(
@@ -521,6 +550,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       _selectedOwnerIds.where((id) => id != event.ownerId),
     );
     emit(_readyState());
+    _reRunActiveSearch();
   }
 
   void _onDateFilterApplied(
@@ -529,6 +559,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   ) {
     _selectedDateRange = event.range;
     emit(_readyState());
+    _reRunActiveSearch();
   }
 
   void _onDateFilterCleared(
@@ -537,5 +568,6 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   ) {
     _selectedDateRange = null;
     emit(_readyState());
+    _reRunActiveSearch();
   }
 }
