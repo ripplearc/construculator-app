@@ -112,6 +112,7 @@ class ShellModule extends Module {
       child: (_) => ProjectSearchPage(
         router: Modular.get<AppRouter>(),
         blocFactory: () => Modular.get<ProjectSearchBloc>(),
+        projectDropdownBloc: Modular.get<ProjectDropdownBloc>(),
       ),
     );
     r.module(globalSearchBaseRoute, module: GlobalSearchModule(appBootstrap));

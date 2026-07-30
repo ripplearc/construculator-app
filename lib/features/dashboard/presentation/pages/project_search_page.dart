@@ -1,13 +1,16 @@
+import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_search_bloc/project_search_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/project_search_empty_recent_widget.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/project_search_owner_filter_sheet.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/project_search_recent_searches_list.dart';
+import 'package:construculator/features/dashboard/presentation/widgets/project_search_results_views.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/project_search_suggestions_list.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/project_search_tags_filter_sheet.dart';
 import 'package:construculator/libraries/auth/domain/entities/user_profile_entity.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/global_search/presentation/widgets/search_load_failure_widget.dart';
+import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -26,10 +29,16 @@ class ProjectSearchPage extends StatefulWidget {
   /// navigation.
   final ProjectSearchBloc Function() blocFactory;
 
+  /// Shell-scoped dropdown bloc that owns project selection; tapping a
+  /// search result dispatches [ProjectDropdownSelected] on it, mirroring
+  /// the projects sheet.
+  final ProjectDropdownBloc projectDropdownBloc;
+
   const ProjectSearchPage({
     super.key,
     required this.router,
     required this.blocFactory,
+    required this.projectDropdownBloc,
   });
 
   @override
@@ -93,6 +102,11 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
     BlocProvider.of<ProjectSearchBloc>(
       context,
     ).add(ProjectSearchQueryUpdatedEvent(query: term));
+  }
+
+  void _onProjectResultTap(Project project) {
+    widget.projectDropdownBloc.add(ProjectDropdownSelected(project.id));
+    widget.router.pop();
   }
 
   Future<void> _showTagsSheet(BuildContext context, Set<String> selectedTags) {
@@ -261,10 +275,19 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
         ).add(ProjectSearchPerformedEvent(query: state.query)),
       );
     }
+    if (state is ProjectSearchLoading) {
+      return const ProjectSearchResultsLoadingView();
+    }
+    if (state is ProjectSearchResultsLoaded) {
+      if (state.results.isEmpty) {
+        return ProjectSearchResultsEmptyView(query: state.query);
+      }
+      return ProjectSearchResultsList(
+        results: state.results,
+        onProjectTap: _onProjectResultTap,
+      );
+    }
     if (state is! ProjectSearchInitial) {
-      // Loading/results surfaces are not part of CA-690/CA-689 scope
-      // (history + suggestions only); render nothing rather than the last
-      // history view.
       return const SizedBox.shrink();
     }
     final viewState = _ProjectSearchViewState.from(state);

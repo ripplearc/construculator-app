@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_search_bloc/project_search_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/project_search_page.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/project_search_empty_recent_widget.dart';
@@ -10,6 +11,10 @@ import 'package:construculator/features/dashboard/presentation/widgets/project_s
 import 'package:construculator/features/dashboard/presentation/widgets/project_search_suggestions_list.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/project_search_tags_filter_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/project/domain/entities/enums.dart';
+import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/project/domain/repositories/project_repository.dart';
+import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
@@ -40,6 +45,13 @@ class _ProjectSearchPageTestModule extends Module {
     RouterTestModule(),
     DashboardModule(appBootstrap),
   ];
+
+  @override
+  void binds(Injector i) {
+    i.add<ProjectDropdownBloc>(
+      () => ProjectDropdownBloc(projectRepository: i(), authManager: i()),
+    );
+  }
 }
 
 void main() {
@@ -112,6 +124,7 @@ void main() {
             return ProjectSearchPage(
               router: router,
               blocFactory: () => Modular.get<ProjectSearchBloc>(),
+              projectDropdownBloc: Modular.get<ProjectDropdownBloc>(),
             );
           },
         ),
@@ -496,6 +509,7 @@ void main() {
           home: ProjectSearchPage(
             router: router,
             blocFactory: () => Modular.get<ProjectSearchBloc>(),
+            projectDropdownBloc: Modular.get<ProjectDropdownBloc>(),
           ),
           locale: const Locale('en'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -725,6 +739,210 @@ void main() {
         );
 
         await tester.pump(kToastDismissDuration);
+      },
+    );
+  });
+
+  group('User on ProjectSearchPage viewing search results', () {
+    Map<String, dynamic> fakeProjectRow({
+      required String id,
+      required String name,
+    }) => {
+      DatabaseConstants.idColumn: id,
+      DatabaseConstants.projectNameColumn: name,
+      DatabaseConstants.descriptionColumn: 'Test description',
+      DatabaseConstants.creatorUserIdColumn: _testUserId,
+      DatabaseConstants.owningCompanyIdColumn: null,
+      DatabaseConstants.exportFolderLinkColumn: null,
+      DatabaseConstants.exportStorageProviderColumn: null,
+      DatabaseConstants.createdAtColumn: '2024-01-01T00:00:00.000Z',
+      DatabaseConstants.updatedAtColumn: '2024-01-01T00:00:00.000Z',
+      DatabaseConstants.statusColumn: 'active',
+    };
+
+    void seedSearchResults({required List<Map<String, dynamic>> projects}) {
+      fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
+        'projects': projects,
+        'estimations': <Map<String, dynamic>>[],
+        'members': <Map<String, dynamic>>[],
+      });
+    }
+
+    Future<void> submitSearch(WidgetTester tester, String query) async {
+      final searchField = find.ancestor(
+        of: find.text(l10n().searchProjectsHint),
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(searchField, query);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'sees the results list with a project card after a successful search',
+      (tester) async {
+        seedSuggestions(const []);
+        seedSearchResults(
+          projects: [fakeProjectRow(id: 'project-1', name: 'Foundation Work')],
+        );
+        await renderPage(tester);
+
+        await submitSearch(tester, 'foundation');
+
+        expect(
+          find.byKey(const Key('projectSearchResultsListView')),
+          findsOneWidget,
+        );
+        expect(find.text(l10n().searchResultsMostRelevant), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('projectSearchResult_project-1')),
+          findsOneWidget,
+        );
+        expect(find.text('Foundation Work'), findsOneWidget);
+        expect(
+          find.text(l10n().projectSearchRecentSearchesTitle),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'sees the loading indicator while the search request is in flight',
+      (tester) async {
+        seedSuggestions(const []);
+        seedSearchResults(
+          projects: [fakeProjectRow(id: 'project-1', name: 'Foundation Work')],
+        );
+        await renderPage(tester);
+
+        final searchField = find.ancestor(
+          of: find.text(l10n().searchProjectsHint),
+          matching: find.byType(TextFormField),
+        );
+        await tester.enterText(searchField, 'foundation');
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // Gate the RPC so the in-flight state stays observable.
+        final completer = Completer<void>();
+        fakeSupabase.shouldDelayOperations = true;
+        fakeSupabase.completer = completer;
+        await tester.testTextInput.receiveAction(TextInputAction.search);
+        await tester.pump();
+
+        expect(
+          find.byKey(const Key('projectSearchResultsLoadingView')),
+          findsOneWidget,
+        );
+
+        completer.complete();
+        fakeSupabase.shouldDelayOperations = false;
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('projectSearchResultsListView')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'sees the no-results message when the search matches nothing',
+      (tester) async {
+        seedSuggestions(const []);
+        seedSearchResults(projects: const []);
+        await renderPage(tester);
+
+        await submitSearch(tester, 'nonexistent');
+
+        expect(
+          find.byKey(const Key('projectSearchResultsEmptyView')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n().searchResultsEmpty('nonexistent')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'tapping a project result selects it in the dropdown bloc and pops '
+      'the page',
+      (tester) async {
+        seedSuggestions(const []);
+        seedSearchResults(
+          projects: [fakeProjectRow(id: 'project-1', name: 'Foundation Work')],
+        );
+
+        Project buildProject(String id, String name, DateTime updatedAt) {
+          return Project(
+            id: id,
+            projectName: name,
+            creatorUserId: _testUserId,
+            createdAt: DateTime(2024, 1, 1),
+            updatedAt: updatedAt,
+            status: ProjectStatus.active,
+          );
+        }
+
+        // Prime the shared dropdown bloc with two projects so the initial
+        // auto-selection (most recently updated) differs from the tapped one.
+        final fakeProjectRepository = FakeProjectRepository();
+        fakeProjectRepository.setAccessibleProjects([
+          buildProject('project-2', 'Other Project', DateTime(2024, 6, 1)),
+          buildProject('project-1', 'Foundation Work', DateTime(2024, 1, 2)),
+        ]);
+        Modular.replaceInstance<ProjectRepository>(fakeProjectRepository);
+        // Factory binding: this resolves a fresh bloc wired to the fake
+        // repository swapped in above.
+        final dropdownBloc = Modular.get<ProjectDropdownBloc>();
+        addTearDown(dropdownBloc.close);
+        final firstLoad = dropdownBloc.stream.firstWhere(
+          (s) => s is ProjectDropdownLoadSuccess,
+        );
+        dropdownBloc.add(const ProjectDropdownStarted());
+        await tester.runAsync(() => firstLoad);
+        expect(
+          (dropdownBloc.state as ProjectDropdownLoadSuccess)
+              .selectedProject!
+              .id,
+          'project-2',
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: createTestTheme(),
+            home: Builder(
+              builder: (context) {
+                buildContext = context;
+                return ProjectSearchPage(
+                  router: router,
+                  blocFactory: () => Modular.get<ProjectSearchBloc>(),
+                  projectDropdownBloc: dropdownBloc,
+                );
+              },
+            ),
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await submitSearch(tester, 'foundation');
+        await tester.tap(
+          find.byKey(const ValueKey('projectSearchResult_project-1')),
+        );
+        await tester.pump();
+
+        expect(
+          (dropdownBloc.state as ProjectDropdownLoadSuccess)
+              .selectedProject!
+              .id,
+          'project-1',
+        );
+        expect(router.popCalls, 1);
       },
     );
   });

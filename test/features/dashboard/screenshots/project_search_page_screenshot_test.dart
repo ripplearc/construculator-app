@@ -1,5 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_search_bloc/project_search_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/project_search_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -33,6 +34,13 @@ class _ProjectSearchPageScreenshotModule extends Module {
     RouterTestModule(),
     DashboardModule(appBootstrap),
   ];
+
+  @override
+  void binds(Injector i) {
+    i.add<ProjectDropdownBloc>(
+      () => ProjectDropdownBloc(projectRepository: i(), authManager: i()),
+    );
+  }
 }
 
 void main() {
@@ -82,6 +90,7 @@ void main() {
         home: ProjectSearchPage(
           router: Modular.get<AppRouter>(),
           blocFactory: () => Modular.get<ProjectSearchBloc>(),
+          projectDropdownBloc: Modular.get<ProjectDropdownBloc>(),
         ),
       ),
     );
@@ -255,6 +264,66 @@ void main() {
         find.byType(ProjectSearchPage),
         matchesGoldenFile(
           'goldens/$testName/${size.width}x${size.height}/${testName}_with_active_date_filter.png',
+        ),
+      );
+    });
+
+    testWidgets('renders search results correctly', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = ratio;
+      addTearDown(tester.view.reset);
+
+      fakeSupabase.setRpcResponse(
+        DatabaseConstants.projectSearchSuggestionsRpcFunction,
+        <String>[],
+      );
+      fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
+        'projects': [
+          {
+            DatabaseConstants.idColumn: 'project-golden-1',
+            DatabaseConstants.projectNameColumn: 'Downtown Office Complex',
+            DatabaseConstants.descriptionColumn: 'Test description',
+            DatabaseConstants.creatorUserIdColumn: _testUserId,
+            DatabaseConstants.owningCompanyIdColumn: null,
+            DatabaseConstants.exportFolderLinkColumn: null,
+            DatabaseConstants.exportStorageProviderColumn: null,
+            DatabaseConstants.createdAtColumn: '2024-01-01T10:00:00.000Z',
+            DatabaseConstants.updatedAtColumn: '2024-01-01T10:00:00.000Z',
+            DatabaseConstants.statusColumn: 'active',
+          },
+          {
+            DatabaseConstants.idColumn: 'project-golden-2',
+            DatabaseConstants.projectNameColumn: 'Shopping Mall Renovation',
+            DatabaseConstants.descriptionColumn: 'Test description',
+            DatabaseConstants.creatorUserIdColumn: _testUserId,
+            DatabaseConstants.owningCompanyIdColumn: null,
+            DatabaseConstants.exportFolderLinkColumn: null,
+            DatabaseConstants.exportStorageProviderColumn: null,
+            DatabaseConstants.createdAtColumn: '2024-02-15T14:30:00.000Z',
+            DatabaseConstants.updatedAtColumn: '2024-02-15T14:30:00.000Z',
+            DatabaseConstants.statusColumn: 'active',
+          },
+        ],
+        'estimations': <Map<String, dynamic>>[],
+        'members': <Map<String, dynamic>>[],
+      });
+
+      await pumpProjectSearchPage(tester: tester);
+
+      final textFieldFinder = find.descendant(
+        of: find.byType(ProjectSearchPage),
+        matching: find.byType(TextFormField),
+      );
+      await tester.enterText(textFieldFinder, 'project');
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+      await tester.awaitImages();
+
+      await expectLater(
+        find.byType(ProjectSearchPage),
+        matchesGoldenFile(
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_results.png',
         ),
       );
     });
