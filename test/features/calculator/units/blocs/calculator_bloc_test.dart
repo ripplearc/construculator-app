@@ -74,6 +74,22 @@ void main() {
       );
 
       blocTest<CalculatorBloc, CalculatorState>(
+        'does not compute pitch when Run is zero',
+        build: () => bloc,
+        seed: () => const CalculatorState(
+          isTyping: true,
+          activeInputLabel: 'Run',
+          currentInputValue: '0',
+          currentNumericValue: '0',
+          finalizedValues: {'Rise': 6.0},
+        ),
+        act: (bloc) => bloc.add(const CalculatorOperatorPressed('=')),
+        verify: (bloc) {
+          expect(bloc.state.resultLabel, isNull);
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
         'auto-computes pitch when both Rise and Run are finalized via =',
         build: () => bloc,
         seed: () => CalculatorState(
@@ -113,6 +129,17 @@ void main() {
           expect(bloc.state.resultValue, '5');
           expect(bloc.state.dependentKeyLabel, 'oc');
           expect(bloc.state.dependentKeyValue, '6ft');
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'rounds up to the next whole post on a non-exact O.C. multiple',
+        build: () => bloc,
+        seed: () => const CalculatorState(finalizedValues: {'Length': 25.0}),
+        act: (bloc) => bloc.add(const CalculatorKeySelected('Fence')),
+        verify: (bloc) {
+          expect(bloc.state.resultLabel, 'postsResult');
+          expect(bloc.state.resultValue, '6');
         },
       );
 
