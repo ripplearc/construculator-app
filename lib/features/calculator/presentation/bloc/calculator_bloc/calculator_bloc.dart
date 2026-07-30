@@ -7,6 +7,7 @@ part 'calculator_state.dart';
 
 /// Manages the state of the calculator display area.
 class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
+  /// Drives the calculator's group-tab UI; each entry names a tab and lists its function keys.
   static const List<({String name, List<String> keys})> functionGroups = [
     (
       name: 'basicGeometry',
@@ -108,7 +109,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
   ) {
     switch (event.action) {
       case ControlAction.delete:
-        if (state.currentInputValue.isEmpty) return;
+        if (!state.isTyping || state.currentInputValue.isEmpty) return;
         final newInput = state.currentInputValue.substring(
           0,
           state.currentInputValue.length - 1,
@@ -224,7 +225,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
       resultLabel: () => _postsResultKey,
       resultValue: () => postsString,
       resultChip: () => CoreCalculatorChip(
-        label: _fenceLabel,
+        label: _postsResultKey,
         value: postsString,
         type: CoreCalculatorChipType.disabled,
       ),
