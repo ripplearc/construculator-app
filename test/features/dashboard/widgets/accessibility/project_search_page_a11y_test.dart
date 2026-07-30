@@ -1,5 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_search_bloc/project_search_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/pages/project_search_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -32,6 +33,13 @@ class _ProjectSearchPageA11yTestModule extends Module {
     RouterTestModule(),
     DashboardModule(appBootstrap),
   ];
+
+  @override
+  void binds(Injector i) {
+    i.add<ProjectDropdownBloc>(
+      () => ProjectDropdownBloc(projectRepository: i(), authManager: i()),
+    );
+  }
 }
 
 void main() {
@@ -68,6 +76,7 @@ void main() {
       home: ProjectSearchPage(
         router: Modular.get<AppRouter>(),
         blocFactory: () => Modular.get<ProjectSearchBloc>(),
+        projectDropdownBloc: Modular.get<ProjectDropdownBloc>(),
       ),
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -197,6 +206,79 @@ void main() {
             await t.enterText(find.byType(TextFormField), 'Car');
             await t.pump(const Duration(milliseconds: 400));
             await t.pump();
+          },
+        );
+      },
+    );
+
+    testWidgets(
+      'meets a11y guidelines for a project result card in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        fakeSupabase.setRpcResponse(
+          DatabaseConstants.projectSearchSuggestionsRpcFunction,
+          <String>[],
+        );
+        fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
+          'projects': [
+            {
+              DatabaseConstants.idColumn: 'project-a11y-1',
+              DatabaseConstants.projectNameColumn: 'Foundation Work',
+              DatabaseConstants.descriptionColumn: 'Test description',
+              DatabaseConstants.creatorUserIdColumn: _testUserId,
+              DatabaseConstants.owningCompanyIdColumn: null,
+              DatabaseConstants.exportFolderLinkColumn: null,
+              DatabaseConstants.exportStorageProviderColumn: null,
+              DatabaseConstants.createdAtColumn: '2024-01-01T00:00:00.000Z',
+              DatabaseConstants.updatedAtColumn: '2024-01-01T00:00:00.000Z',
+              DatabaseConstants.statusColumn: 'active',
+            },
+          ],
+          'estimations': <Map<String, dynamic>>[],
+          'members': <Map<String, dynamic>>[],
+        });
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme),
+          find.byKey(const ValueKey('projectSearchResult_project-a11y-1')),
+          checkTapTargetSize: true,
+          checkLabeledTapTarget: true,
+          setupAfterPump: (t) async {
+            await t.enterText(find.byType(TextFormField), 'foundation');
+            await t.pump(const Duration(milliseconds: 400));
+            await t.testTextInput.receiveAction(TextInputAction.search);
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
+
+    testWidgets(
+      'meets a11y text contrast for the no-results message in both themes',
+      (tester) async {
+        await setupA11yTest(tester);
+        fakeSupabase.setRpcResponse(
+          DatabaseConstants.projectSearchSuggestionsRpcFunction,
+          <String>[],
+        );
+        fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
+          'projects': <Map<String, dynamic>>[],
+          'estimations': <Map<String, dynamic>>[],
+          'members': <Map<String, dynamic>>[],
+        });
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme),
+          find.text(AppLocalizationsEn().searchResultsEmpty('nonexistent')),
+          checkTapTargetSize: false,
+          checkLabeledTapTarget: false,
+          setupAfterPump: (t) async {
+            await t.enterText(find.byType(TextFormField), 'nonexistent');
+            await t.pump(const Duration(milliseconds: 400));
+            await t.testTextInput.receiveAction(TextInputAction.search);
+            await t.pumpAndSettle();
           },
         );
       },
