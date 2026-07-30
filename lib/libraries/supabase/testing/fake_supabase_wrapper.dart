@@ -492,9 +492,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       'table': table,
       'columns': columns,
       'filters': Map<String, dynamic>.from(filters),
-      if (orderBy != null) 'orderBy': orderBy,
+      'orderBy': ?orderBy,
       'ascending': ascending,
-      if (limit != null) 'limit': limit,
+      'limit': ?limit,
     });
 
     if (shouldDelayOperations) {

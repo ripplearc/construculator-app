@@ -1293,6 +1293,38 @@ void main() {
           expect(call['limit'], equals(3));
         });
 
+        test('omits orderBy key from recorded call when orderBy is null', () async {
+          fakeWrapper.addTableData('items', []);
+
+          await fakeWrapper.selectMatch(
+            table: 'items',
+            filters: {'project_id': 'p1'},
+          );
+
+          final call = fakeWrapper.getMethodCallsFor('selectMatch').first;
+          expect(
+            call.containsKey('orderBy'),
+            isFalse,
+            reason: 'orderBy must not appear in the recorded call when omitted',
+          );
+        });
+
+        test('omits limit key from recorded call when limit is null', () async {
+          fakeWrapper.addTableData('items', []);
+
+          await fakeWrapper.selectMatch(
+            table: 'items',
+            filters: {'project_id': 'p1'},
+          );
+
+          final call = fakeWrapper.getMethodCallsFor('selectMatch').first;
+          expect(
+            call.containsKey('limit'),
+            isFalse,
+            reason: 'limit must not appear in the recorded call when omitted',
+          );
+        });
+
         test('truncates matching rows to limit after ordering', () async {
           fakeWrapper.addTableData('items', [
             {'id': '1', 'project_id': 'p1', 'rank': 3},

@@ -14,9 +14,6 @@ analyzer:
     - custom_lint
   errors:
     invalid_annotation_target: ignore
-    unnecessary_underscores: ignore # TODO: [CA-826] [Chore] Fix lint violations for rules suppressed without a migration ticket (lints 6.1.0 upgrade) https://ripplearc.youtrack.cloud/issue/CA-826/Chore-Fix-lint-violations-for-rules-suppressed-without-a-migration-ticket-lints-6.1.0-upgrade
-    strict_top_level_inference: ignore # TODO: [CA-826] [Chore] Fix lint violations for rules suppressed without a migration ticket (lints 6.1.0 upgrade) https://ripplearc.youtrack.cloud/issue/CA-826/Chore-Fix-lint-violations-for-rules-suppressed-without-a-migration-ticket-lints-6.1.0-upgrade
-    use_null_aware_elements: ignore # TODO: [CA-826] [Chore] Fix lint violations for rules suppressed without a migration ticket (lints 6.1.0 upgrade) https://ripplearc.youtrack.cloud/issue/CA-826/Chore-Fix-lint-violations-for-rules-suppressed-without-a-migration-ticket-lints-6.1.0-upgrade
     prefer_initializing_formals: ignore # TODO: [CA-827] [Chore] Fix prefer_initializing_formals violations surfaced by Dart 3.12.2 analyzer expansion https://ripplearc.youtrack.cloud/issue/CA-827/Chore-Fix-prefer_initializing_formals-violations-surfaced-by-Dart-3.12.2-analyzer-expansion
   exclude:
     - lib/generated/**

@@ -61,7 +61,7 @@ class NotFoundException extends AppException {
 /// [message] is the user friendly message that will be displayed to the user.
 class ClientException extends AppException {
   final String message;
-  ClientException(stackTrace, this.message)
+  ClientException(trace.Trace stackTrace, this.message)
     : super(stackTrace, Exception(message));
   @override
   String toString() {
@@ -74,7 +74,7 @@ class ClientException extends AppException {
 /// [message] is the error message containing the details of the configuration error.
 class ConfigException extends AppException {
   final String message;
-  ConfigException(stackTrace, this.message)
+  ConfigException(trace.Trace stackTrace, this.message)
     : super(stackTrace, Exception(message));
   @override
   String toString() {
