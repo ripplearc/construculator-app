@@ -17,13 +17,10 @@ class ChangeLockStatusBloc
   final CurrentProjectNotifier _currentProjectNotifier;
 
   ChangeLockStatusBloc({
-    required CostEstimationRepository repository,
-    required ProjectRepository projectRepository,
-    required CurrentProjectNotifier currentProjectNotifier,
-  }) : _repository = repository,
-       _projectRepository = projectRepository,
-       _currentProjectNotifier = currentProjectNotifier,
-       super(const ChangeLockStatusInitial()) {
+    required this._repository,
+    required this._projectRepository,
+    required this._currentProjectNotifier,
+  }) : super(const ChangeLockStatusInitial()) {
     on<ChangeLockStatusRequested>(_onChangeLockStatusRequested);
   }
 

@@ -17,9 +17,8 @@ class AddCostEstimationBloc
   final AddCostEstimationUseCase _addCostEstimationUseCase;
 
   AddCostEstimationBloc({
-    required AddCostEstimationUseCase addCostEstimationUseCase,
-  }) : _addCostEstimationUseCase = addCostEstimationUseCase,
-       super(const AddCostEstimationInitial()) {
+    required this._addCostEstimationUseCase,
+  }) : super(const AddCostEstimationInitial()) {
     on<AddCostEstimationSubmitted>(_onSubmitted);
   }
 

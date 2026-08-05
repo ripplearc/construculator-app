@@ -4,9 +4,8 @@ import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 
 class AppConfigImpl implements Config {
-  AppConfigImpl({required EnvLoader envLoader})
-    : _envLoader = envLoader,
-      _logger = AppLogger().tag('AppConfig');
+  AppConfigImpl({required this._envLoader})
+    : _logger = AppLogger().tag('AppConfig');
 
   final EnvLoader _envLoader;
   final AppLogger _logger;

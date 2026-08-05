@@ -32,8 +32,7 @@ class CostEstimationRepositoryImpl implements CostEstimationRepository {
 
   static const int defaultPageSize = 10;
 
-  CostEstimationRepositoryImpl({required CostEstimationDataSource dataSource})
-    : _dataSource = dataSource;
+  CostEstimationRepositoryImpl({required this._dataSource});
 
   String _buildStreamKey(
     String projectId,

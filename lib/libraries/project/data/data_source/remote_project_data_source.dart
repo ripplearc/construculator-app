@@ -11,8 +11,7 @@ class RemoteProjectDataSource implements ProjectDataSource {
   final SupabaseWrapper _supabaseWrapper;
   static final _logger = AppLogger().tag('RemoteProjectDataSource');
 
-  const RemoteProjectDataSource({required SupabaseWrapper supabaseWrapper})
-    : _supabaseWrapper = supabaseWrapper;
+  const RemoteProjectDataSource({required this._supabaseWrapper});
 
   @override
   Future<List<ProjectDto>> getOwnedProjects(String userId) async {

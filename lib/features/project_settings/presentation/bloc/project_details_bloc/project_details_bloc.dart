@@ -16,9 +16,8 @@ class ProjectDetailsBloc
     extends Bloc<ProjectDetailsEvent, ProjectDetailsState> {
   final ProjectRepository _projectRepository;
 
-  ProjectDetailsBloc({required ProjectRepository projectRepository})
-    : _projectRepository = projectRepository,
-      super(const ProjectDetailsInitial()) {
+  ProjectDetailsBloc({required this._projectRepository})
+    : super(const ProjectDetailsInitial()) {
     on<ProjectDetailsStarted>(_onStarted);
     on<ProjectDetailsRefreshed>(_onRefreshed);
   }

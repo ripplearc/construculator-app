@@ -35,8 +35,8 @@ class SearchResultsList extends StatelessWidget {
     required this.results,
     required this.onEstimationTap,
     this.onEstimationMenuTap,
-    required EstimationTileProvider estimationTileProvider,
-  }) : _estimationTileProvider = estimationTileProvider;
+    required this._estimationTileProvider,
+  });
 
   @override
   Widget build(BuildContext context) {

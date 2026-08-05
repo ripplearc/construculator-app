@@ -14,7 +14,6 @@ analyzer:
     - custom_lint
   errors:
     invalid_annotation_target: ignore
-    prefer_initializing_formals: ignore # TODO: [CA-827] [Chore] Fix prefer_initializing_formals violations surfaced by Dart 3.12.2 analyzer expansion https://ripplearc.youtrack.cloud/issue/CA-827/Chore-Fix-prefer_initializing_formals-violations-surfaced-by-Dart-3.12.2-analyzer-expansion
   exclude:
     - lib/generated/**
     - lib/**.g.dart
