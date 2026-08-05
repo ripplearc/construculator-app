@@ -10,6 +10,7 @@ import 'package:construculator/libraries/auth/domain/entities/user_profile_entit
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/global_search/presentation/widgets/search_load_failure_widget.dart';
+import 'package:construculator/libraries/global_search/presentation/widgets/search_results_views.dart';
 import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:flutter/material.dart';
@@ -276,11 +277,11 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
       );
     }
     if (state is ProjectSearchLoading) {
-      return const ProjectSearchResultsLoadingView();
+      return const SearchResultsLoadingView();
     }
     if (state is ProjectSearchResultsLoaded) {
       if (state.results.isEmpty) {
-        return ProjectSearchResultsEmptyView(query: state.query);
+        return SearchResultsEmptyView(query: state.query);
       }
       return ProjectSearchResultsList(
         results: state.results,

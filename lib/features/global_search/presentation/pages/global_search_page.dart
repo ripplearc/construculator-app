@@ -10,6 +10,7 @@ import 'package:construculator/libraries/estimation/domain/estimation_tile_provi
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/formatting/display_formatter.dart';
 import 'package:construculator/libraries/global_search/presentation/widgets/search_load_failure_widget.dart';
+import 'package:construculator/libraries/global_search/presentation/widgets/search_results_views.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:flutter/material.dart';
