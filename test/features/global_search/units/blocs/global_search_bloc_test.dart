@@ -2693,6 +2693,64 @@ void main() {
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'a scope change dispatched while GlobalSearchStarted is still '
+        'fetching wins: the disowned initial load neither reverts the scope '
+        'nor replaces the history',
+        setUp: seedUserWithScopedHistory,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          // Gate both history fetches on one completer so the scope change is
+          // dispatched while GlobalSearchStarted's own fetch is still in
+          // flight. Completing the gate resumes both FIFO: the initial load
+          // resumes first while already disowned and must bail; only the
+          // scope change's reload may publish.
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          bloc.add(const GlobalSearchStarted());
+          bloc.add(
+            const GlobalSearchScopeChanged(scope: SearchScope.estimation),
+          );
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.selectedScope == SearchScope.estimation,
+          );
+          fakeSupabase.completer!.complete();
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('girder'),
+          );
+        },
+        // Exactly two emissions: the disowned initial load's late completion
+        // must not emit at all, so no dashboard-scoped state ever appears.
+        expect: () => [
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedScope,
+                'selectedScope',
+                SearchScope.estimation,
+              )
+              .having(
+                (s) => s.recentSearches,
+                'history empty until the reload lands',
+                isEmpty,
+              ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedScope,
+                'selectedScope kept by the scope change',
+                SearchScope.estimation,
+              )
+              .having(
+                (s) => s.recentSearches,
+                'estimation history',
+                ['girder'],
+              ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
         'GlobalSearchStarted resets the selected scope to its own scope',
         setUp: seedUserWithScopedHistory,
         build: () => Modular.get<GlobalSearchBloc>(),

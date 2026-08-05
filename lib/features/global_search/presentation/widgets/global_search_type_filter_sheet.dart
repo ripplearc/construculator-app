@@ -77,6 +77,9 @@ class _GlobalSearchTypeFilterSheetState
                 key: const Key('type_filter_option_calculation'),
                 label: l10n.globalSearchTypeCalculationLabel,
                 isSelected: false,
+                // TODO: [CA-849] Enable once the global_search RPC supports
+                //   the calculation scope (rejects it with SQLSTATE 22023).
+                //   https://ripplearc.youtrack.cloud/issue/CA-849
                 enabled: false,
                 onTap: null,
               ),

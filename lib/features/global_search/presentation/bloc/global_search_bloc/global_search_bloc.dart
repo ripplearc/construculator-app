@@ -89,10 +89,10 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
 
   SearchScope _selectedScope = SearchScope.dashboard;
 
-  // Guards the recents reload triggered by a scope change: a
-  // [GlobalSearchStarted] reset (or a newer scope change) disowns an
-  // in-flight reload so its completion cannot stomp the newer scope's
-  // history.
+  // Guards every recents fetch — the initial [GlobalSearchStarted] load and
+  // the reload triggered by a scope change: whichever of the two is
+  // dispatched later disowns the older in-flight fetch, so a late completion
+  // cannot stomp the newer scope's selection or history.
   int _recentsFetchGeneration = 0;
 
   GlobalSearchBloc({
@@ -212,7 +212,17 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     GlobalSearchStarted event,
     Emitter<GlobalSearchState> emit,
   ) async {
+    // Reset the scope eagerly, before the await, so a failed reload cannot
+    // carry a stale selection forward; _onScopeChanged resets it the same way.
+    _selectedScope = event.scope;
+    // Captured before the await, like _onScopeChanged: a scope change
+    // dispatched while this fetch is in flight takes ownership of the scope
+    // and history, and this fetch's late completion must not clobber it.
+    final generation = ++_recentsFetchGeneration;
     final result = await _repository.getRecentSearches(event.scope);
+    // A scope change (or a newer reset) disowned this fetch while it was in
+    // flight; its owner will populate the history.
+    if (generation != _recentsFetchGeneration) return;
     result.fold(
         (failure) => emit(GlobalSearchRecentsLoadFailure(failure: failure)), (
       recentSearches,
@@ -239,8 +249,6 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       _availableOwnersLoading = false;
       _availableOwnersFetchGeneration++;
       _selectedDateRange = null;
-      _selectedScope = event.scope;
-      _recentsFetchGeneration++;
       emit(_readyState());
     });
   }
