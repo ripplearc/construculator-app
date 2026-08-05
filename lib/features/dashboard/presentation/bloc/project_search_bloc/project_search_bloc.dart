@@ -64,6 +64,14 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
   // and would otherwise clear the signal before the user applies the filter.
   bool _searchIsActive = false;
 
+  // Guards the performed-search execution: [ProjectSearchPerformedEvent]
+  // runs under bloc's default flatMap transformer, so two overlapping
+  // dispatches (e.g. two quick filter-chip taps each re-running the active
+  // search) execute concurrently and whichever RPC resolves last would win
+  // the final emit. The older dispatch bails out on completion instead, so
+  // the visible results always reflect the newest dispatch.
+  int _searchExecutionGeneration = 0;
+
   bool _suggestionsFetched = false;
 
   bool _suggestionsLoading = false;
@@ -258,6 +266,9 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     _suggestionsFetchGeneration++;
     _lastPerformedQuery = null;
     _searchIsActive = false;
+    // Disown any in-flight performed search so its completion cannot
+    // publish results over the freshly reset surface.
+    _searchExecutionGeneration++;
     _selectedTags = const {};
     _tagSearchQuery = '';
     _availableTags = const [];
@@ -351,6 +362,10 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
 
     _lastPerformedQuery = query;
     _searchIsActive = true;
+    // Captured before the await: a newer dispatch (or a reset) disowns this
+    // execution, so its slower RPC cannot publish stale results on top of
+    // the newer one's.
+    final generation = ++_searchExecutionGeneration;
     emit(ProjectSearchLoading(query: query));
 
     // The RPC accepts a single tag/owner, so a multi-selection is silently
@@ -387,6 +402,11 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
       filterByDateFrom: _selectedDateRange?.start,
       filterByDateTo: _selectedDateRange?.end,
     );
+
+    // A newer dispatch (or a reset) disowned this execution while its RPC
+    // was in flight; the newer one owns the results surface and the
+    // history save.
+    if (generation != _searchExecutionGeneration) return;
 
     result.fold(
       (failure) {

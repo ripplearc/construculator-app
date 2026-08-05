@@ -2820,6 +2820,20 @@ void main() {
           );
           await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
         },
+        // The interim ready state (carrying the new range) must be emitted
+        // before the re-run's loading state — pins the handler's
+        // emit-then-re-run ordering, not just the RPC call count.
+        expect: () => [
+          isA<GlobalSearchLoadInProgress>(),
+          isA<GlobalSearchLoadSuccess>(),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedDateRange,
+            'selectedDateRange',
+            isNotNull,
+          ),
+          isA<GlobalSearchLoadInProgress>(),
+          isA<GlobalSearchLoadSuccess>(),
+        ],
         verify: (bloc) {
           final calls = searchCalls();
           expect(calls, hasLength(2));
@@ -2846,6 +2860,19 @@ void main() {
           bloc.add(const GlobalSearchTagFiltersApplied(tags: {'Roofing'}));
           await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
         },
+        // See the date-filter test above: the sequence pins the
+        // emit-then-re-run ordering.
+        expect: () => [
+          isA<GlobalSearchLoadInProgress>(),
+          isA<GlobalSearchLoadSuccess>(),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'selectedTags',
+            {'Roofing'},
+          ),
+          isA<GlobalSearchLoadInProgress>(),
+          isA<GlobalSearchLoadSuccess>(),
+        ],
         verify: (bloc) {
           final calls = searchCalls();
           expect(calls, hasLength(2));
@@ -2866,6 +2893,24 @@ void main() {
           bloc.add(const GlobalSearchTagFilterCleared(tag: 'Roofing'));
           await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
         },
+        // See the date-filter test above: the sequence pins the
+        // emit-then-re-run ordering.
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'selectedTags',
+            {'Roofing'},
+          ),
+          isA<GlobalSearchLoadInProgress>(),
+          isA<GlobalSearchLoadSuccess>(),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'selectedTags',
+            isEmpty,
+          ),
+          isA<GlobalSearchLoadInProgress>(),
+          isA<GlobalSearchLoadSuccess>(),
+        ],
         verify: (bloc) {
           final calls = searchCalls();
           expect(calls, hasLength(2));
@@ -2893,6 +2938,61 @@ void main() {
           final params = calls.last['params'] as Map<String, dynamic>;
           expect(params['scope'], 'estimation');
         },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'a search dispatched while an older one is still in flight wins: '
+        'the older RPC resolving last cannot publish stale results',
+        setUp: seedOneProjectResult,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          // Park the older search's RPC on a gate. Its loading state is
+          // emitted before the RPC await, so once that state is observed the
+          // older search is parked.
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          final olderSearchGate = fakeSupabase.completer!;
+          bloc.add(const GlobalSearchPerformed(query: 'foundation'));
+          await bloc.stream.firstWhere(
+            (s) => s is GlobalSearchLoadInProgress && s.query == 'foundation',
+          );
+          // The newer search runs ungated and publishes first.
+          fakeSupabase.shouldDelayOperations = false;
+          bloc.add(const GlobalSearchPerformed(query: 'girder'));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
+          // Swap the RPC response to empty before releasing the older
+          // search: if its late completion ever published, it would emit a
+          // LoadEmpty distinct from the newer LoadSuccess (an identical
+          // LoadSuccess would be deduplicated by Equatable and hide the
+          // regression).
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            {
+              'projects': <Map<String, dynamic>>[],
+              'estimations': <Map<String, dynamic>>[],
+              'members': <Map<String, dynamic>>[],
+            },
+          );
+          // Release the disowned older search; its generation-guarded
+          // continuation runs to completion during bloc.close() without
+          // emitting.
+          olderSearchGate.complete();
+        },
+        // Exactly three emissions: the older search's late completion must
+        // not publish a stale state over the newer results.
+        expect: () => [
+          isA<GlobalSearchLoadInProgress>().having(
+            (s) => s.query,
+            'query',
+            'foundation',
+          ),
+          isA<GlobalSearchLoadInProgress>().having(
+            (s) => s.query,
+            'query',
+            'girder',
+          ),
+          isA<GlobalSearchLoadSuccess>(),
+        ],
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
