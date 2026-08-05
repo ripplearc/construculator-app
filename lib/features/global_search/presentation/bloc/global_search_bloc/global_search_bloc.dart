@@ -105,6 +105,14 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   // cannot stomp the newer scope's selection or history.
   int _recentsFetchGeneration = 0;
 
+  // Guards the performed-search execution: [GlobalSearchPerformed] runs
+  // under bloc's default flatMap transformer, so two overlapping dispatches
+  // (e.g. two quick filter-chip taps each re-running the active search)
+  // execute concurrently and whichever RPC resolves last would win the
+  // final emit. The older dispatch bails out on completion instead, so the
+  // visible results always reflect the newest dispatch.
+  int _searchExecutionGeneration = 0;
+
   GlobalSearchBloc({
     required this._repository,
     required this._tagRepository,
@@ -258,6 +266,9 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       _availableTagsFetchGeneration++;
       _lastPerformedQuery = null;
       _searchIsActive = false;
+      // Disown any in-flight performed search so its completion cannot
+      // publish results over the freshly reset surface.
+      _searchExecutionGeneration++;
       _selectedOwnerIds = const {};
       _ownerSearchQuery = '';
       _availableOwners = const [];
@@ -339,6 +350,10 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     _currentQuery = trimmedQuery;
     _lastPerformedQuery = trimmedQuery;
     _searchIsActive = true;
+    // Captured before the await: a newer dispatch (or a reset) disowns this
+    // execution, so its slower RPC cannot publish stale results on top of
+    // the newer one's.
+    final generation = ++_searchExecutionGeneration;
     emit(GlobalSearchLoadInProgress(query: trimmedQuery));
 
     final result = await _repository.search(
@@ -358,6 +373,11 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
         filterByDateTo: _selectedDateRange?.end,
       ),
     );
+
+    // A newer dispatch (or a reset) disowned this execution while its RPC
+    // was in flight; the newer one owns the results surface and the
+    // history save.
+    if (generation != _searchExecutionGeneration) return;
 
     result.fold(
         (failure) => emit(

@@ -1980,6 +1980,20 @@ void main() {
           );
           await bloc.stream.firstWhere((s) => s is ProjectSearchResultsLoaded);
         },
+        // The interim idle state (carrying the new range) must be emitted
+        // before the re-run's loading state — pins the handler's
+        // emit-then-re-run ordering, not just the RPC call count.
+        expect: () => [
+          isA<ProjectSearchLoading>().having((s) => s.query, 'query', 'wall'),
+          isA<ProjectSearchResultsLoaded>(),
+          isA<ProjectSearchInitial>().having(
+            (s) => s.selectedDateRange,
+            'selectedDateRange',
+            isNotNull,
+          ),
+          isA<ProjectSearchLoading>().having((s) => s.query, 'query', 'wall'),
+          isA<ProjectSearchResultsLoaded>(),
+        ],
         verify: (_) {
           final calls = searchCalls();
           expect(calls, hasLength(2));
@@ -2008,6 +2022,19 @@ void main() {
           );
           await bloc.stream.firstWhere((s) => s is ProjectSearchResultsLoaded);
         },
+        // See the date-filter test above: the sequence pins the
+        // emit-then-re-run ordering.
+        expect: () => [
+          isA<ProjectSearchLoading>().having((s) => s.query, 'query', 'wall'),
+          isA<ProjectSearchResultsLoaded>(),
+          isA<ProjectSearchInitial>().having(
+            (s) => s.selectedOwnerIds,
+            'selectedOwnerIds',
+            {'owner-1'},
+          ),
+          isA<ProjectSearchLoading>().having((s) => s.query, 'query', 'wall'),
+          isA<ProjectSearchResultsLoaded>(),
+        ],
         verify: (_) {
           final calls = searchCalls();
           expect(calls, hasLength(2));
@@ -2030,6 +2057,24 @@ void main() {
           bloc.add(const ProjectSearchTagFilterClearedEvent(tag: 'Roofing'));
           await bloc.stream.firstWhere((s) => s is ProjectSearchResultsLoaded);
         },
+        // See the date-filter test above: the sequence pins the
+        // emit-then-re-run ordering.
+        expect: () => [
+          isA<ProjectSearchInitial>().having(
+            (s) => s.selectedTags,
+            'selectedTags',
+            {'Roofing'},
+          ),
+          isA<ProjectSearchLoading>().having((s) => s.query, 'query', 'wall'),
+          isA<ProjectSearchResultsLoaded>(),
+          isA<ProjectSearchInitial>().having(
+            (s) => s.selectedTags,
+            'selectedTags',
+            isEmpty,
+          ),
+          isA<ProjectSearchLoading>().having((s) => s.query, 'query', 'wall'),
+          isA<ProjectSearchResultsLoaded>(),
+        ],
         verify: (_) {
           final calls = searchCalls();
           expect(calls, hasLength(2));
@@ -2068,6 +2113,46 @@ void main() {
           final params = calls.last['params'] as Map<String, dynamic>;
           expect(params['filter_by_owners'], ['owner-1']);
         },
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'a search dispatched while an older one is still in flight wins: '
+        'the older RPC resolving last cannot publish stale results',
+        setUp: seedOneProjectResult,
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          // Park the older search's RPC on a gate. Its loading state is
+          // emitted before the RPC await, so once that state is observed the
+          // older search is parked.
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          final olderSearchGate = fakeSupabase.completer!;
+          bloc.add(const ProjectSearchPerformedEvent(query: 'wall'));
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchLoading && s.query == 'wall',
+          );
+          // The newer search runs ungated and publishes first.
+          fakeSupabase.shouldDelayOperations = false;
+          bloc.add(const ProjectSearchPerformedEvent(query: 'bridge'));
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchResultsLoaded && s.query == 'bridge',
+          );
+          // Release the disowned older search; its generation-guarded
+          // continuation runs to completion during bloc.close() without
+          // emitting.
+          olderSearchGate.complete();
+        },
+        // Exactly three emissions: the older search's late completion must
+        // not publish a stale ResultsLoaded('wall') over the newer results.
+        expect: () => [
+          isA<ProjectSearchLoading>().having((s) => s.query, 'query', 'wall'),
+          isA<ProjectSearchLoading>().having((s) => s.query, 'query', 'bridge'),
+          isA<ProjectSearchResultsLoaded>().having(
+            (s) => s.query,
+            'query',
+            'bridge',
+          ),
+        ],
       );
 
       blocTest<ProjectSearchBloc, ProjectSearchState>(
