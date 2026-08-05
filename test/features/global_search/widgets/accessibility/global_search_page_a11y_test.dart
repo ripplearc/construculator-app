@@ -338,6 +338,93 @@ void main() {
     );
 
     testWidgets(
+      'meets a11y guidelines for the Cost option row inside the open Type '
+      'sheet in both themes',
+      (tester) async {
+        // A signed-in user keeps the recents load from failing, so no error
+        // toast overlays the chip row while the sheet is being opened.
+        fakeSupabase.setCurrentUser(
+          FakeUser(
+            id: _testUserId,
+            email: _testUserEmail,
+            createdAt: '2024-01-01T00:00:00.000Z',
+          ),
+        );
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme),
+          find.byKey(const Key('type_filter_option_cost')),
+          checkTapTargetSize: true,
+          checkLabeledTapTarget: true,
+          setupAfterPump: (t) async {
+            // The Navigator state survives the per-theme pumpWidget, so the
+            // sheet route opened by the previous theme pass would leave a
+            // modal barrier that swallows the chip tap — pop back first.
+            t.state<NavigatorState>(find.byType(Navigator).first).popUntil(
+              (route) => route.isFirst,
+            );
+            await t.pumpAndSettle();
+            // The Type chip is the last chip in the horizontal filter row and
+            // sits partially offscreen at the default surface width.
+            await t.ensureVisible(
+              find.byKey(const Key('global_search_type_filter_chip')),
+            );
+            await t.pumpAndSettle();
+            await t.tap(find.byKey(const Key('global_search_type_filter_chip')));
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
+
+    testWidgets(
+      'meets a11y guidelines for the disabled Calculation option row inside '
+      'the open Type sheet in both themes',
+      (tester) async {
+        // A signed-in user keeps the recents load from failing, so no error
+        // toast overlays the chip row while the sheet is being opened.
+        fakeSupabase.setCurrentUser(
+          FakeUser(
+            id: _testUserId,
+            email: _testUserEmail,
+            createdAt: '2024-01-01T00:00:00.000Z',
+          ),
+        );
+        await setupA11yTest(tester);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => makeTestableWidget(theme: theme),
+          find.byKey(const Key('type_filter_option_calculation')),
+          checkTapTargetSize: true,
+          // The row is disabled (no tap action), so the labeled-tap-target
+          // guideline does not apply; the default contrast check still
+          // verifies its textDisable colour against the sheet background.
+          checkLabeledTapTarget: false,
+          setupAfterPump: (t) async {
+            // The Navigator state survives the per-theme pumpWidget, so the
+            // sheet route opened by the previous theme pass would leave a
+            // modal barrier that swallows the chip tap — pop back first.
+            t.state<NavigatorState>(find.byType(Navigator).first).popUntil(
+              (route) => route.isFirst,
+            );
+            await t.pumpAndSettle();
+            // The Type chip is the last chip in the horizontal filter row and
+            // sits partially offscreen at the default surface width.
+            await t.ensureVisible(
+              find.byKey(const Key('global_search_type_filter_chip')),
+            );
+            await t.pumpAndSettle();
+            await t.tap(find.byKey(const Key('global_search_type_filter_chip')));
+            await t.pumpAndSettle();
+          },
+        );
+      },
+    );
+
+    testWidgets(
       'meets a11y guidelines for search failure retry button in both themes',
       (tester) async {
         fakeSupabase.setCurrentUser(

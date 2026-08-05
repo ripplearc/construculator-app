@@ -188,17 +188,18 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
     );
   }
 
-  // Maps a scope to its user-facing Type label. The dashboard arm is
-  // unreachable (no pill renders for the default scope) and member is not
-  // offered by the Type sheet; both fall back to the Cost label for
-  // exhaustiveness.
+  // Maps a scope to its user-facing Type label.
   String _typeLabel(BuildContext context, SearchScope scope) {
     final l10n = context.l10n;
     return switch (scope) {
-      SearchScope.estimation ||
-      SearchScope.dashboard ||
-      SearchScope.member => l10n.globalSearchTypeCostLabel,
+      SearchScope.estimation => l10n.globalSearchTypeCostLabel,
       SearchScope.calculation => l10n.globalSearchTypeCalculationLabel,
+      // dashboard is unreachable (no pill renders for the default scope);
+      // member is not offered by the Type sheet — fail loudly rather than
+      // silently mislabelling the pill if a future caller reaches here.
+      SearchScope.dashboard || SearchScope.member => throw StateError(
+          'unreachable: _typeLabel called for scope $scope',
+        ),
     };
   }
 
