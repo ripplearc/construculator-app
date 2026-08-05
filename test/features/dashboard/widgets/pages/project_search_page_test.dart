@@ -831,7 +831,7 @@ void main() {
         await tester.pump();
 
         expect(
-          find.byKey(const Key('projectSearchResultsLoadingView')),
+          find.byKey(const Key('searchResultsLoadingView')),
           findsOneWidget,
         );
 
@@ -856,7 +856,7 @@ void main() {
         await submitSearch(tester, 'nonexistent');
 
         expect(
-          find.byKey(const Key('projectSearchResultsEmptyView')),
+          find.byKey(const Key('searchResultsEmptyView')),
           findsOneWidget,
         );
         expect(

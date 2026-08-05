@@ -4,8 +4,6 @@ import 'package:construculator/libraries/project/domain/entities/project_entity.
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-const double _emptyStateMaxMessageWidth = 320.0;
-
 /// Scrollable list of project search results grouped under a
 /// "Most relevant" header.
 ///
@@ -71,61 +69,6 @@ class ProjectSearchResultsList extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// Centered loading indicator shown while a project search is in flight.
-class ProjectSearchResultsLoadingView extends StatelessWidget {
-  /// Creates a [ProjectSearchResultsLoadingView].
-  const ProjectSearchResultsLoadingView({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      key: Key('projectSearchResultsLoadingView'),
-      child: CoreLoadingIndicator(key: Key('projectSearchLoadingIndicator')),
-    );
-  }
-}
-
-/// Empty state shown when a project search completes with no matches.
-class ProjectSearchResultsEmptyView extends StatelessWidget {
-  /// The query that produced no results; shown in the message.
-  final String query;
-
-  /// Creates a [ProjectSearchResultsEmptyView].
-  const ProjectSearchResultsEmptyView({super.key, required this.query});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      key: const Key('projectSearchResultsEmptyView'),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CoreIconWidget(
-            key: const Key('projectSearchEmptyIcon'),
-            icon: CoreIcons.fileSearch,
-            size: CoreIconSize.size32,
-            color: context.colorTheme.iconGrayMid,
-          ),
-          const SizedBox(height: CoreSpacing.space6),
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: _emptyStateMaxMessageWidth,
-            ),
-            child: Text(
-              context.l10n.searchResultsEmpty(query),
-              key: const Key('projectSearchEmptyMessage'),
-              textAlign: TextAlign.center,
-              style: context.textTheme.bodyMediumRegular.copyWith(
-                color: context.colorTheme.textHeadline,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
