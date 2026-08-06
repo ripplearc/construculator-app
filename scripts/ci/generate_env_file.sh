@@ -11,6 +11,8 @@
 #   - SUPABASE_URL: The Supabase project URL
 #   - SUPABASE_ANON_KEY: The Supabase anonymous/public key
 #   - API_URL: The API base URL
+#   - POSTHOG_API_KEY: The PostHog project API key (dev only for now)
+#   - POSTHOG_HOST: The PostHog ingestion host (dev only for now)
 #
 # Usage:
 #   This script is automatically run by Codemagic before the build.
@@ -37,23 +39,29 @@ SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-}"
 DEBUG_MODE="${DEBUG_MODE:-false}"
 ANALYTICS_ENABLED="${ANALYTICS_ENABLED:-false}"
 SENTRY_DSN="${SENTRY_DSN:-}"
+POSTHOG_API_KEY="${POSTHOG_API_KEY:-}"
+POSTHOG_HOST="${POSTHOG_HOST:-}"
+POSTHOG_DEBUG="${POSTHOG_DEBUG:-false}"
 
 # Determine environment-specific values
 case "${ENVIRONMENT}" in
   dev)
     ENV_FILE="assets/env/.env.dev"
     DEBUG_MODE="true"
-    ANALYTICS_ENABLED="false"
+    ANALYTICS_ENABLED="true"
+    POSTHOG_DEBUG="true"
     ;;
   qa)
     ENV_FILE="assets/env/.env.qa"
     DEBUG_MODE="false"
-    ANALYTICS_ENABLED="true"
+    ANALYTICS_ENABLED="false"
+    POSTHOG_DEBUG="false"
     ;;
   prod)
     ENV_FILE="assets/env/.env.prod"
     DEBUG_MODE="false"
-    ANALYTICS_ENABLED="true"
+    ANALYTICS_ENABLED="false"
+    POSTHOG_DEBUG="false"
     ;;
   *)
     echo "❌ ERROR: Invalid ENVIRONMENT value: ${ENVIRONMENT}"
@@ -77,6 +85,9 @@ SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY}"
 DEBUG_MODE="${DEBUG_MODE}"
 ANALYTICS_ENABLED="${ANALYTICS_ENABLED}"
 SENTRY_DSN="${SENTRY_DSN}"
+POSTHOG_API_KEY="${POSTHOG_API_KEY}"
+POSTHOG_HOST="${POSTHOG_HOST}"
+POSTHOG_DEBUG="${POSTHOG_DEBUG}"
 EOF
 
 echo "✅ Environment file created successfully: ${ENV_FILE}"
@@ -86,6 +97,7 @@ echo "   Environment: ${ENVIRONMENT}"
 echo "   Debug Mode: ${DEBUG_MODE}"
 echo "   Analytics: ${ANALYTICS_ENABLED}"
 echo "   Sentry: $([ -n "${SENTRY_DSN}" ] && echo "Enabled" || echo "Disabled")"
+echo "   PostHog: $([ -n "${POSTHOG_API_KEY}" ] && echo "Enabled" || echo "Disabled")"
 echo ""
 
 # Verify the file was created

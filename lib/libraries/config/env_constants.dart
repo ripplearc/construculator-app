@@ -12,6 +12,10 @@ const String prodAlias = '';
 
 const String sentryDsnKey = 'SENTRY_DSN';
 
+const String posthogApiKeyKey = 'POSTHOG_API_KEY';
+const String posthogHostKey = 'POSTHOG_HOST';
+const String posthogDebugKey = 'POSTHOG_DEBUG';
+
 enum Environment { dev, qa, prod }
 
 const Duration debounceTime = Duration(milliseconds: 300);
