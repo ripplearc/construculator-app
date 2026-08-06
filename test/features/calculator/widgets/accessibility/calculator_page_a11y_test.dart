@@ -1,5 +1,6 @@
 import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/l10n/generated/app_localizations_en.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -33,7 +34,7 @@ void main() {
         await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
           tester,
           (theme) => makeTestableWidget(theme: theme),
-          find.bySemanticsLabel('Close'),
+          find.bySemanticsLabel(AppLocalizationsEn().closeButton),
           checkTapTargetSize: false,
         );
       },
