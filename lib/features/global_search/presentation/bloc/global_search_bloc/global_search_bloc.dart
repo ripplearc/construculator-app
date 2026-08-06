@@ -214,6 +214,10 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   ) async {
     // Reset the scope eagerly, before the await, so a failed reload cannot
     // carry a stale selection forward; _onScopeChanged resets it the same way.
+    // This unguarded write is safe only while GlobalSearchStarted is
+    // dispatched exactly once, at bloc creation, before any UI can race it;
+    // a re-dispatch (e.g. a future reset-all affordance) would silently
+    // clobber a scope the user has already applied.
     _selectedScope = event.scope;
     // Captured before the await, like _onScopeChanged: a scope change
     // dispatched while this fetch is in flight takes ownership of the scope
