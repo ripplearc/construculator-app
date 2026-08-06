@@ -109,6 +109,13 @@ void main() {
       expect(find.byKey(const Key('cost_file_field')), findsNothing);
     });
 
+    testWidgets('hides calc method card', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('calc_method_card')), findsNothing);
+    });
+
     testWidgets('brand and product link hidden by default', (tester) async {
       await tester.pumpWidget(makeWidget());
       await tester.pumpAndSettle();

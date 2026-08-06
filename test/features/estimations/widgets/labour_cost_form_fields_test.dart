@@ -139,6 +139,27 @@ void main() {
 
       expect(find.byKey(const Key('rate_row')), findsNothing);
     });
+
+    testWidgets('shows calc method card', (tester) async {
+      await tester.pumpWidget(makeWidget(fromCostFile: true));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('calc_method_card')), findsOneWidget);
+    });
+
+    testWidgets('shows conditional value field', (tester) async {
+      await tester.pumpWidget(makeWidget(fromCostFile: true));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('conditional_value_field')), findsOneWidget);
+    });
+
+    testWidgets('shows crew size field', (tester) async {
+      await tester.pumpWidget(makeWidget(fromCostFile: true));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('crew_size_field')), findsOneWidget);
+    });
   });
 
   group('LabourCostFormFields — calc method switching', () {
@@ -176,6 +197,31 @@ void main() {
       final perDay = tester.getSemantics(find.byKey(const Key('per_day_option')));
       expect(perHours.flagsCollection.isSelected.toBoolOrNull(), isTrue);
       expect(perDay.flagsCollection.isSelected.toBoolOrNull(), isFalse);
+    });
+
+    testWidgets('shows crew size field when per hours is selected', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('per_hours_option')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('crew_size_field')), findsOneWidget);
+    });
+
+    testWidgets(
+        'tapping per hours in from cost file mode changes conditional field label',
+        (tester) async {
+      await tester.pumpWidget(makeWidget(fromCostFile: true));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('per_hours_option')));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.noOfHoursLabel), findsOneWidget);
+      expect(find.text(l10n.noOfDaysLabel), findsNothing);
     });
   });
 
