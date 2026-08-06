@@ -114,6 +114,35 @@ void main() {
           expect(bloc.state.finalizedValues['Run'], 12.0);
         },
       );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'does nothing for a non-= operator',
+        build: () => bloc,
+        seed: () => const CalculatorState(
+          isTyping: true,
+          activeInputLabel: 'Run',
+          currentInputValue: '12',
+          currentNumericValue: '12',
+        ),
+        act: (bloc) => bloc.add(const CalculatorOperatorPressed('+')),
+        expect: () => [],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'activates the pressed key without finalizing anything on the very first key press',
+        build: () => bloc,
+        act: (bloc) => bloc.add(const CalculatorKeySelected('Width')),
+        expect: () => [
+          const CalculatorState(
+            activeInputLabel: 'Width',
+            isTyping: true,
+          ),
+        ],
+        verify: (bloc) {
+          expect(bloc.state.completedChips, isEmpty);
+          expect(bloc.state.finalizedValues, isEmpty);
+        },
+      );
     });
 
     group('CalculatorKeySelected — Fence', () {
@@ -204,6 +233,15 @@ void main() {
           const CalculatorControlActioned(ControlAction.clearAll),
         ),
         expect: () => [CalculatorState.initial()],
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
+        'moreOptions does nothing',
+        build: () => bloc,
+        act: (bloc) => bloc.add(
+          const CalculatorControlActioned(ControlAction.moreOptions),
+        ),
+        expect: () => [],
       );
     });
 
