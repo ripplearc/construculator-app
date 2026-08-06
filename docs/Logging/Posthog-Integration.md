@@ -82,7 +82,7 @@ lib/libraries/analytics/
 │   │   └── analytics_user_properties.dart
 │   ├── repositories/
 │   │   ├── analytics_repository.dart      # Abstract contract
-│   │   └── feature_flag_repository.dart   # Abstract contract (separate per SRP)
+│   │   └── feature_flag_repository.dart   # Abstract contract (separate per SRP; Phase 4 — not created in Phase 1 Foundation)
 │   └── types/
 │       └── analytics_error_type.dart
 ├── data/
@@ -92,7 +92,8 @@ lib/libraries/analytics/
 │   └── mappers/
 │       └── analytics_event_mapper.dart
 ├── interfaces/
-│   └── analytics_service.dart
+│   ├── posthog_wrapper.dart    # High-level ops consumed by AnalyticsRepositoryImpl
+│   └── posthog_sdk.dart        # Thin boundary over the raw posthog_flutter static API
 └── analytics_module.dart
 
 lib/app/
@@ -115,11 +116,11 @@ lib/app/
 
 ```yaml
 dependencies:
-  posthog_flutter: ^5.0.0  # Check pub.dev for the latest stable version
+  posthog_flutter: ^5.35.1  # Verified against pub.dev 2026-08-06 — re-check before implementation
 
   # Optional: session replay (adds ~2MB to app size)
   # posthog_flutter:
-  #   version: ^5.0.0
+  #   version: ^5.35.1
   #   features: [session-replay]
 ```
 
@@ -149,16 +150,32 @@ cd ios && pod install && cd ..
 
 ### Step 3: Environment Configuration
 
-Add to `assets/env/.env.dev`, `.env.qa`, `.env.prod`:
+`assets/env/.env.dev`, `.env.qa`, `.env.prod` are **CI-generated** by
+`scripts/ci/generate_env_file.sh`, not hand-edited. Add the new keys there — a default
+line plus a heredoc entry, mirroring the existing `SENTRY_DSN` pattern — and add
+`POSTHOG_API_KEY`/`POSTHOG_HOST` (real secrets) to the `construculator_dev` Codemagic
+environment group. Add corresponding constants (`posthogApiKeyKey`, `posthogHostKey`,
+etc.) to `lib/libraries/config/env_constants.dart`, mirroring `sentryDsnKey`.
 
 ```env
 POSTHOG_API_KEY=phc_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-POSTHOG_HOST=https://us.i.posthog.com  # or https://eu.i.posthog.com for EU data residency
-POSTHOG_ENABLED=true
+POSTHOG_HOST=https://us.i.posthog.com
 POSTHOG_DEBUG=true  # false in production
 ```
 
-Use separate PostHog projects (and API keys) per environment.
+**No `POSTHOG_ENABLED` flag.** Reuse the existing `ANALYTICS_ENABLED` flag (already
+written by `generate_env_file.sh`, zero consumers today) as the analytics kill switch —
+introducing a second enable flag would be a foot-gun for the rollback plan, which
+depends on there being exactly one. *Decided: Ayana, 2026-08-06 (CA-939).*
+
+**Host is fixed at `https://us.i.posthog.com`** — Cloud, US region. *Decided: Suyang,
+2026-08-05.* EU residency is out of scope; revisit only if EU users become a target
+(a migration + compliance workstream, not a config change).
+
+**Project creation is phased**, not "one project per environment from day one": only
+the **dev** Cloud project is created now (CA-943); qa and prod projects are deferred
+until those flavors actually need analytics capture, matching Phase 6 below.
+*Decided: Ayana, 2026-08-06.*
 
 ### Step 4: Create Analytics Library Structure
 
@@ -172,7 +189,14 @@ Create the folder structure as defined in [Architecture Integration](#architectu
 4. Only identify user after authentication **and** consent.
 5. If consent revoked: call `reset()`, stop tracking, persist opt-out.
 
-**Hard rules:** Do not call `identify()` before consent. Do not send raw route arguments, free text, or sensitive values in event properties.
+**Consent decision:** the existing signup terms & privacy acceptance covers product
+analytics — there is no separate opt-in flow. *Decided: Suyang, 2026-08-05.* Caveat:
+the T&P text itself is still being finalized, so the enable/consent check must stay
+cheap to flip. To keep it that way, the check lives at a **single point in
+`PosthogWrapper`**, never at individual call sites — if the T&P work later requires
+opt-in, that's one gate to wire rather than every instrumentation call to retrofit.
+
+**Hard rule:** Do not send raw route arguments, free text, or sensitive values in event properties.
 
 ---
 
@@ -206,6 +230,10 @@ abstract class AnalyticsRepository {
 ```
 
 ### Domain Layer: Feature Flag Repository Interface
+
+> **Phase 4 scope.** `FeatureFlagRepository` is not part of the Phase 1 Foundation — it
+> lands with Feature Flags work (see [Migration & Rollout Plan](#migration--rollout-plan)).
+> Do not create this file alongside `AnalyticsRepository` in Phase 1.
 
 **File:** `lib/libraries/analytics/domain/repositories/feature_flag_repository.dart`
 
@@ -287,7 +315,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
 ### Data Layer: No-Op Repository
 
 ```dart
-/// Production no-op used when POSTHOG_ENABLED=false.
+/// Production no-op used when ANALYTICS_ENABLED=false.
 /// Not a test double — for tests, inject FakePosthogWrapper into AnalyticsRepositoryImpl.
 class NoOpAnalyticsRepository implements AnalyticsRepository {
   @override Future<Either<Failure, void>> track(AnalyticsEvent event) async => const Right(null);
@@ -300,35 +328,43 @@ class NoOpAnalyticsRepository implements AnalyticsRepository {
 
 ### Module Configuration & App Bootstrap
 
+SDK initialization is an infrastructure concern and must happen **before** Modular
+loads — `AppBootstrap` exists precisely for this. Following the same pattern as
+`SupabaseWrapperImpl`/`SentryWrapperImpl`/`AppConfigImpl`: construct the repository in
+`_initializeApp()` in `main.dart` using the already-threaded `EnvLoader` (never
+`dotenv.env[...]` directly), await its `initialize()`, and add the result as a field on
+`AppBootstrap`. The module then only *exposes* the pre-built instance — it never
+constructs it and never calls `Modular.get` outside a module file
+(`forbid_modular_get_outside_module`, CA-621/626).
+
 ```dart
-class AnalyticsModule extends Module {
-  @override
-  void binds(i) {
-    final enabled = dotenv.env['POSTHOG_ENABLED'] == 'true';
-    // Register the concrete impl so bootstrap can resolve it directly for initialization.
-    i.addLazySingleton<AnalyticsRepositoryImpl>(
-      () => AnalyticsRepositoryImpl(
-        apiKey: dotenv.env['POSTHOG_API_KEY']!,
-        host: dotenv.env['POSTHOG_HOST']!,
+// lib/main.dart — inside _initializeApp(), after envLoader/config/supabaseWrapper/sentryWrapper:
+final enabled = envLoader.get(analyticsEnabledKey) == 'true';
+final analyticsRepository = enabled
+    ? AnalyticsRepositoryImpl(
+        apiKey: envLoader.get(posthogApiKeyKey) ?? '',
+        host: envLoader.get(posthogHostKey) ?? '',
         posthogWrapper: PosthogWrapperImpl(),
-      ),
-    );
-    i.addLazySingleton<AnalyticsRepository>(
-      enabled ? () => i.get<AnalyticsRepositoryImpl>() : NoOpAnalyticsRepository.new,
-    );
-  }
+      )
+    : NoOpAnalyticsRepository();
+if (analyticsRepository is AnalyticsRepositoryImpl) {
+  await analyticsRepository.initialize();
 }
+return AppBootstrap(
+  // ...existing fields...
+  analyticsRepository: analyticsRepository,
+);
 ```
 
-SDK initialization is an infrastructure concern — call it on the concrete impl during bootstrap, not through the domain interface:
-
 ```dart
-class AppBootstrap {
-  static Future<void> initialize() async {
-    if (dotenv.env['POSTHOG_ENABLED'] == 'true') {
-      final impl = Modular.get<AnalyticsRepositoryImpl>();
-      await impl.initialize();
-    }
+// lib/libraries/analytics/analytics_module.dart — mirrors ConfigModule
+class AnalyticsModule extends Module {
+  final AppBootstrap appBootstrap;
+  AnalyticsModule(this.appBootstrap);
+
+  @override
+  void exportedBinds(Injector i) {
+    i.addSingleton<AnalyticsRepository>(() => appBootstrap.analyticsRepository);
   }
 }
 ```
@@ -374,6 +410,13 @@ await _analyticsRepository.track(AnalyticsEvent(name: 'user_logged_in'));
 ```
 
 **Track Screen Views in Router:**
+
+> **Not a drop-in `PosthogObserver()`.** The app uses `MaterialApp.router` with
+> `Modular.routerConfig`, not the legacy Navigator API — Sentry's equivalent observer is
+> wired via `Modular.routerDelegate.setObservers([SentryNavigatorObserver()])` in
+> `lib/app/app.dart`. If screen-view tracking moves to an observer-based approach
+> (CA-944) instead of the manual `track()` call below, it must go through
+> `Modular.routerDelegate.setObservers([...])` the same way.
 
 ```dart
 class AppRouterImpl {
@@ -736,7 +779,7 @@ blocTest<AddCostEstimationBloc, AddCostEstimationState>(
 1. Set kill-switch flag `analytics_capture_enabled=false` (immediate, no release needed)
 2. Call `reset()` for active sessions where required by policy
 3. Keep app functional with `NoOpAnalyticsRepository` behavior in code paths
-4. For hard-disable: set `POSTHOG_ENABLED=false` in environment and ship next release
+4. For hard-disable: set `ANALYTICS_ENABLED=false` in environment and ship next release
 
 ---
 
