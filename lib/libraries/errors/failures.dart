@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/analytics/domain/types/analytics_error_type.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/global_search/domain/search_error_type.dart';
@@ -84,6 +85,18 @@ class ProjectFailure extends Failure {
 
   /// Creates a [ProjectFailure] with the given [errorType].
   const ProjectFailure({required this.errorType});
+
+  @override
+  List<Object?> get props => [errorType];
+}
+
+/// Failure thrown when an analytics operation fails.
+class AnalyticsFailure extends Failure {
+  /// The type of analytics error that occurred.
+  final AnalyticsErrorType errorType;
+
+  /// Creates an [AnalyticsFailure] with the given [errorType].
+  const AnalyticsFailure({required this.errorType});
 
   @override
   List<Object?> get props => [errorType];
