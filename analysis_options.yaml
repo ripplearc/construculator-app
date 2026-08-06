@@ -61,6 +61,7 @@ custom_lint:
         - 'CrudEntry'
         - 'PowerSyncCredentials'
         - 'Posthog'
+        - 'PostHogConfig'
 
 linter:
   # The lint rules applied to this project can be customized in the
