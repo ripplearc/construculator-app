@@ -2272,6 +2272,12 @@ abstract class AppLocalizations {
   /// **'Per unit cost*'**
   String get perUnitCostLabel;
 
+  /// Floating label for the unit of measurement selector field
+  ///
+  /// In en, this message translates to:
+  /// **'UOM'**
+  String get unitOfMeasurementLabel;
+
   /// Hint text shown inside the unit of measurement selector when no unit is selected
   ///
   /// In en, this message translates to:
@@ -2361,6 +2367,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sheets'**
   String get unitSheets;
+
+  /// Title of the UOM selection bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'UOM'**
+  String get uomSheetTitle;
+
+  /// Question asking the user how they want to add a unit of measurement
+  ///
+  /// In en, this message translates to:
+  /// **'How you want to add a UOM?'**
+  String get uomAddModeQuestion;
+
+  /// Radio option: select UOM from the predefined list
+  ///
+  /// In en, this message translates to:
+  /// **'From list'**
+  String get uomFromListOption;
+
+  /// Radio option: enter a custom UOM manually
+  ///
+  /// In en, this message translates to:
+  /// **'Manually'**
+  String get uomManuallyOption;
+
+  /// Placeholder for the manual UOM text field
+  ///
+  /// In en, this message translates to:
+  /// **'Input unit of measurement'**
+  String get uomManualInputHint;
+
+  /// Confirmation button label in the UOM selection bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Add UOM'**
+  String get addUomButton;
+
+  /// UOM category tab label for length units
+  ///
+  /// In en, this message translates to:
+  /// **'Length'**
+  String get uomCategoryLength;
+
+  /// UOM category tab label for area units
+  ///
+  /// In en, this message translates to:
+  /// **'Area'**
+  String get uomCategoryArea;
+
+  /// UOM category tab label for volume units
+  ///
+  /// In en, this message translates to:
+  /// **'Volume'**
+  String get uomCategoryVolume;
+
+  /// UOM category tab label for weight units
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get uomCategoryWeight;
+
+  /// UOM category tab label for count/quantity units
+  ///
+  /// In en, this message translates to:
+  /// **'Count'**
+  String get uomCategoryCount;
+
+  /// UOM category tab label for time units
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get uomCategoryTime;
 
   /// Toggle button label that expands/collapses the brand and product link fields on the material cost form
   ///

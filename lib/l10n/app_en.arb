@@ -1913,6 +1913,10 @@
   "@perUnitCostLabel": {
     "description": "Hint label for the per-unit cost field on the material cost form (manually mode)"
   },
+  "unitOfMeasurementLabel": "UOM",
+  "@unitOfMeasurementLabel": {
+    "description": "Floating label for the unit of measurement selector field"
+  },
   "unitOfMeasurementHint": "UOM",
   "@unitOfMeasurementHint": {
     "description": "Hint text shown inside the unit of measurement selector when no unit is selected"
@@ -1972,6 +1976,54 @@
   "unitSheets": "Sheets",
   "@unitSheets": {
     "description": "Unit of measurement: sheets"
+  },
+  "uomSheetTitle": "UOM",
+  "@uomSheetTitle": {
+    "description": "Title of the UOM selection bottom sheet"
+  },
+  "uomAddModeQuestion": "How you want to add a UOM?",
+  "@uomAddModeQuestion": {
+    "description": "Question asking the user how they want to add a unit of measurement"
+  },
+  "uomFromListOption": "From list",
+  "@uomFromListOption": {
+    "description": "Radio option: select UOM from the predefined list"
+  },
+  "uomManuallyOption": "Manually",
+  "@uomManuallyOption": {
+    "description": "Radio option: enter a custom UOM manually"
+  },
+  "uomManualInputHint": "Input unit of measurement",
+  "@uomManualInputHint": {
+    "description": "Placeholder for the manual UOM text field"
+  },
+  "addUomButton": "Add UOM",
+  "@addUomButton": {
+    "description": "Confirmation button label in the UOM selection bottom sheet"
+  },
+  "uomCategoryLength": "Length",
+  "@uomCategoryLength": {
+    "description": "UOM category tab label for length units"
+  },
+  "uomCategoryArea": "Area",
+  "@uomCategoryArea": {
+    "description": "UOM category tab label for area units"
+  },
+  "uomCategoryVolume": "Volume",
+  "@uomCategoryVolume": {
+    "description": "UOM category tab label for volume units"
+  },
+  "uomCategoryWeight": "Weight",
+  "@uomCategoryWeight": {
+    "description": "UOM category tab label for weight units"
+  },
+  "uomCategoryCount": "Count",
+  "@uomCategoryCount": {
+    "description": "UOM category tab label for count/quantity units"
+  },
+  "uomCategoryTime": "Time",
+  "@uomCategoryTime": {
+    "description": "UOM category tab label for time units"
   },
   "otherMaterialDetailsButton": "Other material details",
   "@otherMaterialDetailsButton": {
