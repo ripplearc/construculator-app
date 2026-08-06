@@ -11,6 +11,7 @@ import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/routes/calculator_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -148,6 +149,8 @@ class _AppShellPageState extends State<AppShellPage> {
                 ],
                 selectedIndex: state.selectedTabIndex,
                 onTabSelected: _handleTabTap,
+                onActionButtonPressed: () =>
+                    widget.router.pushNamed(calculatorBaseRoute),
               ),
             ),
           ),

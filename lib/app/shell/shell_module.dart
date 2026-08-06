@@ -3,6 +3,7 @@ import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/app_shell_page.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/features/app_header/app_header_module.dart';
+import 'package:construculator/features/calculator/calculator_module.dart';
 import 'package:construculator/features/dashboard/dashboard_module.dart';
 import 'package:construculator/features/dashboard/domain/usecases/watch_recent_estimations_usecase.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/dashboard_bloc/dashboard_bloc.dart';
@@ -21,6 +22,7 @@ import 'package:construculator/libraries/project/presentation/project_ui_provide
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/routes/calculator_routes.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/router/routes/global_search_routes.dart';
 import 'package:construculator/libraries/router/routes/project_search_routes.dart';
@@ -93,6 +95,7 @@ class ShellModule extends Module {
       ),
       guards: [AuthGuard(() => Modular.get<AuthManager>())],
       children: [
+        ModuleRoute(calculatorBaseRoute, module: CalculatorModule()),
         ModuleRoute(
           estimationBaseRoute,
           module: EstimationRoutesModule(appBootstrap),
