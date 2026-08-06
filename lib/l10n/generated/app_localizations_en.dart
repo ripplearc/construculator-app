@@ -1360,4 +1360,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get perUnitCostInvalidError =>
       'Per unit cost must be a positive number';
+
+  @override
+  String get unitPriceRequiredError => 'Unit price is required';
+
+  @override
+  String get unitPriceInvalidError => 'Unit price must be a positive number';
 }

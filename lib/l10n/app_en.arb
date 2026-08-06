@@ -2118,6 +2118,14 @@
   "perUnitCostInvalidError": "Per unit cost must be a positive number",
   "@perUnitCostInvalidError": {
     "description": "Validation error shown below the per unit cost field when value is zero or negative"
+  },
+  "unitPriceRequiredError": "Unit price is required",
+  "@unitPriceRequiredError": {
+    "description": "Validation error shown below the unit price field when it is empty"
+  },
+  "unitPriceInvalidError": "Unit price must be a positive number",
+  "@unitPriceInvalidError": {
+    "description": "Validation error shown below the unit price field when value is zero or negative"
   }
 }
 
