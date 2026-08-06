@@ -1,4 +1,5 @@
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
+import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,51 +18,58 @@ class _CalculatorPageState extends State<CalculatorPage> {
   // TODO(CA-898): KeyType.label doubles as BLoC domain identifier and display
   // string, blocking localization. Requires CoreUI to add a separate `id` field
   // so `onKeyTapped` passes key.id while displayLabel comes from context.l10n.
-  static const _basicGeometryGroup = GroupNameType(label: 'Basic Geometry');
-  static const _materialsGroup = GroupNameType(label: 'Materials');
-  static const _trigonometryGroup = GroupNameType(label: 'Trigonometry');
+  List<FunctionGroup> _buildGroups(AppLocalizations l10n) {
+    final basicGeometryGroup = GroupNameType(
+      label: l10n.calculatorGroupBasicGeometry,
+    );
+    final materialsGroup = GroupNameType(label: l10n.calculatorGroupMaterials);
+    final trigonometryGroup = GroupNameType(
+      label: l10n.calculatorGroupTrigonometry,
+    );
 
-  static final List<FunctionGroup> _groups = [
-    FunctionGroup(
-      name: _basicGeometryGroup,
-      keys: [
-        KeyType(groupName: 'Basic Geometry', label: 'Width'),
-        KeyType(groupName: 'Basic Geometry', label: 'Length'),
-        KeyType(groupName: 'Basic Geometry', label: 'Height'),
-        KeyType(groupName: 'Basic Geometry', label: 'Pitch'),
-        KeyType(groupName: 'Basic Geometry', label: 'Circle'),
-        KeyType(groupName: 'Basic Geometry', label: 'Rise'),
-        KeyType(groupName: 'Basic Geometry', label: 'Run'),
-        KeyType(groupName: 'Basic Geometry', label: 'Radius'),
-      ],
-    ),
-    FunctionGroup(
-      name: _materialsGroup,
-      keys: [
-        KeyType(groupName: 'Materials', label: 'Lbs'),
-        KeyType(groupName: 'Materials', label: 'Kg'),
-        KeyType(groupName: 'Materials', label: 'Tons'),
-        KeyType(groupName: 'Materials', label: 'Drywall'),
-        KeyType(groupName: 'Materials', label: 'Fence'),
-      ],
-    ),
-    FunctionGroup(
-      name: _trigonometryGroup,
-      keys: [
-        KeyType(groupName: 'Trigonometry', label: 'SIN'),
-        KeyType(groupName: 'Trigonometry', label: 'COS'),
-        KeyType(groupName: 'Trigonometry', label: 'TAN'),
-      ],
-    ),
-  ];
+    return [
+      FunctionGroup(
+        name: basicGeometryGroup,
+        keys: [
+          KeyType(groupName: 'Basic Geometry', label: 'Width'),
+          KeyType(groupName: 'Basic Geometry', label: 'Length'),
+          KeyType(groupName: 'Basic Geometry', label: 'Height'),
+          KeyType(groupName: 'Basic Geometry', label: 'Pitch'),
+          KeyType(groupName: 'Basic Geometry', label: 'Circle'),
+          KeyType(groupName: 'Basic Geometry', label: 'Rise'),
+          KeyType(groupName: 'Basic Geometry', label: 'Run'),
+          KeyType(groupName: 'Basic Geometry', label: 'Radius'),
+        ],
+      ),
+      FunctionGroup(
+        name: materialsGroup,
+        keys: [
+          KeyType(groupName: 'Materials', label: 'Lbs'),
+          KeyType(groupName: 'Materials', label: 'Kg'),
+          KeyType(groupName: 'Materials', label: 'Tons'),
+          KeyType(groupName: 'Materials', label: 'Drywall'),
+          KeyType(groupName: 'Materials', label: 'Fence'),
+        ],
+      ),
+      FunctionGroup(
+        name: trigonometryGroup,
+        keys: [
+          KeyType(groupName: 'Trigonometry', label: 'SIN'),
+          KeyType(groupName: 'Trigonometry', label: 'COS'),
+          KeyType(groupName: 'Trigonometry', label: 'TAN'),
+        ],
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colorTheme;
+    final groups = _buildGroups(context.l10n);
     final Map<GroupNameType, Color> groupAccentColors = {
-      _basicGeometryGroup: colors.keyboardFunctions,
-      _materialsGroup: colors.keyboardUnits,
-      _trigonometryGroup: colors.textSuccess,
+      groups[0].name: colors.keyboardFunctions,
+      groups[1].name: colors.keyboardUnits,
+      groups[2].name: colors.textSuccess,
     };
 
     return BlocProvider<CalculatorBloc>(
@@ -84,6 +92,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                         label: state.resultLabel ?? state.activeInputLabel,
                         value: state.resultValue ?? state.currentInputValue,
                         isTyping: state.isTyping,
+                        closeSemanticLabel: context.l10n.closeButton,
                         chipsList: state.chipsList,
                         dependentKeyLabel: state.dependentKeyLabel,
                         dependentKeyValue: state.dependentKeyValue,
@@ -118,8 +127,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
                       ),
                     ),
                     child: CoreKeyboard(
-                      currentGroup: _groups[state.currentGroupIndex].name,
-                      allGroups: _groups,
+                      currentGroup: groups[state.currentGroupIndex].name,
+                      allGroups: groups,
                       groupAccentColors: groupAccentColors,
                       currentUnitSystem: state.currentUnitSystem,
                       result: const ResultType(label: '='),
@@ -135,7 +144,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                           bloc.add(const CalculatorOperatorPressed('=')),
                       onGroupSelected: (groupName) {
                         final index =
-                            _groups.indexWhere((g) => g.name == groupName);
+                            groups.indexWhere((g) => g.name == groupName);
                         bloc.add(CalculatorGroupSelected(index));
                       },
                       onKeyTapped: (key) =>

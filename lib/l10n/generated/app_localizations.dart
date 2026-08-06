@@ -2553,6 +2553,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You don\'t have permission to view this project.'**
   String get projectSettingsPermissionError;
+
+  /// Label for the on-centre spacing dependent key shown alongside the fence posts result
+  ///
+  /// In en, this message translates to:
+  /// **'O.C'**
+  String get calculatorOcLabel;
+
+  /// Label for the Basic Geometry function group tab in the calculator
+  ///
+  /// In en, this message translates to:
+  /// **'Basic Geometry'**
+  String get calculatorGroupBasicGeometry;
+
+  /// Label for the Materials function group tab in the calculator
+  ///
+  /// In en, this message translates to:
+  /// **'Materials'**
+  String get calculatorGroupMaterials;
+
+  /// Label for the Trigonometry function group tab in the calculator
+  ///
+  /// In en, this message translates to:
+  /// **'Trigonometry'**
+  String get calculatorGroupTrigonometry;
 }
 
 class _AppLocalizationsDelegate
