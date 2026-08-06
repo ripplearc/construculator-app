@@ -336,7 +336,8 @@ void main() {
   });
 
   group('MaterialCostFormFields — save enabled', () {
-    testWidgets('calls onSaveEnabledChanged(false) initially', (tester) async {
+    testWidgets('does not call onSaveEnabledChanged on initial render',
+        (tester) async {
       bool? captured;
       await tester.pumpWidget(
         makeWidget(onSaveEnabledChanged: (v) => captured = v),
@@ -346,9 +347,9 @@ void main() {
       expect(captured, isNull);
     });
 
-    testWidgets('calls onSaveEnabledChanged(true) when material type has text', (
-      tester,
-    ) async {
+    testWidgets(
+        'calls onSaveEnabledChanged(true) when material type and unit price are both valid',
+        (tester) async {
       bool? captured;
       await tester.pumpWidget(
         makeWidget(onSaveEnabledChanged: (v) => captured = v),
@@ -357,7 +358,12 @@ void main() {
 
       await tester.enterText(
         find.byKey(const Key('material_type_field')),
-        'Lap Sealant',
+        'Concrete',
+      );
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('per_unit_cost_field')),
+        '150',
       );
       await tester.pump();
 
@@ -365,9 +371,8 @@ void main() {
     });
 
     testWidgets(
-        'calls onSaveEnabledChanged(false) when material type is cleared', (
-      tester,
-    ) async {
+        'calls onSaveEnabledChanged(false) when material type is cleared',
+        (tester) async {
       bool? captured;
       await tester.pumpWidget(
         makeWidget(onSaveEnabledChanged: (v) => captured = v),
@@ -376,7 +381,12 @@ void main() {
 
       await tester.enterText(
         find.byKey(const Key('material_type_field')),
-        'Lap Sealant',
+        'Concrete',
+      );
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('per_unit_cost_field')),
+        '150',
       );
       await tester.pump();
       await tester.enterText(find.byKey(const Key('material_type_field')), '');
@@ -386,9 +396,36 @@ void main() {
     });
 
     testWidgets(
-        'does not call onSaveEnabledChanged in from cost file mode', (
-      tester,
-    ) async {
+        'calls onSaveEnabledChanged(false) when unit price is invalid',
+        (tester) async {
+      bool? captured;
+      await tester.pumpWidget(
+        makeWidget(onSaveEnabledChanged: (v) => captured = v),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('material_type_field')),
+        'Concrete',
+      );
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('per_unit_cost_field')),
+        '150',
+      );
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('per_unit_cost_field')),
+        '0',
+      );
+      await tester.pump();
+
+      expect(captured, isFalse);
+    });
+
+    testWidgets(
+        'does not call onSaveEnabledChanged in from cost file mode',
+        (tester) async {
       bool? captured;
       await tester.pumpWidget(
         makeWidget(
@@ -424,6 +461,69 @@ void main() {
       await tester.pump();
 
       expect(captured, isFalse);
+    });
+  });
+
+  group('MaterialCostFormFields — unit price validation', () {
+    testWidgets('shows required error when per unit cost is empty after input',
+        (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('per_unit_cost_field')),
+        '10',
+      );
+      await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('per_unit_cost_field')),
+        '',
+      );
+      await tester.pump();
+
+      expect(find.text(l10n.perUnitCostRequiredError), findsOneWidget);
+    });
+
+    testWidgets('shows invalid error when per unit cost is zero', (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('per_unit_cost_field')),
+        '0',
+      );
+      await tester.pump();
+
+      expect(find.text(l10n.perUnitCostInvalidError), findsOneWidget);
+    });
+
+    testWidgets('shows invalid error when per unit cost is negative',
+        (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('per_unit_cost_field')),
+        '-5',
+      );
+      await tester.pump();
+
+      expect(find.text(l10n.perUnitCostInvalidError), findsOneWidget);
+    });
+
+    testWidgets('shows no error when per unit cost is a positive number',
+        (tester) async {
+      await tester.pumpWidget(makeWidget());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byKey(const Key('per_unit_cost_field')),
+        '75.5',
+      );
+      await tester.pump();
+
+      expect(find.text(l10n.perUnitCostRequiredError), findsNothing);
+      expect(find.text(l10n.perUnitCostInvalidError), findsNothing);
     });
   });
 

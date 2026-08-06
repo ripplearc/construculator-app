@@ -1353,4 +1353,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get projectSettingsPermissionError =>
       'You don\'t have permission to view this project.';
+
+  @override
+  String get perUnitCostRequiredError => 'Per unit cost is required';
+
+  @override
+  String get perUnitCostInvalidError =>
+      'Per unit cost must be a positive number';
 }

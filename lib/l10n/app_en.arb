@@ -2110,6 +2110,14 @@
   "@projectSettingsPermissionError": {
     "description": "Toast shown when the user lacks the view_project permission for a project",
     "context": "Dashboard projects sheet"
+  },
+  "perUnitCostRequiredError": "Per unit cost is required",
+  "@perUnitCostRequiredError": {
+    "description": "Validation error shown below the per unit cost field when it is empty"
+  },
+  "perUnitCostInvalidError": "Per unit cost must be a positive number",
+  "@perUnitCostInvalidError": {
+    "description": "Validation error shown below the per unit cost field when value is zero or negative"
   }
 }
 

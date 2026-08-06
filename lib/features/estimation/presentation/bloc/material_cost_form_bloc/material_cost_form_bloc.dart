@@ -8,6 +8,7 @@ class MaterialCostFormBloc
     extends Bloc<MaterialCostFormEvent, MaterialCostFormState> {
   MaterialCostFormBloc() : super(const MaterialCostFormInitial()) {
     on<MaterialCostItemTypeChanged>(_onItemTypeChanged);
+    on<MaterialCostUnitPriceChanged>(_onUnitPriceChanged);
     // TODO(CA-294): register MaterialCostFormSubmitted and wire to CostItemRepository.createCostItem
   }
 
@@ -22,6 +23,27 @@ class MaterialCostFormBloc
       current.copyWith(
         materialType: event.value,
         itemTypeError: event.value.trim().isEmpty ? 'itemTypeRequired' : null,
+      ),
+    );
+  }
+
+  void _onUnitPriceChanged(
+    MaterialCostUnitPriceChanged event,
+    Emitter<MaterialCostFormState> emit,
+  ) {
+    final current = state is MaterialCostFormEditing
+        ? state as MaterialCostFormEditing
+        : const MaterialCostFormEditing();
+    final parsed = double.tryParse(event.value);
+    final isPositive = parsed != null && parsed > 0;
+    emit(
+      current.copyWith(
+        unitPrice: isPositive ? parsed : null,
+        unitPriceError: event.value.trim().isEmpty
+            ? 'perUnitCostRequiredError'
+            : isPositive
+                ? null
+                : 'perUnitCostInvalidError',
       ),
     );
   }
