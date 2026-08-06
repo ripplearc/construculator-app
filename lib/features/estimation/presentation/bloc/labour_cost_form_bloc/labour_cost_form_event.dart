@@ -13,4 +13,28 @@ class LabourCostItemTypeChanged extends LabourCostFormEvent {
   final String value;
 }
 
+class LabourCostCalculationMethodChanged extends LabourCostFormEvent {
+  const LabourCostCalculationMethodChanged(this.calculationMethod);
+
+  final LaborCalculationMethodType? calculationMethod;
+}
+
+class LabourCostLaborValueUpdated extends LabourCostFormEvent {
+  const LabourCostLaborValueUpdated(this.laborValue);
+
+  final LaborValue? laborValue;
+}
+
+class LabourCostCrewSizeUpdated extends LabourCostFormEvent {
+  const LabourCostCrewSizeUpdated(this.crewSize);
+
+  final double? crewSize;
+}
+
+class LabourCostHourlyRateUpdated extends LabourCostFormEvent {
+  const LabourCostHourlyRateUpdated(this.value);
+
+  final String value;
+}
+
 // TODO(CA-294): add LabourCostFormSubmitted event with estimateId and other field values
