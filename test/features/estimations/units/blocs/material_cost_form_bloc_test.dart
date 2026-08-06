@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -58,6 +59,59 @@ void main() {
               .having((s) => s.materialType, 'materialType', testMaterialType)
               .having((s) => s.itemTypeError, 'itemTypeError', isNull)
               .having((s) => s.isItemTypeValid, 'isItemTypeValid', true),
+        ],
+      );
+    });
+
+    group('MaterialCostItemUnitChanged', () {
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'emits Editing with unitError when unit is null',
+        build: () => bloc,
+        act: (bloc) => bloc.add(const MaterialCostItemUnitChanged(null)),
+        expect: () => [
+          isA<MaterialCostFormEditing>()
+              .having((s) => s.unitError, 'unitError', isNotNull)
+              .having((s) => s.isUnitValid, 'isUnitValid', false),
+        ],
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'emits Editing with no unitError when a valid unit is provided',
+        build: () => bloc,
+        act: (bloc) =>
+            bloc.add(const MaterialCostItemUnitChanged(Unit.pieces)),
+        expect: () => [
+          isA<MaterialCostFormEditing>()
+              .having((s) => s.selectedUnit, 'selectedUnit', Unit.pieces)
+              .having((s) => s.unitError, 'unitError', isNull)
+              .having((s) => s.isUnitValid, 'isUnitValid', true),
+        ],
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'selectedUnit reflects the emitted unit value',
+        build: () => bloc,
+        act: (bloc) =>
+            bloc.add(const MaterialCostItemUnitChanged(Unit.kilograms)),
+        expect: () => [
+          isA<MaterialCostFormEditing>()
+              .having((s) => s.selectedUnit, 'selectedUnit', Unit.kilograms),
+        ],
+      );
+
+      blocTest<MaterialCostFormBloc, MaterialCostFormState>(
+        'preserves existing materialType when unit changes',
+        build: () => bloc,
+        act: (bloc) {
+          bloc.add(const MaterialCostItemTypeChanged(testMaterialType));
+          bloc.add(const MaterialCostItemUnitChanged(Unit.meters));
+        },
+        expect: () => [
+          isA<MaterialCostFormEditing>()
+              .having((s) => s.materialType, 'materialType', testMaterialType),
+          isA<MaterialCostFormEditing>()
+              .having((s) => s.materialType, 'materialType', testMaterialType)
+              .having((s) => s.selectedUnit, 'selectedUnit', Unit.meters),
         ],
       );
     });
