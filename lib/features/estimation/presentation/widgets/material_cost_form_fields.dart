@@ -172,12 +172,28 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
         ),
       ),
       const SizedBox(height: CoreSpacing.space5),
-      // TODO: [CA-312] Wire selectedUnit and onUnitSelected to BLoC state
-      UnitOfMeasurementField(
-        key: const Key('uom_field'),
-        fromCostFile: false,
-        selectedUnit: null,
-        onUnitSelected: (_) {},
+      BlocBuilder<MaterialCostFormBloc, MaterialCostFormState>(
+        buildWhen: (prev, curr) {
+          if (prev is MaterialCostFormEditing &&
+              curr is MaterialCostFormEditing) {
+            return prev.selectedUnit != curr.selectedUnit;
+          }
+          return true;
+        },
+        builder: (context, state) {
+          final editing =
+              state is MaterialCostFormEditing ? state : null;
+          return UnitOfMeasurementField(
+            key: const Key('uom_field'),
+            fromCostFile: false,
+            selectedUnit: editing?.selectedUnit,
+            onUnitSelected: (unit) {
+              context
+                  .read<MaterialCostFormBloc>()
+                  .add(MaterialCostItemUnitChanged(unit));
+            },
+          );
+        },
       ),
       const SizedBox(height: CoreSpacing.space5),
       CoreTextField(

@@ -2565,6 +2565,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You don\'t have permission to view this project.'**
   String get projectSettingsPermissionError;
+
+  /// Validation error shown below the UOM field when no unit has been selected
+  ///
+  /// In en, this message translates to:
+  /// **'Please select or enter a unit of measurement.'**
+  String get uomRequiredError;
 }
 
 class _AppLocalizationsDelegate
