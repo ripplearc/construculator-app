@@ -493,9 +493,11 @@ void main() {
 
         await setupA11yTest(tester);
 
-        await tester.pumpWidget(makeTestableWidget());
-        await tester.pumpAndSettle();
-        final emptyResultsText = l10n().searchResultsEmpty('nonexistent');
+        // Pure l10n lookup — no widget tree needed; the guideline helper
+        // below pumps the page itself.
+        final emptyResultsText = lookupAppLocalizations(
+          const Locale('en'),
+        ).searchResultsEmpty('nonexistent');
 
         await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
           tester,
