@@ -1,3 +1,4 @@
+import 'package:construculator/features/estimation/domain/entities/cost_item_entity.dart';
 import 'package:construculator/features/estimation/presentation/bloc/material_cost_form_bloc/material_cost_form_bloc.dart';
 import 'package:construculator/features/estimation/presentation/widgets/unit_of_measurement_field.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
@@ -9,12 +10,14 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 class MaterialCostFormFields extends StatefulWidget {
   /// When true, renders fields for selecting from a cost file; otherwise renders manual-entry fields.
   final bool fromCostFile;
+  final Money? prefillUnitCost;
   final ValueChanged<double>? onTotalChanged;
   final ValueChanged<bool>? onSaveEnabledChanged;
 
   const MaterialCostFormFields({
     super.key,
     required this.fromCostFile,
+    this.prefillUnitCost,
     this.onTotalChanged,
     this.onSaveEnabledChanged,
   });
@@ -44,6 +47,15 @@ class _MaterialCostFormFieldsState extends State<MaterialCostFormFields> {
     if (oldWidget.fromCostFile != widget.fromCostFile) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
+        if (!widget.fromCostFile) {
+          final prefill = widget.prefillUnitCost;
+          if (prefill != null) {
+            final amount = prefill.amount;
+            _perUnitCostController.text = amount.truncateToDouble() == amount
+                ? amount.toInt().toString()
+                : amount.toString();
+          }
+        }
         _notifyTotal();
         _notifySaveEnabled();
       });

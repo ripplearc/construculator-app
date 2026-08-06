@@ -36,6 +36,7 @@ void main() {
 
   Widget makeWidget({
     bool fromCostFile = false,
+    Money? prefillUnitCost,
     ValueChanged<double>? onTotalChanged,
     ValueChanged<bool>? onSaveEnabledChanged,
   }) {
@@ -49,6 +50,7 @@ void main() {
           create: (_) => Modular.get<MaterialCostFormBloc>(),
           child: MaterialCostFormFields(
             fromCostFile: fromCostFile,
+            prefillUnitCost: prefillUnitCost,
             onTotalChanged: onTotalChanged,
             onSaveEnabledChanged: onSaveEnabledChanged,
           ),
@@ -435,5 +437,79 @@ void main() {
       );
       expect(semantics.label, contains(l10n.otherMaterialDetailsButton));
     });
+  });
+
+  group('MaterialCostFormFields — auto-fill behaviour', () {
+    testWidgets('prefills per unit cost when switching to manually mode',
+        (tester) async {
+      const prefill = Money(amount: 150, currency: 'USD');
+
+      await tester.pumpWidget(
+        makeWidget(fromCostFile: true, prefillUnitCost: prefill),
+      );
+      await tester.pump();
+
+      await tester.pumpWidget(
+        makeWidget(fromCostFile: false, prefillUnitCost: prefill),
+      );
+      await tester.pump();
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('per_unit_cost_field')),
+          matching: find.text('150'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('does not prefill when prefillUnitCost is null', (tester) async {
+      await tester.pumpWidget(makeWidget(fromCostFile: true));
+      await tester.pump();
+
+      await tester.pumpWidget(makeWidget(fromCostFile: false));
+      await tester.pump();
+
+      expect(
+        tester
+            .firstWidget<EditableText>(
+              find.descendant(
+                of: find.byKey(const Key('per_unit_cost_field')),
+                matching: find.byType(EditableText),
+              ),
+            )
+            .controller
+            .text,
+        isEmpty,
+      );
+    });
+
+    testWidgets(
+      'fires onTotalChanged without crashing when switching to manually mode with prefill',
+      (tester) async {
+        double? capturedTotal;
+        const prefill = Money(amount: 150, currency: 'USD');
+
+        await tester.pumpWidget(
+          makeWidget(
+            fromCostFile: true,
+            prefillUnitCost: prefill,
+            onTotalChanged: (total) => capturedTotal = total,
+          ),
+        );
+        await tester.pump();
+
+        await tester.pumpWidget(
+          makeWidget(
+            fromCostFile: false,
+            prefillUnitCost: prefill,
+            onTotalChanged: (total) => capturedTotal = total,
+          ),
+        );
+        await tester.pump();
+
+        expect(capturedTotal, 0.0);
+      },
+    );
   });
 }
