@@ -48,7 +48,7 @@ class AuthModule extends Module {
   void routes(RouteManager r) => _registerRoutes(r);
 
   @override
-  void binds(Injector i) => _registerDependencies(i);
+  void binds(Injector i) => _registerDependencies(i, appBootstrap);
 }
 
 void _registerRoutes(RouteManager r) {
@@ -143,7 +143,7 @@ void _registerRoutes(RouteManager r) {
   );
 }
 
-void _registerDependencies(Injector i) {
+void _registerDependencies(Injector i, AppBootstrap appBootstrap) {
   i.addLazySingleton<ResetPasswordUseCase>(() => ResetPasswordUseCase(i()));
   i.addLazySingleton<GetProfessionalRolesUseCase>(
     () => GetProfessionalRolesUseCase(i()),
@@ -175,12 +175,18 @@ void _registerDependencies(Injector i) {
       createAccountUseCase: i(),
       getProfessionalRolesUseCase: i(),
       sendOtpUseCase: i(),
+      analyticsRepository: appBootstrap.analyticsRepository,
     ),
   );
   i.add<LoginWithEmailBloc>(
     () => LoginWithEmailBloc(checkEmailAvailabilityUseCase: i()),
   );
-  i.add<EnterPasswordBloc>(() => EnterPasswordBloc(loginUseCase: i()));
+  i.add<EnterPasswordBloc>(
+    () => EnterPasswordBloc(
+      loginUseCase: i(),
+      analyticsRepository: appBootstrap.analyticsRepository,
+    ),
+  );
   i.add<ForgotPasswordBloc>(
     () => ForgotPasswordBloc(resetPasswordUseCase: i()),
   );
