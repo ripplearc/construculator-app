@@ -1,3 +1,6 @@
+import 'package:construculator/libraries/analytics/domain/entities/analytics_user_properties.dart';
+import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
+import 'package:construculator/libraries/analytics/testing/fake_analytics_repository.dart';
 import 'package:construculator/libraries/auth/auth_manager_impl.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
 import 'package:construculator/libraries/auth/data/models/auth_state.dart';
@@ -25,6 +28,7 @@ void main() {
   late FakeAuthRepository authRepository;
   late FakeSupabaseWrapper supabaseWrapper;
   late FakeSentryWrapper sentryWrapper;
+  late FakeAnalyticsRepository analyticsRepository;
   late AuthManager authManager;
   late Clock clock;
   const testEmail = 'test@example.com';
@@ -51,12 +55,15 @@ void main() {
     authRepository = Modular.get<AuthRepository>() as FakeAuthRepository;
     supabaseWrapper = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
     sentryWrapper = Modular.get<SentryWrapper>() as FakeSentryWrapper;
+    analyticsRepository =
+        Modular.get<AnalyticsRepository>() as FakeAnalyticsRepository;
     authManager = Modular.get<AuthManager>();
     clock = Modular.get<Clock>();
   });
 
   tearDown(() {
     sentryWrapper.reset();
+    analyticsRepository.resetFake();
     Modular.destroy();
   });
 
@@ -1048,6 +1055,129 @@ void main() {
         expect(sentryWrapper.userId, userId);
       });
     });
+
+    group('Analytics Integration', () {
+      test(
+        'loginWithEmail should call identify with user ID on success',
+        () async {
+          final result = await authManager.loginWithEmail(
+            testEmail,
+            testPassword,
+          );
+
+          expect(result.isSuccess, true);
+          expect(analyticsRepository.identifyCalls, hasLength(1));
+          expect(
+            analyticsRepository.identifyCalls.single.userId,
+            result.data!.id,
+          );
+          expect(
+            analyticsRepository.identifyCalls.single.properties,
+            const AnalyticsUserProperties(),
+          );
+        },
+      );
+
+      test('loginWithEmail should not call identify on failure', () async {
+        supabaseWrapper.shouldThrowOnSignIn = true;
+        supabaseWrapper.signInErrorMessage = 'Invalid credentials';
+        supabaseWrapper.authErrorCode =
+            SupabaseAuthErrorCode.invalidCredentials;
+
+        final result = await authManager.loginWithEmail(
+          testEmail,
+          testPassword,
+        );
+
+        expect(result.isSuccess, false);
+        expect(analyticsRepository.identifyCalls, isEmpty);
+      });
+
+      test(
+        'registerWithEmail should call identify with user ID on success',
+        () async {
+          final result = await authManager.registerWithEmail(
+            testEmail,
+            testPassword,
+          );
+
+          expect(result.isSuccess, true);
+          expect(analyticsRepository.identifyCalls, hasLength(1));
+          expect(
+            analyticsRepository.identifyCalls.single.userId,
+            result.data!.id,
+          );
+        },
+      );
+
+      test('registerWithEmail should not call identify on failure', () async {
+        supabaseWrapper.shouldThrowOnSignUp = true;
+        supabaseWrapper.signUpErrorMessage = 'Registration failed';
+        supabaseWrapper.authErrorCode =
+            SupabaseAuthErrorCode.registrationFailure;
+
+        final result = await authManager.registerWithEmail(
+          testEmail,
+          testPassword,
+        );
+
+        expect(result.isSuccess, false);
+        expect(analyticsRepository.identifyCalls, isEmpty);
+      });
+
+      test('verifyOtp should call identify with user ID on success', () async {
+        final result = await authManager.verifyOtp(
+          testEmail,
+          '123456',
+          OtpReceiver.email,
+        );
+
+        expect(result.isSuccess, true);
+        expect(analyticsRepository.identifyCalls, hasLength(1));
+        expect(
+          analyticsRepository.identifyCalls.single.userId,
+          result.data!.id,
+        );
+      });
+
+      test('verifyOtp should not call identify on failure', () async {
+        supabaseWrapper.shouldThrowOnVerifyOtp = true;
+        supabaseWrapper.verifyOtpErrorMessage = 'Invalid OTP';
+        supabaseWrapper.authErrorCode =
+            SupabaseAuthErrorCode.invalidCredentials;
+
+        final result = await authManager.verifyOtp(
+          testEmail,
+          '123456',
+          OtpReceiver.email,
+        );
+
+        expect(result.isSuccess, false);
+        expect(analyticsRepository.identifyCalls, isEmpty);
+      });
+
+      test('logout should call reset on success', () async {
+        await authManager.loginWithEmail(testEmail, testPassword);
+        expect(analyticsRepository.identifyCalls, isNotEmpty);
+
+        final result = await authManager.logout();
+
+        expect(result.isSuccess, true);
+        expect(analyticsRepository.resetCallCount, 1);
+      });
+
+      test('logout should not call reset on failure', () async {
+        await authManager.loginWithEmail(testEmail, testPassword);
+
+        supabaseWrapper.shouldThrowOnSignOut = true;
+        supabaseWrapper.signOutErrorMessage = 'Logout failed';
+
+        final result = await authManager.logout();
+
+        expect(result.isSuccess, false);
+        expect(analyticsRepository.resetCallCount, 0);
+      });
+    });
   });
 }
 
@@ -1060,12 +1190,14 @@ class _TestAppModule extends Module {
     i.addSingleton<AuthRepository>(() => FakeAuthRepository(clock: i()));
     i.addSingleton<SupabaseWrapper>(() => FakeSupabaseWrapper(clock: i()));
     i.addSingleton<SentryWrapper>(() => FakeSentryWrapper());
+    i.addSingleton<AnalyticsRepository>(() => FakeAnalyticsRepository());
     i.add<AuthManager>(
       () => AuthManagerImpl(
         wrapper: i(),
         authRepository: i(),
         authNotifier: i(),
         sentryWrapper: i<SentryWrapper>(),
+        analyticsRepository: i<AnalyticsRepository>(),
       ),
     );
   }
