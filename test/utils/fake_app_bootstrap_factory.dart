@@ -1,4 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/libraries/analytics/data/repositories/no_op_analytics_repository.dart';
+import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
 import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
@@ -19,6 +21,8 @@ class FakeAppBootstrapFactory {
   ///   database state and assertions
   /// - [config]: Provide custom app configuration for the test
   /// - [envLoader]: Provide custom environment loading behavior
+  /// - [analyticsRepository]: Provide a specific AnalyticsRepository; defaults
+  ///   to the production no-op
   ///
   /// When parameters are omitted, sensible test defaults are provided.
   ///
@@ -37,6 +41,7 @@ class FakeAppBootstrapFactory {
     FakeSupabaseWrapper? supabaseWrapper,
     Config? config,
     EnvLoader? envLoader,
+    AnalyticsRepository? analyticsRepository,
   }) {
     return AppBootstrap(
       supabaseWrapper:
@@ -44,6 +49,7 @@ class FakeAppBootstrapFactory {
       config: config ?? FakeAppConfig(),
       envLoader: envLoader ?? FakeEnvLoader(),
       sentryWrapper: FakeSentryWrapper(),
+      analyticsRepository: analyticsRepository ?? const NoOpAnalyticsRepository(),
     );
   }
 }
