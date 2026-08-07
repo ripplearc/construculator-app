@@ -902,6 +902,10 @@ void main() {
           (s) => s is ProjectDropdownLoadSuccess,
         );
         dropdownBloc.add(const ProjectDropdownStarted());
+        // runAsync (unlike the pump-driven flow used elsewhere in this file)
+        // because the dropdown bloc is created and loaded BEFORE the page is
+        // pumped: there is no widget tree yet for pump() to advance, so the
+        // stream event must resolve on the real event loop.
         await tester.runAsync(() => firstLoad);
         expect(
           (dropdownBloc.state as ProjectDropdownLoadSuccess)
