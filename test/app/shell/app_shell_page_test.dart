@@ -350,7 +350,7 @@ void main() {
         await tester.pumpWidget(makeApp());
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text(l10n().appTitle));
+        await tester.tap(find.byKey(const Key('header_row_project_selector')));
         await tester.pumpAndSettle();
 
         expect(find.byType(ProjectsBottomSheet), findsOneWidget);
@@ -369,7 +369,7 @@ void main() {
         await tester.pumpWidget(makeApp());
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text(l10n().appTitle));
+        await tester.tap(find.byKey(const Key('header_row_project_selector')));
         await tester.pumpAndSettle();
 
         await tester.tap(find.byKey(const Key('projects_search_field')));

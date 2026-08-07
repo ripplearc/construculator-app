@@ -108,7 +108,7 @@ class _AppShellPageState extends State<AppShellPage> {
               projectUIProvider: widget.projectUIProvider,
               onProjectTap: () => ProjectsBottomSheet.show(
                 context,
-                BlocProvider.of<ProjectDropdownBloc>(context),
+                context.read<ProjectDropdownBloc>(),
                 widget.router,
               ),
             ),
