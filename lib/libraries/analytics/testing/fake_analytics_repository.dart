@@ -62,7 +62,11 @@ class FakeAnalyticsRepository implements AnalyticsRepository {
     Map<String, dynamic>? properties,
   }) async {
     groupCalls.add(
-      GroupCall(groupType: groupType, groupKey: groupKey, properties: properties),
+      GroupCall(
+        groupType: groupType,
+        groupKey: groupKey,
+        properties: properties,
+      ),
     );
     return const Right(null);
   }
