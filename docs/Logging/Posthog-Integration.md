@@ -93,7 +93,11 @@ lib/libraries/analytics/
 │       └── analytics_event_mapper.dart
 ├── interfaces/
 │   ├── posthog_wrapper.dart    # High-level ops consumed by AnalyticsRepositoryImpl
-│   └── posthog_sdk.dart        # Thin boundary over the raw posthog_flutter static API
+│   └── posthog_sdk.dart        # Thin boundary over the raw posthog_flutter API
+├── posthog_wrapper_impl.dart   # Consumes PosthogSdk; mirrors SentryWrapperImpl
+├── posthog_sdk_impl.dart       # Pass-through to Posthog(); mirrors SentrySdkImpl
+├── testing/
+│   └── fake_posthog_sdk.dart   # Mirrors sentry/testing/fake_sentry_sdk.dart
 └── analytics_module.dart
 
 lib/app/
@@ -102,7 +106,7 @@ lib/app/
 
 ### Why This Approach?
 
-1. **Testability**: Fake at the PostHog SDK boundary (`FakePosthogWrapper`) — keeps real mapping and repository logic under test
+1. **Testability**: Fake at the PostHog wrapper boundary (`FakePosthogWrapper`) — keeps real mapping and repository logic under test; the thinner `PosthogSdk` boundary below it is separately faked (`FakePosthogSdk`) to test `PosthogWrapperImpl` itself
 2. **Flexibility**: Swap PostHog for another provider without touching business logic
 3. **Consistency**: Matches existing patterns (logging, Supabase wrapper, router)
 4. **Separation of Concerns**: Domain layer never imports PostHog directly
@@ -274,6 +278,81 @@ class AnalyticsUserProperties {
 }
 ```
 
+### Data Layer: PostHog SDK Boundary
+
+Mirrors the existing `SentrySdk`/`SentryWrapper` split
+(`lib/libraries/sentry/interfaces/sentry_sdk.dart` + `sentry_wrapper.dart`,
+`sentry_wrapper_impl.dart`): `PosthogSdk` is a thin, untestable pass-through to the
+`posthog_flutter` `Posthog()` singleton (native platform channels, same rationale as
+`SentrySdkImpl`'s `// coverage:ignore-file`); `PosthogWrapper` is the high-level,
+fakeable boundary `AnalyticsRepositoryImpl` depends on. `PosthogWrapperImpl`
+constructor-injects a `PosthogSdk` and delegates every call to it — exactly like
+`SentryWrapperImpl` delegates to `SentrySdk`.
+
+**File:** `lib/libraries/analytics/interfaces/posthog_sdk.dart`
+
+```dart
+/// Thin boundary over the raw posthog_flutter API. Exists so
+/// PosthogWrapperImpl's own logic (consent gating, mapping) can be
+/// unit-tested against a fake; the real implementation is a pass-through
+/// to native platform channels and therefore untestable (mirrors SentrySdk).
+abstract class PosthogSdk {
+  Future<void> setup(PostHogConfig config);
+  Future<void> capture({required String eventName, Map<String, Object>? properties});
+  Future<void> identify({required String userId, Map<String, Object>? userProperties});
+  // reset(), setUserProperties(), group() delegate the same way — omitted for brevity
+}
+```
+
+**File:** `lib/libraries/analytics/posthog_sdk_impl.dart`
+
+```dart
+// coverage:ignore-file
+// Thin pass-through to the Posthog() singleton, which relies on native
+// platform channels and therefore cannot be exercised in unit tests.
+class PosthogSdkImpl implements PosthogSdk {
+  final _posthog = Posthog();
+
+  @override
+  Future<void> setup(PostHogConfig config) => _posthog.setup(config);
+
+  @override
+  Future<void> capture({required String eventName, Map<String, Object>? properties}) =>
+      _posthog.capture(eventName: eventName, properties: properties);
+
+  @override
+  Future<void> identify({required String userId, Map<String, Object>? userProperties}) =>
+      _posthog.identify(userId: userId, userProperties: userProperties);
+}
+```
+
+**File:** `lib/libraries/analytics/posthog_wrapper_impl.dart`
+
+```dart
+class PosthogWrapperImpl implements PosthogWrapper {
+  PosthogWrapperImpl({required PosthogSdk posthogSdk}) : _posthogSdk = posthogSdk;
+  final PosthogSdk _posthogSdk;
+
+  @override
+  Future<void> setup(PostHogConfig config) => _posthogSdk.setup(config);
+
+  @override
+  Future<void> capture({required String eventName, Map<String, Object>? properties}) =>
+      _posthogSdk.capture(eventName: eventName, properties: properties);
+
+  @override
+  Future<void> identify({required String userId, Map<String, Object>? userProperties}) =>
+      _posthogSdk.identify(userId: userId, userProperties: userProperties);
+  // reset(), setUserProperties(), group() follow the same delegation pattern
+}
+```
+
+`PosthogWrapperImpl`'s own tests inject a `FakePosthogSdk`
+(`lib/libraries/analytics/testing/fake_posthog_sdk.dart`, mirroring
+`sentry/testing/fake_sentry_sdk.dart`) rather than the real platform channel —
+separate from `FakePosthogWrapper` below, which fakes one layer up so
+`AnalyticsRepositoryImpl`'s own mapping logic stays under test.
+
 ### Data Layer: PostHog Repository Implementation
 
 ```dart
@@ -335,7 +414,7 @@ loads — `AppBootstrap` exists precisely for this. Following the same pattern a
 `dotenv.env[...]` directly), await its `initialize()`, and add the result as a field on
 `AppBootstrap`. The module then only *exposes* the pre-built instance — it never
 constructs it and never calls `Modular.get` outside a module file
-(`forbid_modular_get_outside_module`, CA-621/626).
+(`forbid_modular_get_outside_module`, CA-626/CA-627).
 
 ```dart
 // lib/main.dart — inside _initializeApp(), after envLoader/config/supabaseWrapper/sentryWrapper:
@@ -344,7 +423,7 @@ final analyticsRepository = enabled
     ? AnalyticsRepositoryImpl(
         apiKey: envLoader.get(posthogApiKeyKey) ?? '',
         host: envLoader.get(posthogHostKey) ?? '',
-        posthogWrapper: PosthogWrapperImpl(),
+        posthogWrapper: PosthogWrapperImpl(posthogSdk: PosthogSdkImpl()),
       )
     : NoOpAnalyticsRepository();
 if (analyticsRepository is AnalyticsRepositoryImpl) {
