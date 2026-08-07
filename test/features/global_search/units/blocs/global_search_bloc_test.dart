@@ -2932,6 +2932,41 @@ void main() {
           );
           await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
         },
+        // Pins the emit-then-re-run ordering: the eager scope emit, the
+        // re-run's loading state, the per-scope recents reload landing
+        // mid-flight, then the re-run's results.
+        expect: () => [
+          isA<GlobalSearchLoadInProgress>().having(
+            (s) => s.query,
+            'query',
+            'foundation',
+          ),
+          isA<GlobalSearchLoadSuccess>(),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedScope,
+                'selectedScope',
+                SearchScope.estimation,
+              )
+              .having(
+                (s) => s.recentSearches,
+                'recentSearches',
+                ['foundation'],
+              ),
+          isA<GlobalSearchLoadInProgress>().having(
+            (s) => s.query,
+            'query',
+            'foundation',
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedScope,
+                'selectedScope',
+                SearchScope.estimation,
+              )
+              .having((s) => s.recentSearches, 'recentSearches', isEmpty),
+          isA<GlobalSearchLoadSuccess>(),
+        ],
         verify: (bloc) {
           final calls = searchCalls();
           expect(calls, hasLength(2));
@@ -2996,6 +3031,44 @@ void main() {
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'editing the query back while a search is in flight disowns it: the '
+        'late RPC completion cannot publish stale results over the '
+        'suggestions surface',
+        setUp: seedOneProjectResult,
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          // Park the search's RPC on a gate. Its loading state is emitted
+          // before the RPC await, so once that state is observed the search
+          // is parked.
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          final searchGate = fakeSupabase.completer!;
+          bloc.add(const GlobalSearchPerformed(query: 'foundation'));
+          await bloc.stream.firstWhere(
+            (s) => s is GlobalSearchLoadInProgress && s.query == 'foundation',
+          );
+          // Clearing the query navigates back to the suggestions surface
+          // while the search RPC is still parked; the edit must disown it.
+          fakeSupabase.shouldDelayOperations = false;
+          bloc.add(const GlobalSearchQueryUpdated(query: ''));
+          await bloc.stream.firstWhere((s) => s is GlobalSearchReady);
+          // Release the disowned search; its generation-guarded continuation
+          // runs to completion during bloc.close() without emitting.
+          searchGate.complete();
+        },
+        // Exactly two emissions: the disowned search's late completion must
+        // not publish a stale LoadSuccess over the suggestions surface.
+        expect: () => [
+          isA<GlobalSearchLoadInProgress>().having(
+            (s) => s.query,
+            'query',
+            'foundation',
+          ),
+          isA<GlobalSearchReady>(),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
         'applying a date filter with no active search emits only the ready '
         'state and performs no search',
         setUp: seedOneProjectResult,
@@ -3037,6 +3110,39 @@ void main() {
           bloc.add(const GlobalSearchTagFiltersApplied(tags: {'Roofing'}));
           await bloc.stream.firstWhere((s) => s is GlobalSearchLoadSuccess);
         },
+        // Pins the emit-then-re-run ordering: results, sheet-open ready
+        // (loading then loaded), filter-applied ready, then the re-run pair.
+        expect: () => [
+          isA<GlobalSearchLoadInProgress>().having(
+            (s) => s.query,
+            'query',
+            'foundation',
+          ),
+          isA<GlobalSearchLoadSuccess>(),
+          isA<GlobalSearchReady>().having(
+            (s) => s.availableTagsLoading,
+            'availableTagsLoading',
+            true,
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.availableTagsLoading,
+                'availableTagsLoading',
+                false,
+              )
+              .having((s) => s.selectedTags, 'selectedTags', isEmpty),
+          isA<GlobalSearchReady>().having(
+            (s) => s.selectedTags,
+            'selectedTags',
+            {'Roofing'},
+          ),
+          isA<GlobalSearchLoadInProgress>().having(
+            (s) => s.query,
+            'query',
+            'foundation',
+          ),
+          isA<GlobalSearchLoadSuccess>(),
+        ],
         verify: (bloc) {
           final calls = searchCalls();
           expect(calls, hasLength(2));

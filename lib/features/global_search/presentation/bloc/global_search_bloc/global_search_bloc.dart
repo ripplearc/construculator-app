@@ -319,6 +319,10 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     // Editing the query returns to the suggestions/recents surface; a filter
     // change must no longer resurrect the previous results.
     _searchIsActive = false;
+    // Disown any in-flight search, same as the GlobalSearchStarted reset: its
+    // late completion must not publish stale results over the suggestions
+    // surface the user navigated to.
+    _searchExecutionGeneration++;
 
     if (trimmedQuery.isEmpty) {
       // Clearing the query cancels any same-pipeline suggestions fetch via
