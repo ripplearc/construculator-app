@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:construculator/features/auth/domain/usecases/create_account_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/get_professional_roles_usecase.dart';
 import 'package:construculator/features/auth/domain/usecases/params/create_account_usecase_params.dart';
 import 'package:construculator/features/auth/domain/usecases/send_otp_usecase.dart';
+import 'package:construculator/libraries/analytics/domain/entities/analytics_event.dart';
+import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
 import 'package:construculator/libraries/auth/data/models/professional_role.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/auth/domain/validation/auth_validation.dart';
@@ -20,11 +24,13 @@ class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
   final CreateAccountUseCase _createAccountUseCase;
   final GetProfessionalRolesUseCase _getProfessionalRolesUseCase;
   final SendOtpUseCase _sendOtpUseCase;
+  final AnalyticsRepository _analyticsRepository;
 
   CreateAccountBloc({
     required this._createAccountUseCase,
     required this._getProfessionalRolesUseCase,
     required this._sendOtpUseCase,
+    required this._analyticsRepository,
   }) : super(CreateAccountInitial()) {
     on<CreateAccountSubmitted>(_onSubmitted);
     on<CreateAccountGetProfessionalRolesRequested>(_onLoadProfessionalRoles);
@@ -209,8 +215,28 @@ class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
       ),
     );
     result.fold(
-      (failure) => emit(CreateAccountFailure(failure: failure)),
-      (roles) => emit(CreateAccountSuccess()),
+      (failure) {
+        unawaited(
+          _analyticsRepository.track(
+            AnalyticsEvent(
+              name: 'user_registration_failed',
+              properties: {'reason': _failureReason(failure)},
+            ),
+          ),
+        );
+        emit(CreateAccountFailure(failure: failure));
+      },
+      (roles) {
+        unawaited(
+          _analyticsRepository.track(
+            const AnalyticsEvent(name: 'user_registered'),
+          ),
+        );
+        emit(CreateAccountSuccess());
+      },
     );
   }
+
+  String _failureReason(Failure failure) =>
+      failure is AuthFailure ? failure.errorType.name : 'unexpected';
 }
