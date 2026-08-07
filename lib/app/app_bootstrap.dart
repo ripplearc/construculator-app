@@ -1,4 +1,5 @@
 // coverage:ignore-file
+import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
 import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
@@ -95,10 +96,16 @@ class AppBootstrap {
   /// Its [initialize] method must be called with the app runner to enable error tracking.
   final SentryWrapper sentryWrapper;
 
+  /// The analytics repository, resolved to either the real PostHog-backed
+  /// implementation or `NoOpAnalyticsRepository` based on `POSTHOG_ENABLED`.
+  /// Must be fully initialized (if real) before passing to the app module.
+  final AnalyticsRepository analyticsRepository;
+
   AppBootstrap({
     required this.envLoader,
     required this.config,
     required this.supabaseWrapper,
     required this.sentryWrapper,
+    required this.analyticsRepository,
   });
 }
