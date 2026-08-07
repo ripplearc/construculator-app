@@ -1,6 +1,9 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/auth/presentation/bloc/enter_password_bloc/enter_password_bloc.dart';
 import 'package:construculator/features/auth/testing/auth_test_module.dart';
+import 'package:construculator/libraries/analytics/domain/entities/analytics_event.dart';
+import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
+import 'package:construculator/libraries/analytics/testing/fake_analytics_repository.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -10,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  late FakeAnalyticsRepository fakeAnalytics;
   late Clock clock;
   late EnterPasswordBloc bloc;
 
@@ -24,12 +28,15 @@ void main() {
   setUp(() {
     Modular.init(AuthTestModule());
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+    fakeAnalytics =
+        Modular.get<AnalyticsRepository>() as FakeAnalyticsRepository;
     clock = Modular.get<Clock>();
     bloc = Modular.get<EnterPasswordBloc>();
   });
 
   tearDown(() {
     fakeSupabase.reset();
+    fakeAnalytics.resetFake();
     bloc.close();
     Modular.destroy();
   });
@@ -52,6 +59,11 @@ void main() {
           EnterPasswordSubmitLoading(),
           EnterPasswordSubmitSuccess(),
         ],
+        verify: (_) {
+          expect(fakeAnalytics.trackedEvents, [
+            const AnalyticsEvent(name: 'user_logged_in'),
+          ]);
+        },
       );
 
       blocTest<EnterPasswordBloc, EnterPasswordState>(
@@ -70,6 +82,14 @@ void main() {
           EnterPasswordSubmitLoading(),
           isA<EnterPasswordSubmitFailure>(),
         ],
+        verify: (_) {
+          expect(fakeAnalytics.trackedEvents, hasLength(1));
+          expect(fakeAnalytics.trackedEvents.single.name, 'user_login_failed');
+          expect(
+            fakeAnalytics.trackedEvents.single.properties['reason'],
+            isNotEmpty,
+          );
+        },
       );
     });
     group('Multiple Login Attempts', () {

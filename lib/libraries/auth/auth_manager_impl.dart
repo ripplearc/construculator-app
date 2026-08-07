@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:construculator/libraries/analytics/domain/entities/analytics_event.dart';
 import 'package:construculator/libraries/analytics/domain/entities/analytics_user_properties.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
 import 'package:construculator/libraries/auth/data/models/auth_credential.dart';
@@ -343,6 +344,11 @@ class AuthManagerImpl implements AuthManager {
 
       await _sentryWrapper.setUser(null);
       await _analyticsRepository.reset();
+      unawaited(
+        _analyticsRepository.track(
+          const AnalyticsEvent(name: 'user_logged_out'),
+        ),
+      );
 
       _logger.info('Logout successful');
       return AuthResult.success(null);

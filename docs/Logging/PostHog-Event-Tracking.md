@@ -17,7 +17,9 @@
 
 ### Authentication
 - `user_registered`
+- `user_registration_failed` — properties: `reason` (typed, see Data Safety Rules; derived from `AuthErrorType`, never the raw exception)
 - `user_logged_in`
+- `user_login_failed` — properties: `reason` (typed, see Data Safety Rules; derived from `AuthErrorType`, never the raw exception)
 - `user_logged_out`
 - `user_password_reset`
 - `otp_verified`

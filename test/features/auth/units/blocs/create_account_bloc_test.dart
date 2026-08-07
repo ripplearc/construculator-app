@@ -1,6 +1,9 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/auth/presentation/bloc/create_account_bloc/create_account_bloc.dart';
 import 'package:construculator/features/auth/testing/auth_test_module.dart';
+import 'package:construculator/libraries/analytics/domain/entities/analytics_event.dart';
+import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
+import 'package:construculator/libraries/analytics/testing/fake_analytics_repository.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -12,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   late FakeSupabaseWrapper fakeSupabase;
+  late FakeAnalyticsRepository fakeAnalytics;
   late Clock clock;
   late CreateAccountBloc bloc;
   const testPhone = '+12019292918';
@@ -28,12 +32,15 @@ void main() {
   setUp(() {
     Modular.init(AuthTestModule());
     fakeSupabase = Modular.get<SupabaseWrapper>() as FakeSupabaseWrapper;
+    fakeAnalytics =
+        Modular.get<AnalyticsRepository>() as FakeAnalyticsRepository;
     clock = Modular.get<Clock>();
     bloc = Modular.get<CreateAccountBloc>();
   });
 
   tearDown(() {
     fakeSupabase.reset();
+    fakeAnalytics.resetFake();
     Modular.destroy();
   });
 
@@ -614,6 +621,11 @@ void main() {
         ),
       ),
       expect: () => [isA<CreateAccountLoading>(), isA<CreateAccountSuccess>()],
+      verify: (_) {
+        expect(fakeAnalytics.trackedEvents, [
+          const AnalyticsEvent(name: 'user_registered'),
+        ]);
+      },
     );
 
     blocTest<CreateAccountBloc, CreateAccountState>(
@@ -642,6 +654,17 @@ void main() {
           isA<AuthFailure>(),
         ),
       ],
+      verify: (_) {
+        expect(fakeAnalytics.trackedEvents, hasLength(1));
+        expect(
+          fakeAnalytics.trackedEvents.single.name,
+          'user_registration_failed',
+        );
+        expect(
+          fakeAnalytics.trackedEvents.single.properties['reason'],
+          isNotEmpty,
+        );
+      },
     );
 
     blocTest<CreateAccountBloc, CreateAccountState>(
@@ -670,6 +693,17 @@ void main() {
           isA<AuthFailure>(),
         ),
       ],
+      verify: (_) {
+        expect(fakeAnalytics.trackedEvents, hasLength(1));
+        expect(
+          fakeAnalytics.trackedEvents.single.name,
+          'user_registration_failed',
+        );
+        expect(
+          fakeAnalytics.trackedEvents.single.properties['reason'],
+          isNotEmpty,
+        );
+      },
     );
   });
 }
