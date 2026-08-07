@@ -2107,6 +2107,31 @@ void main() {
           );
           await bloc.stream.firstWhere((s) => s is ProjectSearchResultsLoaded);
         },
+        // Pins the emit-then-re-run ordering: results, sheet-open idle
+        // (loading then loaded), filter-applied idle, then the re-run pair.
+        expect: () => [
+          isA<ProjectSearchLoading>().having((s) => s.query, 'query', 'wall'),
+          isA<ProjectSearchResultsLoaded>(),
+          isA<ProjectSearchInitial>().having(
+            (s) => s.availableOwnersLoading,
+            'availableOwnersLoading',
+            true,
+          ),
+          isA<ProjectSearchInitial>()
+              .having(
+                (s) => s.availableOwnersLoading,
+                'availableOwnersLoading',
+                false,
+              )
+              .having((s) => s.selectedOwnerIds, 'selectedOwnerIds', isEmpty),
+          isA<ProjectSearchInitial>().having(
+            (s) => s.selectedOwnerIds,
+            'selectedOwnerIds',
+            {'owner-1'},
+          ),
+          isA<ProjectSearchLoading>().having((s) => s.query, 'query', 'wall'),
+          isA<ProjectSearchResultsLoaded>(),
+        ],
         verify: (_) {
           final calls = searchCalls();
           expect(calls, hasLength(2));
@@ -2152,6 +2177,40 @@ void main() {
             'query',
             'bridge',
           ),
+        ],
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'editing the query back while a search is in flight disowns it: the '
+        'late RPC completion cannot publish stale results over the '
+        'suggestions surface',
+        setUp: seedOneProjectResult,
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          // Park the search's RPC on a gate. Its loading state is emitted
+          // before the RPC await, so once that state is observed the search
+          // is parked.
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          final searchGate = fakeSupabase.completer!;
+          bloc.add(const ProjectSearchPerformedEvent(query: 'wall'));
+          await bloc.stream.firstWhere(
+            (s) => s is ProjectSearchLoading && s.query == 'wall',
+          );
+          // Clearing the field navigates back to the history surface while
+          // the search RPC is still parked; the edit must disown it.
+          fakeSupabase.shouldDelayOperations = false;
+          bloc.add(const ProjectSearchQueryUpdatedEvent(query: ''));
+          await bloc.stream.firstWhere((s) => s is ProjectSearchInitial);
+          // Release the disowned search; its generation-guarded continuation
+          // runs to completion during bloc.close() without emitting.
+          searchGate.complete();
+        },
+        // Exactly two emissions: the disowned search's late completion must
+        // not publish a stale ResultsLoaded over the suggestions surface.
+        expect: () => [
+          isA<ProjectSearchLoading>().having((s) => s.query, 'query', 'wall'),
+          isA<ProjectSearchInitial>(),
         ],
       );
 

@@ -172,6 +172,10 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     // Editing the query returns to the suggestions/recents surface; a filter
     // change must no longer resurrect the previous results.
     _searchIsActive = false;
+    // Disown any in-flight search, same as _onHistoryRequested: its late
+    // completion must not publish stale results over the suggestions surface
+    // the user navigated to.
+    _searchExecutionGeneration++;
 
     if (query.isEmpty) {
       // Clearing the field restores the history surface rather than blanking
