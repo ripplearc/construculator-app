@@ -24,7 +24,10 @@ Future<void> main() async {
 
   await appBootstrap.sentryWrapper.initialize(
     () => runApp(
-      ModularApp(module: AppModule(appBootstrap), child: const AppWidget()),
+      ModularApp(
+        module: AppModule(appBootstrap),
+        child: AppWidget(analyticsRepository: appBootstrap.analyticsRepository),
+      ),
     ),
   );
 }
