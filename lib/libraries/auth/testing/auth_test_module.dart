@@ -1,11 +1,11 @@
 // coverage:ignore-file
+import 'package:construculator/libraries/analytics/testing/fake_analytics_repository.dart';
 import 'package:construculator/libraries/auth/auth_manager_impl.dart';
 import 'package:construculator/libraries/auth/auth_notifier_impl.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/repositories/supabase_repository_impl.dart';
-import 'package:construculator/libraries/analytics/testing/fake_analytics_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
