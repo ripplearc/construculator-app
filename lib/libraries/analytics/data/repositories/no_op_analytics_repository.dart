@@ -4,7 +4,7 @@ import 'package:construculator/libraries/analytics/domain/repositories/analytics
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 
-/// Production no-op used when `POSTHOG_ENABLED=false`.
+/// Production no-op used when `ANALYTICS_ENABLED=false`.
 ///
 /// Not a test double — for tests, inject `FakePosthogWrapper` into
 /// [AnalyticsRepositoryImpl] instead.
