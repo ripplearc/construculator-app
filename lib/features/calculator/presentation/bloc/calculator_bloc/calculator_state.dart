@@ -1,4 +1,3 @@
-// coverage:ignore-file
 part of 'calculator_bloc.dart';
 
 /// Represents the current state of the calculator display area.
@@ -107,6 +106,18 @@ class CalculatorState extends Equatable {
       currentUnitSystem: currentUnitSystem ?? this.currentUnitSystem,
     );
   }
+
+  List<CoreCalculatorChip> get chipsList => [
+        ...completedChips,
+        if (isTyping)
+          if (activeInputLabel case final label?)
+            CoreCalculatorChip(
+              label: label,
+              value: currentInputValue,
+              type: CoreCalculatorChipType.active,
+            ),
+        if (resultChip case final chip?) chip,
+      ];
 
   @override
   List<Object?> get props => [
