@@ -23,7 +23,8 @@ class AppHeaderModule extends Module {
   /// When [currentProjectNotifier] reports a selected project, delegates to
   /// the project header provided by [projectUIProvider]. Otherwise shows a
   /// [TitleSearchAppBar] with search navigation wired through [router] to the
-  /// global search route.
+  /// global search route. [onProjectTap] is forwarded to the title's project
+  /// selector.
   ///
   /// Dependencies are passed in by the caller (resolved once at
   /// field-initialisation time) rather than looked up via `Modular.get()`
@@ -41,6 +42,9 @@ class AppHeaderModule extends Module {
 
     void onSearchTap() => router.pushNamed(fullGlobalSearchRoute);
 
-    return TitleSearchAppBar(onSearchTap: onSearchTap);
+    return TitleSearchAppBar(
+      onSearchTap: onSearchTap,
+      onProjectTap: onProjectTap,
+    );
   }
 }
