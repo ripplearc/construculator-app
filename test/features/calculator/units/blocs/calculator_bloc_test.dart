@@ -147,6 +147,25 @@ void main() {
 
     group('CalculatorKeySelected — Fence', () {
       blocTest<CalculatorBloc, CalculatorState>(
+        'finalizes an in-progress Length entry before computing fence posts',
+        build: () => bloc,
+        seed: () => const CalculatorState(
+          isTyping: true,
+          activeInputLabel: 'Length',
+          currentInputValue: '24',
+          currentNumericValue: '24',
+        ),
+        act: (bloc) => bloc.add(const CalculatorKeySelected('Fence')),
+        verify: (bloc) {
+          expect(bloc.state.finalizedValues['Length'], 24.0);
+          expect(bloc.state.resultLabel, 'postsResult');
+          expect(bloc.state.resultValue, '5');
+          expect(bloc.state.dependentKeyLabel, 'oc');
+          expect(bloc.state.dependentKeyValue, '6ft');
+        },
+      );
+
+      blocTest<CalculatorBloc, CalculatorState>(
         'computes fence posts when Length is already finalized',
         build: () => bloc,
         seed: () => const CalculatorState(
