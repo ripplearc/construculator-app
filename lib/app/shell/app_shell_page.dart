@@ -4,10 +4,8 @@ import 'package:construculator/app/shell/widgets/tab_navigator.dart';
 import 'package:construculator/features/app_header/app_header_module.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
-import 'package:construculator/features/dashboard/presentation/pages/dashboard_page.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/projects_bottom_sheet.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
-import 'package:construculator/features/members/presentation/pages/members_page.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
@@ -59,7 +57,7 @@ class _AppShellPageState extends State<AppShellPage> {
     }
 
     if (state.selectedTabIndex != 0) {
-      bloc.add(const AppShellTabSelected(ShellTab.home));
+      bloc.add(const AppShellTabSelected(ShellTab.calculations));
       return;
     }
 
@@ -73,14 +71,10 @@ class _AppShellPageState extends State<AppShellPage> {
 
   Widget _buildTabRoot(ShellTab tab) {
     switch (tab) {
-      case ShellTab.home:
-        return DashboardPage(router: widget.router);
       case ShellTab.calculations:
         return const CalculationsPage();
-      case ShellTab.estimation:
+      case ShellTab.estimates:
         return EstimationModule.landingPage();
-      case ShellTab.members:
-        return const MembersPage();
     }
   }
 
@@ -102,7 +96,6 @@ class _AppShellPageState extends State<AppShellPage> {
           onPopInvokedWithResult: (didPop, _) => _onPopInvoked(didPop),
           child: Scaffold(
             appBar: AppHeaderModule.buildHeader(
-              isHomeTab: state.selectedTabIndex == ShellTab.home.index,
               currentProjectNotifier: widget.currentProjectNotifier,
               router: widget.router,
               projectUIProvider: widget.projectUIProvider,
@@ -137,20 +130,12 @@ class _AppShellPageState extends State<AppShellPage> {
               child: CoreBottomNavBar(
                 tabs: [
                   BottomNavTab(
-                    icon: CoreIcons.home,
-                    label: context.l10n.homeTab,
-                  ),
-                  BottomNavTab(
-                    icon: CoreIcons.calculate,
+                    icon: CoreIcons.calculation,
                     label: context.l10n.calculationsTab,
                   ),
                   BottomNavTab(
                     icon: CoreIcons.cost,
-                    label: context.l10n.costEstimation,
-                  ),
-                  BottomNavTab(
-                    icon: CoreIcons.members,
-                    label: context.l10n.membersTab,
+                    label: context.l10n.estimatesTab,
                   ),
                 ],
                 selectedIndex: state.selectedTabIndex,

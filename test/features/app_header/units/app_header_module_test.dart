@@ -20,7 +20,7 @@ void main() {
       fakeRouter = FakeAppRouter();
     });
 
-    Widget makeApp({required bool isHomeTab}) {
+    Widget makeApp() {
       return MaterialApp(
         theme: CoreTheme.light(),
         locale: const Locale('en'),
@@ -28,7 +28,6 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           appBar: AppHeaderModule.buildHeader(
-            isHomeTab: isHomeTab,
             currentProjectNotifier: fakeNotifier,
             router: fakeRouter,
             projectUIProvider: FakeProjectUIProvider(),
@@ -37,29 +36,23 @@ void main() {
       );
     }
 
-    testWidgets('returns HeaderRow on the home tab with no project selected', (
+    testWidgets('returns TitleSearchAppBar with no project selected', (
       tester,
     ) async {
-      await tester.pumpWidget(makeApp(isHomeTab: true));
+      await tester.pumpWidget(makeApp());
 
-      expect(find.byType(HeaderRow), findsOneWidget);
-      expect(find.byKey(const Key('header_row_search_button')), findsOneWidget);
-      expect(
-        find.byKey(const Key('header_row_notification_icon')),
-        findsOneWidget,
-      );
-      expect(
-        find.byKey(const Key('header_row_profile_avatar')),
-        findsOneWidget,
-      );
+      expect(find.byType(TitleSearchAppBar), findsOneWidget);
+      expect(find.byType(HeaderRow), findsNothing);
     });
 
-    testWidgets('wires the HeaderRow search tap to the global search route', (
+    testWidgets('wires the TitleSearchAppBar search tap to the global search route', (
       tester,
     ) async {
-      await tester.pumpWidget(makeApp(isHomeTab: true));
+      await tester.pumpWidget(makeApp());
 
-      await tester.tap(find.byKey(const Key('header_row_search_button')));
+      await tester.tap(
+        find.byKey(const Key('title_search_app_bar_search_button')),
+      );
       await tester.pump();
 
       expect(fakeRouter.navigationHistory, [
@@ -67,38 +60,12 @@ void main() {
       ]);
     });
 
-    testWidgets(
-      'returns TitleSearchAppBar on non-home tabs with no project selected',
-      (tester) async {
-        await tester.pumpWidget(makeApp(isHomeTab: false));
-
-        expect(find.byType(TitleSearchAppBar), findsOneWidget);
-        expect(find.byType(HeaderRow), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'wires the TitleSearchAppBar search tap to the global search route',
-      (tester) async {
-        await tester.pumpWidget(makeApp(isHomeTab: false));
-
-        await tester.tap(
-          find.byKey(const Key('title_search_app_bar_search_button')),
-        );
-        await tester.pump();
-
-        expect(fakeRouter.navigationHistory, [
-          const RouteCall(fullGlobalSearchRoute, null),
-        ]);
-      },
-    );
-
     testWidgets('returns the project header when a project is selected', (
       tester,
     ) async {
       fakeNotifier.setCurrentProjectId('project-1');
 
-      await tester.pumpWidget(makeApp(isHomeTab: true));
+      await tester.pumpWidget(makeApp());
 
       expect(find.byType(FakeProjectAppBar), findsOneWidget);
       expect(find.byType(HeaderRow), findsNothing);
