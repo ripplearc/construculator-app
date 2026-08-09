@@ -1,3 +1,4 @@
+// coverage:ignore-file
 import 'package:construculator/libraries/analytics/domain/entities/analytics_event.dart';
 import 'package:construculator/libraries/analytics/domain/entities/analytics_user_properties.dart';
 import 'package:construculator/libraries/either/interfaces/either.dart';
