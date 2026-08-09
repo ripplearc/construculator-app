@@ -10,6 +10,7 @@ class AnalyticsUserProperties extends Equatable {
     this.name,
     this.role,
     Map<String, dynamic> custom = const {},
+    // ignore: prefer_initializing_formals
   }) : _custom = custom;
 
   /// The user's email address.

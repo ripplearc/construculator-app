@@ -7,7 +7,9 @@ class AnalyticsEvent extends Equatable {
   const AnalyticsEvent({
     required this.name,
     Map<String, dynamic> properties = const {},
-  }) : _properties = properties;
+  })
+    // ignore: prefer_initializing_formals
+    : _properties = properties;
 
   /// The event name, e.g. `estimation_created`. Use `snake_case`.
   final String name;
