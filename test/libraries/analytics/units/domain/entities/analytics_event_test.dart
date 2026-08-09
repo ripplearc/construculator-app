@@ -34,5 +34,17 @@ void main() {
 
       expect(first, isNot(second));
     });
+
+    test('properties getter returns an unmodifiable map', () {
+      const event = AnalyticsEvent(
+        name: 'estimation_created',
+        properties: {'estimation_id': 'est-1'},
+      );
+
+      expect(
+        () => event.properties['estimation_id'] = 'est-2',
+        throwsUnsupportedError,
+      );
+    });
   });
 }

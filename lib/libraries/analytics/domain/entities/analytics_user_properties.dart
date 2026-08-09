@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/analytics/domain/utils/unmodifiable_map_view.dart';
 import 'package:equatable/equatable.dart';
 
 /// Person properties set on the current user via `identify()` or
@@ -8,8 +9,8 @@ class AnalyticsUserProperties extends Equatable {
     this.email,
     this.name,
     this.role,
-    this.custom = const {},
-  });
+    Map<String, dynamic> custom = const {},
+  }) : _custom = custom;
 
   /// The user's email address.
   final String? email;
@@ -20,8 +21,10 @@ class AnalyticsUserProperties extends Equatable {
   /// The user's role.
   final String? role;
 
+  final Map<String, dynamic> _custom;
+
   /// Additional properties not covered by the named fields above.
-  final Map<String, dynamic> custom;
+  Map<String, dynamic> get custom => _custom.unmodifiableView;
 
   /// Flattens the named fields and [custom] into a single map, omitting
   /// unset named fields.
@@ -29,9 +32,9 @@ class AnalyticsUserProperties extends Equatable {
     if (email != null) 'email': email,
     if (name != null) 'name': name,
     if (role != null) 'role': role,
-    ...custom,
+    ..._custom,
   };
 
   @override
-  List<Object?> get props => [email, name, role, custom];
+  List<Object?> get props => [email, name, role, _custom];
 }

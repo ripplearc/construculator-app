@@ -49,5 +49,16 @@ void main() {
 
       expect(first, second);
     });
+
+    test('custom getter returns an unmodifiable map', () {
+      const properties = AnalyticsUserProperties(
+        custom: {'company_id': 'company-1'},
+      );
+
+      expect(
+        () => properties.custom['company_id'] = 'company-2',
+        throwsUnsupportedError,
+      );
+    });
   });
 }
