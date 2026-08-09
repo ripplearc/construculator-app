@@ -303,7 +303,9 @@ SENTRY_DSN=           (empty - Sentry disabled in dev)
 API_URL=http://localhost:8000/api
 SUPABASE_URL=http://localhost:54321
 DEBUG_MODE=true
-ANALYTICS_ENABLED=false
+ANALYTICS_ENABLED=true
+POSTHOG_API_KEY=...   (dev only for now)
+POSTHOG_HOST=...      (dev only for now)
 ```
 
 Example variables in `construculator_qa`:
@@ -314,8 +316,12 @@ SENTRY_DSN=https://...@sentry.io/...
 API_URL=https://qa-api.construculator.com/api
 SUPABASE_URL=https://qa-project.supabase.co
 DEBUG_MODE=false
-ANALYTICS_ENABLED=true
+ANALYTICS_ENABLED=false
+POSTHOG_API_KEY=      (empty - PostHog is dev-only for now)
+POSTHOG_HOST=         (empty - PostHog is dev-only for now)
 ```
+
+`ANALYTICS_ENABLED` is the single kill switch for analytics — it currently gates PostHog and is reused rather than adding a parallel `POSTHOG_ENABLED` flag. `POSTHOG_DEBUG` follows `DEBUG_MODE` per environment (`true` in dev, `false` in qa/prod) and doesn't need to be set explicitly in Codemagic; the script defaults it per `ENVIRONMENT`.
 
 ### Common environment variables
 

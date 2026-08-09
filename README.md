@@ -158,8 +158,11 @@ API_URL=http://localhost:8000/api
 SUPABASE_URL=http://localhost:54321
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 DEBUG_MODE=true
-ANALYTICS_ENABLED=false
+ANALYTICS_ENABLED=true
 SENTRY_DSN=
+POSTHOG_API_KEY=
+POSTHOG_HOST=
+POSTHOG_DEBUG=true
 ```
 
 **Environment Variable Details:**
@@ -172,8 +175,11 @@ SENTRY_DSN=
 | `SUPABASE_URL` | Supabase API URL | `http://localhost:54321` (from `supabase start` output) |
 | `SUPABASE_ANON_KEY` | Supabase anonymous key | Copy the ` Publishable key` from `supabase start` output |
 | `DEBUG_MODE` | Enable debug logging | `true` for development, `false` for production |
-| `ANALYTICS_ENABLED` | Enable analytics | `false` for local development |
+| `ANALYTICS_ENABLED` | Enable analytics (single kill switch, currently gates PostHog) | `true` for local development, `false` for qa/prod |
 | `SENTRY_DSN` | Sentry error tracking DSN | Leave empty for local dev |
+| `POSTHOG_API_KEY` | PostHog project API key (dev only for now) | Leave empty for local dev, or use your PostHog project key |
+| `POSTHOG_HOST` | PostHog ingestion host (dev only for now) | Leave empty for local dev, or use your PostHog instance URL |
+| `POSTHOG_DEBUG` | Enable PostHog debug logging | `true` for local development, `false` for qa/prod |
 
 #### Important: Emulator Network Configuration
 

@@ -31,6 +31,14 @@ if [ -z "${SENTRY_DSN:-}" ]; then
   echo "⚠️  WARNING: SENTRY_DSN is not set (Sentry will be disabled)"
 fi
 
+if [ -z "${POSTHOG_API_KEY:-}" ]; then
+  echo "⚠️  WARNING: POSTHOG_API_KEY is not set (PostHog will be disabled)"
+fi
+
+if [ -z "${POSTHOG_HOST:-}" ]; then
+  echo "⚠️  WARNING: POSTHOG_HOST is not set (PostHog will be disabled)"
+fi
+
 # Set default values for optional variables
 APP_NAME="${APP_NAME:-Construculator}"
 API_URL="${API_URL:-}"
