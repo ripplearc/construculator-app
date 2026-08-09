@@ -155,9 +155,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
         type: CoreCalculatorChipType.editable,
       );
 
-      final updatedChips =
-          List<CoreCalculatorChip>.from(currentState.completedChips)
-            ..add(newChip);
+      final updatedChips = [...currentState.completedChips, newChip];
 
       final updatedNumericValues =
           Map<String, double>.from(currentState.finalizedValues)
