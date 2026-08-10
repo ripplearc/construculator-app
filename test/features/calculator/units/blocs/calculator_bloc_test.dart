@@ -394,6 +394,49 @@ void main() {
         expect(state.chipsList.first, completedChip);
         expect(state.chipsList.last, resultChip);
       });
+
+      test('omits active chip when typing with no active input label', () {
+        final completedChip = CoreCalculatorChip(
+          label: 'Rise',
+          value: '6',
+          type: CoreCalculatorChipType.editable,
+        );
+        final state = CalculatorState(
+          isTyping: true,
+          completedChips: [completedChip],
+        );
+        expect(state.chipsList, [completedChip]);
+      });
+
+      test(
+        'orders completed chips, active chip, then result chip',
+        () {
+          final completedChip = CoreCalculatorChip(
+            label: 'Rise',
+            value: '6',
+            type: CoreCalculatorChipType.editable,
+          );
+          final resultChip = CoreCalculatorChip(
+            label: 'Pitch',
+            value: '0.5',
+            type: CoreCalculatorChipType.disabled,
+          );
+          final state = CalculatorState(
+            completedChips: [completedChip],
+            isTyping: true,
+            activeInputLabel: 'Run',
+            currentInputValue: '12',
+            resultChip: resultChip,
+          );
+
+          expect(state.chipsList.length, 3);
+          expect(state.chipsList[0], completedChip);
+          expect(state.chipsList[1].label, 'Run');
+          expect(state.chipsList[1].value, '12');
+          expect(state.chipsList[1].type, CoreCalculatorChipType.active);
+          expect(state.chipsList[2], resultChip);
+        },
+      );
     });
 
     group('functionGroups', () {

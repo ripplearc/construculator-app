@@ -107,6 +107,12 @@ class CalculatorState extends Equatable {
     );
   }
 
+  /// The chips to render in the display area, in order: [completedChips],
+  /// then an in-progress active chip while typing, then [resultChip].
+  /// The active chip is built here (not stored) from [activeInputLabel] and
+  /// [currentInputValue] so it always reflects the latest keystroke.
+  /// [dependentKeyLabel] and [dependentKeyValue] are excluded because they
+  /// render in a separate value section, not as chips.
   List<CoreCalculatorChip> get chipsList => [
         ...completedChips,
         if (isTyping)
