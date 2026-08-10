@@ -1,4 +1,6 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/libraries/analytics/domain/repositories/feature_flag_repository.dart';
+import 'package:construculator/libraries/analytics/testing/fake_feature_flag_repository.dart';
 import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
@@ -19,6 +21,8 @@ class FakeAppBootstrapFactory {
   ///   database state and assertions
   /// - [config]: Provide custom app configuration for the test
   /// - [envLoader]: Provide custom environment loading behavior
+  /// - [featureFlagRepository]: Provide a specific FeatureFlagRepository
+  ///   (e.g. FakeFeatureFlagRepository with overrides) to control flag state
   ///
   /// When parameters are omitted, sensible test defaults are provided.
   ///
@@ -37,6 +41,7 @@ class FakeAppBootstrapFactory {
     FakeSupabaseWrapper? supabaseWrapper,
     Config? config,
     EnvLoader? envLoader,
+    FeatureFlagRepository? featureFlagRepository,
   }) {
     return AppBootstrap(
       supabaseWrapper:
@@ -44,6 +49,8 @@ class FakeAppBootstrapFactory {
       config: config ?? FakeAppConfig(),
       envLoader: envLoader ?? FakeEnvLoader(),
       sentryWrapper: FakeSentryWrapper(),
+      featureFlagRepository:
+          featureFlagRepository ?? FakeFeatureFlagRepository(),
     );
   }
 }

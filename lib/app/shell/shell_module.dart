@@ -14,6 +14,7 @@ import 'package:construculator/features/dashboard/presentation/pages/project_sea
 import 'package:construculator/features/estimation/estimation_routes_module.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
 import 'package:construculator/features/project_settings/project_settings_routes_module.dart';
+import 'package:construculator/libraries/analytics/feature_flag_module.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
@@ -42,6 +43,7 @@ class ShellModule extends Module {
     EstimationLibraryModule(appBootstrap),
     DashboardModule(appBootstrap),
     AppHeaderModule(),
+    FeatureFlagModule(appBootstrap),
   ];
 
   @override
