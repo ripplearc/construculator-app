@@ -3,6 +3,7 @@
 **Related docs:**
 - [PostHog Event Tracking Reference](PostHog-Event-Tracking.md) — event taxonomy, naming conventions, data safety rules
 - [Analytics Future Features](Analytics-Future-Features.md) — planned analytics for upcoming features
+- [PostHog Feature Flags — Integration Design](PostHog-Feature-Flags.md) — evaluation model, targeting, wrapper boundary, fail-safe behavior, testing approach (CA-954)
 
 ---
 
@@ -573,6 +574,8 @@ All funnels below are sample templates. Final events, steps, and conversion wind
 ## Feature Flags
 
 Feature flags enable gradual rollouts, A/B testing, and remote configuration without shipping an app update.
+
+> **See also:** [PostHog Feature Flags — Integration Design](PostHog-Feature-Flags.md) (CA-954) for the architecture behind this section — evaluation model (local cache vs. per-call), targeting, wrapper boundary, fail-safe behavior, testing approach, and naming disambiguation from CA-925's compile-time `FeatureFlags.<feature>`.
 
 ### Use Cases for Construculator
 
