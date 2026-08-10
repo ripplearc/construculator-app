@@ -2,6 +2,7 @@ import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/module_model.dart';
 import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
+import 'package:construculator/libraries/analytics/testing/fake_feature_flag_repository.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
@@ -21,6 +22,7 @@ void main() {
           envLoader: FakeEnvLoader(),
           sentryWrapper: FakeSentryWrapper(),
           supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
+          featureFlagRepository: FakeFeatureFlagRepository(),
         );
         Modular.init(ShellModule(appBootstrap));
         manager = Modular.get<TabModuleManager>();
@@ -68,6 +70,7 @@ void main() {
           envLoader: FakeEnvLoader(),
           sentryWrapper: FakeSentryWrapper(),
           supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
+          featureFlagRepository: FakeFeatureFlagRepository(),
         );
         Modular.init(_TestShellModule(appBootstrap));
         customManager = Modular.get<TabModuleManager>();
