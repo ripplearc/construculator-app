@@ -2,11 +2,15 @@ import 'package:construculator/app/app.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/app_module.dart';
 import 'package:construculator/libraries/analytics/analytics_repository_factory.dart';
+import 'package:construculator/libraries/analytics/data/repositories/feature_flag_repository_impl.dart';
+import 'package:construculator/libraries/analytics/data/repositories/no_op_feature_flag_repository.dart';
+import 'package:construculator/libraries/analytics/domain/repositories/feature_flag_repository.dart';
 import 'package:construculator/libraries/analytics/posthog_sdk_impl.dart';
 import 'package:construculator/libraries/analytics/posthog_wrapper_impl.dart';
 import 'package:construculator/libraries/config/app_config_impl.dart';
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/config/env_loader_impl.dart';
+import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/powersync/data/open_powersync_database.dart';
 import 'package:construculator/libraries/sentry/sentry_sdk_impl.dart';
@@ -55,6 +59,9 @@ Future<AppBootstrap> _initializeApp() async {
     envLoader: envLoader,
     buildPosthogWrapper: () => PosthogWrapperImpl(posthogSdk: PosthogSdkImpl()),
   );
+  final featureFlagRepository = await _initializeFeatureFlagRepository(
+    envLoader,
+  );
   return AppBootstrap(
     config: config,
     envLoader: envLoader,
@@ -62,7 +69,25 @@ Future<AppBootstrap> _initializeApp() async {
     sentryWrapper: sentryWrapper,
     analyticsRepository: analyticsRepository,
     powerSyncDatabase: powerSyncDatabase,
+    featureFlagRepository: featureFlagRepository,
   );
+}
+
+Future<FeatureFlagRepository> _initializeFeatureFlagRepository(
+  EnvLoader envLoader,
+) async {
+  if (envLoader.get(analyticsEnabledKey) != 'true') {
+    return const NoOpFeatureFlagRepository();
+  }
+  final posthogWrapper = PosthogWrapperImpl(posthogSdk: PosthogSdkImpl());
+  await posthogWrapper.initialize(
+    apiKey: envLoader.get(posthogApiKeyKey) ?? '',
+    host: envLoader.get(posthogHostKey) ?? '',
+    debug: envLoader.get(posthogDebugKey) == 'true',
+  );
+  final repository = FeatureFlagRepositoryImpl(posthogWrapper: posthogWrapper);
+  await repository.reloadFeatureFlags();
+  return repository;
 }
 
 Environment _getEnvironmentFromString(String? envName) {

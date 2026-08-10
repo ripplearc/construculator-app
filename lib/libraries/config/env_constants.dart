@@ -12,10 +12,13 @@ const String prodAlias = '';
 
 const String sentryDsnKey = 'SENTRY_DSN';
 
+/// Single kill switch for PostHog (analytics and feature flags alike) —
+/// no separate `POSTHOG_ENABLED` flag exists.
+const String analyticsEnabledKey = 'ANALYTICS_ENABLED';
+
 const String posthogApiKeyKey = 'POSTHOG_API_KEY';
 const String posthogHostKey = 'POSTHOG_HOST';
 const String posthogDebugKey = 'POSTHOG_DEBUG';
-const String analyticsEnabledKey = 'ANALYTICS_ENABLED';
 
 enum Environment { dev, qa, prod }
 

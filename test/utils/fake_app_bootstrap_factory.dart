@@ -1,6 +1,8 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/analytics/data/repositories/no_op_analytics_repository.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
+import 'package:construculator/libraries/analytics/domain/repositories/feature_flag_repository.dart';
+import 'package:construculator/libraries/analytics/testing/fake_feature_flag_repository.dart';
 import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
@@ -27,6 +29,8 @@ class FakeAppBootstrapFactory {
   ///   to the production no-op
   /// - [powerSyncDatabase]: Provide a specific fake database to assert against
   ///   sync lifecycle calls
+  /// - [featureFlagRepository]: Provide a specific FeatureFlagRepository
+  ///   (e.g. FakeFeatureFlagRepository with overrides) to control flag state
   ///
   /// When parameters are omitted, sensible test defaults are provided.
   ///
@@ -47,6 +51,7 @@ class FakeAppBootstrapFactory {
     EnvLoader? envLoader,
     AnalyticsRepository? analyticsRepository,
     PowerSyncDatabase? powerSyncDatabase,
+    FeatureFlagRepository? featureFlagRepository,
   }) {
     return AppBootstrap(
       supabaseWrapper:
@@ -54,8 +59,11 @@ class FakeAppBootstrapFactory {
       config: config ?? FakeAppConfig(),
       envLoader: envLoader ?? FakeEnvLoader(),
       sentryWrapper: FakeSentryWrapper(),
-      analyticsRepository: analyticsRepository ?? NoOpAnalyticsRepository(),
+      analyticsRepository:
+          analyticsRepository ?? const NoOpAnalyticsRepository(),
       powerSyncDatabase: powerSyncDatabase ?? FakePowerSyncDatabase(),
+      featureFlagRepository:
+          featureFlagRepository ?? FakeFeatureFlagRepository(),
     );
   }
 }
