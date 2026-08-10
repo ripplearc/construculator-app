@@ -78,6 +78,22 @@ void main() {
 
         expect(fakePosthogSdk.groupCalls, isEmpty);
       });
+
+      test('isFeatureEnabled returns null without querying the SDK',
+          () async {
+        final result = await posthogWrapper.isFeatureEnabled(
+          'calculator-enabled',
+        );
+
+        expect(result, isNull);
+        expect(fakePosthogSdk.isFeatureEnabledCalls, isEmpty);
+      });
+
+      test('reloadFeatureFlags is a no-op', () async {
+        await posthogWrapper.reloadFeatureFlags();
+
+        expect(fakePosthogSdk.reloadFeatureFlagsCallCount, 0);
+      });
     });
 
     group('when initialized', () {
@@ -143,6 +159,23 @@ void main() {
             groupProperties: {'project_name': 'Test Project'},
           ),
         ]);
+      });
+
+      test('isFeatureEnabled delegates to the SDK', () async {
+        fakePosthogSdk.isFeatureEnabledResult = true;
+
+        final result = await posthogWrapper.isFeatureEnabled(
+          'calculator-enabled',
+        );
+
+        expect(result, isTrue);
+        expect(fakePosthogSdk.isFeatureEnabledCalls, ['calculator-enabled']);
+      });
+
+      test('reloadFeatureFlags delegates to the SDK', () async {
+        await posthogWrapper.reloadFeatureFlags();
+
+        expect(fakePosthogSdk.reloadFeatureFlagsCallCount, 1);
       });
     });
   });

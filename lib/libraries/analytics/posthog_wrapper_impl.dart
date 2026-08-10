@@ -82,4 +82,18 @@ class PosthogWrapperImpl implements PosthogWrapper {
       groupProperties: groupProperties,
     );
   }
+
+  @override
+  Future<bool?> isFeatureEnabled(String flagKey) async {
+    if (!_isEnabled) return null;
+
+    return _posthogSdk.isFeatureEnabled(flagKey);
+  }
+
+  @override
+  Future<void> reloadFeatureFlags() async {
+    if (!_isEnabled) return;
+
+    await _posthogSdk.reloadFeatureFlags();
+  }
 }
