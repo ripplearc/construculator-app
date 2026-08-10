@@ -1,6 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:construculator/features/calculator/calculator_module.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
-import 'package:construculator/features/calculator/testing/calculator_test_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -9,7 +9,7 @@ void main() {
   late CalculatorBloc bloc;
 
   setUp(() {
-    Modular.init(CalculatorTestModule());
+    Modular.init(CalculatorModule());
     bloc = Modular.get<CalculatorBloc>();
   });
 
@@ -108,7 +108,7 @@ void main() {
         ),
         act: (bloc) => bloc.add(const CalculatorOperatorPressed('=')),
         verify: (bloc) {
-          expect(bloc.state.resultLabel, 'pitchResult');
+          expect(bloc.state.resultLabel, 'Pitch');
           expect(bloc.state.resultValue, '0.5');
           expect(bloc.state.resultChip, isNotNull);
           expect(bloc.state.finalizedValues['Run'], 12.0);
@@ -158,7 +158,7 @@ void main() {
         act: (bloc) => bloc.add(const CalculatorKeySelected('Fence')),
         verify: (bloc) {
           expect(bloc.state.finalizedValues['Length'], 24.0);
-          expect(bloc.state.resultLabel, 'postsResult');
+          expect(bloc.state.resultLabel, 'Posts');
           expect(bloc.state.resultValue, '5');
           expect(bloc.state.dependentKeyLabel, 'oc');
           expect(bloc.state.dependentKeyValue, '6ft');
@@ -173,7 +173,7 @@ void main() {
         ),
         act: (bloc) => bloc.add(const CalculatorKeySelected('Fence')),
         verify: (bloc) {
-          expect(bloc.state.resultLabel, 'postsResult');
+          expect(bloc.state.resultLabel, 'Posts');
           expect(bloc.state.resultValue, '5');
           expect(bloc.state.dependentKeyLabel, 'oc');
           expect(bloc.state.dependentKeyValue, '6ft');
@@ -186,7 +186,7 @@ void main() {
         seed: () => const CalculatorState(finalizedValues: {'Length': 25.0}),
         act: (bloc) => bloc.add(const CalculatorKeySelected('Fence')),
         verify: (bloc) {
-          expect(bloc.state.resultLabel, 'postsResult');
+          expect(bloc.state.resultLabel, 'Posts');
           expect(bloc.state.resultValue, '6');
         },
       );
@@ -350,6 +350,92 @@ void main() {
             currentInputValue: 'ft',
           ),
         ],
+      );
+    });
+
+    group('CalculatorState.chipsList', () {
+      test('is empty in initial state', () {
+        expect(CalculatorState.initial().chipsList, isEmpty);
+      });
+
+      test('contains active chip while typing with a label', () {
+        const state = CalculatorState(
+          isTyping: true,
+          activeInputLabel: 'Rise',
+          currentInputValue: '6',
+        );
+        expect(state.chipsList.length, 1);
+        expect(state.chipsList.single.label, 'Rise');
+        expect(state.chipsList.single.value, '6');
+        expect(state.chipsList.single.type, CoreCalculatorChipType.active);
+      });
+
+      test('omits active chip when not typing', () {
+        const state = CalculatorState(isTyping: false, activeInputLabel: 'Rise');
+        expect(state.chipsList, isEmpty);
+      });
+
+      test('appends result chip after completed chips', () {
+        final resultChip = CoreCalculatorChip(
+          label: 'Pitch',
+          value: '0.5',
+          type: CoreCalculatorChipType.disabled,
+        );
+        final completedChip = CoreCalculatorChip(
+          label: 'Rise',
+          value: '6',
+          type: CoreCalculatorChipType.editable,
+        );
+        final state = CalculatorState(
+          completedChips: [completedChip],
+          resultChip: resultChip,
+        );
+        expect(state.chipsList.length, 2);
+        expect(state.chipsList.first, completedChip);
+        expect(state.chipsList.last, resultChip);
+      });
+
+      test('omits active chip when typing with no active input label', () {
+        final completedChip = CoreCalculatorChip(
+          label: 'Rise',
+          value: '6',
+          type: CoreCalculatorChipType.editable,
+        );
+        final state = CalculatorState(
+          isTyping: true,
+          completedChips: [completedChip],
+        );
+        expect(state.chipsList, [completedChip]);
+      });
+
+      test(
+        'orders completed chips, active chip, then result chip',
+        () {
+          final completedChip = CoreCalculatorChip(
+            label: 'Rise',
+            value: '6',
+            type: CoreCalculatorChipType.editable,
+          );
+          final resultChip = CoreCalculatorChip(
+            label: 'Pitch',
+            value: '0.5',
+            type: CoreCalculatorChipType.disabled,
+          );
+          final state = CalculatorState(
+            completedChips: [completedChip],
+            isTyping: true,
+            activeInputLabel: 'Run',
+            currentInputValue: '12',
+            resultChip: resultChip,
+          );
+
+          expect(state.chipsList.length, 3);
+          expect(state.chipsList[0], completedChip);
+          expect(state.chipsList[1].label, 'Run');
+          expect(state.chipsList[1].value, '12');
+          expect(state.chipsList[1].type, CoreCalculatorChipType.active);
+          expect(state.chipsList[2], resultChip);
+        },
       );
     });
 

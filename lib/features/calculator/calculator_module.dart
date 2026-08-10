@@ -5,7 +5,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 class CalculatorModule extends Module {
   @override
   void binds(Injector i) {
-    i.add<CalculatorBloc>(CalculatorBloc.new);
+    i.add<CalculatorBloc>(() => CalculatorBloc());
   }
 
   @override

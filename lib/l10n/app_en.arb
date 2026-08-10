@@ -2119,14 +2119,6 @@
     "description": "Toast shown when the user lacks the view_project permission for a project",
     "context": "Dashboard projects sheet"
   },
-  "calculatorPitchResultLabel": "Pitch-rise per 12in run",
-  "@calculatorPitchResultLabel": {
-    "description": "Label for the computed pitch result chip in the calculator display area"
-  },
-  "calculatorPostsResultLabel": "Posts",
-  "@calculatorPostsResultLabel": {
-    "description": "Label for the computed fence posts result chip in the calculator display area"
-  },
   "calculatorOcLabel": "O.C",
   "@calculatorOcLabel": {
     "description": "Label for the on-centre spacing dependent key shown alongside the fence posts result"
