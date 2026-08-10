@@ -158,7 +158,7 @@ void main() {
         act: (bloc) => bloc.add(const CalculatorKeySelected('Fence')),
         verify: (bloc) {
           expect(bloc.state.finalizedValues['Length'], 24.0);
-          expect(bloc.state.resultLabel, 'postsResult');
+          expect(bloc.state.resultLabel, 'Posts');
           expect(bloc.state.resultValue, '5');
           expect(bloc.state.dependentKeyLabel, 'oc');
           expect(bloc.state.dependentKeyValue, '6ft');
