@@ -7,6 +7,7 @@ void main() {
   late CalculatorBloc bloc;
 
   setUp(() {
+    // ignore: no_direct_instantiation
     bloc = CalculatorBloc();
   });
 
