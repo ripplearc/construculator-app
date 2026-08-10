@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/analytics/domain/types/analytics_error_type.dart';
+import 'package:construculator/libraries/analytics/domain/types/feature_flag_error_type.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/global_search/domain/search_error_type.dart';
@@ -97,6 +98,18 @@ class AnalyticsFailure extends Failure {
 
   /// Creates an [AnalyticsFailure] with the given [errorType].
   const AnalyticsFailure({required this.errorType});
+
+  @override
+  List<Object?> get props => [errorType];
+}
+
+/// Failure thrown when a feature flag operation fails.
+class FeatureFlagFailure extends Failure {
+  /// The type of feature flag error that occurred.
+  final FeatureFlagErrorType errorType;
+
+  /// Creates a [FeatureFlagFailure] with the given [errorType].
+  const FeatureFlagFailure({required this.errorType});
 
   @override
   List<Object?> get props => [errorType];
