@@ -1353,12 +1353,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'You don\'t have permission to view this project.';
 
   @override
-  String get calculatorPitchResultLabel => 'Pitch-rise per 12in run';
-
-  @override
-  String get calculatorPostsResultLabel => 'Posts';
-
-  @override
   String get calculatorOcLabel => 'O.C';
 
   @override

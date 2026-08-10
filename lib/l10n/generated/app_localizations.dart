@@ -2554,18 +2554,6 @@ abstract class AppLocalizations {
   /// **'You don\'t have permission to view this project.'**
   String get projectSettingsPermissionError;
 
-  /// Label for the computed pitch result chip in the calculator display area
-  ///
-  /// In en, this message translates to:
-  /// **'Pitch-rise per 12in run'**
-  String get calculatorPitchResultLabel;
-
-  /// Label for the computed fence posts result chip in the calculator display area
-  ///
-  /// In en, this message translates to:
-  /// **'Posts'**
-  String get calculatorPostsResultLabel;
-
   /// Label for the on-centre spacing dependent key shown alongside the fence posts result
   ///
   /// In en, this message translates to:

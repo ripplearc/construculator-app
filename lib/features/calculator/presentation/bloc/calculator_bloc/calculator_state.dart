@@ -122,7 +122,7 @@ class CalculatorState extends Equatable {
               value: currentInputValue,
               type: CoreCalculatorChipType.active,
             ),
-        if (resultChip case final chip?) chip,
+        ?resultChip,
       ];
 
   @override
