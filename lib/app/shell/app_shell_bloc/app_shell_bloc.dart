@@ -1,9 +1,12 @@
 import 'package:construculator/app/shell/tab_module_manager.dart';
+import 'package:construculator/libraries/analytics/domain/repositories/feature_flag_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'app_shell_event.dart';
 part 'app_shell_state.dart';
+
+const _calculatorEnabledFlagKey = 'calculator-enabled';
 
 /// BLoC responsible for managing tab selection and lazy-load state in the app shell.
 ///
@@ -11,11 +14,12 @@ part 'app_shell_state.dart';
 /// so that the Page layer remains a pure presentation concern.
 class AppShellBloc extends Bloc<AppShellEvent, AppShellState> {
   final TabModuleManager _moduleLoader;
+  final FeatureFlagRepository _featureFlagRepository;
 
-  AppShellBloc({required this._moduleLoader})
-    : super(
-        const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {}),
-      ) {
+  AppShellBloc({
+    required this._moduleLoader,
+    required this._featureFlagRepository,
+  }) : super(const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {})) {
     on<AppShellInitialized>(_onInitialized);
     on<AppShellTabSelected>(_onTabSelected);
     add(const AppShellInitialized());
@@ -26,7 +30,20 @@ class AppShellBloc extends Bloc<AppShellEvent, AppShellState> {
     Emitter<AppShellState> emit,
   ) async {
     await _moduleLoader.ensureTabModuleLoaded(ShellTab.home);
-    emit(state.copyWith(loadedTabIndexes: {0}, selectedTabIndex: 0));
+    final flagResult = await _featureFlagRepository.isFeatureEnabled(
+      _calculatorEnabledFlagKey,
+    );
+    final calculatorEnabled = flagResult.fold(
+      (_) => false,
+      (isEnabled) => isEnabled ?? false,
+    );
+    emit(
+      state.copyWith(
+        loadedTabIndexes: {0},
+        selectedTabIndex: 0,
+        calculatorEnabled: calculatorEnabled,
+      ),
+    );
   }
 
   Future<void> _onTabSelected(
