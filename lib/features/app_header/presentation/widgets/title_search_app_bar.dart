@@ -1,3 +1,4 @@
+import 'package:construculator/features/app_header/presentation/widgets/project_selector_title.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -32,31 +33,9 @@ class TitleSearchAppBar extends StatelessWidget implements PreferredSizeWidget {
         elevation: 0,
         centerTitle: true,
         titleSpacing: 0,
-        title: Semantics(
-          label: context.l10n.projectDropdownSemanticLabel,
-          button: true,
-          child: InkWell(
-            key: const Key('title_search_app_bar_project_selector'),
-            onTap: onProjectTap,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Text(
-                    context.l10n.appTitle,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                ),
-                const SizedBox(width: CoreSpacing.space1),
-                CoreIconWidget(
-                  icon: CoreIcons.arrowDropDown,
-                  color: coreColors.iconGrayMid,
-                  size: CoreIconSize.size24,
-                ),
-              ],
-            ),
-          ),
+        title: ProjectSelectorTitle(
+          selectorKey: const Key('title_search_app_bar_project_selector'),
+          onProjectTap: onProjectTap,
         ),
         actions: [
           CoreIconWidget(

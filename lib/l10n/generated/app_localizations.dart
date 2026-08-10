@@ -910,12 +910,6 @@ abstract class AppLocalizations {
   /// **'Add estimation'**
   String get addEstimation;
 
-  /// Label for cost estimation button on dashboard
-  ///
-  /// In en, this message translates to:
-  /// **'Cost Estimation'**
-  String get costEstimation;
-
   /// Label for calculations tab or header
   ///
   /// In en, this message translates to:

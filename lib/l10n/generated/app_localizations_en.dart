@@ -443,9 +443,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addEstimation => 'Add estimation';
 
   @override
-  String get costEstimation => 'Cost Estimation';
-
-  @override
   String get calculations => 'Calculations';
 
   @override
