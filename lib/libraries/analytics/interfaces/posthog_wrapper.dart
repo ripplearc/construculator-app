@@ -43,4 +43,14 @@ abstract class PosthogWrapper {
     required String groupKey,
     Map<String, dynamic>? groupProperties,
   });
+
+  /// Returns whether [flagKey] is enabled for the current user, or `null`
+  /// if this wrapper isn't enabled (see [initialize]).
+  ///
+  /// Evaluated from the client-side cache populated by [reloadFeatureFlags],
+  /// not a live network call.
+  Future<bool?> isFeatureEnabled(String flagKey);
+
+  /// Refreshes the client-side feature flag cache for the current identity.
+  Future<void> reloadFeatureFlags();
 }

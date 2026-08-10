@@ -47,4 +47,15 @@ abstract class PosthogSdk {
     required String groupKey,
     Map<String, dynamic>? groupProperties,
   });
+
+  /// Returns whether a boolean feature flag is enabled; mirrors
+  /// `Posthog().isFeatureEnabled`.
+  ///
+  /// Returns `false` when [key] is disabled, missing, or not a boolean
+  /// flag — the underlying SDK has no null case.
+  Future<bool> isFeatureEnabled(String key);
+
+  /// Reloads feature flags for the current user; mirrors
+  /// `Posthog().reloadFeatureFlags`.
+  Future<void> reloadFeatureFlags();
 }
