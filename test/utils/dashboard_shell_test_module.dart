@@ -33,7 +33,10 @@ class DashboardShellTestModule extends Module {
       ),
     );
     i.addLazySingleton<AppShellBloc>(
-      () => AppShellBloc(moduleLoader: i.get()),
+      () => AppShellBloc(
+        moduleLoader: i.get(),
+        featureFlagRepository: appBootstrap.featureFlagRepository,
+      ),
     );
     i.addLazySingleton<ProjectDropdownBloc>(
       () => ProjectDropdownBloc(
