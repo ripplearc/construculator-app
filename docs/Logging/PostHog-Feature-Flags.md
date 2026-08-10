@@ -94,11 +94,11 @@ The real (currently unmerged) `PosthogWrapper` already has a single gate (`_isEn
 // lib/libraries/analytics/interfaces/posthog_wrapper.dart (existing, unmerged CA-941 (4/6))
 abstract class PosthogWrapper {
   Future<void> initialize({required String apiKey, required String host, bool debug = false});
-  Future<void> capture({required String eventName, Map<String, Object>? properties});
-  Future<void> identify({required String userId, Map<String, Object>? userProperties});
+  Future<void> capture({required String eventName, Map<String, dynamic>? properties});
+  Future<void> identify({required String userId, Map<String, dynamic>? userProperties});
   Future<void> reset();
-  Future<void> setPersonProperties({required Map<String, Object> userProperties});
-  Future<void> group({required String groupType, required String groupKey, Map<String, Object>? groupProperties});
+  Future<void> setPersonProperties({Map<String, dynamic>? userProperties});
+  Future<void> group({required String groupType, required String groupKey, Map<String, dynamic>? groupProperties});
 }
 ```
 
