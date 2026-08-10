@@ -141,8 +141,9 @@ class _AppShellPageState extends State<AppShellPage> {
                 ],
                 selectedIndex: state.selectedTabIndex,
                 onTabSelected: _handleTabTap,
-                onActionButtonPressed: () =>
-                    widget.router.pushNamed(calculatorBaseRoute),
+                onActionButtonPressed: state.calculatorEnabled
+                    ? () => widget.router.pushNamed(calculatorBaseRoute)
+                    : null,
               ),
             ),
           ),

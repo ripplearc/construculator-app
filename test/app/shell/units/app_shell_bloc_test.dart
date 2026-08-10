@@ -1,11 +1,29 @@
+// ignore_for_file: no_direct_instantiation
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/app/shell/app_shell_bloc/app_shell_bloc.dart';
 import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/app/shell/tab_module_manager.dart';
+import 'package:construculator/libraries/analytics/testing/fake_feature_flag_repository.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
+
+AppShellBloc _buildBlocWithFlag(bool? calculatorEnabled) {
+  final featureFlagRepository = FakeFeatureFlagRepository();
+  if (calculatorEnabled != null) {
+    featureFlagRepository.flagOverrides['calculator-enabled'] =
+        calculatorEnabled;
+  }
+  final appBootstrap = FakeAppBootstrapFactory.create(
+    featureFlagRepository: featureFlagRepository,
+  );
+  return AppShellBloc(
+    moduleLoader: TabModuleManager(appBootstrap, providers: const {}),
+    featureFlagRepository: featureFlagRepository,
+  );
+}
 
 void main() {
   late AppShellBloc bloc;
@@ -56,7 +74,7 @@ void main() {
 
       expect(copiedState.selectedTabIndex, 1);
       expect(copiedState.loadedTabIndexes, {0, 1});
-      expect(copiedState.props, [1, {0, 1}]);
+      expect(copiedState.props, [1, {0, 1}, false]);
       expect(copiedState, equals(state));
     });
 
@@ -105,6 +123,36 @@ void main() {
       build: () => bloc,
       act: (bloc) => bloc.add(const AppShellTabSelected(ShellTab.calculations)),
       expect: () => <AppShellState>[],
+    );
+  });
+
+  group('calculator-enabled flag', () {
+    blocTest<AppShellBloc, AppShellState>(
+      'emits calculatorEnabled: true when the flag resolves true',
+      build: () => _buildBlocWithFlag(true),
+      expect: () => [
+        const AppShellState(
+          selectedTabIndex: 0,
+          loadedTabIndexes: {0},
+          calculatorEnabled: true,
+        ),
+      ],
+    );
+
+    blocTest<AppShellBloc, AppShellState>(
+      'emits calculatorEnabled: false (fails closed) when the flag is unset',
+      build: () => _buildBlocWithFlag(null),
+      expect: () => [
+        const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {0}),
+      ],
+    );
+
+    blocTest<AppShellBloc, AppShellState>(
+      'emits calculatorEnabled: false when the flag resolves false',
+      build: () => _buildBlocWithFlag(false),
+      expect: () => [
+        const AppShellState(selectedTabIndex: 0, loadedTabIndexes: {0}),
+      ],
     );
   });
 }
