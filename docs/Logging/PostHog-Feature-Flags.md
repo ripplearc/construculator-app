@@ -22,7 +22,7 @@
 
 PostHog Feature Flags is a separate PostHog product from the analytics/event-capture surface CA-937 shipped (CA-941–946): flags are **runtime, SDK-evaluated**, and support boolean toggles, multivariate values, JSON payloads, rollout percentages, and cohort/property targeting — all changeable from the PostHog dashboard without an app release.
 
-This doc formalizes the design decisions the ticket's acceptance criteria require, ahead of CA-955 ("Gate the Calculator module behind a PostHog feature flag"), which is the first real consumer and is blocked on this doc landing. No code is added by this ticket — `FeatureFlagRepository`, wrapper extensions, and fakes described below are CA-955's (or a dedicated follow-up's) implementation work.
+This doc formalizes the design decisions the ticket's acceptance criteria require, ahead of CA-955 ("Gate the Calculator module behind a PostHog feature flag"), which is the first real consumer and is coordinating directly against this design while it's in review (CA-955's 5-PR implementation stack, #511–#515, is already open and builds against this document). No code is added by this ticket — `FeatureFlagRepository`, wrapper extensions, and fakes described below are CA-955's implementation work.
 
 Only the `dev/fishfood` PostHog Cloud project exists today (CA-943), so any flag defined against this design is only usable/testable in that environment until qa/prod projects exist.
 
