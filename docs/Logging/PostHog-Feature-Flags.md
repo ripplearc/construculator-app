@@ -82,6 +82,18 @@ PostHog feature flags are evaluated against the same `distinct_id` the SDK alrea
 
 **Pre-login (anonymous) evaluation:** before the first `identify()` call, flags evaluate against PostHog's auto-generated anonymous `distinct_id`. This is acceptable for CA-955's use case (the Calculator entry point is inside `AppShellPage`, reached only post-login), but any future flag gating pre-login UI should evaluate anonymous targeting behavior explicitly before relying on it.
 
+**Additional targeting/rollout axes (beyond `distinct_id`):** PostHog supports several rollout mechanisms that don't require any new identity plumbing. Confirmed directly against current PostHog docs, not assumed:
+
+| Axis | Native support? | Notes |
+|---|---|---|
+| **Chained/triggering flags** | Yes — [flag dependencies](https://posthog.com/docs/feature-flags/dependencies) | A flag's release conditions can include "flag A equals true / variant X" as a condition type. PostHog resolves the dependency chain server-side on every evaluation of the dependent flag — no client-side orchestration needed. |
+| **App-version gating** | Yes — semver release conditions | Release conditions support semver operators (`<`, `>=`, etc.) on `$app_version`. Mobile SDKs (including `posthog_flutter`) attach `$app_version` to every flag-evaluation request automatically via `setDefaultPersonProperties` (default `true`) — no manual property-setting required. |
+| **Country diversion** | Yes — GeoIP | PostHog derives `$geoip_country_code` / `$geoip_country_name` from the request IP automatically; usable directly in release conditions with no `identify()`-time work. |
+| **Locale (language) diversion** | No — needs a manual property | GeoIP gives geography, not the user's chosen app language. A flag that must target by *language* rather than country needs a custom person property (e.g. `app_locale`) set via `setPersonProperties()`, most naturally alongside the existing `identify()` call in `AuthManagerImpl`. Not implemented by this design — add it if/when a flag actually needs language-based targeting. |
+| **Population-tier rollout (teamfood → dogfood → GA)** | Not a distinct primitive — same mechanism as regular rollout | PostHog has no built-in "stage" concept. [PostHog's own phased-rollout guidance](https://posthog.com/docs/feature-flags/phased-rollout) is to combine percentage rollout with cohorts — the same mechanism this doc already assumes for gradual rollout elsewhere. This isn't a gap to work around; it's the intended mechanism. |
+
+None of the above change the wrapper/repository shape in [Wrapper Boundary](#wrapper-boundary) — they're all expressed as PostHog dashboard release conditions and stay transparent to `isFeatureEnabled()`/`getFeatureFlagVariant()` callers. The one actual to-do for a future flag author: if a flag needs locale targeting, set the `app_locale` person property explicitly; everything else in the table works out of the box.
+
 ---
 
 ## Wrapper Boundary
