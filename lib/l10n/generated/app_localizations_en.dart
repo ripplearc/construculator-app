@@ -443,9 +443,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addEstimation => 'Add estimation';
 
   @override
-  String get costEstimation => 'Cost Estimation';
-
-  @override
   String get calculations => 'Calculations';
 
   @override
@@ -806,13 +803,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'Construculator';
 
   @override
-  String get homeTab => 'Home';
-
-  @override
   String get calculationsTab => 'Calculations';
 
   @override
-  String get membersTab => 'Members';
+  String get estimatesTab => 'Estimates';
 
   @override
   String get permissionDenied =>

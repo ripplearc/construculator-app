@@ -251,7 +251,7 @@ void main() {
 
     final appShellBloc = Modular.get<AppShellBloc>();
     final tabSelected = appShellBloc.stream
-        .firstWhere((state) => state.selectedTabIndex == ShellTab.estimation.index);
+        .firstWhere((state) => state.selectedTabIndex == ShellTab.estimates.index);
 
     await tester.tap(find.text(l10n().viewAllButton));
     await tester.pump();
@@ -260,7 +260,7 @@ void main() {
 
     expect(
       appShellBloc.state.selectedTabIndex,
-      ShellTab.estimation.index,
+      ShellTab.estimates.index,
     );
   });
 

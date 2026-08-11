@@ -1,5 +1,6 @@
 import 'package:construculator/features/app_header/presentation/widgets/notification_icon.dart';
 import 'package:construculator/features/app_header/presentation/widgets/profile_avatar.dart';
+import 'package:construculator/features/app_header/presentation/widgets/project_selector_title.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -57,38 +58,17 @@ class HeaderRow extends StatelessWidget implements PreferredSizeWidget {
           title: Row(
             children: [
               Expanded(
-                child: Semantics(
-                  label: context.l10n.projectDropdownSemanticLabel,
-                  button: true,
-                  child: InkWell(
-                    key: const Key('header_row_project_selector'),
-                    onTap: onProjectTap,
-                    child: SizedBox(
-                      height: CoreSpacing.space12,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: CoreSpacing.space3,
-                        ),
-                        child: Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                context.l10n.appTitle,
-                                style: typography.titleMediumSemiBold.copyWith(
-                                  color: colors.textHeadline,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                              ),
-                            ),
-                            const SizedBox(width: CoreSpacing.space1),
-                            CoreIconWidget(
-                              icon: CoreIcons.arrowDropDown,
-                              color: colors.iconGrayMid,
-                              size: CoreIconSize.size24,
-                            ),
-                          ],
-                        ),
+                child: SizedBox(
+                  height: CoreSpacing.space12,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: CoreSpacing.space3,
+                    ),
+                    child: ProjectSelectorTitle(
+                      selectorKey: const Key('header_row_project_selector'),
+                      onProjectTap: onProjectTap,
+                      textStyle: typography.titleMediumSemiBold.copyWith(
+                        color: colors.textHeadline,
                       ),
                     ),
                   ),

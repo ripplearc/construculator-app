@@ -910,12 +910,6 @@ abstract class AppLocalizations {
   /// **'Add estimation'**
   String get addEstimation;
 
-  /// Label for cost estimation button on dashboard
-  ///
-  /// In en, this message translates to:
-  /// **'Cost Estimation'**
-  String get costEstimation;
-
   /// Label for calculations tab or header
   ///
   /// In en, this message translates to:
@@ -1534,23 +1528,17 @@ abstract class AppLocalizations {
   /// **'Construculator'**
   String get appTitle;
 
-  /// Label for home tab in bottom navigation
-  ///
-  /// In en, this message translates to:
-  /// **'Home'**
-  String get homeTab;
-
   /// Label for calculations tab in bottom navigation
   ///
   /// In en, this message translates to:
   /// **'Calculations'**
   String get calculationsTab;
 
-  /// Label for members tab in bottom navigation
+  /// Bottom nav tab label for the cost estimates feature
   ///
   /// In en, this message translates to:
-  /// **'Members'**
-  String get membersTab;
+  /// **'Estimates'**
+  String get estimatesTab;
 
   /// Error message shown when user lacks permission for an operation
   ///

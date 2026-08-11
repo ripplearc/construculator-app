@@ -680,11 +680,6 @@
     "description": "Text for add estimation button",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57361-6592&t=LRsSVoyqW6AaIfXf-4"
   },
-  "costEstimation": "Cost Estimation",
-  "@costEstimation": {
-    "description": "Label for cost estimation button on dashboard",
-    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design?node-id=57518-25657&t=12IIYBsZE7VQ2Gg0-4"
-  },
   "calculations": "Calculations",
   "@calculations": {
     "description": "Label for calculations tab or header"
@@ -1276,19 +1271,14 @@
     "description": "Application title displayed in app bar",
     "context": "AppShellPage"
   },
-  "homeTab": "Home",
-  "@homeTab": {
-    "description": "Label for home tab in bottom navigation",
-    "context": "AppShellPage"
-  },
   "calculationsTab": "Calculations",
   "@calculationsTab": {
     "description": "Label for calculations tab in bottom navigation",
     "context": "AppShellPage"
   },
-  "membersTab": "Members",
-  "@membersTab": {
-    "description": "Label for members tab in bottom navigation",
+  "estimatesTab": "Estimates",
+  "@estimatesTab": {
+    "description": "Bottom nav tab label for the cost estimates feature",
     "context": "AppShellPage"
   },
   "permissionDenied": "You don't have permission to perform this action",

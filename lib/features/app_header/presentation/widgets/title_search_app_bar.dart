@@ -1,15 +1,20 @@
+import 'package:construculator/features/app_header/presentation/widgets/project_selector_title.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-/// Plain app bar with the app title and a search action, shown on non-home
-/// tabs when no project is selected.
+/// Plain app bar with a project-selector title and a search action, shown
+/// when no project is selected.
 class TitleSearchAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Called when the search icon is tapped.
   final VoidCallback? onSearchTap;
 
-  /// Creates a [TitleSearchAppBar] with an optional [onSearchTap] callback.
-  const TitleSearchAppBar({super.key, this.onSearchTap});
+  /// Called when the title is tapped to open the project selector.
+  final VoidCallback? onProjectTap;
+
+  /// Creates a [TitleSearchAppBar] with optional [onSearchTap] and
+  /// [onProjectTap] callbacks.
+  const TitleSearchAppBar({super.key, this.onSearchTap, this.onProjectTap});
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +33,10 @@ class TitleSearchAppBar extends StatelessWidget implements PreferredSizeWidget {
         elevation: 0,
         centerTitle: true,
         titleSpacing: 0,
-        title: Text(context.l10n.appTitle),
+        title: ProjectSelectorTitle(
+          selectorKey: const Key('title_search_app_bar_project_selector'),
+          onProjectTap: onProjectTap,
+        ),
         actions: [
           CoreIconWidget(
             key: const Key('title_search_app_bar_search_button'),
