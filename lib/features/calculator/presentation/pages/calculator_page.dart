@@ -15,6 +15,20 @@ class CalculatorPage extends StatefulWidget {
 class _CalculatorPageState extends State<CalculatorPage> {
   DisplayAreaStage _currentStage = DisplayAreaStage.collapsed;
 
+  Locale? _groupsLocale;
+  List<FunctionGroup>? _groups;
+
+  List<FunctionGroup> _groupsFor(BuildContext context) {
+    final locale = Localizations.localeOf(context);
+    var groups = _groups;
+    if (groups == null || _groupsLocale != locale) {
+      _groupsLocale = locale;
+      groups = _buildGroups(context.l10n);
+      _groups = groups;
+    }
+    return groups;
+  }
+
   // TODO(CA-898): KeyType.label doubles as BLoC domain identifier and display
   // string, blocking localization. Requires CoreUI to add a separate `id` field
   // so `onKeyTapped` passes key.id while displayLabel comes from context.l10n.
@@ -65,7 +79,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
   @override
   Widget build(BuildContext context) {
     final colors = context.colorTheme;
-    final groups = _buildGroups(context.l10n);
+    final groups = _groupsFor(context);
     final Map<GroupNameType, Color> groupAccentColors = {
       groups[0].name: colors.keyboardFunctions,
       groups[1].name: colors.keyboardUnits,
@@ -94,7 +108,12 @@ class _CalculatorPageState extends State<CalculatorPage> {
                         isTyping: state.isTyping,
                         closeSemanticLabel: context.l10n.closeButton,
                         chipsList: state.chipsList,
-                        dependentKeyLabel: state.dependentKeyLabel,
+                        // TODO(CA-965): previousSessions is unwired pending
+                        // research into archiving trigger, data model, and
+                        // persistence approach for calculation history.
+                        dependentKeyLabel: state.dependentKeyLabel == 'oc'
+                            ? context.l10n.calculatorOcLabel
+                            : state.dependentKeyLabel,
                         dependentKeyValue: state.dependentKeyValue,
                         onPressedDependentKey: () {},
                         onClose: () =>
@@ -127,7 +146,12 @@ class _CalculatorPageState extends State<CalculatorPage> {
                       ),
                     ),
                     child: CoreKeyboard(
-                      currentGroup: groups[state.currentGroupIndex].name,
+                      currentGroup:
+                          groups[state.currentGroupIndex.clamp(
+                                0,
+                                groups.length - 1,
+                              )]
+                              .name,
                       allGroups: groups,
                       groupAccentColors: groupAccentColors,
                       currentUnitSystem: state.currentUnitSystem,
@@ -143,8 +167,9 @@ class _CalculatorPageState extends State<CalculatorPage> {
                       onResultTapped: () =>
                           bloc.add(const CalculatorOperatorPressed('=')),
                       onGroupSelected: (groupName) {
-                        final index =
-                            groups.indexWhere((g) => g.name == groupName);
+                        final index = groups.indexWhere(
+                          (g) => g.name == groupName,
+                        );
                         bloc.add(CalculatorGroupSelected(index));
                       },
                       onKeyTapped: (key) =>
