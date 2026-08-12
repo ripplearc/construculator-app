@@ -87,25 +87,17 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('ProjectDetailScreen Screenshot Tests', () {
-    testWidgets('renders loaded content (light)', (tester) async {
-      await pumpScreen(tester: tester, theme: createTestTheme());
+  screenshotThemeGroups('ProjectDetailScreen Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
+    testWidgets('renders loaded content', (tester) async {
+      await pumpScreen(tester: tester, theme: theme);
 
       await expectLater(
         find.byType(ProjectDetailScreen),
         matchesGoldenFile(
-          'goldens/project_detail_screen/${size.width}x${size.height}/loaded.png',
-        ),
-      );
-    });
-
-    testWidgets('renders loaded content (dark)', (tester) async {
-      await pumpScreen(tester: tester, theme: createTestThemeDark());
-
-      await expectLater(
-        find.byType(ProjectDetailScreen),
-        matchesGoldenFile(
-          'goldens/project_detail_screen/${size.width}x${size.height}/loaded_dark.png',
+          'goldens/project_detail_screen/${size.width}x${size.height}/loaded$suffix.png',
         ),
       );
     });
