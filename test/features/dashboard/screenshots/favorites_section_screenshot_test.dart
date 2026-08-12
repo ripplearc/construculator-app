@@ -20,9 +20,9 @@ void main() {
 
   Future<void> pumpFavoritesSection({
     required WidgetTester tester,
+    required ThemeData theme,
     List<FavoriteCalculation> calculations = const [],
     List<FavoriteEstimation> estimations = const [],
-    ThemeData? theme,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = ratio;
@@ -30,7 +30,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -57,8 +57,8 @@ void main() {
 
   Future<void> pumpBottomSheet({
     required WidgetTester tester,
+    required ThemeData theme,
     FavouriteFilterType selectedFilter = FavouriteFilterType.all,
-    ThemeData? theme,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = ratio;
@@ -66,7 +66,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -84,13 +84,14 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('FavoritesSection Screenshot Tests - Light', () {
+  screenshotThemeGroups('FavoritesSection Screenshot Tests', (theme, suffix) {
     testWidgets('renders loaded section with calculations and estimations', (
       tester,
     ) async {
       final date = DateTime(2025, 4, 22, 14, 30);
       await pumpFavoritesSection(
         tester: tester,
+        theme: theme,
         calculations: [
           FavoriteCalculation(
             id: 'c1',
@@ -122,31 +123,34 @@ void main() {
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favorites_section_loaded.png',
+          'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favorites_section_loaded$suffix.png',
         ),
       );
     });
 
     testWidgets('renders empty state correctly', (tester) async {
-      await pumpFavoritesSection(tester: tester);
+      await pumpFavoritesSection(tester: tester, theme: theme);
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favorites_section_empty.png',
+          'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favorites_section_empty$suffix.png',
         ),
       );
     });
   });
 
-  group('FavouriteSortBottomSheet Screenshot Tests - Light', () {
+  screenshotThemeGroups('FavouriteSortBottomSheet Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders sort sheet with All selected', (tester) async {
-      await pumpBottomSheet(tester: tester);
+      await pumpBottomSheet(tester: tester, theme: theme);
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favourite_sort_sheet_all.png',
+          'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favourite_sort_sheet_all$suffix.png',
         ),
       );
     });
@@ -156,13 +160,14 @@ void main() {
     ) async {
       await pumpBottomSheet(
         tester: tester,
+        theme: theme,
         selectedFilter: FavouriteFilterType.costEstimations,
       );
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favourite_sort_sheet_cost_estimations.png',
+          'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favourite_sort_sheet_cost_estimations$suffix.png',
         ),
       );
     });
@@ -172,119 +177,14 @@ void main() {
     ) async {
       await pumpBottomSheet(
         tester: tester,
+        theme: theme,
         selectedFilter: FavouriteFilterType.calculations,
       );
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favourite_sort_sheet_calculations.png',
-        ),
-      );
-    });
-  });
-
-  group('FavoritesSection Screenshot Tests - Dark', () {
-    testWidgets('renders loaded section with calculations and estimations', (
-      tester,
-    ) async {
-      final date = DateTime(2025, 4, 22, 14, 30);
-      await pumpFavoritesSection(
-        tester: tester,
-        calculations: [
-          FavoriteCalculation(
-            id: 'c1',
-            date: date,
-            tags: const ['Flooring', 'Area', 'Tagname', 'Tagname'],
-          ),
-          FavoriteCalculation(
-            id: 'c2',
-            date: DateTime(2025, 4, 22, 14, 30),
-            tags: const ['Tagname', 'Tagname', 'Tagname'],
-          ),
-        ],
-        estimations: [
-          FavoriteEstimation(
-            id: 'e1',
-            title: '2nd Wall cost',
-            date: DateTime(2025, 5, 3, 14, 30),
-            totalCost: 12343.88,
-          ),
-          FavoriteEstimation(
-            id: 'e2',
-            title: 'Wall cost',
-            date: date,
-            totalCost: 10000.88,
-          ),
-        ],
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favorites_section_loaded_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders empty state correctly', (tester) async {
-      await pumpFavoritesSection(
-        tester: tester,
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favorites_section_empty_dark.png',
-        ),
-      );
-    });
-  });
-
-  group('FavouriteSortBottomSheet Screenshot Tests - Dark', () {
-    testWidgets('renders sort sheet with All selected', (tester) async {
-      await pumpBottomSheet(tester: tester, theme: createTestThemeDark());
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favourite_sort_sheet_all_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders sort sheet with Cost estimations selected', (
-      tester,
-    ) async {
-      await pumpBottomSheet(
-        tester: tester,
-        selectedFilter: FavouriteFilterType.costEstimations,
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favourite_sort_sheet_cost_estimations_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders sort sheet with Calculations selected', (
-      tester,
-    ) async {
-      await pumpBottomSheet(
-        tester: tester,
-        selectedFilter: FavouriteFilterType.calculations,
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favourite_sort_sheet_calculations_dark.png',
+          'goldens/favorites_section/${size.width.toInt()}x${size.height.toInt()}/favourite_sort_sheet_calculations$suffix.png',
         ),
       );
     });
