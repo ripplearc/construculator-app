@@ -37,12 +37,12 @@ void main() {
 
   Future<void> pumpWidget({
     required WidgetTester tester,
+    required ThemeData theme,
     bool fromCostFile = false,
-    ThemeData? theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -57,11 +57,41 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('MaterialCostFormFields Screenshot Tests', () {
+  screenshotThemeGroups('MaterialCostFormFields Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
+    testWidgets('renders manually mode with item type error', (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      await pumpWidget(tester: tester, theme: theme);
+      await tester.enterText(
+        find.byKey(const Key('material_type_field')),
+        'x',
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('material_type_field')),
+        '',
+      );
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byType(MaterialCostFormFields),
+        matchesGoldenFile(
+          'goldens/material_cost_form_fields/${size.width}x${size.height}/manually_error$suffix.png',
+        ),
+      );
+    });
+  });
+
+  // These two scenarios only ever had a light golden; screenshotThemeGroups
+  // always produces both light and dark, so they stay outside it rather than
+  // gaining new dark goldens as a side effect of this migration.
+  group('MaterialCostFormFields Screenshot Tests - Light Only', () {
     testWidgets('renders manually mode in light theme', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
-      await pumpWidget(tester: tester);
+      await pumpWidget(tester: tester, theme: createTestTheme());
       await expectLater(
         find.byType(MaterialCostFormFields),
         matchesGoldenFile(
@@ -73,59 +103,11 @@ void main() {
     testWidgets('renders from cost file mode in light theme', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
-      await pumpWidget(tester: tester, fromCostFile: true);
+      await pumpWidget(tester: tester, fromCostFile: true, theme: createTestTheme());
       await expectLater(
         find.byType(MaterialCostFormFields),
         matchesGoldenFile(
           'goldens/material_cost_form_fields/${size.width}x${size.height}/from_cost_file_light.png',
-        ),
-      );
-    });
-
-    testWidgets('renders manually mode with item type error in light theme', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1.0;
-      await pumpWidget(tester: tester);
-      await tester.enterText(
-        find.byKey(const Key('material_type_field')),
-        'x',
-      );
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.byKey(const Key('material_type_field')),
-        '',
-      );
-      await tester.pumpAndSettle();
-      await expectLater(
-        find.byType(MaterialCostFormFields),
-        matchesGoldenFile(
-          'goldens/material_cost_form_fields/${size.width}x${size.height}/manually_error_light.png',
-        ),
-      );
-    });
-
-    testWidgets('renders manually mode with item type error in dark theme', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1.0;
-      await pumpWidget(tester: tester, theme: createTestThemeDark());
-      await tester.enterText(
-        find.byKey(const Key('material_type_field')),
-        'x',
-      );
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.byKey(const Key('material_type_field')),
-        '',
-      );
-      await tester.pumpAndSettle();
-      await expectLater(
-        find.byType(MaterialCostFormFields),
-        matchesGoldenFile(
-          'goldens/material_cost_form_fields/${size.width}x${size.height}/manually_error_dark.png',
         ),
       );
     });
