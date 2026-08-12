@@ -58,57 +58,28 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('AppShell BottomNavBar Screenshot Tests - Light', () {
+  screenshotThemeGroups('AppShell BottomNavBar Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('calculations tab selected', (tester) async {
-      await pumpBottomNav(tester: tester, theme: createTestTheme());
+      await pumpBottomNav(tester: tester, theme: theme);
 
       await expectLater(
         find.byType(CoreBottomNavBar),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_calculations_light.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_calculations$suffix.png',
         ),
       );
     });
 
     testWidgets('estimates tab selected', (tester) async {
-      await pumpBottomNav(
-        tester: tester,
-        theme: createTestTheme(),
-        selectedIndex: 1,
-      );
+      await pumpBottomNav(tester: tester, theme: theme, selectedIndex: 1);
 
       await expectLater(
         find.byType(CoreBottomNavBar),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_estimates_light.png',
-        ),
-      );
-    });
-  });
-
-  group('AppShell BottomNavBar Screenshot Tests - Dark', () {
-    testWidgets('calculations tab selected', (tester) async {
-      await pumpBottomNav(tester: tester, theme: createTestThemeDark());
-
-      await expectLater(
-        find.byType(CoreBottomNavBar),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_calculations_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('estimates tab selected', (tester) async {
-      await pumpBottomNav(
-        tester: tester,
-        theme: createTestThemeDark(),
-        selectedIndex: 1,
-      );
-
-      await expectLater(
-        find.byType(CoreBottomNavBar),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_estimates_dark.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_estimates$suffix.png',
         ),
       );
     });
