@@ -1,15 +1,26 @@
 import 'package:bloc_test/bloc_test.dart';
-import 'package:construculator/features/calculator/calculator_module.dart';
 import 'package:construculator/features/calculator/presentation/bloc/calculator_bloc/calculator_bloc.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
+/// Test module that provides [CalculatorBloc] as a factory (`i.add`) so
+/// each test resolves a fresh instance via `Modular.get`. The production
+/// [CalculatorModule] no longer binds [CalculatorBloc] — the page owns its
+/// lifecycle directly via `BlocProvider` — so this test-only binding keeps
+/// the unit tests on dependency injection instead of direct instantiation.
+class _CalculatorBlocTestModule extends Module {
+  @override
+  void binds(Injector i) {
+    i.add<CalculatorBloc>(() => CalculatorBloc());
+  }
+}
+
 void main() {
   late CalculatorBloc bloc;
 
   setUp(() {
-    Modular.init(CalculatorModule());
+    Modular.init(_CalculatorBlocTestModule());
     bloc = Modular.get<CalculatorBloc>();
   });
 
