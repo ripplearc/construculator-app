@@ -14,12 +14,12 @@ void main() {
 
   Future<void> pumpTabView({
     required WidgetTester tester,
+    required ThemeData theme,
     int selectedTab = 0,
-    ThemeData? theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -49,17 +49,20 @@ void main() {
     await loadAppFontsAll();
   });
 
-  group('CostEstimationDetailsTabView Screenshot Tests - Light', () {
+  screenshotThemeGroups('CostEstimationDetailsTabView Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders materials tab correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
-      await pumpTabView(tester: tester, selectedTab: 0);
+      await pumpTabView(tester: tester, selectedTab: 0, theme: theme);
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/cost_estimation_details_tab_view/${size.width}x${size.height}/materials_tab.png',
+          'goldens/cost_estimation_details_tab_view/${size.width}x${size.height}/materials_tab$suffix.png',
         ),
       );
     });
@@ -68,12 +71,12 @@ void main() {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
-      await pumpTabView(tester: tester, selectedTab: 1);
+      await pumpTabView(tester: tester, selectedTab: 1, theme: theme);
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/cost_estimation_details_tab_view/${size.width}x${size.height}/labours_tab.png',
+          'goldens/cost_estimation_details_tab_view/${size.width}x${size.height}/labours_tab$suffix.png',
         ),
       );
     });
@@ -82,56 +85,12 @@ void main() {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
-      await pumpTabView(tester: tester, selectedTab: 2);
+      await pumpTabView(tester: tester, selectedTab: 2, theme: theme);
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/cost_estimation_details_tab_view/${size.width}x${size.height}/equipments_tab.png',
-        ),
-      );
-    });
-  });
-
-  group('CostEstimationDetailsTabView Screenshot Tests - Dark', () {
-    testWidgets('renders materials tab correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
-      await pumpTabView(tester: tester, selectedTab: 0, theme: createTestThemeDark());
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/cost_estimation_details_tab_view/${size.width}x${size.height}/materials_tab_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders labours tab correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
-      await pumpTabView(tester: tester, selectedTab: 1, theme: createTestThemeDark());
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/cost_estimation_details_tab_view/${size.width}x${size.height}/labours_tab_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders equipments tab correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
-      await pumpTabView(tester: tester, selectedTab: 2, theme: createTestThemeDark());
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/cost_estimation_details_tab_view/${size.width}x${size.height}/equipments_tab_dark.png',
+          'goldens/cost_estimation_details_tab_view/${size.width}x${size.height}/equipments_tab$suffix.png',
         ),
       );
     });
