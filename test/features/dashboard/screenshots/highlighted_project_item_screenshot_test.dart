@@ -33,11 +33,11 @@ void main() {
   Future<void> pumpHighlightedProjectItem({
     required WidgetTester tester,
     required Project project,
-    ThemeData? theme,
+    required ThemeData theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -58,46 +58,10 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('HighlightedProjectItem Screenshot Tests - Light', () {
-    testWidgets('renders highlighted project item correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpHighlightedProjectItem(tester: tester, project: buildProject());
-
-      await expectLater(
-        find.byType(HighlightedProjectItem),
-        matchesGoldenFile(
-          'goldens/highlighted_project_item/${size.width}x${size.height}/highlighted_project_item_base.png',
-        ),
-      );
-    });
-
-    testWidgets('renders highlighted project item with long name correctly', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpHighlightedProjectItem(
-        tester: tester,
-        project: buildProject(
-          projectName: 'Complete Home Renovation and Extension Project Phase 2',
-        ),
-      );
-
-      await expectLater(
-        find.byType(HighlightedProjectItem),
-        matchesGoldenFile(
-          'goldens/highlighted_project_item/${size.width}x${size.height}/highlighted_project_item_long_name.png',
-        ),
-      );
-    });
-  });
-
-  group('HighlightedProjectItem Screenshot Tests - Dark', () {
+  screenshotThemeGroups('HighlightedProjectItem Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders highlighted project item correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
@@ -106,13 +70,13 @@ void main() {
       await pumpHighlightedProjectItem(
         tester: tester,
         project: buildProject(),
-        theme: createTestThemeDark(),
+        theme: theme,
       );
 
       await expectLater(
         find.byType(HighlightedProjectItem),
         matchesGoldenFile(
-          'goldens/highlighted_project_item/${size.width}x${size.height}/highlighted_project_item_base_dark.png',
+          'goldens/highlighted_project_item/${size.width}x${size.height}/highlighted_project_item_base$suffix.png',
         ),
       );
     });
@@ -129,13 +93,13 @@ void main() {
         project: buildProject(
           projectName: 'Complete Home Renovation and Extension Project Phase 2',
         ),
-        theme: createTestThemeDark(),
+        theme: theme,
       );
 
       await expectLater(
         find.byType(HighlightedProjectItem),
         matchesGoldenFile(
-          'goldens/highlighted_project_item/${size.width}x${size.height}/highlighted_project_item_long_name_dark.png',
+          'goldens/highlighted_project_item/${size.width}x${size.height}/highlighted_project_item_long_name$suffix.png',
         ),
       );
     });

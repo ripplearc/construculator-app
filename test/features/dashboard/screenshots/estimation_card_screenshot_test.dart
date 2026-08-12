@@ -19,11 +19,11 @@ void main() {
     required WidgetTester tester,
     required CostEstimate estimation,
     required VoidCallback onTap,
-    ThemeData? theme,
+    required ThemeData theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -40,7 +40,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('EstimationCard Screenshot Tests - Light', () {
+  screenshotThemeGroups('EstimationCard Screenshot Tests', (theme, suffix) {
     testWidgets('renders base estimation card correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
@@ -56,12 +56,13 @@ void main() {
         tester: tester,
         estimation: estimation,
         onTap: () {},
+        theme: theme,
       );
 
       await expectLater(
         find.byType(EstimationCard),
         matchesGoldenFile(
-          'goldens/estimation_card/${size.width}x${size.height}/estimation_card_base.png',
+          'goldens/estimation_card/${size.width}x${size.height}/estimation_card_base$suffix.png',
         ),
       );
     });
@@ -81,66 +82,13 @@ void main() {
         tester: tester,
         estimation: estimation,
         onTap: () {},
+        theme: theme,
       );
 
       await expectLater(
         find.byType(EstimationCard),
         matchesGoldenFile(
-          'goldens/estimation_card/${size.width}x${size.height}/estimation_card_long_name.png',
-        ),
-      );
-    });
-  });
-
-  group('EstimationCard Screenshot Tests - Dark', () {
-    testWidgets('renders base estimation card correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      final estimation = CostEstimate.defaultEstimate(
-        estimateName: 'Base Estimate',
-        updatedAt: DateTime(2024, 1, 1, 8, 30),
-        createdAt: DateTime(2024, 1, 1, 8, 30),
-      );
-
-      await pumpEstimationCard(
-        tester: tester,
-        estimation: estimation,
-        onTap: () {},
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(EstimationCard),
-        matchesGoldenFile(
-          'goldens/estimation_card/${size.width}x${size.height}/estimation_card_base_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders estimation card with long name correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      final estimation = CostEstimate.defaultEstimate(
-        estimateName: 'Complete Home Renovation and Extension Project',
-        updatedAt: DateTime(2024, 3, 10, 16, 45),
-        createdAt: DateTime(2024, 3, 10, 16, 45),
-      );
-
-      await pumpEstimationCard(
-        tester: tester,
-        estimation: estimation,
-        onTap: () {},
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(EstimationCard),
-        matchesGoldenFile(
-          'goldens/estimation_card/${size.width}x${size.height}/estimation_card_long_name_dark.png',
+          'goldens/estimation_card/${size.width}x${size.height}/estimation_card_long_name$suffix.png',
         ),
       );
     });
