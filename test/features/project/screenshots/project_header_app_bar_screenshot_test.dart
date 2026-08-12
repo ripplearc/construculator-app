@@ -55,10 +55,10 @@ void main() {
     required WidgetTester tester,
     required String projectId,
     required String projectName,
+    required ThemeData theme,
     VoidCallback? onProjectTap,
     VoidCallback? onSearchTap,
     VoidCallback? onNotificationTap,
-    ThemeData? theme,
   }) async {
     final project = Project(
       id: projectId,
@@ -74,7 +74,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -94,7 +94,10 @@ void main() {
     await tester.awaitImages();
   }
 
-  group('ProjectHeaderAppBar Screenshot Tests - Light', () {
+  screenshotThemeGroups('ProjectHeaderAppBar Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders project header app bar with normal name correctly', (
       tester,
     ) async {
@@ -109,12 +112,13 @@ void main() {
         onProjectTap: () {},
         onSearchTap: () {},
         onNotificationTap: () {},
+        theme: theme,
       );
 
       await expectLater(
         find.byType(ProjectHeaderAppBar),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_normal.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_normal$suffix.png',
         ),
       );
     });
@@ -133,12 +137,13 @@ void main() {
         onProjectTap: () {},
         onSearchTap: () {},
         onNotificationTap: () {},
+        theme: theme,
       );
 
       await expectLater(
         find.byType(ProjectHeaderAppBar),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_long_name.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_long_name$suffix.png',
         ),
       );
     });
@@ -157,89 +162,13 @@ void main() {
         onProjectTap: () {},
         onSearchTap: () {},
         onNotificationTap: () {},
+        theme: theme,
       );
 
       await expectLater(
         find.byType(ProjectHeaderAppBar),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_no_avatar.png',
-        ),
-      );
-    });
-  });
-
-  group('ProjectHeaderAppBar Screenshot Tests - Dark', () {
-    testWidgets('renders project header app bar with normal name correctly', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpProjectHeaderAppBar(
-        tester: tester,
-        projectId: 'project-id-dark-1',
-        projectName: 'Kitchen Renovation',
-        onProjectTap: () {},
-        onSearchTap: () {},
-        onNotificationTap: () {},
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(ProjectHeaderAppBar),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_normal_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders project header app bar with long name correctly', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpProjectHeaderAppBar(
-        tester: tester,
-        projectId: 'project-id-dark-2',
-        projectName: 'Complete Home Renovation and Extension Project',
-        onProjectTap: () {},
-        onSearchTap: () {},
-        onNotificationTap: () {},
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(ProjectHeaderAppBar),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_long_name_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders project header app bar without avatar correctly', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpProjectHeaderAppBar(
-        tester: tester,
-        projectId: 'project-id-dark-3',
-        projectName: 'Bathroom Remodel',
-        onProjectTap: () {},
-        onSearchTap: () {},
-        onNotificationTap: () {},
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(ProjectHeaderAppBar),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_no_avatar_dark.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_no_avatar$suffix.png',
         ),
       );
     });
