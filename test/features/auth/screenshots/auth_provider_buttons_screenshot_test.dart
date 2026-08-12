@@ -18,11 +18,11 @@ void main() {
   Future<void> pumpAuthProviderButtons({
     required WidgetTester tester,
     required bool isEmailAuth,
-    ThemeData? theme,
+    required ThemeData theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Builder(
@@ -42,37 +42,10 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('AuthProviderButtons Screenshot Tests - Light', () {
-    testWidgets('renders email auth mode correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-      await pumpAuthProviderButtons(tester: tester, isEmailAuth: true);
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/auth_provider_buttons/${size.width}x${size.height}/auth_provider_buttons_email_auth.png',
-        ),
-      );
-    });
-
-    testWidgets('renders phone auth mode correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-      await pumpAuthProviderButtons(tester: tester, isEmailAuth: false);
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/auth_provider_buttons/${size.width}x${size.height}/auth_provider_buttons_phone_auth.png',
-        ),
-      );
-    });
-  });
-
-  group('AuthProviderButtons Screenshot Tests - Dark', () {
+  screenshotThemeGroups('AuthProviderButtons Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders email auth mode correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
@@ -80,13 +53,13 @@ void main() {
       await pumpAuthProviderButtons(
         tester: tester,
         isEmailAuth: true,
-        theme: createTestThemeDark(),
+        theme: theme,
       );
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/auth_provider_buttons/${size.width}x${size.height}/auth_provider_buttons_email_auth_dark.png',
+          'goldens/auth_provider_buttons/${size.width}x${size.height}/auth_provider_buttons_email_auth$suffix.png',
         ),
       );
     });
@@ -98,13 +71,13 @@ void main() {
       await pumpAuthProviderButtons(
         tester: tester,
         isEmailAuth: false,
-        theme: createTestThemeDark(),
+        theme: theme,
       );
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/auth_provider_buttons/${size.width}x${size.height}/auth_provider_buttons_phone_auth_dark.png',
+          'goldens/auth_provider_buttons/${size.width}x${size.height}/auth_provider_buttons_phone_auth$suffix.png',
         ),
       );
     });

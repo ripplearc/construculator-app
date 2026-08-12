@@ -18,11 +18,11 @@ void main() {
     required WidgetTester tester,
     required String title,
     required String description,
-    ThemeData? theme,
+    required ThemeData theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         home: Builder(
           builder: (ctx) => Scaffold(
             backgroundColor: ctx.colorTheme.pageBackground,
@@ -40,7 +40,10 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('ForgotPasswordHeader Screenshot Tests - Light', () {
+  screenshotThemeGroups('ForgotPasswordHeader Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders forgot password header correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
@@ -51,35 +54,13 @@ void main() {
         title: 'Forgot Password?',
         description:
             'An OTP will be sent to your registered email ID to reset your password',
+        theme: theme,
       );
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/forgot_password_header/${size.width}x${size.height}/forgot_password_header.png',
-        ),
-      );
-    });
-  });
-
-  group('ForgotPasswordHeader Screenshot Tests - Dark', () {
-    testWidgets('renders forgot password header correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpForgotPasswordHeader(
-        tester: tester,
-        title: 'Forgot Password?',
-        description:
-            'An OTP will be sent to your registered email ID to reset your password',
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/forgot_password_header/${size.width}x${size.height}/forgot_password_header_dark.png',
+          'goldens/forgot_password_header/${size.width}x${size.height}/forgot_password_header$suffix.png',
         ),
       );
     });
