@@ -37,12 +37,12 @@ void main() {
 
   Future<void> pumpWidget({
     required WidgetTester tester,
+    required ThemeData theme,
     bool fromCostFile = false,
-    ThemeData? theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -57,61 +57,38 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('LabourCostFormFields Screenshot Tests', () {
-    testWidgets('renders manually mode in light theme', (tester) async {
+  screenshotThemeGroups('LabourCostFormFields Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
+    testWidgets('renders manually mode', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
-      await pumpWidget(tester: tester);
+      await pumpWidget(tester: tester, theme: theme);
       await expectLater(
         find.byType(LabourCostFormFields),
         matchesGoldenFile(
-          'goldens/labour_cost_form_fields/${size.width}x${size.height}/manually_light.png',
+          'goldens/labour_cost_form_fields/${size.width}x${size.height}/manually$suffix.png',
         ),
       );
     });
 
-    testWidgets('renders from cost file mode in light theme', (tester) async {
+    testWidgets('renders from cost file mode', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
-      await pumpWidget(tester: tester, fromCostFile: true);
+      await pumpWidget(tester: tester, fromCostFile: true, theme: theme);
       await expectLater(
         find.byType(LabourCostFormFields),
         matchesGoldenFile(
-          'goldens/labour_cost_form_fields/${size.width}x${size.height}/from_cost_file_light.png',
+          'goldens/labour_cost_form_fields/${size.width}x${size.height}/from_cost_file$suffix.png',
         ),
       );
     });
 
-    testWidgets('renders manually mode in dark theme', (tester) async {
+    testWidgets('renders manually mode with item type error', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
-      await pumpWidget(tester: tester, theme: createTestThemeDark());
-      await expectLater(
-        find.byType(LabourCostFormFields),
-        matchesGoldenFile(
-          'goldens/labour_cost_form_fields/${size.width}x${size.height}/manually_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders from cost file mode in dark theme', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1.0;
-      await pumpWidget(tester: tester, fromCostFile: true, theme: createTestThemeDark());
-      await expectLater(
-        find.byType(LabourCostFormFields),
-        matchesGoldenFile(
-          'goldens/labour_cost_form_fields/${size.width}x${size.height}/from_cost_file_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders manually mode with item type error in light theme', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1.0;
-      await pumpWidget(tester: tester);
+      await pumpWidget(tester: tester, theme: theme);
       await tester.enterText(find.byKey(const Key('labour_type_field')), 'x');
       await tester.pumpAndSettle();
       await tester.enterText(find.byKey(const Key('labour_type_field')), '');
@@ -119,25 +96,7 @@ void main() {
       await expectLater(
         find.byType(LabourCostFormFields),
         matchesGoldenFile(
-          'goldens/labour_cost_form_fields/${size.width}x${size.height}/manually_error_light.png',
-        ),
-      );
-    });
-
-    testWidgets('renders manually mode with item type error in dark theme', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1.0;
-      await pumpWidget(tester: tester, theme: createTestThemeDark());
-      await tester.enterText(find.byKey(const Key('labour_type_field')), 'x');
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byKey(const Key('labour_type_field')), '');
-      await tester.pumpAndSettle();
-      await expectLater(
-        find.byType(LabourCostFormFields),
-        matchesGoldenFile(
-          'goldens/labour_cost_form_fields/${size.width}x${size.height}/manually_error_dark.png',
+          'goldens/labour_cost_form_fields/${size.width}x${size.height}/manually_error$suffix.png',
         ),
       );
     });
