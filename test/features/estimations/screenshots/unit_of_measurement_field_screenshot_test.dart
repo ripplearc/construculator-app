@@ -16,13 +16,13 @@ void main() {
 
   Future<void> pumpWidget({
     required WidgetTester tester,
+    required ThemeData theme,
     bool fromCostFile = false,
     Unit? selectedUnit,
-    ThemeData? theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -41,55 +41,30 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('UnitOfMeasurementField Screenshot Tests', () {
-    testWidgets('manual empty state in light theme', (tester) async {
+  screenshotThemeGroups('UnitOfMeasurementField Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
+    testWidgets('manual empty state', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
-      await pumpWidget(tester: tester);
+      await pumpWidget(tester: tester, theme: theme);
       await expectLater(
         find.byType(UnitOfMeasurementField),
         matchesGoldenFile(
-          'goldens/unit_of_measurement_field/${size.width}x${size.height}/manual_empty_light.png',
+          'goldens/unit_of_measurement_field/${size.width}x${size.height}/manual_empty$suffix.png',
         ),
       );
     });
 
-    testWidgets('manual empty state in dark theme', (tester) async {
+    testWidgets('manual selected state', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1.0;
-      await pumpWidget(tester: tester, theme: createTestThemeDark());
+      await pumpWidget(tester: tester, selectedUnit: Unit.kilograms, theme: theme);
       await expectLater(
         find.byType(UnitOfMeasurementField),
         matchesGoldenFile(
-          'goldens/unit_of_measurement_field/${size.width}x${size.height}/manual_empty_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('manual selected state in light theme', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1.0;
-      await pumpWidget(tester: tester, selectedUnit: Unit.kilograms);
-      await expectLater(
-        find.byType(UnitOfMeasurementField),
-        matchesGoldenFile(
-          'goldens/unit_of_measurement_field/${size.width}x${size.height}/manual_selected_light.png',
-        ),
-      );
-    });
-
-    testWidgets('manual selected state in dark theme', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1.0;
-      await pumpWidget(
-        tester: tester,
-        selectedUnit: Unit.kilograms,
-        theme: createTestThemeDark(),
-      );
-      await expectLater(
-        find.byType(UnitOfMeasurementField),
-        matchesGoldenFile(
-          'goldens/unit_of_measurement_field/${size.width}x${size.height}/manual_selected_dark.png',
+          'goldens/unit_of_measurement_field/${size.width}x${size.height}/manual_selected$suffix.png',
         ),
       );
     });
