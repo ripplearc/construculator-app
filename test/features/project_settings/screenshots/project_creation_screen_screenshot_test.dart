@@ -49,8 +49,8 @@ void main() {
     fakeRepository.reset();
   });
 
-  Widget buildScreen({ThemeData? theme}) => MaterialApp(
-        theme: theme ?? createTestTheme(),
+  Widget buildScreen({required ThemeData theme}) => MaterialApp(
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -64,60 +64,32 @@ void main() {
   String goldenPath(String name) =>
       'goldens/project_creation_screen/${_screenSize.width.toInt()}x${_screenSize.height.toInt()}/$name.png';
 
-  group('ProjectCreationScreen Screenshot Tests', () {
+  screenshotThemeGroups('ProjectCreationScreen Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('initial state — empty form, submit disabled', (tester) async {
       tester.view.physicalSize = _screenSize;
       tester.view.devicePixelRatio = _pixelRatio;
       addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(buildScreen());
+      await tester.pumpWidget(buildScreen(theme: theme));
       await tester.pumpAndSettle();
 
       await expectLater(
         find.byType(ProjectCreationScreen),
-        matchesGoldenFile(goldenPath('project_creation_initial_light')),
+        matchesGoldenFile(goldenPath('project_creation_initial$suffix')),
       );
     });
 
-    testWidgets('with valid name — submit enabled', (tester) async {
-      tester.view.physicalSize = _screenSize;
-      tester.view.devicePixelRatio = _pixelRatio;
-      addTearDown(tester.view.reset);
-
-      await tester.pumpWidget(buildScreen());
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byType(ProjectNameTextField), 'My Project');
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(ProjectCreationScreen),
-        matchesGoldenFile(goldenPath('project_creation_with_name_light')),
-      );
-    });
-
-    testWidgets('initial state — dark theme', (tester) async {
-      tester.view.physicalSize = _screenSize;
-      tester.view.devicePixelRatio = _pixelRatio;
-      addTearDown(tester.view.reset);
-
-      await tester.pumpWidget(buildScreen(theme: createTestThemeDark()));
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(ProjectCreationScreen),
-        matchesGoldenFile(goldenPath('project_creation_initial_dark')),
-      );
-    });
-
-    testWidgets('error state — submit attempted with empty name, light theme', (
+    testWidgets('error state — submit attempted with empty name', (
       tester,
     ) async {
       tester.view.physicalSize = _screenSize;
       tester.view.devicePixelRatio = _pixelRatio;
       addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(buildScreen());
+      await tester.pumpWidget(buildScreen(theme: theme));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const Key('create_project_button')));
@@ -125,26 +97,7 @@ void main() {
 
       await expectLater(
         find.byType(ProjectCreationScreen),
-        matchesGoldenFile(goldenPath('project_creation_error_state_light')),
-      );
-    });
-
-    testWidgets('error state — submit attempted with empty name, dark theme', (
-      tester,
-    ) async {
-      tester.view.physicalSize = _screenSize;
-      tester.view.devicePixelRatio = _pixelRatio;
-      addTearDown(tester.view.reset);
-
-      await tester.pumpWidget(buildScreen(theme: createTestThemeDark()));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(const Key('create_project_button')));
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(ProjectCreationScreen),
-        matchesGoldenFile(goldenPath('project_creation_error_state_dark')),
+        matchesGoldenFile(goldenPath('project_creation_error_state$suffix')),
       );
     });
 
@@ -158,7 +111,7 @@ void main() {
       // Seed the in-flight state before the first build so the button
       // renders its loading indicator from the initial frame.
       bloc.emit(const ProjectSettingsCreating());
-      await tester.pumpWidget(buildScreen());
+      await tester.pumpWidget(buildScreen(theme: theme));
       // A single pump freezes the indicator's deterministic pre-load frame —
       // the Lottie composition loads asynchronously and never resolves inside
       // the fake-async zone, matching the search_results_list loading golden
@@ -168,31 +121,29 @@ void main() {
 
       await expectLater(
         find.byType(ProjectCreationScreen),
-        matchesGoldenFile(goldenPath('project_creation_loading_light')),
+        matchesGoldenFile(goldenPath('project_creation_loading$suffix')),
       );
     });
+  });
 
-    testWidgets('creating state — loading indicator, dark theme', (
-      tester,
-    ) async {
+  // This scenario only ever had a light golden; screenshotThemeGroups always
+  // produces both light and dark, so it stays outside it rather than gaining
+  // a new dark golden as a side effect of this migration.
+  group('ProjectCreationScreen Screenshot Tests - Light Only', () {
+    testWidgets('with valid name — submit enabled', (tester) async {
       tester.view.physicalSize = _screenSize;
       tester.view.devicePixelRatio = _pixelRatio;
       addTearDown(tester.view.reset);
 
-      // Seed the in-flight state before the first build so the button
-      // renders its loading indicator from the initial frame.
-      bloc.emit(const ProjectSettingsCreating());
-      await tester.pumpWidget(buildScreen(theme: createTestThemeDark()));
-      // A single pump freezes the indicator's deterministic pre-load frame —
-      // the Lottie composition loads asynchronously and never resolves inside
-      // the fake-async zone, matching the search_results_list loading golden
-      // pattern. runAsync + a timed pump would capture a wall-clock-dependent
-      // animation frame that renders differently across CPU architectures.
-      await tester.pump();
+      await tester.pumpWidget(buildScreen(theme: createTestTheme()));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(ProjectNameTextField), 'My Project');
+      await tester.pumpAndSettle();
 
       await expectLater(
         find.byType(ProjectCreationScreen),
-        matchesGoldenFile(goldenPath('project_creation_loading_dark')),
+        matchesGoldenFile(goldenPath('project_creation_with_name_light')),
       );
     });
   });

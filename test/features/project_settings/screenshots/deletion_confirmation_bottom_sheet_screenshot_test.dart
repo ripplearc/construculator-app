@@ -13,92 +13,89 @@ void main() {
     await loadAppFonts();
   });
 
-  group('DeletionConfirmationBottomSheet Screenshot Tests - Light', () {
-    // Part A — isolated widget
-    group('isolated widget', () {
-      const size = Size(390, 420);
-      const ratio = 1.0;
+  // Part A — isolated widget
+  screenshotThemeGroups('DeletionConfirmationBottomSheet Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
+    const size = Size(390, 420);
+    const ratio = 1.0;
 
-      Future<void> pumpSheet({
-        required WidgetTester tester,
-        String projectName = 'Material of Building',
-        int? imagesAttachedCount,
-        Size pumpSize = size,
-        ThemeData? theme,
-      }) async {
-        tester.view.physicalSize = pumpSize;
-        tester.view.devicePixelRatio = ratio;
+    Future<void> pumpSheet({
+      required WidgetTester tester,
+      String projectName = 'Material of Building',
+      int? imagesAttachedCount,
+      Size pumpSize = size,
+    }) async {
+      tester.view.physicalSize = pumpSize;
+      tester.view.devicePixelRatio = ratio;
 
-        ThemeData effectiveTheme;
-        if (theme == null) {
-          effectiveTheme = createTestTheme();
-        } else {
-          effectiveTheme = theme;
-        }
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: effectiveTheme,
-            locale: const Locale('en'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Builder(
-              builder: (ctx) => Scaffold(
-                backgroundColor: ctx.colorTheme.pageBackground,
-                body: DeletionConfirmationBottomSheet(
-                  projectName: projectName,
-                  onConfirm: () {},
-                  onCancel: () {},
-                  imagesAttachedCount: imagesAttachedCount,
-                ),
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: theme,
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (ctx) => Scaffold(
+              backgroundColor: ctx.colorTheme.pageBackground,
+              body: DeletionConfirmationBottomSheet(
+                projectName: projectName,
+                onConfirm: () {},
+                onCancel: () {},
+                imagesAttachedCount: imagesAttachedCount,
               ),
             ),
           ),
-        );
-        await tester.pumpAndSettle();
-      }
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
 
-      testWidgets('renders default state without image count', (tester) async {
-        await pumpSheet(tester: tester);
+    testWidgets('renders default state without image count', (tester) async {
+      await pumpSheet(tester: tester);
 
-        await expectLater(
-          find.byType(Scaffold),
-          matchesGoldenFile(
-            'goldens/deletion_confirmation_bottom_sheet/${size.width.toInt()}x${size.height.toInt()}/default_no_images.png',
-          ),
-        );
-      });
-
-      testWidgets('renders with 25 images attached', (tester) async {
-        await pumpSheet(tester: tester, imagesAttachedCount: 25);
-
-        await expectLater(
-          find.byType(Scaffold),
-          matchesGoldenFile(
-            'goldens/deletion_confirmation_bottom_sheet/${size.width.toInt()}x${size.height.toInt()}/with_images_attached.png',
-          ),
-        );
-      });
-
-      testWidgets('renders with long project name', (tester) async {
-        await pumpSheet(
-          tester: tester,
-          projectName:
-              'This is a very long construction project name that should wrap to multiple lines to test overflow handling',
-          imagesAttachedCount: 25,
-          pumpSize: const Size(390, 500),
-        );
-
-        await expectLater(
-          find.byType(Scaffold),
-          matchesGoldenFile(
-            'goldens/deletion_confirmation_bottom_sheet/390x500/long_project_name.png',
-          ),
-        );
-      });
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/deletion_confirmation_bottom_sheet/${size.width.toInt()}x${size.height.toInt()}/default_no_images$suffix.png',
+        ),
+      );
     });
 
-    // Part B — modal over empty background (validates Figma overlay appearance)
-    group('modal over background', () {
+    testWidgets('renders with 25 images attached', (tester) async {
+      await pumpSheet(tester: tester, imagesAttachedCount: 25);
+
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/deletion_confirmation_bottom_sheet/${size.width.toInt()}x${size.height.toInt()}/with_images_attached$suffix.png',
+        ),
+      );
+    });
+
+    testWidgets('renders with long project name', (tester) async {
+      await pumpSheet(
+        tester: tester,
+        projectName:
+            'This is a very long construction project name that should wrap to multiple lines to test overflow handling',
+        imagesAttachedCount: 25,
+        pumpSize: const Size(390, 500),
+      );
+
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/deletion_confirmation_bottom_sheet/390x500/long_project_name$suffix.png',
+        ),
+      );
+    });
+  });
+
+  // Part B — modal over empty background (validates Figma overlay appearance)
+  screenshotThemeGroups(
+    'DeletionConfirmationBottomSheet modal over background Screenshot Tests',
+    (theme, suffix) {
       const size = Size(390, 844);
       const ratio = 1.0;
 
@@ -109,7 +106,7 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             debugShowCheckedModeBanner: false,
-            theme: createTestTheme(),
+            theme: theme,
             locale: const Locale('en'),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -124,135 +121,12 @@ void main() {
         await expectLater(
           find.byType(MaterialApp),
           matchesGoldenFile(
-            'goldens/deletion_confirmation_bottom_sheet/${size.width.toInt()}x${size.height.toInt()}/modal_over_background.png',
+            'goldens/deletion_confirmation_bottom_sheet/${size.width.toInt()}x${size.height.toInt()}/modal_over_background$suffix.png',
           ),
         );
       });
-    });
-  });
-
-  group('DeletionConfirmationBottomSheet Screenshot Tests - Dark', () {
-    // Part A — isolated widget
-    group('isolated widget', () {
-      const size = Size(390, 420);
-      const ratio = 1.0;
-
-      Future<void> pumpSheet({
-        required WidgetTester tester,
-        String projectName = 'Material of Building',
-        int? imagesAttachedCount,
-        Size pumpSize = size,
-        ThemeData? theme,
-      }) async {
-        tester.view.physicalSize = pumpSize;
-        tester.view.devicePixelRatio = ratio;
-
-        ThemeData effectiveTheme;
-        if (theme == null) {
-          effectiveTheme = createTestThemeDark();
-        } else {
-          effectiveTheme = theme;
-        }
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: effectiveTheme,
-            locale: const Locale('en'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Builder(
-              builder: (ctx) => Scaffold(
-                backgroundColor: ctx.colorTheme.pageBackground,
-                body: DeletionConfirmationBottomSheet(
-                  projectName: projectName,
-                  onConfirm: () {},
-                  onCancel: () {},
-                  imagesAttachedCount: imagesAttachedCount,
-                ),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-      }
-
-      testWidgets('renders default state without image count', (tester) async {
-        await pumpSheet(tester: tester, theme: createTestThemeDark());
-
-        await expectLater(
-          find.byType(Scaffold),
-          matchesGoldenFile(
-            'goldens/deletion_confirmation_bottom_sheet/${size.width.toInt()}x${size.height.toInt()}/default_no_images_dark.png',
-          ),
-        );
-      });
-
-      testWidgets('renders with 25 images attached', (tester) async {
-        await pumpSheet(
-          tester: tester,
-          imagesAttachedCount: 25,
-          theme: createTestThemeDark(),
-        );
-
-        await expectLater(
-          find.byType(Scaffold),
-          matchesGoldenFile(
-            'goldens/deletion_confirmation_bottom_sheet/${size.width.toInt()}x${size.height.toInt()}/with_images_attached_dark.png',
-          ),
-        );
-      });
-
-      testWidgets('renders with long project name', (tester) async {
-        await pumpSheet(
-          tester: tester,
-          projectName:
-              'This is a very long construction project name that should wrap to multiple lines to test overflow handling',
-          imagesAttachedCount: 25,
-          pumpSize: const Size(390, 500),
-          theme: createTestThemeDark(),
-        );
-
-        await expectLater(
-          find.byType(Scaffold),
-          matchesGoldenFile(
-            'goldens/deletion_confirmation_bottom_sheet/390x500/long_project_name_dark.png',
-          ),
-        );
-      });
-    });
-
-    // Part B — modal over empty background (validates Figma overlay appearance)
-    group('modal over background', () {
-      const size = Size(390, 844);
-      const ratio = 1.0;
-
-      testWidgets('renders as modal over page background', (tester) async {
-        tester.view.physicalSize = size;
-        tester.view.devicePixelRatio = ratio;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: createTestThemeDark(),
-            locale: const Locale('en'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: _ModalBackgroundPage(
-              projectName: 'Material of Building',
-              imagesAttachedCount: 25,
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        await expectLater(
-          find.byType(MaterialApp),
-          matchesGoldenFile(
-            'goldens/deletion_confirmation_bottom_sheet/${size.width.toInt()}x${size.height.toInt()}/modal_over_background_dark.png',
-          ),
-        );
-      });
-    });
-  });
+    },
+  );
 }
 
 /// Renders a plain background page and opens the deletion sheet as a modal
