@@ -13,8 +13,8 @@ void main() {
     await loadAppFontsAll();
   });
 
-  Widget wrap(Widget child, {ThemeData? theme}) => MaterialApp(
-        theme: theme ?? createTestTheme(),
+  Widget wrap(Widget child, {required ThemeData theme}) => MaterialApp(
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -31,25 +31,11 @@ void main() {
   String goldenPath(String name) =>
       'goldens/validation_error_widget/${size.width}x${size.height}/$name.png';
 
-  group('ValidationErrorWidget screenshot tests', () {
-    testWidgets('light theme', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(
-        wrap(const ValidationErrorWidget(message: 'Project name is required')),
-      );
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(ValidationErrorWidget),
-        matchesGoldenFile(goldenPath('validation_error_widget_light')),
-      );
-    });
-
-    testWidgets('dark theme', (tester) async {
+  screenshotThemeGroups('ValidationErrorWidget screenshot tests', (
+    theme,
+    suffix,
+  ) {
+    testWidgets('renders correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.resetPhysicalSize);
@@ -58,14 +44,14 @@ void main() {
       await tester.pumpWidget(
         wrap(
           const ValidationErrorWidget(message: 'Project name is required'),
-          theme: createTestThemeDark(),
+          theme: theme,
         ),
       );
       await tester.pumpAndSettle();
 
       await expectLater(
         find.byType(ValidationErrorWidget),
-        matchesGoldenFile(goldenPath('validation_error_widget_dark')),
+        matchesGoldenFile(goldenPath('validation_error_widget$suffix')),
       );
     });
   });
