@@ -66,13 +66,13 @@ void main() {
   // range stays controllable without driving bloc state through the chip.
   Future<void> pumpPageAndOpenDateRangeSheet({
     required WidgetTester tester,
+    required ThemeData theme,
     DateRange? initialRange,
-    ThemeData? theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -109,18 +109,21 @@ void main() {
     await tester.awaitImages();
   }
 
-  group('DateRangeBottomSheet Screenshot Tests - Light', () {
+  screenshotThemeGroups('DateRangeBottomSheet Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders default state with Today selected', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      await pumpPageAndOpenDateRangeSheet(tester: tester);
+      await pumpPageAndOpenDateRangeSheet(tester: tester, theme: theme);
 
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_default.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_default$suffix.png',
         ),
       );
     });
@@ -136,54 +139,13 @@ void main() {
           start: DateTime(2026, 1, 1),
           end: DateTime(2026, 1, 5),
         ),
+        theme: theme,
       );
 
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_custom_selected.png',
-        ),
-      );
-    });
-  });
-
-  group('DateRangeBottomSheet Screenshot Tests - Dark', () {
-    testWidgets('renders default state with Today selected', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpPageAndOpenDateRangeSheet(
-        tester: tester,
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_default_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders with a custom range pre-selected', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpPageAndOpenDateRangeSheet(
-        tester: tester,
-        initialRange: DateRange(
-          start: DateTime(2026, 1, 1),
-          end: DateTime(2026, 1, 5),
-        ),
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_custom_selected_dark.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_custom_selected$suffix.png',
         ),
       );
     });

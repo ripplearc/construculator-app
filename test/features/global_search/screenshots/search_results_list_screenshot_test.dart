@@ -42,7 +42,7 @@ void main() {
     required WidgetTester tester,
     required Size size,
     required SearchResults results,
-    ThemeData? theme,
+    required ThemeData theme,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = ratio;
@@ -51,7 +51,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -75,7 +75,7 @@ void main() {
     required WidgetTester tester,
     required Size size,
     required String query,
-    ThemeData? theme,
+    required ThemeData theme,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = ratio;
@@ -84,7 +84,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -102,7 +102,7 @@ void main() {
   Future<void> pumpLoadingView({
     required WidgetTester tester,
     required Size size,
-    ThemeData? theme,
+    required ThemeData theme,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = ratio;
@@ -111,7 +111,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         home: Builder(
           builder: (ctx) => Scaffold(
             backgroundColor: ctx.colorTheme.pageBackground,
@@ -123,75 +123,10 @@ void main() {
     await tester.pump();
   }
 
-  group('SearchResultsList Screenshot Tests - Light', () {
-    testWidgets('renders two estimation cards correctly', (tester) async {
-      final results = SearchResults(
-        estimations: [
-          makeEstimation(id: 'est-1', estimateName: '2nd Wall Cost', totalCost: 12343.88),
-          makeEstimation(
-            id: 'est-2',
-            estimateName: 'Wall Cost',
-            totalCost: 10000.88,
-            updatedAt: DateTime(2025, 4, 22, 14, 30),
-          ),
-        ],
-      );
-
-      await pumpSearchResultsList(tester: tester, size: listSize, results: results);
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/search_results_list/${listSize.width}x${listSize.height}/two_estimation_cards.png',
-        ),
-      );
-    });
-
-    testWidgets('renders single estimation card correctly', (tester) async {
-      final results = SearchResults(
-        estimations: [
-          makeEstimation(estimateName: '2nd Wall Cost', totalCost: 12343.88),
-        ],
-      );
-
-      await pumpSearchResultsList(tester: tester, size: singleCardSize, results: results);
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/search_results_list/${singleCardSize.width}x${singleCardSize.height}/single_estimation_card.png',
-        ),
-      );
-    });
-  });
-
-  group('SearchResultsEmptyView Screenshot Tests - Light', () {
-    testWidgets('renders empty state correctly', (tester) async {
-      await pumpEmptyView(tester: tester, size: emptySize, query: 'Wall');
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/search_results_list/${emptySize.width}x${emptySize.height}/empty_state.png',
-        ),
-      );
-    });
-  });
-
-  group('SearchResultsLoadingView Screenshot Tests - Light', () {
-    testWidgets('renders loading state correctly', (tester) async {
-      await pumpLoadingView(tester: tester, size: loadingSize);
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/search_results_list/${loadingSize.width}x${loadingSize.height}/loading_state.png',
-        ),
-      );
-    });
-  });
-
-  group('SearchResultsList Screenshot Tests - Dark', () {
+  screenshotThemeGroups('SearchResultsList Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders two estimation cards correctly', (tester) async {
       final results = SearchResults(
         estimations: [
@@ -209,13 +144,13 @@ void main() {
         tester: tester,
         size: listSize,
         results: results,
-        theme: createTestThemeDark(),
+        theme: theme,
       );
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/search_results_list/${listSize.width}x${listSize.height}/two_estimation_cards_dark.png',
+          'goldens/search_results_list/${listSize.width}x${listSize.height}/two_estimation_cards$suffix.png',
         ),
       );
     });
@@ -231,48 +166,50 @@ void main() {
         tester: tester,
         size: singleCardSize,
         results: results,
-        theme: createTestThemeDark(),
+        theme: theme,
       );
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/search_results_list/${singleCardSize.width}x${singleCardSize.height}/single_estimation_card_dark.png',
+          'goldens/search_results_list/${singleCardSize.width}x${singleCardSize.height}/single_estimation_card$suffix.png',
         ),
       );
     });
   });
 
-  group('SearchResultsEmptyView Screenshot Tests - Dark', () {
+  screenshotThemeGroups('SearchResultsEmptyView Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders empty state correctly', (tester) async {
       await pumpEmptyView(
         tester: tester,
         size: emptySize,
         query: 'Wall',
-        theme: createTestThemeDark(),
+        theme: theme,
       );
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/search_results_list/${emptySize.width}x${emptySize.height}/empty_state_dark.png',
+          'goldens/search_results_list/${emptySize.width}x${emptySize.height}/empty_state$suffix.png',
         ),
       );
     });
   });
 
-  group('SearchResultsLoadingView Screenshot Tests - Dark', () {
+  screenshotThemeGroups('SearchResultsLoadingView Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders loading state correctly', (tester) async {
-      await pumpLoadingView(
-        tester: tester,
-        size: loadingSize,
-        theme: createTestThemeDark(),
-      );
+      await pumpLoadingView(tester: tester, size: loadingSize, theme: theme);
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/search_results_list/${loadingSize.width}x${loadingSize.height}/loading_state_dark.png',
+          'goldens/search_results_list/${loadingSize.width}x${loadingSize.height}/loading_state$suffix.png',
         ),
       );
     });
