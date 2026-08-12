@@ -20,11 +20,11 @@ void main() {
     required String termsAndServicesLink,
     required String privacyPolicyLink,
     required String andAcknowledge,
-    ThemeData? theme,
+    required ThemeData theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         home: Builder(
           builder: (ctx) => Scaffold(
             backgroundColor: ctx.colorTheme.pageBackground,
@@ -46,7 +46,10 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('TermsAndConditions Screenshot Tests - Light', () {
+  screenshotThemeGroups('TermsAndConditions Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders terms and conditions correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
@@ -59,37 +62,13 @@ void main() {
         termsAndServicesLink: 'terms & services',
         privacyPolicyLink: 'privacy policy',
         andAcknowledge: 'and acknowledge ',
+        theme: theme,
       );
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/terms_and_conditions/${size.width}x${size.height}/terms_and_conditions_agreement.png',
-        ),
-      );
-    });
-  });
-
-  group('TermsAndConditions Screenshot Tests - Dark', () {
-    testWidgets('renders terms and conditions correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpTermsAndConditions(
-        tester: tester,
-        termsAndConditionsText:
-            'By selecting agree and continue. I agree to Construculator ',
-        termsAndServicesLink: 'terms & services',
-        privacyPolicyLink: 'privacy policy',
-        andAcknowledge: 'and acknowledge ',
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/terms_and_conditions/${size.width}x${size.height}/terms_and_conditions_agreement_dark.png',
+          'goldens/terms_and_conditions/${size.width}x${size.height}/terms_and_conditions_agreement$suffix.png',
         ),
       );
     });

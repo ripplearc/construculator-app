@@ -18,11 +18,11 @@ void main() {
     required WidgetTester tester,
     required String text,
     required String actionText,
-    ThemeData? theme,
+    required ThemeData theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         home: Builder(
           builder: (ctx) => Scaffold(
             backgroundColor: ctx.colorTheme.pageBackground,
@@ -38,7 +38,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('AuthFooter Screenshot Tests - Light', () {
+  screenshotThemeGroups('AuthFooter Screenshot Tests', (theme, suffix) {
     testWidgets('renders register footer correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
@@ -47,12 +47,13 @@ void main() {
         tester: tester,
         text: "Don't have an account?",
         actionText: 'Register',
+        theme: theme,
       );
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/auth_footer/${size.width}x${size.height}/auth_footer_register.png',
+          'goldens/auth_footer/${size.width}x${size.height}/auth_footer_register$suffix.png',
         ),
       );
     });
@@ -65,52 +66,13 @@ void main() {
         tester: tester,
         text: 'Already have an account?',
         actionText: 'Login',
+        theme: theme,
       );
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/auth_footer/${size.width}x${size.height}/auth_footer_login.png',
-        ),
-      );
-    });
-  });
-
-  group('AuthFooter Screenshot Tests - Dark', () {
-    testWidgets('renders register footer correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-      await pumpAuthFooter(
-        tester: tester,
-        text: "Don't have an account?",
-        actionText: 'Register',
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/auth_footer/${size.width}x${size.height}/auth_footer_register_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders login footer correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-      await pumpAuthFooter(
-        tester: tester,
-        text: 'Already have an account?',
-        actionText: 'Login',
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/auth_footer/${size.width}x${size.height}/auth_footer_login_dark.png',
+          'goldens/auth_footer/${size.width}x${size.height}/auth_footer_login$suffix.png',
         ),
       );
     });
