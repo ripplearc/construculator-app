@@ -32,29 +32,19 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
   }
 
-  group('EditProjectButton screenshot tests', () {
-    testWidgets('light theme', (tester) async {
+  screenshotThemeGroups('EditProjectButton screenshot tests', (
+    theme,
+    suffix,
+  ) {
+    testWidgets('renders correctly', (tester) async {
       setSize(tester);
-      await tester.pumpWidget(wrap(createTestTheme()));
+      await tester.pumpWidget(wrap(theme));
       await tester.pump();
 
       await expectLater(
         find.byType(EditProjectButton),
         matchesGoldenFile(
-          'goldens/edit_project_button/${size.width}x${size.height}/edit_project_button_light.png',
-        ),
-      );
-    });
-
-    testWidgets('dark theme', (tester) async {
-      setSize(tester);
-      await tester.pumpWidget(wrap(createTestThemeDark()));
-      await tester.pump();
-
-      await expectLater(
-        find.byType(EditProjectButton),
-        matchesGoldenFile(
-          'goldens/edit_project_button/${size.width}x${size.height}/edit_project_button_dark.png',
+          'goldens/edit_project_button/${size.width}x${size.height}/edit_project_button$suffix.png',
         ),
       );
     });

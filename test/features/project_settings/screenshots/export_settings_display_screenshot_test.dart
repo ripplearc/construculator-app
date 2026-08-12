@@ -15,8 +15,8 @@ void main() {
     await loadAppFontsAll();
   });
 
-  Widget wrap(Widget child, {ThemeData? theme}) => MaterialApp(
-        theme: theme ?? createTestTheme(),
+  Widget wrap(Widget child, {required ThemeData theme}) => MaterialApp(
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -33,7 +33,10 @@ void main() {
         ),
       );
 
-  group('ExportSettingsDisplay screenshot tests - Light', () {
+  screenshotThemeGroups('ExportSettingsDisplay screenshot tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('google drive state', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
@@ -46,6 +49,7 @@ void main() {
             storageProvider: StorageProvider.googleDrive,
             folderName: 'Cost estimation',
           ),
+          theme: theme,
         ),
       );
       await tester.pumpAndSettle();
@@ -53,7 +57,7 @@ void main() {
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_google_drive.png',
+          'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_google_drive$suffix.png',
         ),
       );
     });
@@ -70,6 +74,7 @@ void main() {
             storageProvider: StorageProvider.dropbox,
             folderName: 'Cost estimation',
           ),
+          theme: theme,
         ),
       );
       await tester.pumpAndSettle();
@@ -77,7 +82,7 @@ void main() {
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_dropbox.png',
+          'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_dropbox$suffix.png',
         ),
       );
     });
@@ -94,6 +99,7 @@ void main() {
             storageProvider: StorageProvider.oneDrive,
             folderName: 'Cost estimation',
           ),
+          theme: theme,
         ),
       );
       await tester.pumpAndSettle();
@@ -101,7 +107,7 @@ void main() {
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_one_drive.png',
+          'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_one_drive$suffix.png',
         ),
       );
     });
@@ -118,6 +124,7 @@ void main() {
             storageProvider: StorageProvider.googleDrive,
             folderName: null,
           ),
+          theme: theme,
         ),
       );
       await tester.pumpAndSettle();
@@ -125,7 +132,7 @@ void main() {
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_no_folder.png',
+          'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_no_folder$suffix.png',
         ),
       );
     });
@@ -142,6 +149,7 @@ void main() {
             storageProvider: null,
             folderName: null,
           ),
+          theme: theme,
         ),
       );
       await tester.pumpAndSettle();
@@ -149,134 +157,7 @@ void main() {
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_no_export.png',
-        ),
-      );
-    });
-  });
-
-  group('ExportSettingsDisplay screenshot tests - Dark', () {
-    testWidgets('google drive state', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(
-        wrap(
-          const ExportSettingsDisplay(
-            storageProvider: StorageProvider.googleDrive,
-            folderName: 'Cost estimation',
-          ),
-          theme: createTestThemeDark(),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_google_drive_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('dropbox state', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(
-        wrap(
-          const ExportSettingsDisplay(
-            storageProvider: StorageProvider.dropbox,
-            folderName: 'Cost estimation',
-          ),
-          theme: createTestThemeDark(),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_dropbox_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('one drive state', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(
-        wrap(
-          const ExportSettingsDisplay(
-            storageProvider: StorageProvider.oneDrive,
-            folderName: 'Cost estimation',
-          ),
-          theme: createTestThemeDark(),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_one_drive_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('provider set, no folder name', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(
-        wrap(
-          const ExportSettingsDisplay(
-            storageProvider: StorageProvider.googleDrive,
-            folderName: null,
-          ),
-          theme: createTestThemeDark(),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_no_folder_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('no export configured state', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(
-        wrap(
-          const ExportSettingsDisplay(
-            storageProvider: null,
-            folderName: null,
-          ),
-          theme: createTestThemeDark(),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_no_export_dark.png',
+          'goldens/export_settings_display/${size.width}x${size.height}/export_settings_display_no_export$suffix.png',
         ),
       );
     });

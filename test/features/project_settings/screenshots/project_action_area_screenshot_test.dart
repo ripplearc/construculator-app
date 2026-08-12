@@ -33,29 +33,19 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
   }
 
-  group('ProjectActionArea screenshot tests', () {
-    testWidgets('light theme', (tester) async {
+  screenshotThemeGroups('ProjectActionArea screenshot tests', (
+    theme,
+    suffix,
+  ) {
+    testWidgets('renders correctly', (tester) async {
       setSize(tester);
-      await tester.pumpWidget(wrap(createTestTheme()));
+      await tester.pumpWidget(wrap(theme));
       await tester.pumpAndSettle();
 
       await expectLater(
         find.byType(ProjectActionArea),
         matchesGoldenFile(
-          'goldens/project_action_area/${size.width}x${size.height}/project_action_area_light.png',
-        ),
-      );
-    });
-
-    testWidgets('dark theme', (tester) async {
-      setSize(tester);
-      await tester.pumpWidget(wrap(createTestThemeDark()));
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(ProjectActionArea),
-        matchesGoldenFile(
-          'goldens/project_action_area/${size.width}x${size.height}/project_action_area_dark.png',
+          'goldens/project_action_area/${size.width}x${size.height}/project_action_area$suffix.png',
         ),
       );
     });
