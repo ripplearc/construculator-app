@@ -63,9 +63,9 @@ class AuthHeader extends StatelessWidget {
                             ),
                             Padding(
                               padding: EdgeInsets.only(left: 4.0),
-                              child: Icon(
-                                Icons.edit_outlined,
-                                size: 20,
+                              child: CoreIconWidget(
+                                icon: CoreIcons.edit,
+                                size: CoreIconSize.size20,
                                 color: colors.textLink,
                               ),
                             ),
