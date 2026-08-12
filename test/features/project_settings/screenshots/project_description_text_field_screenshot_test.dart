@@ -14,8 +14,8 @@ void main() {
     await loadAppFontsAll();
   });
 
-  Widget wrap(Widget child, {ThemeData? theme}) => MaterialApp(
-        theme: theme ?? createTestTheme(),
+  Widget wrap(Widget child, {required ThemeData theme}) => MaterialApp(
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -32,7 +32,10 @@ void main() {
         ),
       );
 
-  group('ProjectDescriptionTextField screenshot tests - Light', () {
+  screenshotThemeGroups('ProjectDescriptionTextField screenshot tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('empty state', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
@@ -43,14 +46,14 @@ void main() {
       addTearDown(controller.dispose);
 
       await tester.pumpWidget(
-        wrap(ProjectDescriptionTextField(controller: controller)),
+        wrap(ProjectDescriptionTextField(controller: controller), theme: theme),
       );
       await tester.pumpAndSettle();
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/project_description_text_field/${size.width}x${size.height}/project_description_text_field_empty.png',
+          'goldens/project_description_text_field/${size.width}x${size.height}/project_description_text_field_empty$suffix.png',
         ),
       );
     });
@@ -65,14 +68,14 @@ void main() {
       addTearDown(controller.dispose);
 
       await tester.pumpWidget(
-        wrap(ProjectDescriptionTextField(controller: controller)),
+        wrap(ProjectDescriptionTextField(controller: controller), theme: theme),
       );
       await tester.pumpAndSettle();
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/project_description_text_field/${size.width}x${size.height}/project_description_text_field_with_value.png',
+          'goldens/project_description_text_field/${size.width}x${size.height}/project_description_text_field_with_value$suffix.png',
         ),
       );
     });
@@ -87,7 +90,7 @@ void main() {
       addTearDown(controller.dispose);
 
       await tester.pumpWidget(
-        wrap(ProjectDescriptionTextField(controller: controller)),
+        wrap(ProjectDescriptionTextField(controller: controller), theme: theme),
       );
       await tester.pumpAndSettle();
 
@@ -100,90 +103,7 @@ void main() {
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/project_description_text_field/${size.width}x${size.height}/project_description_text_field_error_too_long.png',
-        ),
-      );
-    });
-  });
-
-  group('ProjectDescriptionTextField screenshot tests - Dark', () {
-    testWidgets('empty state', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      final controller = TextEditingController();
-      addTearDown(controller.dispose);
-
-      await tester.pumpWidget(
-        wrap(
-          ProjectDescriptionTextField(controller: controller),
-          theme: createTestThemeDark(),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/project_description_text_field/${size.width}x${size.height}/project_description_text_field_empty_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('with value', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      final controller = TextEditingController(text: 'A two-storey building');
-      addTearDown(controller.dispose);
-
-      await tester.pumpWidget(
-        wrap(
-          ProjectDescriptionTextField(controller: controller),
-          theme: createTestThemeDark(),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/project_description_text_field/${size.width}x${size.height}/project_description_text_field_with_value_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('too-long error state', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      final controller = TextEditingController();
-      addTearDown(controller.dispose);
-
-      await tester.pumpWidget(
-        wrap(
-          ProjectDescriptionTextField(controller: controller),
-          theme: createTestThemeDark(),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.enterText(
-        find.byType(ProjectDescriptionTextField),
-        'A' * 101,
-      );
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/project_description_text_field/${size.width}x${size.height}/project_description_text_field_error_too_long_dark.png',
+          'goldens/project_description_text_field/${size.width}x${size.height}/project_description_text_field_error_too_long$suffix.png',
         ),
       );
     });

@@ -42,11 +42,14 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('ProjectHeaderCard Screenshot Tests', () {
-    testWidgets('renders with description (light)', (tester) async {
+  screenshotThemeGroups('ProjectHeaderCard Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
+    testWidgets('renders with description', (tester) async {
       await pumpProjectHeaderCard(
         tester: tester,
-        theme: createTestTheme(),
+        theme: theme,
         description:
             'Lorem Ipsum is simply dummy text of the printing and '
             'typesetting industry. Lorem Ipsum has been the',
@@ -55,29 +58,17 @@ void main() {
       await expectLater(
         find.byType(ProjectHeaderCard),
         matchesGoldenFile(
-          'goldens/project_header_card/${size.width}x${size.height}/with_description.png',
+          'goldens/project_header_card/${size.width}x${size.height}/with_description$suffix.png',
         ),
       );
     });
+  });
 
-    testWidgets('renders with description (dark)', (tester) async {
-      await pumpProjectHeaderCard(
-        tester: tester,
-        theme: createTestThemeDark(),
-        description:
-            'Lorem Ipsum is simply dummy text of the printing and '
-            'typesetting industry. Lorem Ipsum has been the',
-      );
-
-      await expectLater(
-        find.byType(ProjectHeaderCard),
-        matchesGoldenFile(
-          'goldens/project_header_card/${size.width}x${size.height}/with_description_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders without description (light)', (tester) async {
+  // This scenario only ever had a light golden; screenshotThemeGroups always
+  // produces both light and dark, so it stays outside it rather than gaining
+  // a new dark golden as a side effect of this migration.
+  group('ProjectHeaderCard Screenshot Tests - Light Only', () {
+    testWidgets('renders without description', (tester) async {
       await pumpProjectHeaderCard(tester: tester, theme: createTestTheme());
 
       await expectLater(
