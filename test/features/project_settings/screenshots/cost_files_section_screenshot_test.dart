@@ -18,7 +18,7 @@ void main() {
   Future<void> pumpCostFilesSection({
     required WidgetTester tester,
     required List<CostFile> files,
-    ThemeData? theme,
+    required ThemeData theme,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = ratio;
@@ -26,7 +26,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -44,7 +44,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('CostFilesSection Screenshot Tests - Light', () {
+  screenshotThemeGroups('CostFilesSection Screenshot Tests', (theme, suffix) {
     testWidgets('renders with files correctly', (tester) async {
       await pumpCostFilesSection(
         tester: tester,
@@ -62,68 +62,24 @@ void main() {
             uploadedAt: DateTime(2024, 3, 10),
           ),
         ],
+        theme: theme,
       );
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/cost_files_section/${size.width}x${size.height}/with_files.png',
+          'goldens/cost_files_section/${size.width}x${size.height}/with_files$suffix.png',
         ),
       );
     });
 
     testWidgets('renders empty state correctly', (tester) async {
-      await pumpCostFilesSection(tester: tester, files: []);
+      await pumpCostFilesSection(tester: tester, files: [], theme: theme);
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/cost_files_section/${size.width}x${size.height}/empty.png',
-        ),
-      );
-    });
-  });
-
-  group('CostFilesSection Screenshot Tests - Dark', () {
-    testWidgets('renders with files correctly', (tester) async {
-      await pumpCostFilesSection(
-        tester: tester,
-        files: [
-          CostFile(
-            id: 'file-1',
-            fileName: 'Major Material Cost.xls',
-            fileSizeInBytes: 204800,
-            uploadedAt: DateTime(2024, 4, 23),
-          ),
-          CostFile(
-            id: 'file-2',
-            fileName: 'Foundation Budget.xlsx',
-            fileSizeInBytes: 1572864,
-            uploadedAt: DateTime(2024, 3, 10),
-          ),
-        ],
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/cost_files_section/${size.width}x${size.height}/with_files_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders empty state correctly', (tester) async {
-      await pumpCostFilesSection(
-        tester: tester,
-        files: [],
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/cost_files_section/${size.width}x${size.height}/empty_dark.png',
+          'goldens/cost_files_section/${size.width}x${size.height}/empty$suffix.png',
         ),
       );
     });
