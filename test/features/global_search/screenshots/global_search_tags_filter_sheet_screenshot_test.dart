@@ -75,8 +75,8 @@ void main() {
 
   Future<void> pumpPageAndOpenTagsSheet({
     required WidgetTester tester,
+    required ThemeData theme,
     Set<String> activeTagsBeforeOpen = const {},
-    ThemeData? theme,
   }) async {
     seedTags(const [
       'Roofing',
@@ -90,7 +90,7 @@ void main() {
     ]);
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -130,18 +130,21 @@ void main() {
     await tester.awaitImages();
   }
 
-  group('GlobalSearchTagsFilterSheet Screenshot Tests - Light', () {
+  screenshotThemeGroups('GlobalSearchTagsFilterSheet Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders default state with no tags selected', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      await pumpPageAndOpenTagsSheet(tester: tester);
+      await pumpPageAndOpenTagsSheet(tester: tester, theme: theme);
 
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_default.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_default$suffix.png',
         ),
       );
     });
@@ -156,12 +159,13 @@ void main() {
         // Tags near the top of the alphabetically ordered list so the
         // checked state is visible within the sheet's viewport.
         activeTagsBeforeOpen: const {'Bed room wall', 'Carpeting'},
+        theme: theme,
       );
 
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_selected_tags.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_selected_tags$suffix.png',
         ),
       );
     });
@@ -173,7 +177,7 @@ void main() {
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      await pumpPageAndOpenTagsSheet(tester: tester);
+      await pumpPageAndOpenTagsSheet(tester: tester, theme: theme);
 
       await tester.enterText(
         find.descendant(
@@ -187,75 +191,7 @@ void main() {
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_query.png',
-        ),
-      );
-    });
-  });
-
-  group('GlobalSearchTagsFilterSheet Screenshot Tests - Dark', () {
-    testWidgets('renders default state with no tags selected', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpPageAndOpenTagsSheet(
-        tester: tester,
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_default_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders with pre-selected tags checked', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpPageAndOpenTagsSheet(
-        tester: tester,
-        activeTagsBeforeOpen: const {'Bed room wall', 'Carpeting'},
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_selected_tags_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders with search query filtering the tag list', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpPageAndOpenTagsSheet(
-        tester: tester,
-        theme: createTestThemeDark(),
-      );
-
-      await tester.enterText(
-        find.descendant(
-          of: find.byType(GlobalSearchTagsFilterSheet),
-          matching: find.byType(TextFormField),
-        ),
-        'ing',
-      );
-      await tester.pump();
-
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_query_dark.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_query$suffix.png',
         ),
       );
     });

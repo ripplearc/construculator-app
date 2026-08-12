@@ -19,11 +19,11 @@ void main() {
 
   Future<void> pumpEmptyRecentWidget({
     required WidgetTester tester,
-    ThemeData? theme,
+    required ThemeData theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -39,35 +39,21 @@ void main() {
     await tester.awaitImages();
   }
 
-  group('GlobalSearchEmptyRecentWidget Screenshot Tests - Light', () {
+  screenshotThemeGroups('GlobalSearchEmptyRecentWidget Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders empty recent state correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      await pumpEmptyRecentWidget(tester: tester);
+      await pumpEmptyRecentWidget(tester: tester, theme: theme);
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_default.png',
-        ),
-      );
-    });
-  });
-
-  group('GlobalSearchEmptyRecentWidget Screenshot Tests - Dark', () {
-    testWidgets('renders empty recent state correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpEmptyRecentWidget(tester: tester, theme: createTestThemeDark());
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_default_dark.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_default$suffix.png',
         ),
       );
     });
