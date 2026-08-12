@@ -19,7 +19,7 @@ void main() {
   Future<void> pumpWidget(
     WidgetTester tester,
     Widget widget, {
-    ThemeData? theme,
+    required ThemeData theme,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = ratio;
@@ -27,7 +27,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -44,7 +44,10 @@ void main() {
 
   const goldenDir = 'goldens/member_invitation';
 
-  group('InvitedMembersList Screenshot Tests - Light', () {
+  screenshotThemeGroups('InvitedMembersList Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders list with two invited members', (tester) async {
       await pumpWidget(
         tester,
@@ -54,31 +57,12 @@ void main() {
             InvitedMember(email: 'bob@example.com', name: 'Bob Example'),
           ],
         ),
+        theme: theme,
       );
 
       await expectLater(
         find.byType(Scaffold),
-        matchesGoldenFile('$goldenDir/${size.width}x${size.height}/invited_members_list.png'),
-      );
-    });
-  });
-
-  group('InvitedMembersList Screenshot Tests - Dark', () {
-    testWidgets('renders list with two invited members', (tester) async {
-      await pumpWidget(
-        tester,
-        const InvitedMembersList(
-          members: [
-            InvitedMember(email: 'alice@example.com', name: 'Alice Example'),
-            InvitedMember(email: 'bob@example.com', name: 'Bob Example'),
-          ],
-        ),
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile('$goldenDir/${size.width}x${size.height}/invited_members_list_dark.png'),
+        matchesGoldenFile('$goldenDir/${size.width}x${size.height}/invited_members_list$suffix.png'),
       );
     });
   });
