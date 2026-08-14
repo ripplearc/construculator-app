@@ -22,6 +22,7 @@ import 'package:construculator/features/auth/presentation/pages/register_with_em
 import 'package:construculator/features/auth/presentation/pages/set_new_password_page.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/consent/consent_library_module.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/guards/no_auth_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
@@ -40,6 +41,7 @@ class AuthModule extends Module {
   List<Module> get imports => [
     AuthLibraryModule(appBootstrap),
     SupabaseModule(appBootstrap),
+    ConsentLibraryModule(appBootstrap),
     ClockModule(),
     RouterModule(),
   ];
@@ -176,6 +178,8 @@ void _registerDependencies(Injector i, AppBootstrap appBootstrap) {
       getProfessionalRolesUseCase: i(),
       sendOtpUseCase: i(),
       analyticsRepository: appBootstrap.analyticsRepository,
+      checkConsentStatusUseCase: i(),
+      recordConsentUseCase: i(),
     ),
   );
   i.add<LoginWithEmailBloc>(

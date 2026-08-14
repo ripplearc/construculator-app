@@ -5,6 +5,13 @@ import 'package:construculator/libraries/analytics/domain/entities/analytics_eve
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
 import 'package:construculator/libraries/analytics/testing/fake_analytics_repository.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
+import 'package:construculator/libraries/consent/domain/entities/consent_status_entity.dart';
+import 'package:construculator/libraries/consent/domain/entities/consent_version_entity.dart';
+import 'package:construculator/libraries/consent/domain/repositories/consent_repository.dart';
+import 'package:construculator/libraries/consent/domain/types/consent_error_type.dart';
+import 'package:construculator/libraries/consent/domain/types/consent_types.dart';
+import 'package:construculator/libraries/consent/testing/fake_consent_repository.dart';
+import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -700,5 +707,104 @@ void main() {
         ]);
       },
     );
+
+    group('consent recording', () {
+      const submitted = CreateAccountSubmitted(
+        email: 'consent@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        mobileNumber: '1234567890',
+        password: 'securePassword',
+        confirmPassword: 'securePassword',
+        role: 'engineer',
+        phonePrefix: '+1',
+      );
+
+      final requiredVersion = ConsentVersion(
+        id: 'version-1',
+        consentType: ConsentType.termsAndPrivacy,
+        version: 1,
+        documentUrl: 'https://example.com/terms/v1',
+        publishedAt: DateTime.utc(2026, 8, 11),
+      );
+
+      late FakeConsentRepository consent;
+
+      setUp(() {
+        consent = Modular.get<ConsentRepository>() as FakeConsentRepository;
+        fakeSupabase.setCurrentUser(createFakeUser('consent@example.com'));
+      });
+
+      blocTest<CreateAccountBloc, CreateAccountState>(
+        'records an acceptance before reporting success',
+        // The success state is what routes to the shell, so the record has to
+        // exist by the time it is emitted or ConsentGuard blocks the account
+        // signup just created.
+        build: () {
+          consent.cachedStatusToReturn = ConsentNeverGiven(requiredVersion);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(submitted),
+        expect: () => [
+          isA<CreateAccountLoading>(),
+          isA<CreateAccountSuccess>(),
+        ],
+        verify: (_) => expect(consent.recordedAcceptances, [
+          (consentType: ConsentType.termsAndPrivacy, version: 1),
+        ]),
+      );
+
+      blocTest<CreateAccountBloc, CreateAccountState>(
+        'records the published version when one is already outdated',
+        build: () {
+          consent.cachedStatusToReturn = ConsentOutdated(
+              acceptedVersion: 0,
+              requiredVersion: requiredVersion,
+            );
+          return bloc;
+        },
+        act: (bloc) => bloc.add(submitted),
+        verify: (_) => expect(consent.recordedAcceptances, [
+          (consentType: ConsentType.termsAndPrivacy, version: 1),
+        ]),
+      );
+
+      blocTest<CreateAccountBloc, CreateAccountState>(
+        'writes nothing when an acceptance is already on file',
+        build: () {
+          consent.cachedStatusToReturn = const ConsentSatisfied(1);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(submitted),
+        expect: () => [
+          isA<CreateAccountLoading>(),
+          isA<CreateAccountSuccess>(),
+        ],
+        verify: (_) => expect(consent.recordedAcceptances, isEmpty),
+      );
+
+      blocTest<CreateAccountBloc, CreateAccountState>(
+        'fails the signup when the consent write fails',
+        // Advancing here would land the user in the shell believing they had
+        // consented, with no record to show for it.
+        build: () {
+          consent
+            ..cachedStatusToReturn = ConsentNeverGiven(requiredVersion)
+            ..acceptanceResultToReturn = const Left(
+              ConsentFailure(errorType: ConsentErrorType.connectionError),
+            );
+          return bloc;
+        },
+        act: (bloc) => bloc.add(submitted),
+        expect: () => [
+          isA<CreateAccountLoading>(),
+          isA<CreateAccountFailure>().having(
+            (s) => s.failure,
+            'failure',
+            isA<ConsentFailure>(),
+          ),
+        ],
+      );
+    });
   });
 }
