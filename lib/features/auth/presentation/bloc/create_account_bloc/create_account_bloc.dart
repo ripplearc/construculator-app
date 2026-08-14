@@ -6,6 +6,11 @@ import 'package:construculator/libraries/auth/data/models/professional_role.dart
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/auth/domain/validation/auth_validation.dart';
 import 'package:construculator/libraries/config/env_constants.dart';
+import 'package:construculator/libraries/consent/domain/entities/consent_status_entity.dart';
+import 'package:construculator/libraries/consent/domain/types/consent_types.dart';
+import 'package:construculator/libraries/consent/domain/usecases/check_consent_status_usecase.dart';
+import 'package:construculator/libraries/consent/domain/usecases/params/consent_usecase_params.dart';
+import 'package:construculator/libraries/consent/domain/usecases/record_consent_usecase.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -20,11 +25,15 @@ class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
   final CreateAccountUseCase _createAccountUseCase;
   final GetProfessionalRolesUseCase _getProfessionalRolesUseCase;
   final SendOtpUseCase _sendOtpUseCase;
+  final CheckConsentStatusUseCase _checkConsentStatusUseCase;
+  final RecordConsentUseCase _recordConsentUseCase;
 
   CreateAccountBloc({
     required this._createAccountUseCase,
     required this._getProfessionalRolesUseCase,
     required this._sendOtpUseCase,
+    required this._checkConsentStatusUseCase,
+    required this._recordConsentUseCase,
   }) : super(CreateAccountInitial()) {
     on<CreateAccountSubmitted>(_onSubmitted);
     on<CreateAccountGetProfessionalRolesRequested>(_onLoadProfessionalRoles);
@@ -208,9 +217,60 @@ class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
         countryCode: event.phonePrefix,
       ),
     );
-    result.fold(
-      (failure) => emit(CreateAccountFailure(failure: failure)),
-      (roles) => emit(CreateAccountSuccess()),
+
+    final accountFailure = result.getLeftOrNull();
+    if (accountFailure != null) {
+      emit(CreateAccountFailure(failure: accountFailure));
+      return;
+    }
+
+    final consentFailure = await _recordSignupConsent();
+    if (consentFailure != null) {
+      emit(CreateAccountFailure(failure: consentFailure));
+      return;
+    }
+
+    emit(CreateAccountSuccess());
+  }
+
+  // Records the user's acceptance of the currently published terms.
+  //
+  // Awaited rather than fire-and-forget, and awaited *before*
+  // [CreateAccountSuccess] is emitted — the success state is what routes the
+  // user to the shell, and reaching the shell with no acceptance on file
+  // means [ConsentGuard] blocks the account signup just created.
+  //
+  // The button label and the terms copy the user agreed to are unchanged;
+  // what is new is that agreeing now leaves a record.
+  //
+  // Returns the failure to surface, or null when there is nothing to do.
+  Future<Failure?> _recordSignupConsent() async {
+    final status = await _checkConsentStatusUseCase(
+      const ConsentStatusParams(
+        consentType: ConsentType.termsAndPrivacy,
+      ),
     );
+
+    final version = switch (status) {
+      ConsentNeverGiven(:final requiredVersion) => requiredVersion.version,
+      ConsentOutdated(:final requiredVersion) => requiredVersion.version,
+      // Already on file, so signup has nothing to record.
+      ConsentSatisfied() || ConsentUnverified() => null,
+      // The requirement could not be established. Recording an acceptance
+      // would mean naming a version we cannot read, so it is skipped; the
+      // gate will prompt on the next launch once the requirement is known.
+      ConsentIndeterminate() => null,
+    };
+
+    if (version == null) return null;
+
+    final recordResult = await _recordConsentUseCase(
+      RecordConsentParams(
+        consentType: ConsentType.termsAndPrivacy,
+        version: version,
+      ),
+    );
+
+    return recordResult.getLeftOrNull();
   }
 }
