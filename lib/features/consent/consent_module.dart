@@ -1,0 +1,57 @@
+import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/consent/presentation/bloc/consent_gate_bloc/consent_gate_bloc.dart';
+import 'package:construculator/features/consent/presentation/pages/consent_gate_page.dart';
+import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/consent/consent_library_module.dart';
+import 'package:construculator/libraries/router/guards/auth_guard.dart';
+import 'package:construculator/libraries/router/interfaces/app_router.dart';
+import 'package:construculator/libraries/router/routes/consent_routes.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_modular/flutter_modular.dart';
+
+/// Module for the consent gate feature.
+///
+/// The gate route carries [AuthGuard] **only**. It deliberately does not carry
+/// [ConsentGuard]: this is where that guard redirects to, so guarding it would
+/// send the redirect back to itself.
+class ConsentModule extends Module {
+  final AppBootstrap appBootstrap;
+
+  ConsentModule(this.appBootstrap);
+
+  @override
+  List<Module> get imports => [ConsentLibraryModule(appBootstrap)];
+
+  @override
+  void binds(Injector i) {
+    i.add<ConsentGateBloc>(
+      () => ConsentGateBloc(
+        checkConsentStatusUseCase: i(),
+        watchConsentStatusUseCase: i(),
+        verifyConsentStatusUseCase: i(),
+        recordConsentUseCase: i(),
+      ),
+    );
+  }
+
+  @override
+  void routes(RouteManager r) {
+    r.child(
+      consentGateRoute,
+      guards: [AuthGuard(() => Modular.get<AuthManager>())],
+      child: (_) => BlocProvider<ConsentGateBloc>(
+        create: (_) =>
+            Modular.get<ConsentGateBloc>()..add(const ConsentGateStarted()),
+        child: ConsentGatePage(
+          router: Modular.get<AppRouter>(),
+          // Inert for now, matching the existing signup terms links
+          // (`_openLink` in create_account_page.dart). Opening these
+          // externally needs a URL-launcher wrapper, which the app does not
+          // have yet — the page takes this as a parameter so wiring one in
+          // later touches only this line.
+          onOpenDocument: (_) {},
+        ),
+      ),
+    );
+  }
+}
