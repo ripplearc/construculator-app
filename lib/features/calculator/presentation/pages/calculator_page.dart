@@ -108,10 +108,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
                         isTyping: state.isTyping,
                         closeSemanticLabel: context.l10n.closeButton,
                         chipsList: state.chipsList,
-                        // TODO(CA-969): previousSessions is unwired. See
-                        // docs/Calculator-History-Design.md (CA-965) for the
-                        // archiving trigger, data model, and persistence
-                        // approach CA-969 implements.
+                        // TODO(CA-969): previousSessions is unwired.
+                        // See docs/Calculator-History-Design.md (CA-965).
                         dependentKeyLabel: state.dependentKeyLabel == 'oc'
                             ? context.l10n.calculatorOcLabel
                             : state.dependentKeyLabel,
