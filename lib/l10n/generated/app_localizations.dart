@@ -160,6 +160,96 @@ abstract class AppLocalizations {
   /// **'Connection error'**
   String get connectionError;
 
+  /// Label for the button that records acceptance on the consent gate page
+  ///
+  /// In en, this message translates to:
+  /// **'Agree and continue'**
+  String get consentGateAcceptButton;
+
+  /// Body text explaining why the consent gate is blocking the app
+  ///
+  /// In en, this message translates to:
+  /// **'Please review and accept the updated terms and privacy policy to continue.'**
+  String get consentGateBody;
+
+  /// Link text opening the privacy policy from the consent gate page
+  ///
+  /// In en, this message translates to:
+  /// **'privacy policy'**
+  String get consentGatePrivacyLink;
+
+  /// Label for the retry action shown when recording acceptance failed
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get consentGateRetryButton;
+
+  /// Inline error shown under the accept button when the acceptance write failed
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t save your response. Please try again.'**
+  String get consentGateSubmitErrorMessage;
+
+  /// Link text opening the terms of service from the consent gate page
+  ///
+  /// In en, this message translates to:
+  /// **'terms of service'**
+  String get consentGateTermsLink;
+
+  /// Title of the consent gate page shown when a new version has been published
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ve updated our terms'**
+  String get consentGateTitle;
+
+  /// Body text shown when the published terms could not be established and there is no prior acceptance
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again. You\'ll be able to continue once we can confirm the current terms.'**
+  String get consentUnavailableBody;
+
+  /// Label for the retry action on the consent unavailable screen
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get consentUnavailableRetryButton;
+
+  /// Title shown when the consent requirement could not be established at all
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load the terms'**
+  String get consentUnavailableTitle;
+
+  /// Label dismissing the consent withdrawal confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get consentWithdrawalCancelButton;
+
+  /// Label confirming consent withdrawal
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, withdraw'**
+  String get consentWithdrawalConfirmButton;
+
+  /// Body of the consent withdrawal confirmation explaining the consequence
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll be signed out and asked to accept the terms again next time you open the app.'**
+  String get consentWithdrawalDialogBody;
+
+  /// Title of the consent withdrawal confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw your consent?'**
+  String get consentWithdrawalDialogTitle;
+
+  /// Label of the settings row that opens the consent withdrawal confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw consent'**
+  String get consentWithdrawalTileLabel;
+
   /// Label for login button
   ///
   /// In en, this message translates to:
