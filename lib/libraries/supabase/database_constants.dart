@@ -20,6 +20,16 @@ class DatabaseConstants {
   static const String searchHistoryTable = 'search_history';
   static const String tagsTable = 'tags';
 
+  /// View exposing exactly one row per consent type: the highest version whose
+  /// `effective_from` has passed.
+  ///
+  /// The database owns both rules — highest version wins, and a version dated
+  /// in the future is not yet in force — so a scheduled publication goes live
+  /// on its own without a client release. The client never selects the
+  /// underlying `consent_versions` table: working out which row is current is
+  /// not a decision it should be making.
+  static const String currentConsentVersionsView = 'current_consent_versions';
+
   /// Table storing per-user project search history. Fully isolated from
   /// [searchHistoryTable] (which serves Global Search) — neither feature reads
   /// from nor writes to the other's table.
@@ -115,4 +125,15 @@ class DatabaseConstants {
 
   // Cost Items columns
   static const String itemTypeColumn = 'item_type';
+
+  // Consent columns (id and user_id use the shared columns above; these
+  // tables timestamp with published_at and recorded_at, not created_at)
+  static const String consentTypeColumn = 'consent_type';
+  static const String versionColumn = 'version';
+  static const String documentUrlColumn = 'document_url';
+  static const String publishedAtColumn = 'published_at';
+  static const String actionColumn = 'action';
+  static const String recordedAtColumn = 'recorded_at';
+  static const String appVersionColumn = 'app_version';
+  static const String platformColumn = 'platform';
 }
