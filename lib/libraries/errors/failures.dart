@@ -1,6 +1,7 @@
 import 'package:construculator/libraries/analytics/domain/types/analytics_error_type.dart';
 import 'package:construculator/libraries/analytics/domain/types/feature_flag_error_type.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
+import 'package:construculator/libraries/consent/domain/types/consent_error_type.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/global_search/domain/search_error_type.dart';
 import 'package:construculator/libraries/project/domain/project_error_type.dart';
@@ -110,6 +111,23 @@ class FeatureFlagFailure extends Failure {
 
   /// Creates a [FeatureFlagFailure] with the given [errorType].
   const FeatureFlagFailure({required this.errorType});
+
+  @override
+  List<Object?> get props => [errorType];
+}
+
+/// Failure thrown when a consent operation fails.
+///
+/// Returned only from the consent write path and from genuinely unexpected
+/// conditions. A failed consent *read* or *version check* deliberately returns
+/// a `ConsentStatus` on the right rather than this failure on the left — see
+/// `ConsentRepository` for why that asymmetry is load-bearing.
+class ConsentFailure extends Failure {
+  /// The type of consent error that occurred.
+  final ConsentErrorType errorType;
+
+  /// Creates a [ConsentFailure] with the given [errorType].
+  const ConsentFailure({required this.errorType});
 
   @override
   List<Object?> get props => [errorType];
