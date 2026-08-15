@@ -2,7 +2,6 @@
 
 import 'package:construculator/libraries/powersync/interfaces/powersync_database_wrapper.dart';
 import 'package:powersync/powersync.dart';
-import 'package:sqlite_async/sqlite_async.dart';
 
 /// Default [PowerSyncDatabaseWrapper] that forwards to the opened
 /// [PowerSyncDatabase].
@@ -60,7 +59,11 @@ class PowerSyncDatabaseWrapperImpl implements PowerSyncDatabaseWrapper {
   @override
   Future<T> writeTransaction<T>(Future<T> Function(WriteContext tx) action) {
     return _database.writeTransaction(
-      (ctx) => action(_SqliteWriteContextAdapter(ctx)),
+      // Adapts the transaction context by its `execute` closure rather than by
+      // type, so `sqlite_async` stays out of this file (and off the direct
+      // dependency list) while the write still runs inside the transaction.
+      // ignore: no_direct_instantiation, reason: transaction-scoped adapter
+      (ctx) => action(_WriteContextAdapter(ctx.execute)),
     );
   }
 
@@ -76,19 +79,24 @@ class PowerSyncDatabaseWrapperImpl implements PowerSyncDatabaseWrapper {
   }
 }
 
-/// Adapts [SqliteWriteContext] to the project-owned [WriteContext] seam,
-/// keeping the sqlite_async type out of the data-source layer.
-class _SqliteWriteContextAdapter implements WriteContext {
-  final SqliteWriteContext _ctx;
+/// Adapts the enclosing transaction context to the project-owned [WriteContext]
+/// seam by holding its `execute` closure.
+///
+/// Taking the closure rather than the context object means `sqlite_async`'s
+/// `SqliteWriteContext` is never named here, so this library needs no direct
+/// dependency on `sqlite_async` — and the type still cannot leak above the
+/// data-source layer.
+class _WriteContextAdapter implements WriteContext {
+  final Future<void> Function(String sql, [List<Object?> parameters]) _execute;
 
-  _SqliteWriteContextAdapter(this._ctx);
+  _WriteContextAdapter(this._execute);
 
   @override
   Future<void> execute(
     String sql, [
     List<Object?> parameters = const [],
   ]) async {
-    await _ctx.execute(sql, parameters);
+    await _execute(sql, parameters);
   }
 }
 
