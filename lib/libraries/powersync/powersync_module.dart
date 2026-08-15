@@ -5,9 +5,9 @@ import 'package:construculator/libraries/powersync/powersync_manager_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:powersync/powersync.dart';
 
-/// Modular module that wires up the PowerSync backend connector.
-/// Wires the PowerSync stack: the opened local database, the Supabase-backed
-/// connector, and the [PowerSyncManager] that drives the sync lifecycle.
+/// Modular module that wires up the PowerSync stack: the opened local
+/// database, the Supabase-backed connector, and the [PowerSyncManager] that
+/// drives the sync lifecycle.
 ///
 /// The database is opened during app bootstrap (see `openPowerSyncDatabase`)
 /// and passed in via [AppBootstrap], because opening it is asynchronous and
