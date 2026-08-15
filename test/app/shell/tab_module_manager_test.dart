@@ -67,6 +67,8 @@ void main() {
           envLoader: FakeEnvLoader(),
           sentryWrapper: FakeSentryWrapper(),
           supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
+          analyticsRepository: NoOpAnalyticsRepository(),
+          powerSyncDatabase: FakePowerSyncDatabase(),
         );
         Modular.init(_TestShellModule(appBootstrap));
         customManager = Modular.get<TabModuleManager>();

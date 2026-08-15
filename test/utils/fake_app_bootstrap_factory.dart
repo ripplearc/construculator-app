@@ -54,6 +54,8 @@ class FakeAppBootstrapFactory {
       config: config ?? FakeAppConfig(),
       envLoader: envLoader ?? FakeEnvLoader(),
       sentryWrapper: FakeSentryWrapper(),
+      analyticsRepository: analyticsRepository ?? NoOpAnalyticsRepository(),
+      powerSyncDatabase: powerSyncDatabase ?? FakePowerSyncDatabase(),
     );
   }
 }

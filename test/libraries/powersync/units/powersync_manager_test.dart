@@ -48,14 +48,6 @@ void main() {
     );
   }
 
-  /// Lets queued auth-stream events reach the manager's listener.
-  ///
-  /// The unit-test analogue of `tester.pumpAndSettle()`: there is no widget
-  /// tree to pump here, so we drain the event queue to flush pending
-  /// broadcast-stream deliveries instead. [pumpEventQueue] pumps repeatedly,
-  /// so it settles multi-hop async chains a single timer tick would miss.
-  Future<void> pumpAuthEvents() => pumpEventQueue();
-
   group('PowerSyncManager', () {
     test('exposes the database opened during bootstrap', () {
       final manager = startManager();
@@ -82,7 +74,6 @@ void main() {
       startManager();
 
       signIn();
-      await pumpAuthEvents();
 
       expect(fakeDatabase.connectCallCount, 1);
       expect(fakeDatabase.lastConnector, same(moduleConnector()));
@@ -93,7 +84,6 @@ void main() {
       startManager();
 
       fakeSupabase.setCurrentUser(null);
-      await pumpAuthEvents();
 
       expect(fakeDatabase.disconnectAndClearCallCount, 1);
     });
@@ -102,10 +92,8 @@ void main() {
       startManager();
 
       signIn();
-      await pumpAuthEvents();
 
       signIn();
-      await pumpAuthEvents();
 
       expect(fakeDatabase.connectCallCount, 1);
     });
@@ -116,9 +104,7 @@ void main() {
       expect(fakeDatabase.connectCallCount, 1);
 
       fakeSupabase.setCurrentUser(null);
-      await pumpAuthEvents();
       signIn();
-      await pumpAuthEvents();
 
       expect(fakeDatabase.connectCallCount, 2);
       expect(fakeDatabase.disconnectAndClearCallCount, 1);
@@ -137,6 +123,22 @@ void main() {
       expect(fakeDatabase.connectCallCount, 2);
     });
 
+    test(
+      'disconnectAndClear failure keeps the manager connected for a retry',
+      () async {
+        signIn();
+        final manager = startManager();
+        fakeDatabase.disconnectAndClearError = Exception('disk error');
+
+        await manager.disconnectAndClear();
+        expect(fakeDatabase.disconnectAndClearCallCount, 1);
+
+        fakeDatabase.disconnectAndClearError = null;
+        await manager.disconnectAndClear();
+        expect(fakeDatabase.disconnectAndClearCallCount, 2);
+      },
+    );
+
     test('disconnectAndClear is a no-op when not connected', () async {
       final manager = startManager();
 
@@ -150,7 +152,6 @@ void main() {
 
       (manager as Disposable).dispose();
       signIn();
-      await pumpAuthEvents();
 
       expect(fakeDatabase.connectCallCount, 0);
     });

@@ -15,8 +15,11 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 /// Fake implementation of SupabaseWrapper for testing
 class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Used to notify listeners of changes in the authentication state through [onAuthStateChange]
+  /// Synchronous so that emitting an auth event delivers it to listeners
+  /// before control returns to the test, making assertions deterministic
+  /// without draining the real event loop.
   final StreamController<supabase.AuthState> _authStateController =
-      StreamController<supabase.AuthState>.broadcast();
+      StreamController<supabase.AuthState>.broadcast(sync: true);
 
   /// Tracks the currently authenticated user
   FakeUser? _currentUser;

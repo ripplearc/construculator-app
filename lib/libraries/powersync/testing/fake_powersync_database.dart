@@ -27,13 +27,17 @@ class FakePowerSyncDatabase implements PowerSyncDatabase {
   /// exercise connection-failure handling.
   Object? connectError;
 
+  /// When set, the next [disconnectAndClear] call throws this error, allowing
+  /// tests to exercise disconnect-failure handling.
+  Object? disconnectAndClearError;
+
   /// Queues [transaction] to be returned by the next [getNextCrudTransaction] call.
   void setNextTransaction(CrudTransaction? transaction) {
     _nextTransaction = transaction;
   }
 
   /// Clears all recorded call counts, the captured connector, the configured
-  /// [connectError], and any queued transaction, returning the fake to its
+  /// [connectError], [disconnectAndClearError], and any queued transaction, returning the fake to its
   /// initial state so it can be reused across tests.
   void reset() {
     connectCallCount = 0;
@@ -41,6 +45,7 @@ class FakePowerSyncDatabase implements PowerSyncDatabase {
     disconnectCallCount = 0;
     disconnectAndClearCallCount = 0;
     connectError = null;
+    disconnectAndClearError = null;
     _nextTransaction = null;
   }
 
@@ -67,6 +72,10 @@ class FakePowerSyncDatabase implements PowerSyncDatabase {
   @override
   Future<void> disconnectAndClear({bool clearLocal = true}) async {
     disconnectAndClearCallCount++;
+    final error = disconnectAndClearError;
+    if (error != null) {
+      throw error;
+    }
   }
 
   /// Returns the queued transaction (set via [setNextTransaction]) and clears

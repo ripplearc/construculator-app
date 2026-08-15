@@ -28,12 +28,10 @@ class PowerSyncManagerImpl implements PowerSyncManager, Disposable {
   bool _connected = false;
 
   PowerSyncManagerImpl({
-    required PowerSyncDatabase database,
-    required PowerSyncBackendConnector connector,
-    required SupabaseWrapper supabaseWrapper,
-  }) : _database = database,
-       _connector = connector,
-       _supabaseWrapper = supabaseWrapper {
+    required this._database,
+    required this._connector,
+    required this._supabaseWrapper,
+  }) {
     _initAuthListener();
   }
 
@@ -60,9 +58,6 @@ class PowerSyncManagerImpl implements PowerSyncManager, Disposable {
       },
     );
 
-    // Handle the already-authenticated case: when the session is restored
-    // synchronously during bootstrap, the [signedIn] event may have been
-    // emitted before this subscription was attached.
     if (_supabaseWrapper.isAuthenticated) {
       unawaited(connect());
     }
@@ -94,6 +89,7 @@ class PowerSyncManagerImpl implements PowerSyncManager, Disposable {
     try {
       await _database.disconnectAndClear();
     } catch (error, stackTrace) {
+      _connected = true;
       _logger.error(
         'Failed to disconnect and clear PowerSync',
         error,

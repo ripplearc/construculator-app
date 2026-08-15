@@ -115,5 +115,7 @@ class AppBootstrap {
     required this.config,
     required this.supabaseWrapper,
     required this.sentryWrapper,
+    required this.analyticsRepository,
+    required this.powerSyncDatabase,
   });
 }
