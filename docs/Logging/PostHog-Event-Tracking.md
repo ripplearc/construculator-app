@@ -3,13 +3,20 @@
 > Extracted from the [PostHog Integration Guide](Posthog-Integration.md) per reviewer request.
 > These are **examples and samples**, not a finalized plan of record. Events must be reviewed and approved during implementation.
 >
-> **TODO [CA-695](https://ripplearc.youtrack.cloud/issue/CA-695):** Create a dedicated analytics skill to maintain and govern this taxonomy as it grows.
+> Governed by the [`analytics-event`](../../skills/analytics-event/SKILL.md) skill ([CA-695](https://ripplearc.youtrack.cloud/issue/CA-695)) — use it to add, update, list, validate, or deprecate events rather than editing this file by hand.
 
 ---
 
 ## Event Naming Convention
 
 **Pattern:** `{object}_{action}` in `snake_case` — e.g., `estimation_created`, `project_switched`
+
+## Event Metadata
+
+An event may carry optional inline metadata after a ` — ` separator: `owner` and `properties`.
+Events with no metadata are undocumented examples pending a real owner. Example:
+
+- `estimation_created` — owner: `@estimation-team`; properties: estimation_id, project_id
 
 ---
 
@@ -62,6 +69,14 @@
 - `screen_loaded`
 - `error_occurred`
 - `api_call_completed`
+
+---
+
+## Deprecated Events
+
+_None yet._ When an event is retired, move its bullet here with a migration note:
+
+- `~~old_event_name~~` — deprecated `<date>`; migrated to `new_event_name`. `<reason>`
 
 ---
 
