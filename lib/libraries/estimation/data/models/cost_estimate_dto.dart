@@ -156,6 +156,23 @@ class CostEstimateDto extends Equatable {
     );
   }
 
+  /// Creates a [CostEstimateDto] from a PowerSync/SQLite result row.
+  ///
+  /// SQLite has no boolean type, so the `is_locked` column is stored and
+  /// returned as an integer (`0` = false, `1` = true). This factory normalizes
+  /// that encoding to a `bool` before delegating to [CostEstimateDto.fromJson],
+  /// which otherwise expects the Supabase representation where `is_locked` is
+  /// already a boolean. All other columns share the same encoding as the
+  /// Supabase rows (text ids/timestamps, `real`/`integer` numerics).
+  ///
+  /// Throws [TypeError] if required columns are missing or have invalid types.
+  factory CostEstimateDto.fromRow(Map<String, dynamic> row) {
+    return CostEstimateDto.fromJson({
+      ...row,
+      'is_locked': (row['is_locked'] as int? ?? 0) != 0,
+    });
+  }
+
   /// Converts this DTO to a JSON map.
   ///
   /// This method converts the DTO back to the database/API JSON format,
