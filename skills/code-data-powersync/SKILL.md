@@ -171,15 +171,31 @@ subscription lifecycle via `Stream.multi`:
 @override
 Stream<List<CostEstimateDto>> watchByProject(String projectId) {
   return Stream<List<CostEstimateDto>>.multi((controller) async {
-    final handle = await _wrapper.syncStream('cost_estimates'); // JWT-gated; no client params
-    final sub = _wrapper
-        .watch(_byProjectSql, parameters: [projectId])  // watch() stays single source of truth
-        .map((rows) => rows.map(CostEstimateDto.fromRow).toList())
-        .listen(controller.add, onError: controller.addError, onDone: controller.close);
+    StreamSubscription<List<Map<String, dynamic>>>? sub;
+    SyncStreamHandle? handle;
+    var cancelled = false;
+    // Registered synchronously, before any await, so a cancel racing the
+    // await below is still observed — Dart does not replay a cancel that
+    // fires before onCancel is set.
     controller.onCancel = () {
-      sub.cancel();
-      handle.unsubscribe(); // release the on-demand stream — no leak
+      cancelled = true;
+      sub?.cancel();
+      handle?.unsubscribe();
     };
+    try {
+      final activated = await _wrapper.syncStream('cost_estimates'); // JWT-gated; no client params
+      handle = activated;
+      if (cancelled) {
+        activated.unsubscribe(); // subscriber cancelled during the await — release immediately
+        return;
+      }
+      sub = _wrapper
+          .watch(_byProjectSql, parameters: [projectId]) // watch() stays single source of truth
+          .map((rows) => rows.map(CostEstimateDto.fromRow).toList())
+          .listen(controller.add, onError: controller.addError, onDone: controller.close);
+    } catch (e, st) {
+      controller.addError(e, st); // syncStream() throws (e.g. JWT denial) — surface as a stream error
+    }
   });
 }
 ```
@@ -243,8 +259,9 @@ from the `write-tests` skills; the PowerSync-specific moves are:
   in order, so you can verify both the transaction boundary and the individual statements.
   To test the error path, set `fake.executeError` — it propagates through the transaction
   callback just as it does for bare `execute()` calls.
-- **Lazy on-demand activation:** assert `syncStream(...)` is called on first `watch`
-  subscription and that the watch controller is released on cancel (no leak).
+- **Lazy on-demand activation:** assert `fake.syncStreamCalls` contains the stream name
+  after the first `watch` subscription, and that the watch controller is released on
+  cancel (no leak).
 - **syncStream error path:** set `fake.syncStreamError = SomeException()` to prove the
   DataSource propagates a thrown handle-acquisition error to `controller.addError`.
 - **Handle release assertion:** after cancelling the subscription, assert
