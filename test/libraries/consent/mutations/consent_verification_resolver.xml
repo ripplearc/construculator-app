@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CONSENT VERIFICATION RESOLVER MUTATION TESTING -->
+    <!-- Targets: ConsentVerificationResolver.resolve(), which decides what a
+         background verification attempt means. Critical path: this decides
+         whether a returning user gets re-gated or stays in the app. -->
+
+    <files>
+        <file>lib/libraries/consent/data/consent_verification_resolver.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+        <regex pattern="try\s*\{" dotAll="false"/>
+        <regex pattern="catch\s*\(" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- RULE 1: Invert the consent-type match filter -->
+        <regex pattern="version\.consentType == type" dotAll="true" id="resolver.match.invert_type_filter">
+            <mutation text="version.consentType != type"/>
+        </regex>
+
+        <!-- RULE 2: Skip the no-match-published branch -->
+        <regex pattern="if \(match == null\) return ConsentSatisfied\(acceptedVersion \?\? 0\);" dotAll="true" id="resolver.match.skip_no_match_branch">
+            <mutation text="if (false) return ConsentSatisfied(acceptedVersion ?? 0);"/>
+        </regex>
+
+        <!-- RULE 3: Wrong fallback version when nothing is published for the type -->
+        <regex pattern="return ConsentSatisfied\(acceptedVersion \?\? 0\);" dotAll="true" id="resolver.match.wrong_fallback_version">
+            <mutation text="return ConsentSatisfied(acceptedVersion ?? 999);"/>
+        </regex>
+
+        <!-- RULE 4: Invert the fail-open/fail-closed decision on a failed check -->
+        <regex pattern="return acceptedVersion == null" dotAll="true" id="resolver.failure.invert_has_prior_acceptance">
+            <mutation text="return acceptedVersion != null"/>
+        </regex>
+
+        <!-- RULE 5: Wrong status when there is nothing to fall back on -->
+        <regex pattern="\? const ConsentIndeterminate\(\)" dotAll="true" id="resolver.failure.wrong_indeterminate_status">
+            <mutation text="? ConsentUnverified(0)"/>
+        </regex>
+
+        <!-- RULE 6: Wrong status when a prior acceptance exists -->
+        <regex pattern=": ConsentUnverified\(acceptedVersion\);" dotAll="true" id="resolver.failure.wrong_unverified_status">
+            <mutation text=": const ConsentIndeterminate();"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="consent_verification_resolver" expected-return="0">flutter test test/libraries/consent/units/data/repositories/consent_repository_impl_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
