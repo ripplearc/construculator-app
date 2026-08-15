@@ -25,6 +25,17 @@ abstract class PowerSyncCostEstimationDataSource {
     int? limit,
   });
 
+  /// Watches a single cost estimate by [id] from local SQLite, re-emitting on
+  /// every local or synced change to that row.
+  ///
+  /// Emits `null` when no row matches — either because the estimate has not yet
+  /// synced down or because it was deleted — so the UI can react to the row
+  /// appearing and disappearing. Like [watchEstimations], it activates the
+  /// on-demand `user_cost_estimates` sync stream on the first subscription and
+  /// releases it when that subscription is cancelled, and remains the single
+  /// source of truth — callers must not patch the result by hand after a write.
+  Stream<CostEstimateDto?> watchEstimationById({required String id});
+
   /// Reads a one-shot snapshot of the cost estimates for [projectId] from local
   /// SQLite, ordered by [sortBy] in the given [ascending] direction and
   /// optionally capped to [limit] rows (null means no cap).

@@ -191,6 +191,149 @@ void main() {
       });
     });
 
+    group('watchEstimationById', () {
+      const byIdSql = 'SELECT * FROM cost_estimates WHERE id = ? LIMIT 1';
+
+      test(
+        'activates the on-demand sync stream and maps the row to a DTO',
+        () async {
+          fakeWrapper.emitWatch(byIdSql, [sqliteRow()]);
+
+          final emission = expectLater(
+            dataSource.watchEstimationById(id: estimateIdDefault),
+            emits(
+              isA<CostEstimateDto>().having(
+                (dto) => dto.id,
+                'id',
+                estimateIdDefault,
+              ),
+            ),
+          );
+
+          await emission;
+          expect(fakeWrapper.syncStreamCalls, [syncStreamName]);
+          expect(fakeWrapper.watchCalls.single.sql, byIdSql);
+          expect(fakeWrapper.watchCalls.single.parameters, [estimateIdDefault]);
+        },
+      );
+
+      test('emits null when no row matches the id', () async {
+        fakeWrapper.emitWatch(byIdSql, const []);
+
+        await expectLater(
+          dataSource.watchEstimationById(id: estimateIdDefault),
+          emits(isNull),
+        );
+      });
+
+      test('decodes is_locked integer encoding to a bool DTO', () async {
+        fakeWrapper.emitWatch(byIdSql, [sqliteRow(locked: true)]);
+
+        await expectLater(
+          dataSource.watchEstimationById(id: estimateIdDefault),
+          emits(
+            isA<CostEstimateDto>().having(
+              (dto) => dto.isLocked,
+              'isLocked',
+              isTrue,
+            ),
+          ),
+        );
+      });
+
+      test('re-emits null when the watched row is deleted', () async {
+        fakeWrapper.emitWatch(byIdSql, [sqliteRow()]);
+
+        final emission = expectLater(
+          dataSource.watchEstimationById(id: estimateIdDefault),
+          emitsInOrder([isA<CostEstimateDto>(), isNull]),
+        );
+
+        await pumpEventQueue();
+        fakeWrapper.emitWatch(byIdSql, const []);
+
+        await emission;
+      });
+
+      test('emits the row once it syncs down after an empty result', () async {
+        fakeWrapper.emitWatch(byIdSql, const []);
+
+        final emission = expectLater(
+          dataSource.watchEstimationById(id: estimateIdDefault),
+          emitsInOrder([isNull, isA<CostEstimateDto>()]),
+        );
+
+        await pumpEventQueue();
+        fakeWrapper.emitWatch(byIdSql, [sqliteRow()]);
+
+        await emission;
+      });
+
+      test('drops emissions that rebuild an identical DTO', () async {
+        fakeWrapper.emitWatch(byIdSql, [sqliteRow()]);
+
+        final emitted = <CostEstimateDto?>[];
+        final subscription = dataSource
+            .watchEstimationById(id: estimateIdDefault)
+            .listen(emitted.add);
+        addTearDown(subscription.cancel);
+
+        await pumpEventQueue();
+        // An unrelated change to `cost_estimates` re-fires the same row.
+        fakeWrapper.emitWatch(byIdSql, [sqliteRow()]);
+        await pumpEventQueue();
+
+        expect(emitted, hasLength(1));
+
+        fakeWrapper.emitWatch(byIdSql, [sqliteRow(locked: true)]);
+        await pumpEventQueue();
+
+        expect(emitted, hasLength(2));
+        expect(emitted.last!.isLocked, isTrue);
+      });
+
+      test(
+        'releases the sync stream when the subscription is cancelled',
+        () async {
+          final subscription = dataSource
+              .watchEstimationById(id: estimateIdDefault)
+              .listen((_) {});
+          await pumpEventQueue();
+
+          expect(fakeWrapper.syncStreamCalls, [syncStreamName]);
+          expect(fakeWrapper.syncStreamUnsubscribes, isEmpty);
+
+          await subscription.cancel();
+
+          expect(fakeWrapper.syncStreamUnsubscribes, [syncStreamName]);
+        },
+      );
+
+      test('surfaces a sync-stream activation error on the stream', () async {
+        final error = Exception('activation failed');
+        fakeWrapper.syncStreamError = error;
+
+        await expectLater(
+          dataSource.watchEstimationById(id: estimateIdDefault),
+          emitsError(same(error)),
+        );
+      });
+
+      test('forwards watch errors to the stream', () async {
+        final error = Exception('watch failed');
+
+        final emission = expectLater(
+          dataSource.watchEstimationById(id: estimateIdDefault),
+          emitsError(same(error)),
+        );
+
+        await pumpEventQueue();
+        fakeWrapper.emitWatchError(byIdSql, error);
+
+        await emission;
+      });
+    });
+
     group('getEstimations', () {
       test(
         'returns mapped DTOs from a one-shot read without activating sync',

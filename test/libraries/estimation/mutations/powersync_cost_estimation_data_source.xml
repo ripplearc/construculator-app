@@ -41,8 +41,8 @@
         </regex>
 
         <!-- RULE 5: In watchEstimations, drop the row->DTO mapping -->
-        <regex pattern="\.map\(\(rows\) =&gt; rows\.map\(CostEstimateDto\.fromRow\)\.toList\(\)\)" dotAll="true" id="ds.watch.skip_row_mapping">
-            <mutation text=".map((rows) =&gt; &lt;CostEstimateDto&gt;[])"/>
+        <regex pattern="mapRows: \(rows\) =&gt; rows\.map\(CostEstimateDto\.fromRow\)\.toList\(\)," dotAll="true" id="ds.watch.skip_row_mapping">
+            <mutation text="mapRows: (rows) =&gt; &lt;CostEstimateDto&gt;[],"/>
         </regex>
 
         <!-- RULE 6: In getEstimations, drop the row->DTO mapping -->
@@ -58,6 +58,17 @@
         <!-- RULE 8: In watchEstimations, swallow the sync-stream activation error -->
         <regex pattern="controller\.addError\(error, stackTrace\);" dotAll="true" id="ds.watch.swallow_activation_error">
             <mutation text="// controller.addError(error, stackTrace);"/>
+        </regex>
+
+        <!-- RULE 9: In watchEstimationById, invert the empty-result guard so a
+             present row maps to null (and an absent one dereferences .first) -->
+        <regex pattern="rows\.isEmpty \? null" dotAll="true" id="ds.watchById.invert_empty_guard">
+            <mutation text="rows.isNotEmpty ? null"/>
+        </regex>
+
+        <!-- RULE 10: In watchEstimationById, drop the row->DTO mapping -->
+        <regex pattern=": CostEstimateDto\.fromRow\(rows\.first\)," dotAll="true" id="ds.watchById.skip_row_mapping">
+            <mutation text=": null,"/>
         </regex>
     </rules>
 

@@ -42,14 +42,52 @@ class PowerSyncCostEstimationDataSourceImpl
       ascending: ascending,
       limited: limit != null,
     );
-    final parameters = _selectParameters(projectId, limit);
+    return _watchWithSyncStream(
+      sql: sql,
+      parameters: _selectParameters(projectId, limit),
+      mapRows: (rows) => rows.map(CostEstimateDto.fromRow).toList(),
+      logMessage:
+          'Activating sync stream "$_syncStreamName" and watching estimates '
+          'for project: $projectId',
+    );
+  }
 
-    // Lazy activation tied to the subscription lifecycle: the on-demand stream
-    // is only synced while someone is actually watching it, and is released on
-    // cancel. The watch() stream remains the single source of truth.
-    return Stream<List<CostEstimateDto>>.multi((controller) async {
+  @override
+  Stream<CostEstimateDto?> watchEstimationById({required String id}) {
+    return _watchWithSyncStream(
+      sql: 'SELECT * FROM $_table WHERE id = ? LIMIT 1',
+      parameters: [id],
+      mapRows: (rows) =>
+          rows.isEmpty ? null : CostEstimateDto.fromRow(rows.first),
+      // `watch` fires on any change to `cost_estimates`, so an unrelated
+      // estimate would otherwise rebuild this row into an identical DTO.
+      dedupe: true,
+      logMessage:
+          'Activating sync stream "$_syncStreamName" and watching estimate: $id',
+    );
+  }
+
+  // Watches [sql] as the single source of truth while keeping the on-demand
+  // `user_cost_estimates` sync stream active only for the subscription's
+  // lifetime.
+  //
+  // Lazy activation tied to the subscription lifecycle: the on-demand stream is
+  // only synced while someone is actually watching it, and is released on
+  // cancel. [mapRows] projects each raw result set into the emitted shape T (a
+  // list for the collection watch, a nullable DTO for the by-id watch).
+  //
+  // [dedupe] drops emissions equal to the previous one, for shapes T that have
+  // value equality.
+  Stream<T> _watchWithSyncStream<T>({
+    required String sql,
+    required List<Object?> parameters,
+    required T Function(List<Map<String, dynamic>> rows) mapRows,
+    required String logMessage,
+    bool dedupe = false,
+  }) {
+    return Stream<T>.multi((controller) async {
       SyncStreamHandle? handle;
-      StreamSubscription<List<CostEstimateDto>>? subscription;
+      StreamSubscription<T>? subscription;
       var listenerCancelled = false;
 
       Future<void> releaseHandle() async {
@@ -65,10 +103,7 @@ class PowerSyncCostEstimationDataSourceImpl
         await releaseHandle();
       };
 
-      _logger.debug(
-        'Activating sync stream "$_syncStreamName" and watching estimates '
-        'for project: $projectId',
-      );
+      _logger.debug(logMessage);
 
       try {
         handle = await _wrapper.syncStream(_syncStreamName);
@@ -83,14 +118,12 @@ class PowerSyncCostEstimationDataSourceImpl
         return;
       }
 
-      subscription = _wrapper
-          .watch(sql, parameters: parameters)
-          .map((rows) => rows.map(CostEstimateDto.fromRow).toList())
-          .listen(
-            controller.add,
-            onError: controller.addError,
-            onDone: controller.close,
-          );
+      final rows = _wrapper.watch(sql, parameters: parameters).map(mapRows);
+      subscription = (dedupe ? rows.distinct() : rows).listen(
+        controller.add,
+        onError: controller.addError,
+        onDone: controller.close,
+      );
 
       if (listenerCancelled || !controller.hasListener) {
         await subscription?.cancel();
