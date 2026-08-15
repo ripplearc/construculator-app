@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CONSENT REPOSITORY IMPL MUTATION TESTING -->
+    <!-- Targets: ConsentRepositoryImpl, which decides what every read/write
+         outcome means for the gate. Critical path: this decides whether a
+         user reaches the app. -->
+
+    <files>
+        <file>lib/libraries/consent/data/repositories/consent_repository_impl.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+        <regex pattern="try\s*\{" dotAll="false"/>
+        <regex pattern="catch\s*\(" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- RULE 1: Skip the signed-out guard in getCachedConsentStatus -->
+        <regex pattern="if \(userId == null\) return const Right\(ConsentSatisfied\(0\)\);" dotAll="true" id="repo.read.skip_signed_out_guard">
+            <mutation text="if (false) return const Right(ConsentSatisfied(0));"/>
+        </regex>
+
+        <!-- RULE 2: Skip the missing-published-version guard in getCachedConsentStatus -->
+        <regex pattern="if \(published == null\) return const Right\(ConsentIndeterminate\(\)\);" dotAll="true" id="repo.read.skip_no_published_guard">
+            <mutation text="if (false) return const Right(ConsentIndeterminate());"/>
+        </regex>
+
+        <!-- RULE 3: Invert the withdrawn-action check -->
+        <regex pattern="newest\.action == ConsentAction\.withdrawn" dotAll="true" id="repo.effective_version.invert_withdrawn_check">
+            <mutation text="newest.action != ConsentAction.withdrawn"/>
+        </regex>
+
+        <!-- RULE 4: Swap the withdrawn-vs-active ternary branches -->
+        <regex pattern="\? null\n      : newest\.version;" dotAll="true" id="repo.effective_version.swap_branches">
+            <mutation text="? newest.version\n      : null;"/>
+        </regex>
+
+        <!-- RULE 5: Skip the missing-published-version guard in watchConsentStatus -->
+        <regex pattern="if \(published == null\) \{\n            return const Right&lt;Failure, ConsentStatus&gt;\(ConsentIndeterminate\(\)\);\n          \}" dotAll="true" id="repo.watch.skip_no_published_guard">
+            <mutation text="if (false) {\n            return const Right&lt;Failure, ConsentStatus&gt;(ConsentIndeterminate());\n          }"/>
+        </regex>
+
+        <!-- RULE 6: Skip the signed-out guard in verifyPublishedVersion -->
+        <regex pattern="// Not signed in: the gate does not apply\. Never an error\.\n    if \(userId == null\) return const Right\(ConsentSatisfied\(0\)\);" dotAll="true" id="repo.verify.skip_signed_out_guard">
+            <mutation text="// Not signed in: the gate does not apply. Never an error.\n    if (false) return const Right(ConsentSatisfied(0));"/>
+        </regex>
+
+        <!-- RULE 7: recordAcceptance records the wrong action -->
+        <regex pattern="version: version,\n    action: ConsentAction\.accepted,\n  \);" dotAll="true" id="repo.record_acceptance.wrong_action">
+            <mutation text="version: version,\n    action: ConsentAction.withdrawn,\n  );"/>
+        </regex>
+
+        <!-- RULE 8: recordWithdrawal records the wrong action -->
+        <regex pattern="version: version,\n      action: ConsentAction\.withdrawn,\n    \);" dotAll="true" id="repo.record_withdrawal.wrong_action">
+            <mutation text="version: version,\n      action: ConsentAction.accepted,\n    );"/>
+        </regex>
+
+        <!-- RULE 9: Skip looking up the version being withdrawn -->
+        <regex pattern="var version = 0;\n    if \(userId != null\) \{" dotAll="true" id="repo.record_withdrawal.skip_version_lookup">
+            <mutation text="var version = 0;\n    if (false) {"/>
+        </regex>
+
+        <!-- RULE 10: Wrong fallback when nothing is on file to withdraw -->
+        <regex pattern="version = _effectiveAcceptedVersion\(current\) \?\? 0;" dotAll="true" id="repo.record_withdrawal.wrong_fallback_version">
+            <mutation text="version = _effectiveAcceptedVersion(current) ?? 999;"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="consent_repository_impl" expected-return="0">flutter test test/libraries/consent/units/data/repositories/consent_repository_impl_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
