@@ -215,6 +215,64 @@ void main() {
           throwsA(same(error)),
         );
       });
+
+      test(
+        'throws writeTransactionError without invoking the action',
+        () async {
+          final error = Exception('transaction failed');
+          fakeWrapper.writeTransactionError = error;
+          var actionRan = false;
+
+          await expectLater(
+            fakeWrapper.writeTransaction<void>((_) async => actionRan = true),
+            throwsA(same(error)),
+          );
+          expect(actionRan, isFalse);
+          expect(fakeWrapper.writeTransactionCallCount, 1);
+        },
+      );
+
+      test('writeTransactionError does not affect bare execute', () async {
+        fakeWrapper.writeTransactionError = Exception('transaction failed');
+
+        await fakeWrapper.execute('DELETE FROM projects');
+
+        expect(fakeWrapper.executeCalls, hasLength(1));
+      });
+
+      test('executeError does not fire before the action runs', () async {
+        fakeWrapper.executeError = Exception('write failed');
+        var actionRan = false;
+
+        await expectLater(
+          fakeWrapper.writeTransaction<void>((_) async => actionRan = true),
+          completes,
+        );
+        expect(actionRan, isTrue);
+      });
+
+      test(
+        'writeTransactionError throws on every call until cleared',
+        () async {
+          fakeWrapper.writeTransactionError = Exception('transaction failed');
+
+          await expectLater(
+            fakeWrapper.writeTransaction<void>((_) async {}),
+            throwsA(isA<Exception>()),
+          );
+          await expectLater(
+            fakeWrapper.writeTransaction<void>((_) async {}),
+            throwsA(isA<Exception>()),
+          );
+
+          fakeWrapper.writeTransactionError = null;
+
+          await expectLater(
+            fakeWrapper.writeTransaction<void>((_) async {}),
+            completes,
+          );
+        },
+      );
     });
 
     group('reset', () {
@@ -233,6 +291,7 @@ void main() {
         handle.unsubscribe();
         fakeWrapper.getAllError = Exception('x');
         fakeWrapper.executeError = Exception('y');
+        fakeWrapper.writeTransactionError = Exception('w');
         fakeWrapper.syncStreamError = Exception('z');
 
         fakeWrapper.reset();
@@ -245,6 +304,7 @@ void main() {
         expect(fakeWrapper.syncStreamUnsubscribes, isEmpty);
         expect(fakeWrapper.getAllError, isNull);
         expect(fakeWrapper.executeError, isNull);
+        expect(fakeWrapper.writeTransactionError, isNull);
         expect(fakeWrapper.syncStreamError, isNull);
         expect(await fakeWrapper.getAll(sql), isEmpty);
 

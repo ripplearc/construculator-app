@@ -58,6 +58,16 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
   /// NOT self-clear after one use.
   Object? executeError;
 
+  /// When set, every [writeTransaction] call throws this error before [action]
+  /// is invoked, on every call until explicitly cleared
+  /// (`writeTransactionError = null`) or [reset] is called — it does NOT
+  /// self-clear after one use.
+  ///
+  /// Scoped to the transactional path only, so a test can fail the transaction
+  /// itself without also failing bare [execute] calls (which [executeError]
+  /// would).
+  Object? writeTransactionError;
+
   /// When set, every [syncStream] call throws this error until it is cleared
   /// (set back to `null`) or [reset] is called.
   Object? syncStreamError;
@@ -137,8 +147,14 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
   }
 
   @override
-  Future<T> writeTransaction<T>(Future<T> Function(WriteContext tx) action) {
+  Future<T> writeTransaction<T>(
+    Future<T> Function(WriteContext tx) action,
+  ) async {
     writeTransactionCallCount++;
+    final error = writeTransactionError;
+    if (error != null) {
+      throw error;
+    }
     return action(_FakeWriteContext(this));
   }
 
@@ -166,6 +182,7 @@ class FakePowerSyncDatabaseWrapper implements PowerSyncDatabaseWrapper {
     syncStreamUnsubscribes.clear();
     getAllError = null;
     executeError = null;
+    writeTransactionError = null;
     syncStreamError = null;
     _closeWatchControllers();
   }
