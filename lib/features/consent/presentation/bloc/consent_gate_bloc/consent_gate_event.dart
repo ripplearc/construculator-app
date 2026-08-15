@@ -39,10 +39,10 @@ class ConsentGateRetryRequested extends ConsentGateEvent {
 
 // ignore: unused_element -- constructed and handled once ConsentGateBloc lands.
 class _ConsentGateStatusChanged extends ConsentGateEvent {
-  final Either<Failure, ConsentStatus> result;
+  final ConsentStatus status;
 
-  const _ConsentGateStatusChanged(this.result);
+  const _ConsentGateStatusChanged(this.status);
 
   @override
-  List<Object?> get props => [result];
+  List<Object?> get props => [status];
 }
