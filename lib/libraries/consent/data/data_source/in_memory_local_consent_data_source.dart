@@ -91,9 +91,13 @@ class InMemoryLocalConsentDataSource implements LocalConsentDataSource {
 
   // The newest record for [userId] and [type], or null when there is none.
   //
-  // Newest by insertion rather than by [UserConsentDto.recordedAt]: the table
-  // is append-only, so insertion order is the authority, and two records
-  // written in the same instant must still resolve deterministically.
+  // Satisfies LocalConsentDataSource's recordedAt-ordered contract by
+  // insertion order rather than by comparing [UserConsentDto.recordedAt]
+  // directly: this source is a single process appending through one clock,
+  // so insertion order and recordedAt order coincide, and insertion order
+  // additionally resolves two records written in the same instant
+  // deterministically. CA-971's store gets the same two properties from
+  // `order by recorded_at desc` plus a tiebreak, per CA-963 §3.
   UserConsentDto? _latest(String userId, ConsentType type) {
     for (final record in _records.reversed) {
       if (record.userId == userId && record.consentType == type) return record;
