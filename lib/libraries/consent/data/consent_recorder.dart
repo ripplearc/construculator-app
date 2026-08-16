@@ -48,9 +48,7 @@ class ConsentRecorder {
 
     try {
       final stored = await _localDataSource.insertUserConsent(
-        UserConsentDto(
-          // Assigned by the store on insert.
-          id: '',
+        UserConsentDto.draft(
           userId: userId,
           consentType: consentType,
           version: version,
