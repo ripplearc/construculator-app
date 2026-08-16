@@ -45,22 +45,37 @@ extension ConsentActionWireValue on ConsentAction {
   };
 }
 
+/// Reads a `timestamptz` column, or null when it cannot be read.
+DateTime? parseTimestamp(Object? value) {
+  if (value is DateTime) return value;
+  if (value is String) return DateTime.tryParse(value);
+  return null;
+}
+
 /// Reads a `timestamptz` column, falling back to the UTC epoch.
 ///
-/// Shared by both consent DTOs, whose timestamps are audit metadata rather
-/// than gate input — an unreadable value must not fail a row the gate can
-/// otherwise decide on.
+/// For timestamps that are audit metadata rather than gate input — currently
+/// only `ConsentVersionDto.publishedAt`. `UserConsentDto.recordedAt` orders
+/// the consent history and deliberately does not use this: see its own guard.
 ///
 /// Deliberately quieter than `ProjectDto._parseDateTime`, which logs a warning
 /// first: the consent data sources rethrow silently and the repository is the
 /// module's single logging boundary.
-DateTime parseTimestampOrEpoch(Object? value) {
-  if (value is DateTime) return value;
-  if (value is String) {
-    final parsed = DateTime.tryParse(value);
-    if (parsed != null) return parsed;
-  }
-  // UTC rather than local: this value sits in props, so the flag participates
-  // in equality and a local epoch would compare differently by machine.
-  return DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
-}
+DateTime parseTimestampOrEpoch(Object? value) =>
+    parseTimestamp(value) ??
+    // UTC rather than local: this value sits in props, so the flag
+    // participates in equality and a local epoch would compare differently by
+    // machine.
+    DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+
+/// Reads a version column delivered as a number or a numeric string.
+///
+/// Accepts either shape: the repo's convention for numeric columns is `as
+/// num` rather than an int type test, and whether a local store hands this
+/// back as text is each store's choice to make, not something a DTO should
+/// silently depend on.
+int? parseVersion(Object? value) => switch (value) {
+  final num n => n.toInt(),
+  final String s => int.tryParse(s),
+  _ => null,
+};

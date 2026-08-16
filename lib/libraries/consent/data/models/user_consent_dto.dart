@@ -11,8 +11,9 @@ import 'package:equatable/equatable.dart';
 /// decide the gate: a record whose action or version cannot be read must not
 /// be treated as an acceptance the user never gave.
 class UserConsentDto extends Equatable {
-  /// Unique identifier for this record.
-  final String id;
+  /// Unique identifier for this record, or null on a record the store has
+  /// not yet assigned one — see [UserConsentDto.draft].
+  final String? id;
 
   /// The user this record belongs to.
   final String userId;
@@ -49,10 +50,24 @@ class UserConsentDto extends Equatable {
     this.platform,
   });
 
+  /// A record not yet written to the store, which assigns [id] on insert.
+  ///
+  /// Exists so the write path does not have to fabricate a sentinel id that
+  /// [fromJson]'s own guard would reject.
+  const UserConsentDto.draft({
+    required this.userId,
+    required this.consentType,
+    required this.version,
+    required this.action,
+    required this.recordedAt,
+    this.appVersion,
+    this.platform,
+  }) : id = null;
+
   /// Builds a DTO from a raw user consents row.
   ///
-  /// Throws [FormatException] when the row cannot be read as a usable consent
-  /// record.
+  /// Throws [FormatException] naming the field that could not be read when
+  /// the row cannot be read as a usable consent record.
   factory UserConsentDto.fromJson(Map<String, dynamic> json) {
     final consentType = ConsentTypeWireValue.fromJson(
       json[DatabaseConstants.consentTypeColumn],
@@ -60,29 +75,44 @@ class UserConsentDto extends Equatable {
     final action = ConsentActionWireValue.fromJson(
       json[DatabaseConstants.actionColumn],
     );
-    final version = json[DatabaseConstants.versionColumn];
+    final version = parseVersion(json[DatabaseConstants.versionColumn]);
     final id = json[DatabaseConstants.idColumn];
     final userId = json[DatabaseConstants.userIdColumn];
+    final recordedAt = parseTimestamp(
+      json[DatabaseConstants.recordedAtColumn],
+    );
+    final rawAppVersion = json[DatabaseConstants.appVersionColumn];
+    final rawPlatform = json[DatabaseConstants.platformColumn];
 
-    if (consentType == null ||
-        action == null ||
-        version is! int ||
-        id is! String ||
-        userId is! String) {
-      throw const FormatException('Unreadable user consent row');
+    final unreadable = switch (null) {
+      _ when consentType == null => DatabaseConstants.consentTypeColumn,
+      _ when action == null => DatabaseConstants.actionColumn,
+      // Zero mirrors the backend's check (version > 0); CA-963 §2.
+      _ when version == null || version <= 0 => DatabaseConstants.versionColumn,
+      _ when id is! String => DatabaseConstants.idColumn,
+      _ when userId is! String => DatabaseConstants.userIdColumn,
+      // Not audit metadata, unlike the sibling DTO's publishedAt: this orders
+      // the history, and the newest record decides the gate. An epoch
+      // fallback would sort a withdrawal below the acceptance it supersedes,
+      // reading as consent the user revoked.
+      _ when recordedAt == null => DatabaseConstants.recordedAtColumn,
+      _ => null,
+    };
+    if (unreadable != null) {
+      throw FormatException('Unreadable user consent row: $unreadable');
     }
 
     return UserConsentDto(
-      id: id,
-      userId: userId,
-      consentType: consentType,
-      version: version,
-      action: action,
-      recordedAt: parseTimestampOrEpoch(
-        json[DatabaseConstants.recordedAtColumn],
-      ),
-      appVersion: json[DatabaseConstants.appVersionColumn] as String?,
-      platform: json[DatabaseConstants.platformColumn] as String?,
+      id: id as String,
+      userId: userId as String,
+      consentType: consentType!,
+      version: version!,
+      action: action!,
+      recordedAt: recordedAt!,
+      // Audit metadata: an unreadable value is dropped rather than failing a
+      // row the gate can otherwise decide on.
+      appVersion: rawAppVersion is String ? rawAppVersion : null,
+      platform: rawPlatform is String ? rawPlatform : null,
     );
   }
 
@@ -95,22 +125,36 @@ class UserConsentDto extends Equatable {
     DatabaseConstants.consentTypeColumn: consentType.toJson(),
     DatabaseConstants.versionColumn: version,
     DatabaseConstants.actionColumn: action.toJson(),
-    DatabaseConstants.recordedAtColumn: recordedAt.toIso8601String(),
+    // UTC rather than a naive local timestamp: this column orders a history
+    // across devices, so a local `DateTime` serialized without a `.toUtc()`
+    // would read back skewed by the writer's timezone.
+    DatabaseConstants.recordedAtColumn: recordedAt.toUtc().toIso8601String(),
     if (appVersion != null) DatabaseConstants.appVersionColumn: appVersion,
     if (platform != null) DatabaseConstants.platformColumn: platform,
   };
 
   /// Converts to the domain [UserConsent] entity.
-  UserConsent toDomain() => UserConsent(
-    id: id,
-    userId: userId,
-    consentType: consentType,
-    version: version,
-    action: action,
-    recordedAt: recordedAt,
-    appVersion: appVersion,
-    platform: platform,
-  );
+  ///
+  /// Throws [StateError] on a [draft] record — one that has not yet been
+  /// written to the store and so has no [id] to give the entity.
+  UserConsent toDomain() {
+    final assignedId = id;
+    if (assignedId == null) {
+      throw StateError(
+        'A draft consent record has no id until the store assigns one',
+      );
+    }
+    return UserConsent(
+      id: assignedId,
+      userId: userId,
+      consentType: consentType,
+      version: version,
+      action: action,
+      recordedAt: recordedAt,
+      appVersion: appVersion,
+      platform: platform,
+    );
+  }
 
   @override
   List<Object?> get props => [
@@ -120,5 +164,7 @@ class UserConsentDto extends Equatable {
     version,
     action,
     recordedAt,
+    appVersion,
+    platform,
   ];
 }
