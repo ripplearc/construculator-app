@@ -103,4 +103,49 @@ void main() {
       expect(parsed.isUtc, isTrue);
     });
   });
+
+  group('parseTimestamp', () {
+    test('passes a DateTime through unchanged', () {
+      expect(parseTimestamp(DateTime.utc(2026, 8, 11)), DateTime.utc(2026, 8, 11));
+    });
+
+    test('parses a timestamp string', () {
+      expect(
+        parseTimestamp('2026-08-11T00:00:00.000Z'),
+        DateTime.utc(2026, 8, 11),
+      );
+    });
+
+    test('returns null rather than defaulting on an unparseable string', () {
+      // Unlike parseTimestampOrEpoch: this reader has no safe default to
+      // fall back to, and leaves that decision to the caller.
+      expect(parseTimestamp('not a date'), isNull);
+    });
+
+    test('returns null on a missing value', () {
+      expect(parseTimestamp(null), isNull);
+    });
+  });
+
+  group('parseVersion', () {
+    test('accepts an int', () {
+      expect(parseVersion(3), 3);
+    });
+
+    test('accepts a double', () {
+      expect(parseVersion(3.0), 3);
+    });
+
+    test('accepts a numeric string', () {
+      expect(parseVersion('3'), 3);
+    });
+
+    test('returns null for a non-numeric string', () {
+      expect(parseVersion('three'), isNull);
+    });
+
+    test('returns null for a missing value', () {
+      expect(parseVersion(null), isNull);
+    });
+  });
 }

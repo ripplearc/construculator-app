@@ -51,7 +51,7 @@ class ConsentVersionDto extends Equatable {
     final consentType = ConsentTypeWireValue.fromJson(
       json[DatabaseConstants.consentTypeColumn],
     );
-    final version = _parseVersion(json[DatabaseConstants.versionColumn]);
+    final version = parseVersion(json[DatabaseConstants.versionColumn]);
     final documentUrl = json[DatabaseConstants.documentUrlColumn];
     final id = json[DatabaseConstants.idColumn];
 
@@ -100,16 +100,6 @@ class ConsentVersionDto extends Equatable {
     documentUrl: documentUrl,
     publishedAt: publishedAt,
   );
-
-  // Accepts a number or a numeric string. The repo's convention for numeric
-  // columns is `as num` rather than an int type test, and whether a local
-  // store hands this back as text is CA-971's choice to make, not something
-  // this DTO should silently depend on.
-  static int? _parseVersion(Object? value) => switch (value) {
-    final num n => n.toInt(),
-    final String s => int.tryParse(s),
-    _ => null,
-  };
 
   // The consent page renders this as an external link, and it is the one
   // screen with no back affordance — so a value like 'n/a' that passes a
