@@ -23,8 +23,10 @@ abstract class LocalConsentDataSource {
   /// Returns the newest consent record for [userId] and [type], or null when
   /// the user has none.
   ///
-  /// Newest only — the table is append-only, and a withdrawal supersedes the
-  /// acceptance beneath it.
+  /// Newest by [UserConsentDto.recordedAt] — the table is append-only, and a
+  /// withdrawal supersedes the acceptance beneath it. Implementations must
+  /// resolve records sharing an instant deterministically, since two records
+  /// written in the same instant must still produce one answer.
   Future<UserConsentDto?> fetchLatestUserConsent(
     String userId,
     ConsentType type,
@@ -32,6 +34,8 @@ abstract class LocalConsentDataSource {
 
   /// Emits the newest consent record for [userId] and [type] whenever the
   /// underlying data changes.
+  ///
+  /// Newest on the same terms as [fetchLatestUserConsent].
   Stream<UserConsentDto?> watchLatestUserConsent(
     String userId,
     ConsentType type,
