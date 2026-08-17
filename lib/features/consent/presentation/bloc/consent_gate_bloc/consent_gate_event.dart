@@ -38,6 +38,7 @@ class ConsentGateRetryRequested extends ConsentGateEvent {
 /// The watched consent data changed.
 ///
 /// Private: raised by the BLoC's own subscription, never by the UI.
+// ignore: unused_element -- constructed and handled once ConsentGateBloc lands.
 class _ConsentGateStatusChanged extends ConsentGateEvent {
   final Either<Failure, ConsentStatus> result;
 

@@ -4,7 +4,7 @@ part of 'consent_gate_bloc.dart';
 ///
 /// Sealed so the page's switch is exhaustive. Most of these states render
 /// nothing at all — the gate is designed to be invisible whenever it is not
-/// actively blocking, so only three of the eight put anything on screen.
+/// actively blocking, so only four of the eight put anything on screen.
 sealed class ConsentGateState extends Equatable {
   const ConsentGateState();
 
