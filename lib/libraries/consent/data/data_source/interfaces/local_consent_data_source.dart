@@ -11,6 +11,9 @@ import 'package:construculator/libraries/consent/domain/types/consent_types.dart
 /// Methods throw on failure rather than returning a result type — the
 /// repository is the single place that decides what a failure means, and for
 /// the read path it deliberately means a status rather than an error.
+///
+/// CA-971 provides the offline-first PowerSync implementation of this port;
+/// the in-memory store bound today is a temporary stand-in until it lands.
 abstract class LocalConsentDataSource {
   /// Returns the published version for [type], or null when none is held
   /// locally yet.
@@ -18,6 +21,11 @@ abstract class LocalConsentDataSource {
   /// Null is a meaningful answer, not an error: it means the requirement is
   /// unknown, so there is no document to present and nothing to compare
   /// against.
+  ///
+  /// Reads are per-type rather than batched like the remote source's
+  /// `fetchPublishedVersions`: each call is against a local store where a
+  /// round trip costs nothing, and a gate check only ever needs one type at a
+  /// time.
   Future<ConsentVersionDto?> fetchPublishedVersion(ConsentType type);
 
   /// Returns the newest consent record for [userId] and [type], or null when
@@ -32,8 +40,9 @@ abstract class LocalConsentDataSource {
     ConsentType type,
   );
 
-  /// Emits the newest consent record for [userId] and [type] whenever the
-  /// underlying data changes.
+  /// Emits the newest consent record for [userId] and [type] immediately on
+  /// subscribe, then again whenever the underlying data changes. Emits null
+  /// when the user has no record.
   ///
   /// Newest on the same terms as [fetchLatestUserConsent].
   Stream<UserConsentDto?> watchLatestUserConsent(
