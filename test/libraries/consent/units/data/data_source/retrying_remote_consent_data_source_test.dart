@@ -6,6 +6,7 @@ import 'package:construculator/libraries/consent/data/models/consent_version_dto
 import 'package:construculator/libraries/consent/domain/types/consent_types.dart';
 import 'package:construculator/libraries/consent/testing/fake_consent_data_sources.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 
 ConsentVersionDto _version(int number) => ConsentVersionDto(
   id: 'version-$number',
@@ -25,14 +26,17 @@ void main() {
       dataSource = RetryingRemoteConsentDataSource(inner);
     });
 
-    test('returns the inner result without retrying when it succeeds', () async {
-      inner.publishedVersions = [_version(1)];
+    test(
+      'returns the inner result without retrying when it succeeds',
+      () async {
+        inner.publishedVersions = [_version(1)];
 
-      final result = await dataSource.fetchPublishedVersions();
+        final result = await dataSource.fetchPublishedVersions();
 
-      expect(result, hasLength(1));
-      expect(inner.callCount, 1);
-    });
+        expect(result, hasLength(1));
+        expect(inner.callCount, 1);
+      },
+    );
 
     test('retries a transient failure and succeeds', () async {
       inner
@@ -78,5 +82,34 @@ void main() {
       );
       expect(inner.callCount, 1);
     });
+
+    // A connection-level failure can surface through PostgREST rather than
+    // as a raw socket error, and it deserves the same backoff.
+    test('retries a PostgrestException carrying a connection code', () async {
+      inner
+        ..error = PostgrestException(message: 'cannot connect', code: '08006')
+        ..failuresBeforeSuccess = 1
+        ..publishedVersions = [_version(3)];
+
+      await dataSource.fetchPublishedVersions();
+
+      expect(inner.callCount, 2);
+    });
+
+    test(
+      'does not retry a PostgrestException with a non-connection code',
+      () async {
+        inner.error = PostgrestException(
+          message: 'not found',
+          code: 'PGRST116',
+        );
+
+        await expectLater(
+          () => dataSource.fetchPublishedVersions(),
+          throwsA(isA<PostgrestException>()),
+        );
+        expect(inner.callCount, 1);
+      },
+    );
   });
 }
