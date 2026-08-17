@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:construculator/libraries/consent/data/data_source/interfaces/remote_consent_data_source.dart';
 import 'package:construculator/libraries/consent/data/models/consent_version_dto.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 
 /// Adds bounded retry to another [RemoteConsentDataSource].
 ///
@@ -46,12 +47,20 @@ class RetryingRemoteConsentDataSource implements RemoteConsentDataSource {
       }
     }
 
-    throw StateError('unreachable: the loop returns or rethrows on the final attempt');
+    throw StateError(
+      'unreachable: the loop returns or rethrows on the final attempt',
+    );
   }
+
+  /// Postgres connection-level codes: cannot connect, cannot establish, and
+  /// unable to connect now. All three describe the server, not the request.
+  static const _transientPostgrestCodes = {'08000', '08003', '08006'};
 
   // Whether [error] is worth another attempt.
   bool _isTransient(Object error) =>
       error is TimeoutException ||
       error is SocketException ||
-      error is HttpException;
+      error is HttpException ||
+      (error is PostgrestException &&
+          _transientPostgrestCodes.contains(error.code));
 }
