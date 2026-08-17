@@ -16,40 +16,38 @@ class TitleSearchAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// [onProjectTap] callbacks.
   const TitleSearchAppBar({super.key, this.onSearchTap, this.onProjectTap});
 
+  static const double _height = CoreSpacing.space12;
+  static const EdgeInsets _padding = EdgeInsets.symmetric(
+    horizontal: CoreSpacing.space4,
+    vertical: CoreSpacing.space2,
+  );
+
   @override
   Widget build(BuildContext context) {
-    final coreColors = Theme.of(context).coreColors;
-    return Container(
-      decoration: BoxDecoration(
-        color: coreColors.pageBackground,
-        boxShadow: CoreShadows.medium,
+    final coreColors = context.colorTheme;
+    return CoreAppBar(
+      height: _height,
+      padding: _padding,
+      centerTitle: true,
+      titleSpacing: 0,
+      title: ProjectSelectorTitle(
+        selectorKey: const Key('title_search_app_bar_project_selector'),
+        onProjectTap: onProjectTap,
       ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: CoreSpacing.space4,
-        vertical: CoreSpacing.space2,
-      ),
-      child: AppBar(
-        backgroundColor: coreColors.pageBackground,
-        elevation: 0,
-        centerTitle: true,
-        titleSpacing: 0,
-        title: ProjectSelectorTitle(
-          selectorKey: const Key('title_search_app_bar_project_selector'),
-          onProjectTap: onProjectTap,
+      actions: [
+        CoreIconWidget(
+          key: const Key('title_search_app_bar_search_button'),
+          icon: CoreIcons.search,
+          size: CoreIconSize.size24,
+          padding: const EdgeInsets.all(CoreSpacing.space3),
+          color: coreColors.iconDark,
+          semanticLabel: context.l10n.dashboardSearchSemanticLabel,
+          onTap: onSearchTap,
         ),
-        actions: [
-          CoreIconWidget(
-            key: const Key('title_search_app_bar_search_button'),
-            icon: CoreIcons.search,
-            semanticLabel: context.l10n.dashboardSearchSemanticLabel,
-            onTap: onSearchTap,
-          ),
-          const SizedBox(width: CoreSpacing.space4),
-        ],
-      ),
+      ],
     );
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => Size.fromHeight(_height + _padding.vertical);
 }
