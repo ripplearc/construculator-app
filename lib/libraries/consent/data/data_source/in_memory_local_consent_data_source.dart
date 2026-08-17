@@ -35,8 +35,9 @@ class InMemoryLocalConsentDataSource implements LocalConsentDataSource {
 
   var _nextId = 0;
 
-  InMemoryLocalConsentDataSource({Map<ConsentType, ConsentVersionDto>? seedVersions})
-    : _publishedVersions = seedVersions ?? _defaultSeed();
+  InMemoryLocalConsentDataSource({
+    Map<ConsentType, ConsentVersionDto>? seedVersions,
+  }) : _publishedVersions = seedVersions ?? _defaultSeed();
 
   static Map<ConsentType, ConsentVersionDto> _defaultSeed() {
     final publishedAt = DateTime.fromMillisecondsSinceEpoch(0);
