@@ -48,9 +48,11 @@ class ConsentVerificationResolver {
         acceptedVersion: acceptedVersion,
         published: match.toDomain(),
       );
-    } catch (error) {
+    } catch (error, stackTrace) {
       _logger.warning(
-        'Consent verification failed for ${type.toJson()}: $error',
+        'Consent verification failed for ${type.toJson()}',
+        error,
+        stackTrace,
       );
 
       // Deliberately a status, not a failure: which one depends entirely on
