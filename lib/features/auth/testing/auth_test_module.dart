@@ -23,6 +23,10 @@ import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/consent/domain/repositories/consent_repository.dart';
+import 'package:construculator/libraries/consent/domain/usecases/check_consent_status_usecase.dart';
+import 'package:construculator/libraries/consent/domain/usecases/record_consent_usecase.dart';
+import 'package:construculator/libraries/consent/testing/fake_consent_repository.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -61,6 +65,13 @@ class AuthTestModule extends Module {
     );
     i.add<CreateAccountUseCase>(() => CreateAccountUseCase(i(), i()));
     i.add<SendOtpUseCase>(() => SendOtpUseCase(i()));
+
+    // Signup records an initial acceptance, so the consent path has to be
+    // resolvable here. Faked at the repository because it belongs to another
+    // library — tests drive it via Modular.get<ConsentRepository>().
+    i.addSingleton<ConsentRepository>(FakeConsentRepository.new);
+    i.add<CheckConsentStatusUseCase>(() => CheckConsentStatusUseCase(i()));
+    i.add<RecordConsentUseCase>(() => RecordConsentUseCase(i()));
     i.add<VerifyOtpUseCase>(() => VerifyOtpUseCase(i()));
     i.add<LoginUseCase>(() => LoginUseCase(i()));
     i.add<SetNewPasswordUseCase>(() => SetNewPasswordUseCase(i()));
@@ -78,6 +89,8 @@ class AuthTestModule extends Module {
         createAccountUseCase: i(),
         getProfessionalRolesUseCase: i(),
         sendOtpUseCase: i(),
+        checkConsentStatusUseCase: i(),
+        recordConsentUseCase: i(),
       ),
     );
     i.add<LoginWithEmailBloc>(
