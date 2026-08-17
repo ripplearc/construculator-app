@@ -69,14 +69,19 @@ class _DocumentLink extends StatelessWidget {
       child: InkWell(
         onTap: onPressed,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+          constraints: const BoxConstraints(
+            minHeight: CoreSpacing.space12,
+            minWidth: CoreSpacing.space12,
+          ),
           child: Align(
             alignment: Alignment.centerLeft,
-            child: Text(
-              label,
-              style: typography.bodyMediumMedium.copyWith(
-                color: colors.textLink,
-                decoration: TextDecoration.underline,
+            child: ExcludeSemantics(
+              child: Text(
+                label,
+                style: typography.bodyMediumMedium.copyWith(
+                  color: colors.textLink,
+                  decoration: TextDecoration.underline,
+                ),
               ),
             ),
           ),
