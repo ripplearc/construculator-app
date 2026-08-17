@@ -128,11 +128,13 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
     String? orderBy,
     bool ascending = true,
     int? limit,
+    bool retry = true,
   }) async {
     var query = _supabaseClient
         .from(table)
         .select(columns)
-        .match(filters.cast<String, Object>());
+        .match(filters.cast<String, Object>())
+        .retry(enabled: retry);
     if (orderBy != null) {
       final ordered = query.order(orderBy, ascending: ascending);
       return limit != null ? await ordered.limit(limit) : await ordered;
@@ -186,9 +188,7 @@ class SupabaseWrapperImpl implements SupabaseWrapper {
     required Map<String, dynamic> data,
     required String onConflict,
   }) async {
-    await _supabaseClient
-        .from(table)
-        .upsert(data, onConflict: onConflict);
+    await _supabaseClient.from(table).upsert(data, onConflict: onConflict);
   }
 
   @override

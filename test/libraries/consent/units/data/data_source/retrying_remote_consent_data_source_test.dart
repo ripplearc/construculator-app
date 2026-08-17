@@ -5,7 +5,9 @@ import 'package:construculator/libraries/consent/data/data_source/retrying_remot
 import 'package:construculator/libraries/consent/data/models/consent_version_dto.dart';
 import 'package:construculator/libraries/consent/domain/types/consent_types.dart';
 import 'package:construculator/libraries/consent/testing/fake_remote_consent_data_source.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 
 ConsentVersionDto _version(int number) => ConsentVersionDto(
@@ -16,6 +18,10 @@ ConsentVersionDto _version(int number) => ConsentVersionDto(
   publishedAt: DateTime.fromMillisecondsSinceEpoch(0),
 );
 
+/// Backoff with no real delay. The production defaults are exercised
+/// separately, in the test that pins their actual durations.
+const _noDelay = [Duration.zero, Duration.zero, Duration.zero];
+
 void main() {
   group('RetryingRemoteConsentDataSource', () {
     late FakeRemoteConsentDataSource inner;
@@ -23,7 +29,7 @@ void main() {
 
     setUp(() {
       inner = FakeRemoteConsentDataSource();
-      dataSource = RetryingRemoteConsentDataSource(inner);
+      dataSource = RetryingRemoteConsentDataSource(inner, backoff: _noDelay);
     });
 
     test(
@@ -71,6 +77,21 @@ void main() {
       expect(inner.callCount, 2);
     });
 
+    // A connection dropped mid-flight surfaces as http.ClientException, not
+    // the dart:io HttpException the transport never actually throws.
+    test('retries an http.ClientException from a dropped connection', () async {
+      inner
+        ..error = http.ClientException(
+          'Connection closed before full header was received',
+        )
+        ..failuresBeforeSuccess = 1
+        ..publishedVersionsToReturn = [_version(4)];
+
+      await dataSource.fetchPublishedVersions();
+
+      expect(inner.callCount, 2);
+    });
+
     // A parse failure or a permission denial fails identically every time, so
     // retrying only delays the answer the gate is waiting on.
     test('does not retry a non-transient failure', () async {
@@ -111,5 +132,71 @@ void main() {
         expect(inner.callCount, 1);
       },
     );
+
+    test('stops retrying when a later failure is not transient', () async {
+      inner.errorSequence.addAll([
+        const SocketException('offline'),
+        const FormatException('bad payload'),
+      ]);
+
+      await expectLater(
+        () => dataSource.fetchPublishedVersions(),
+        throwsA(isA<FormatException>()),
+      );
+      expect(
+        inner.callCount,
+        2,
+        reason:
+            'abandons the remaining budget once a failure is not '
+            'transient, rather than carrying on',
+      );
+    });
+
+    test('retries an attempt that exceeds attemptTimeout', () async {
+      dataSource = RetryingRemoteConsentDataSource(
+        inner,
+        backoff: _noDelay,
+        attemptTimeout: const Duration(milliseconds: 10),
+      );
+      inner
+        ..delaySequence.add(const Duration(milliseconds: 50))
+        ..publishedVersionsToReturn = [_version(5)];
+
+      final result = await dataSource.fetchPublishedVersions();
+
+      expect(result.single.version, 5);
+      expect(inner.callCount, 2, reason: 'stalled first attempt, fast retry');
+    });
+  });
+
+  // Drives virtual time via fake_async so the assertion on the declared
+  // delays costs milliseconds, not the 3.25s those delays actually total.
+  test('waits the delays _backoff declares between retries', () {
+    fakeAsync((async) {
+      final inner = FakeRemoteConsentDataSource()
+        ..error = const SocketException('offline')
+        ..failuresBeforeSuccess = 2
+        ..publishedVersionsToReturn = [_version(1)];
+      final dataSource = RetryingRemoteConsentDataSource(inner);
+
+      var completed = false;
+      dataSource.fetchPublishedVersions().then((_) => completed = true);
+
+      async.flushMicrotasks();
+      expect(inner.callCount, 1, reason: 'first attempt runs immediately');
+
+      async.elapse(const Duration(milliseconds: 249));
+      expect(inner.callCount, 1, reason: 'not yet at the 250ms mark');
+
+      async.elapse(const Duration(milliseconds: 1));
+      expect(inner.callCount, 2, reason: 'retry fires at exactly 250ms');
+
+      async.elapse(const Duration(milliseconds: 999));
+      expect(inner.callCount, 2, reason: 'not yet at the 1s mark');
+
+      async.elapse(const Duration(milliseconds: 1));
+      expect(inner.callCount, 3, reason: 'retry fires at exactly 1s later');
+      expect(completed, isTrue);
+    });
   });
 }

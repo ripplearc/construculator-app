@@ -36,6 +36,7 @@ dependencies:
   path_provider: 2.1.6
   path: 1.9.1
   package_info_plus: 10.2.1
+  http: 1.6.0
 
 dev_dependencies:
   flutter_test:
@@ -53,6 +54,7 @@ dev_dependencies:
   patrol: 4.9.0
   integration_test:
     sdk: flutter
+  fake_async: 1.3.3
 
 patrol:
   app_name: Construculator

@@ -455,7 +455,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required String filterColumn,
     required dynamic filterValue,
   }) async {
-    final tableDataSnapshot = List<Map<String, dynamic>>.from(_tables[table] ?? <Map<String, dynamic>>[]);
+    final tableDataSnapshot = List<Map<String, dynamic>>.from(
+      _tables[table] ?? <Map<String, dynamic>>[],
+    );
 
     if (shouldDelayOperations) {
       await completer?.future;
@@ -493,8 +495,11 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     String? orderBy,
     bool ascending = true,
     int? limit,
+    bool retry = true,
   }) async {
-    final tableDataSnapshot = List<Map<String, dynamic>>.from(_tables[table] ?? <Map<String, dynamic>>[]);
+    final tableDataSnapshot = List<Map<String, dynamic>>.from(
+      _tables[table] ?? <Map<String, dynamic>>[],
+    );
 
     _methodCalls.add({
       'method': 'selectMatch',
@@ -504,6 +509,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       'orderBy': ?orderBy,
       'ascending': ascending,
       'limit': ?limit,
+      'retry': retry,
     });
 
     if (shouldDelayOperations) {
@@ -555,7 +561,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required String filterColumn,
     required List<dynamic> filterValues,
   }) async {
-    final tableDataSnapshot = List<Map<String, dynamic>>.from(_tables[table] ?? <Map<String, dynamic>>[]);
+    final tableDataSnapshot = List<Map<String, dynamic>>.from(
+      _tables[table] ?? <Map<String, dynamic>>[],
+    );
 
     if (shouldDelayOperations) {
       await completer?.future;
@@ -596,7 +604,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     required int rangeFrom,
     required int rangeTo,
   }) async {
-    final tableDataSnapshot = List<Map<String, dynamic>>.from(_tables[table] ?? <Map<String, dynamic>>[]);
+    final tableDataSnapshot = List<Map<String, dynamic>>.from(
+      _tables[table] ?? <Map<String, dynamic>>[],
+    );
 
     if (shouldDelayOperations) {
       await completer?.future;

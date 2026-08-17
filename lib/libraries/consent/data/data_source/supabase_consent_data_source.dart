@@ -23,9 +23,13 @@ class SupabaseConsentDataSource implements RemoteConsentDataSource {
       // published, so reading it would hand back several rows per consent type
       // and leave this class picking one — a decision that depends on
       // effective_from and belongs in the database, which owns it.
+      // Retry is owned by RetryingRemoteConsentDataSource, not PostgREST —
+      // otherwise the two budgets compound into up to 16 requests for one
+      // version check.
       final rows = await _supabaseWrapper.selectMatch(
         table: DatabaseConstants.currentConsentVersionsView,
         filters: const {},
+        retry: false,
       );
 
       // An unrecognised type means a newer server, not a corrupt row: this
