@@ -16,12 +16,35 @@ class FakeRemoteConsentDataSource implements RemoteConsentDataSource {
   /// Null means every call throws, which is how retry exhaustion is exercised.
   int? failuresBeforeSuccess;
 
+  /// Errors to throw on successive calls, one per call, in order.
+  ///
+  /// Takes priority over [error]/[failuresBeforeSuccess] for as many calls as
+  /// it has entries; once exhausted, later calls fall back to that pair. Use
+  /// this to model a transient failure followed by a different, non-transient
+  /// one — something a single [error] can't express.
+  final List<Object> errorSequence = [];
+
+  /// Delay before each successive call resolves (or throws), one per call.
+  ///
+  /// Once exhausted, later calls resolve immediately. Use this to model an
+  /// attempt that stalls past a caller's timeout.
+  final List<Duration> delaySequence = [];
+
   /// Number of times [fetchPublishedVersions] has been called.
   var callCount = 0;
 
   @override
   Future<List<ConsentVersionDto>> fetchPublishedVersions() async {
+    final index = callCount;
     callCount++;
+
+    if (index < delaySequence.length) {
+      await Future<void>.delayed(delaySequence[index]);
+    }
+
+    if (index < errorSequence.length) {
+      throw errorSequence[index];
+    }
 
     final thrown = error;
     if (thrown != null) {

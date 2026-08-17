@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:construculator/libraries/consent/data/data_source/interfaces/remote_consent_data_source.dart';
 import 'package:construculator/libraries/consent/data/models/consent_version_dto.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 
 /// Adds bounded retry to another [RemoteConsentDataSource].
@@ -13,6 +14,10 @@ import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 /// policy can change without touching the gate decision, and the repository's
 /// failure handling can be read without stepping through a backoff loop.
 ///
+/// The single owner of retry for this query: `SupabaseConsentDataSource`
+/// disables PostgREST's own retry (`retry: false`) so the two budgets don't
+/// compound into up to 16 requests for one version check.
+///
 /// Retries only conditions that can plausibly clear on their own. A parse
 /// failure or a permission denial fails identically every time, so retrying
 /// them only delays the answer the caller is waiting on.
@@ -22,34 +27,41 @@ import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 /// error to surface.
 class RetryingRemoteConsentDataSource implements RemoteConsentDataSource {
   final RemoteConsentDataSource _inner;
-
-  /// Attempts after the first before giving up.
-  static const _maxRetries = 3;
+  final List<Duration> _backoff;
+  final Duration _attemptTimeout;
 
   /// Delay before each retry. Short enough that a user opening the app on a
-  /// flaky connection still gets a verified answer within a few seconds.
-  static const _backoff = [
+  /// flaky connection still gets an answer within roughly
+  /// `attemptTimeout * (backoff.length + 1) + sum(backoff)`.
+  static const _defaultBackoff = [
     Duration(milliseconds: 250),
     Duration(seconds: 1),
     Duration(seconds: 2),
   ];
 
-  const RetryingRemoteConsentDataSource(this._inner);
+  /// How long a single attempt is given before it counts as a failure worth
+  /// retrying. Nothing downstream imposes one on its own: `selectMatch` has
+  /// no `.timeout()` of its own, so a stalled connection would otherwise hang
+  /// instead of failing.
+  static const _defaultAttemptTimeout = Duration(seconds: 3);
+
+  const RetryingRemoteConsentDataSource(
+    this._inner, {
+    this._backoff = _defaultBackoff,
+    this._attemptTimeout = _defaultAttemptTimeout,
+  });
 
   @override
   Future<List<ConsentVersionDto>> fetchPublishedVersions() async {
-    for (var attempt = 0; attempt <= _maxRetries; attempt++) {
+    for (final delay in _backoff) {
       try {
-        return await _inner.fetchPublishedVersions();
+        return await _inner.fetchPublishedVersions().timeout(_attemptTimeout);
       } catch (error) {
-        if (!_isTransient(error) || attempt == _maxRetries) rethrow;
-        await Future<void>.delayed(_backoff[attempt]);
+        if (!_isTransient(error)) rethrow;
+        await Future<void>.delayed(delay);
       }
     }
-
-    throw StateError(
-      'unreachable: the loop returns or rethrows on the final attempt',
-    );
+    return await _inner.fetchPublishedVersions().timeout(_attemptTimeout);
   }
 
   /// Postgres connection-level codes: cannot connect, cannot establish, and
@@ -57,10 +69,16 @@ class RetryingRemoteConsentDataSource implements RemoteConsentDataSource {
   static const _transientPostgrestCodes = {'08000', '08003', '08006'};
 
   // Whether [error] is worth another attempt.
+  //
+  // http.ClientException, not HttpException: IOClient converts dart:io's
+  // HttpException into a plain ClientException before it ever escapes the
+  // HTTP layer, so the mid-flight-drop case ("Connection closed before full
+  // header was received") only matches this type. SocketException still
+  // matches directly — IOClient's _ClientSocketException implements it.
   bool _isTransient(Object error) =>
       error is TimeoutException ||
       error is SocketException ||
-      error is HttpException ||
+      error is http.ClientException ||
       (error is PostgrestException &&
           _transientPostgrestCodes.contains(error.code));
 }

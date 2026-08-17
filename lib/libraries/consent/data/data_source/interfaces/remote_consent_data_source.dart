@@ -7,9 +7,10 @@ import 'package:construculator/libraries/consent/data/models/consent_version_dto
 /// able to mask a newly published version, which is the one thing that has to
 /// be established authoritatively.
 ///
-/// Throws on failure. The repository retries transient failures and then
-/// resolves the outcome to a status — an unreachable server is an expected
-/// condition on a mobile network, not an error to surface to the user.
+/// Throws on failure. A `RetryingRemoteConsentDataSource` decorator retries
+/// transient failures before the repository resolves the outcome to a
+/// status — an unreachable server is an expected condition on a mobile
+/// network, not an error to surface to the user.
 abstract class RemoteConsentDataSource {
   /// Returns the currently published version of every consent document.
   ///
