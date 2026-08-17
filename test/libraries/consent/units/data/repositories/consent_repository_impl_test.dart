@@ -332,14 +332,13 @@ void main() {
       final emitted = expectLater(
         statuses,
         emitsInOrder([
+          // The initial subscribe emission, from nothing on file yet.
           isA<ConsentNeverGiven>(),
           const ConsentSatisfied(2),
         ]),
       );
 
-      local
-        ..emitLatestConsent(null)
-        ..emitLatestConsent(record(2, ConsentAction.accepted));
+      local.emitLatestConsent(record(2, ConsentAction.accepted));
       await local.dispose();
       await emitted;
     });
