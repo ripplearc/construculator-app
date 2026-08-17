@@ -90,7 +90,7 @@ class ConsentGateBloc extends Bloc<ConsentGateEvent, ConsentGateState> {
 
     final result = await _recordConsentUseCase(
       RecordConsentParams(
-        consentType: ConsentType.termsAndPrivacy,
+        consentType: _params.consentType,
         version: event.version.version,
       ),
     );
