@@ -91,7 +91,7 @@ class ConsentPrompt extends StatelessWidget {
               children: [
                 CoreIconWidget(
                   icon: CoreIcons.error,
-                  size: 16,
+                  size: CoreIconSize.size16,
                   color: colors.iconRed,
                 ),
                 const SizedBox(width: CoreSpacing.space1),

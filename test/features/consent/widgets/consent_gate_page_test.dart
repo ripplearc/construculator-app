@@ -199,4 +199,18 @@ void main() {
       expect(router.navigationHistory.map((c) => c.route), contains(shellRoute));
     });
   });
+
+  group('when verification fails but a prior acceptance is on file', () {
+    testWidgets('renders nothing and leaves for the shell', (tester) async {
+      // The fail-open path: nothing is wrong from the user's point of view,
+      // so it must be indistinguishable from the fully-satisfied path here.
+      resolveTo(const ConsentUnverified(2));
+
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CoreLoadingIndicator), findsNothing);
+      expect(router.navigationHistory.map((c) => c.route), contains(shellRoute));
+    });
+  });
 }
