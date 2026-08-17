@@ -57,7 +57,20 @@ class FakeLocalConsentDataSource implements LocalConsentDataSource {
   Stream<UserConsentDto?> watchLatestUserConsent(
     String userId,
     ConsentType type,
-  ) => _watchController.stream;
+  ) => Stream.multi((controller) {
+    // Stream.multi's callback runs synchronously on listen, unlike an
+    // async* generator's first yield, which resumes on a later microtask.
+    // A synchronous emit right after subscribing must land on this
+    // listener rather than being lost to a broadcast stream it hasn't
+    // subscribed to yet.
+    controller.add(latestConsents[type]);
+    final subscription = _watchController.stream.listen(
+      controller.add,
+      onError: controller.addError,
+      onDone: controller.close,
+    );
+    controller.onCancel = subscription.cancel;
+  });
 
   @override
   Future<UserConsentDto> insertUserConsent(UserConsentDto dto) async {
