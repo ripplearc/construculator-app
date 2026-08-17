@@ -1,4 +1,4 @@
-import 'package:construculator/libraries/consent/data/data_source/remote_consent_data_source.dart';
+import 'package:construculator/libraries/consent/data/data_source/supabase_consent_data_source.dart';
 import 'package:construculator/libraries/consent/domain/types/consent_types.dart';
 import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
@@ -24,15 +24,13 @@ Map<String, dynamic> _versionRow({
 }
 
 void main() {
-  group('RemoteConsentDataSourceImpl', () {
+  group('SupabaseConsentDataSource', () {
     late FakeSupabaseWrapper supabaseWrapper;
-    late RemoteConsentDataSourceImpl dataSource;
+    late SupabaseConsentDataSource dataSource;
 
     setUp(() {
       supabaseWrapper = FakeSupabaseWrapper(clock: FakeClockImpl());
-      dataSource = RemoteConsentDataSourceImpl(
-        supabaseWrapper: supabaseWrapper,
-      );
+      dataSource = SupabaseConsentDataSource(supabaseWrapper: supabaseWrapper);
     });
 
     tearDown(() {
@@ -40,18 +38,16 @@ void main() {
     });
 
     test('fetchPublishedVersions maps rows to ConsentVersionDtos', () async {
-      supabaseWrapper.addTableData(
-        DatabaseConstants.currentConsentVersionsView,
-        [
-          _versionRow(),
-          _versionRow(
-            id: 'version-2',
-            consentType: 'analytics',
-            version: 3,
-            documentUrl: 'https://ripplearc.com/legal/analytics',
-          ),
-        ],
-      );
+      supabaseWrapper
+          .addTableData(DatabaseConstants.currentConsentVersionsView, [
+            _versionRow(),
+            _versionRow(
+              id: 'version-2',
+              consentType: 'analytics',
+              version: 3,
+              documentUrl: 'https://ripplearc.com/legal/analytics',
+            ),
+          ]);
 
       final result = await dataSource.fetchPublishedVersions();
 
@@ -82,17 +78,19 @@ void main() {
       expect(calls.first['filters'], isEmpty);
     });
 
-    test('fetchPublishedVersions returns empty when nothing is published',
-        () async {
-      supabaseWrapper.addTableData(
-        DatabaseConstants.currentConsentVersionsView,
-        const [],
-      );
+    test(
+      'fetchPublishedVersions returns empty when nothing is published',
+      () async {
+        supabaseWrapper.addTableData(
+          DatabaseConstants.currentConsentVersionsView,
+          const [],
+        );
 
-      final result = await dataSource.fetchPublishedVersions();
+        final result = await dataSource.fetchPublishedVersions();
 
-      expect(result, isEmpty);
-    });
+        expect(result, isEmpty);
+      },
+    );
 
     test('fetchPublishedVersions rethrows when the read fails', () async {
       supabaseWrapper.shouldThrowOnSelectMatch = true;
@@ -108,15 +106,17 @@ void main() {
     // A blank document_url would leave the consent page with nothing to
     // present, so the DTO refuses the row rather than defaulting it. The
     // backend rejects it on write too; this covers the client half.
-    test('fetchPublishedVersions drops a row with a blank document url',
-        () async {
-      supabaseWrapper.addTableData(
-        DatabaseConstants.currentConsentVersionsView,
-        [_versionRow(documentUrl: '')],
-      );
+    test(
+      'fetchPublishedVersions drops a row with a blank document url',
+      () async {
+        supabaseWrapper.addTableData(
+          DatabaseConstants.currentConsentVersionsView,
+          [_versionRow(documentUrl: '')],
+        );
 
-      expect(await dataSource.fetchPublishedVersions(), isEmpty);
-    });
+        expect(await dataSource.fetchPublishedVersions(), isEmpty);
+      },
+    );
 
     test('fetchPublishedVersions drops an unrecognised consent type', () async {
       // A type this build does not know means a newer server, not a corrupt
