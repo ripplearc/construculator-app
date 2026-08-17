@@ -7,7 +7,8 @@ import 'package:construculator/libraries/consent/data/repositories/consent_repos
 import 'package:construculator/libraries/consent/domain/entities/consent_status_entity.dart';
 import 'package:construculator/libraries/consent/domain/types/consent_error_type.dart';
 import 'package:construculator/libraries/consent/domain/types/consent_types.dart';
-import 'package:construculator/libraries/consent/testing/fake_consent_data_sources.dart';
+import 'package:construculator/libraries/consent/testing/fake_local_consent_data_source.dart';
+import 'package:construculator/libraries/consent/testing/fake_remote_consent_data_source.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -60,7 +61,7 @@ void main() {
   group('getCachedConsentStatus', () {
     test('is satisfied when the accepted version matches the published one', () async {
       local.publishedVersions[type] = version(2);
-      local.latestConsents[type] = record(2, ConsentAction.accepted);
+      await local.seedLatestConsent(record(2, ConsentAction.accepted));
 
       final result = await repository.getCachedConsentStatus(type);
 
@@ -71,7 +72,7 @@ void main() {
       // Can happen after a rollback on the server. The user has agreed to at
       // least what is being asked, so there is nothing to prompt for.
       local.publishedVersions[type] = version(2);
-      local.latestConsents[type] = record(3, ConsentAction.accepted);
+      await local.seedLatestConsent(record(3, ConsentAction.accepted));
 
       final result = await repository.getCachedConsentStatus(type);
 
@@ -80,7 +81,7 @@ void main() {
 
     test('is outdated when a newer version has been published', () async {
       local.publishedVersions[type] = version(3);
-      local.latestConsents[type] = record(2, ConsentAction.accepted);
+      await local.seedLatestConsent(record(2, ConsentAction.accepted));
 
       final status = await repository.getCachedConsentStatus(type);
 
@@ -103,7 +104,7 @@ void main() {
       // accepted — not in the position of someone still on the withdrawn
       // version.
       local.publishedVersions[type] = version(2);
-      local.latestConsents[type] = record(2, ConsentAction.withdrawn);
+      await local.seedLatestConsent(record(2, ConsentAction.withdrawn));
 
       final status = await repository.getCachedConsentStatus(type);
 
@@ -116,12 +117,23 @@ void main() {
       expect(result, const ConsentIndeterminate());
     });
 
-    test('resolves a failed local read to a status, never a failure', () async {
+    test('resolves a failed published-version read to a status, never a failure', () async {
       // A read that failed establishes nothing, which is the same position as
       // a clean read that found no requirement. Returning a Left here would
       // let the guard treat a broken read as better evidence than a working
       // one.
-      local.readError = const FormatException('corrupt row');
+      local.publishedVersionReadError = const FormatException('corrupt row');
+
+      final result = await repository.getCachedConsentStatus(type);
+
+      expect(result, const ConsentIndeterminate());
+    });
+
+    test('resolves a failed user-consent read to a status, never a failure', () async {
+      // The two local reads are separate failure sites; the published-version
+      // read succeeding must not mask this one failing.
+      local.publishedVersions[type] = version(1);
+      local.latestConsentReadError = const FormatException('corrupt row');
 
       final result = await repository.getCachedConsentStatus(type);
 
@@ -139,8 +151,8 @@ void main() {
 
   group('verifyPublishedVersion', () {
     test('is outdated when the server publishes a newer version', () async {
-      local.latestConsents[type] = record(1, ConsentAction.accepted);
-      remote.publishedVersions = [version(2)];
+      await local.seedLatestConsent(record(1, ConsentAction.accepted));
+      remote.publishedVersionsToReturn = [version(2)];
 
       final status = await repository.verifyPublishedVersion(type);
 
@@ -149,8 +161,8 @@ void main() {
     });
 
     test('ignores versions published for other consent types', () async {
-      local.latestConsents[type] = record(1, ConsentAction.accepted);
-      remote.publishedVersions = [
+      await local.seedLatestConsent(record(1, ConsentAction.accepted));
+      remote.publishedVersionsToReturn = [
         ConsentVersionDto(
           id: 'analytics-9',
           consentType: ConsentType.analytics,
@@ -167,7 +179,7 @@ void main() {
     });
 
     test('is satisfied at version zero when nothing is published and nothing was accepted', () async {
-      remote.publishedVersions = [];
+      remote.publishedVersionsToReturn = [];
 
       final status = await repository.verifyPublishedVersion(type);
 
@@ -180,7 +192,7 @@ void main() {
     test('falls open to unverified when the fetch fails with an acceptance on file', () async {
       // The single leniency in the design, and it is safe because the user
       // demonstrably accepted at some point.
-      local.latestConsents[type] = record(2, ConsentAction.accepted);
+      await local.seedLatestConsent(record(2, ConsentAction.accepted));
       remote.error = const SocketException('offline');
 
       final result = await repository.verifyPublishedVersion(type);
@@ -199,7 +211,7 @@ void main() {
     });
 
     test('treats a withdrawn record as nothing on file when failing', () async {
-      local.latestConsents[type] = record(2, ConsentAction.withdrawn);
+      await local.seedLatestConsent(record(2, ConsentAction.withdrawn));
       remote.error = const SocketException('offline');
 
       final result = await repository.verifyPublishedVersion(type);
@@ -208,7 +220,7 @@ void main() {
     });
 
     test('calls the remote source once, leaving retries to the decorator', () async {
-      local.latestConsents[type] = record(2, ConsentAction.accepted);
+      await local.seedLatestConsent(record(2, ConsentAction.accepted));
       remote.error = const FormatException('bad payload');
 
       await repository.verifyPublishedVersion(type);
@@ -291,7 +303,7 @@ void main() {
 
   group('recordWithdrawal', () {
     test('appends a withdrawal carrying the version being revoked', () async {
-      local.latestConsents[type] = record(3, ConsentAction.accepted);
+      await local.seedLatestConsent(record(3, ConsentAction.accepted));
 
       final result = await repository.recordWithdrawal(consentType: type);
 
@@ -306,7 +318,7 @@ void main() {
 
     test('leaves the user gated afterwards', () async {
       local.publishedVersions[type] = version(3);
-      local.latestConsents[type] = record(3, ConsentAction.accepted);
+      await local.seedLatestConsent(record(3, ConsentAction.accepted));
 
       await repository.recordWithdrawal(consentType: type);
       final status = await repository.getCachedConsentStatus(type);
@@ -338,7 +350,30 @@ void main() {
         ]),
       );
 
-      local.emitLatestConsent(record(2, ConsentAction.accepted));
+      // Lets the initial subscribe emission clear the pipeline before the
+      // write lands, so the write is observed as a second, distinct event
+      // rather than racing the subscription and folding into the first.
+      await pumpEventQueue();
+      await local.seedLatestConsent(record(2, ConsentAction.accepted));
+      await local.dispose();
+      await emitted;
+    });
+
+    test('swallows a watch failure rather than propagating it', () async {
+      // ConsentRepositoryImpl.watchConsentStatus absorbs errors inside
+      // handleError without emitting anything downstream - a broken watch
+      // must not crash whatever UI is subscribed to it.
+      local.publishedVersions[type] = version(1);
+
+      final statuses = repository.watchConsentStatus(type);
+      final emitted = expectLater(
+        statuses,
+        emitsInOrder([isA<ConsentNeverGiven>(), emitsDone]),
+      );
+
+      await pumpEventQueue();
+      local.publishedVersionReadError = const FormatException('corrupt row');
+      await local.seedLatestConsent(record(1, ConsentAction.accepted));
       await local.dispose();
       await emitted;
     });
