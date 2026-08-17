@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mutations version="1.0">
     <!-- RETRYING REMOTE CONSENT DATA SOURCE MUTATION TESTING -->
-    <!-- Targets: RetryingRemoteConsentDataSource.fetchPublishedVersions and
-         _isTransient — the predicate deciding whether a failure is worth
-         retrying, and the loop deciding how long to keep trying. -->
+    <!-- Targets: RetryingRemoteConsentDataSource.fetchPublishedVersions — the
+         loop deciding how long to keep trying. Classification of which
+         failures are worth retrying now lives in ConsentErrorMapper.isTransient
+         and is covered by consent_error_mapper.xml instead. -->
 
     <files>
         <file>lib/libraries/consent/data/data_source/retrying_remote_consent_data_source.dart</file>
@@ -12,29 +13,8 @@
     <rules>
         <!-- RULE 1: Invert the transient check, so a transient failure gives
              up immediately instead of retrying. -->
-        <regex pattern="if \(!_isTransient\(error\)\) rethrow;" dotAll="true" id="retry.loop.invert_transient_check">
-            <mutation text="if (_isTransient(error)) rethrow;"/>
-        </regex>
-
-        <!-- RULE 2: Drop the timeout arm of _isTransient. -->
-        <regex pattern="error is TimeoutException \|\|\n      error is SocketException" dotAll="true" id="retry.is_transient.drop_timeout">
-            <mutation text="error is SocketException"/>
-        </regex>
-
-        <!-- RULE 3: Drop the socket arm of _isTransient. -->
-        <regex pattern="error is SocketException \|\|\n      error is http\.ClientException" dotAll="true" id="retry.is_transient.drop_socket">
-            <mutation text="error is http.ClientException"/>
-        </regex>
-
-        <!-- RULE 4: Drop the ClientException arm of _isTransient. -->
-        <regex pattern="error is http\.ClientException \|\|\n      \(error is PostgrestException" dotAll="true" id="retry.is_transient.drop_client_exception">
-            <mutation text="(error is PostgrestException"/>
-        </regex>
-
-        <!-- RULE 5: Empty the transient PostgREST code set, so a
-             connection-level PostgrestException is never retried. -->
-        <regex pattern="static const _transientPostgrestCodes = \{'08000', '08003', '08006'\};" dotAll="true" id="retry.postgrest_codes.empty">
-            <mutation text="static const _transientPostgrestCodes = &lt;String&gt;{};"/>
+        <regex pattern="if \(!ConsentErrorMapper\.isTransient\(error\)\) rethrow;" dotAll="true" id="retry.loop.invert_transient_check">
+            <mutation text="if (ConsentErrorMapper.isTransient(error)) rethrow;"/>
         </regex>
 
         <!-- RULE 6: Empty the default backoff, collapsing 4 attempts to 1.

@@ -5,6 +5,7 @@ import 'package:construculator/libraries/consent/data/consent_error_mapper.dart'
 import 'package:construculator/libraries/consent/domain/types/consent_error_type.dart';
 import 'package:construculator/libraries/errors/exceptions.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:stack_trace/stack_trace.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
@@ -24,9 +25,16 @@ void main() {
       );
     });
 
-    test('maps http exceptions to connectionError', () {
+    test('maps a dropped connection to connectionError', () {
+      // http.ClientException, not HttpException: IOClient converts dart:io's
+      // HttpException into a plain ClientException before it ever escapes the
+      // HTTP layer, so this is the type a mid-flight drop actually arrives as.
       expect(
-        ConsentErrorMapper.toErrorType(const HttpException('bad transport')),
+        ConsentErrorMapper.toErrorType(
+          http.ClientException(
+            'Connection closed before full header was received',
+          ),
+        ),
         ConsentErrorType.connectionError,
       );
     });
@@ -111,7 +119,7 @@ void main() {
     });
 
     test('maps postgrest connection codes to connectionError', () {
-      for (final code in ['08006', '08001', '08003']) {
+      for (final code in ['08000', '08006', '08001', '08003']) {
         expect(
           ConsentErrorMapper.toErrorType(
             supabase.PostgrestException(message: 'connection lost', code: code),
@@ -134,17 +142,20 @@ void main() {
       }
     });
 
-    test('maps an unrecognised postgrest failure to unexpectedDatabaseError', () {
-      expect(
-        ConsentErrorMapper.toErrorType(
-          const supabase.PostgrestException(
-            message: 'something went wrong',
-            code: '99999',
+    test(
+      'maps an unrecognised postgrest failure to unexpectedDatabaseError',
+      () {
+        expect(
+          ConsentErrorMapper.toErrorType(
+            const supabase.PostgrestException(
+              message: 'something went wrong',
+              code: '99999',
+            ),
           ),
-        ),
-        ConsentErrorType.unexpectedDatabaseError,
-      );
-    });
+          ConsentErrorType.unexpectedDatabaseError,
+        );
+      },
+    );
 
     test('maps anything unrecognised to unexpectedError', () {
       // Nothing about this came from the store, so it must not be reported as
@@ -164,6 +175,57 @@ void main() {
       );
 
       expect(failure.errorType, ConsentErrorType.permissionDenied);
+    });
+
+    test('isTransient accepts conditions that can plausibly clear', () {
+      expect(
+        ConsentErrorMapper.isTransient(TimeoutException('write timed out')),
+        isTrue,
+      );
+      expect(
+        ConsentErrorMapper.isTransient(const SocketException('no route')),
+        isTrue,
+      );
+      expect(
+        ConsentErrorMapper.isTransient(
+          http.ClientException('Connection closed'),
+        ),
+        isTrue,
+      );
+      expect(
+        ConsentErrorMapper.isTransient(
+          const supabase.PostgrestException(
+            message: 'connection lost',
+            code: '08006',
+          ),
+        ),
+        isTrue,
+      );
+    });
+
+    test('isTransient rejects failures that will not clear on retry', () {
+      expect(
+        ConsentErrorMapper.isTransient(const FormatException('bad payload')),
+        isFalse,
+      );
+      expect(
+        ConsentErrorMapper.isTransient(
+          const supabase.PostgrestException(
+            message: 'query failed',
+            code: 'PGRST116',
+          ),
+        ),
+        isFalse,
+      );
+      expect(
+        ConsentErrorMapper.isTransient(
+          const supabase.PostgrestException(
+            message: 'new row violates row-level security policy',
+            code: '42501',
+          ),
+        ),
+        isFalse,
+      );
     });
   });
 }
