@@ -54,11 +54,10 @@ class ConsentRepositoryImpl implements ConsentRepository {
     if (userId == null) return _ungated;
 
     try {
-      final published = await _localDataSource.fetchPublishedVersion(type);
-      final accepted = await _localDataSource.fetchLatestUserConsent(
-        userId,
-        type,
-      );
+      final (published, accepted) = await (
+        _localDataSource.fetchPublishedVersion(type),
+        _localDataSource.fetchLatestUserConsent(userId, type),
+      ).wait;
 
       // The requirement has not arrived yet: nothing to compare against, and
       // no document to present.
@@ -90,11 +89,21 @@ class ConsentRepositoryImpl implements ConsentRepository {
           }
           return _compare(_effectiveAcceptedVersion(accepted), published);
         })
-        .handleError((Object error) {
-          _logger.warning(
-            'Consent watch failed for ${type.toJson()}: $error',
-          );
-        });
+        .transform(
+          StreamTransformer<ConsentStatus, ConsentStatus>.fromHandlers(
+            handleError: (error, stackTrace, sink) {
+              _logger.warning(
+                'Consent watch failed for ${type.toJson()}: $error',
+              );
+
+              // Matches the Future-path behaviour: a failed tick establishes
+              // nothing, so it resolves to the same status a clean read that
+              // found no requirement would — not to a gap the subscriber has
+              // no signal for.
+              sink.add(const ConsentIndeterminate());
+            },
+          ),
+        );
   }
 
   // Compares an accepted version against a published one. The comparison

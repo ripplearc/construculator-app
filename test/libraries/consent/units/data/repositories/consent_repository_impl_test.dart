@@ -359,16 +359,20 @@ void main() {
       await emitted;
     });
 
-    test('swallows a watch failure rather than propagating it', () async {
-      // ConsentRepositoryImpl.watchConsentStatus absorbs errors inside
-      // handleError without emitting anything downstream - a broken watch
-      // must not crash whatever UI is subscribed to it.
+    test('resolves a watch failure to indeterminate rather than dropping it', () async {
+      // A broken watch tick must reach the subscriber as a status, the same
+      // way a failed getCachedConsentStatus read does, rather than leaving
+      // it holding a stale value with no signal a check failed.
       local.publishedVersions[type] = version(1);
 
       final statuses = repository.watchConsentStatus(type);
       final emitted = expectLater(
         statuses,
-        emitsInOrder([isA<ConsentNeverGiven>(), emitsDone]),
+        emitsInOrder([
+          isA<ConsentNeverGiven>(),
+          const ConsentIndeterminate(),
+          emitsDone,
+        ]),
       );
 
       await pumpEventQueue();
