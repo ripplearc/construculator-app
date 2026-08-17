@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:construculator/libraries/consent/data/data_source/retrying_remote_consent_data_source.dart';
 import 'package:construculator/libraries/consent/data/models/consent_version_dto.dart';
 import 'package:construculator/libraries/consent/domain/types/consent_types.dart';
-import 'package:construculator/libraries/consent/testing/fake_consent_data_sources.dart';
+import 'package:construculator/libraries/consent/testing/fake_remote_consent_data_source.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 
@@ -29,7 +29,7 @@ void main() {
     test(
       'returns the inner result without retrying when it succeeds',
       () async {
-        inner.publishedVersions = [_version(1)];
+        inner.publishedVersionsToReturn = [_version(1)];
 
         final result = await dataSource.fetchPublishedVersions();
 
@@ -42,7 +42,7 @@ void main() {
       inner
         ..error = const SocketException('offline')
         ..failuresBeforeSuccess = 2
-        ..publishedVersions = [_version(1)];
+        ..publishedVersionsToReturn = [_version(1)];
 
       final result = await dataSource.fetchPublishedVersions();
 
@@ -64,7 +64,7 @@ void main() {
       inner
         ..error = TimeoutException('slow')
         ..failuresBeforeSuccess = 1
-        ..publishedVersions = [_version(2)];
+        ..publishedVersionsToReturn = [_version(2)];
 
       await dataSource.fetchPublishedVersions();
 
@@ -89,7 +89,7 @@ void main() {
       inner
         ..error = PostgrestException(message: 'cannot connect', code: '08006')
         ..failuresBeforeSuccess = 1
-        ..publishedVersions = [_version(3)];
+        ..publishedVersionsToReturn = [_version(3)];
 
       await dataSource.fetchPublishedVersions();
 
