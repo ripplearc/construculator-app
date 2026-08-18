@@ -62,7 +62,7 @@ Future<AppBootstrap> _initializeApp() async {
 Future<AnalyticsRepository> _initializeAnalyticsRepository(
   EnvLoader envLoader,
 ) async {
-  if (envLoader.get(posthogEnabledKey) != 'true') {
+  if (envLoader.get(analyticsEnabledKey) != 'true') {
     return const NoOpAnalyticsRepository();
   }
   final repository = AnalyticsRepositoryImpl(
