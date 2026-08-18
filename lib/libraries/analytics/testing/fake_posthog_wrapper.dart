@@ -36,7 +36,9 @@ class FakePosthogWrapper implements PosthogWrapper {
     required String host,
     bool debug = false,
   }) async {
-    initializeCalls.add(InitializeCall(apiKey: apiKey, host: host, debug: debug));
+    initializeCalls.add(
+      InitializeCall(apiKey: apiKey, host: host, debug: debug),
+    );
   }
 
   @override
@@ -46,7 +48,9 @@ class FakePosthogWrapper implements PosthogWrapper {
   }) async {
     final error = errorToThrow;
     if (error != null) throw error;
-    capturedEvents.add(CaptureCall(eventName: eventName, properties: properties));
+    capturedEvents.add(
+      CaptureCall(eventName: eventName, properties: properties),
+    );
   }
 
   @override
@@ -69,7 +73,9 @@ class FakePosthogWrapper implements PosthogWrapper {
   }
 
   @override
-  Future<void> setPersonProperties({Map<String, dynamic>? userProperties}) async {
+  Future<void> setPersonProperties({
+    Map<String, dynamic>? userProperties,
+  }) async {
     final error = errorToThrow;
     if (error != null) throw error;
     setPersonPropertiesCalls.add(userProperties);
