@@ -7,6 +7,7 @@ import 'package:construculator/libraries/analytics/testing/fake_posthog_wrapper.
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:flutter_modular/src/presenter/navigation/modular_page.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 MaterialPageRoute<void> _routeNamed(String? name) {
@@ -16,11 +17,31 @@ MaterialPageRoute<void> _routeNamed(String? name) {
   );
 }
 
+/// Builds a route whose `settings` is a real [ModularPage], as Modular's own
+/// routing pipeline produces, with [templateName] as the originally-declared
+/// route name and [resolvedUri] as the value Modular resolved it to.
+MaterialPageRoute<void> _modularRouteNamed(
+  String templateName, {
+  String? resolvedUri,
+}) {
+  final page = ModularPage<void>(
+    route: ParallelRoute<void>(
+      name: templateName,
+      uri: Uri.parse(resolvedUri ?? templateName),
+      child: (_) => const SizedBox(),
+    ),
+    args: ModularArguments(uri: Uri.parse(resolvedUri ?? templateName)),
+    flags: ModularFlags(),
+  );
+  return MaterialPageRoute<void>(settings: page, builder: (_) => const SizedBox());
+}
+
 void main() {
   group('AnalyticsNavigatorObserver', () {
     late FakeEnvLoader fakeEnvLoader;
     late FakePosthogWrapper fakePosthogWrapper;
     late AnalyticsRepositoryImpl repository;
+    late AnalyticsNavigatorObserver observer;
 
     setUp(() {
       fakeEnvLoader = FakeEnvLoader();
@@ -29,6 +50,7 @@ void main() {
         envLoader: fakeEnvLoader,
         posthogWrapper: fakePosthogWrapper,
       );
+      observer = AnalyticsNavigatorObserver(analyticsRepository: repository);
     });
 
     tearDown(() {
@@ -37,11 +59,6 @@ void main() {
     });
 
     test('captures screen_viewed with the route name for a static route', () {
-      final observer = AnalyticsNavigatorObserver(
-        analyticsRepository: repository,
-        argsProvider: () => ModularArguments(uri: Uri.parse('/dashboard')),
-      );
-
       observer.didPush(_routeNamed('/dashboard'), null);
 
       expect(fakePosthogWrapper.capturedEvents, [
@@ -52,31 +69,28 @@ void main() {
       ]);
     });
 
-    test('strips resolved param values from the route name', () {
-      final observer = AnalyticsNavigatorObserver(
-        analyticsRepository: repository,
-        argsProvider: () => ModularArguments(
-          uri: Uri.parse('/details/abc123'),
-          params: {'estimationId': 'abc123'},
-        ),
-      );
+    test(
+      'reads the template name from ModularPage.route.name, never the '
+      'resolved uri',
+      () {
+        observer.didPush(
+          _modularRouteNamed(
+            '/details/:estimationId',
+            resolvedUri: '/details/abc123',
+          ),
+          null,
+        );
 
-      observer.didPush(_routeNamed('/details/abc123'), null);
-
-      expect(fakePosthogWrapper.capturedEvents, [
-        const CaptureCall(
-          eventName: 'screen_viewed',
-          properties: {'screen_name': '/details/:estimationId'},
-        ),
-      ]);
-    });
+        expect(fakePosthogWrapper.capturedEvents, [
+          const CaptureCall(
+            eventName: 'screen_viewed',
+            properties: {'screen_name': '/details/:estimationId'},
+          ),
+        ]);
+      },
+    );
 
     test('never sends raw route arguments as properties', () {
-      final observer = AnalyticsNavigatorObserver(
-        analyticsRepository: repository,
-        argsProvider: () => ModularArguments(uri: Uri.parse('/dashboard')),
-      );
-
       final route = MaterialPageRoute<void>(
         settings: const RouteSettings(
           name: '/dashboard',
@@ -96,23 +110,17 @@ void main() {
     });
 
     test('captures nothing when the route has no name', () {
-      final observer = AnalyticsNavigatorObserver(
-        analyticsRepository: repository,
-        argsProvider: () => ModularArguments(uri: Uri.parse('/')),
-      );
-
       observer.didPush(_routeNamed(null), null);
 
       expect(fakePosthogWrapper.capturedEvents, isEmpty);
     });
 
     test('captures nothing when analytics is disabled (NoOpAnalyticsRepository)', () {
-      final observer = AnalyticsNavigatorObserver(
+      final noOpObserver = AnalyticsNavigatorObserver(
         analyticsRepository: const NoOpAnalyticsRepository(),
-        argsProvider: () => ModularArguments(uri: Uri.parse('/dashboard')),
       );
 
-      observer.didPush(_routeNamed('/dashboard'), null);
+      noOpObserver.didPush(_routeNamed('/dashboard'), null);
 
       expect(fakePosthogWrapper.capturedEvents, isEmpty);
     });
