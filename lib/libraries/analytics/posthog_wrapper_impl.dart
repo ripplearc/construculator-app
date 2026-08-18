@@ -16,10 +16,10 @@ class PosthogWrapperImpl implements PosthogWrapper {
     required String host,
     bool debug = false,
   }) async {
-    // Skip PostHog initialization if the API key is not configured.
+    // Skip PostHog initialization if the API key or host is not configured.
     // This prevents silent no-op scenarios where PostHog accepts an empty
-    // token but drops all events without indication.
-    if (apiKey.isEmpty) {
+    // token/host but drops all events without indication.
+    if (apiKey.isEmpty || host.isEmpty) {
       return;
     }
 
