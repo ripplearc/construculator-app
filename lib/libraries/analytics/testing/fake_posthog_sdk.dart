@@ -20,7 +20,7 @@ class FakePosthogSdk implements PosthogSdk {
   int resetCallCount = 0;
 
   /// Recorded calls to [setPersonProperties].
-  final List<Map<String, dynamic>?> setPersonPropertiesCalls = [];
+  final List<SetPersonPropertiesCall> setPersonPropertiesCalls = [];
 
   /// Recorded calls to [group].
   final List<GroupCall> groupCalls = [];
@@ -73,7 +73,9 @@ class FakePosthogSdk implements PosthogSdk {
   Future<void> setPersonProperties({
     Map<String, dynamic>? userPropertiesToSet,
   }) async {
-    setPersonPropertiesCalls.add(userPropertiesToSet);
+    setPersonPropertiesCalls.add(
+      SetPersonPropertiesCall(userPropertiesToSet: userPropertiesToSet),
+    );
   }
 
   @override
@@ -120,6 +122,18 @@ class IdentifyCall extends Equatable {
 
   @override
   List<Object?> get props => [userId, userProperties];
+}
+
+/// Represents a call to [FakePosthogSdk.setPersonProperties].
+class SetPersonPropertiesCall extends Equatable {
+  /// Creates a recorded setPersonProperties call.
+  const SetPersonPropertiesCall({this.userPropertiesToSet});
+
+  /// Optional user properties to set.
+  final Map<String, dynamic>? userPropertiesToSet;
+
+  @override
+  List<Object?> get props => [userPropertiesToSet];
 }
 
 /// Represents a call to [FakePosthogSdk.group].
