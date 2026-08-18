@@ -53,23 +53,47 @@ void main() {
         fakeEnvLoader.setEnvVar(posthogHostKey, 'https://us.i.posthog.com');
         fakeEnvLoader.setEnvVar(posthogDebugKey, 'true');
 
-        await repository.initialize();
+        final result = await repository.initialize();
 
-        expect(fakePosthogWrapper.initializeCalls, [
-          const InitializeCall(
-            apiKey: 'phc_test_key',
-            host: 'https://us.i.posthog.com',
-            debug: true,
-          ),
-        ]);
+        _expectRight(result, (_) {
+          expect(fakePosthogWrapper.initializeCalls, [
+            const InitializeCall(
+              apiKey: 'phc_test_key',
+              host: 'https://us.i.posthog.com',
+              debug: true,
+            ),
+          ]);
+        });
       });
 
       test('defaults apiKey and host to empty string when unset', () async {
-        await repository.initialize();
+        final result = await repository.initialize();
 
-        expect(fakePosthogWrapper.initializeCalls, [
-          const InitializeCall(apiKey: '', host: '', debug: false),
-        ]);
+        _expectRight(result, (_) {
+          expect(fakePosthogWrapper.initializeCalls, [
+            const InitializeCall(apiKey: '', host: '', debug: false),
+          ]);
+        });
+      });
+
+      test('treats POSTHOG_DEBUG case-insensitively', () async {
+        fakeEnvLoader.setEnvVar(posthogDebugKey, 'True');
+
+        final result = await repository.initialize();
+
+        _expectRight(result, (_) {
+          expect(fakePosthogWrapper.initializeCalls, [
+            const InitializeCall(apiKey: '', host: '', debug: true),
+          ]);
+        });
+      });
+
+      test('maps errors to a Failure', () async {
+        fakePosthogWrapper.errorToThrow = Exception('boom');
+
+        final result = await repository.initialize();
+
+        _expectLeft(result, (failure) => expect(failure, isA<Failure>()));
       });
     });
 
