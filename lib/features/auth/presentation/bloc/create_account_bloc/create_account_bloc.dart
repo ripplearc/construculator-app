@@ -6,6 +6,7 @@ import 'package:construculator/features/auth/domain/usecases/params/create_accou
 import 'package:construculator/features/auth/domain/usecases/send_otp_usecase.dart';
 import 'package:construculator/libraries/analytics/domain/entities/analytics_event.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
+import 'package:construculator/libraries/analytics/domain/utils/failure_analytics_reason.dart';
 import 'package:construculator/libraries/auth/data/models/professional_role.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/auth/domain/validation/auth_validation.dart';
@@ -220,7 +221,7 @@ class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
           _analyticsRepository.track(
             AnalyticsEvent(
               name: 'user_registration_failed',
-              properties: {'reason': _failureReason(failure)},
+              properties: {'reason': failure.analyticsReason},
             ),
           ),
         );
@@ -236,7 +237,4 @@ class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
       },
     );
   }
-
-  String _failureReason(Failure failure) =>
-      failure is AuthFailure ? failure.errorType.name : 'unexpected';
 }

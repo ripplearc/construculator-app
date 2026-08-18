@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:construculator/libraries/analytics/current_screen_tracker.dart';
 import 'package:construculator/libraries/analytics/data/repositories/analytics_repository_impl.dart';
 import 'package:construculator/libraries/analytics/domain/entities/analytics_event.dart';
 import 'package:construculator/libraries/analytics/domain/entities/analytics_user_properties.dart';
@@ -28,16 +29,28 @@ void _expectLeft<L, R>(Either<L, R> result, void Function(L error) assertions) {
 
 void main() {
   group('AnalyticsRepositoryImpl', () {
+    const testAppVersion = '1.2.3';
+
     late FakeEnvLoader fakeEnvLoader;
     late FakePosthogWrapper fakePosthogWrapper;
+    late CurrentScreenTracker currentScreenTracker;
     late AnalyticsRepositoryImpl repository;
+
+    Map<String, dynamic> standardProperties({String? screenName}) => {
+      'app_version': testAppVersion,
+      'platform': 'android',
+      'screen_name': screenName,
+    };
 
     setUp(() {
       fakeEnvLoader = FakeEnvLoader();
       fakePosthogWrapper = FakePosthogWrapper();
+      currentScreenTracker = CurrentScreenTracker();
       repository = AnalyticsRepositoryImpl(
         envLoader: fakeEnvLoader,
         posthogWrapper: fakePosthogWrapper,
+        currentScreenTracker: currentScreenTracker,
+        appVersion: testAppVersion,
       );
     });
 
@@ -108,11 +121,54 @@ void main() {
 
         _expectRight(result, (_) {
           expect(fakePosthogWrapper.capturedEvents, [
-            const CaptureCall(
+            CaptureCall(
               eventName: 'estimation_created',
-              properties: {'estimation_id': 'est-1'},
+              properties: {
+                ...standardProperties(),
+                'estimation_id': 'est-1',
+              },
             ),
           ]);
+        });
+      });
+
+      test(
+        'attaches app_version, platform, and the current screen name to '
+        'every event',
+        () async {
+          currentScreenTracker.screenName = '/details/:estimationId';
+
+          final result = await repository.track(
+            const AnalyticsEvent(name: 'estimation_created'),
+          );
+
+          _expectRight(result, (_) {
+            expect(fakePosthogWrapper.capturedEvents, [
+              CaptureCall(
+                eventName: 'estimation_created',
+                properties: standardProperties(
+                  screenName: '/details/:estimationId',
+                ),
+              ),
+            ]);
+          });
+        },
+      );
+
+      test('event properties override standard properties on key collision',
+          () async {
+        final result = await repository.track(
+          const AnalyticsEvent(
+            name: 'estimation_created',
+            properties: {'app_version': 'overridden'},
+          ),
+        );
+
+        _expectRight(result, (_) {
+          expect(
+            fakePosthogWrapper.capturedEvents.single.properties?['app_version'],
+            'overridden',
+          );
         });
       });
 

@@ -1,4 +1,5 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/libraries/analytics/current_screen_tracker.dart';
 import 'package:construculator/libraries/analytics/data/repositories/no_op_analytics_repository.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/feature_flag_repository.dart';
@@ -64,6 +65,7 @@ class FakeAppBootstrapFactory {
       powerSyncDatabase: powerSyncDatabase ?? FakePowerSyncDatabase(),
       featureFlagRepository:
           featureFlagRepository ?? FakeFeatureFlagRepository(),
+      currentScreenTracker: CurrentScreenTracker(),
     );
   }
 }

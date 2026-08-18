@@ -1,6 +1,7 @@
 // ignore_for_file: no_direct_instantiation
 
 import 'package:construculator/libraries/analytics/analytics_navigator_observer.dart';
+import 'package:construculator/libraries/analytics/current_screen_tracker.dart';
 import 'package:construculator/libraries/analytics/data/repositories/analytics_repository_impl.dart';
 import 'package:construculator/libraries/analytics/data/repositories/no_op_analytics_repository.dart';
 import 'package:construculator/libraries/analytics/testing/fake_posthog_wrapper.dart';
@@ -38,19 +39,34 @@ MaterialPageRoute<void> _modularRouteNamed(
 
 void main() {
   group('AnalyticsNavigatorObserver', () {
+    const testAppVersion = '1.2.3';
+
     late FakeEnvLoader fakeEnvLoader;
     late FakePosthogWrapper fakePosthogWrapper;
+    late CurrentScreenTracker currentScreenTracker;
     late AnalyticsRepositoryImpl repository;
     late AnalyticsNavigatorObserver observer;
+
+    Map<String, dynamic> standardProperties({String? screenName}) => {
+      'app_version': testAppVersion,
+      'platform': 'android',
+      'screen_name': screenName,
+    };
 
     setUp(() {
       fakeEnvLoader = FakeEnvLoader();
       fakePosthogWrapper = FakePosthogWrapper();
+      currentScreenTracker = CurrentScreenTracker();
       repository = AnalyticsRepositoryImpl(
         envLoader: fakeEnvLoader,
         posthogWrapper: fakePosthogWrapper,
+        currentScreenTracker: currentScreenTracker,
+        appVersion: testAppVersion,
       );
-      observer = AnalyticsNavigatorObserver(analyticsRepository: repository);
+      observer = AnalyticsNavigatorObserver(
+        analyticsRepository: repository,
+        currentScreenTracker: currentScreenTracker,
+      );
     });
 
     tearDown(() {
@@ -62,9 +78,9 @@ void main() {
       observer.didPush(_routeNamed('/dashboard'), null);
 
       expect(fakePosthogWrapper.capturedEvents, [
-        const CaptureCall(
+        CaptureCall(
           eventName: 'screen_viewed',
-          properties: {'screen_name': '/dashboard'},
+          properties: standardProperties(screenName: '/dashboard'),
         ),
       ]);
     });
@@ -82,9 +98,9 @@ void main() {
         );
 
         expect(fakePosthogWrapper.capturedEvents, [
-          const CaptureCall(
+          CaptureCall(
             eventName: 'screen_viewed',
-            properties: {'screen_name': '/details/:estimationId'},
+            properties: standardProperties(screenName: '/details/:estimationId'),
           ),
         ]);
       },
@@ -102,9 +118,9 @@ void main() {
       observer.didPush(route, null);
 
       expect(fakePosthogWrapper.capturedEvents, [
-        const CaptureCall(
+        CaptureCall(
           eventName: 'screen_viewed',
-          properties: {'screen_name': '/dashboard'},
+          properties: standardProperties(screenName: '/dashboard'),
         ),
       ]);
     });
@@ -118,6 +134,7 @@ void main() {
     test('captures nothing when analytics is disabled (NoOpAnalyticsRepository)', () {
       final noOpObserver = AnalyticsNavigatorObserver(
         analyticsRepository: const NoOpAnalyticsRepository(),
+        currentScreenTracker: currentScreenTracker,
       );
 
       noOpObserver.didPush(_routeNamed('/dashboard'), null);

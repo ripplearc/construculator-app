@@ -655,21 +655,19 @@ void main() {
         ),
       ],
       verify: (_) {
-        expect(fakeAnalytics.trackedEvents, hasLength(1));
-        expect(
-          fakeAnalytics.trackedEvents.single.name,
-          'user_registration_failed',
-        );
-        expect(
-          fakeAnalytics.trackedEvents.single.properties['reason'],
-          isNotEmpty,
-        );
+        expect(fakeAnalytics.trackedEvents, [
+          const AnalyticsEvent(
+            name: 'user_registration_failed',
+            properties: {'reason': 'serverError'},
+          ),
+        ]);
       },
     );
 
     blocTest<CreateAccountBloc, CreateAccountState>(
       'emits [Loading, Failure] when user profile creation fails',
       build: () {
+        fakeSupabase.setCurrentUser(createFakeUser('fail-insert@example.com'));
         fakeSupabase.shouldThrowOnInsert = true;
         return bloc;
       },
@@ -694,15 +692,12 @@ void main() {
         ),
       ],
       verify: (_) {
-        expect(fakeAnalytics.trackedEvents, hasLength(1));
-        expect(
-          fakeAnalytics.trackedEvents.single.name,
-          'user_registration_failed',
-        );
-        expect(
-          fakeAnalytics.trackedEvents.single.properties['reason'],
-          isNotEmpty,
-        );
+        expect(fakeAnalytics.trackedEvents, [
+          const AnalyticsEvent(
+            name: 'user_registration_failed',
+            properties: {'reason': 'serverError'},
+          ),
+        ]);
       },
     );
   });

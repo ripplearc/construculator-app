@@ -35,6 +35,7 @@ dependencies:
   posthog_flutter: 5.35.1
   path_provider: 2.1.6
   path: 1.9.1
+  package_info_plus: 10.2.1
 
 dev_dependencies:
   flutter_test:

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:construculator/libraries/analytics/current_screen_tracker.dart';
 import 'package:construculator/libraries/analytics/domain/entities/analytics_event.dart';
 import 'package:construculator/libraries/analytics/domain/entities/analytics_user_properties.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
@@ -11,6 +12,7 @@ import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
+import 'package:flutter/foundation.dart';
 
 /// PostHog-backed implementation of [AnalyticsRepository].
 ///
@@ -19,11 +21,49 @@ import 'package:construculator/libraries/logging/app_logger.dart';
 class AnalyticsRepositoryImpl implements AnalyticsRepository {
   final EnvLoader _envLoader;
   final PosthogWrapper _posthogWrapper;
+  final CurrentScreenTracker _currentScreenTracker;
+  final String _appVersion;
   static final _logger = AppLogger().tag('AnalyticsRepositoryImpl');
 
-  /// Creates an [AnalyticsRepositoryImpl] with the given [_envLoader] and
-  /// [_posthogWrapper].
-  AnalyticsRepositoryImpl({required this._envLoader, required this._posthogWrapper});
+  /// Creates an [AnalyticsRepositoryImpl].
+  ///
+  /// [currentScreenTracker] must be the same instance given to
+  /// `AnalyticsNavigatorObserver` so `track()` can attach the currently
+  /// active screen to every event. [appVersion] is resolved once at
+  /// bootstrap (e.g. via `package_info_plus`) since it never changes at
+  /// runtime.
+  AnalyticsRepositoryImpl({
+    required this._envLoader,
+    required this._posthogWrapper,
+    required this._currentScreenTracker,
+    required this._appVersion,
+  });
+
+  /// Standard properties attached to every [track]ed event, per
+  /// `docs/Logging/PostHog-Event-Tracking.md`'s "Standard Properties"
+  /// contract.
+  Map<String, dynamic> get _standardProperties => {
+    'app_version': _appVersion,
+    'platform': _platformName,
+    'screen_name': _currentScreenTracker.screenName,
+  };
+
+  String get _platformName {
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.iOS:
+        return 'ios';
+      case TargetPlatform.android:
+        return 'android';
+      case TargetPlatform.macOS:
+        return 'macos';
+      case TargetPlatform.windows:
+        return 'windows';
+      case TargetPlatform.linux:
+        return 'linux';
+      case TargetPlatform.fuchsia:
+        return 'fuchsia';
+    }
+  }
 
   /// Reads PostHog configuration from [_envLoader] and initializes the
   /// underlying wrapper.
@@ -68,7 +108,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     try {
       await _posthogWrapper.capture(
         eventName: event.name,
-        properties: event.properties,
+        properties: {..._standardProperties, ...event.properties},
       );
       return const Right(null);
     } catch (e) {
