@@ -1798,11 +1798,23 @@ abstract class AppLocalizations {
   /// **'Fill search field with {term}'**
   String globalSearchRecentSearchFillSemanticLabel(String term);
 
+  /// Label of the custom accessibility action on a recent search row that deletes the term from history (the assistive-technology equivalent of the swipe-to-dismiss gesture)
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {term} from recent searches'**
+  String globalSearchRecentSearchDeleteSemanticLabel(String term);
+
   /// Accessibility label for the trailing icon on a recent project search row — fills the search field with the term
   ///
   /// In en, this message translates to:
   /// **'Fill search field with {term}'**
   String projectSearchRecentSearchFillSemanticLabel(String term);
+
+  /// Label of the custom accessibility action on a recent project search row that deletes the term from history (the assistive-technology equivalent of the swipe-to-dismiss gesture)
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {term} from recent searches'**
+  String projectSearchRecentSearchDeleteSemanticLabel(String term);
 
   /// Section title shown above the suggestions list on the project search screen when the user has typed a query
   ///
@@ -2157,6 +2169,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not load owners.'**
   String get projectSearchOwnersLoadErrorMessage;
+
+  /// Error toast shown when deleting a recent project search term from history fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to remove recent search. Please try again.'**
+  String get projectSearchDeleteErrorMessage;
 
   /// Label for the project name text field
   ///

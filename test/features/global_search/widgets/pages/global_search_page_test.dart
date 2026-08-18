@@ -346,6 +346,60 @@ void main() {
       expect(find.text('MD bungalow'), findsOneWidget);
     });
 
+    testWidgets('swiping a recent search away deletes it from history and '
+        'removes the row', (tester) async {
+      seedRecentSearches();
+      await renderPage(tester);
+
+      await tester.drag(
+        find.byKey(const ValueKey('recent_search_item_MD bungalow')),
+        const Offset(-500, 0),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('recent_search_item_MD bungalow')),
+        findsNothing,
+      );
+      expect(find.text('Material of building'), findsOneWidget);
+      final deleteCalls = fakeSupabase
+          .getMethodCallsFor('deleteMatch')
+          .where(
+            (call) => call['table'] == DatabaseConstants.searchHistoryTable,
+          )
+          .toList();
+      expect(
+        deleteCalls,
+        hasLength(1),
+        reason: 'the swipe must delete the term from the backend history',
+      );
+    });
+
+    testWidgets('sees a toast and the restored row when deleting a recent '
+        'search fails', (tester) async {
+      seedRecentSearches();
+      await renderPage(tester);
+
+      fakeSupabase.shouldThrowOnDeleteMatch = true;
+      fakeSupabase.deleteMatchExceptionType = SupabaseExceptionType.timeout;
+
+      await tester.drag(
+        find.byKey(const ValueKey('recent_search_item_MD bungalow')),
+        const Offset(-500, 0),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().globalSearchDeleteErrorMessage), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('recent_search_item_MD bungalow')),
+        findsOneWidget,
+        reason: 'a failed delete must restore the dismissed row',
+      );
+
+      // Flush the toast's auto-dismiss timer before the test ends.
+      await tester.pump(kToastDismissDuration);
+    });
+
     testWidgets('tapping trailing icon fills search field', (tester) async {
       seedRecentSearches();
       await renderPage(tester);

@@ -105,6 +105,34 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
     ).add(ProjectSearchQueryUpdatedEvent(query: term));
   }
 
+  // Dispatches the deletion and resolves the Dismissible's confirmDismiss
+  // on this term's own outcome ack: true on the success state (the row's
+  // data is already gone), false on the delete-failure state (the row
+  // slides back while the toast surfaces the failure). Matching on the
+  // echoed term keeps concurrent swipes from resolving each other.
+  Future<bool> _onHistoryDismissRequested(
+    BuildContext context,
+    String term,
+  ) async {
+    final bloc = BlocProvider.of<ProjectSearchBloc>(context);
+    final outcome = bloc.stream.firstWhere(
+      (state) =>
+          (state is ProjectSearchHistoryDeleteSuccess &&
+              state.searchTerm == term) ||
+          (state is ProjectSearchHistoryDeleteFailure &&
+              state.searchTerm == term),
+    );
+    bloc.add(ProjectSearchHistoryItemDismissedEvent(searchTerm: term));
+    try {
+      final state = await outcome;
+      return state is ProjectSearchHistoryDeleteSuccess;
+    } catch (_) {
+      // The bloc closed with the outcome unobserved (page disposed, or the
+      // surface changed before it landed); the row is unmounted either way.
+      return false;
+    }
+  }
+
   void _onProjectResultTap(Project project) {
     widget.projectDropdownBloc.add(ProjectDropdownSelected(project.id));
     widget.router.pop();
@@ -316,6 +344,8 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
       recentSearches: state.recentSearches,
       onItemTap: (term) => _onItemTap(context, term),
       onTrailingTap: (term) => _onTrailingTap(context, term),
+      onItemDismissRequested: (term) =>
+          _onHistoryDismissRequested(context, term),
     );
   }
 
@@ -385,7 +415,8 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
             listenWhen: (prev, curr) =>
                 curr is ProjectSearchFailureState ||
                 curr is ProjectSearchTagsLoadFailure ||
-                curr is ProjectSearchOwnersLoadFailure,
+                curr is ProjectSearchOwnersLoadFailure ||
+                curr is ProjectSearchHistoryDeleteFailure,
             listener: (context, state) {
               final l10n = context.l10n;
               if (state is ProjectSearchFailureState) {
@@ -404,6 +435,12 @@ class _ProjectSearchPageState extends State<ProjectSearchPage> {
                 CoreToast.showWarning(
                   context,
                   l10n.projectSearchOwnersLoadErrorMessage,
+                  l10n.closeLabel,
+                );
+              } else if (state is ProjectSearchHistoryDeleteFailure) {
+                CoreToast.showError(
+                  context,
+                  l10n.projectSearchDeleteErrorMessage,
                   l10n.closeLabel,
                 );
               }
