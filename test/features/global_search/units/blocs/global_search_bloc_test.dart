@@ -68,6 +68,35 @@ Map<String, dynamic> _fakeSearchHistoryData({
   };
 }
 
+// Builds a global_search RPC response map from the given per-domain rows.
+Map<String, dynamic> _globalSearchResponse({
+  List<Map<String, dynamic>> projects = const [],
+  List<Map<String, dynamic>> estimations = const [],
+  List<Map<String, dynamic>> members = const [],
+}) {
+  return {
+    'projects': projects,
+    'estimations': estimations,
+    'members': members,
+  };
+}
+
+// Builds [count] estimation rows with sequential ids starting at
+// [startIndex], so successive pages carry distinct, ordered ids.
+List<Map<String, dynamic>> _fakeEstimationPage(
+  int count, {
+  int startIndex = 0,
+}) {
+  return List.generate(
+    count,
+    (i) => estimation_factory.EstimationTestDataMapFactory
+        .createFakeEstimationData(
+      id: 'est-${startIndex + i}',
+      estimateName: 'Estimation ${startIndex + i}',
+    ),
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -747,6 +776,491 @@ void main() {
             reason:
                 'an empty owner selection must be forwarded as null, the '
                 'backend contract for "no owner filter"',
+          );
+        },
+      );
+    });
+
+    group('GlobalSearchLoadMoreRequested', () {
+      // Runs a first search returning a full page of 20 estimations and
+      // waits for its results surface, so each test starts from a
+      // paginatable LoadSuccess.
+      Future<void> performFullFirstPage(GlobalSearchBloc bloc) async {
+        fakeSupabase.setRpcResponse(
+          DatabaseConstants.globalSearchRpcFunction,
+          _globalSearchResponse(estimations: _fakeEstimationPage(20)),
+        );
+        bloc.add(const GlobalSearchPerformed(query: 'wall'));
+        await bloc.stream.firstWhere(
+          (state) => state is GlobalSearchLoadSuccess,
+        );
+      }
+
+      // Returns the params of every global_search RPC call made so far.
+      List<Map<String, dynamic>> globalSearchRpcParams() {
+        return fakeSupabase
+            .getMethodCallsFor('rpc')
+            .where(
+              (call) =>
+                  call['functionName'] ==
+                  DatabaseConstants.globalSearchRpcFunction,
+            )
+            .map((call) => call['params'] as Map<String, dynamic>)
+            .toList();
+      }
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'appends the next page and advances the estimations offset',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            _globalSearchResponse(
+              estimations: _fakeEstimationPage(5, startIndex: 20),
+            ),
+          );
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.loadMoreStatus == GlobalSearchLoadMoreStatus.idle &&
+                state.results.estimations.length == 25,
+          );
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>()
+              .having((s) => s.results.estimations, 'first page', hasLength(20))
+              .having((s) => s.hasMoreEstimations, 'hasMore', isTrue)
+              .having(
+                (s) => s.loadMoreStatus,
+                'status',
+                GlobalSearchLoadMoreStatus.idle,
+              ),
+          isA<GlobalSearchLoadSuccess>()
+              .having(
+                (s) => s.results.estimations,
+                'loaded results stay visible while the page loads',
+                hasLength(20),
+              )
+              .having(
+                (s) => s.loadMoreStatus,
+                'status',
+                GlobalSearchLoadMoreStatus.inProgress,
+              ),
+          isA<GlobalSearchLoadSuccess>()
+              .having(
+                (s) => s.results.estimations,
+                'appended results',
+                hasLength(25),
+              )
+              .having(
+                (s) => s.hasMoreEstimations,
+                'short page exhausts the domain',
+                isFalse,
+              )
+              .having(
+                (s) => s.loadMoreStatus,
+                'status',
+                GlobalSearchLoadMoreStatus.idle,
+              ),
+        ],
+        verify: (_) {
+          final paramsPerCall = globalSearchRpcParams();
+          expect(paramsPerCall, hasLength(2));
+          expect(
+            paramsPerCall.first['estimations_offset'],
+            0,
+            reason: 'a fresh search always starts at the first page',
+          );
+          expect(
+            paramsPerCall.last['estimations_offset'],
+            20,
+            reason: 'the page fetch must advance the offset by the page size',
+          );
+          expect(paramsPerCall.last['limit'], 20);
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'deduplicates rows that shifted pages server-side and preserves order',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            _globalSearchResponse(
+              estimations: [
+                // est-19 already rendered from the first page: a row pushed
+                // onto page two by an insert between the fetches.
+                ..._fakeEstimationPage(1, startIndex: 19),
+                ..._fakeEstimationPage(2, startIndex: 20),
+              ],
+            ),
+          );
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.loadMoreStatus == GlobalSearchLoadMoreStatus.idle &&
+                state.results.estimations.length > 20,
+          );
+        },
+        verify: (bloc) {
+          final state = bloc.state as GlobalSearchLoadSuccess;
+          final ids = state.results.estimations.map((e) => e.id).toList();
+          expect(
+            ids,
+            List.generate(22, (i) => 'est-$i'),
+            reason:
+                'the duplicated est-19 must appear once, and appended rows '
+                'must keep their page order after the first page',
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'does not fetch once the estimations domain is exhausted',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            _globalSearchResponse(estimations: _fakeEstimationPage(3)),
+          );
+          bloc.add(const GlobalSearchPerformed(query: 'wall'));
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchLoadSuccess,
+          );
+          bloc.add(const GlobalSearchLoadMoreRequested());
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>()
+              .having(
+                (s) => s.hasMoreEstimations,
+                'a short first page exhausts the domain',
+                isFalse,
+              ),
+        ],
+        verify: (_) {
+          expect(
+            globalSearchRpcParams(),
+            hasLength(1),
+            reason: 'an exhausted domain must not trigger further fetches',
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'ignores a load-more dispatched while a page fetch is in flight',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            _globalSearchResponse(
+              estimations: _fakeEstimationPage(2, startIndex: 20),
+            ),
+          );
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.loadMoreStatus == GlobalSearchLoadMoreStatus.inProgress,
+          );
+          fakeSupabase.completer!.complete();
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.loadMoreStatus == GlobalSearchLoadMoreStatus.idle &&
+                state.results.estimations.length == 22,
+          );
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.loadMoreStatus,
+            'status',
+            GlobalSearchLoadMoreStatus.idle,
+          ),
+          // A single in-flight/idle cycle: the second dispatch is swallowed
+          // by the in-flight guard instead of emitting its own cycle.
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.loadMoreStatus,
+            'status',
+            GlobalSearchLoadMoreStatus.inProgress,
+          ),
+          isA<GlobalSearchLoadSuccess>()
+              .having((s) => s.results.estimations, 'appended', hasLength(22))
+              .having(
+                (s) => s.loadMoreStatus,
+                'status',
+                GlobalSearchLoadMoreStatus.idle,
+              ),
+        ],
+        verify: (_) {
+          expect(
+            globalSearchRpcParams(),
+            hasLength(2),
+            reason:
+                'the duplicate dispatch must not start a second page fetch',
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'keeps loaded results on a failed page fetch and appends on retry',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          fakeSupabase.shouldThrowOnRpc = true;
+          fakeSupabase.rpcExceptionType = SupabaseExceptionType.timeout;
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.loadMoreStatus == GlobalSearchLoadMoreStatus.failure,
+          );
+          fakeSupabase.shouldThrowOnRpc = false;
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            _globalSearchResponse(
+              estimations: _fakeEstimationPage(2, startIndex: 20),
+            ),
+          );
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.loadMoreStatus == GlobalSearchLoadMoreStatus.idle &&
+                state.results.estimations.length == 22,
+          );
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.loadMoreStatus,
+            'status',
+            GlobalSearchLoadMoreStatus.idle,
+          ),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.loadMoreStatus,
+            'status',
+            GlobalSearchLoadMoreStatus.inProgress,
+          ),
+          isA<GlobalSearchLoadSuccess>()
+              .having(
+                (s) => s.results.estimations,
+                'loaded results survive the failure',
+                hasLength(20),
+              )
+              .having(
+                (s) => s.hasMoreEstimations,
+                'the failed page can be retried',
+                isTrue,
+              )
+              .having(
+                (s) => s.loadMoreStatus,
+                'status',
+                GlobalSearchLoadMoreStatus.failure,
+              ),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.loadMoreStatus,
+            'status',
+            GlobalSearchLoadMoreStatus.inProgress,
+          ),
+          isA<GlobalSearchLoadSuccess>()
+              .having(
+                (s) => s.results.estimations,
+                'retry appends the page',
+                hasLength(22),
+              )
+              .having(
+                (s) => s.loadMoreStatus,
+                'status',
+                GlobalSearchLoadMoreStatus.idle,
+              ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'ignores a load-more after a re-run search fails — stale pagination '
+        'must not resurrect the previous results over the failure surface',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          fakeSupabase.shouldThrowOnRpc = true;
+          fakeSupabase.rpcExceptionType = SupabaseExceptionType.timeout;
+          bloc.add(const GlobalSearchPerformed(query: 'wall'));
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchLoadFailure,
+          );
+          bloc.add(const GlobalSearchLoadMoreRequested());
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.hasMoreEstimations,
+            'hasMore',
+            isTrue,
+          ),
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadFailure>(),
+          // No LoadSuccess emission may follow: the failure surface owns
+          // the body until the user retries the search itself.
+        ],
+        verify: (_) {
+          expect(
+            globalSearchRpcParams(),
+            hasLength(2),
+            reason:
+                'the load-more after a failed search must not fetch a page',
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'ignores a load-more dispatched before any search is performed',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) => bloc.add(const GlobalSearchLoadMoreRequested()),
+        expect: () => <GlobalSearchState>[],
+        verify: (_) {
+          expect(
+            globalSearchRpcParams(),
+            isEmpty,
+            reason: 'no results surface exists, so nothing may be fetched',
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'a query edit disowns the in-flight page fetch — its completion '
+        'must not publish results over the suggestions surface',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.searchSuggestionsRpcFunction,
+            <String>[],
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.loadMoreStatus == GlobalSearchLoadMoreStatus.inProgress,
+          );
+          // Editing the query returns the body to the suggestions surface
+          // and disowns the gated page fetch (its own suggestions fetch is
+          // gated behind the same completer and resumes after it, FIFO).
+          bloc.add(const GlobalSearchQueryUpdated(query: 'girder'));
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchReady && state.query == 'girder',
+          );
+          fakeSupabase.completer!.complete();
+          fakeSupabase.shouldDelayOperations = false;
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady && !state.suggestionsLoading,
+          );
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.loadMoreStatus,
+            'status',
+            GlobalSearchLoadMoreStatus.idle,
+          ),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.loadMoreStatus,
+            'status',
+            GlobalSearchLoadMoreStatus.inProgress,
+          ),
+          // The disowned page fetch resolves first (FIFO) and emits nothing;
+          // only the suggestions surface may appear from here on.
+          isA<GlobalSearchReady>()
+              .having((s) => s.query, 'query', 'girder')
+              .having((s) => s.suggestionsLoading, 'loading', isTrue),
+          isA<GlobalSearchReady>()
+              .having((s) => s.query, 'query', 'girder')
+              .having((s) => s.suggestionsLoading, 'loading', isFalse),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'a new search disowns the in-flight page fetch and resets pagination',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.loadMoreStatus == GlobalSearchLoadMoreStatus.inProgress,
+          );
+          // The fresh search's RPC is gated behind the same completer; both
+          // resume FIFO on release, so the disowned page fetch resolves
+          // first and must bail out without emitting.
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            _globalSearchResponse(estimations: _fakeEstimationPage(3)),
+          );
+          bloc.add(const GlobalSearchPerformed(query: 'fresh'));
+          fakeSupabase.completer!.complete();
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchLoadSuccess,
+          );
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.results.estimations,
+            'first search results',
+            hasLength(20),
+          ),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.loadMoreStatus,
+            'status',
+            GlobalSearchLoadMoreStatus.inProgress,
+          ),
+          const GlobalSearchLoadInProgress(query: 'fresh'),
+          // No append emission from the disowned fetch may interleave here.
+          isA<GlobalSearchLoadSuccess>()
+              .having(
+                (s) => s.results.estimations,
+                'fresh first page replaces the disowned append',
+                hasLength(3),
+              )
+              .having((s) => s.hasMoreEstimations, 'hasMore', isFalse)
+              .having(
+                (s) => s.loadMoreStatus,
+                'status',
+                GlobalSearchLoadMoreStatus.idle,
+              ),
+        ],
+        verify: (_) {
+          final paramsPerCall = globalSearchRpcParams();
+          expect(paramsPerCall, hasLength(3));
+          expect(
+            paramsPerCall.last['estimations_offset'],
+            0,
+            reason: 'a fresh search must reset the pagination cursor',
           );
         },
       );

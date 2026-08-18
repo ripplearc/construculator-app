@@ -1000,6 +1000,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchResultsMostRelevant => 'Most relevant';
 
   @override
+  String get searchResultsLoadMoreFailed => 'Couldn\'t load more results';
+
+  @override
   String searchResultsEmpty(String query) {
     return 'No results found for \"$query\"';
   }

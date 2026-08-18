@@ -86,6 +86,16 @@ class GlobalSearchSuggestionsRequested extends GlobalSearchEvent {
   const GlobalSearchSuggestionsRequested();
 }
 
+/// Requests the next page of results for the active search.
+///
+/// Dispatched when the results list scrolls near its end, and by the retry
+/// affordance on a failed load-more footer. The BLoC ignores the event when
+/// no search is active, a page fetch is already in flight, or the results
+/// are exhausted, so the UI may dispatch it repeatedly while scrolling.
+class GlobalSearchLoadMoreRequested extends GlobalSearchEvent {
+  const GlobalSearchLoadMoreRequested();
+}
+
 /// Applies (or replaces) the active tag filter set.
 ///
 /// Dispatched when the user taps Apply in the Tags filter sheet.

@@ -977,6 +977,73 @@ void main() {
     );
 
     testWidgets(
+      'sees the next page appended after scrolling the results list to its '
+      'end',
+      (tester) async {
+        seedUser();
+        seedSearchResults(
+          estimations: List.generate(
+            20,
+            (i) => estimation_factory
+                .EstimationTestDataMapFactory.createFakeEstimationData(
+              id: 'est-page1-$i',
+              estimateName: 'Estimation $i',
+            ),
+          ),
+        );
+        await renderPage(tester);
+
+        await submitSearch(tester, 'steel');
+
+        seedSearchResults(
+          estimations: [
+            estimation_factory
+                .EstimationTestDataMapFactory.createFakeEstimationData(
+              id: 'est-extra',
+              estimateName: 'Appended estimation',
+            ),
+          ],
+        );
+        await tester.drag(
+          find.byKey(const Key('searchResultsListView')),
+          const Offset(0, -5000),
+        );
+        await tester.pumpAndSettle();
+
+        final rpcCalls = fakeSupabase
+            .getMethodCallsFor('rpc')
+            .where(
+              (call) =>
+                  call['functionName'] ==
+                  DatabaseConstants.globalSearchRpcFunction,
+            )
+            .toList();
+        expect(
+          rpcCalls,
+          hasLength(2),
+          reason: 'scrolling to the end must dispatch a page fetch',
+        );
+        expect(
+          (rpcCalls.last['params'] as Map<String, dynamic>)['estimations_offset'],
+          20,
+          reason: 'the page fetch must advance the estimations offset',
+        );
+
+        // Reveal the appended row — it lays out just below the pre-append
+        // scroll extent.
+        await tester.drag(
+          find.byKey(const Key('searchResultsListView')),
+          const Offset(0, -1000),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('estimationCard_est-extra')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
       'sees the loading indicator while the search request is in flight',
       (tester) async {
         seedUser();
