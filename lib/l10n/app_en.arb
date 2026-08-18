@@ -1588,6 +1588,11 @@
     "description": "Section header shown above the list of most relevant search results",
     "context": "N/A"
   },
+  "searchResultsLoadMoreFailed": "Couldn't load more results",
+  "@searchResultsLoadMoreFailed": {
+    "description": "Message shown in the results list footer when fetching the next page of search results fails",
+    "context": "N/A"
+  },
   "searchResultsEmpty": "No results found for \"{query}\"",
   "@searchResultsEmpty": {
     "description": "Message shown when a search returns no results",

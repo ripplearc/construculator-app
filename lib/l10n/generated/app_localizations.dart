@@ -1888,6 +1888,12 @@ abstract class AppLocalizations {
   /// **'Most relevant'**
   String get searchResultsMostRelevant;
 
+  /// Message shown in the results list footer when fetching the next page of search results fails
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load more results'**
+  String get searchResultsLoadMoreFailed;
+
   /// Message shown when a search returns no results
   ///
   /// In en, this message translates to:

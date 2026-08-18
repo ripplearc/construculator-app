@@ -31,6 +31,11 @@ void main() {
     required SearchResults results,
     void Function(CostEstimate)? onEstimationTap,
     void Function(CostEstimate)? onEstimationMenuTap,
+    bool hasMore = false,
+    bool isLoadingMore = false,
+    bool loadMoreFailed = false,
+    VoidCallback? onLoadMore,
+    VoidCallback? onRetryLoadMore,
   }) {
     return MaterialApp(
       theme: CoreTheme.light(),
@@ -42,9 +47,23 @@ void main() {
           results: results,
           onEstimationTap: onEstimationTap ?? (_) {},
           onEstimationMenuTap: onEstimationMenuTap,
+          hasMore: hasMore,
+          isLoadingMore: isLoadingMore,
+          loadMoreFailed: loadMoreFailed,
+          onLoadMore: onLoadMore,
+          onRetryLoadMore: onRetryLoadMore,
           estimationTileProvider: const FakeEstimationTileProvider(),
         ),
       ),
+    );
+  }
+
+  // Enough estimations to overflow the default test viewport, so the list
+  // can actually be scrolled toward its end.
+  List<CostEstimate> makeScrollablePage({int count = 20}) {
+    return List.generate(
+      count,
+      (i) => makeEstimation(id: 'est-$i', estimateName: 'Estimation $i'),
     );
   }
 
@@ -196,6 +215,166 @@ void main() {
         );
 
         expect(find.byKey(const Key('searchResultsListView')), findsOneWidget);
+      });
+    });
+
+    group('Infinite scroll', () {
+      testWidgets('invokes onLoadMore when scrolled near the end and more '
+          'results exist', (tester) async {
+        var loadMoreCalls = 0;
+        await tester.pumpWidget(
+          createWidget(
+            results: SearchResults(estimations: makeScrollablePage()),
+            hasMore: true,
+            onLoadMore: () => loadMoreCalls += 1,
+          ),
+        );
+
+        await tester.drag(
+          find.byKey(const Key('searchResultsListView')),
+          const Offset(0, -5000),
+        );
+        await tester.pump();
+
+        expect(loadMoreCalls, greaterThan(0));
+      });
+
+      testWidgets('does not invoke onLoadMore when no more results exist',
+          (tester) async {
+        var loadMoreCalls = 0;
+        await tester.pumpWidget(
+          createWidget(
+            results: SearchResults(estimations: makeScrollablePage()),
+            hasMore: false,
+            onLoadMore: () => loadMoreCalls += 1,
+          ),
+        );
+
+        await tester.drag(
+          find.byKey(const Key('searchResultsListView')),
+          const Offset(0, -5000),
+        );
+        await tester.pump();
+
+        expect(loadMoreCalls, 0);
+      });
+
+      testWidgets('does not invoke onLoadMore while the last page fetch is '
+          'in flight', (tester) async {
+        var loadMoreCalls = 0;
+        await tester.pumpWidget(
+          createWidget(
+            results: SearchResults(estimations: makeScrollablePage()),
+            hasMore: true,
+            isLoadingMore: true,
+            onLoadMore: () => loadMoreCalls += 1,
+          ),
+        );
+
+        await tester.drag(
+          find.byKey(const Key('searchResultsListView')),
+          const Offset(0, -5000),
+        );
+        await tester.pump();
+
+        expect(loadMoreCalls, 0);
+      });
+
+      testWidgets('does not invoke onLoadMore on scroll after a failed page '
+          'fetch — only the retry affordance may re-request', (tester) async {
+        var loadMoreCalls = 0;
+        await tester.pumpWidget(
+          createWidget(
+            results: SearchResults(estimations: makeScrollablePage()),
+            hasMore: true,
+            loadMoreFailed: true,
+            onLoadMore: () => loadMoreCalls += 1,
+          ),
+        );
+
+        await tester.drag(
+          find.byKey(const Key('searchResultsListView')),
+          const Offset(0, -5000),
+        );
+        await tester.pump();
+
+        expect(loadMoreCalls, 0);
+      });
+
+      testWidgets('renders the loading footer while a page fetch is in flight',
+          (tester) async {
+        await tester.pumpWidget(
+          createWidget(
+            results: SearchResults(estimations: makeScrollablePage()),
+            hasMore: true,
+            isLoadingMore: true,
+          ),
+        );
+
+        await tester.drag(
+          find.byKey(const Key('searchResultsListView')),
+          const Offset(0, -5000),
+        );
+        await tester.pump();
+
+        expect(
+          find.byKey(const Key('searchResultsLoadMoreIndicator')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('searchResultsLoadMoreFailedMessage')),
+          findsNothing,
+        );
+      });
+
+      testWidgets('renders the failure footer with a retry affordance that '
+          'invokes onRetryLoadMore', (tester) async {
+        var retryCalls = 0;
+        await tester.pumpWidget(
+          createWidget(
+            results: SearchResults(estimations: makeScrollablePage()),
+            hasMore: true,
+            loadMoreFailed: true,
+            onRetryLoadMore: () => retryCalls += 1,
+          ),
+        );
+
+        await tester.drag(
+          find.byKey(const Key('searchResultsListView')),
+          const Offset(0, -5000),
+        );
+        await tester.pump();
+
+        expect(
+          find.byKey(const Key('searchResultsLoadMoreFailedMessage')),
+          findsOneWidget,
+        );
+        expect(find.text("Couldn't load more results"), findsOneWidget);
+
+        await tester.tap(
+          find.byKey(const Key('searchResultsLoadMoreRetryButton')),
+        );
+        await tester.pump();
+
+        expect(retryCalls, 1);
+      });
+
+      testWidgets('renders no footer when idle', (tester) async {
+        await tester.pumpWidget(
+          createWidget(
+            results: SearchResults(estimations: makeScrollablePage(count: 2)),
+            hasMore: true,
+          ),
+        );
+
+        expect(
+          find.byKey(const Key('searchResultsLoadMoreIndicator')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const Key('searchResultsLoadMoreFailedMessage')),
+          findsNothing,
+        );
       });
     });
   });
