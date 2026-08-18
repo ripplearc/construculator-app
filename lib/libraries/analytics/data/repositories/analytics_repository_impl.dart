@@ -30,12 +30,18 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
   ///
   /// Infrastructure concern — called once during app bootstrap, not part of
   /// the [AnalyticsRepository] domain contract.
-  Future<void> initialize() {
-    return _posthogWrapper.initialize(
-      apiKey: _envLoader.get(posthogApiKeyKey) ?? '',
-      host: _envLoader.get(posthogHostKey) ?? '',
-      debug: _envLoader.get(posthogDebugKey) == 'true',
-    );
+  Future<Either<Failure, void>> initialize() async {
+    try {
+      await _posthogWrapper.initialize(
+        apiKey: _envLoader.get(posthogApiKeyKey) ?? '',
+        host: _envLoader.get(posthogHostKey) ?? '',
+        debug: (_envLoader.get(posthogDebugKey) ?? '').toLowerCase() ==
+            'true',
+      );
+      return const Right(null);
+    } catch (e) {
+      return Left(_handleError(e, 'initializing analytics'));
+    }
   }
 
   Failure _handleError(Object error, String operation) {
