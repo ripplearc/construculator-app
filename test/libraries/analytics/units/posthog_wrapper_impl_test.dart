@@ -29,6 +29,12 @@ void main() {
         expect(fakePosthogSdk.setupCallCount, 0);
       });
 
+      test('skips SDK setup when host is empty', () async {
+        await posthogWrapper.initialize(apiKey: testApiKey, host: '');
+
+        expect(fakePosthogSdk.setupCallCount, 0);
+      });
+
       test('sets up the SDK with the given apiKey, host, and debug flag',
           () async {
         await posthogWrapper.initialize(
@@ -125,7 +131,9 @@ void main() {
         );
 
         expect(fakePosthogSdk.setPersonPropertiesCalls, [
-          {'role': 'engineer'},
+          const SetPersonPropertiesCall(
+            userPropertiesToSet: {'role': 'engineer'},
+          ),
         ]);
       });
 
