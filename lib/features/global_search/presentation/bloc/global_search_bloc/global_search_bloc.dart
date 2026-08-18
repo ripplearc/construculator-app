@@ -104,6 +104,11 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
 
   SearchScope _selectedScope = SearchScope.dashboard;
 
+  // The scope the loaded _recentSearches belong to. Lags _selectedScope
+  // while a scope change's history reload is in flight, so a deletion
+  // swiped in that window targets the history actually displayed.
+  SearchScope _recentsScope = SearchScope.dashboard;
+
   // Guards every recents fetch — the initial [GlobalSearchStarted] load and
   // the reload triggered by a scope change: whichever of the two is
   // dispatched later disowns the older in-flight fetch, so a late completion
@@ -208,6 +213,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       availableOwnersLoading: _availableOwnersLoading,
       selectedDateRange: _selectedDateRange,
       selectedScope: _selectedScope,
+      recentsScope: _recentsScope,
     );
   }
 
@@ -279,6 +285,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       recentSearches,
     ) {
       _recentSearches = recentSearches;
+      _recentsScope = event.scope;
       _rawSuggestions = const [];
       _suggestionsFetched = false;
       _suggestionsLoading = false;
@@ -339,6 +346,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       },
       (recentSearches) {
         _recentSearches = recentSearches;
+        _recentsScope = event.scope;
         emit(_readyState());
       },
     );
@@ -582,11 +590,29 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       event.scope,
     );
 
+    // Emissions are gated on the idle surface still owning the body: a
+    // deletion resolving after the user ran a search must update the list
+    // without yanking the results surface back to recents. The row's
+    // Dismissible resolves its confirmDismiss on the term-carrying ack —
+    // and only on its own term, so concurrent swipes cannot cross-resolve.
+    final onRecentsSurface = state is GlobalSearchReady;
+
     result.fold(
-      (failure) => emit(GlobalSearchRecentDeleteFailure(failure: failure)),
+      (failure) {
+        if (!onRecentsSurface) return;
+        emit(
+          GlobalSearchRecentDeleteFailure(
+            failure: failure,
+            searchTerm: event.searchTerm,
+          ),
+        );
+        emit(_readyState());
+      },
       (_) {
         _recentSearches = List<String>.from(_recentSearches)
           ..removeWhere((term) => term == event.searchTerm);
+        if (!onRecentsSurface) return;
+        emit(GlobalSearchRecentDeleteSuccess(searchTerm: event.searchTerm));
         emit(_readyState());
       },
     );
