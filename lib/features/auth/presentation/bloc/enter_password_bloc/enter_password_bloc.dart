@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:construculator/features/auth/domain/usecases/login_usecase.dart';
 import 'package:construculator/libraries/analytics/domain/entities/analytics_event.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
+import 'package:construculator/libraries/analytics/domain/utils/failure_analytics_reason.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -34,7 +35,7 @@ class EnterPasswordBloc extends Bloc<EnterPasswordEvent, EnterPasswordState> {
           _analyticsRepository.track(
             AnalyticsEvent(
               name: 'user_login_failed',
-              properties: {'reason': _failureReason(failure)},
+              properties: {'reason': failure.analyticsReason},
             ),
           ),
         );
@@ -50,7 +51,4 @@ class EnterPasswordBloc extends Bloc<EnterPasswordEvent, EnterPasswordState> {
       },
     );
   }
-
-  String _failureReason(Failure failure) =>
-      failure is AuthFailure ? failure.errorType.name : 'unexpected';
 }

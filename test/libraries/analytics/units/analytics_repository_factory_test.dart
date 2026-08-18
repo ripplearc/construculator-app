@@ -1,4 +1,7 @@
+// ignore_for_file: no_direct_instantiation
+
 import 'package:construculator/libraries/analytics/analytics_repository_factory.dart';
+import 'package:construculator/libraries/analytics/current_screen_tracker.dart';
 import 'package:construculator/libraries/analytics/data/repositories/analytics_repository_impl.dart';
 import 'package:construculator/libraries/analytics/data/repositories/no_op_analytics_repository.dart';
 import 'package:construculator/libraries/analytics/testing/fake_posthog_wrapper.dart';
@@ -30,6 +33,8 @@ void main() {
           buildPosthogWrapperCallCount++;
           return fakePosthogWrapper;
         },
+        currentScreenTracker: CurrentScreenTracker(),
+        appVersion: '1.2.3',
       );
     }
 

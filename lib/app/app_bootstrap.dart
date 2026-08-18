@@ -1,4 +1,5 @@
 // coverage:ignore-file
+import 'package:construculator/libraries/analytics/current_screen_tracker.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
 import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
@@ -101,11 +102,19 @@ class AppBootstrap {
   /// Must be fully initialized (if real) before passing to the app module.
   final AnalyticsRepository analyticsRepository;
 
+  /// Shared holder of the currently active screen's template name.
+  ///
+  /// Must be passed to both `AnalyticsRepositoryImpl` (which reads it to
+  /// enrich every tracked event) and `AnalyticsNavigatorObserver` (which
+  /// writes it on every navigation) — the same instance to both.
+  final CurrentScreenTracker currentScreenTracker;
+
   AppBootstrap({
     required this.envLoader,
     required this.config,
     required this.supabaseWrapper,
     required this.sentryWrapper,
     required this.analyticsRepository,
+    required this.currentScreenTracker,
   });
 }

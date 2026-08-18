@@ -352,12 +352,12 @@ class AuthManagerImpl implements AuthManager {
       await _wrapper.signOut();
 
       await _sentryWrapper.setUser(null);
-      await _analyticsRepository.reset();
       unawaited(
         _analyticsRepository.track(
           const AnalyticsEvent(name: 'user_logged_out'),
         ),
       );
+      await _analyticsRepository.reset();
 
       _logger.info('Logout successful');
       return AuthResult.success(null);

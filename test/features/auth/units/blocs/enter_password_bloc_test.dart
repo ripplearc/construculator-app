@@ -75,7 +75,7 @@ void main() {
         act: (bloc) => bloc.add(
           EnterPasswordSubmitted(
             email: 'test@example.com',
-            password: 'wrongpassword',
+            password: '@Password123!',
           ),
         ),
         expect: () => [
@@ -83,12 +83,12 @@ void main() {
           isA<EnterPasswordSubmitFailure>(),
         ],
         verify: (_) {
-          expect(fakeAnalytics.trackedEvents, hasLength(1));
-          expect(fakeAnalytics.trackedEvents.single.name, 'user_login_failed');
-          expect(
-            fakeAnalytics.trackedEvents.single.properties['reason'],
-            isNotEmpty,
-          );
+          expect(fakeAnalytics.trackedEvents, [
+            const AnalyticsEvent(
+              name: 'user_login_failed',
+              properties: {'reason': 'unknownError'},
+            ),
+          ]);
         },
       );
     });

@@ -1160,6 +1160,7 @@ void main() {
       test('logout should call reset on success', () async {
         await authManager.loginWithEmail(testEmail, testPassword);
         expect(analyticsRepository.identifyCalls, isNotEmpty);
+        analyticsRepository.callSequence.clear();
 
         final result = await authManager.logout();
 
@@ -1169,6 +1170,7 @@ void main() {
           analyticsRepository.trackedEvents,
           contains(const AnalyticsEvent(name: 'user_logged_out')),
         );
+        expect(analyticsRepository.callSequence, ['track', 'reset']);
       });
 
       test('logout should not call reset on failure', () async {

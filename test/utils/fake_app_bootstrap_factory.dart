@@ -1,4 +1,5 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/libraries/analytics/current_screen_tracker.dart';
 import 'package:construculator/libraries/analytics/data/repositories/no_op_analytics_repository.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
 import 'package:construculator/libraries/config/interfaces/config.dart';
@@ -50,6 +51,7 @@ class FakeAppBootstrapFactory {
       envLoader: envLoader ?? FakeEnvLoader(),
       sentryWrapper: FakeSentryWrapper(),
       analyticsRepository: analyticsRepository ?? const NoOpAnalyticsRepository(),
+      currentScreenTracker: CurrentScreenTracker(),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:construculator/libraries/analytics/current_screen_tracker.dart';
 import 'package:construculator/libraries/analytics/domain/entities/analytics_event.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
 import 'package:flutter/widgets.dart';
@@ -24,9 +25,17 @@ import 'package:flutter_modular/src/presenter/navigation/modular_page.dart';
 /// since a disabled app resolves to `NoOpAnalyticsRepository` at bootstrap.
 class AnalyticsNavigatorObserver extends NavigatorObserver {
   /// Creates an [AnalyticsNavigatorObserver] backed by [analyticsRepository].
-  AnalyticsNavigatorObserver({required this._analyticsRepository});
+  ///
+  /// [currentScreenTracker] must be the same instance given to
+  /// `AnalyticsRepositoryImpl` so every tracked event, not just
+  /// `screen_viewed`, carries the currently active screen.
+  AnalyticsNavigatorObserver({
+    required this._analyticsRepository,
+    required this._currentScreenTracker,
+  });
 
   final AnalyticsRepository _analyticsRepository;
+  final CurrentScreenTracker _currentScreenTracker;
 
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
@@ -35,6 +44,9 @@ class AnalyticsNavigatorObserver extends NavigatorObserver {
     final templateName = settings is ModularPage
         ? settings.route.name
         : settings.name;
+    if (templateName != null && templateName.isNotEmpty) {
+      _currentScreenTracker.screenName = templateName;
+    }
     _trackScreenView(templateName);
   }
 
