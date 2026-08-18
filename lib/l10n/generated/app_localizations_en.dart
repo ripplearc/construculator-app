@@ -946,8 +946,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String globalSearchRecentSearchDeleteSemanticLabel(String term) {
+    return 'Delete $term from recent searches';
+  }
+
+  @override
   String projectSearchRecentSearchFillSemanticLabel(String term) {
     return 'Fill search field with $term';
+  }
+
+  @override
+  String projectSearchRecentSearchDeleteSemanticLabel(String term) {
+    return 'Delete $term from recent searches';
   }
 
   @override
@@ -1149,6 +1159,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get projectSearchOwnersLoadErrorMessage => 'Could not load owners.';
+
+  @override
+  String get projectSearchDeleteErrorMessage =>
+      'Failed to remove recent search. Please try again.';
 
   @override
   String get projectNameLabel => 'Project name*';

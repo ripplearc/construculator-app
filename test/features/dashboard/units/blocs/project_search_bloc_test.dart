@@ -842,6 +842,11 @@ void main() {
         },
         skip: 2,
         expect: () => [
+          isA<ProjectSearchHistoryDeleteSuccess>().having(
+            (s) => s.searchTerm,
+            'ack carries the deleted term for the row that requested it',
+            'foundation',
+          ),
           const ProjectSearchInitial(recentSearches: ['wall'], suggestions: []),
         ],
         verify: (_) {
@@ -904,7 +909,8 @@ void main() {
       );
 
       blocTest<ProjectSearchBloc, ProjectSearchState>(
-        'emits nothing when no user is authenticated',
+        'surfaces the delete-failure toast state without calling the backend '
+        'when no user is authenticated',
         setUp: () {
           fakeSupabase.setCurrentUser(null);
         },
@@ -912,14 +918,17 @@ void main() {
         act: (bloc) => bloc.add(
           const ProjectSearchHistoryItemDismissedEvent(searchTerm: 'wall'),
         ),
-        expect: () => <ProjectSearchState>[],
+        expect: () => [
+          isA<ProjectSearchHistoryDeleteFailure>(),
+          isA<ProjectSearchInitial>(),
+        ],
         verify: (_) {
           expect(fakeSupabase.getMethodCallsFor('deleteMatch'), isEmpty);
         },
       );
 
       blocTest<ProjectSearchBloc, ProjectSearchState>(
-        'emits nothing when deleteMatch fails',
+        'emits the delete-failure toast state when deleteMatch fails',
         setUp: () {
           fakeSupabase.shouldThrowOnDeleteMatch = true;
           fakeSupabase.deleteMatchExceptionType = SupabaseExceptionType.timeout;
@@ -929,7 +938,65 @@ void main() {
         act: (bloc) => bloc.add(
           const ProjectSearchHistoryItemDismissedEvent(searchTerm: 'wall'),
         ),
-        expect: () => <ProjectSearchState>[],
+        expect: () => [
+          isA<ProjectSearchHistoryDeleteFailure>(),
+          isA<ProjectSearchInitial>(),
+        ],
+      );
+
+      blocTest<ProjectSearchBloc, ProjectSearchState>(
+        'keeps the dismissed term in the history when the delete fails, so '
+        'the row can slide back',
+        setUp: () {
+          fakeSupabase.addTableData(
+            DatabaseConstants.projectSearchHistoryTable,
+            [
+              {
+                DatabaseConstants.userIdColumn: _testUserId,
+                DatabaseConstants.searchTermColumn: 'foundation',
+                DatabaseConstants.updatedAtColumn: '2024-06-01T00:00:00.000Z',
+              },
+              {
+                DatabaseConstants.userIdColumn: _testUserId,
+                DatabaseConstants.searchTermColumn: 'wall',
+                DatabaseConstants.updatedAtColumn: '2024-05-01T00:00:00.000Z',
+              },
+            ],
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.projectSearchSuggestionsRpcFunction,
+            <dynamic>[],
+          );
+          fakeSupabase.shouldThrowOnDeleteMatch = true;
+          fakeSupabase.deleteMatchExceptionType = SupabaseExceptionType.timeout;
+        },
+        build: () => Modular.get<ProjectSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const ProjectSearchHistoryRequestedEvent());
+          await bloc.stream.firstWhere(
+            (state) => state is ProjectSearchInitial && !state.isLoadingHistory,
+          );
+          bloc.add(
+            const ProjectSearchHistoryItemDismissedEvent(
+              searchTerm: 'foundation',
+            ),
+          );
+          await bloc.stream.firstWhere(
+            (state) => state is ProjectSearchHistoryDeleteFailure,
+          );
+        },
+        skip: 2,
+        expect: () => [
+          isA<ProjectSearchHistoryDeleteFailure>().having(
+            (s) => s.searchTerm,
+            'ack carries the term whose deletion failed',
+            'foundation',
+          ),
+          const ProjectSearchInitial(
+            recentSearches: ['foundation', 'wall'],
+            suggestions: [],
+          ),
+        ],
       );
     });
 

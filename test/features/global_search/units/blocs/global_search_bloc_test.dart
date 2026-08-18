@@ -2016,6 +2016,11 @@ void main() {
             'recentSearches after Started',
             containsAll(['wall', 'concrete']),
           ),
+          isA<GlobalSearchRecentDeleteSuccess>().having(
+            (s) => s.searchTerm,
+            'ack carries the deleted term for the row that requested it',
+            'wall',
+          ),
           isA<GlobalSearchReady>().having(
             (s) => s.recentSearches,
             'recentSearches after Removed',
@@ -2025,7 +2030,8 @@ void main() {
       );
 
       blocTest<GlobalSearchBloc, GlobalSearchState>(
-        'emits GlobalSearchRecentDeleteFailure when delete throws',
+        'emits nothing when the delete fails off the recents surface — a '
+        'late failure must not yank another surface back to recents',
         setUp: () {
           fakeSupabase.setCurrentUser(
             FakeUser(
@@ -2047,11 +2053,111 @@ void main() {
             scope: SearchScope.dashboard,
           ),
         ),
+        expect: () => <GlobalSearchState>[],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'a dismissal during a scope change deletes from the displayed '
+        "history's scope, not the newly selected one",
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
+            _fakeSearchHistoryData(userId: _testUserId, searchTerm: 'wall'),
+          ]);
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('wall'),
+          );
+          // Gate the new scope's history reload so the dashboard-scope list
+          // stays displayed while the selected scope is already estimation.
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          bloc.add(
+            const GlobalSearchScopeChanged(scope: SearchScope.estimation),
+          );
+          final scopeChanged = await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchReady,
+          ) as GlobalSearchReady;
+          expect(scopeChanged.selectedScope, SearchScope.estimation);
+          expect(
+            scopeChanged.recentsScope,
+            SearchScope.dashboard,
+            reason:
+                'the displayed history still belongs to the old scope while '
+                'the reload is gated',
+          );
+          fakeSupabase.completer!.complete();
+          fakeSupabase.shouldDelayOperations = false;
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentsScope == SearchScope.estimation,
+          );
+        },
+        verify: (_) {
+          // The page dispatches with Ready.recentsScope; this pins that the
+          // state exposes the old scope for exactly the gated window.
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'keeps the dismissed term in the list when the delete fails, so the '
+        'row can slide back',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
+            _fakeSearchHistoryData(userId: _testUserId, searchTerm: 'wall'),
+            _fakeSearchHistoryData(userId: _testUserId, searchTerm: 'concrete'),
+          ]);
+          fakeSupabase.shouldThrowOnDeleteMatch = true;
+          fakeSupabase.deleteMatchExceptionType = SupabaseExceptionType.socket;
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.length == 2,
+          );
+          bloc.add(
+            const GlobalSearchRecentRemoved(
+              searchTerm: 'wall',
+              scope: SearchScope.dashboard,
+            ),
+          );
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchRecentDeleteFailure,
+          );
+        },
+        skip: 1,
         expect: () => [
           isA<GlobalSearchRecentDeleteFailure>().having(
-            (s) => s.failure,
-            'failure',
-            SearchFailure(errorType: SearchErrorType.connectionError),
+            (s) => s.searchTerm,
+            'ack carries the term whose deletion failed',
+            'wall',
+          ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.recentSearches,
+            'recentSearches kept intact',
+            allOf(hasLength(2), containsAll(['wall', 'concrete'])),
           ),
         ],
       );

@@ -173,3 +173,44 @@ class ProjectSearchOwnersLoadFailure extends ProjectSearchState {
   @override
   List<Object?> get props => [failure];
 }
+
+/// Emitted when deleting a recent search term from history fails.
+///
+/// Transient: the BLoC re-emits a [ProjectSearchInitial] immediately after,
+/// so the history surface stays interactive while the toast surfaces the
+/// failure and the term's row resolves its pending swipe by [searchTerm].
+class ProjectSearchHistoryDeleteFailure extends ProjectSearchState {
+  /// The failure describing why the history deletion failed.
+  final Failure failure;
+
+  /// The term whose deletion failed, echoed verbatim from the event so the
+  /// row that requested it — and only that row — can resolve its swipe.
+  final String searchTerm;
+
+  /// Creates a [ProjectSearchHistoryDeleteFailure] with the given [failure]
+  /// and [searchTerm].
+  const ProjectSearchHistoryDeleteFailure({
+    required this.failure,
+    required this.searchTerm,
+  });
+
+  @override
+  List<Object?> get props => [failure, searchTerm];
+}
+
+/// Emitted when a recent search term is deleted from history.
+///
+/// Transient: the BLoC re-emits a [ProjectSearchInitial] — already without
+/// the term — immediately after. Carries [searchTerm] so the row that
+/// requested the deletion, and only that row, completes its swipe dismissal.
+class ProjectSearchHistoryDeleteSuccess extends ProjectSearchState {
+  /// The deleted term, echoed verbatim from the event.
+  final String searchTerm;
+
+  /// Creates a [ProjectSearchHistoryDeleteSuccess] with the given
+  /// [searchTerm].
+  const ProjectSearchHistoryDeleteSuccess({required this.searchTerm});
+
+  @override
+  List<Object?> get props => [searchTerm];
+}

@@ -60,6 +60,12 @@ class GlobalSearchReady extends GlobalSearchState {
   /// Type filter.
   final SearchScope selectedScope;
 
+  /// The scope the displayed [recentSearches] belong to. Lags behind
+  /// [selectedScope] while a scope change's history reload is in flight,
+  /// so a deletion swiped in that window targets the history actually on
+  /// screen rather than the newly selected scope's.
+  final SearchScope recentsScope;
+
   const GlobalSearchReady({
     this.recentSearches = const [],
     this.query = '',
@@ -73,6 +79,7 @@ class GlobalSearchReady extends GlobalSearchState {
     this.availableOwnersLoading = false,
     this.selectedDateRange,
     this.selectedScope = SearchScope.dashboard,
+    this.recentsScope = SearchScope.dashboard,
   });
 
   /// Returns a copy of this state with the given fields replaced.
@@ -89,6 +96,7 @@ class GlobalSearchReady extends GlobalSearchState {
     bool? availableOwnersLoading,
     DateRange? selectedDateRange,
     SearchScope? selectedScope,
+    SearchScope? recentsScope,
   }) {
     return GlobalSearchReady(
       recentSearches: recentSearches ?? this.recentSearches,
@@ -104,6 +112,7 @@ class GlobalSearchReady extends GlobalSearchState {
           availableOwnersLoading ?? this.availableOwnersLoading,
       selectedDateRange: selectedDateRange ?? this.selectedDateRange,
       selectedScope: selectedScope ?? this.selectedScope,
+      recentsScope: recentsScope ?? this.recentsScope,
     );
   }
 
@@ -121,6 +130,7 @@ class GlobalSearchReady extends GlobalSearchState {
     availableOwnersLoading,
     selectedDateRange,
     selectedScope,
+    recentsScope,
   ];
 }
 
@@ -233,14 +243,40 @@ class GlobalSearchEmptyQuery extends GlobalSearchState {
 }
 
 /// Emitted when removing a recent search term from history fails.
+///
+/// Transient: the BLoC re-emits the ready state immediately after, so the
+/// idle surface stays interactive while the toast surfaces the failure and
+/// the term's row resolves its pending swipe by [searchTerm].
 class GlobalSearchRecentDeleteFailure extends GlobalSearchState {
   /// The failure describing why the recent search deletion failed.
   final Failure failure;
 
-  const GlobalSearchRecentDeleteFailure({required this.failure});
+  /// The term whose deletion failed, echoed verbatim from the event so the
+  /// row that requested it — and only that row — can resolve its swipe.
+  final String searchTerm;
+
+  const GlobalSearchRecentDeleteFailure({
+    required this.failure,
+    required this.searchTerm,
+  });
 
   @override
-  List<Object?> get props => [failure];
+  List<Object?> get props => [failure, searchTerm];
+}
+
+/// Emitted when a recent search term is deleted from history.
+///
+/// Transient: the BLoC re-emits the ready state — already without the term —
+/// immediately after. Carries [searchTerm] so the row that requested the
+/// deletion, and only that row, completes its swipe dismissal.
+class GlobalSearchRecentDeleteSuccess extends GlobalSearchState {
+  /// The deleted term, echoed verbatim from the event.
+  final String searchTerm;
+
+  const GlobalSearchRecentDeleteSuccess({required this.searchTerm});
+
+  @override
+  List<Object?> get props => [searchTerm];
 }
 
 /// Emitted when loading the available tags for the filter sheet fails.

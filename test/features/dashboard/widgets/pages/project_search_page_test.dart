@@ -18,6 +18,7 @@ import 'package:construculator/libraries/project/testing/fake_project_repository
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -491,6 +492,61 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+
+    testWidgets('swiping a recent search away deletes it from history and '
+        'removes the row', (tester) async {
+      seedRecentSearches();
+      await renderPage(tester);
+
+      await tester.drag(
+        find.byKey(const ValueKey('recent_search_item_foundation')),
+        const Offset(-500, 0),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('recent_search_item_foundation')),
+        findsNothing,
+      );
+      expect(find.text('wall'), findsOneWidget);
+      final deleteCalls = fakeSupabase
+          .getMethodCallsFor('deleteMatch')
+          .where(
+            (call) =>
+                call['table'] == DatabaseConstants.projectSearchHistoryTable,
+          )
+          .toList();
+      expect(
+        deleteCalls,
+        hasLength(1),
+        reason: 'the swipe must delete the term from the backend history',
+      );
+    });
+
+    testWidgets('sees a toast and the restored row when deleting a recent '
+        'search fails', (tester) async {
+      seedRecentSearches();
+      await renderPage(tester);
+
+      fakeSupabase.shouldThrowOnDeleteMatch = true;
+      fakeSupabase.deleteMatchExceptionType = SupabaseExceptionType.timeout;
+
+      await tester.drag(
+        find.byKey(const ValueKey('recent_search_item_foundation')),
+        const Offset(-500, 0),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n().projectSearchDeleteErrorMessage), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('recent_search_item_foundation')),
+        findsOneWidget,
+        reason: 'a failed delete must restore the dismissed row',
+      );
+
+      // Flush the toast's auto-dismiss timer before the test ends.
+      await tester.pump(kToastDismissDuration);
     });
 
     testWidgets('shows a loading indicator while history is loading', (
