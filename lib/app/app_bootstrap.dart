@@ -97,7 +97,7 @@ class AppBootstrap {
   final SentryWrapper sentryWrapper;
 
   /// The analytics repository, resolved to either the real PostHog-backed
-  /// implementation or `NoOpAnalyticsRepository` based on `POSTHOG_ENABLED`.
+  /// implementation or `NoOpAnalyticsRepository` based on `ANALYTICS_ENABLED`.
   /// Must be fully initialized (if real) before passing to the app module.
   final AnalyticsRepository analyticsRepository;
 
