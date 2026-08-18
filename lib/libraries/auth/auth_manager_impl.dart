@@ -166,6 +166,9 @@ class AuthManagerImpl implements AuthManager {
       }
 
       await _sentryWrapper.setUser(user.id);
+      // TODO: [CA-961] Gate identify() on recorded analytics consent once
+      // the server-driven consent flow lands; currently relies on the
+      // signup terms & privacy acceptance covering analytics consent.
       await _analyticsRepository.identify(
         userId: user.id,
         properties: const AnalyticsUserProperties(),
@@ -206,6 +209,9 @@ class AuthManagerImpl implements AuthManager {
       }
 
       await _sentryWrapper.setUser(user.id);
+      // TODO: [CA-961] Gate identify() on recorded analytics consent once
+      // the server-driven consent flow lands; currently relies on the
+      // signup terms & privacy acceptance covering analytics consent.
       await _analyticsRepository.identify(
         userId: user.id,
         properties: const AnalyticsUserProperties(),
@@ -282,6 +288,9 @@ class AuthManagerImpl implements AuthManager {
       }
 
       await _sentryWrapper.setUser(user.id);
+      // TODO: [CA-961] Gate identify() on recorded analytics consent once
+      // the server-driven consent flow lands; currently relies on the
+      // signup terms & privacy acceptance covering analytics consent.
       await _analyticsRepository.identify(
         userId: user.id,
         properties: const AnalyticsUserProperties(),
