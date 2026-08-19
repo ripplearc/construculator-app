@@ -110,6 +110,14 @@ Before running the application, you must set up the local backend services:
 2.  **Start the Services:** Follow the instructions in the [construculator-backend README](https://github.com/ripplearc/construculator-backend) to run the server locally using Docker.
 3.  **Verify Services:** Ensure Supabase and the API are running before proceeding to the frontend setup.
 
+End-to-end tests run against this same stack, driven by the scripts in
+`scripts/e2e/`. See [E2E Environment](docs/Testing/E2E-Environment.md) — note
+that its reset and purge commands destroy the local development data set up
+here, and that only CI gets a genuinely separate environment.
+
+> **TODO [CA-991](https://ripplearc.youtrack.cloud/issue/CA-991):** give the E2E
+> backend stack its own distinct project_id so this caveat becomes unnecessary.
+
 ---
 
 ## Frontend Setup (Flutter)
