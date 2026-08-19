@@ -1,3 +1,4 @@
+// coverage:ignore-file
 /// Interface that wraps PostHog functionality.
 ///
 /// This allows for easier testing by providing a clean abstraction layer,
