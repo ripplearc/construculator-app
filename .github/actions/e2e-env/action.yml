@@ -1,0 +1,95 @@
+name: "E2E Environment"
+description: "Starts a Supabase + PowerSync stack for end-to-end tests on a CI runner and reports its connection details. Isolated because each runner starts with no Supabase project of its own."
+
+inputs:
+  backend-repo:
+    description: "Repository holding the Supabase and PowerSync definitions."
+    required: false
+    default: "ripplearc/construculator-backend"
+  backend-ref:
+    description: "Ref of the backend repository to check out."
+    required: false
+    default: "master"
+  backend-path:
+    description: "Path the backend repository is checked out to."
+    required: false
+    default: "construculator-backend"
+  supabase-version:
+    description: "Supabase CLI version. Kept in step with the backend's database_tests workflow."
+    required: false
+    default: "2.106.0"
+
+outputs:
+  supabase-url:
+    description: "Base URL of the Supabase API gateway."
+    value: ${{ steps.stack.outputs.supabase-url }}
+  supabase-anon-key:
+    description: "Anon key of the started stack."
+    value: ${{ steps.stack.outputs.supabase-anon-key }}
+  mailpit-url:
+    description: "Base URL of the Mailpit mail catcher."
+    value: ${{ steps.stack.outputs.mailpit-url }}
+  powersync-url:
+    description: "Base URL of the PowerSync service."
+    value: ${{ steps.stack.outputs.powersync-url }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Check out backend
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.backend-repo }}
+        ref: ${{ inputs.backend-ref }}
+        path: ${{ inputs.backend-path }}
+
+    - name: Install Supabase CLI
+      uses: supabase/setup-cli@v1
+      with:
+        version: ${{ inputs.supabase-version }}
+
+    - name: Generate auth signing key
+      shell: bash
+      working-directory: ${{ inputs.backend-path }}
+      run: |
+        printf '[]\n' > supabase/signing_key.json
+        supabase gen signing-key --algorithm ES256 --append
+
+    - name: Start Supabase
+      shell: bash
+      working-directory: ${{ inputs.backend-path }}
+      run: supabase start
+
+    - name: Start PowerSync
+      shell: bash
+      working-directory: ${{ inputs.backend-path }}/powersync
+      run: |
+        sed "s|^PS_API_TOKEN=.*|PS_API_TOKEN=$(openssl rand -hex 32)|" .env.example > .env
+        docker compose up -d
+
+    - name: Report connection details
+      id: stack
+      shell: bash
+      working-directory: ${{ inputs.backend-path }}
+      run: |
+        anon_key="$(supabase status -o json | python3 -c 'import json,sys; print(json.load(sys.stdin)["ANON_KEY"])')"
+        echo "::add-mask::$anon_key"
+        {
+          echo "supabase-url=http://127.0.0.1:54321"
+          echo "supabase-anon-key=$anon_key"
+          echo "mailpit-url=http://127.0.0.1:54324"
+          echo "powersync-url=http://127.0.0.1:8081"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Wait for PowerSync
+      shell: bash
+      run: |
+        for _ in $(seq 1 60); do
+          if curl -fsS -o /dev/null http://127.0.0.1:8081/probes/liveness; then
+            exit 0
+          fi
+          sleep 2
+        done
+        echo "::error::PowerSync did not become healthy within 120s"
+        docker compose -f "${{ inputs.backend-path }}/powersync/compose.yaml" logs --tail 50 || true
+        exit 1
