@@ -1,15 +1,12 @@
 import 'package:construculator/app/app.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/app_module.dart';
-import 'package:construculator/libraries/analytics/data/repositories/analytics_repository_impl.dart';
-import 'package:construculator/libraries/analytics/data/repositories/no_op_analytics_repository.dart';
-import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
+import 'package:construculator/libraries/analytics/analytics_repository_factory.dart';
 import 'package:construculator/libraries/analytics/posthog_sdk_impl.dart';
 import 'package:construculator/libraries/analytics/posthog_wrapper_impl.dart';
 import 'package:construculator/libraries/config/app_config_impl.dart';
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/config/env_loader_impl.dart';
-import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/sentry/sentry_sdk_impl.dart';
 import 'package:construculator/libraries/sentry/sentry_wrapper_impl.dart';
@@ -49,7 +46,10 @@ Future<AppBootstrap> _initializeApp() async {
     config: config,
     sentrySdk: SentrySdkImpl(),
   );
-  final analyticsRepository = await _initializeAnalyticsRepository(envLoader);
+  final analyticsRepository = await createAnalyticsRepository(
+    envLoader: envLoader,
+    buildPosthogWrapper: () => PosthogWrapperImpl(posthogSdk: PosthogSdkImpl()),
+  );
   return AppBootstrap(
     config: config,
     envLoader: envLoader,
@@ -57,20 +57,6 @@ Future<AppBootstrap> _initializeApp() async {
     sentryWrapper: sentryWrapper,
     analyticsRepository: analyticsRepository,
   );
-}
-
-Future<AnalyticsRepository> _initializeAnalyticsRepository(
-  EnvLoader envLoader,
-) async {
-  if (envLoader.get(analyticsEnabledKey) != 'true') {
-    return const NoOpAnalyticsRepository();
-  }
-  final repository = AnalyticsRepositoryImpl(
-    envLoader: envLoader,
-    posthogWrapper: PosthogWrapperImpl(posthogSdk: PosthogSdkImpl()),
-  );
-  await repository.initialize();
-  return repository;
 }
 
 Environment _getEnvironmentFromString(String? envName) {
