@@ -85,7 +85,7 @@ runs:
       shell: bash
       run: |
         for _ in $(seq 1 60); do
-          if curl -fsS -o /dev/null http://127.0.0.1:8081/api/health; then
+          if curl -fsS -o /dev/null http://127.0.0.1:8081/probes/liveness; then
             exit 0
           fi
           sleep 2
