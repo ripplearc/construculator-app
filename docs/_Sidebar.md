@@ -23,4 +23,6 @@
 - [Fakes](Fakes)
 - [Accessibility (a11y) Testing](Accessibility-Testing)
 - [CI Scripts and Workflows](CI-Scripts)
+- [Performance Harness](Performance-Harness)
+- [Performance Device Register](Performance-Device-Register)
 
