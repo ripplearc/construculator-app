@@ -98,6 +98,18 @@ jobs:
             --input "build/perf/${{ steps.params.outputs.run_id }}" \
             --output "build/perf/${{ steps.params.outputs.run_id }}/perf-run.json"
 
+      - name: Publish run to trend store
+        # Only runs measured on the default branch become trend points. A
+        # #RunPerf run against a PR is a one-off check, and recording it would
+        # mix unmerged code into the history the baselines are read from.
+        if: steps.ref.outputs.ref == github.event.repository.default_branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          bash scripts/perf/publish_perf_run.sh \
+            --run-file "build/perf/${{ steps.params.outputs.run_id }}/perf-run.json" \
+            --push
+
       - name: Upload performance run
         uses: actions/upload-artifact@v4
         with:
