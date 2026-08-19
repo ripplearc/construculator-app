@@ -51,7 +51,7 @@ workflows:
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
 
           # Find changed test files using find to avoid ** globbing issues
-          TEST_DIRS=$(find test/features test/libraries test/app -type d \
+          TEST_DIRS=$(find test/features test/libraries test/app test/tools -type d \
             \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
 
           CHANGED_TESTS=""
@@ -184,7 +184,7 @@ workflows:
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
 
           # Find changed test files using find to avoid ** globbing issues
-          TEST_DIRS=$(find test/features test/libraries test/app -type d \
+          TEST_DIRS=$(find test/features test/libraries test/app test/tools -type d \
             \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
 
           CHANGED_TESTS=""
@@ -273,7 +273,7 @@ workflows:
           UNIT_TEST_DIRS=()
           while IFS= read -r dir; do
             [[ -n "$dir" ]] && UNIT_TEST_DIRS+=("$dir")
-          done < <(find test/features test/libraries test/app -type d \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
+          done < <(find test/features test/libraries test/app test/tools -type d \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
           
           if [ ${#UNIT_TEST_DIRS[@]} -gt 0 ]; then
             fvm flutter test "${UNIT_TEST_DIRS[@]}" --coverage --machine > test-results/flutter.json
@@ -453,7 +453,7 @@ workflows:
           UNIT_TEST_DIRS=()
           while IFS= read -r dir; do
             [[ -n "$dir" ]] && UNIT_TEST_DIRS+=("$dir")
-          done < <(find test/features test/libraries test/app -type d \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
+          done < <(find test/features test/libraries test/app test/tools -type d \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
           
           if [ ${#UNIT_TEST_DIRS[@]} -gt 0 ]; then
             fvm flutter test "${UNIT_TEST_DIRS[@]}" --coverage --machine > test-results/flutter.json

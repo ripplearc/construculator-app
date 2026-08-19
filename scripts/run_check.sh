@@ -118,7 +118,7 @@ pre_check() {
   local test_dirs=()
   while IFS= read -r dir; do
     [[ -n "$dir" ]] && test_dirs+=("$dir")
-  done < <(find test/features test/libraries test/app -type d \
+  done < <(find test/features test/libraries test/app test/tools -type d \
     \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
 
   local changed_tests=""
@@ -298,7 +298,7 @@ comprehensive_check() {
   while IFS= read -r dir; do
     [[ -n "$dir" ]] && unit_test_dirs+=("$dir")
   done < <(
-    find test/features test/libraries test/app -type d \
+    find test/features test/libraries test/app test/tools -type d \
       \( -name "units" -o -name "widgets" \) 2>/dev/null | sort
   )
 
