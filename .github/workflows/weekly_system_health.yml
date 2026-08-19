@@ -1,0 +1,107 @@
+name: Weekly System Health
+
+# Measures startup, jank and memory on lab hardware and publishes the run as an
+# artifact. It runs on a self-hosted runner because Flutter's startup tracing
+# needs a host VM-service connection to the device and `--profile-memory` shells
+# out to host-side DevTools, neither of which a hosted device farm provides.
+
+on:
+  schedule:
+    # Mondays 03:00 UTC, off-peak so the lab device is otherwise idle.
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      device_id:
+        description: "Device id to measure (defaults to the PERF_DEVICE_ID variable)"
+        required: false
+        type: string
+      iterations:
+        description: "Startup iterations per phase"
+        required: false
+        default: "5"
+        type: string
+  issue_comment:
+    types: [created, edited]
+
+concurrency:
+  # The lab device can only serve one run at a time.
+  group: perf-lab
+  cancel-in-progress: false
+
+jobs:
+  measure:
+    name: Measure performance
+    if: >-
+      github.event_name != 'issue_comment' ||
+      (github.event.issue.pull_request &&
+       contains(github.event.comment.body, '#RunPerf'))
+    runs-on: [self-hosted, perf-lab, android]
+    timeout-minutes: 90
+
+    steps:
+      - name: Resolve ref to measure
+        id: ref
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "issue_comment" ]; then
+            REF=$(gh api "repos/${{ github.repository }}/pulls/${{ github.event.issue.number }}" --jq '.head.ref')
+          else
+            REF="${{ github.ref_name }}"
+          fi
+          echo "Measuring ref: $REF"
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.ref.outputs.ref }}
+
+      - name: Resolve run parameters
+        id: params
+        env:
+          DEFAULT_DEVICE_ID: ${{ vars.PERF_DEVICE_ID }}
+          INPUT_DEVICE_ID: ${{ inputs.device_id }}
+          INPUT_ITERATIONS: ${{ inputs.iterations }}
+        run: |
+          DEVICE_ID="${INPUT_DEVICE_ID:-$DEFAULT_DEVICE_ID}"
+          if [ -z "$DEVICE_ID" ]; then
+            echo "❌ No device id. Set the PERF_DEVICE_ID repository variable" >&2
+            echo "   or pass device_id when dispatching this workflow." >&2
+            exit 1
+          fi
+          echo "device_id=$DEVICE_ID" >> "$GITHUB_OUTPUT"
+          echo "iterations=${INPUT_ITERATIONS:-5}" >> "$GITHUB_OUTPUT"
+          echo "run_id=$(date -u +%Y-%m-%dT%H-%M-%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Install Flutter version via FVM
+        run: fvm install
+
+      - name: Install dependencies
+        run: fvm flutter pub get
+
+      - name: Generate env file
+        env:
+          ENVIRONMENT: perf
+        run: bash scripts/ci/generate_env_file.sh
+
+      - name: Capture performance run
+        run: |
+          bash scripts/perf/capture_perf_run.sh \
+            --device-id "${{ steps.params.outputs.device_id }}" \
+            --output-dir "build/perf/${{ steps.params.outputs.run_id }}" \
+            --iterations "${{ steps.params.outputs.iterations }}"
+
+      - name: Build perf-run.json
+        run: |
+          fvm dart run scripts/perf/build_perf_report.dart \
+            --input "build/perf/${{ steps.params.outputs.run_id }}" \
+            --output "build/perf/${{ steps.params.outputs.run_id }}/perf-run.json"
+
+      - name: Upload performance run
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-run-${{ steps.params.outputs.run_id }}
+          path: build/perf/${{ steps.params.outputs.run_id }}
+          if-no-files-found: error
+          retention-days: 90
