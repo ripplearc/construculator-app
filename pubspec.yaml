@@ -58,6 +58,8 @@ dev_dependencies:
   xml: 6.6.1
   integration_test:
     sdk: flutter
+  flutter_driver:
+    sdk: flutter
   fake_async: 1.3.3
 
 patrol:
