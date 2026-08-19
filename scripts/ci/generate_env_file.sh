@@ -71,9 +71,23 @@ case "${ENVIRONMENT}" in
     ANALYTICS_ENABLED="false"
     POSTHOG_DEBUG="false"
     ;;
+  perf)
+    # Writes .env.dev because AppConfigImpl resolves Environment.dev to that
+    # file and the Environment enum has no perf member. The performance harness
+    # therefore builds with --dart-define=ENVIRONMENT=dev and relies on this
+    # case having already stripped the telemetry out of the file it loads.
+    #
+    # Telemetry is disabled so that network calls and event batching do not
+    # perturb the measurements or publish lab runs as if they were field data.
+    ENV_FILE="assets/env/.env.dev"
+    DEBUG_MODE="false"
+    ANALYTICS_ENABLED="false"
+    SENTRY_DSN=""
+    POSTHOG_DEBUG="false"
+    ;;
   *)
     echo "❌ ERROR: Invalid ENVIRONMENT value: ${ENVIRONMENT}"
-    echo "   Valid values: dev, qa, prod"
+    echo "   Valid values: dev, qa, prod, perf"
     exit 1
     ;;
 esac
