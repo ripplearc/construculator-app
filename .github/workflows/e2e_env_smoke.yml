@@ -1,0 +1,56 @@
+name: "E2E Environment Smoke"
+
+on:
+  pull_request:
+    paths:
+      - "scripts/e2e/**"
+      - ".github/actions/e2e-env/**"
+      - ".github/workflows/e2e_env_smoke.yml"
+  workflow_dispatch:
+    inputs:
+      backend-ref:
+        description: "Backend ref to stand the environment up from."
+        required: false
+        default: "master"
+
+jobs:
+  smoke:
+    name: E2E Environment Smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start E2E environment
+        id: env
+        uses: ./.github/actions/e2e-env
+        with:
+          backend-ref: ${{ inputs.backend-ref || 'master' }}
+
+      # The seeded account is what CUJ-1 signs in as. Without a matching
+      # auth.users row the stack looks healthy but no test can log in, so this
+      # is the assertion that actually proves the environment is usable.
+      - name: Seeded user can sign in
+        env:
+          SUPABASE_URL: ${{ steps.env.outputs.supabase-url }}
+          ANON_KEY: ${{ steps.env.outputs.supabase-anon-key }}
+        run: |
+          status=$(curl -sS -o response.json -w '%{http_code}' \
+            -X POST "$SUPABASE_URL/auth/v1/token?grant_type=password" \
+            -H "apikey: $ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"email":"seeder@example.com","password":"e2e-local-only-password"}')
+          if [ "$status" != "200" ]; then
+            echo "::error::Sign-in as the seeded user returned HTTP $status"
+            cat response.json
+            exit 1
+          fi
+          python3 -c 'import json; assert json.load(open("response.json"))["access_token"]'
+
+      - name: Mail catcher is reachable
+        env:
+          MAILPIT_URL: ${{ steps.env.outputs.mailpit-url }}
+        run: curl -fsS -o /dev/null "$MAILPIT_URL/api/v1/messages"
+
+      - name: Dump PowerSync logs
+        if: failure()
+        run: docker logs powersync --tail 100 || true
