@@ -1,3 +1,4 @@
+// coverage:ignore-file
 import 'package:construculator/libraries/analytics/interfaces/posthog_wrapper.dart';
 import 'package:equatable/equatable.dart';
 
