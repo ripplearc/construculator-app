@@ -5,6 +5,8 @@ import 'package:construculator/libraries/estimation/domain/entities/cost_estimat
 import 'package:construculator/libraries/estimation/testing/testing.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:construculator/libraries/global_search/presentation/widgets/search_results_views.dart';
+import 'package:construculator/libraries/project/domain/entities/enums.dart';
+import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -39,6 +41,21 @@ void main() {
     );
   }
 
+  Project makeProject({
+    String id = 'project-1',
+    String projectName = 'Downtown Office Complex',
+  }) {
+    final date = DateTime(2025, 5, 3, 14, 30);
+    return Project(
+      id: id,
+      projectName: projectName,
+      creatorUserId: 'user-1',
+      createdAt: date,
+      updatedAt: date,
+      status: ProjectStatus.active,
+    );
+  }
+
   Future<void> pumpSearchResultsList({
     required WidgetTester tester,
     required Size size,
@@ -65,6 +82,7 @@ void main() {
             backgroundColor: ctx.colorTheme.pageBackground,
             body: SearchResultsList(
               results: results,
+              onProjectTap: (_) {},
               onEstimationTap: (_) {},
               onEstimationMenuTap: (_) {},
               hasMore: hasMore,
@@ -244,6 +262,29 @@ void main() {
         ),
       );
     });
+
+    testWidgets('renders a project card above an estimation card correctly',
+        (tester) async {
+      final results = SearchResults(
+        projects: [makeProject()],
+        estimations: [
+          makeEstimation(estimateName: '2nd Wall Cost', totalCost: 12343.88),
+        ],
+      );
+
+      await pumpSearchResultsList(
+        tester: tester,
+        size: listSize,
+        results: results,
+      );
+
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/search_results_list/${listSize.width}x${listSize.height}/project_and_estimation_cards.png',
+        ),
+      );
+    });
   });
 
   group('SearchResultsEmptyView Screenshot Tests - Light', () {
@@ -394,6 +435,30 @@ void main() {
         find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/search_results_list/${footerSize.width}x${footerSize.height}/end_of_results_footer_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders a project card above an estimation card correctly',
+        (tester) async {
+      final results = SearchResults(
+        projects: [makeProject()],
+        estimations: [
+          makeEstimation(estimateName: '2nd Wall Cost', totalCost: 12343.88),
+        ],
+      );
+
+      await pumpSearchResultsList(
+        tester: tester,
+        size: listSize,
+        results: results,
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/search_results_list/${listSize.width}x${listSize.height}/project_and_estimation_cards_dark.png',
         ),
       );
     });

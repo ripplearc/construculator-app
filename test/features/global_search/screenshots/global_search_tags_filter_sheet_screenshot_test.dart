@@ -17,6 +17,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../utils/fake_project_dropdown_bloc_factory.dart';
 import '../../../utils/screenshot/await_images_extension.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
@@ -78,6 +79,8 @@ void main() {
     Set<String> activeTagsBeforeOpen = const {},
     ThemeData? theme,
   }) async {
+    final projectDropdownBloc = FakeProjectDropdownBlocFactory.create();
+    addTearDown(projectDropdownBloc.close);
     seedTags(const [
       'Roofing',
       'Carpeting',
@@ -98,6 +101,7 @@ void main() {
           router: Modular.get<AppRouter>(),
           blocFactory: () => Modular.get<GlobalSearchBloc>(),
           estimationTileProvider: Modular.get<EstimationTileProvider>(),
+          projectDropdownBloc: projectDropdownBloc,
         ),
       ),
     );
