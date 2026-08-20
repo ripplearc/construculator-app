@@ -6,6 +6,9 @@ import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 class SentryWrapperImpl implements SentryWrapper {
+  static const double _prodTracesSampleRate = 0.1;
+  static const double _nonProdTracesSampleRate = 1.0;
+
   final EnvLoader _envLoader;
   final Config _config;
   final SentrySdk _sentrySdk;
@@ -34,8 +37,10 @@ class SentryWrapperImpl implements SentryWrapper {
       options.dsn = dsn;
       options.environment = _config.getEnvironmentName(_config.environment);
 
-      // TODO: https://ripplearc.youtrack.cloud/issue/CA-566 (Enable performance tracing once baseline is established).
-      options.tracesSampleRate = 0.0;
+      options.tracesSampleRate = _config.isProd
+          ? _prodTracesSampleRate
+          : _nonProdTracesSampleRate;
+      options.enableAutoPerformanceTracing = true;
       options.attachScreenshot = false;
       options.enableAutoSessionTracking = true;
       options.captureFailedRequests = true;
