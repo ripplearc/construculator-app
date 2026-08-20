@@ -3,13 +3,9 @@
 # Starts the E2E backend: Supabase (API, Postgres, auth, Mailpit) plus the
 # self-hosted PowerSync stack that attaches to Supabase's network.
 #
-# Locally this starts the same Supabase project used for ordinary development
-# rather than a separate one, so an already-running dev stack is reused as-is.
-# Starting is harmless; see reset_env.sh and stop_env.sh --purge for the
-# operations that destroy that project's data.
-#
-# TODO(CA-991): isolate via a distinct backend project_id instead of relying on
-# this confirmation gate.
+# This starts the isolated E2E Supabase project (see lib.sh), not a developer's
+# ordinary local dev stack. Starting is harmless; see reset_env.sh and
+# stop_env.sh --purge for the operations that destroy that project's data.
 #
 # Usage: scripts/e2e/start_env.sh
 #
