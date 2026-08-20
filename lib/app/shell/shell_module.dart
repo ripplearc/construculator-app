@@ -98,15 +98,21 @@ class ShellModule extends Module {
       guards: [AuthGuard(() => Modular.get<AuthManager>())],
       children: [
         ModuleRoute(calculatorBaseRoute, module: CalculatorModule()),
-        ModuleRoute(
-          estimationBaseRoute,
-          module: EstimationRoutesModule(appBootstrap),
-        ),
-        ModuleRoute(
-          projectSettingsBaseRoute,
-          module: ProjectSettingsRoutesModule(appBootstrap),
-        ),
       ],
+    );
+    // Estimation and project-settings destinations are full-screen pushes,
+    // so they must be top-level routes like the search pages below:
+    // AppShellPage renders no RouterOutlet, and a child route resolved
+    // under '/' has no outlet to mount into — Modular swallows the push
+    // with no transition and no error (CA-900). Their inner routes carry
+    // their own AuthGuards.
+    r.module(
+      estimationBaseRoute,
+      module: EstimationRoutesModule(appBootstrap),
+    );
+    r.module(
+      projectSettingsBaseRoute,
+      module: ProjectSettingsRoutesModule(appBootstrap),
     );
     r.child(
       projectSearchRoute,
