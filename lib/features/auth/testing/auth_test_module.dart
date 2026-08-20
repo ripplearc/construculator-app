@@ -15,6 +15,7 @@ import 'package:construculator/features/auth/presentation/bloc/login_with_email_
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/set_new_password_bloc/set_new_password_bloc.dart';
+import 'package:construculator/libraries/analytics/data/repositories/no_op_analytics_repository.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier_controller.dart';
@@ -41,6 +42,7 @@ class AuthTestModule extends Module {
         config: FakeAppConfig(),
         supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
         sentryWrapper: FakeSentryWrapper(),
+        analyticsRepository: const NoOpAnalyticsRepository(),
       ),
     ),
     RouterTestModule(),

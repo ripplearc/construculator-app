@@ -1,6 +1,9 @@
 import 'package:construculator/app/app.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/app_module.dart';
+import 'package:construculator/libraries/analytics/analytics_repository_factory.dart';
+import 'package:construculator/libraries/analytics/posthog_sdk_impl.dart';
+import 'package:construculator/libraries/analytics/posthog_wrapper_impl.dart';
 import 'package:construculator/libraries/config/app_config_impl.dart';
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/config/env_loader_impl.dart';
@@ -43,11 +46,16 @@ Future<AppBootstrap> _initializeApp() async {
     config: config,
     sentrySdk: SentrySdkImpl(),
   );
+  final analyticsRepository = await createAnalyticsRepository(
+    envLoader: envLoader,
+    buildPosthogWrapper: () => PosthogWrapperImpl(posthogSdk: PosthogSdkImpl()),
+  );
   return AppBootstrap(
     config: config,
     envLoader: envLoader,
     supabaseWrapper: wrapper,
     sentryWrapper: sentryWrapper,
+    analyticsRepository: analyticsRepository,
   );
 }
 
