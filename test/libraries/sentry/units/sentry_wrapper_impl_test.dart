@@ -74,10 +74,31 @@ void main() {
         expect(options, isNotNull);
         expect(options!.dsn, testDsn);
         expect(options.environment, devReadableName);
-        expect(options.tracesSampleRate, 0.0);
         expect(options.attachScreenshot, isFalse);
         expect(options.enableAutoSessionTracking, isTrue);
         expect(options.captureFailedRequests, isTrue);
+      });
+
+      test('samples all transactions on non-prod environments', () async {
+        fakeConfig.setEnvironment(Environment.dev);
+        fakeEnvLoader.setEnvVar(sentryDsnKey, testDsn);
+
+        await sentryWrapper.initialize(() {});
+
+        final options = fakeSentrySdk.lastConfiguredOptions;
+        expect(options!.tracesSampleRate, 1.0);
+        expect(options.enableAutoPerformanceTracing, isTrue);
+      });
+
+      test('samples a reduced fraction of transactions on prod', () async {
+        fakeConfig.setEnvironment(Environment.prod);
+        fakeEnvLoader.setEnvVar(sentryDsnKey, testDsn);
+
+        await sentryWrapper.initialize(() {});
+
+        final options = fakeSentrySdk.lastConfiguredOptions;
+        expect(options!.tracesSampleRate, 0.1);
+        expect(options.enableAutoPerformanceTracing, isTrue);
       });
     });
 
