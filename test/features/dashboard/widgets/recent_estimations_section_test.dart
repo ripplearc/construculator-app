@@ -8,6 +8,7 @@ import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/estimation/data/models/cost_estimate_dto.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
+import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
 import 'package:construculator/libraries/estimation/testing/fake_cost_estimation_repository.dart';
 
@@ -154,11 +155,30 @@ void main() {
   testWidgets('shows error message when estimations fail to load', (
     tester,
   ) async {
-    currentProjectNotifier.setCurrentProjectId(null);
+    // A factory (not a single stream instance) because the watch may be
+    // re-invoked when the project-changed listener fires, and a
+    // single-subscription stream cannot be listened to twice.
+    fakeRepository.streamFactory = () => Stream.value(
+          const Left(
+            EstimationFailure(errorType: EstimationErrorType.unexpectedError),
+          ),
+        );
 
     await pumpSection(tester);
 
     expect(find.text(l10n().recentEstimationsLoadError), findsOneWidget);
+  });
+
+  testWidgets('stays on the loading placeholders instead of an error while '
+      'no project is selected yet (CA-900)', (tester) async {
+    currentProjectNotifier.setCurrentProjectId(null);
+
+    bloc.add(const RecentEstimationsWatchStarted());
+    await tester.pumpWidget(buildTestApp());
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text(l10n().recentEstimationsLoadError), findsNothing);
   });
 
   testWidgets('renders estimation cards when data is loaded', (tester) async {
