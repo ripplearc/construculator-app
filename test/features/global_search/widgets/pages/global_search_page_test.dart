@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/global_search/global_search_module.dart';
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
 import 'package:construculator/features/global_search/presentation/pages/global_search_page.dart';
@@ -10,6 +11,9 @@ import 'package:construculator/features/global_search/presentation/widgets/globa
 import 'package:construculator/features/global_search/presentation/widgets/global_search_type_filter_sheet.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
+import 'package:construculator/libraries/project/domain/entities/enums.dart';
+import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
+import 'package:construculator/libraries/project/testing/fake_project_repository.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -27,6 +31,7 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import '../../../../libraries/estimation/helpers/estimation_test_data_map_factory.dart'
     as estimation_factory;
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_project_dropdown_bloc_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 import '../../../../utils/toast_test_utils.dart';
 
@@ -118,13 +123,22 @@ void main() {
 
   AppLocalizations l10n() => AppLocalizations.of(buildContext!)!;
 
-  Future<void> renderPage(WidgetTester tester) async {
+  Future<void> renderPage(
+    WidgetTester tester, {
+    ProjectDropdownBloc? projectDropdownBloc,
+  }) async {
+    // Closing an already-closed bloc is a no-op, so tests that pass their
+    // own bloc (and tear it down themselves) are unaffected.
+    final dropdownBloc =
+        projectDropdownBloc ?? FakeProjectDropdownBlocFactory.create();
+    addTearDown(dropdownBloc.close);
     await tester.pumpWidget(
       makeTestableWidget(
         child: GlobalSearchPage(
           router: router,
           blocFactory: () => Modular.get<GlobalSearchBloc>(),
           estimationTileProvider: Modular.get<EstimationTileProvider>(),
+          projectDropdownBloc: dropdownBloc,
         ),
       ),
     );
@@ -934,12 +948,45 @@ void main() {
 
     void seedSearchResults({
       required List<Map<String, dynamic>> estimations,
+      List<Map<String, dynamic>> projects = const [],
     }) {
       fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
-        'projects': <Map<String, dynamic>>[],
+        'projects': projects,
         'estimations': estimations,
         'members': <Map<String, dynamic>>[],
       });
+    }
+
+    Map<String, dynamic> projectRow({
+      required String id,
+      required String projectName,
+    }) {
+      return {
+        DatabaseConstants.idColumn: id,
+        DatabaseConstants.projectNameColumn: projectName,
+        DatabaseConstants.descriptionColumn: null,
+        DatabaseConstants.creatorUserIdColumn: _testUserId,
+        DatabaseConstants.owningCompanyIdColumn: null,
+        DatabaseConstants.exportFolderLinkColumn: null,
+        DatabaseConstants.exportStorageProviderColumn: null,
+        DatabaseConstants.createdAtColumn: '2024-01-01T00:00:00.000Z',
+        DatabaseConstants.updatedAtColumn: '2024-01-01T00:00:00.000Z',
+        DatabaseConstants.statusColumn: 'active',
+      };
+    }
+
+    Project projectEntity({
+      required String id,
+      required String projectName,
+    }) {
+      return Project(
+        id: id,
+        projectName: projectName,
+        creatorUserId: _testUserId,
+        createdAt: DateTime(2024, 1, 1),
+        updatedAt: DateTime(2024, 1, 1),
+        status: ProjectStatus.active,
+      );
     }
 
     Future<void> submitSearch(WidgetTester tester, String query) async {
@@ -972,6 +1019,61 @@ void main() {
             ValueKey('estimationCard_${estimation_factory.estimateIdDefault}'),
           ),
           findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'sees a project result card and tapping it selects the project and '
+      'pops back to the shell',
+      (tester) async {
+        seedUser();
+        seedSearchResults(
+          estimations: const [],
+          projects: [
+            projectRow(id: 'proj-office', projectName: 'Downtown Office'),
+          ],
+        );
+        // Two accessible projects so the dropdown's auto-selection picks
+        // 'proj-other' and the tap observably changes the selection.
+        final projectRepository = FakeProjectRepository()
+          ..setAccessibleProjects([
+            projectEntity(id: 'proj-other', projectName: 'Other Project'),
+            projectEntity(id: 'proj-office', projectName: 'Downtown Office'),
+          ]);
+        final dropdownBloc = FakeProjectDropdownBlocFactory.create(
+          projectRepository: projectRepository,
+          authenticatedUserId: _testUserId,
+        )..add(const ProjectDropdownStarted());
+        await dropdownBloc.stream.firstWhere(
+          (state) => state is ProjectDropdownLoadSuccess,
+        );
+        addTearDown(dropdownBloc.close);
+
+        await renderPage(tester, projectDropdownBloc: dropdownBloc);
+        await submitSearch(tester, 'office');
+
+        expect(
+          find.byKey(const ValueKey('projectCard_proj-office')),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byKey(const ValueKey('projectCard_proj-office')));
+        await tester.pumpAndSettle();
+
+        expect(
+          dropdownBloc.state,
+          isA<ProjectDropdownLoadSuccess>().having(
+            (state) => state.selectedProject,
+            'selectedProject',
+            isA<Project>().having((project) => project.id, 'id', 'proj-office'),
+          ),
+          reason: 'tapping a project result must select that project',
+        );
+        expect(
+          router.popCalls,
+          1,
+          reason: 'after selecting, the page must pop back to the shell',
         );
       },
     );
