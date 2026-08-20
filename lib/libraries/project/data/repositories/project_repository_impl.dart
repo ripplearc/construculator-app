@@ -119,9 +119,19 @@ class ProjectRepositoryImpl implements ProjectRepository {
         .listen(
           (_) => _refreshProjects(),
           onError: (Object error, StackTrace stackTrace) {
+            // Realtime being unavailable must not fail the projects surface:
+            // the eager fetch below (and any later refresh) still serves the
+            // list — it just stops live-updating. Only the fetch path pushes
+            // failures to listeners (CA-900). A terminally errored stream is
+            // not resubscribed until all listeners detach; CA-985 adds
+            // retry/backoff. https://ripplearc.youtrack.cloud/issue/CA-985
             final failure = ProjectErrorMapper.toFailure(error);
-            _logFailure('watching project changes', failure, stackTrace);
-            _projectsController?.addError(failure, stackTrace);
+            _logFailure(
+              'watching project changes (realtime unavailable; list degrades '
+              'to fetch-once)',
+              failure,
+              stackTrace,
+            );
           },
         );
 
