@@ -1,8 +1,10 @@
 import 'package:construculator/features/global_search/domain/entities/search_results.dart';
 import 'package:construculator/features/global_search/presentation/widgets/estimation_card_widget.dart';
+import 'package:construculator/features/global_search/presentation/widgets/project_card_widget.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_tile_provider.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
+import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
@@ -18,9 +20,10 @@ const double _kEndOfResultsDividerHeight = 1.0;
 
 /// Scrollable list of search results grouped under a "Most relevant" header.
 ///
-/// Renders [EstimationCard] for each estimation in [results]. The
-/// [onEstimationTap] and [onEstimationMenuTap] callbacks are forwarded to each
-/// card.
+/// Renders one [ProjectCard] per project followed by one [EstimationCard]
+/// per estimation in [results], matching the RPC's relevance grouping. The
+/// [onProjectTap], [onEstimationTap], and [onEstimationMenuTap] callbacks
+/// are forwarded to the cards.
 ///
 /// Supports infinite scroll: when the list is scrolled within
 /// [_kLoadMoreExtentThreshold] of its end and [hasMore] is true, [onLoadMore]
@@ -32,6 +35,9 @@ const double _kEndOfResultsDividerHeight = 1.0;
 class SearchResultsList extends StatelessWidget {
   /// The search results to display.
   final SearchResults results;
+
+  /// Called when a project card is tapped.
+  final void Function(Project) onProjectTap;
 
   /// Called when an estimation card body is tapped.
   final void Function(CostEstimate) onEstimationTap;
@@ -66,6 +72,7 @@ class SearchResultsList extends StatelessWidget {
   const SearchResultsList({
     super.key,
     required this.results,
+    required this.onProjectTap,
     required this.onEstimationTap,
     this.onEstimationMenuTap,
     this.hasMore = false,
@@ -231,6 +238,20 @@ class SearchResultsList extends StatelessWidget {
           ),
           // TODO(CA-652): Add a SliverList here that renders one CalculationCard per SearchResults.calculations entry.
           // https://ripplearc.youtrack.cloud/issue/CA-652
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
+            sliver: SliverList.builder(
+              itemCount: results.projects.length,
+              itemBuilder: (context, index) {
+                final project = results.projects[index];
+                return ProjectCard(
+                  key: ValueKey('projectCard_${project.id}'),
+                  project: project,
+                  onTap: () => onProjectTap(project),
+                );
+              },
+            ),
+          ),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
             sliver: SliverList.builder(

@@ -485,7 +485,8 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   // [offset] is the estimations-page offset.
   // TODO(CA-979): split the offset per domain — the RPC mapping applies one
   // offset to projects, estimations and members alike, which only stays
-  // correct while estimations are the sole paginated domain.
+  // correct while estimations are the sole paginated domain (project rows
+  // render but do not paginate).
   // https://ripplearc.youtrack.cloud/issue/CA-979
   SearchParams _buildSearchParams({
     required String query,

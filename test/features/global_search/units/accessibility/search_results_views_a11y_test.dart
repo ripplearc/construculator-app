@@ -4,6 +4,8 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/estimation/testing/testing.dart';
 import 'package:construculator/libraries/global_search/presentation/widgets/search_results_views.dart';
+import 'package:construculator/libraries/project/domain/entities/enums.dart';
+import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -45,6 +47,7 @@ void main() {
         home: Scaffold(
           body: SearchResultsList(
             results: results,
+            onProjectTap: (_) {},
             onEstimationTap: (_) {},
             onEstimationMenuTap: onEstimationMenuTap,
             hasMore: hasMore,
@@ -79,6 +82,29 @@ void main() {
           tester,
           (theme) => buildList(results, theme, onEstimationMenuTap: (_) {}),
           find.byKey(const Key('menuIcon')),
+        );
+      });
+
+      testWidgets('a11y: project card tap target passes in both themes', (tester) async {
+        await setupA11yTest(tester);
+
+        final results = SearchResults(
+          projects: [
+            Project(
+              id: 'p1',
+              projectName: 'Downtown Office Complex',
+              creatorUserId: 'user-1',
+              createdAt: testDate,
+              updatedAt: testDate,
+              status: ProjectStatus.active,
+            ),
+          ],
+        );
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => buildList(results, theme),
+          find.byKey(const ValueKey('projectCard_p1')),
         );
       });
 
