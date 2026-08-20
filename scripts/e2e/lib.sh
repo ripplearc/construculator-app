@@ -10,22 +10,18 @@
 # Backend repository checkout that owns supabase/ and powersync/.
 # Defaults to a sibling of the app repository.
 #
-# WARNING: locally this is the same Supabase project a developer uses for
-# ordinary development — supabase/config.toml declares
-# project_id = "construculator-backend", and powersync/compose.yaml attaches to
-# that project's network by name. These scripts therefore do NOT get their own
-# isolated stack on a developer machine; only CI is isolated, because each run
-# starts on a fresh runner. Anything destructive here hits real local dev data,
-# which is why reset and purge require explicit confirmation.
-#
-# TODO: https://ripplearc.youtrack.cloud/issue/CA-991 - isolate via a
-# distinct backend project_id instead of relying on this confirmation gate.
+# supabase/config.toml declares project_id = "construculator-backend-e2e", a
+# distinct project from whatever a developer's own local Supabase work uses
+# by default — so the containers, volumes and Docker network these scripts
+# start and destroy are their own, not a developer's ordinary dev stack.
+# The confirmation gate below is defense-in-depth for whatever E2E data the
+# stack itself has accumulated, not a guard against hitting unrelated data.
 E2E_APP_DIR="${E2E_APP_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 E2E_BACKEND_DIR="${E2E_BACKEND_DIR:-$(dirname "$E2E_APP_DIR")/construculator-backend}"
 
 # project_id from the backend's supabase/config.toml. Named here so the
 # confirmation prompts can say exactly which project is about to be destroyed.
-E2E_DB_PROJECT="construculator-backend"
+E2E_DB_PROJECT="construculator-backend-e2e"
 
 # Read-only mirrors of the ports the backend already binds: the API, database
 # and Mailpit ports come from supabase/config.toml, and the PowerSync port from
@@ -98,9 +94,9 @@ e2e_ensure_powersync_env() {
   }
 }
 
-# Gates an action that destroys data. Locally the target is the developer's own
-# Supabase project, so the seeders will not restore anything that was not seeded
-# — real accounts and any other local work are simply gone. CI sets
+# Gates an action that destroys data. The target is the isolated E2E project,
+# so this protects only whatever the E2E stack itself has accumulated — the
+# seeders will not restore anything that was not seeded. CI sets
 # E2E_ASSUME_YES because a runner has nothing of its own to lose.
 e2e_confirm_destructive() {
   local action="$1"
