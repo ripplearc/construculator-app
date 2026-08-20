@@ -29,16 +29,10 @@ void main() {
       'search button meets tap target and label guidelines in both themes',
       (tester) async {
         await setupA11yTest(tester);
-        // Tap target size is disabled: the container's vertical padding
-        // squeezes the inner AppBar to 40px, so the search icon measures
-        // 48x40 — a pre-existing layout carried over verbatim from
-        // AppShellPage. TODO: [CA-822] rework the layout to reach 48x48.
-        // https://ripplearc.youtrack.cloud/issue/CA-822
         await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
           tester,
           (theme) => makeTestableWidget(theme: theme),
           find.byKey(const Key('title_search_app_bar_search_button')),
-          checkTapTargetSize: false,
         );
       },
     );

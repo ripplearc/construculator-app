@@ -25,9 +25,11 @@ void main() {
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const Scaffold(
-          appBar: TitleSearchAppBar(),
-          body: SizedBox.shrink(),
+        home: Scaffold(
+          // Pumped with a callback so [CoreIconWidget] takes its interactive
+          // IconButton path, matching how the app bar is wired in production.
+          appBar: TitleSearchAppBar(onSearchTap: () {}),
+          body: const SizedBox.shrink(),
         ),
       ),
     );
