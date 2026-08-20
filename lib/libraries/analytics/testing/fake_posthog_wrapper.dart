@@ -37,6 +37,8 @@ class FakePosthogWrapper implements PosthogWrapper {
     required String host,
     bool debug = false,
   }) async {
+    final error = errorToThrow;
+    if (error != null) throw error;
     initializeCalls.add(
       InitializeCall(apiKey: apiKey, host: host, debug: debug),
     );
