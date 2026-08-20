@@ -79,6 +79,9 @@ class ShellModule extends Module {
           BlocProvider<AppShellBloc>(
             create: (_) => Modular.get<AppShellBloc>(),
           ),
+          // Started once from AppShellPage.initState (not here: this value
+          // expression re-executes on every shell rebuild, and an unguarded
+          // re-dispatch resets the user's project selection).
           BlocProvider<ProjectDropdownBloc>.value(
             value: Modular.get<ProjectDropdownBloc>(),
           ),

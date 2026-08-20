@@ -43,6 +43,21 @@ class _AppShellPageState extends State<AppShellPage> {
     (_) => GlobalKey<NavigatorState>(),
   );
 
+  @override
+  void initState() {
+    super.initState();
+    // Start the projects watch at shell mount (not first sheet opening) so
+    // the first project auto-selects on login; without a selection,
+    // CurrentProjectNotifier stays null and every project-scoped surface
+    // (e.g. recent estimations) never loads (CA-900). Guarded like the
+    // projects sheet: a remount must not restart a loaded watch, which
+    // would reset the user's selection to the first project.
+    final projectDropdownBloc = context.read<ProjectDropdownBloc>();
+    if (projectDropdownBloc.state is! ProjectDropdownLoadSuccess) {
+      projectDropdownBloc.add(const ProjectDropdownStarted());
+    }
+  }
+
   void _onPopInvoked(bool didPop) {
     if (didPop) return;
 

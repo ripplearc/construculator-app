@@ -386,12 +386,46 @@ void main() {
     tearDown(() => fakeProjectNotifier.reset());
 
     testWidgets(
+      'starts the projects watch on shell mount and auto-selects the first '
+      'project without any manual dispatch',
+      (tester) async {
+        fakeProjectRepository.setAccessibleProjects([
+          buildProject('project-a', 'Project A', DateTime(2025, 1, 2)),
+        ]);
+
+        final dropdownBloc = Modular.get<ProjectDropdownBloc>();
+        final loaded = dropdownBloc.stream.firstWhere(
+          (s) => s is ProjectDropdownLoadSuccess && s.selectedProject != null,
+        );
+
+        // No ProjectDropdownStarted is dispatched here: mounting the shell
+        // must start the watch itself (CA-900 — previously nothing did
+        // until the projects sheet was opened, so no project auto-selected
+        // on login).
+        await tester.pumpWidget(makeApp());
+        await tester.pump();
+        await tester.pump();
+
+        await tester.runAsync(() => loaded);
+        await tester.pump();
+        expect(fakeProjectNotifier.currentProjectId, 'project-a');
+      },
+    );
+
+    testWidgets(
       'updates CurrentProjectNotifier when project selection changes',
       (tester) async {
         fakeProjectRepository.setAccessibleProjects([
           buildProject('project-a', 'Project A', DateTime(2025, 1, 2)),
           buildProject('project-b', 'Project B', DateTime(2025, 1, 1)),
         ]);
+
+        // Subscribe before pumping: mounting the shell auto-dispatches
+        // ProjectDropdownStarted from initState, so a manual dispatch here
+        // would restart the already-running watch.
+        final dropdownBloc = Modular.get<ProjectDropdownBloc>();
+        final firstLoad = dropdownBloc.stream
+            .firstWhere((s) => s is ProjectDropdownLoadSuccess);
 
         await tester.pumpWidget(makeApp());
         // Two pumps: first drains AppShellInitialized, second drains the
@@ -400,11 +434,6 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        final dropdownBloc = Modular.get<ProjectDropdownBloc>();
-
-        final firstLoad = dropdownBloc.stream
-            .firstWhere((s) => s is ProjectDropdownLoadSuccess);
-        dropdownBloc.add(const ProjectDropdownStarted());
         await tester.runAsync(() => firstLoad);
         await tester.pump();
         expect(fakeProjectNotifier.currentProjectId, 'project-a');
