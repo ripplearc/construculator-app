@@ -31,6 +31,9 @@ void main() {
       SearchResults results,
       ThemeData theme, {
       void Function(CostEstimate)? onEstimationMenuTap,
+      bool hasMore = false,
+      bool loadMoreFailed = false,
+      VoidCallback? onRetryLoadMore,
     }) {
       return MaterialApp(
         theme: theme,
@@ -42,6 +45,9 @@ void main() {
             results: results,
             onEstimationTap: (_) {},
             onEstimationMenuTap: onEstimationMenuTap,
+            hasMore: hasMore,
+            loadMoreFailed: loadMoreFailed,
+            onRetryLoadMore: onRetryLoadMore,
             estimationTileProvider: const FakeEstimationTileProvider(),
           ),
         ),
@@ -70,6 +76,24 @@ void main() {
           tester,
           (theme) => buildList(results, theme, onEstimationMenuTap: (_) {}),
           find.byKey(const Key('menuIcon')),
+        );
+      });
+
+      testWidgets('a11y: load-more retry button tap target passes in both themes', (tester) async {
+        await setupA11yTest(tester);
+
+        final results = SearchResults(estimations: [makeEstimation()]);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => buildList(
+            results,
+            theme,
+            hasMore: true,
+            loadMoreFailed: true,
+            onRetryLoadMore: () {},
+          ),
+          find.byKey(const Key('searchResultsLoadMoreRetryButton')),
         );
       });
     });

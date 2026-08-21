@@ -242,6 +242,17 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
         onEstimationTap: (estimation) => widget.router.pushNamed(
           '$fullEstimationDetailsRoute/${estimation.id}',
         ),
+        hasMore: state.hasMoreEstimations,
+        isLoadingMore:
+            state.loadMoreStatus == GlobalSearchLoadMoreStatus.inProgress,
+        loadMoreFailed:
+            state.loadMoreStatus == GlobalSearchLoadMoreStatus.failure,
+        onLoadMore: () => context.read<GlobalSearchBloc>().add(
+              const GlobalSearchLoadMoreRequested(),
+            ),
+        onRetryLoadMore: () => context.read<GlobalSearchBloc>().add(
+              const GlobalSearchLoadMoreRequested(),
+            ),
         estimationTileProvider: widget.estimationTileProvider,
       );
     }

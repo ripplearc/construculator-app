@@ -1,4 +1,5 @@
 import 'dart:async' show unawaited;
+import 'package:construculator/features/global_search/domain/entities/pagination_params.dart';
 import 'package:construculator/features/global_search/domain/entities/search_params_entity.dart';
 import 'package:construculator/features/global_search/domain/entities/search_results.dart';
 import 'package:construculator/features/global_search/domain/entities/search_scope_entity.dart';
@@ -19,6 +20,10 @@ part 'global_search_state.dart';
 const Duration _kQueryDebounceDuration = Duration(milliseconds: 300);
 
 const int _kMaxDisplayedSuggestions = 5;
+
+// Page size for search result fetches; a page shorter than this marks its
+// domain as exhausted.
+const int _kSearchResultsPageSize = 20;
 
 /// Returns an [EventTransformer] that debounces events by [duration] and
 /// switches to the latest mapper stream, cancelling any in-flight processing.
@@ -110,8 +115,31 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   // (e.g. two quick filter-chip taps each re-running the active search)
   // execute concurrently and whichever RPC resolves last would win the
   // final emit. The older dispatch bails out on completion instead, so the
-  // visible results always reflect the newest dispatch.
+  // visible results always reflect the newest dispatch. Load-more page
+  // fetches capture the same generation without bumping it, so any newer
+  // search or reset disowns them alongside the search they extend.
   int _searchExecutionGeneration = 0;
+
+  // Results accumulated across all pages of the active search; the source
+  // for every [GlobalSearchLoadSuccess] emission.
+  SearchResults _activeResults = const SearchResults();
+
+  // Offset for the next estimations page. Advances by the page size (not by
+  // the appended count) so client-side deduplication cannot desync the
+  // server-side cursor.
+  int _estimationsNextOffset = 0;
+
+  // Whether the last estimations page was full, i.e. more may exist.
+  // Estimations are the only paginated domain; sibling flags for the other
+  // domains follow the same pattern once CA-979 splits the offsets.
+  // https://ripplearc.youtrack.cloud/issue/CA-979
+  bool _hasMoreEstimations = false;
+
+  // Prevents concurrent page fetches: scroll events may dispatch
+  // [GlobalSearchLoadMoreRequested] repeatedly while one is in flight.
+  // Every path that bumps _searchExecutionGeneration also clears this flag,
+  // because the disowned fetch returns early without touching it.
+  bool _loadMoreInFlight = false;
 
   GlobalSearchBloc({
     required this._repository,
@@ -126,6 +154,7 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       transformer: _debounce(_kQueryDebounceDuration),
     );
     on<GlobalSearchPerformed>(_onPerformed);
+    on<GlobalSearchLoadMoreRequested>(_onLoadMoreRequested);
     on<GlobalSearchRecentRemoved>(_onRecentRemoved);
     on<GlobalSearchSuggestionsRequested>(_onSuggestionsRequested);
     on<GlobalSearchTagFiltersApplied>(_onTagFiltersApplied);
@@ -266,9 +295,14 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       _availableTagsFetchGeneration++;
       _lastPerformedQuery = null;
       _searchIsActive = false;
-      // Disown any in-flight performed search so its completion cannot
-      // publish results over the freshly reset surface.
+      // Disown any in-flight performed search or load-more page fetch so
+      // its completion cannot publish results over the freshly reset
+      // surface; the disowned fetch no longer owns the in-flight flag.
       _searchExecutionGeneration++;
+      _loadMoreInFlight = false;
+      _activeResults = const SearchResults();
+      _estimationsNextOffset = 0;
+      _hasMoreEstimations = false;
       _selectedOwnerIds = const {};
       _ownerSearchQuery = '';
       _availableOwners = const [];
@@ -319,10 +353,16 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     // Editing the query returns to the suggestions/recents surface; a filter
     // change must no longer resurrect the previous results.
     _searchIsActive = false;
-    // Disown any in-flight search, same as the GlobalSearchStarted reset: its
-    // late completion must not publish stale results over the suggestions
-    // surface the user navigated to.
+    // Disown any in-flight search or load-more page fetch, same as the
+    // GlobalSearchStarted reset: its late completion must not publish stale
+    // results over the suggestions surface the user navigated to. The
+    // disowned fetch no longer owns the in-flight flag, and the pagination
+    // fields reset with it so no sibling path can read a stale cursor.
     _searchExecutionGeneration++;
+    _loadMoreInFlight = false;
+    _activeResults = const SearchResults();
+    _estimationsNextOffset = 0;
+    _hasMoreEstimations = false;
 
     if (trimmedQuery.isEmpty) {
       // Clearing the query cancels any same-pipeline suggestions fetch via
@@ -347,35 +387,30 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     Emitter<GlobalSearchState> emit,
   ) async {
     final trimmedQuery = event.query.trim();
+    // Captured before the await: a newer dispatch (or a reset) disowns this
+    // execution, so its slower RPC cannot publish stale results on top of
+    // the newer one's. A disowned load-more page fetch no longer owns the
+    // in-flight flag, so this dispatch takes it over. Bumped before the
+    // empty-query branch because that submit supersedes the active search
+    // too: without it an in-flight page fetch keeps its generation and
+    // repaints the results list over the validation surface.
+    final generation = ++_searchExecutionGeneration;
+    _loadMoreInFlight = false;
+
     if (trimmedQuery.isEmpty) {
+      _activeResults = const SearchResults();
+      _estimationsNextOffset = 0;
+      _hasMoreEstimations = false;
       emit(const GlobalSearchEmptyQuery());
       return;
     }
     _currentQuery = trimmedQuery;
     _lastPerformedQuery = trimmedQuery;
     _searchIsActive = true;
-    // Captured before the await: a newer dispatch (or a reset) disowns this
-    // execution, so its slower RPC cannot publish stale results on top of
-    // the newer one's.
-    final generation = ++_searchExecutionGeneration;
     emit(GlobalSearchLoadInProgress(query: trimmedQuery));
 
     final result = await _repository.search(
-      SearchParams(
-        query: trimmedQuery,
-        scope: _selectedScope,
-        // SearchParams accepts a single tag; sort for deterministic selection
-        // until CA-638 extends the API to support multi-tag filtering.
-        filterByTag: _selectedTags.isEmpty
-            ? null
-            : (_selectedTags.toList()..sort()).first,
-        // Sorted so equal selections always produce the same RPC payload.
-        filterByOwners: _selectedOwnerIds.isEmpty
-            ? null
-            : (_selectedOwnerIds.toList()..sort()),
-        filterByDateFrom: _selectedDateRange?.start,
-        filterByDateTo: _selectedDateRange?.end,
-      ),
+      _buildSearchParams(query: trimmedQuery, offset: 0),
     );
 
     // A newer dispatch (or a reset) disowned this execution while its RPC
@@ -383,10 +418,15 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     // history save.
     if (generation != _searchExecutionGeneration) return;
 
-    result.fold(
-        (failure) => emit(
-              GlobalSearchLoadFailure(failure: failure, query: trimmedQuery),
-            ), (
+    result.fold((failure) {
+      // The failure surface owns the body now; reset the pagination fields
+      // so a stray load-more dispatch cannot resurrect the previous
+      // search's results over it.
+      _activeResults = const SearchResults();
+      _hasMoreEstimations = false;
+      _estimationsNextOffset = 0;
+      emit(GlobalSearchLoadFailure(failure: failure, query: trimmedQuery));
+    }, (
       searchResults,
     ) {
       final hasResults =
@@ -394,8 +434,18 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
           searchResults.estimations.isNotEmpty ||
           searchResults.members.isNotEmpty;
 
+      _activeResults = searchResults;
+      _estimationsNextOffset = _kSearchResultsPageSize;
+      _hasMoreEstimations =
+          searchResults.estimations.length >= _kSearchResultsPageSize;
+
       if (hasResults) {
-        emit(GlobalSearchLoadSuccess(results: searchResults));
+        emit(
+          GlobalSearchLoadSuccess(
+            results: _activeResults,
+            hasMoreEstimations: _hasMoreEstimations,
+          ),
+        );
       } else {
         emit(GlobalSearchLoadEmpty(query: trimmedQuery));
       }
@@ -424,6 +474,102 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
             ),
       );
     });
+  }
+
+  // Builds the SearchParams for the active query, filters, and scope.
+  // [offset] is the estimations-page offset.
+  // TODO(CA-979): split the offset per domain — the RPC mapping applies one
+  // offset to projects, estimations and members alike, which only stays
+  // correct while estimations are the sole paginated domain.
+  // https://ripplearc.youtrack.cloud/issue/CA-979
+  SearchParams _buildSearchParams({
+    required String query,
+    required int offset,
+  }) {
+    return SearchParams(
+      query: query,
+      scope: _selectedScope,
+      // SearchParams accepts a single tag; sort for deterministic selection
+      // until CA-638 extends the API to support multi-tag filtering.
+      filterByTag: _selectedTags.isEmpty
+          ? null
+          : (_selectedTags.toList()..sort()).first,
+      // Sorted so equal selections always produce the same RPC payload.
+      filterByOwners: _selectedOwnerIds.isEmpty
+          ? null
+          : (_selectedOwnerIds.toList()..sort()),
+      filterByDateFrom: _selectedDateRange?.start,
+      filterByDateTo: _selectedDateRange?.end,
+      pagination: PaginationParams(
+        offset: offset,
+        limit: _kSearchResultsPageSize,
+      ),
+    );
+  }
+
+  Future<void> _onLoadMoreRequested(
+    GlobalSearchLoadMoreRequested event,
+    Emitter<GlobalSearchState> emit,
+  ) async {
+    final query = _lastPerformedQuery;
+    // Only a live results surface can extend itself; ignore events arriving
+    // after the user edited the query back to suggestions or before any
+    // search ran.
+    if (!_searchIsActive || query == null) return;
+    if (_loadMoreInFlight || !_hasMoreEstimations) return;
+
+    // Captured without bumping: this page fetch belongs to the active
+    // search execution, and any newer search or reset disowns it by
+    // bumping the shared generation.
+    final generation = _searchExecutionGeneration;
+    _loadMoreInFlight = true;
+    emit(
+      GlobalSearchLoadSuccess(
+        results: _activeResults,
+        hasMoreEstimations: true,
+        loadMoreStatus: GlobalSearchLoadMoreStatus.inProgress,
+      ),
+    );
+
+    final result = await _repository.search(
+      _buildSearchParams(query: query, offset: _estimationsNextOffset),
+    );
+
+    // A newer search (or a reset) disowned this page fetch while its RPC
+    // was in flight; the owner has already taken over the in-flight flag
+    // and the results surface.
+    if (generation != _searchExecutionGeneration) return;
+    _loadMoreInFlight = false;
+
+    result.fold(
+      (failure) => emit(
+        GlobalSearchLoadSuccess(
+          results: _activeResults,
+          hasMoreEstimations: true,
+          loadMoreStatus: GlobalSearchLoadMoreStatus.failure,
+        ),
+      ),
+      (page) {
+        // A row that shifted pages server-side (e.g. an estimation created
+        // between fetches) would otherwise render twice after the append.
+        final loadedIds = _activeResults.estimations.map((e) => e.id).toSet();
+        final appended = page.estimations
+            .where((estimation) => !loadedIds.contains(estimation.id))
+            .toList();
+        _activeResults = _activeResults.copyWith(
+          estimations: [..._activeResults.estimations, ...appended],
+        );
+        _hasMoreEstimations =
+            page.estimations.length >= _kSearchResultsPageSize;
+        _estimationsNextOffset += _kSearchResultsPageSize;
+        emit(
+          GlobalSearchLoadSuccess(
+            results: _activeResults,
+            hasMoreEstimations: _hasMoreEstimations,
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _onRecentRemoved(

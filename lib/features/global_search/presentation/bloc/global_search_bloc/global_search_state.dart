@@ -135,15 +135,43 @@ class GlobalSearchLoadInProgress extends GlobalSearchState {
   List<Object?> get props => [query];
 }
 
+/// Progress of a load-more (next results page) request on the results surface.
+enum GlobalSearchLoadMoreStatus {
+  /// No page fetch is in flight; the list may request the next page.
+  idle,
+
+  /// A page fetch is in flight; the list shows a loading footer.
+  inProgress,
+
+  /// The last page fetch failed; the list shows a retry footer while the
+  /// already-loaded results stay visible.
+  failure,
+}
+
 /// Emitted when a search returns at least one result.
 class GlobalSearchLoadSuccess extends GlobalSearchState {
-  /// The results returned by a successful search request.
+  /// The results returned by a successful search request, accumulated across
+  /// all pages loaded so far for the active query.
   final SearchResults results;
 
-  const GlobalSearchLoadSuccess({required this.results});
+  /// Whether more estimation results may exist beyond the loaded pages.
+  ///
+  /// Derived from the last page's size versus the request limit. Estimations
+  /// are the only paginated domain until CA-979 splits the per-domain offsets.
+  /// https://ripplearc.youtrack.cloud/issue/CA-979
+  final bool hasMoreEstimations;
+
+  /// Progress of the in-flight or last load-more request.
+  final GlobalSearchLoadMoreStatus loadMoreStatus;
+
+  const GlobalSearchLoadSuccess({
+    required this.results,
+    this.hasMoreEstimations = false,
+    this.loadMoreStatus = GlobalSearchLoadMoreStatus.idle,
+  });
 
   @override
-  List<Object?> get props => [results];
+  List<Object?> get props => [results, hasMoreEstimations, loadMoreStatus];
 }
 
 /// Emitted when a search completes successfully but returns no results.
