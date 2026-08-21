@@ -15,6 +15,7 @@ void main() {
   const Size singleCardSize = Size(390, 220);
   const Size emptySize = Size(390, 300);
   const Size loadingSize = Size(390, 300);
+  const Size footerSize = Size(390, 300);
   const double ratio = 1.0;
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -43,6 +44,10 @@ void main() {
     required Size size,
     required SearchResults results,
     ThemeData? theme,
+    bool hasMore = false,
+    bool isLoadingMore = false,
+    bool loadMoreFailed = false,
+    VoidCallback? onRetryLoadMore,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = ratio;
@@ -62,6 +67,10 @@ void main() {
               results: results,
               onEstimationTap: (_) {},
               onEstimationMenuTap: (_) {},
+              hasMore: hasMore,
+              isLoadingMore: isLoadingMore,
+              loadMoreFailed: loadMoreFailed,
+              onRetryLoadMore: onRetryLoadMore,
               estimationTileProvider: const FakeEstimationTileProvider(),
             ),
           ),
@@ -163,6 +172,57 @@ void main() {
         ),
       );
     });
+
+    testWidgets('renders the load-more loading footer correctly', (
+      tester,
+    ) async {
+      final results = SearchResults(
+        estimations: [
+          makeEstimation(estimateName: '2nd Wall Cost', totalCost: 12343.88),
+        ],
+      );
+
+      await pumpSearchResultsList(
+        tester: tester,
+        size: footerSize,
+        results: results,
+        hasMore: true,
+        isLoadingMore: true,
+      );
+
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/search_results_list/${footerSize.width}x${footerSize.height}/load_more_loading_footer.png',
+        ),
+      );
+    });
+
+    testWidgets('renders the load-more failure footer correctly', (
+      tester,
+    ) async {
+      final results = SearchResults(
+        estimations: [
+          makeEstimation(estimateName: '2nd Wall Cost', totalCost: 12343.88),
+        ],
+      );
+
+      await pumpSearchResultsList(
+        tester: tester,
+        size: footerSize,
+        results: results,
+        hasMore: true,
+        loadMoreFailed: true,
+        onRetryLoadMore: () {},
+      );
+
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/search_results_list/${footerSize.width}x${footerSize.height}/load_more_failure_footer.png',
+        ),
+      );
+    });
   });
 
   group('SearchResultsEmptyView Screenshot Tests - Light', () {
@@ -238,6 +298,59 @@ void main() {
         find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/search_results_list/${singleCardSize.width}x${singleCardSize.height}/single_estimation_card_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders the load-more loading footer correctly', (
+      tester,
+    ) async {
+      final results = SearchResults(
+        estimations: [
+          makeEstimation(estimateName: '2nd Wall Cost', totalCost: 12343.88),
+        ],
+      );
+
+      await pumpSearchResultsList(
+        tester: tester,
+        size: footerSize,
+        results: results,
+        theme: createTestThemeDark(),
+        hasMore: true,
+        isLoadingMore: true,
+      );
+
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/search_results_list/${footerSize.width}x${footerSize.height}/load_more_loading_footer_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders the load-more failure footer correctly', (
+      tester,
+    ) async {
+      final results = SearchResults(
+        estimations: [
+          makeEstimation(estimateName: '2nd Wall Cost', totalCost: 12343.88),
+        ],
+      );
+
+      await pumpSearchResultsList(
+        tester: tester,
+        size: footerSize,
+        results: results,
+        theme: createTestThemeDark(),
+        hasMore: true,
+        loadMoreFailed: true,
+        onRetryLoadMore: () {},
+      );
+
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/search_results_list/${footerSize.width}x${footerSize.height}/load_more_failure_footer_dark.png',
         ),
       );
     });

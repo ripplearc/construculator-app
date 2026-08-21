@@ -1264,6 +1264,191 @@ void main() {
           );
         },
       );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'a GlobalSearchStarted reset disowns the in-flight page fetch — its '
+        'completion must not publish results over the reset surface',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.loadMoreStatus == GlobalSearchLoadMoreStatus.inProgress,
+          );
+          // The reset's own history fetch must not queue behind the same
+          // gate, so the reset lands while the page fetch is still gated.
+          fakeSupabase.shouldDelayOperations = false;
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere((state) => state is GlobalSearchReady);
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            _globalSearchResponse(estimations: _fakeEstimationPage(3)),
+          );
+          fakeSupabase.completer!.complete();
+          // The disowned page fetch resumes first (FIFO); a fresh search
+          // acts as the barrier proving it emitted nothing on its way out.
+          bloc.add(const GlobalSearchPerformed(query: 'fresh'));
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchLoadSuccess,
+          );
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.results.estimations,
+            'first search results',
+            hasLength(20),
+          ),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.loadMoreStatus,
+            'status',
+            GlobalSearchLoadMoreStatus.inProgress,
+          ),
+          const GlobalSearchReady(),
+          // No append emission from the disowned fetch may interleave here.
+          const GlobalSearchLoadInProgress(query: 'fresh'),
+          isA<GlobalSearchLoadSuccess>()
+              .having(
+                (s) => s.results.estimations,
+                'fresh first page replaces the disowned append',
+                hasLength(3),
+              )
+              .having((s) => s.hasMoreEstimations, 'hasMore', isFalse),
+        ],
+        verify: (_) {
+          expect(
+            globalSearchRpcParams(),
+            hasLength(3),
+            reason:
+                'first search, the disowned page fetch, and the fresh search '
+                '— the reset must not fetch a page of its own',
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'ignores a load-more after a query edit, even though a query was '
+        'performed earlier',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.searchSuggestionsRpcFunction,
+            <String>[],
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          // Editing the query leaves _lastPerformedQuery set but takes the
+          // body off the results surface, so only the first half of the
+          // load-more guard can reject the event.
+          bloc.add(const GlobalSearchQueryUpdated(query: 'girder'));
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.query == 'girder' &&
+                !state.suggestionsLoading,
+          );
+          bloc.add(const GlobalSearchLoadMoreRequested());
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.results.estimations,
+            'first search results',
+            hasLength(20),
+          ),
+          isA<GlobalSearchReady>()
+              .having((s) => s.query, 'query', 'girder')
+              .having((s) => s.suggestionsLoading, 'loading', isTrue),
+          isA<GlobalSearchReady>()
+              .having((s) => s.query, 'query', 'girder')
+              .having((s) => s.suggestionsLoading, 'loading', isFalse),
+          // No results emission may follow the load-more.
+        ],
+        verify: (_) {
+          expect(
+            globalSearchRpcParams(),
+            hasLength(1),
+            reason:
+                'the suggestions surface owns the body, so no page may be '
+                'fetched',
+          );
+        },
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'an empty-query submit disowns the in-flight page fetch — its '
+        'completion must not repaint results over the validation surface',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.loadMoreStatus == GlobalSearchLoadMoreStatus.inProgress,
+          );
+          fakeSupabase.shouldDelayOperations = false;
+          // Clearing the field and submitting inside the query-update
+          // debounce window lands on the empty-query branch.
+          bloc.add(const GlobalSearchPerformed(query: '   '));
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchEmptyQuery,
+          );
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            _globalSearchResponse(estimations: _fakeEstimationPage(3)),
+          );
+          fakeSupabase.completer!.complete();
+          bloc.add(const GlobalSearchPerformed(query: 'fresh'));
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchLoadSuccess,
+          );
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.results.estimations,
+            'first search results',
+            hasLength(20),
+          ),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.loadMoreStatus,
+            'status',
+            GlobalSearchLoadMoreStatus.inProgress,
+          ),
+          const GlobalSearchEmptyQuery(),
+          // No append emission from the disowned fetch may interleave here.
+          const GlobalSearchLoadInProgress(query: 'fresh'),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.results.estimations,
+            'fresh first page replaces the disowned append',
+            hasLength(3),
+          ),
+        ],
+        verify: (_) {
+          expect(
+            globalSearchRpcParams(),
+            hasLength(3),
+            reason:
+                'first search, the disowned page fetch, and the fresh search '
+                '— the empty submit must not fetch anything itself',
+          );
+        },
+      );
     });
 
     group('GlobalSearchQueryUpdated', () {

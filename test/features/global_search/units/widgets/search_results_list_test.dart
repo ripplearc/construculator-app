@@ -239,6 +239,62 @@ void main() {
         expect(loadMoreCalls, greaterThan(0));
       });
 
+      testWidgets('ignores scroll notifications bubbling up from a nested '
+          'scrollable', (tester) async {
+        var loadMoreCalls = 0;
+        await tester.pumpWidget(
+          createWidget(
+            results: SearchResults(estimations: makeScrollablePage()),
+            hasMore: true,
+            onLoadMore: () => loadMoreCalls += 1,
+          ),
+        );
+
+        final listContext = tester.element(
+          find.byKey(const Key('searchResultsListView')),
+        );
+        // The notification is constructed rather than produced by a real
+        // nested scrollable: SearchResultsList builds its own rows, so no
+        // inner Scrollable can be injected through its public API. Dispatching
+        // from the list's own element leaves `depth` exactly as set here, so
+        // the two cases below differ in nothing but that field.
+        //
+        // Metrics of an inner list sitting at its own end: acted on, they
+        // would request a page for a list that has not been scrolled at all.
+        final nestedMetrics = FixedScrollMetrics(
+          minScrollExtent: 0,
+          maxScrollExtent: 0,
+          pixels: 0,
+          viewportDimension: 100,
+          axisDirection: AxisDirection.down,
+          devicePixelRatio: tester.view.devicePixelRatio,
+        );
+
+        ScrollUpdateNotification(
+          metrics: nestedMetrics,
+          context: listContext,
+          depth: 1,
+        ).dispatch(listContext);
+        await tester.pump();
+
+        expect(
+          loadMoreCalls,
+          0,
+          reason: 'a nested scrollable may not request this list\'s pages',
+        );
+
+        // The same metrics at depth 0 do request a page, so the depth — not
+        // the metrics — is what rejected the notification above.
+        ScrollUpdateNotification(
+          metrics: nestedMetrics,
+          context: listContext,
+          depth: 0,
+        ).dispatch(listContext);
+        await tester.pump();
+
+        expect(loadMoreCalls, 1);
+      });
+
       testWidgets('does not invoke onLoadMore when no more results exist',
           (tester) async {
         var loadMoreCalls = 0;
