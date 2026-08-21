@@ -223,6 +223,27 @@ void main() {
         ),
       );
     });
+
+    testWidgets('renders the end-of-results footer correctly', (tester) async {
+      final results = SearchResults(
+        estimations: [
+          makeEstimation(estimateName: '2nd Wall Cost', totalCost: 12343.88),
+        ],
+      );
+
+      await pumpSearchResultsList(
+        tester: tester,
+        size: footerSize,
+        results: results,
+      );
+
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/search_results_list/${footerSize.width}x${footerSize.height}/end_of_results_footer.png',
+        ),
+      );
+    });
   });
 
   group('SearchResultsEmptyView Screenshot Tests - Light', () {
@@ -351,6 +372,28 @@ void main() {
         find.byType(Scaffold),
         matchesGoldenFile(
           'goldens/search_results_list/${footerSize.width}x${footerSize.height}/load_more_failure_footer_dark.png',
+        ),
+      );
+    });
+
+    testWidgets('renders the end-of-results footer correctly', (tester) async {
+      final results = SearchResults(
+        estimations: [
+          makeEstimation(estimateName: '2nd Wall Cost', totalCost: 12343.88),
+        ],
+      );
+
+      await pumpSearchResultsList(
+        tester: tester,
+        size: footerSize,
+        results: results,
+        theme: createTestThemeDark(),
+      );
+
+      await expectLater(
+        find.byType(Scaffold),
+        matchesGoldenFile(
+          'goldens/search_results_list/${footerSize.width}x${footerSize.height}/end_of_results_footer_dark.png',
         ),
       );
     });
