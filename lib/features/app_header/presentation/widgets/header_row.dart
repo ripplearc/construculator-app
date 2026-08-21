@@ -27,87 +27,74 @@ class HeaderRow extends StatelessWidget implements PreferredSizeWidget {
     this.onProjectTap,
   });
 
+  static const double _height = CoreSpacing.space12;
+  static const EdgeInsets _padding = EdgeInsets.only(
+    left: CoreSpacing.space1,
+    right: CoreSpacing.space4,
+    top: CoreSpacing.space2,
+    bottom: CoreSpacing.space2,
+  );
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colorTheme;
     final typography = context.textTheme;
 
-    return PhysicalModel(
-      color: colors.pageBackground,
-      elevation: 0,
-      borderRadius: BorderRadius.zero,
-      child: Container(
-        decoration: BoxDecoration(
-          boxShadow: CoreShadows.medium,
-          color: colors.pageBackground,
-        ),
-        height: double.infinity,
-        padding: const EdgeInsets.only(
-          left: CoreSpacing.space1,
-          right: CoreSpacing.space4,
-        ),
-        child: AppBar(
-          backgroundColor: colors.pageBackground,
-          // elevation/scrolledUnderElevation are 0 intentionally — shadow comes
-          // from the outer Container's BoxDecoration to avoid a double-shadow.
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          titleSpacing: 0,
-          toolbarHeight: CoreSpacing.space16,
-          automaticallyImplyLeading: false,
-          title: Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: CoreSpacing.space12,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: CoreSpacing.space3,
-                    ),
-                    child: ProjectSelectorTitle(
-                      selectorKey: const Key('header_row_project_selector'),
-                      onProjectTap: onProjectTap,
-                      textStyle: typography.titleMediumSemiBold.copyWith(
-                        color: colors.textHeadline,
-                      ),
-                    ),
+    return CoreAppBar(
+      height: _height,
+      padding: _padding,
+      titleSpacing: 0,
+      title: Row(
+        children: [
+          Expanded(
+            child: SizedBox(
+              height: CoreSpacing.space12,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: CoreSpacing.space3,
+                ),
+                child: ProjectSelectorTitle(
+                  selectorKey: const Key('header_row_project_selector'),
+                  onProjectTap: onProjectTap,
+                  textStyle: typography.titleMediumSemiBold.copyWith(
+                    color: colors.textHeadline,
                   ),
                 ),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CoreIconWidget(
-                    key: const Key('header_row_search_button'),
-                    icon: CoreIcons.search,
-                    size: CoreIconSize.size24,
-                    padding: const EdgeInsets.all(CoreSpacing.space3),
-                    onTap: onSearchTap,
-                    color: colors.iconDark,
-                    semanticLabel: context.l10n.dashboardSearchSemanticLabel,
-                  ),
-                  const SizedBox(width: CoreSpacing.space2),
-                  NotificationIcon(
-                    key: const Key('header_row_notification_icon'),
-                    unreadCount: unreadNotificationCount,
-                    onTap: onNotificationTap,
-                  ),
-                  const SizedBox(width: CoreSpacing.space2),
-                  ProfileAvatar(
-                    key: const Key('header_row_profile_avatar'),
-                    name: userName,
-                    imageUrl: avatarImageUrl,
-                    onTap: onProfileTap,
-                  ),
-                ],
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CoreIconWidget(
+                key: const Key('header_row_search_button'),
+                icon: CoreIcons.search,
+                size: CoreIconSize.size24,
+                padding: const EdgeInsets.all(CoreSpacing.space3),
+                onTap: onSearchTap,
+                color: colors.iconDark,
+                semanticLabel: context.l10n.dashboardSearchSemanticLabel,
+              ),
+              const SizedBox(width: CoreSpacing.space2),
+              NotificationIcon(
+                key: const Key('header_row_notification_icon'),
+                unreadCount: unreadNotificationCount,
+                onTap: onNotificationTap,
+              ),
+              const SizedBox(width: CoreSpacing.space2),
+              ProfileAvatar(
+                key: const Key('header_row_profile_avatar'),
+                name: userName,
+                imageUrl: avatarImageUrl,
+                onTap: onProfileTap,
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(CoreSpacing.space16);
+  Size get preferredSize => Size.fromHeight(_height + _padding.vertical);
 }
