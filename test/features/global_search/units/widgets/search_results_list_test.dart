@@ -415,7 +415,8 @@ void main() {
         expect(retryCalls, 1);
       });
 
-      testWidgets('renders no footer when idle', (tester) async {
+      testWidgets('renders no footer when idle and more results may exist',
+          (tester) async {
         await tester.pumpWidget(
           createWidget(
             results: SearchResults(estimations: makeScrollablePage(count: 2)),
@@ -430,6 +431,88 @@ void main() {
         expect(
           find.byKey(const Key('searchResultsLoadMoreFailedMessage')),
           findsNothing,
+        );
+        expect(
+          find.byKey(const Key('searchResultsNoMoreResultsMessage')),
+          findsNothing,
+        );
+      });
+
+      testWidgets('captions the loading footer so the spinner is not the only '
+          'signal', (tester) async {
+        await tester.pumpWidget(
+          createWidget(
+            results: SearchResults(estimations: makeScrollablePage(count: 2)),
+            hasMore: true,
+            isLoadingMore: true,
+          ),
+        );
+
+        expect(
+          find.byKey(const Key('searchResultsLoadMoreLoadingMessage')),
+          findsOneWidget,
+        );
+        expect(find.text('Loading more results'), findsOneWidget);
+      });
+
+      testWidgets('closes the list off with the end-of-results footer once '
+          'every page is loaded', (tester) async {
+        await tester.pumpWidget(
+          createWidget(
+            results: SearchResults(estimations: makeScrollablePage(count: 2)),
+            hasMore: false,
+          ),
+        );
+
+        expect(
+          find.byKey(const Key('searchResultsNoMoreResultsMessage')),
+          findsOneWidget,
+        );
+        expect(find.text('No more results'), findsOneWidget);
+        expect(
+          find.byKey(const Key('searchResultsEndOfResultsDivider')),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('renders no end-of-results footer while a page fetch is in '
+          'flight', (tester) async {
+        await tester.pumpWidget(
+          createWidget(
+            results: SearchResults(estimations: makeScrollablePage(count: 2)),
+            hasMore: false,
+            isLoadingMore: true,
+          ),
+        );
+
+        expect(
+          find.byKey(const Key('searchResultsNoMoreResultsMessage')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const Key('searchResultsLoadMoreIndicator')),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('renders no end-of-results footer while the failure footer '
+          'owns the end of the list', (tester) async {
+        await tester.pumpWidget(
+          createWidget(
+            results: SearchResults(estimations: makeScrollablePage(count: 2)),
+            hasMore: false,
+            loadMoreFailed: true,
+            onRetryLoadMore: () {},
+          ),
+        );
+
+        expect(
+          find.byKey(const Key('searchResultsNoMoreResultsMessage')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const Key('searchResultsLoadMoreFailedMessage')),
+          findsOneWidget,
         );
       });
     });

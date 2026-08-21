@@ -10,6 +10,13 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 // before the next results page is requested.
 const double _kLoadMoreExtentThreshold = 200.0;
 
+// Size of the load-more spinner. Smaller than CoreLoadingIndicator's default,
+// which is sized for a full-page loading surface rather than a list footer.
+const double _kLoadMoreIndicatorSize = CoreSpacing.space12;
+
+// Hairline rule separating the last row from the end-of-results caption.
+const double _kEndOfResultsDividerHeight = 1.0;
+
 /// Scrollable list of search results grouped under a "Most relevant" header.
 ///
 /// Renders [EstimationCard] for each estimation in [results]. The
@@ -21,7 +28,8 @@ const double _kLoadMoreExtentThreshold = 200.0;
 /// is invoked. While [isLoadingMore] is true a loading footer renders; when
 /// [loadMoreFailed] is true a failure footer with a retry affordance renders
 /// instead and scrolling no longer requests pages until [onRetryLoadMore]
-/// succeeds.
+/// succeeds. Once [hasMore] is false and the list is not empty, an
+/// end-of-results footer closes the list off.
 class SearchResultsList extends StatelessWidget {
   /// The search results to display.
   final SearchResults results;
@@ -87,11 +95,55 @@ class SearchResultsList extends StatelessWidget {
     return false;
   }
 
-  Widget _buildLoadingFooter() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: CoreSpacing.space4),
-      child: Center(
-        child: CoreLoadingIndicator(key: Key('searchResultsLoadMoreIndicator')),
+  Widget _buildLoadingFooter(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space4),
+      child: Column(
+        children: [
+          // The indicator carries its own generic "Loading" semantics label;
+          // the caption below says the same thing more precisely, so only
+          // one of the two should reach a screen reader.
+          const ExcludeSemantics(
+            child: CoreLoadingIndicator(
+              key: Key('searchResultsLoadMoreIndicator'),
+              size: _kLoadMoreIndicatorSize,
+            ),
+          ),
+          const SizedBox(height: CoreSpacing.space2),
+          Text(
+            context.l10n.searchResultsLoadingMore,
+            key: const Key('searchResultsLoadMoreLoadingMessage'),
+            textAlign: TextAlign.center,
+            style: context.textTheme.bodyMediumRegular.copyWith(
+              color: context.colorTheme.textBody,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEndOfResultsFooter(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space6),
+      child: Column(
+        children: [
+          Divider(
+            key: const Key('searchResultsEndOfResultsDivider'),
+            height: _kEndOfResultsDividerHeight,
+            thickness: _kEndOfResultsDividerHeight,
+            color: context.colorTheme.lineLight,
+          ),
+          const SizedBox(height: CoreSpacing.space6),
+          Text(
+            context.l10n.searchResultsNoMoreResults,
+            key: const Key('searchResultsNoMoreResultsMessage'),
+            textAlign: TextAlign.center,
+            style: context.textTheme.bodyMediumRegular.copyWith(
+              color: context.colorTheme.textBody,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -106,7 +158,7 @@ class SearchResultsList extends StatelessWidget {
             key: const Key('searchResultsLoadMoreFailedMessage'),
             textAlign: TextAlign.center,
             style: context.textTheme.bodyMediumRegular.copyWith(
-              color: context.colorTheme.textHeadline,
+              color: context.colorTheme.textBody,
             ),
           ),
           const SizedBox(height: CoreSpacing.space4),
@@ -171,9 +223,20 @@ class SearchResultsList extends StatelessWidget {
             ),
           ),
           if (isLoadingMore)
-            SliverToBoxAdapter(child: _buildLoadingFooter())
+            SliverToBoxAdapter(child: _buildLoadingFooter(context))
           else if (loadMoreFailed)
-            SliverToBoxAdapter(child: _buildFailureFooter(context)),
+            SliverToBoxAdapter(child: _buildFailureFooter(context))
+          // An empty list gets SearchResultsEmptyView instead of this widget,
+          // so a row is always present when the footer closes the list off.
+          else if (!hasMore && results.estimations.isNotEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: CoreSpacing.space4,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: _buildEndOfResultsFooter(context),
+              ),
+            ),
         ],
       ),
     );
