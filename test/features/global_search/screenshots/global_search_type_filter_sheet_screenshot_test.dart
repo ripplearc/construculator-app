@@ -16,6 +16,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../utils/fake_project_dropdown_bloc_factory.dart';
 import '../../../utils/screenshot/await_images_extension.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
@@ -62,6 +63,8 @@ void main() {
     required WidgetTester tester,
     SearchScope scopeBeforeOpen = SearchScope.dashboard,
   }) async {
+    final projectDropdownBloc = FakeProjectDropdownBlocFactory.create();
+    addTearDown(projectDropdownBloc.close);
     await tester.pumpWidget(
       MaterialApp(
         theme: createTestTheme(),
@@ -72,6 +75,7 @@ void main() {
           router: Modular.get<AppRouter>(),
           blocFactory: () => Modular.get<GlobalSearchBloc>(),
           estimationTileProvider: Modular.get<EstimationTileProvider>(),
+          projectDropdownBloc: projectDropdownBloc,
         ),
       ),
     );

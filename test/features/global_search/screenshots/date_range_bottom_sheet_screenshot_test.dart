@@ -18,6 +18,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../utils/fake_project_dropdown_bloc_factory.dart';
 import '../../../utils/screenshot/await_images_extension.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
@@ -69,6 +70,8 @@ void main() {
     DateRange? initialRange,
     ThemeData? theme,
   }) async {
+    final projectDropdownBloc = FakeProjectDropdownBlocFactory.create();
+    addTearDown(projectDropdownBloc.close);
     await tester.pumpWidget(
       MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -80,6 +83,7 @@ void main() {
           router: Modular.get<AppRouter>(),
           blocFactory: () => Modular.get<GlobalSearchBloc>(),
           estimationTileProvider: Modular.get<EstimationTileProvider>(),
+          projectDropdownBloc: projectDropdownBloc,
         ),
       ),
     );

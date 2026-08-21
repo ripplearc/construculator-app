@@ -22,6 +22,7 @@ import '../../../../libraries/estimation/helpers/estimation_test_data_map_factor
     as estimation_factory;
 import '../../../../utils/a11y/a11y_guidelines.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
+import '../../../../utils/fake_project_dropdown_bloc_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 
 const String _testUserId = 'user-a11y-test';
@@ -75,11 +76,14 @@ void main() {
       theme: theme ?? createTestTheme(),
       home: Builder(
         builder: (context) {
+          final projectDropdownBloc = FakeProjectDropdownBlocFactory.create();
+          addTearDown(projectDropdownBloc.close);
           buildContext = context;
           return GlobalSearchPage(
             router: Modular.get<AppRouter>(),
             blocFactory: () => Modular.get<GlobalSearchBloc>(),
             estimationTileProvider: Modular.get<EstimationTileProvider>(),
+            projectDropdownBloc: projectDropdownBloc,
           );
         },
       ),

@@ -1,3 +1,4 @@
+import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/global_search/domain/entities/search_scope_entity.dart';
 import 'package:construculator/features/global_search/presentation/bloc/global_search_bloc/global_search_bloc.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_empty_recent_widget.dart';
@@ -31,11 +32,16 @@ class GlobalSearchPage extends StatefulWidget {
   /// Supplies display data for the estimation result cards.
   final EstimationTileProvider estimationTileProvider;
 
+  /// The shell-owned selection bloc; tapping a project result dispatches
+  /// [ProjectDropdownSelected] on it, mirroring ProjectSearchPage.
+  final ProjectDropdownBloc projectDropdownBloc;
+
   const GlobalSearchPage({
     super.key,
     required this.router,
     required this.blocFactory,
     required this.estimationTileProvider,
+    required this.projectDropdownBloc,
   });
 
   @override
@@ -239,6 +245,15 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
     if (state is GlobalSearchLoadSuccess) {
       return SearchResultsList(
         results: state.results,
+        // Mirrors ProjectSearchPage: selection stays owned by the shell's
+        // ProjectDropdownBloc, and popping returns to the shell showing
+        // the newly selected project.
+        onProjectTap: (project) {
+          widget.projectDropdownBloc.add(
+            ProjectDropdownSelected(project.id),
+          );
+          widget.router.pop();
+        },
         onEstimationTap: (estimation) => widget.router.pushNamed(
           '$fullEstimationDetailsRoute/${estimation.id}',
         ),

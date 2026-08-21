@@ -190,7 +190,8 @@ class RemoteGlobalSearchDataSource implements GlobalSearchDataSource {
       'filter_by_owners': params.filterByOwners,
       'scope': params.scope?.name,
       // The RPC paginates each result domain independently; the app-side
-      // pagination offset applies to all three.
+      // pagination offset applies to all three until CA-979 splits them
+      // per domain. https://ripplearc.youtrack.cloud/issue/CA-979
       'projects_offset': params.pagination.offset,
       'estimations_offset': params.pagination.offset,
       'members_offset': params.pagination.offset,

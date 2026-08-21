@@ -1,4 +1,5 @@
 import 'package:construculator/app/app_bootstrap.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
 import 'package:construculator/features/global_search/data/data_source/interfaces/global_search_data_source.dart';
 import 'package:construculator/features/global_search/data/data_source/remote_global_search_data_source.dart';
 import 'package:construculator/features/global_search/data/repositories/global_search_repository_impl.dart';
@@ -63,6 +64,9 @@ class GlobalSearchModule extends Module {
         router: Modular.get<AppRouter>(),
         blocFactory: () => Modular.get<GlobalSearchBloc>(),
         estimationTileProvider: Modular.get<EstimationTileProvider>(),
+        // Bound in ShellModule, which stays active beneath this pushed
+        // route; resolved at construction time (never inside build).
+        projectDropdownBloc: Modular.get<ProjectDropdownBloc>(),
       ),
     );
   }

@@ -5,6 +5,8 @@ import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/estimation/domain/entities/cost_estimate_entity.dart';
 import 'package:construculator/libraries/estimation/testing/testing.dart';
 import 'package:construculator/libraries/global_search/presentation/widgets/search_results_views.dart';
+import 'package:construculator/libraries/project/domain/entities/enums.dart';
+import 'package:construculator/libraries/project/domain/entities/project_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
@@ -29,6 +31,7 @@ void main() {
 
   Widget createWidget({
     required SearchResults results,
+    void Function(Project)? onProjectTap,
     void Function(CostEstimate)? onEstimationTap,
     void Function(CostEstimate)? onEstimationMenuTap,
     bool hasMore = false,
@@ -45,6 +48,7 @@ void main() {
       home: Scaffold(
         body: SearchResultsList(
           results: results,
+          onProjectTap: onProjectTap ?? (_) {},
           onEstimationTap: onEstimationTap ?? (_) {},
           onEstimationMenuTap: onEstimationMenuTap,
           hasMore: hasMore,
@@ -64,6 +68,20 @@ void main() {
     return List.generate(
       count,
       (i) => makeEstimation(id: 'est-$i', estimateName: 'Estimation $i'),
+    );
+  }
+
+  Project makeProject({
+    String id = 'project-1',
+    String projectName = 'Downtown Office Complex',
+  }) {
+    return Project(
+      id: id,
+      projectName: projectName,
+      creatorUserId: 'user-1',
+      createdAt: testDate,
+      updatedAt: testDate,
+      status: ProjectStatus.active,
     );
   }
 
@@ -139,6 +157,7 @@ void main() {
         await tester.pumpWidget(
           createWidget(
             results: results,
+            onProjectTap: (_) {},
             onEstimationTap: (e) => tapped = e,
           ),
         );
@@ -197,6 +216,7 @@ void main() {
         await tester.pumpWidget(
           createWidget(
             results: results,
+            onProjectTap: (_) {},
             onEstimationTap: (e) => tappedIds.add(e.id),
           ),
         );
@@ -215,6 +235,57 @@ void main() {
         );
 
         expect(find.byKey(const Key('searchResultsListView')), findsOneWidget);
+      });
+    });
+
+    group('Project cards', () {
+      testWidgets('renders one ProjectCard per project', (tester) async {
+        final results = SearchResults(
+          projects: [
+            makeProject(id: 'p1', projectName: 'Downtown Office Complex'),
+            makeProject(id: 'p2', projectName: 'Harbor Bridge'),
+          ],
+        );
+        await tester.pumpWidget(createWidget(results: results));
+
+        expect(find.byKey(const ValueKey('projectCard_p1')), findsOneWidget);
+        expect(find.byKey(const ValueKey('projectCard_p2')), findsOneWidget);
+        expect(find.text('Downtown Office Complex'), findsOneWidget);
+        expect(find.text('Harbor Bridge'), findsOneWidget);
+      });
+
+      testWidgets('renders project rows above estimation rows',
+          (tester) async {
+        final results = SearchResults(
+          projects: [makeProject(id: 'p1')],
+          estimations: [makeEstimation(id: 'est-1')],
+        );
+        await tester.pumpWidget(createWidget(results: results));
+
+        final projectTop =
+            tester.getTopLeft(find.byKey(const ValueKey('projectCard_p1')));
+        final estimationTop = tester
+            .getTopLeft(find.byKey(const ValueKey('estimationCard_est-1')));
+        expect(projectTop.dy, lessThan(estimationTop.dy));
+      });
+
+      testWidgets('calls onProjectTap with the tapped project',
+          (tester) async {
+        Project? tapped;
+        final project = makeProject(id: 'p1');
+        final results = SearchResults(projects: [project]);
+
+        await tester.pumpWidget(
+          createWidget(
+            results: results,
+            onProjectTap: (p) => tapped = p,
+          ),
+        );
+
+        await tester.tap(find.byKey(const ValueKey('projectCard_p1')));
+        await tester.pump();
+
+        expect(tapped, equals(project));
       });
     });
 
