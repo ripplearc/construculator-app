@@ -18,6 +18,7 @@
 - [Testing](#testing)
 - [Scripts & Automation](#scripts--automation)
 - [CI/CD](#cicd)
+- [Trend Dashboard Host](#trend-dashboard-host)
 - [Troubleshooting](#troubleshooting)
 
 ---
@@ -553,6 +554,56 @@ To manually trigger CI checks on a PR, add a comment with:
 ```
 
 This will trigger the `comprehensive-check`, `pre-check` and `ios-debug-build` workflows.
+
+---
+
+## Trend Dashboard Host
+
+The system-health and E2E trend dashboard is published as a static site on
+GitHub Pages, served from the `gh-pages` branch via a GitHub Actions
+workflow (not the Jekyll auto-build path).
+
+**URL:** https://ripplearc.github.io/construculator-app/
+
+> **TODO [CA-978](https://ripplearc.youtrack.cloud/issue/CA-978):** build the
+> dashboard rendering and data-ingestion logic that reads the store below and
+> renders both views (system-health metrics, E2E results) at this URL. This
+> host and its publish path are already in place.
+
+### How a CI job publishes to the store
+
+`gh-pages` holds a placeholder `index.html` plus an append-only `data/`
+directory. Any CI job in this repo can add a file to that store by running
+`scripts/dashboard/publish_artifact.sh` directly, or by calling the reusable
+`.github/workflows/publish-dashboard-artifact.yml` workflow:
+
+```bash
+scripts/dashboard/publish_artifact.sh \
+  --file build/my-run.json \
+  --dest system-health/2026-08-21.json \
+  --push
+```
+
+The script checks out `gh-pages` into a throwaway `git worktree`, copies the
+file under `data/<dest>`, commits, and pushes — it never touches the caller's
+own checkout or branch. Re-publishing identical content at the same
+destination is a no-op (no new commit). GitHub Pages rebuilds automatically
+within about a minute of a push to `gh-pages`; no manual redeploy step is
+needed. The workflow requests only `contents: write`, scoped to that one job.
+
+### Size budget
+
+GitHub Pages caps a published site at 1 GB. The store is append-only JSON, so
+budget for pruning raw per-run files or rolling them up into periodic
+summaries once `data/` approaches a few hundred MB — well before the 1 GB
+ceiling, to leave headroom for the site's other assets. No pruning tooling
+exists yet; this is a threshold to watch, not something built by CA-988.
+
+### Cost
+
+GitHub Pages and Actions minutes are both free for public repositories, and
+`ripplearc/construculator-app` is public. No recurring cost, no trial period,
+no card on file.
 
 ---
 

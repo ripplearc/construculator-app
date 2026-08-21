@@ -1,0 +1,52 @@
+name: Publish Dashboard Artifact
+
+# Appends one file to the gh-pages data/ store and pushes, so the CA-978 trend
+# dashboard's GitHub Pages host grows without anyone touching gh-pages by
+# hand. Reusable via workflow_call so future CI jobs (e.g. CA-978's) can
+# invoke it directly; workflow_dispatch exists so the publish path itself can
+# be exercised on demand.
+
+on:
+  workflow_call:
+    inputs:
+      artifact-path:
+        description: "Path (relative to the caller's checkout) of the file to publish"
+        required: true
+        type: string
+      dest-path:
+        description: "Destination path under data/ on gh-pages"
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      artifact-path:
+        description: "Path of the file to publish"
+        required: true
+        type: string
+      dest-path:
+        description: "Destination path under data/ on gh-pages"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish to gh-pages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Publish artifact to gh-pages
+        env:
+          ARTIFACT_PATH: ${{ inputs.artifact-path }}
+          DEST_PATH: ${{ inputs.dest-path }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          bash scripts/dashboard/publish_artifact.sh \
+            --file "$ARTIFACT_PATH" \
+            --dest "$DEST_PATH" \
+            --push
