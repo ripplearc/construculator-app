@@ -33,6 +33,7 @@ dependencies:
   sentry_flutter: 9.24.0
   powersync: 1.18.0
   posthog_flutter: 5.35.1
+  package_info_plus: 10.2.1
 
 dev_dependencies:
   flutter_test:

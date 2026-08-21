@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/analytics/domain/entities/analytics_event.dart';
 import 'package:construculator/libraries/analytics/domain/entities/analytics_user_properties.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
 import 'package:construculator/libraries/analytics/testing/fake_analytics_repository.dart';
@@ -1159,11 +1160,17 @@ void main() {
       test('logout should call reset on success', () async {
         await authManager.loginWithEmail(testEmail, testPassword);
         expect(analyticsRepository.identifyCalls, isNotEmpty);
+        analyticsRepository.callSequence.clear();
 
         final result = await authManager.logout();
 
         expect(result.isSuccess, true);
         expect(analyticsRepository.resetCallCount, 1);
+        expect(
+          analyticsRepository.trackedEvents,
+          contains(const AnalyticsEvent(name: 'user_logged_out')),
+        );
+        expect(analyticsRepository.callSequence, ['track', 'reset']);
       });
 
       test('logout should not call reset on failure', () async {

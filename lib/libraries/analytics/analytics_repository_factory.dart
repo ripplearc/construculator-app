@@ -1,3 +1,4 @@
+import 'package:construculator/libraries/analytics/current_screen_tracker.dart';
 import 'package:construculator/libraries/analytics/data/repositories/analytics_repository_impl.dart';
 import 'package:construculator/libraries/analytics/data/repositories/no_op_analytics_repository.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
@@ -21,6 +22,8 @@ typedef PosthogWrapperBuilder = PosthogWrapper Function();
 Future<AnalyticsRepository> createAnalyticsRepository({
   required EnvLoader envLoader,
   required PosthogWrapperBuilder buildPosthogWrapper,
+  required CurrentScreenTracker currentScreenTracker,
+  required String appVersion,
 }) async {
   if (envLoader.get(analyticsEnabledKey) != 'true') {
     return const NoOpAnalyticsRepository();
@@ -31,6 +34,8 @@ Future<AnalyticsRepository> createAnalyticsRepository({
   final repository = AnalyticsRepositoryImpl(
     envLoader: envLoader,
     posthogWrapper: buildPosthogWrapper(),
+    currentScreenTracker: currentScreenTracker,
+    appVersion: appVersion,
   );
   await repository.initialize();
   return repository;
