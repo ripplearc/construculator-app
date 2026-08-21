@@ -10,6 +10,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 class AppWidget extends StatefulWidget {
   const AppWidget({required this.analyticsRepository, super.key});
 
+  /// Used to wire [AnalyticsNavigatorObserver] for screen-view tracking.
   final AnalyticsRepository analyticsRepository;
 
   @override
