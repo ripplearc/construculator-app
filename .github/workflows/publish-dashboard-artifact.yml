@@ -1,0 +1,89 @@
+name: Publish Dashboard Artifact
+
+# Appends one file to the gh-pages data/ store, then deploys the resulting
+# tree through the Pages Actions API. Pages here is configured with the
+# "GitHub Actions" build type (not "Deploy from a branch"), so a plain push to
+# gh-pages is not enough to publish: that branch is just the durable,
+# append-only history CA-978 reads from, and only deploy-pages actually
+# updates the served site. Using the classic branch-watcher instead would put
+# every push back under GitHub's legacy Pages build queue (10 builds/hour),
+# which is exactly what CA-988 was scoped to avoid.
+#
+# Reusable via workflow_call so future CI jobs (e.g. CA-978's) can invoke it
+# directly; workflow_dispatch exists so the publish path itself can be
+# exercised on demand.
+
+on:
+  workflow_call:
+    inputs:
+      artifact-path:
+        description: "Path (relative to the caller's checkout) of the file to publish"
+        required: true
+        type: string
+      dest-path:
+        description: "Destination path under data/ on gh-pages"
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      artifact-path:
+        description: "Path of the file to publish"
+        required: true
+        type: string
+      dest-path:
+        description: "Destination path under data/ on gh-pages"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish to gh-pages store
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Publish artifact to gh-pages
+        env:
+          ARTIFACT_PATH: ${{ inputs.artifact-path }}
+          DEST_PATH: ${{ inputs.dest-path }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          bash scripts/dashboard/publish_artifact.sh \
+            --file "$ARTIFACT_PATH" \
+            --dest "$DEST_PATH" \
+            --push
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload gh-pages tree as Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
