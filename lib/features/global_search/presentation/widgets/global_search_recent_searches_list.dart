@@ -21,12 +21,18 @@ class GlobalSearchRecentSearchesList extends StatelessWidget {
   /// Called when the user taps the trailing ↗ icon to fill the search field.
   final ValueChanged<String> onTrailingTap;
 
+  /// Called when the user swipes a row to delete the term from history.
+  /// Resolves true once the deletion succeeded (completing the dismissal)
+  /// and false when it failed (sliding the row back).
+  final Future<bool> Function(String term) onItemDismissRequested;
+
   /// Creates a [GlobalSearchRecentSearchesList].
   const GlobalSearchRecentSearchesList({
     super.key,
     required this.recentSearches,
     required this.onItemTap,
     required this.onTrailingTap,
+    required this.onItemDismissRequested,
   });
 
   @override
@@ -41,6 +47,7 @@ class GlobalSearchRecentSearchesList extends StatelessWidget {
           term: term,
           onTap: () => onItemTap(term),
           onTrailingTap: () => onTrailingTap(term),
+          onDismissRequested: () => onItemDismissRequested(term),
         );
       },
     );

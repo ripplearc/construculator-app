@@ -12,6 +12,7 @@ void main() {
     List<String> recentSearches = terms,
     ValueChanged<String>? onItemTap,
     ValueChanged<String>? onTrailingTap,
+    Future<bool> Function(String)? onItemDismissRequested,
     ThemeData? theme,
   }) {
     return MaterialApp(
@@ -21,6 +22,10 @@ void main() {
           recentSearches: recentSearches,
           onItemTap: onItemTap ?? (_) {},
           onTrailingTap: onTrailingTap ?? (_) {},
+          // Resolves false so the static harness never completes a
+          // dismissal — the row data here can never change.
+          onItemDismissRequested:
+              onItemDismissRequested ?? (_) async => false,
         ),
       ),
       locale: const Locale('en'),
@@ -93,6 +98,47 @@ void main() {
     testWidgets('asserts when recentSearches is empty', (tester) async {
       await tester.pumpWidget(makeTestableWidget(recentSearches: const []));
       expect(tester.takeException(), isA<AssertionError>());
+    });
+
+    testWidgets('swiping a row end-to-start requests dismissal with the '
+        'term', (tester) async {
+      String? dismissedTerm;
+      await tester.pumpWidget(
+        makeTestableWidget(
+          onItemDismissRequested: (t) async {
+            dismissedTerm = t;
+            // False keeps the row mounted: the static harness holds no
+            // bloc to remove it from the list data.
+            return false;
+          },
+        ),
+      );
+      await tester.pump();
+
+      await tester.drag(
+        find.byKey(const ValueKey('recent_search_item_MD bungalow')),
+        const Offset(-500, 0),
+      );
+      await tester.pumpAndSettle();
+
+      expect(dismissedTerm, 'MD bungalow');
+    });
+
+    testWidgets('reveals the delete background while swiping', (tester) async {
+      await tester.pumpWidget(makeTestableWidget());
+      await tester.pump();
+
+      await tester.drag(
+        find.byKey(const ValueKey('recent_search_item_MD bungalow')),
+        const Offset(-100, 0),
+      );
+      await tester.pump();
+
+      expect(
+        find.byKey(const ValueKey('recent_search_delete_icon_MD bungalow')),
+        findsOneWidget,
+        reason: 'only the dragged row may reveal its delete background',
+      );
     });
   });
 }

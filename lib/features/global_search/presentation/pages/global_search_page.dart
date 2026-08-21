@@ -217,6 +217,35 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
     };
   }
 
+  // Dispatches the deletion and resolves the Dismissible's confirmDismiss
+  // on this term's own outcome ack: true on the success state (the row's
+  // data is already gone), false on the delete-failure state (the row
+  // slides back while the toast surfaces the failure). Matching on the
+  // echoed term keeps concurrent swipes from resolving each other.
+  Future<bool> _onRecentDismissRequested(
+    BuildContext context,
+    String term,
+    SearchScope scope,
+  ) async {
+    final bloc = context.read<GlobalSearchBloc>();
+    final outcome = bloc.stream.firstWhere(
+      (state) =>
+          (state is GlobalSearchRecentDeleteSuccess &&
+              state.searchTerm == term) ||
+          (state is GlobalSearchRecentDeleteFailure &&
+              state.searchTerm == term),
+    );
+    bloc.add(GlobalSearchRecentRemoved(searchTerm: term, scope: scope));
+    try {
+      final state = await outcome;
+      return state is GlobalSearchRecentDeleteSuccess;
+    } catch (_) {
+      // The bloc closed with the outcome unobserved (page disposed, or the
+      // surface changed before it landed); the row is unmounted either way.
+      return false;
+    }
+  }
+
   GlobalSearchReady? _effectiveReady(GlobalSearchState state) {
     if (state is GlobalSearchReady) {
       _lastReady = state;
@@ -297,6 +326,14 @@ class _GlobalSearchPageState extends State<GlobalSearchPage> {
         recentSearches: effectiveReady.recentSearches,
         onItemTap: (term) => _onItemTap(context, term),
         onTrailingTap: (term) => _onTrailingTap(context, term),
+        onItemDismissRequested: (term) => _onRecentDismissRequested(
+          context,
+          term,
+          // The scope owning the DISPLAYED history, which lags selectedScope
+          // while a scope change's reload is in flight — the swiped row
+          // belongs to it, not to the newly selected scope.
+          effectiveReady.recentsScope,
+        ),
       );
     }
     return const GlobalSearchEmptyRecentWidget();

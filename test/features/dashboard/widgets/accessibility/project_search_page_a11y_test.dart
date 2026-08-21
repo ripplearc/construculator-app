@@ -13,6 +13,7 @@ import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dar
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -180,6 +181,64 @@ void main() {
             matching: find.byKey(const Key('trailing_icon')),
           ),
           checkTapTargetSize: true,
+        );
+      },
+    );
+
+    testWidgets(
+      'exposes the swipe-to-delete as a semantic scroll action on recent '
+      'search rows',
+      (tester) async {
+        fakeSupabase.addTableData(
+          DatabaseConstants.projectSearchHistoryTable,
+          [
+            {
+              DatabaseConstants.userIdColumn: _testUserId,
+              DatabaseConstants.searchTermColumn: 'foundation',
+              DatabaseConstants.updatedAtColumn: '2024-06-01T00:00:00.000Z',
+            },
+          ],
+        );
+
+        // Disposed inline: the tester verifies no live SemanticsHandle at
+        // the END OF THE TEST BODY, which runs before addTearDown callbacks.
+        final handle = tester.ensureSemantics();
+        await tester.pumpWidget(makeTestableWidget());
+        await tester.pumpAndSettle();
+
+        final node = tester.getSemantics(
+          find.byKey(const ValueKey('recent_search_dismissible_foundation')),
+        );
+        expect(
+          node.getSemanticsData().hasAction(SemanticsAction.scrollLeft),
+          isTrue,
+          reason:
+              'Dismissible must expose the swipe-to-delete as a semantic '
+              'scroll action',
+        );
+        // The unlabeled scroll action alone never tells an AT user a delete
+        // exists; the row must also carry the labeled custom action.
+        final actionIds = node.getSemanticsData().customSemanticsActionIds;
+        expect(actionIds, isNotNull);
+        final customActionLabels = <String>[];
+        if (actionIds != null) {
+          for (final id in actionIds) {
+            final action = CustomSemanticsAction.getAction(id);
+            if (action != null) {
+              final String? actionLabel = action.label;
+              if (actionLabel != null) {
+                customActionLabels.add(actionLabel);
+              }
+            }
+          }
+        }
+        handle.dispose();
+        expect(
+          customActionLabels,
+          contains('Delete foundation from recent searches'),
+          reason:
+              'the delete affordance must be announced as a labeled custom '
+              'action',
         );
       },
     );

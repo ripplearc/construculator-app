@@ -317,9 +317,29 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
     ProjectSearchHistoryItemDismissedEvent event,
     Emitter<ProjectSearchState> emit,
   ) async {
+    // Emissions are gated on the history surface being visible: a dismissal
+    // resolving after the user navigated to search results must update the
+    // cache without replacing the results view. The row's Dismissible
+    // resolves its pending swipe on the term-carrying ack — and only on its
+    // own term, so concurrent swipes cannot cross-resolve — while the
+    // re-emitted Initial keeps the surface interactive.
+    void emitDeleteFailure(Failure failure) {
+      if (state is! ProjectSearchInitial) return;
+      emit(
+        ProjectSearchHistoryDeleteFailure(
+          failure: failure,
+          searchTerm: event.searchTerm,
+        ),
+      );
+      emit(_initialFromCache());
+    }
+
     final userId = _authManager.getCurrentCredentials().data?.id;
     if (userId == null || userId.isEmpty) {
       _logger.warning('History dismiss aborted: no authenticated user');
+      emitDeleteFailure(
+        const AuthFailure(errorType: AuthErrorType.userNotFound),
+      );
       return;
     }
 
@@ -332,20 +352,16 @@ class ProjectSearchBloc extends Bloc<ProjectSearchEvent, ProjectSearchState> {
       _logger.warning(
         'Failed to delete recent project search "${event.searchTerm}": $failure',
       );
-    }, (_) => _removeDismissedTermAndEmit(event.searchTerm, emit));
-  }
-
-  void _removeDismissedTermAndEmit(
-    String searchTerm,
-    Emitter<ProjectSearchState> emit,
-  ) {
-    final normalized = searchTerm.toLowerCase().trim();
-    _cachedRecents = _cachedRecents
-        .where((term) => term.toLowerCase().trim() != normalized)
-        .toList(growable: false);
-    if (state is ProjectSearchInitial) {
+      emitDeleteFailure(failure);
+    }, (_) {
+      final normalized = event.searchTerm.toLowerCase().trim();
+      _cachedRecents = _cachedRecents
+          .where((term) => term.toLowerCase().trim() != normalized)
+          .toList(growable: false);
+      if (state is! ProjectSearchInitial) return;
+      emit(ProjectSearchHistoryDeleteSuccess(searchTerm: event.searchTerm));
       emit(_initialFromCache());
-    }
+    });
   }
 
   Future<void> _executeSearch(

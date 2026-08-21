@@ -1506,10 +1506,30 @@
       }
     }
   },
+  "globalSearchRecentSearchDeleteSemanticLabel": "Delete {term} from recent searches",
+  "@globalSearchRecentSearchDeleteSemanticLabel": {
+    "description": "Label of the custom accessibility action on a recent search row that deletes the term from history (the assistive-technology equivalent of the swipe-to-dismiss gesture)",
+    "context": "N/A",
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
   "projectSearchRecentSearchFillSemanticLabel": "Fill search field with {term}",
   "@projectSearchRecentSearchFillSemanticLabel": {
     "description": "Accessibility label for the trailing icon on a recent project search row — fills the search field with the term",
     "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design",
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
+  "projectSearchRecentSearchDeleteSemanticLabel": "Delete {term} from recent searches",
+  "@projectSearchRecentSearchDeleteSemanticLabel": {
+    "description": "Label of the custom accessibility action on a recent project search row that deletes the term from history (the assistive-technology equivalent of the swipe-to-dismiss gesture)",
+    "context": "N/A",
     "placeholders": {
       "term": {
         "type": "String"
@@ -1836,6 +1856,11 @@
   "projectSearchOwnersLoadErrorMessage": "Could not load owners.",
   "@projectSearchOwnersLoadErrorMessage": {
     "description": "Warning toast shown when fetching the available owners for the project search filter sheet fails",
+    "context": "N/A"
+  },
+  "projectSearchDeleteErrorMessage": "Failed to remove recent search. Please try again.",
+  "@projectSearchDeleteErrorMessage": {
+    "description": "Error toast shown when deleting a recent project search term from history fails",
     "context": "N/A"
   },
   "projectNameLabel": "Project name*",
