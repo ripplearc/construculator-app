@@ -287,30 +287,74 @@ void main() {
         },
       );
 
-      test('propagates error from watchProjectChanges stream', () async {
-        const userId = 'user-123';
+      test(
+        'degrades to fetch-once on a watchProjectChanges error: no stream '
+        'error reaches listeners and later refreshes still serve the list '
+        '(CA-900)',
+        () async {
+          const userId = 'user-123';
+          supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+            _createProjectRow(
+              id: 'owned-project',
+              projectName: 'Owned',
+              creatorUserId: userId,
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ]);
 
-        final firstEmission = Completer<void>();
-        final errorReceived = Completer<void>();
-        final subscription = repository
-            .watchProjects(userId)
-            .listen(
-              (_) {
-                if (!firstEmission.isCompleted) firstEmission.complete();
-              },
-              onError: (error, _) {
-                expect(error, isA<ProjectFailure>());
-                if (!errorReceived.isCompleted) errorReceived.complete();
-              },
-            );
-        await firstEmission.future;
+          Object? receivedError;
+          final emittedBatches = <List<Project>>[];
+          final firstEmission = Completer<void>();
+          final recoveredEmission = Completer<void>();
+          final subscription = repository.watchProjects(userId).listen(
+            (batch) {
+              emittedBatches.add(batch);
+              if (!firstEmission.isCompleted) {
+                firstEmission.complete();
+              } else if (!recoveredEmission.isCompleted) {
+                recoveredEmission.complete();
+              }
+            },
+            onError: (Object error, _) => receivedError = error,
+          );
+          await firstEmission.future;
 
-        supabaseWrapper.shouldEmitStreamErrors = true;
-        supabaseWrapper.addTableData(DatabaseConstants.projectsTable, []);
+          // Realtime delivery errors (e.g. RealtimeSubscribeException when
+          // the local publication is missing the watched tables).
+          supabaseWrapper.shouldEmitStreamErrors = true;
+          supabaseWrapper.addTableData(DatabaseConstants.projectsTable, []);
 
-        await errorReceived.future;
-        await subscription.cancel();
-      });
+          // The subscription survives the error: a later realtime event
+          // still triggers a refresh that serves the full list.
+          supabaseWrapper.shouldEmitStreamErrors = false;
+          supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+            _createProjectRow(
+              id: 'owned-project',
+              projectName: 'Owned',
+              creatorUserId: userId,
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+            _createProjectRow(
+              id: 'second-project',
+              projectName: 'Second',
+              creatorUserId: userId,
+              updatedAt: DateTime(2025, 1, 2),
+            ),
+          ]);
+          await recoveredEmission.future;
+          await subscription.cancel();
+
+          expect(
+            receivedError,
+            isNull,
+            reason:
+                'a realtime failure must degrade to fetch-once, not fail '
+                'the projects surface',
+          );
+          expect(emittedBatches.first, hasLength(1));
+          expect(emittedBatches.last, hasLength(2));
+        },
+      );
 
       test(
         'queues a follow-up refresh when changes arrive mid-refresh',
