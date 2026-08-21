@@ -1894,6 +1894,18 @@ abstract class AppLocalizations {
   /// **'Couldn\'t load more results'**
   String get searchResultsLoadMoreFailed;
 
+  /// Label shown under the spinner in the results list footer while the next page of search results is being fetched
+  ///
+  /// In en, this message translates to:
+  /// **'Loading more results'**
+  String get searchResultsLoadingMore;
+
+  /// Label shown in the results list footer once every page of search results has been loaded
+  ///
+  /// In en, this message translates to:
+  /// **'No more results'**
+  String get searchResultsNoMoreResults;
+
   /// Message shown when a search returns no results
   ///
   /// In en, this message translates to:

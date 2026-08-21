@@ -6,6 +6,7 @@ import 'package:construculator/libraries/estimation/testing/testing.dart';
 import 'package:construculator/libraries/global_search/presentation/widgets/search_results_views.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
 
@@ -32,6 +33,7 @@ void main() {
       ThemeData theme, {
       void Function(CostEstimate)? onEstimationMenuTap,
       bool hasMore = false,
+      bool isLoadingMore = false,
       bool loadMoreFailed = false,
       VoidCallback? onRetryLoadMore,
     }) {
@@ -46,6 +48,7 @@ void main() {
             onEstimationTap: (_) {},
             onEstimationMenuTap: onEstimationMenuTap,
             hasMore: hasMore,
+            isLoadingMore: isLoadingMore,
             loadMoreFailed: loadMoreFailed,
             onRetryLoadMore: onRetryLoadMore,
             estimationTileProvider: const FakeEstimationTileProvider(),
@@ -95,6 +98,55 @@ void main() {
           ),
           find.byKey(const Key('searchResultsLoadMoreRetryButton')),
         );
+      });
+
+      testWidgets('a11y: end-of-results caption contrast passes in both themes',
+          (tester) async {
+        await setupA11yTest(tester);
+
+        final results = SearchResults(estimations: [makeEstimation()]);
+
+        await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
+          tester,
+          (theme) => buildList(results, theme),
+          find.byKey(const Key('searchResultsNoMoreResultsMessage')),
+          checkTapTargetSize: false,
+          checkLabeledTapTarget: false,
+        );
+      });
+
+      testWidgets('a11y: the loading footer announces the caption once, not '
+          'the spinner\'s generic label too', (tester) async {
+        await setupA11yTest(tester);
+
+        final results = SearchResults(estimations: [makeEstimation()]);
+
+        for (final theme in [CoreTheme.light(), CoreTheme.dark()]) {
+          await tester.pumpWidget(
+            buildList(results, theme, hasMore: true, isLoadingMore: true),
+          );
+
+          final handle = tester.ensureSemantics();
+          // Counting every loading-ish label, rather than asserting the
+          // indicator's exact wording is absent, keeps this failing if CoreUI
+          // renames its label instead of silently passing.
+          final announced = find
+              .bySemanticsLabel(RegExp('loading', caseSensitive: false))
+              .evaluate()
+              .length;
+          expect(
+            announced,
+            1,
+            reason:
+                'the indicator\'s own label would double-announce the caption '
+                'below it',
+          );
+          expect(
+            find.bySemanticsLabel('Loading more results'),
+            findsOneWidget,
+          );
+          handle.dispose();
+        }
       });
     });
 
