@@ -560,8 +560,11 @@ This will trigger the `comprehensive-check`, `pre-check` and `ios-debug-build` w
 ## Trend Dashboard Host
 
 The system-health and E2E trend dashboard is published as a static site on
-GitHub Pages, served from the `gh-pages` branch via a GitHub Actions
-workflow (not the Jekyll auto-build path).
+GitHub Pages. Pages is configured with the **GitHub Actions** build type, not
+"Deploy from a branch" — a push alone does not publish anything; a workflow
+job explicitly deploys via `actions/deploy-pages`. This keeps every publish
+outside GitHub's legacy Pages build queue (10 builds/hour), which still
+applies to the branch-watcher regardless of Jekyll processing.
 
 **URL:** https://ripplearc.github.io/construculator-app/
 
@@ -573,9 +576,26 @@ workflow (not the Jekyll auto-build path).
 ### How a CI job publishes to the store
 
 `gh-pages` holds a placeholder `index.html` plus an append-only `data/`
-directory. Any CI job in this repo can add a file to that store by running
-`scripts/dashboard/publish_artifact.sh` directly, or by calling the reusable
-`.github/workflows/publish-dashboard-artifact.yml` workflow:
+directory — this branch is the durable history CA-978 reads from, not the
+thing GitHub Pages watches directly. Any CI job in this repo publishes a new
+file by calling the reusable `.github/workflows/publish-dashboard-artifact.yml`
+workflow (`workflow_call`, or `workflow_dispatch` to run it manually), which
+does two things in order:
+
+1. **`publish` job** — runs `scripts/dashboard/publish_artifact.sh`, which
+   checks out `gh-pages` into a throwaway `git worktree`, copies the file
+   under `data/<dest>`, commits, and pushes. It never touches the caller's own
+   checkout or branch, and re-publishing identical content at the same
+   destination is a no-op (no new commit). Needs only `contents: write`.
+2. **`deploy` job** — checks out the now-updated `gh-pages` branch and
+   deploys it through the Pages Actions API
+   (`actions/configure-pages` → `actions/upload-pages-artifact` →
+   `actions/deploy-pages`). This is the step that actually publishes; needs
+   `pages: write` and `id-token: write`, plus the `github-pages` deployment
+   environment.
+
+Calling the script directly only updates the git history — it does not, by
+itself, update the live site. Use the workflow (or run both steps) to publish.
 
 ```bash
 scripts/dashboard/publish_artifact.sh \
@@ -583,13 +603,6 @@ scripts/dashboard/publish_artifact.sh \
   --dest system-health/2026-08-21.json \
   --push
 ```
-
-The script checks out `gh-pages` into a throwaway `git worktree`, copies the
-file under `data/<dest>`, commits, and pushes — it never touches the caller's
-own checkout or branch. Re-publishing identical content at the same
-destination is a no-op (no new commit). GitHub Pages rebuilds automatically
-within about a minute of a push to `gh-pages`; no manual redeploy step is
-needed. The workflow requests only `contents: write`, scoped to that one job.
 
 ### Size budget
 
