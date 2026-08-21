@@ -70,6 +70,11 @@ class SearchResultsList extends StatelessWidget {
   });
 
   bool _onScrollNotification(ScrollNotification notification) {
+    // Only this list's own scroll position may request a page. A nested
+    // scrollable (e.g. a future horizontal chip strip inside a row) bubbles
+    // its notifications up here too, and its extentAfter says nothing about
+    // how close this list is to its end.
+    if (notification.depth != 0) return false;
     final loadMore = onLoadMore;
     // A failed page fetch must not silently re-trigger on scroll; only the
     // retry affordance may re-request it.
