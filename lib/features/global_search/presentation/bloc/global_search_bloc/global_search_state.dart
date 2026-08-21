@@ -157,7 +157,8 @@ class GlobalSearchLoadSuccess extends GlobalSearchState {
   /// Whether more estimation results may exist beyond the loaded pages.
   ///
   /// Derived from the last page's size versus the request limit. Estimations
-  /// are the only paginated domain until project rows render (CA-900).
+  /// are the only paginated domain until CA-979 splits the per-domain offsets.
+  /// https://ripplearc.youtrack.cloud/issue/CA-979
   final bool hasMoreEstimations;
 
   /// Progress of the in-flight or last load-more request.

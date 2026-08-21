@@ -130,8 +130,9 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   int _estimationsNextOffset = 0;
 
   // Whether the last estimations page was full, i.e. more may exist.
-  // Estimations are the only paginated domain until project rows render
-  // (CA-900); its sibling flags follow the same pattern.
+  // Estimations are the only paginated domain; sibling flags for the other
+  // domains follow the same pattern once CA-979 splits the offsets.
+  // https://ripplearc.youtrack.cloud/issue/CA-979
   bool _hasMoreEstimations = false;
 
   // Prevents concurrent page fetches: scroll events may dispatch
@@ -386,19 +387,26 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     Emitter<GlobalSearchState> emit,
   ) async {
     final trimmedQuery = event.query.trim();
+    // Captured before the await: a newer dispatch (or a reset) disowns this
+    // execution, so its slower RPC cannot publish stale results on top of
+    // the newer one's. A disowned load-more page fetch no longer owns the
+    // in-flight flag, so this dispatch takes it over. Bumped before the
+    // empty-query branch because that submit supersedes the active search
+    // too: without it an in-flight page fetch keeps its generation and
+    // repaints the results list over the validation surface.
+    final generation = ++_searchExecutionGeneration;
+    _loadMoreInFlight = false;
+
     if (trimmedQuery.isEmpty) {
+      _activeResults = const SearchResults();
+      _estimationsNextOffset = 0;
+      _hasMoreEstimations = false;
       emit(const GlobalSearchEmptyQuery());
       return;
     }
     _currentQuery = trimmedQuery;
     _lastPerformedQuery = trimmedQuery;
     _searchIsActive = true;
-    // Captured before the await: a newer dispatch (or a reset) disowns this
-    // execution, so its slower RPC cannot publish stale results on top of
-    // the newer one's. A disowned load-more page fetch no longer owns the
-    // in-flight flag, so this dispatch takes it over.
-    final generation = ++_searchExecutionGeneration;
-    _loadMoreInFlight = false;
     emit(GlobalSearchLoadInProgress(query: trimmedQuery));
 
     final result = await _repository.search(
@@ -469,10 +477,11 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
   }
 
   // Builds the SearchParams for the active query, filters, and scope.
-  // [offset] is the estimations-page offset; the RPC mapping currently
-  // applies one offset to every domain, which stays correct while
-  // estimations are the only rendered, paginated domain — CA-900's project
-  // rows must split the offsets per domain.
+  // [offset] is the estimations-page offset.
+  // TODO(CA-979): split the offset per domain — the RPC mapping applies one
+  // offset to projects, estimations and members alike, which only stays
+  // correct while estimations are the sole paginated domain.
+  // https://ripplearc.youtrack.cloud/issue/CA-979
   SearchParams _buildSearchParams({
     required String query,
     required int offset,
