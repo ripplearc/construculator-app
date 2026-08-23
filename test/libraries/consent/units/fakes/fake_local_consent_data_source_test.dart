@@ -185,9 +185,18 @@ void main() {
       });
 
       test('emits the newest record after insertUserConsent', () async {
+        // `emits(...)` alone checked only the first event, which the old
+        // subscription race let accidentally already be the post-insert
+        // record (the generator often didn't start until after the insert
+        // had run). With the race fixed, the subscription is live before
+        // the insert, so the genuine first event is the pre-insert `null`.
+        final stream = fake.watchLatestUserConsent(userId, type);
         final emitted = expectLater(
-          fake.watchLatestUserConsent(userId, type),
-          emits(predicate<UserConsentDto?>((r) => r!.version == 6)),
+          stream,
+          emitsInOrder([
+            isNull,
+            predicate<UserConsentDto?>((r) => r!.version == 6),
+          ]),
         );
 
         await fake.insertUserConsent(
@@ -197,10 +206,14 @@ void main() {
       });
 
       test('does not emit for a write to a different user or type', () async {
-        final results = <UserConsentDto?>[];
-        final subscription = fake
-            .watchLatestUserConsent(userId, type)
-            .listen(results.add);
+        // This used to pass only because the wrapped store's watch stream
+        // dropped both writes into an unsubscribed window (a race fixed in
+        // #542) rather than because they were genuinely filtered by identity
+        // -- expectLater/emitsInOrder against a synchronously-subscribed,
+        // distinct-collapsed stream makes the same assertion for the right
+        // reason instead.
+        final stream = fake.watchLatestUserConsent(userId, type);
+        final expectation = expectLater(stream, emitsInOrder([isNull]));
 
         await fake.insertUserConsent(
           record('user-2', type, 1, ConsentAction.accepted),
@@ -208,10 +221,8 @@ void main() {
         await fake.insertUserConsent(
           record(userId, ConsentType.analytics, 1, ConsentAction.accepted),
         );
-        await pumpEventQueue();
 
-        expect(results, [isNull]);
-        await subscription.cancel();
+        await expectation;
       });
     });
 
