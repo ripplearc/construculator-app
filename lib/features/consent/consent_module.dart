@@ -50,6 +50,13 @@ class ConsentModule extends Module {
           // have yet — the page takes this as a parameter so wiring one in
           // later touches only this line.
           onOpenDocument: (_) {},
+          // TODO: [CA-XXX] Wire a real URL launcher wrapper. Until then this
+          // stays false: the callback above can't open anything, and unlike
+          // the dismissible signup screen, this gate cannot be left, so a
+          // tappable-but-dead link is worse than no link at all -- see
+          // ConsentPrompt.documentLinksAvailable. Flip to true (or drop the
+          // parameter, since it defaults true) once the launcher lands.
+          documentLinksAvailable: false,
         ),
       ),
     );

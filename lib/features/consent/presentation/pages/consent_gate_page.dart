@@ -23,10 +23,17 @@ class ConsentGatePage extends StatelessWidget {
   /// concerns and remains testable.
   final void Function(String url) onOpenDocument;
 
+  /// Whether [onOpenDocument] can actually open a document.
+  ///
+  /// Forwarded to [ConsentPrompt]; see its own doc for why a non-functional
+  /// callback hides the links instead of leaving them tappable and dead.
+  final bool documentLinksAvailable;
+
   const ConsentGatePage({
     super.key,
     required this.router,
     required this.onOpenDocument,
+    this.documentLinksAvailable = true,
   });
 
   @override
@@ -58,15 +65,18 @@ class ConsentGatePage extends StatelessWidget {
               ConsentGateBlocked(:final requiredVersion) => ConsentPrompt(
                 version: requiredVersion,
                 onOpenDocument: onOpenDocument,
+                documentLinksAvailable: documentLinksAvailable,
               ),
               ConsentGateSubmitting(:final requiredVersion) => ConsentPrompt(
                 version: requiredVersion,
                 onOpenDocument: onOpenDocument,
+                documentLinksAvailable: documentLinksAvailable,
                 isSubmitting: true,
               ),
               ConsentGateSubmitFailed(:final requiredVersion) => ConsentPrompt(
                 version: requiredVersion,
                 onOpenDocument: onOpenDocument,
+                documentLinksAvailable: documentLinksAvailable,
                 hasSubmitFailed: true,
               ),
               ConsentGateUnavailable() => ConsentUnavailable(
