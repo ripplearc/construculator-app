@@ -1,5 +1,6 @@
 import 'package:construculator/libraries/consent/data/data_source/interfaces/remote_consent_data_source.dart';
 import 'package:construculator/libraries/consent/data/models/consent_version_dto.dart';
+import 'package:construculator/libraries/consent/data/models/consent_wire_values.dart';
 import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/supabase/database_constants.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
@@ -27,22 +28,21 @@ class SupabaseConsentDataSource implements RemoteConsentDataSource {
         filters: const {},
       );
 
-      // Unreadable rows are dropped, not fatal. A consent type this build does
-      // not recognise means a newer server, and failing the whole batch over
-      // it would block users on a row about a document that does not concern
-      // them. Each drop is still a real data bug, so it goes to Sentry rather
-      // than vanishing silently.
+      // An unrecognised type means a newer server, not a corrupt row: this
+      // build cannot gate on a document it does not know about, so skipping
+      // is safe. Anything else unreadable is a row we DO gate on — let it
+      // throw so the repository resolves to a status that blocks, rather
+      // than silently dropping a requirement the user never satisfied.
       final versions = <ConsentVersionDto>[];
       for (final row in rows) {
-        try {
-          versions.add(ConsentVersionDto.fromJson(row));
-        } on FormatException catch (error, stackTrace) {
-          _logger.error(
-            'Dropping unreadable consent version row',
-            error,
-            stackTrace,
-          );
+        if (ConsentTypeWireValue.fromJson(
+              row[DatabaseConstants.consentTypeColumn],
+            ) ==
+            null) {
+          _logger.warning('Skipping unrecognised consent type row');
+          continue;
         }
+        versions.add(ConsentVersionDto.fromJson(row));
       }
       return versions;
     } catch (error, stackTrace) {

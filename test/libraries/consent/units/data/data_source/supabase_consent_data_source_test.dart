@@ -103,18 +103,21 @@ void main() {
       );
     });
 
-    // A blank document_url would leave the consent page with nothing to
-    // present, so the DTO refuses the row rather than defaulting it. The
-    // backend rejects it on write too; this covers the client half.
+    // A blank document_url is a corrupt row of a type this build DOES gate
+    // on, not an unrecognised type — dropping it would silently satisfy a
+    // requirement the user never met, so it must propagate instead.
     test(
-      'fetchPublishedVersions drops a row with a blank document url',
+      'fetchPublishedVersions rethrows a row with a blank document url',
       () async {
         supabaseWrapper.addTableData(
           DatabaseConstants.currentConsentVersionsView,
           [_versionRow(documentUrl: '')],
         );
 
-        expect(await dataSource.fetchPublishedVersions(), isEmpty);
+        await expectLater(
+          () => dataSource.fetchPublishedVersions(),
+          throwsA(isA<FormatException>()),
+        );
       },
     );
 
@@ -132,16 +135,21 @@ void main() {
       expect(versions.single.consentType, ConsentType.termsAndPrivacy);
     });
 
-    test('fetchPublishedVersions drops a row with a zero version', () async {
-      // Zero would compare as satisfied against every acceptance on file.
-      supabaseWrapper.addTableData(
-        DatabaseConstants.currentConsentVersionsView,
-        [_versionRow(version: 0), _versionRow(id: 'version-2')],
-      );
+    test(
+      'fetchPublishedVersions rethrows on a corrupt row of a known type',
+      () async {
+        // Zero would compare as satisfied against every acceptance on file —
+        // this must propagate, not vanish as if nothing were published.
+        supabaseWrapper.addTableData(
+          DatabaseConstants.currentConsentVersionsView,
+          [_versionRow(version: 0)],
+        );
 
-      final versions = await dataSource.fetchPublishedVersions();
-
-      expect(versions.single.id, 'version-2');
-    });
+        await expectLater(
+          () => dataSource.fetchPublishedVersions(),
+          throwsA(isA<FormatException>()),
+        );
+      },
+    );
   });
 }
