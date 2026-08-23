@@ -80,7 +80,9 @@ void main() {
     testWidgets('renders the prompt when blocked on a new version', (
       tester,
     ) async {
-      resolveTo(ConsentOutdated(acceptedVersion: 1, requiredVersion: requiredVersion));
+      resolveTo(
+        ConsentOutdated(acceptedVersion: 1, requiredVersion: requiredVersion),
+      );
 
       await pumpPage(tester);
 
@@ -132,6 +134,27 @@ void main() {
         find.byType(ConsentGatePage),
         matchesGoldenFile(
           'goldens/consent_gate_page/${size.width}x${size.height}/consent_gate_page_submit_failed.png',
+        ),
+      );
+    });
+
+    testWidgets('renders the retry screen when the requirement is unknown', (
+      tester,
+    ) async {
+      // The state that matters most to get right and had zero pixel
+      // coverage: it is what a user sees offline or on a version lookup
+      // failure -- hard-blocked, single button, nothing else on screen --
+      // and #547 maps ConsentIndeterminate here unconditionally whenever a
+      // prior state doesn't exist, so it's reachable far more often than
+      // "the backend is down."
+      resolveTo(const ConsentIndeterminate());
+
+      await pumpPage(tester);
+
+      await expectLater(
+        find.byType(ConsentGatePage),
+        matchesGoldenFile(
+          'goldens/consent_gate_page/${size.width}x${size.height}/consent_gate_page_unavailable.png',
         ),
       );
     });

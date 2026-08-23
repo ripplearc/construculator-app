@@ -14,6 +14,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../utils/a11y/a11y_guidelines.dart';
+import '../../../../utils/screenshot/font_loader.dart';
 
 void main() {
   late FakeConsentRepository repository;
@@ -41,7 +42,6 @@ void main() {
   void resolveTo(ConsentStatus status) => repository
     ..cachedStatusToReturn = status
     ..verifiedStatusToReturn = status;
-
 
   Widget buildPage(ThemeData theme) => MaterialApp(
     theme: theme,
@@ -111,6 +111,60 @@ void main() {
         buildPage,
         find.byKey(const Key('consentUnavailableRetryButton')),
       );
+    });
+  });
+
+  // Neither screen has a back affordance or app bar, so these buttons are
+  // the only way off an unescapable page. Every check above runs at the
+  // default text scale; this is the first test in the repo (per
+  // `gh search code textScaler`, zero hits) asserting the primary action
+  // survives the large end of the OS text-scale range instead.
+  //
+  // scrollUntilVisible, not a plain hitTestable() check: the scroll wrapper's
+  // whole promise is that the button is *reachable*, not that it never needs
+  // scrolling -- content genuinely may not fit above the fold at 2x scale,
+  // and that is fine. What the old centred-Column-with-no-scroll layout
+  // could not do at all is let the user scroll to it; that is the regression
+  // this guards.
+  group('ConsentGatePage at large text scale', () {
+    testWidgets('accept button remains reachable at 2x text scale', (
+      tester,
+    ) async {
+      await setupA11yTest(tester);
+      resolveTo(ConsentNeverGiven(requiredVersion));
+      tester.platformDispatcher.textScaleFactorTestValue = 2.0;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      await tester.pumpWidget(buildPage(createTestTheme()));
+      await tester.pumpAndSettle();
+
+      final button = find.byKey(const Key('consentGateAcceptButton'));
+      await tester.scrollUntilVisible(
+        button,
+        100,
+        scrollable: find.byType(Scrollable),
+      );
+      expect(button.hitTestable(), findsOneWidget);
+    });
+
+    testWidgets('retry button remains reachable at 2x text scale', (
+      tester,
+    ) async {
+      await setupA11yTest(tester);
+      resolveTo(const ConsentIndeterminate());
+      tester.platformDispatcher.textScaleFactorTestValue = 2.0;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      await tester.pumpWidget(buildPage(createTestTheme()));
+      await tester.pumpAndSettle();
+
+      final button = find.byKey(const Key('consentUnavailableRetryButton'));
+      await tester.scrollUntilVisible(
+        button,
+        100,
+        scrollable: find.byType(Scrollable),
+      );
+      expect(button.hitTestable(), findsOneWidget);
     });
   });
 }

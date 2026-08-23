@@ -40,73 +40,92 @@ class ConsentPrompt extends StatelessWidget {
     final typography = context.textTheme;
     final colors = context.colorTheme;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            l10n.consentGateTitle,
-            key: const Key('consentGateTitle'),
-            style: typography.headlineLargeSemiBold.copyWith(
-              color: colors.textHeadline,
-            ),
-          ),
-          const SizedBox(height: CoreSpacing.space4),
-          Text(
-            l10n.consentGateBody,
-            style: typography.bodyMediumRegular.copyWith(
-              color: colors.textHeadline,
-            ),
-          ),
-          const SizedBox(height: CoreSpacing.space6),
-          ConsentDocumentLinks(
-            termsLabel: l10n.consentGateTermsLink,
-            privacyLabel: l10n.consentGatePrivacyLink,
-            onTermsPressed: () => onOpenDocument(version.documentUrl),
-            onPrivacyPressed: () => onOpenDocument(version.documentUrl),
-          ),
-          const SizedBox(height: CoreSpacing.space8),
-          if (isSubmitting)
-            const Center(
-              key: Key('consentGateSubmitting'),
-              child: CoreLoadingIndicator(),
-            )
-          else
-            CoreButton(
-              key: const Key('consentGateAcceptButton'),
-              centerAlign: true,
-              label: hasSubmitFailed
-                  ? l10n.consentGateRetryButton
-                  : l10n.consentGateAcceptButton,
-              onPressed: () => context.read<ConsentGateBloc>().add(
-                ConsentGateAccepted(version),
-              ),
-            ),
-          if (hasSubmitFailed) ...[
-            const SizedBox(height: CoreSpacing.space3),
-            Row(
-              key: const Key('consentGateSubmitError'),
-              children: [
-                CoreIconWidget(
-                  icon: CoreIcons.error,
-                  size: CoreIconSize.size16,
-                  color: colors.iconRed,
+    // This is a full-screen dead end -- no app bar, no back affordance, and
+    // the accept/retry button below is the only way off it. A centred Column
+    // with no scroll fallback overflows off both ends at large text scale
+    // and clips the button away with no gesture that can bring it back, so
+    // the scroll wrapper is load-bearing here, not cosmetic. ConstrainedBox
+    // keeps the content vertically centred when it fits, matching the
+    // checked-in goldens, and lets it scroll the moment it doesn't.
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space6),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                l10n.consentGateTitle,
+                key: const Key('consentGateTitle'),
+                style: typography.headlineLargeSemiBold.copyWith(
+                  color: colors.textHeadline,
                 ),
-                const SizedBox(width: CoreSpacing.space1),
-                Expanded(
-                  child: Text(
-                    l10n.consentGateSubmitErrorMessage,
-                    style: typography.bodySmallRegular.copyWith(
-                      color: colors.textError,
-                    ),
+              ),
+              const SizedBox(height: CoreSpacing.space4),
+              Text(
+                l10n.consentGateBody,
+                style: typography.bodyMediumRegular.copyWith(
+                  color: colors.textHeadline,
+                ),
+              ),
+              const SizedBox(height: CoreSpacing.space6),
+              ConsentDocumentLinks(
+                termsLabel: l10n.consentGateTermsLink,
+                privacyLabel: l10n.consentGatePrivacyLink,
+                onTermsPressed: () => onOpenDocument(version.documentUrl),
+                onPrivacyPressed: () => onOpenDocument(version.documentUrl),
+              ),
+              const SizedBox(height: CoreSpacing.space8),
+              if (isSubmitting)
+                const Center(
+                  key: Key('consentGateSubmitting'),
+                  child: CoreLoadingIndicator(),
+                )
+              else
+                CoreButton(
+                  key: const Key('consentGateAcceptButton'),
+                  centerAlign: true,
+                  label: hasSubmitFailed
+                      ? l10n.consentGateRetryButton
+                      : l10n.consentGateAcceptButton,
+                  onPressed: () => context.read<ConsentGateBloc>().add(
+                    ConsentGateAccepted(version),
+                  ),
+                ),
+              if (hasSubmitFailed) ...[
+                const SizedBox(height: CoreSpacing.space3),
+                // liveRegion so a screen-reader user hears that the write
+                // failed -- otherwise the only signal is a silent button
+                // relabel from "Agree and continue" to "Try again", with
+                // focus left where it was.
+                Semantics(
+                  liveRegion: true,
+                  child: Row(
+                    key: const Key('consentGateSubmitError'),
+                    children: [
+                      CoreIconWidget(
+                        icon: CoreIcons.error,
+                        size: CoreIconSize.size16,
+                        color: colors.iconRed,
+                      ),
+                      const SizedBox(width: CoreSpacing.space1),
+                      Expanded(
+                        child: Text(
+                          l10n.consentGateSubmitErrorMessage,
+                          style: typography.bodySmallRegular.copyWith(
+                            color: colors.textError,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
-          ],
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }
