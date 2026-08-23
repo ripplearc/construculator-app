@@ -39,10 +39,25 @@ class ConsentVerificationResolver {
           .where((version) => version.consentType == type)
           .firstOrNull;
 
-      // The server answered but publishes nothing for this type. Treated as
-      // no requirement rather than as a failure: there is genuinely nothing
-      // to hold the user to.
-      if (match == null) return ConsentSatisfied(acceptedVersion ?? 0);
+      // The server answered but has no row for this type. That is
+      // indistinguishable from a row the data source dropped as unreadable
+      // (SupabaseConsentDataSource#fetchPublishedVersions logs and rethrows a
+      // corrupt row of a known type, but a row whose consent_type column is
+      // itself corrupt still drops as "unknown"). We cannot positively
+      // establish the requirement, so this resolves exactly as a failed
+      // fetch does below, rather than asserting a consent we never saw.
+      //
+      // TODO: [CA-XXX] gatesAccess is not yet type-aware, so this also gates
+      // a missing `analytics` row. Safe today because every production call
+      // site passes only termsAndPrivacy, but that stops holding once the
+      // Settings opt-out toggle ships analytics verification -- make
+      // ConsentStatus.gatesAccess type-aware before that lands.
+      if (match == null) {
+        _logger.error('No published consent version for ${type.toJson()}');
+        return acceptedVersion == null
+            ? const ConsentIndeterminate()
+            : ConsentUnverified(acceptedVersion);
+      }
 
       return ConsentStatus.resolve(
         acceptedVersion: acceptedVersion,
