@@ -166,10 +166,10 @@ abstract class AppLocalizations {
   /// **'Agree and continue'**
   String get consentGateAcceptButton;
 
-  /// Body text explaining why the consent gate is blocking the app
+  /// Body text explaining why the consent gate is blocking the app. Neutral wording: this page also serves ConsentNeverGiven, a user with no prior acceptance, for whom 'updated' would be false -- see #548 B1.
   ///
   /// In en, this message translates to:
-  /// **'Please review and accept the updated terms and privacy policy to continue.'**
+  /// **'Please review and accept our terms of service and privacy policy to continue.'**
   String get consentGateBody;
 
   /// Link text opening the privacy policy from the consent gate page
@@ -196,10 +196,10 @@ abstract class AppLocalizations {
   /// **'terms of service'**
   String get consentGateTermsLink;
 
-  /// Title of the consent gate page shown when a new version has been published
+  /// Title of the consent gate page. Shown for both ConsentOutdated (a republished version) and ConsentNeverGiven (no prior acceptance at all) -- ConsentGateBloc collapses both to ConsentGateBlocked, so one string pair must be true for both audiences. Kept neutral rather than 'We've updated our terms', which asserted a prior agreement ConsentNeverGiven users never made -- see #548 B1. A returning-user-specific 'updated' framing would need ConsentGateBlocked to carry which status produced it, tracked as a follow-up alongside #546 N3.
   ///
   /// In en, this message translates to:
-  /// **'We\'ve updated our terms'**
+  /// **'Review our terms'**
   String get consentGateTitle;
 
   /// Body text shown when the published terms could not be established and there is no prior acceptance

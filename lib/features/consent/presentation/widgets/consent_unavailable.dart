@@ -19,36 +19,46 @@ class ConsentUnavailable extends StatelessWidget {
     final typography = context.textTheme;
     final colors = context.colorTheme;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            l10n.consentUnavailableTitle,
-            key: const Key('consentUnavailableTitle'),
-            style: typography.headlineLargeSemiBold.copyWith(
-              color: colors.textHeadline,
-            ),
+    // This is a full-screen dead end -- no app bar, no back affordance, and
+    // the retry button below is the only way off it. A centred Column with
+    // no scroll fallback overflows off both ends at large text scale and
+    // clips the button away with no gesture that can bring it back, so the
+    // scroll wrapper is load-bearing here, not cosmetic.
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: CoreSpacing.space6),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                l10n.consentUnavailableTitle,
+                key: const Key('consentUnavailableTitle'),
+                style: typography.headlineLargeSemiBold.copyWith(
+                  color: colors.textHeadline,
+                ),
+              ),
+              const SizedBox(height: CoreSpacing.space4),
+              Text(
+                l10n.consentUnavailableBody,
+                style: typography.bodyMediumRegular.copyWith(
+                  color: colors.textHeadline,
+                ),
+              ),
+              const SizedBox(height: CoreSpacing.space8),
+              CoreButton(
+                key: const Key('consentUnavailableRetryButton'),
+                centerAlign: true,
+                label: l10n.consentUnavailableRetryButton,
+                onPressed: () => context.read<ConsentGateBloc>().add(
+                  const ConsentGateRetryRequested(),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: CoreSpacing.space4),
-          Text(
-            l10n.consentUnavailableBody,
-            style: typography.bodyMediumRegular.copyWith(
-              color: colors.textHeadline,
-            ),
-          ),
-          const SizedBox(height: CoreSpacing.space8),
-          CoreButton(
-            key: const Key('consentUnavailableRetryButton'),
-            centerAlign: true,
-            label: l10n.consentUnavailableRetryButton,
-            onPressed: () => context.read<ConsentGateBloc>().add(
-              const ConsentGateRetryRequested(),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

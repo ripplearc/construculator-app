@@ -46,7 +46,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get consentGateBody =>
-      'Please review and accept the updated terms and privacy policy to continue.';
+      'Please review and accept our terms of service and privacy policy to continue.';
 
   @override
   String get consentGatePrivacyLink => 'privacy policy';
@@ -62,7 +62,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get consentGateTermsLink => 'terms of service';
 
   @override
-  String get consentGateTitle => 'We\'ve updated our terms';
+  String get consentGateTitle => 'Review our terms';
 
   @override
   String get consentUnavailableBody =>

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/consent/presentation/bloc/consent_gate_bloc/consent_gate_bloc.dart';
 import 'package:construculator/features/consent/testing/consent_test_module.dart';
@@ -114,10 +116,7 @@ void main() {
         ..verifiedStatusToReturn = const ConsentUnverified(2),
       build: buildBloc,
       act: (bloc) => bloc.add(const ConsentGateStarted()),
-      expect: () => const [
-        ConsentGateAllowed(2),
-        ConsentGateUnverified(2),
-      ],
+      expect: () => const [ConsentGateAllowed(2), ConsentGateUnverified(2)],
     );
 
     blocTest<ConsentGateBloc, ConsentGateState>(
@@ -128,6 +127,80 @@ void main() {
       verify: (_) => expect(repository.verificationRequests, [
         ConsentType.termsAndPrivacy,
       ]),
+    );
+
+    blocTest<ConsentGateBloc, ConsentGateState>(
+      'degrades to unverified rather than blocking when a verify tick is '
+      'indeterminate after the cache already allowed the user through',
+      // The status source (watch or verify) cannot tell "nothing to compare
+      // against" apart from "a row was dropped as unreadable" -- but this
+      // bloc already knows the user is standing on an acceptance, so it must
+      // not revoke access on evidence that only means "could not check".
+      setUp: () => repository
+        ..cachedStatusToReturn = const ConsentSatisfied(2)
+        ..verifiedStatusToReturn = const ConsentIndeterminate(),
+      build: buildBloc,
+      act: (bloc) => bloc.add(const ConsentGateStarted()),
+      expect: () => const [ConsentGateAllowed(2), ConsentGateUnverified(2)],
+    );
+
+    blocTest<ConsentGateBloc, ConsentGateState>(
+      'does not overwrite an accept that completes during a slow verify '
+      'with the verify\'s now-stale result',
+      // verifyPublishedVersion reads the local acceptance before its round
+      // trip, so an accept that starts and finishes entirely inside this
+      // await is invisible to what it returns. Holding verify open lets the
+      // accept flow run to completion first, proving the guard catches the
+      // race rather than merely not needing to.
+      setUp: () => repository
+        ..cachedStatusToReturn = const ConsentSatisfied(1)
+        ..verifiedStatusToReturn = ConsentOutdated(
+          acceptedVersion: 1,
+          requiredVersion: requiredVersion,
+        )
+        ..verificationCompleter = Completer<void>(),
+      build: buildBloc,
+      act: (bloc) async {
+        bloc.add(const ConsentGateStarted());
+        // Verify is now blocked on the completer; the cached read has
+        // already landed and the accept flow is free to run to completion.
+        await bloc.stream.firstWhere((s) => s is ConsentGateAllowed);
+        bloc.add(ConsentGateAccepted(requiredVersion));
+        await bloc.stream.firstWhere(
+          (s) => s is ConsentGateAllowed && s.acceptedVersion == 2,
+        );
+        // Only now does the stale verify get to resolve.
+        repository.verificationCompleter!.complete();
+      },
+      expect: () => [
+        const ConsentGateAllowed(1),
+        ConsentGateSubmitting(requiredVersion),
+        const ConsentGateAllowed(2),
+        // No further emission: the verify's ConsentGateBlocked(v2) result
+        // must be discarded, not appended here.
+      ],
+    );
+  });
+
+  group('on watched status change, standing on an acceptance', () {
+    blocTest<ConsentGateBloc, ConsentGateState>(
+      'degrades to unverified rather than blocking on an indeterminate tick',
+      setUp: () {
+        repository.cachedStatusToReturn = const ConsentSatisfied(1);
+        // Matches the cached read, so the verify phase's own emission
+        // (already covered above) doesn't interfere with observing the
+        // watch tick in isolation.
+        repository.verifiedStatusToReturn = const ConsentSatisfied(1);
+        repository.statusStreamToReturn = Stream<ConsentStatus>.fromIterable(
+          const [ConsentIndeterminate()],
+        );
+      },
+      build: buildBloc,
+      act: (bloc) => bloc.add(const ConsentGateStarted()),
+      expect: () => const [
+        ConsentGateAllowed(1), // cached read
+        ConsentGateUnverified(1), // watch tick degrades, does not block
+      ],
     );
   });
 
@@ -172,10 +245,7 @@ void main() {
       setUp: () {
         repository.cachedStatusToReturn = const ConsentSatisfied(1);
         repository.statusStreamToReturn = Stream.fromIterable([
-          ConsentOutdated(
-              acceptedVersion: 1,
-              requiredVersion: requiredVersion,
-            ),
+          ConsentOutdated(acceptedVersion: 1, requiredVersion: requiredVersion),
         ]);
       },
       build: buildBloc,
@@ -205,7 +275,19 @@ void main() {
   group('on retry', () {
     blocTest<ConsentGateBloc, ConsentGateState>(
       're-resolves the status',
-      setUp: () => resolveTo(const ConsentIndeterminate()),
+      setUp: () => repository
+        ..cachedStatusToReturn = const ConsentIndeterminate()
+        ..verifiedStatusToReturn = const ConsentIndeterminate()
+        // Held open for the whole test and never completed. This test is
+        // about retry re-running the cached-read phase (verify has its own
+        // coverage above); with cached and verified set to the identical
+        // status, the verify phase's own emission would be indistinguishable
+        // from the cached-read's, and completing it at any point risks it
+        // reading the repository's post-mutation value instead of the one it
+        // started with -- the exact race this file's other race-protection
+        // test is about. Leaving it permanently pending keeps both the
+        // initial call's and the retry's verify phase from emitting at all.
+        ..verificationCompleter = Completer<void>(),
       build: buildBloc,
       act: (bloc) async {
         bloc.add(const ConsentGateStarted());

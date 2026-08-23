@@ -60,9 +60,9 @@
     "description": "Label for the button that records acceptance on the consent gate page",
     "context": "N/A"
   },
-  "consentGateBody": "Please review and accept the updated terms and privacy policy to continue.",
+  "consentGateBody": "Please review and accept our terms of service and privacy policy to continue.",
   "@consentGateBody": {
-    "description": "Body text explaining why the consent gate is blocking the app",
+    "description": "Body text explaining why the consent gate is blocking the app. Neutral wording: this page also serves ConsentNeverGiven, a user with no prior acceptance, for whom 'updated' would be false -- see #548 B1.",
     "context": "N/A"
   },
   "consentGatePrivacyLink": "privacy policy",
@@ -85,9 +85,9 @@
     "description": "Link text opening the terms of service from the consent gate page",
     "context": "N/A"
   },
-  "consentGateTitle": "We've updated our terms",
+  "consentGateTitle": "Review our terms",
   "@consentGateTitle": {
-    "description": "Title of the consent gate page shown when a new version has been published",
+    "description": "Title of the consent gate page. Shown for both ConsentOutdated (a republished version) and ConsentNeverGiven (no prior acceptance at all) -- ConsentGateBloc collapses both to ConsentGateBlocked, so one string pair must be true for both audiences. Kept neutral rather than 'We've updated our terms', which asserted a prior agreement ConsentNeverGiven users never made -- see #548 B1. A returning-user-specific 'updated' framing would need ConsentGateBlocked to carry which status produced it, tracked as a follow-up alongside #546 N3.",
     "context": "N/A"
   },
   "consentUnavailableBody": "Check your connection and try again. You'll be able to continue once we can confirm the current terms.",
