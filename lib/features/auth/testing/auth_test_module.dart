@@ -25,6 +25,8 @@ import 'package:construculator/libraries/auth/interfaces/auth_notifier_controlle
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
+import 'package:construculator/libraries/config/env_constants.dart';
+import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/consent/domain/repositories/consent_repository.dart';
@@ -55,7 +57,18 @@ class AuthTestModule extends Module {
   @override
   List<Module> get imports => [
     ClockTestModule(),
-    AuthLibraryModule(appBootstrap),
+    AuthLibraryModule(
+      AppBootstrap(
+        // Defaults to 'on' here so existing signup-consent tests exercise
+        // _recordSignupConsent the way they did before that call was gated
+        // behind this flag -- a test that is specifically about the flag
+        // being off grabs Modular.get<EnvLoader>() and overrides it.
+        envLoader: FakeEnvLoader()..setEnvVar(consentGateEnabledKey, 'true'),
+        config: FakeAppConfig(),
+        supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
+        sentryWrapper: FakeSentryWrapper(),
+      ),
+    ),
     RouterTestModule(),
   ];
 
@@ -102,6 +115,7 @@ class AuthTestModule extends Module {
         analyticsRepository: appBootstrap.analyticsRepository,
         checkConsentStatusUseCase: i(),
         recordConsentUseCase: i(),
+        envLoader: Modular.get<EnvLoader>(),
       ),
     );
     i.add<LoginWithEmailBloc>(
