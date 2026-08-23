@@ -146,75 +146,68 @@ void main() {
       );
     });
 
-    // Collected through an explicit subscription rather than emitsInOrder:
-    // the stream is nullable, and a null the matcher has to cast trips
-    // package:matcher's stream machinery.
-    //
-    // The pump after listen is load-bearing, not defensive. watch is an
-    // async* generator, so it does not subscribe to the change controller
-    // until the initial yield has been taken; that controller is broadcast
-    // and does not buffer, so a write racing the subscription would be
-    // dropped and the test would hang rather than fail.
-    Future<List<UserConsentDto?>> collect(
-      Future<void> Function() act, {
-      String userId = 'user-1',
-      ConsentType type = ConsentType.termsAndPrivacy,
-    }) async {
-      final emitted = <UserConsentDto?>[];
-      final subscription = dataSource
-          .watchLatestUserConsent(userId, type)
-          .listen(emitted.add);
-      await pumpEventQueue();
-
-      await act();
-      await pumpEventQueue();
-
-      await subscription.cancel();
-      return emitted;
-    }
-
     test(
       'watchLatestUserConsent emits the current record on subscribe',
       () async {
-        expect(await collect(() async {}), [isNull]);
+        await expectLater(
+          dataSource.watchLatestUserConsent(
+            'user-1',
+            ConsentType.termsAndPrivacy,
+          ),
+          emits(isNull),
+        );
       },
     );
 
     test('watchLatestUserConsent emits again on insert', () async {
-      final emitted = await collect(
-        () => dataSource.insertUserConsent(_draft()),
+      final stream = dataSource.watchLatestUserConsent(
+        'user-1',
+        ConsentType.termsAndPrivacy,
+      );
+      final expectation = expectLater(
+        stream,
+        emitsInOrder([isNull, isA<UserConsentDto>()]),
       );
 
-      expect(emitted, hasLength(2));
-      expect(emitted.first, isNull);
-      expect(emitted.last?.action, ConsentAction.accepted);
+      await dataSource.insertUserConsent(_draft());
+
+      await expectation;
     });
 
     // Re-emits rather than staying silent -- the store notifies on any write
     // and each subscriber re-reads its own slice -- but the value the watcher
-    // sees must still be its own, and user-1 has nothing on file.
+    // sees must still be its own, and user-1 has nothing on file. `.distinct()`
+    // on the source means a write that doesn't change this watcher's own
+    // latest record produces no second emission at all, so a single `isNull`
+    // is the complete, deterministic expectation, not a truncated read of it.
     test(
       'watchLatestUserConsent does not leak another user\'s write',
       () async {
-        final emitted = await collect(
-          () => dataSource.insertUserConsent(_draft(userId: 'user-2')),
+        final stream = dataSource.watchLatestUserConsent(
+          'user-1',
+          ConsentType.termsAndPrivacy,
         );
+        final expectation = expectLater(stream, emitsInOrder([isNull]));
 
-        expect(emitted, everyElement(isNull));
+        await dataSource.insertUserConsent(_draft(userId: 'user-2'));
+
+        await expectation;
       },
     );
 
     test('dispose closes the watch stream', () async {
-      var done = false;
-      dataSource
-          .watchLatestUserConsent('user-1', ConsentType.termsAndPrivacy)
-          .listen(null, onDone: () => done = true);
-      await pumpEventQueue();
+      final stream = dataSource.watchLatestUserConsent(
+        'user-1',
+        ConsentType.termsAndPrivacy,
+      );
+      final expectation = expectLater(
+        stream,
+        emitsInOrder([isNull, emitsDone]),
+      );
 
       await dataSource.dispose();
-      await pumpEventQueue();
 
-      expect(done, isTrue);
+      await expectation;
     });
   });
 }

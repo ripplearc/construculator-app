@@ -67,9 +67,25 @@ class InMemoryLocalConsentDataSource implements LocalConsentDataSource {
   Stream<UserConsentDto?> watchLatestUserConsent(
     String userId,
     ConsentType type,
-  ) async* {
-    yield _latest(userId, type);
-    yield* _changes.stream.map((_) => _latest(userId, type));
+  ) {
+    // `async*`'s `yield` followed by `yield* _changes.stream...` left a
+    // one-turn window after listen() where nobody was subscribed to
+    // `_changes` yet: a write landing in that window fired into a broadcast
+    // controller with no listener and was discarded permanently, with
+    // nothing above this class re-polling to recover it. `Stream.multi`
+    // attaches the listener to `_changes` synchronously inside the listen()
+    // call, closing that window. `.distinct()` then collapses redundant
+    // re-emissions from writes that don't change this (userId, type)'s
+    // latest record -- e.g. another user's write -- back down to the single
+    // emission callers expect.
+    return Stream<UserConsentDto?>.multi((controller) {
+      controller.add(_latest(userId, type));
+      final subscription = _changes.stream.listen(
+        (_) => controller.add(_latest(userId, type)),
+        onDone: controller.close,
+      );
+      controller.onCancel = subscription.cancel;
+    }).distinct();
   }
 
   @override
