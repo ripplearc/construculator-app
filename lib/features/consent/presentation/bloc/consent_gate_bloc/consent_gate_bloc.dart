@@ -59,16 +59,34 @@ class ConsentGateBloc extends Bloc<ConsentGateEvent, ConsentGateState> {
     // Subscribed after the first resolution so a version published mid-session
     // re-gates the user without a restart. Distinct because an unrelated write
     // to the consent history should not churn the UI.
-    _subscription ??= _watchConsentStatusUseCase(_params).distinct().listen(
-      (status) => add(_ConsentGateStatusChanged(status)),
-    );
+    _subscription ??= _watchConsentStatusUseCase(
+      _params,
+    ).distinct().listen((status) => add(_ConsentGateStatusChanged(status)));
 
     // Phase three. The local answer is already on screen, so confirming it
     // against the server blocks nothing; only a confirmed mismatch interrupts.
     // This is also the only path that can report ConsentUnverified, which is
     // how a failed check with a prior acceptance on file fails open.
     final verified = await _verifyConsentStatusUseCase(_params);
-    if (state is! ConsentGateSubmitting) emit(_stateFor(verified));
+
+    // A verification started before the user accepted cannot speak to what
+    // they accepted: the resolver reads the local acceptance before its
+    // round trip (see ConsentRepositoryImpl.verifyPublishedVersion), so a
+    // write that both starts and finishes during this await is invisible to
+    // it. Guarding only ConsentGateSubmitting protects the write itself but
+    // not the window right after: a verify resolving from a pre-write
+    // snapshot would silently overwrite ConsentGateAllowed/SubmitFailed with
+    // a stale result. Widening to the whole post-acceptance family closes
+    // that; safe alongside the _stateFor fix above, which is what stops a
+    // stale ConsentIndeterminate from un-gating an outdated version instead
+    // of leaving Allowed alone.
+    if (state
+        case ConsentGateSubmitting() ||
+            ConsentGateSubmitFailed() ||
+            ConsentGateAllowed()) {
+      return;
+    }
+    emit(_stateFor(verified));
   }
 
   void _onStatusChanged(
@@ -129,7 +147,20 @@ class ConsentGateBloc extends Bloc<ConsentGateEvent, ConsentGateState> {
     ConsentNeverGiven(:final requiredVersion) => ConsentGateBlocked(
       requiredVersion,
     ),
-    ConsentIndeterminate() => const ConsentGateUnavailable(),
+    // The user is already standing on an acceptance. A status that only
+    // means "could not establish the requirement" is not evidence against
+    // it, so it degrades to the ungated fallback rather than revoking
+    // access mid-session -- the watch stream and the verify phase can both
+    // deliver this after the user was already resolved to Allowed/
+    // Unverified, and neither knows the prior state the way this switch
+    // does. Cold start (no prior state) keeps its original behaviour.
+    ConsentIndeterminate() => switch (state) {
+      ConsentGateAllowed(:final acceptedVersion) ||
+      ConsentGateUnverified(
+        :final acceptedVersion,
+      ) => ConsentGateUnverified(acceptedVersion),
+      _ => const ConsentGateUnavailable(),
+    },
   };
 
   @override
