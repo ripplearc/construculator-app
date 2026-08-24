@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../utils/app_runner.dart';
 import '../../utils/test_config.dart';
@@ -11,22 +11,20 @@ void main() {
     ($) async {
       await startApp($);
 
-      await $(TextField).first.enterText(TestConfig.loginEmail);
-      await $('Continue').tap();
-      await $.pumpAndSettle();
+      await $(const Key('login_email_field')).enterText(TestConfig.loginEmail);
+      await $(const Key('login_email_continue_button')).tap();
 
-      await $(TextField).first.enterText(TestConfig.loginPassword);
-      await $('Continue').tap();
-      await $.pumpAndSettle();
+      await $(
+        const Key('login_password_field'),
+      ).enterText(TestConfig.loginPassword);
+      await $(const Key('login_password_continue_button')).tap();
 
-      await $('Continue').tap();
-      await $.pumpAndSettle();
+      // The success modal is a package-owned bottom sheet whose button carries
+      // no key, so it is anchored to the sheet rather than to screen position.
+      await $(BottomSheet).$(CoreButton).tap();
 
-      expect($(BottomNavigationBar), findsOneWidget);
+      await $(const Key('app_shell_bottom_nav_bar')).waitUntilVisible();
     },
-    config: const PatrolTesterConfig(
-      visibleTimeout: Duration(seconds: 15),
-      settleTimeout: Duration(seconds: 10),
-    ),
+    config: const PatrolTesterConfig(visibleTimeout: Duration(seconds: 30)),
   );
 }

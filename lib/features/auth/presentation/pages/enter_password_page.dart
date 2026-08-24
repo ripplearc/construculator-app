@@ -117,6 +117,7 @@ class _EnterPasswordPageState extends State<EnterPasswordPage> {
                 ),
                 const SizedBox(height: 24),
                 CoreTextField(
+                  key: const Key('login_password_field'),
                   controller: _passwordController,
                   obscureText: !_isPasswordVisible,
                   label: l10n.passwordLabel,
@@ -153,6 +154,7 @@ class _EnterPasswordPageState extends State<EnterPasswordPage> {
                 ),
                 const SizedBox(height: 16),
                 CoreButton(
+                  key: const Key('login_password_continue_button'),
                   onPressed: () => _onLoginButtonPressed(context),
                   isDisabled:
                       !_canPressContinue || state is EnterPasswordSubmitLoading,

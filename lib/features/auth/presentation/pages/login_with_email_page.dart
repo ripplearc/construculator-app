@@ -184,6 +184,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
             ),
             const SizedBox(height: CoreSpacing.space10),
             CoreTextField(
+              key: const Key('login_email_field'),
               controller: _emailController,
               label: l10n.emailLabel,
               hintText: l10n.emailHint,
@@ -193,6 +194,7 @@ class _LoginWithEmailPageState extends State<LoginWithEmailPage> {
             ),
             const SizedBox(height: CoreSpacing.space6),
             CoreButton(
+              key: const Key('login_email_continue_button'),
               isDisabled:
                   !_canPressContinue ||
                   state is LoginWithEmailAvailabilityLoading,
