@@ -46,15 +46,11 @@ Future<AppBootstrap> _initializeApp() async {
   final wrapper = SupabaseWrapperImpl(envLoader: envLoader);
   await wrapper.initialize();
   final sentryWrapper = SentryWrapperImpl(
-    
     envLoader: envLoader,
-   
     config: config,
     sentrySdk: SentrySdkImpl(),
   );
-  final powerSyncDatabase = await openPowerSyncDatabase(,
-    sentrySdk: SentrySdkImpl(),
-  );
+  final powerSyncDatabase = await openPowerSyncDatabase();
   final analyticsRepository = await createAnalyticsRepository(
     envLoader: envLoader,
     buildPosthogWrapper: () => PosthogWrapperImpl(posthogSdk: PosthogSdkImpl()),

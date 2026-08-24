@@ -33,7 +33,7 @@ class PowerSyncModule extends Module {
     // lifetime — without any caller needing to resolve it explicitly.
     i.addSingleton<PowerSyncManager>(
       () => PowerSyncManagerImpl(
-        database: appBootstrap.powerSyncDatabase,
+        database: i(),
         connector: i(),
         supabaseWrapper: appBootstrap.supabaseWrapper,
       ),

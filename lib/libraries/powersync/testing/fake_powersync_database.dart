@@ -1,5 +1,7 @@
 // coverage:ignore-file
 
+import 'dart:async';
+
 import 'package:powersync/powersync.dart';
 
 /// Fake [PowerSyncDatabase] for testing.
@@ -31,14 +33,24 @@ class FakePowerSyncDatabase implements PowerSyncDatabase {
   /// tests to exercise disconnect-failure handling.
   Object? disconnectAndClearError;
 
+  /// When set, [connect] awaits this future before completing. Lets tests hold
+  /// a connection in flight and drive another lifecycle call into it.
+  Future<void>? connectGate;
+
+  /// Names of the lifecycle methods that have run, appended in the order they
+  /// *completed*. Distinguishes serialized lifecycle calls from interleaved
+  /// ones, which call counts alone cannot.
+  final List<String> completedOperations = [];
+
   /// Queues [transaction] to be returned by the next [getNextCrudTransaction] call.
   void setNextTransaction(CrudTransaction? transaction) {
     _nextTransaction = transaction;
   }
 
   /// Clears all recorded call counts, the captured connector, the configured
-  /// [connectError], [disconnectAndClearError], and any queued transaction, returning the fake to its
-  /// initial state so it can be reused across tests.
+  /// [connectError], [disconnectAndClearError] and [connectGate], the recorded
+  /// [completedOperations], and any queued transaction, returning the fake to
+  /// its initial state so it can be reused across tests.
   void reset() {
     connectCallCount = 0;
     lastConnector = null;
@@ -46,6 +58,8 @@ class FakePowerSyncDatabase implements PowerSyncDatabase {
     disconnectAndClearCallCount = 0;
     connectError = null;
     disconnectAndClearError = null;
+    connectGate = null;
+    completedOperations.clear();
     _nextTransaction = null;
   }
 
@@ -58,10 +72,15 @@ class FakePowerSyncDatabase implements PowerSyncDatabase {
   }) async {
     connectCallCount++;
     lastConnector = connector;
+    final gate = connectGate;
+    if (gate != null) {
+      await gate;
+    }
     final error = connectError;
     if (error != null) {
       throw error;
     }
+    completedOperations.add('connect');
   }
 
   @override
@@ -76,6 +95,7 @@ class FakePowerSyncDatabase implements PowerSyncDatabase {
     if (error != null) {
       throw error;
     }
+    completedOperations.add('disconnectAndClear');
   }
 
   /// Returns the queued transaction (set via [setNextTransaction]) and clears

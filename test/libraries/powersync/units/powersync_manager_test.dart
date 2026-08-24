@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_manager.dart';
+import 'package:construculator/libraries/powersync/powersync_manager_impl.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -19,7 +22,7 @@ void main() {
     powerSyncDatabase: fakeDatabase,
   );
 
-  setUpAll(() => Modular.init(_AppModule(bootstrap)));
+  setUpAll(() => Modular.init(_PowerSyncTestModule(bootstrap)));
 
   tearDownAll(() {
     Modular.destroy();
@@ -27,6 +30,11 @@ void main() {
   });
 
   setUp(() {
+    // Explicit dispose is required, not redundant: Modular.dispose<T>() maps to
+    // auto_injector's disposeSingleton<T>(), which drops the instance without
+    // invoking Disposable.dispose(). Only module teardown calls that. Without
+    // this line the previous test's manager keeps its auth subscription and
+    // keeps driving the shared fake database.
     (Modular.get<PowerSyncManager>() as Disposable).dispose();
     Modular.dispose<PowerSyncManager>();
     fakeSupabase.reset();
@@ -34,6 +42,14 @@ void main() {
   });
 
   PowerSyncManager startManager() => Modular.get<PowerSyncManager>();
+
+  /// Awaits every lifecycle operation queued so far. The auth listener starts
+  /// them with [unawaited], so there is no future for the test to hold; this
+  /// is a deterministic settle point that never drains the real event loop.
+  Future<void> settle() async {
+    await (Modular.get<PowerSyncManager>() as PowerSyncManagerImpl)
+        .pendingOperations;
+  }
 
   PowerSyncBackendConnector moduleConnector() =>
       Modular.get<PowerSyncBackendConnector>();
@@ -55,25 +71,31 @@ void main() {
       expect(manager.database, same(fakeDatabase));
     });
 
-    test('does not connect when no session exists at startup', () {
+    test('does not connect when no session exists at startup', () async {
       startManager();
+      await settle();
 
       expect(fakeDatabase.connectCallCount, 0);
     });
 
-    test('connects immediately when already authenticated at startup', () {
-      signIn();
+    test(
+      'connects immediately when already authenticated at startup',
+      () async {
+        signIn();
 
-      startManager();
+        startManager();
+        await settle();
 
-      expect(fakeDatabase.connectCallCount, 1);
-      expect(fakeDatabase.lastConnector, same(moduleConnector()));
-    });
+        expect(fakeDatabase.connectCallCount, 1);
+        expect(fakeDatabase.lastConnector, same(moduleConnector()));
+      },
+    );
 
     test('connects when a sign-in event is emitted', () async {
       startManager();
 
       signIn();
+      await settle();
 
       expect(fakeDatabase.connectCallCount, 1);
       expect(fakeDatabase.lastConnector, same(moduleConnector()));
@@ -84,6 +106,7 @@ void main() {
       startManager();
 
       fakeSupabase.setCurrentUser(null);
+      await settle();
 
       expect(fakeDatabase.disconnectAndClearCallCount, 1);
     });
@@ -94,6 +117,7 @@ void main() {
       signIn();
 
       signIn();
+      await settle();
 
       expect(fakeDatabase.connectCallCount, 1);
     });
@@ -101,10 +125,12 @@ void main() {
     test('reconnects after a sign-out followed by a new sign-in', () async {
       signIn();
       final manager = startManager();
+      await settle();
       expect(fakeDatabase.connectCallCount, 1);
 
       fakeSupabase.setCurrentUser(null);
       signIn();
+      await settle();
 
       expect(fakeDatabase.connectCallCount, 2);
       expect(fakeDatabase.disconnectAndClearCallCount, 1);
@@ -128,6 +154,7 @@ void main() {
       () async {
         signIn();
         final manager = startManager();
+        await settle();
         fakeDatabase.disconnectAndClearError = Exception('disk error');
 
         await manager.disconnectAndClear();
@@ -141,6 +168,7 @@ void main() {
 
     test('disconnectAndClear is a no-op when not connected', () async {
       final manager = startManager();
+      await settle();
 
       await manager.disconnectAndClear();
 
@@ -152,9 +180,83 @@ void main() {
 
       (manager as Disposable).dispose();
       signIn();
+      await settle();
 
       expect(fakeDatabase.connectCallCount, 0);
     });
+
+    test('retries a failed clear before connecting the next user', () async {
+      signIn();
+      startManager();
+      await settle();
+      expect(fakeDatabase.connectCallCount, 1);
+
+      fakeDatabase.disconnectAndClearError = Exception('disk error');
+      fakeSupabase.setCurrentUser(null);
+      await settle();
+      expect(fakeDatabase.disconnectAndClearCallCount, 1);
+
+      fakeDatabase.disconnectAndClearError = null;
+      signIn();
+      await settle();
+
+      expect(fakeDatabase.disconnectAndClearCallCount, 2);
+      expect(
+        fakeDatabase.connectCallCount,
+        2,
+        reason: 'user B must establish its own sync connection',
+      );
+    });
+
+    test(
+      'refuses to connect while the previous session is still uncleared',
+      () async {
+        signIn();
+        startManager();
+        await settle();
+
+        fakeDatabase.disconnectAndClearError = Exception('disk error');
+        fakeSupabase.setCurrentUser(null);
+        await settle();
+
+        // The clear is still failing when the next user signs in.
+        signIn();
+        await settle();
+
+        expect(fakeDatabase.disconnectAndClearCallCount, 2);
+        expect(
+          fakeDatabase.connectCallCount,
+          1,
+          reason: 'must not sync a new user on top of the previous rows',
+        );
+      },
+    );
+
+    test(
+      'serializes a sign-out arriving during an in-flight connect',
+      () async {
+        startManager();
+        final gate = Completer<void>();
+        fakeDatabase.connectGate = gate.future;
+
+        signIn();
+        fakeSupabase.setCurrentUser(null);
+
+        gate.complete();
+        fakeDatabase.connectGate = null;
+        await settle();
+
+        expect(fakeDatabase.completedOperations, [
+          'connect',
+          'disconnectAndClear',
+        ]);
+
+        signIn();
+        await settle();
+
+        expect(fakeDatabase.connectCallCount, 2);
+      },
+    );
   });
 }
 
@@ -163,9 +265,9 @@ void main() {
 // [PowerSyncManager] singleton — is exercised directly. [PowerSyncModule]
 // exposes its binds via `exportedBinds`, which are only resolvable through an
 // importing module, hence this wrapper.
-class _AppModule extends Module {
+class _PowerSyncTestModule extends Module {
   final AppBootstrap appBootstrap;
-  _AppModule(this.appBootstrap);
+  _PowerSyncTestModule(this.appBootstrap);
 
   @override
   List<Module> get imports => [PowerSyncModule(appBootstrap)];
