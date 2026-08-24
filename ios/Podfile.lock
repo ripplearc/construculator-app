@@ -1,9 +1,21 @@
 PODS:
   - app_links (7.0.0):
     - Flutter
+  - CocoaAsyncSocket (7.6.5)
   - Flutter (1.0.0)
+  - integration_test (0.0.1):
+    - Flutter
   - package_info_plus (0.4.5):
     - Flutter
+  - patrol (0.0.1):
+    - CocoaAsyncSocket (~> 7.6)
+    - Flutter
+    - FlutterMacOS
+  - PostHog (3.69.9)
+  - posthog_flutter (0.0.1):
+    - Flutter
+    - FlutterMacOS
+    - PostHog (< 4.0.0, >= 3.69.0)
   - powersync-sqlite-core (0.4.14)
   - powersync_flutter_libs (0.0.1):
     - Flutter
@@ -48,7 +60,10 @@ PODS:
 DEPENDENCIES:
   - app_links (from `.symlinks/plugins/app_links/ios`)
   - Flutter (from `Flutter`)
+  - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
+  - patrol (from `.symlinks/plugins/patrol/darwin`)
+  - posthog_flutter (from `.symlinks/plugins/posthog_flutter/darwin`)
   - powersync_flutter_libs (from `.symlinks/plugins/powersync_flutter_libs/darwin`)
   - sentry_flutter (from `.symlinks/plugins/sentry_flutter/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
@@ -57,6 +72,8 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
+    - CocoaAsyncSocket
+    - PostHog
     - powersync-sqlite-core
     - Sentry
     - sqlite3
@@ -66,8 +83,14 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/app_links/ios"
   Flutter:
     :path: Flutter
+  integration_test:
+    :path: ".symlinks/plugins/integration_test/ios"
   package_info_plus:
     :path: ".symlinks/plugins/package_info_plus/ios"
+  patrol:
+    :path: ".symlinks/plugins/patrol/darwin"
+  posthog_flutter:
+    :path: ".symlinks/plugins/posthog_flutter/darwin"
   powersync_flutter_libs:
     :path: ".symlinks/plugins/powersync_flutter_libs/darwin"
   sentry_flutter:
@@ -81,8 +104,13 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   app_links: a754cbec3c255bd4bbb4d236ecc06f28cd9a7ce8
+  CocoaAsyncSocket: 065fd1e645c7abab64f7a6a2007a48038fdc6a99
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
   package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
+  patrol: cea8074f183a2a4232d0ebd10569ae05149ada42
+  PostHog: 5e655fb81b57323f9f0554a01c070ee861f51c93
+  posthog_flutter: 9c75b82b310d8c6e5b61f9481c7ababcdf49125f
   powersync-sqlite-core: 6ce0b8b254812855e4ec52899ddc3ac6a30bda12
   powersync_flutter_libs: 20381b877038d27d8fa918f8c3fff08bfc3925d0
   Sentry: 108fdbb76299c4189af12246bf0308c09c278922
@@ -92,6 +120,6 @@ SPEC CHECKSUMS:
   sqlite3_flutter_libs: b3e120efe9a82017e5552a620f696589ed4f62ab
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
 
-PODFILE CHECKSUM: 8a301b5098e613e28a1525105c2f7fed7e64dd30
+PODFILE CHECKSUM: b301bf0090022afa3fee1791bc39b1eda2b88d5d
 
-COCOAPODS: 1.17.0
+COCOAPODS: 1.16.2
