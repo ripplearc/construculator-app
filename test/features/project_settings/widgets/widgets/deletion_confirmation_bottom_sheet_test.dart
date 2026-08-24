@@ -2,6 +2,7 @@ import 'package:construculator/features/project_settings/presentation/widgets/de
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../../../utils/screenshot/font_loader.dart';
 
@@ -123,6 +124,21 @@ void main() {
 
         expect(find.text(l10n().imagesAttachedCount(9999)), findsOneWidget);
         expect(tester.takeException(), isNull);
+      });
+    });
+
+    group('Delete icon', () {
+      testWidgets('renders the delete icon at 24', (tester) async {
+        await tester.pumpWidget(createWidget());
+
+        final deleteIcon = tester.widget<CoreIconWidget>(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is CoreIconWidget && widget.icon == CoreIcons.delete,
+          ),
+        );
+
+        expect(deleteIcon.size, CoreIconSize.size24);
       });
     });
 
