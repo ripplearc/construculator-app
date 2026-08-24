@@ -4,6 +4,7 @@ import 'package:construculator/features/auth/testing/auth_test_module.dart';
 import 'package:construculator/libraries/analytics/domain/entities/analytics_event.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
 import 'package:construculator/libraries/analytics/testing/fake_analytics_repository.dart';
+import 'package:construculator/libraries/supabase/data/supabase_types.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
@@ -67,7 +68,7 @@ void main() {
       );
 
       blocTest<EnterPasswordBloc, EnterPasswordState>(
-        'emits [EnterPasswordSubmitLoading, EnterPasswordSubmitFailure] when invalid credentials',
+        'emits [EnterPasswordSubmitLoading, EnterPasswordSubmitFailure] on an unrecognized sign-in error',
         build: () {
           fakeSupabase.shouldThrowOnSignIn = true;
           return bloc;
@@ -87,6 +88,33 @@ void main() {
             const AnalyticsEvent(
               name: 'user_login_failed',
               properties: {'reason': 'unknownError'},
+            ),
+          ]);
+        },
+      );
+
+      blocTest<EnterPasswordBloc, EnterPasswordState>(
+        'emits [EnterPasswordSubmitLoading, EnterPasswordSubmitFailure] when invalid credentials',
+        build: () {
+          fakeSupabase.shouldThrowOnSignIn = true;
+          fakeSupabase.authErrorCode = SupabaseAuthErrorCode.invalidCredentials;
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          EnterPasswordSubmitted(
+            email: 'test@example.com',
+            password: '@Password123!',
+          ),
+        ),
+        expect: () => [
+          EnterPasswordSubmitLoading(),
+          isA<EnterPasswordSubmitFailure>(),
+        ],
+        verify: (_) {
+          expect(fakeAnalytics.trackedEvents, [
+            const AnalyticsEvent(
+              name: 'user_login_failed',
+              properties: {'reason': 'invalidCredentials'},
             ),
           ]);
         },
