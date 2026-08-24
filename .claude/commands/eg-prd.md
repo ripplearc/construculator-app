@@ -48,7 +48,7 @@ Three questions in sequence (one `AskUserQuestion` call each):
 - `header`: `"Output"`
 - `multiSelect`: `true`
 - `options`:
-  1. **Save as `docs/specs/<slug>-prd-<YYYY-MM-DD>.md`** — "Durable artifact. Recommended for anything Standard or Comprehensive."
+  1. **Save as `docs/prds/<slug>-prd-<YYYY-MM-DD>.md`** — "Durable artifact. Recommended for anything Standard or Comprehensive. Lives in `docs/prds/`, not `docs/specs/` — a PRD is product requirements, not the engineering spec `docs/specs/_TEMPLATE.md` is shaped for (BLoC contract, RBAC, test contract); `/eg-new-feature`'s design doc is what belongs in `docs/specs/`."
   2. **Print and chat only** — "PRD lives in this conversation. Good for Lightweight or throwaway exploration."
   3. **Hand off to `/eg-new-feature` after** — "Once the PRD is approved, end with the literal `/eg-new-feature <one-line summary>` so the next step is one command away."
   4. **Save to memory** — "Persist as a durable note (e.g. CLAUDE.md or your memory system) for future sessions to recall. Prefer this for cross-cutting policies the PRD discovers, not the full doc."

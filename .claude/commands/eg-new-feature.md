@@ -214,7 +214,7 @@ Free-form chat (for option 1 or 2) only happens AFTER this question has scoped t
 
 ## Step 3: Implementation plan
 
-Once the design doc is `design ready`, write a short ordered implementation plan in chat:
+Once the design doc is `design ready`, use the `skills/plan-implementation` skill to produce a short ordered implementation plan in chat, covering:
 
 1. **Domain layer:** entities (`domain/entities/`), repository interface (`domain/repositories/`), usecase(s) (`domain/usecases/`) — pure Dart, no codegen needed yet.
 2. **Data layer:** model(s) with `@freezed` / `@JsonSerializable` (run `fvm dart run build_runner build --delete-conflicting-outputs` after); data source interface + remote implementation (`data/data_source/`); repository implementation (`data/repositories/`).
