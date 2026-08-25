@@ -18,13 +18,13 @@ void main() {
 
   Future<void> pumpHeaderRow({
     required WidgetTester tester,
-    ThemeData? theme,
+    required ThemeData theme,
     int? unreadNotificationCount,
     String? userName,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -41,7 +41,7 @@ void main() {
     await tester.awaitImages();
   }
 
-  group('HeaderRow Screenshot Tests - Light', () {
+  screenshotThemeGroups('HeaderRow Screenshot Tests', (theme, suffix) {
     testWidgets('renders default state with no notifications and no user', (
       tester,
     ) async {
@@ -49,63 +49,12 @@ void main() {
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      await pumpHeaderRow(tester: tester);
+      await pumpHeaderRow(tester: tester, theme: theme);
 
       await expectLater(
         find.byType(HeaderRow),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_default.png',
-        ),
-      );
-    });
-
-    testWidgets('renders with unread notification badge', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpHeaderRow(tester: tester, unreadNotificationCount: 5);
-
-      await expectLater(
-        find.byType(HeaderRow),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_badge.png',
-        ),
-      );
-    });
-
-    testWidgets('renders with username for profile letter avatar', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpHeaderRow(tester: tester, userName: 'John Doe');
-
-      await expectLater(
-        find.byType(HeaderRow),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_username.png',
-        ),
-      );
-    });
-  });
-
-  group('HeaderRow Screenshot Tests - Dark', () {
-    testWidgets('renders default state with no notifications and no user', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpHeaderRow(tester: tester, theme: createTestThemeDark());
-
-      await expectLater(
-        find.byType(HeaderRow),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_default_dark.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_default$suffix.png',
         ),
       );
     });
@@ -117,14 +66,14 @@ void main() {
 
       await pumpHeaderRow(
         tester: tester,
+        theme: theme,
         unreadNotificationCount: 5,
-        theme: createTestThemeDark(),
       );
 
       await expectLater(
         find.byType(HeaderRow),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_badge_dark.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_badge$suffix.png',
         ),
       );
     });
@@ -136,16 +85,12 @@ void main() {
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      await pumpHeaderRow(
-        tester: tester,
-        userName: 'John Doe',
-        theme: createTestThemeDark(),
-      );
+      await pumpHeaderRow(tester: tester, theme: theme, userName: 'John Doe');
 
       await expectLater(
         find.byType(HeaderRow),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_username_dark.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_username$suffix.png',
         ),
       );
     });

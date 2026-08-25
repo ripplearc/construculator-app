@@ -20,11 +20,11 @@ void main() {
   Future<void> pumpNotificationIcon({
     required WidgetTester tester,
     required int unreadCount,
-    ThemeData? theme,
+    required ThemeData theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -40,60 +40,7 @@ void main() {
     await tester.awaitImages();
   }
 
-  group('NotificationIcon Screenshot Tests - Light', () {
-    testWidgets('renders without badge when unreadCount is zero', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpNotificationIcon(tester: tester, unreadCount: 0);
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_no_badge.png',
-        ),
-      );
-    });
-
-    testWidgets('renders with badge when unreadCount is greater than zero', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpNotificationIcon(tester: tester, unreadCount: 3);
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_badge.png',
-        ),
-      );
-    });
-
-    testWidgets('renders 99+ badge when unreadCount exceeds 99', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpNotificationIcon(tester: tester, unreadCount: 123);
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_overflow_badge.png',
-        ),
-      );
-    });
-  });
-
-  group('NotificationIcon Screenshot Tests - Dark', () {
+  screenshotThemeGroups('NotificationIcon Screenshot Tests', (theme, suffix) {
     testWidgets('renders without badge when unreadCount is zero', (
       tester,
     ) async {
@@ -104,13 +51,13 @@ void main() {
       await pumpNotificationIcon(
         tester: tester,
         unreadCount: 0,
-        theme: createTestThemeDark(),
+        theme: theme,
       );
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_no_badge_dark.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_no_badge$suffix.png',
         ),
       );
     });
@@ -125,13 +72,13 @@ void main() {
       await pumpNotificationIcon(
         tester: tester,
         unreadCount: 3,
-        theme: createTestThemeDark(),
+        theme: theme,
       );
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_badge_dark.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_badge$suffix.png',
         ),
       );
     });
@@ -146,13 +93,13 @@ void main() {
       await pumpNotificationIcon(
         tester: tester,
         unreadCount: 123,
-        theme: createTestThemeDark(),
+        theme: theme,
       );
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_overflow_badge_dark.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_overflow_badge$suffix.png',
         ),
       );
     });

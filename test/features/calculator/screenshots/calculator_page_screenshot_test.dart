@@ -12,11 +12,11 @@ void main() {
 
   Future<void> pumpCalculatorPage({
     required WidgetTester tester,
-    ThemeData? theme,
+    required ThemeData theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -31,33 +31,17 @@ void main() {
     await loadAppFontsAll();
   });
 
-  group('CalculatorPage Screenshot Tests - Light', () {
+  screenshotThemeGroups('CalculatorPage Screenshot Tests', (theme, suffix) {
     testWidgets('renders initial state correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
-      await pumpCalculatorPage(tester: tester);
+      await pumpCalculatorPage(tester: tester, theme: theme);
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/calculator_page/${size.width}x${size.height}/calculator_page_initial_light.png',
-        ),
-      );
-    });
-  });
-
-  group('CalculatorPage Screenshot Tests - Dark', () {
-    testWidgets('renders initial state correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-      await pumpCalculatorPage(tester: tester, theme: createTestThemeDark());
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/calculator_page/${size.width}x${size.height}/calculator_page_initial_dark.png',
+          'goldens/calculator_page/${size.width}x${size.height}/calculator_page_initial$suffix.png',
         ),
       );
     });
