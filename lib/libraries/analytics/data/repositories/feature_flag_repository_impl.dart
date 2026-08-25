@@ -53,4 +53,32 @@ class FeatureFlagRepositoryImpl implements FeatureFlagRepository {
       return const Right(null);
     }
   }
+
+  @override
+  Future<Either<Failure, String?>> getFeatureFlagVariant(
+    String featureFlagKey,
+  ) async {
+    try {
+      return Right(
+        await _posthogWrapper.getFeatureFlagVariant(featureFlagKey),
+      );
+    } catch (e) {
+      _logMappedError(e, 'evaluating feature flag variant $featureFlagKey');
+      return const Right(null);
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>?>> getFeatureFlagPayload(
+    String featureFlagKey,
+  ) async {
+    try {
+      return Right(
+        await _posthogWrapper.getFeatureFlagPayload(featureFlagKey),
+      );
+    } catch (e) {
+      _logMappedError(e, 'evaluating feature flag payload $featureFlagKey');
+      return const Right(null);
+    }
+  }
 }

@@ -21,4 +21,18 @@ class NoOpFeatureFlagRepository implements FeatureFlagRepository {
   Future<Either<Failure, void>> reloadFeatureFlags() async {
     return const Right(null);
   }
+
+  @override
+  Future<Either<Failure, String?>> getFeatureFlagVariant(
+    String featureFlagKey,
+  ) async {
+    return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>?>> getFeatureFlagPayload(
+    String featureFlagKey,
+  ) async {
+    return const Right(null);
+  }
 }
