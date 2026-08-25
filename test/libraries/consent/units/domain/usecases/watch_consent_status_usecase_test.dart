@@ -23,14 +23,17 @@ void main() {
     test('emits each status the repository publishes', () async {
       repository.statusStreamToReturn = Stream.fromIterable(const [
         ConsentSatisfied(1),
-        ConsentIndeterminate(),
+        ConsentIndeterminate(ConsentType.termsAndPrivacy),
       ]);
 
       final emitted = await useCase(
         const ConsentStatusParams(consentType: ConsentType.termsAndPrivacy),
       ).toList();
 
-      expect(emitted, const [ConsentSatisfied(1), ConsentIndeterminate()]);
+      expect(emitted, const [
+        ConsentSatisfied(1),
+        ConsentIndeterminate(ConsentType.termsAndPrivacy),
+      ]);
     });
 
     test('observes each consent type it is given', () async {

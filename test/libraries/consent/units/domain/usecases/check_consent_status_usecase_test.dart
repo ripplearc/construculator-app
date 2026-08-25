@@ -21,13 +21,13 @@ void main() {
 
   group('CheckConsentStatusUseCase', () {
     test('returns the status the repository resolved', () async {
-      repository.cachedStatusToReturn = const ConsentIndeterminate();
+      repository.cachedStatusToReturn = const ConsentIndeterminate(ConsentType.termsAndPrivacy);
 
       final result = await useCase(
         const ConsentStatusParams(consentType: ConsentType.termsAndPrivacy),
       );
 
-      expect(result, const ConsentIndeterminate());
+      expect(result, const ConsentIndeterminate(ConsentType.termsAndPrivacy));
     });
 
     test('asks about each consent type it is given', () async {
