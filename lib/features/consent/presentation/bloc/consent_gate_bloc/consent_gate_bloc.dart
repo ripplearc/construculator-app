@@ -67,25 +67,28 @@ class ConsentGateBloc extends Bloc<ConsentGateEvent, ConsentGateState> {
     // against the server blocks nothing; only a confirmed mismatch interrupts.
     // This is also the only path that can report ConsentUnverified, which is
     // how a failed check with a prior acceptance on file fails open.
+    final beforeVerify = state;
     final verified = await _verifyConsentStatusUseCase(_params);
 
     // A verification started before the user accepted cannot speak to what
     // they accepted: the resolver reads the local acceptance before its
-    // round trip (see ConsentRepositoryImpl.verifyPublishedVersion), so a
-    // write that both starts and finishes during this await is invisible to
+    // round trip (see ConsentRepositoryImpl.verifyPublishedVersion), so an
+    // accept that both starts and finishes during this await is invisible to
     // it. Guarding only ConsentGateSubmitting protects the write itself but
     // not the window right after: a verify resolving from a pre-write
-    // snapshot would silently overwrite ConsentGateAllowed/SubmitFailed with
-    // a stale result. Widening to the whole post-acceptance family closes
-    // that; safe alongside the _stateFor fix above, which is what stops a
-    // stale ConsentIndeterminate from un-gating an outdated version instead
-    // of leaving Allowed alone.
-    if (state
-        case ConsentGateSubmitting() ||
-            ConsentGateSubmitFailed() ||
-            ConsentGateAllowed()) {
-      return;
-    }
+    // snapshot would silently overwrite the accept's outcome with a stale
+    // result.
+    //
+    // Comparing against a snapshot taken before the await, rather than
+    // switching on the current state's type, is deliberate: this phase's own
+    // first emission a few lines up can equally leave state as
+    // ConsentGateAllowed before verify ever starts (an ordinary cache hit,
+    // no accept involved), and that legitimate case must still let a
+    // verify-confirmed mismatch through. Only a state that changed *during*
+    // this specific await -- i.e. a concurrent _onAccepted -- should block
+    // it, which is what an equality check against the snapshot captures and
+    // a type check on the current state cannot.
+    if (state != beforeVerify) return;
     emit(_stateFor(verified));
   }
 
