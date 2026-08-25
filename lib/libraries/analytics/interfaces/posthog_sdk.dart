@@ -58,4 +58,17 @@ abstract class PosthogSdk {
   /// Reloads feature flags for the current user; mirrors
   /// `Posthog().reloadFeatureFlags`.
   Future<void> reloadFeatureFlags();
+
+  /// Returns the raw flag value; mirrors `Posthog().getFeatureFlag`.
+  ///
+  /// A `bool` means a simple on/off flag; a `String` means a multivariate
+  /// flag's variant key. Returns `null` if [key] is unset or evaluation
+  /// failed.
+  Future<Object?> getFeatureFlag(String key);
+
+  /// Returns the JSON payload for a feature flag; mirrors
+  /// `Posthog().getFeatureFlagPayload`.
+  ///
+  /// Returns `null` if [key] has no payload or evaluation failed.
+  Future<Object?> getFeatureFlagPayload(String key);
 }

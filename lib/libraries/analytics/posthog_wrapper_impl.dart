@@ -96,4 +96,20 @@ class PosthogWrapperImpl implements PosthogWrapper {
 
     await _posthogSdk.reloadFeatureFlags();
   }
+
+  @override
+  Future<String?> getFeatureFlagVariant(String flagKey) async {
+    if (!_isEnabled) return null;
+
+    final result = await _posthogSdk.getFeatureFlag(flagKey);
+    return result is String ? result : null;
+  }
+
+  @override
+  Future<Map<String, dynamic>?> getFeatureFlagPayload(String flagKey) async {
+    if (!_isEnabled) return null;
+
+    final result = await _posthogSdk.getFeatureFlagPayload(flagKey);
+    return result is Map ? Map<String, dynamic>.from(result) : null;
+  }
 }

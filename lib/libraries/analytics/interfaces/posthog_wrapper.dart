@@ -57,4 +57,14 @@ abstract class PosthogWrapper {
   /// subsequent [isFeatureEnabled] call is not guaranteed to reflect it
   /// immediately.
   Future<void> reloadFeatureFlags();
+
+  /// Returns the variant key for a multivariate [flagKey], or `null` if the
+  /// flag is unset, a simple boolean flag (not multivariate), evaluation
+  /// failed, or this wrapper isn't enabled (see [initialize]).
+  Future<String?> getFeatureFlagVariant(String flagKey);
+
+  /// Returns the JSON payload for [flagKey], or `null` if the flag has no
+  /// payload, evaluation failed, or this wrapper isn't enabled (see
+  /// [initialize]).
+  Future<Map<String, dynamic>?> getFeatureFlagPayload(String flagKey);
 }

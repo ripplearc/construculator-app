@@ -37,8 +37,25 @@ class FakePosthogWrapper implements PosthogWrapper {
   /// Number of times [reloadFeatureFlags] was called.
   int reloadFeatureFlagsCallCount = 0;
 
+  /// Recorded calls to [getFeatureFlagVariant], in order of the flag key
+  /// passed.
+  final List<String> getFeatureFlagVariantCalls = [];
+
+  /// Per-key return values for [getFeatureFlagVariant]; a key absent from
+  /// this map behaves the same as an unset/non-multivariate flag (`null`).
+  final Map<String, String?> variantOverrides = {};
+
+  /// Recorded calls to [getFeatureFlagPayload], in order of the flag key
+  /// passed.
+  final List<String> getFeatureFlagPayloadCalls = [];
+
+  /// Per-key return values for [getFeatureFlagPayload]; a key absent from
+  /// this map behaves the same as a flag with no payload (`null`).
+  final Map<String, Map<String, dynamic>?> payloadOverrides = {};
+
   /// If set, [capture], [identify], [reset], [setPersonProperties],
-  /// [group], [isFeatureEnabled], and [reloadFeatureFlags] throw this
+  /// [group], [isFeatureEnabled], [reloadFeatureFlags],
+  /// [getFeatureFlagVariant], and [getFeatureFlagPayload] throw this
   /// instead of recording the call.
   Object? errorToThrow;
 
@@ -127,6 +144,22 @@ class FakePosthogWrapper implements PosthogWrapper {
     reloadFeatureFlagsCallCount++;
   }
 
+  @override
+  Future<String?> getFeatureFlagVariant(String flagKey) async {
+    final error = errorToThrow;
+    if (error != null) throw error;
+    getFeatureFlagVariantCalls.add(flagKey);
+    return variantOverrides[flagKey];
+  }
+
+  @override
+  Future<Map<String, dynamic>?> getFeatureFlagPayload(String flagKey) async {
+    final error = errorToThrow;
+    if (error != null) throw error;
+    getFeatureFlagPayloadCalls.add(flagKey);
+    return payloadOverrides[flagKey];
+  }
+
   /// Clears all recorded calls, flag overrides, and any configured error.
   ///
   /// Named to avoid colliding with [reset], the interface method under test.
@@ -140,6 +173,10 @@ class FakePosthogWrapper implements PosthogWrapper {
     isFeatureEnabledCalls.clear();
     flagOverrides.clear();
     reloadFeatureFlagsCallCount = 0;
+    getFeatureFlagVariantCalls.clear();
+    variantOverrides.clear();
+    getFeatureFlagPayloadCalls.clear();
+    payloadOverrides.clear();
     errorToThrow = null;
   }
 }

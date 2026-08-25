@@ -36,6 +36,19 @@ class FakePosthogSdk implements PosthogSdk {
   /// Number of times [reloadFeatureFlags] was called.
   int reloadFeatureFlagsCallCount = 0;
 
+  /// Recorded calls to [getFeatureFlag], in order of the flag key passed.
+  final List<String> getFeatureFlagCalls = [];
+
+  /// Value returned by [getFeatureFlag].
+  Object? getFeatureFlagResult;
+
+  /// Recorded calls to [getFeatureFlagPayload], in order of the flag key
+  /// passed.
+  final List<String> getFeatureFlagPayloadCalls = [];
+
+  /// Value returned by [getFeatureFlagPayload].
+  Object? getFeatureFlagPayloadResult;
+
   /// Restores the fake to its initial state.
   ///
   /// Named to avoid colliding with [reset], the interface method under test.
@@ -50,6 +63,10 @@ class FakePosthogSdk implements PosthogSdk {
     isFeatureEnabledCalls.clear();
     isFeatureEnabledResult = false;
     reloadFeatureFlagsCallCount = 0;
+    getFeatureFlagCalls.clear();
+    getFeatureFlagResult = null;
+    getFeatureFlagPayloadCalls.clear();
+    getFeatureFlagPayloadResult = null;
   }
 
   @override
@@ -116,6 +133,18 @@ class FakePosthogSdk implements PosthogSdk {
   @override
   Future<void> reloadFeatureFlags() async {
     reloadFeatureFlagsCallCount++;
+  }
+
+  @override
+  Future<Object?> getFeatureFlag(String key) async {
+    getFeatureFlagCalls.add(key);
+    return getFeatureFlagResult;
+  }
+
+  @override
+  Future<Object?> getFeatureFlagPayload(String key) async {
+    getFeatureFlagPayloadCalls.add(key);
+    return getFeatureFlagPayloadResult;
   }
 }
 

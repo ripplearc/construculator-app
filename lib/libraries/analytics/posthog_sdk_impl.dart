@@ -74,4 +74,15 @@ class PosthogSdkImpl implements PosthogSdk {
   Future<void> reloadFeatureFlags() {
     return Posthog().reloadFeatureFlags();
   }
+
+  @override
+  Future<Object?> getFeatureFlag(String key) {
+    return Posthog().getFeatureFlag(key);
+  }
+
+  @override
+  Future<Object?> getFeatureFlagPayload(String key) {
+    // ignore: deprecated_member_use
+    return Posthog().getFeatureFlagPayload(key);
+  }
 }
