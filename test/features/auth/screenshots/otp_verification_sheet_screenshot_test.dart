@@ -52,7 +52,11 @@ void main() {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
-      await pumpOtpSheet(tester: tester, verifyButtonDisabled: true, theme: theme);
+      await pumpOtpSheet(
+        tester: tester,
+        verifyButtonDisabled: true,
+        theme: theme,
+      );
 
       await expectLater(
         find.byType(OtpVerificationQuickSheet),
