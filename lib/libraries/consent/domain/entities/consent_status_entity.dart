@@ -1,4 +1,5 @@
 import 'package:construculator/libraries/consent/domain/entities/consent_version_entity.dart';
+import 'package:construculator/libraries/consent/domain/types/consent_types.dart';
 import 'package:equatable/equatable.dart';
 
 /// Outcome of comparing the published consent version against the user's
@@ -149,8 +150,16 @@ class ConsentUnverified extends ConsentStatus {
 /// by the time the guard runs. It occurs when connectivity drops between
 /// authentication and the first consent sync.
 class ConsentIndeterminate extends ConsentStatus {
-  const ConsentIndeterminate();
+  /// Which document failed to resolve.
+  ///
+  /// Omitting the version and the URL is justified — neither is known — but
+  /// *which* document was being checked always is: the caller asked about one
+  /// type. Without it a caller resolving both, such as CA-964's analytics gate
+  /// alongside the terms gate, receives an indistinguishable value for either.
+  final ConsentType consentType;
+
+  const ConsentIndeterminate(this.consentType);
 
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [consentType];
 }

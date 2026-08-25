@@ -41,7 +41,10 @@ void main() {
     test('blocks when the requirement could not be established', () {
       // Nothing to fall back on and no document to name, so neither letting
       // the user through nor prompting them would be honest.
-      expect(gates(const ConsentIndeterminate()), isTrue);
+      expect(
+        gates(const ConsentIndeterminate(ConsentType.termsAndPrivacy)),
+        isTrue,
+      );
     });
 
     test('distinguishes an unverified check from a satisfied one', () {
@@ -57,13 +60,18 @@ void main() {
       expect(const ConsentUnverified(1), isNot(const ConsentUnverified(2)));
     });
 
-    test('gives the indeterminate outcome an explicit empty identity', () {
-      // It carries nothing beyond "nothing could be established", so every
-      // instance is the same outcome. Asserted on props directly because two
-      // const instances are canonicalised to the same object, so equality
-      // short-circuits on identity and never reads them.
-      expect(const ConsentIndeterminate().props, isEmpty);
-      expect(const ConsentIndeterminate(), const ConsentIndeterminate());
+    test('keeps an unresolved check tied to the document it was for', () {
+      // The two documents version independently, so an unresolved check on one
+      // must not read as an unresolved check on the other -- a caller
+      // resolving both would otherwise get an indistinguishable value.
+      expect(
+        const ConsentIndeterminate(ConsentType.termsAndPrivacy),
+        const ConsentIndeterminate(ConsentType.termsAndPrivacy),
+      );
+      expect(
+        const ConsentIndeterminate(ConsentType.termsAndPrivacy),
+        isNot(const ConsentIndeterminate(ConsentType.analytics)),
+      );
     });
 
     test('compares outdated statuses by accepted and required version', () {
