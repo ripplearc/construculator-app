@@ -4,6 +4,7 @@ import 'package:construculator/app/shell/widgets/tab_navigator.dart';
 import 'package:construculator/features/app_header/app_header_module.dart';
 import 'package:construculator/features/calculations/presentation/pages/calculations_page.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
+import 'package:construculator/features/dashboard/presentation/bloc/recent_estimations_bloc/recent_estimations_bloc.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/projects_bottom_sheet.dart';
 import 'package:construculator/features/estimation/estimation_module.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
@@ -102,6 +103,13 @@ class _AppShellPageState extends State<AppShellPage> {
           if (widget.currentProjectNotifier.currentProjectId != newId) {
             widget.currentProjectNotifier.setCurrentProjectId(newId);
           }
+        } else if (dropdownState is ProjectDropdownLoadFailure) {
+          // Nothing is ever going to select a project after a load failure:
+          // tell project-scoped surfaces so they exit their loading hold
+          // instead of skeletoning forever (CA-900).
+          context.read<RecentEstimationsBloc>().add(
+                const RecentEstimationsProjectLoadFailed(),
+              );
         }
       },
       child: BlocBuilder<AppShellBloc, AppShellState>(

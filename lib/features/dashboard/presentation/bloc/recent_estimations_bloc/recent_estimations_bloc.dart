@@ -31,6 +31,7 @@ class RecentEstimationsBloc
     required this._currentProjectNotifier,
   }) : super(const RecentEstimationsLoading()) {
     on<RecentEstimationsWatchStarted>(_onWatchStarted);
+    on<RecentEstimationsProjectLoadFailed>(_onProjectLoadFailed);
     on<_RecentEstimationsProjectChanged>(_onProjectChanged);
     on<_RecentEstimationsUpdated>(_onUpdated);
   }
@@ -63,6 +64,14 @@ class RecentEstimationsBloc
     // https://ripplearc.youtrack.cloud/issue/CA-984
     final projectId = currentProjectId;
     if (projectId == null || projectId.isEmpty) {
+      // This short-circuit was the previously unlogged silent link in the
+      // project-load chain. Warning, not error: right after login it is an
+      // expected transient, so it must leave a breadcrumb without paging
+      // Sentry.
+      _logger.warning(
+        'No current project selected; holding the loading state until a '
+        'selection arrives',
+      );
       _subscription = null;
       return;
     }
@@ -78,6 +87,10 @@ class RecentEstimationsBloc
         // stream error would otherwise escape to the zone handler and
         // leave the section stuck on the loading state. Warning-level:
         // error() belongs at the stream-owning data boundary, not in a bloc.
+        // The sources reaching this handler are terminal, so the watch stays
+        // dead until the next project change re-arms it; CA-999 adds an
+        // onDone-triggered resubscribe.
+        // https://ripplearc.youtrack.cloud/issue/CA-999
         _logger.warning('Recent estimations stream errored', error, stackTrace);
         add(
           _RecentEstimationsUpdated(
@@ -93,6 +106,21 @@ class RecentEstimationsBloc
     Emitter<RecentEstimationsState> emit,
   ) {
     add(const RecentEstimationsWatchStarted());
+  }
+
+  void _onProjectLoadFailed(
+    RecentEstimationsProjectLoadFailed event,
+    Emitter<RecentEstimationsState> emit,
+  ) {
+    // The loading hold in _onWatchStarted waits for a selection that, after
+    // a project load failure, is never going to arrive — surface an error
+    // instead of skeletoning forever. The project-changed subscription
+    // stays alive, so a later successful load (e.g. a retry from the
+    // projects sheet) still re-arms the watch.
+    _logger.warning('Project load failed; leaving the loading hold');
+    _subscription?.cancel();
+    _subscription = null;
+    emit(const RecentEstimationsError('project load failed'));
   }
 
   void _onUpdated(

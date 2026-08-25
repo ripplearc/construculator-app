@@ -123,7 +123,9 @@ class ProjectRepositoryImpl implements ProjectRepository {
             // the eager fetch below (and any later refresh) still serves the
             // list — it just stops live-updating. Only the fetch path pushes
             // failures to listeners (CA-900). A terminally errored stream is
-            // not resubscribed until all listeners detach; CA-985 adds
+            // not resubscribed until all listeners detach — in practice
+            // until app restart, since the sole production listener is the
+            // app-lifetime ProjectDropdownBloc singleton; CA-985 adds
             // retry/backoff. https://ripplearc.youtrack.cloud/issue/CA-985
             final failure = ProjectErrorMapper.toFailure(error);
             _logFailure(
