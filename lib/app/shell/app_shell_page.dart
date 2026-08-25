@@ -128,6 +128,7 @@ class _AppShellPageState extends State<AppShellPage> {
             bottomNavigationBar: SafeArea(
               minimum: const EdgeInsets.all(CoreSpacing.space4),
               child: CoreBottomNavBar(
+                key: const Key('app_shell_bottom_nav_bar'),
                 tabs: [
                   BottomNavTab(
                     icon: CoreIcons.calculation,
