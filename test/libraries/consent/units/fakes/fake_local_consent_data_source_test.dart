@@ -71,6 +71,51 @@ void main() {
 
         expect(result, version(2));
       });
+
+      test(
+        'publishedVersionReadErrorSequence fails one call then clears',
+        () async {
+          // The whole point of the sequence over the sticky field: the
+          // second call must succeed, which is what proves a failed watch
+          // tick is superseded rather than permanent.
+          fake.publishedVersions[type] = version(2);
+          fake.publishedVersionReadErrorSequence.add(
+            const FormatException('corrupt row'),
+          );
+
+          await expectLater(
+            () => fake.fetchPublishedVersion(type),
+            throwsA(isA<FormatException>()),
+          );
+          expect(await fake.fetchPublishedVersion(type), version(2));
+        },
+      );
+
+      test('a null sequence entry lets that call succeed', () async {
+        fake.publishedVersions[type] = version(2);
+        fake.publishedVersionReadErrorSequence.addAll([
+          null,
+          Exception('second call fails'),
+        ]);
+
+        expect(await fake.fetchPublishedVersion(type), version(2));
+        await expectLater(
+          () => fake.fetchPublishedVersion(type),
+          throwsA(isA<Exception>()),
+        );
+      });
+
+      test('falls back to publishedVersionReadError once exhausted', () async {
+        fake.publishedVersions[type] = version(2);
+        fake.publishedVersionReadErrorSequence.add(null);
+        fake.publishedVersionReadError = const FormatException('sticky');
+
+        expect(await fake.fetchPublishedVersion(type), version(2));
+        await expectLater(
+          () => fake.fetchPublishedVersion(type),
+          throwsA(isA<FormatException>()),
+        );
+      });
     });
 
     group('fetchLatestUserConsent', () {
@@ -96,7 +141,12 @@ void main() {
 
       test('returns only the record matching the requested type', () async {
         await fake.seedLatestConsent(
-          record(userId, ConsentType.termsAndPrivacy, 1, ConsentAction.accepted),
+          record(
+            userId,
+            ConsentType.termsAndPrivacy,
+            1,
+            ConsentAction.accepted,
+          ),
         );
         await fake.seedLatestConsent(
           record(userId, ConsentType.analytics, 2, ConsentAction.accepted),
@@ -203,6 +253,29 @@ void main() {
           record(userId, type, 6, ConsentAction.accepted),
         );
         await emitted;
+      });
+
+      test('emits watchError ahead of the store events when set', () async {
+        // The stream error path is otherwise unreachable through this fake:
+        // the wrapped store never errors, so a repository's stream-level
+        // error handling had nothing to exercise it.
+        fake.watchError = Exception('watch failed');
+
+        final stream = fake.watchLatestUserConsent(userId, type);
+        final expectation = expectLater(
+          stream,
+          emitsInOrder([
+            emitsError(isA<Exception>()),
+            isNull,
+            predicate<UserConsentDto?>((r) => r!.version == 3),
+          ]),
+        );
+
+        await fake.insertUserConsent(
+          record(userId, type, 3, ConsentAction.accepted),
+        );
+
+        await expectation;
       });
 
       test('does not emit for a write to a different user or type', () async {

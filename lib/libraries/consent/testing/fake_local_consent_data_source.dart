@@ -20,6 +20,19 @@ class FakeLocalConsentDataSource implements LocalConsentDataSource {
   /// Error thrown by [fetchPublishedVersion].
   Object? publishedVersionReadError;
 
+  /// Errors thrown by successive [fetchPublishedVersion] calls, one per call,
+  /// in order. A null entry lets that one call succeed.
+  ///
+  /// Takes priority over [publishedVersionReadError] for as many calls as it
+  /// has entries; once exhausted, later calls fall back to it. This is the
+  /// read behind each tick of [watchLatestUserConsent], so it is the lever
+  /// that fails one tick and then clears — the "superseded by the next
+  /// successful one" half of `ConsentRepository.watchConsentStatus`'s
+  /// contract, which the sticky field above cannot express because it also
+  /// fails every later tick. Mirrors `FakeRemoteConsentDataSource`'s
+  /// `errorSequence`, for the same reason.
+  final List<Object?> publishedVersionReadErrorSequence = [];
+
   /// Error thrown by [fetchLatestUserConsent].
   ///
   /// Kept separate from [publishedVersionReadError] because
@@ -31,9 +44,20 @@ class FakeLocalConsentDataSource implements LocalConsentDataSource {
   /// Error thrown by [insertUserConsent].
   Object? writeError;
 
+  /// Error emitted on the [watchLatestUserConsent] stream itself, ahead of
+  /// the wrapped store's events.
+  ///
+  /// Distinct from [publishedVersionReadErrorSequence], which fails the read
+  /// behind a tick while the stream stays healthy. This drives the stream
+  /// error path instead — reached only by a genuine watch failure, and
+  /// otherwise unreachable through this fake.
+  Object? watchError;
+
   /// Records passed to [insertUserConsent], in call order. Excludes records
   /// seeded through [seedLatestConsent].
   final List<UserConsentDto> insertedRecords = [];
+
+  var _publishedVersionReadCount = 0;
 
   late final InMemoryLocalConsentDataSource _store =
       InMemoryLocalConsentDataSource(seedVersions: publishedVersions);
@@ -48,7 +72,10 @@ class FakeLocalConsentDataSource implements LocalConsentDataSource {
 
   @override
   Future<ConsentVersionDto?> fetchPublishedVersion(ConsentType type) async {
-    final error = publishedVersionReadError;
+    final index = _publishedVersionReadCount++;
+    final error = index < publishedVersionReadErrorSequence.length
+        ? publishedVersionReadErrorSequence[index]
+        : publishedVersionReadError;
     if (error != null) throw error;
     return _store.fetchPublishedVersion(type);
   }
@@ -67,7 +94,25 @@ class FakeLocalConsentDataSource implements LocalConsentDataSource {
   Stream<UserConsentDto?> watchLatestUserConsent(
     String userId,
     ConsentType type,
-  ) => _store.watchLatestUserConsent(userId, type);
+  ) {
+    final error = watchError;
+    if (error == null) return _store.watchLatestUserConsent(userId, type);
+
+    // Emitted ahead of the store's own events rather than replacing them, so
+    // a test can assert the repository survives the error and still resolves
+    // the ticks that follow it.
+    return Stream<UserConsentDto?>.multi((controller) {
+      controller.addError(error);
+      final subscription = _store
+          .watchLatestUserConsent(userId, type)
+          .listen(
+            controller.add,
+            onError: controller.addError,
+            onDone: controller.close,
+          );
+      controller.onCancel = subscription.cancel;
+    });
+  }
 
   @override
   Future<UserConsentDto> insertUserConsent(UserConsentDto dto) async {
