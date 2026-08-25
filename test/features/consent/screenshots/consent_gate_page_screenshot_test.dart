@@ -147,7 +147,7 @@ void main() {
       // and #547 maps ConsentIndeterminate here unconditionally whenever a
       // prior state doesn't exist, so it's reachable far more often than
       // "the backend is down."
-      resolveTo(const ConsentIndeterminate());
+      resolveTo(const ConsentIndeterminate(ConsentType.termsAndPrivacy));
 
       await pumpPage(tester);
 

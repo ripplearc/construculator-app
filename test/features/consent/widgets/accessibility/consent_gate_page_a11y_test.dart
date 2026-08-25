@@ -104,7 +104,7 @@ void main() {
       tester,
     ) async {
       await setupA11yTest(tester);
-      resolveTo(const ConsentIndeterminate());
+      resolveTo(const ConsentIndeterminate(ConsentType.termsAndPrivacy));
 
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
@@ -151,7 +151,7 @@ void main() {
       tester,
     ) async {
       await setupA11yTest(tester);
-      resolveTo(const ConsentIndeterminate());
+      resolveTo(const ConsentIndeterminate(ConsentType.termsAndPrivacy));
       tester.platformDispatcher.textScaleFactorTestValue = 2.0;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
 

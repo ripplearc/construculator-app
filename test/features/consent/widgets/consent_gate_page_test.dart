@@ -144,7 +144,7 @@ void main() {
 
   group('when the requirement cannot be established', () {
     setUp(
-      () => resolveTo(const ConsentIndeterminate()),
+      () => resolveTo(const ConsentIndeterminate(ConsentType.termsAndPrivacy)),
     );
 
     testWidgets('renders a retry screen rather than a consent prompt', (
