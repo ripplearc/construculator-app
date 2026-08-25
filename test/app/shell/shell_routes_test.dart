@@ -1,5 +1,5 @@
-import 'package:construculator/app/shell/shell_module.dart';
-import 'package:construculator/features/dashboard/dashboard_module.dart';
+import 'package:construculator/app/app_module.dart';
+import 'package:construculator/features/calculator/presentation/pages/calculator_page.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_details_page.dart';
 import 'package:construculator/features/project_settings/presentation/pages/project_creation_screen.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
@@ -9,6 +9,7 @@ import 'package:construculator/libraries/project/interfaces/current_project_noti
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/testing/fake_current_project_notifier.dart';
 import 'package:construculator/libraries/project/testing/fake_project_ui_provider.dart';
+import 'package:construculator/libraries/router/routes/calculator_routes.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
 import 'package:construculator/libraries/router/routes/project_settings_routes.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -21,17 +22,29 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../utils/fake_app_bootstrap_factory.dart';
 
-/// Regression tests for CA-900: pushes to the estimation and
-/// project-settings destinations were silently swallowed while their
-/// modules were registered as children of '/', because AppShellPage renders
-/// no RouterOutlet for them to mount into. They are top-level routes now,
-/// and these tests pin that a push actually lands on the destination page.
+/// Regression tests for CA-900: pushes to the estimation, project-settings,
+/// and calculator destinations were silently swallowed while their modules
+/// were registered as children of '/', because AppShellPage renders no
+/// RouterOutlet for them to mount into. They are top-level routes now, and
+/// these tests pin that a push actually lands on the destination page —
+/// and that each route stays unreachable when signed out.
 void main() {
-  late FakeSupabaseWrapper fakeSupabaseWrapper;
+  // One wrapper and bootstrap for the whole file, with per-test state resets
+  // in setUp: modular_core's Tracker caches every imported module's injector
+  // by runtimeType and never clears that cache on Modular.destroy, so binds
+  // from imported modules (AuthManager, SupabaseWrapper, ...) capture the
+  // FIRST test's bootstrap for the rest of the process. Creating a fresh
+  // wrapper per test would leave the injector reading the first test's
+  // instance while the test mutates its own — the signed-out tests below
+  // would silently run signed-in.
+  final fakeClock = FakeClockImpl();
+  final fakeSupabaseWrapper = FakeSupabaseWrapper(clock: fakeClock);
+  final appBootstrap = FakeAppBootstrapFactory.create(
+    supabaseWrapper: fakeSupabaseWrapper,
+  );
 
   setUp(() {
-    final fakeClock = FakeClockImpl();
-    fakeSupabaseWrapper = FakeSupabaseWrapper(clock: fakeClock);
+    fakeSupabaseWrapper.reset();
 
     // An authenticated user, so every AuthGuard on the pushed routes passes.
     fakeSupabaseWrapper.setCurrentUser(
@@ -51,15 +64,11 @@ void main() {
     );
     fakeSupabaseWrapper.addTableData('users', [fakeUser.toJson()]);
 
-    final appBootstrap = FakeAppBootstrapFactory.create(
-      supabaseWrapper: fakeSupabaseWrapper,
-    );
-
-    Modular.init(ShellModule(appBootstrap));
-    addTearDown(Modular.destroy);
-    // Pre-bind DashboardModule so AuthNotifier, AuthManager, AppRouter, and
-    // RecentEstimationsBloc are resolvable when AppShellPage is constructed.
-    Modular.bindModule(DashboardModule(appBootstrap));
+    // Root the harness at AppModule so the module graph matches production
+    // wiring exactly — path composition still resolves ShellModule at '/',
+    // no manual module pre-binding is needed, and the AuthGuard's redirect
+    // target (the /auth login route) exists for the signed-out tests below.
+    Modular.init(AppModule(appBootstrap));
 
     Modular.replaceInstance<CurrentProjectNotifier>(
       FakeCurrentProjectNotifier(),
@@ -68,6 +77,14 @@ void main() {
   });
 
   tearDown(() {
+    // Modular.routerConfig is never reset by Modular.destroy, so without
+    // this the next test re-mounts THIS test's page stack against a fresh
+    // injector and stale Modular.args. Clearing the delegate's configuration
+    // returns it to the pristine state the first test of a run sees. The
+    // setter only exists on the concrete ModularRouterDelegate, which
+    // flutter_modular does not export — hence the dynamic cast.
+    (Modular.routerConfig.routerDelegate as dynamic).currentConfiguration =
+        null;
     Modular.destroy();
   });
 
@@ -109,6 +126,53 @@ void main() {
       await pumpShellAndPush(tester, createProjectRoute);
 
       expect(find.byType(ProjectCreationScreen), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'pushNamed to the calculator route renders CalculatorPage',
+    (tester) async {
+      await pumpShellAndPush(tester, calculatorBaseRoute);
+
+      expect(find.byType(CalculatorPage), findsOneWidget);
+    },
+  );
+
+  // Signed-out variants: pin the guard coverage claim, not just rendering —
+  // removing an AuthGuard from these routes must fail the suite.
+  testWidgets(
+    'pushNamed to the estimation details route does not render '
+    'CostEstimationDetailsPage when signed out',
+    (tester) async {
+      fakeSupabaseWrapper.setCurrentUser(null);
+
+      await pumpShellAndPush(tester, '$fullEstimationDetailsRoute/est-123');
+
+      expect(find.byType(CostEstimationDetailsPage), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'pushNamed to the create-project route does not render '
+    'ProjectCreationScreen when signed out',
+    (tester) async {
+      fakeSupabaseWrapper.setCurrentUser(null);
+
+      await pumpShellAndPush(tester, createProjectRoute);
+
+      expect(find.byType(ProjectCreationScreen), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'pushNamed to the calculator route does not render CalculatorPage '
+    'when signed out',
+    (tester) async {
+      fakeSupabaseWrapper.setCurrentUser(null);
+
+      await pumpShellAndPush(tester, calculatorBaseRoute);
+
+      expect(find.byType(CalculatorPage), findsNothing);
     },
   );
 }
