@@ -37,7 +37,7 @@ void main() {
           acceptedVersion: null,
         );
 
-        expect(status, const ConsentIndeterminate());
+        expect(status, const ConsentIndeterminate(type));
         expect(status.gatesAccess, isTrue);
       });
 
@@ -101,7 +101,7 @@ void main() {
           acceptedVersion: null,
         );
 
-        expect(status, const ConsentIndeterminate());
+        expect(status, const ConsentIndeterminate(type));
       });
     });
 
@@ -114,7 +114,7 @@ void main() {
           acceptedVersion: null,
         );
 
-        expect(status, const ConsentIndeterminate());
+        expect(status, const ConsentIndeterminate(type));
         expect(status.gatesAccess, isTrue);
       });
 

@@ -55,7 +55,7 @@ class ConsentVerificationResolver {
       if (match == null) {
         _logger.error('No published consent version for ${type.toJson()}');
         return acceptedVersion == null
-            ? const ConsentIndeterminate()
+            ? ConsentIndeterminate(type)
             : ConsentUnverified(acceptedVersion);
       }
 
@@ -74,7 +74,7 @@ class ConsentVerificationResolver {
       // whether there is a prior acceptance to fall back on.
       return acceptedVersion == null
           // Nothing to fall back on and no document to present.
-          ? const ConsentIndeterminate()
+          ? ConsentIndeterminate(type)
           // Trust the last known-good acceptance; retry next launch.
           : ConsentUnverified(acceptedVersion);
     }
