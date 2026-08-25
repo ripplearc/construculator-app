@@ -79,9 +79,20 @@ Future<FeatureFlagRepository> _initializeFeatureFlagRepository(
   if (envLoader.get(analyticsEnabledKey) != 'true') {
     return const NoOpFeatureFlagRepository();
   }
+  // TODO: [CA-942] Once AnalyticsRepositoryImpl's bootstrap lands, share this
+  // PosthogWrapperImpl instance with it instead of each constructing its own —
+  // see docs/Logging/Posthog-Integration.md.
   final posthogWrapper = PosthogWrapperImpl(posthogSdk: PosthogSdkImpl());
+  final apiKey = envLoader.get(posthogApiKeyKey) ?? '';
+  if (apiKey.isEmpty) {
+    final logger = AppLogger().tag('main');
+    logger.warning(
+      'ANALYTICS_ENABLED=true but POSTHOG_API_KEY is empty — feature flags '
+      'will silently read as off.',
+    );
+  }
   await posthogWrapper.initialize(
-    apiKey: envLoader.get(posthogApiKeyKey) ?? '',
+    apiKey: apiKey,
     host: envLoader.get(posthogHostKey) ?? '',
     debug: envLoader.get(posthogDebugKey) == 'true',
   );
