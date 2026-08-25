@@ -68,6 +68,7 @@ custom_lint:
         - 'PowerSyncCredentials'
         - 'Posthog'
         - 'PostHogConfig'
+        - 'PowerSyncDatabase'
 
 linter:
   # The lint rules applied to this project can be customized in the

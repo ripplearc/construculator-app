@@ -72,16 +72,10 @@ void main() {
       test(
         'should initialize with authenticated state when user exists',
         () async {
-          supabaseWrapper.setCurrentUser(
-            FakeUser(
-              email: testEmail,
-              id: 'test-id',
-              createdAt: clock.now().toIso8601String(),
-              appMetadata: {},
-            ),
-          );
           authNotifier.reset();
 
+          // Subscribe before emitting: the fake's auth stream delivers
+          // synchronously, so an event raised first would be missed.
           final initialEvent = expectLater(
             authNotifier.onAuthStateChanged,
             emits(
@@ -90,6 +84,16 @@ void main() {
               ),
             ),
           );
+
+          supabaseWrapper.setCurrentUser(
+            FakeUser(
+              email: testEmail,
+              id: 'test-id',
+              createdAt: clock.now().toIso8601String(),
+              appMetadata: {},
+            ),
+          );
+
           await initialEvent;
           expect(authNotifier.stateChangedEvents.length, 1);
           expect(

@@ -5,6 +5,7 @@ import 'package:construculator/app/shell/tab_module_manager.dart';
 import 'package:construculator/libraries/analytics/data/repositories/no_op_analytics_repository.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_wrapper.dart';
 import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
@@ -23,6 +24,7 @@ void main() {
           sentryWrapper: FakeSentryWrapper(),
           supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
           analyticsRepository: const NoOpAnalyticsRepository(),
+          powerSyncDatabase: FakePowerSyncDatabase(),
         );
         Modular.init(ShellModule(appBootstrap));
         manager = Modular.get<TabModuleManager>();
@@ -65,7 +67,8 @@ void main() {
           envLoader: FakeEnvLoader(),
           sentryWrapper: FakeSentryWrapper(),
           supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
-          analyticsRepository: const NoOpAnalyticsRepository(),
+          analyticsRepository: NoOpAnalyticsRepository(),
+          powerSyncDatabase: FakePowerSyncDatabase(),
         );
         Modular.init(_TestShellModule(appBootstrap));
         customManager = Modular.get<TabModuleManager>();
