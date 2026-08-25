@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:construculator/libraries/analytics/domain/repositories/feature_flag_repository.dart';
-import 'package:construculator/libraries/analytics/domain/types/feature_flag_error_type.dart';
 import 'package:construculator/libraries/analytics/interfaces/posthog_wrapper.dart';
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
@@ -20,25 +19,16 @@ class FeatureFlagRepositoryImpl implements FeatureFlagRepository {
   /// Creates a [FeatureFlagRepositoryImpl] with the given [_posthogWrapper].
   FeatureFlagRepositoryImpl({required this._posthogWrapper});
 
-  Failure _mapError(Object error, String operation) {
+  void _logMappedError(Object error, String operation) {
     if (error is TimeoutException) {
       _logger.warning('Timeout error $operation: message=${error.message}');
-      return const FeatureFlagFailure(
-        errorType: FeatureFlagErrorType.timeoutError,
-      );
-    }
-
-    if (error is SocketException) {
+    } else if (error is SocketException) {
       _logger.warning(
         'Connection error $operation: message=${error.message}',
       );
-      return const FeatureFlagFailure(
-        errorType: FeatureFlagErrorType.connectionError,
-      );
+    } else {
+      _logger.error('Unexpected error $operation: $error');
     }
-
-    _logger.error('Unexpected error $operation: $error');
-    return UnexpectedFailure();
   }
 
   @override
@@ -48,7 +38,7 @@ class FeatureFlagRepositoryImpl implements FeatureFlagRepository {
     try {
       return Right(await _posthogWrapper.isFeatureEnabled(featureFlagKey));
     } catch (e) {
-      _mapError(e, 'evaluating feature flag $featureFlagKey');
+      _logMappedError(e, 'evaluating feature flag $featureFlagKey');
       return const Right(null);
     }
   }
@@ -59,7 +49,7 @@ class FeatureFlagRepositoryImpl implements FeatureFlagRepository {
       await _posthogWrapper.reloadFeatureFlags();
       return const Right(null);
     } catch (e) {
-      _mapError(e, 'reloading feature flags');
+      _logMappedError(e, 'reloading feature flags');
       return const Right(null);
     }
   }
