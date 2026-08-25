@@ -49,6 +49,17 @@ dev_dependencies:
   json_serializable: 6.11.2
   custom_lint: 0.8.1
   bloc_test: 10.0.0
+  patrol: 4.4.0
+  integration_test:
+    sdk: flutter
+
+patrol:
+  app_name: Construculator
+  test_directory: integration_test
+  android:
+    package_name: com.cms.cm_sample.fishfood
+  ios:
+    bundle_id: com.example.construculatorAppArchitecture
 
 flutter:
   uses-material-design: true
