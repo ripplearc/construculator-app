@@ -13,6 +13,11 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 /// Lives in the data layer rather than beside the enum because classifying a
 /// failure means recognizing `PostgrestException` codes and auth errors, and
 /// the domain is not allowed to know those types exist.
+///
+/// Permission denials are the one rejection [PostgresErrorCode] has no value
+/// for: an expired or missing JWT arrives as `PGRST301`, and PostgREST reports
+/// some policy denials in prose rather than a code, so both are matched by
+/// hand under [PostgresErrorCode.unknownError].
 class ConsentErrorMapper {
   const ConsentErrorMapper._();
 
@@ -94,10 +99,6 @@ class ConsentErrorMapper {
     return ConsentErrorType.unexpectedError;
   }
 
-  /// Recognises the rejections [PostgresErrorCode] has no value for.
-  ///
-  /// An expired or missing JWT arrives as `PGRST301`, and PostgREST reports
-  /// some policy denials in prose rather than a code.
   static bool _isPermissionDenied(supabase.PostgrestException error) {
     return error.code == 'PGRST301' ||
         error.message.toLowerCase().contains('permission denied');
