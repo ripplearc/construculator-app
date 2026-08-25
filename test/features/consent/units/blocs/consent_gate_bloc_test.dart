@@ -81,7 +81,7 @@ void main() {
     blocTest<ConsentGateBloc, ConsentGateState>(
       'shows the retry screen, not a prompt, when the requirement is unknown',
       // There is no document to name, so there is nothing to agree to.
-      setUp: () => resolveTo(const ConsentIndeterminate()),
+      setUp: () => resolveTo(const ConsentIndeterminate(ConsentType.termsAndPrivacy)),
       build: buildBloc,
       act: (bloc) => bloc.add(const ConsentGateStarted()),
       expect: () => const [ConsentGateUnavailable()],
@@ -138,7 +138,7 @@ void main() {
       // not revoke access on evidence that only means "could not check".
       setUp: () => repository
         ..cachedStatusToReturn = const ConsentSatisfied(2)
-        ..verifiedStatusToReturn = const ConsentIndeterminate(),
+        ..verifiedStatusToReturn = const ConsentIndeterminate(ConsentType.termsAndPrivacy),
       build: buildBloc,
       act: (bloc) => bloc.add(const ConsentGateStarted()),
       expect: () => const [ConsentGateAllowed(2), ConsentGateUnverified(2)],
@@ -192,7 +192,7 @@ void main() {
         // watch tick in isolation.
         repository.verifiedStatusToReturn = const ConsentSatisfied(1);
         repository.statusStreamToReturn = Stream<ConsentStatus>.fromIterable(
-          const [ConsentIndeterminate()],
+          const [ConsentIndeterminate(ConsentType.termsAndPrivacy)],
         );
       },
       build: buildBloc,
@@ -276,8 +276,8 @@ void main() {
     blocTest<ConsentGateBloc, ConsentGateState>(
       're-resolves the status',
       setUp: () => repository
-        ..cachedStatusToReturn = const ConsentIndeterminate()
-        ..verifiedStatusToReturn = const ConsentIndeterminate()
+        ..cachedStatusToReturn = const ConsentIndeterminate(ConsentType.termsAndPrivacy)
+        ..verifiedStatusToReturn = const ConsentIndeterminate(ConsentType.termsAndPrivacy)
         // Held open for the whole test and never completed. This test is
         // about retry re-running the cached-read phase (verify has its own
         // coverage above); with cached and verified set to the identical
