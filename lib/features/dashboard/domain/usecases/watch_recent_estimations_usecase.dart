@@ -4,7 +4,6 @@ import 'package:construculator/libraries/estimation/domain/entities/cost_estimat
 import 'package:construculator/libraries/estimation/domain/enums/estimation_sort_option.dart';
 import 'package:construculator/libraries/estimation/domain/estimation_error_type.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
-import 'package:construculator/libraries/logging/app_logger.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:equatable/equatable.dart';
 
@@ -27,7 +26,6 @@ class RecentEstimationsParams extends Equatable {
 /// Retrieves a stream from the [CostEstimationRepository] with strict
 /// limits and sort ordering specific to the Dashboard requirements.
 class WatchRecentEstimationsUseCase {
-  static final _logger = AppLogger().tag('WatchRecentEstimationsUseCase');
   final CostEstimationRepository _repository;
   final CurrentProjectNotifier _currentProjectNotifier;
 
@@ -42,12 +40,10 @@ class WatchRecentEstimationsUseCase {
     final projectId = _currentProjectNotifier.currentProjectId;
 
     if (projectId == null || projectId.isEmpty) {
-      // Warning, not error: right after login this is an expected transient
-      // (the project dropdown's auto-selection has not landed yet), so it
-      // must leave a breadcrumb without paging Sentry.
-      _logger.warning(
-        'Current project ID is null or empty, cannot watch recent estimations',
-      );
+      // Defensive only: RecentEstimationsBloc, the sole production caller,
+      // short-circuits (and logs) before invoking this use case without a
+      // selected project — so this branch does not log a duplicate
+      // breadcrumb.
       return Stream.value(
         const Left(
           EstimationFailure(errorType: EstimationErrorType.unexpectedError),

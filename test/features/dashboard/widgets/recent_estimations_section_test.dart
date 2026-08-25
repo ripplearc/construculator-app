@@ -178,7 +178,39 @@ void main() {
     await tester.pump();
     await tester.pump();
 
+    // The three skeleton placeholders must actually render — a section
+    // that drew nothing at all must not pass this test.
+    expect(
+      find.descendant(
+        of: find.byType(ListView),
+        matching: find.byType(Container),
+      ),
+      findsNWidgets(3),
+    );
+    expect(find.byType(EstimationCard), findsNothing);
     expect(find.text(l10n().recentEstimationsLoadError), findsNothing);
+  });
+
+  testWidgets(
+      'shows the load error instead of holding the placeholders once the '
+      'project load fails (CA-900)', (tester) async {
+    currentProjectNotifier.setCurrentProjectId(null);
+
+    // runAsync, like pumpSection: the bloc is created in setUp, outside the
+    // fake-async zone, so its event processing only completes on the real
+    // event loop.
+    final errored = bloc.stream.firstWhere(
+      (state) => state is RecentEstimationsError,
+    );
+    bloc.add(const RecentEstimationsWatchStarted());
+    await tester.pumpWidget(buildTestApp());
+    await tester.pump();
+
+    bloc.add(const RecentEstimationsProjectLoadFailed());
+    await tester.runAsync(() => errored);
+    await tester.pump();
+
+    expect(find.text(l10n().recentEstimationsLoadError), findsOneWidget);
   });
 
   testWidgets('renders estimation cards when data is loaded', (tester) async {

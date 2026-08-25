@@ -473,5 +473,30 @@ void main() {
         expect(fakeProjectNotifier.currentProjectId, 'project-b');
       },
     );
+
+    testWidgets(
+      'signals RecentEstimationsBloc when the project load fails, so the '
+      'section leaves its loading hold instead of skeletoning forever '
+      '(CA-900)',
+      (tester) async {
+        fakeProjectRepository.shouldThrowOnWatchProjects = true;
+
+        // Pin one bloc instance: the module binds a factory, so without
+        // this the instance asserted here would differ from the one the
+        // page's provider resolves.
+        final recentEstimationsBloc = Modular.get<RecentEstimationsBloc>();
+        Modular.replaceInstance<RecentEstimationsBloc>(recentEstimationsBloc);
+        final errored = recentEstimationsBloc.stream.firstWhere(
+          (s) => s is RecentEstimationsError,
+        );
+
+        await tester.pumpWidget(makeApp());
+        await tester.pump();
+        await tester.pump();
+
+        await tester.runAsync(() => errored);
+        expect(recentEstimationsBloc.state, isA<RecentEstimationsError>());
+      },
+    );
   });
 }

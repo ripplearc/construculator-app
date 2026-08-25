@@ -236,6 +236,46 @@ void main() {
   );
 
   blocTest<RecentEstimationsBloc, RecentEstimationsState>(
+    'emits RecentEstimationsError when the project load fails — the '
+    'loading hold must not outlive the possibility of a selection (CA-900)',
+    build: () {
+      currentProjectNotifier.setCurrentProjectId(null);
+      return bloc;
+    },
+    act: (bloc) {
+      bloc.add(const RecentEstimationsWatchStarted());
+      bloc.add(const RecentEstimationsProjectLoadFailed());
+    },
+    expect: () => [
+      const RecentEstimationsLoading(lastKnownEstimations: null),
+      const RecentEstimationsError('project load failed'),
+    ],
+  );
+
+  blocTest<RecentEstimationsBloc, RecentEstimationsState>(
+    'recovers from a project load failure once a selection eventually '
+    'arrives (e.g. a successful retry from the projects sheet)',
+    build: () {
+      seedEstimationTable([tEstimationMap]);
+      currentProjectNotifier.setCurrentProjectId(null);
+      return bloc;
+    },
+    act: (bloc) async {
+      bloc.add(const RecentEstimationsWatchStarted());
+      bloc.add(const RecentEstimationsProjectLoadFailed());
+      await bloc.stream.firstWhere((s) => s is RecentEstimationsError);
+      currentProjectNotifier.setCurrentProjectId(testProjectId);
+      await bloc.stream.firstWhere((s) => s is RecentEstimationsLoaded);
+    },
+    expect: () => [
+      const RecentEstimationsLoading(lastKnownEstimations: null),
+      const RecentEstimationsError('project load failed'),
+      const RecentEstimationsLoading(lastKnownEstimations: null),
+      RecentEstimationsLoaded(tEstimations),
+    ],
+  );
+
+  blocTest<RecentEstimationsBloc, RecentEstimationsState>(
     're-watches when the current project changes after start',
     build: () {
       seedEstimationTable([tEstimationMap]);

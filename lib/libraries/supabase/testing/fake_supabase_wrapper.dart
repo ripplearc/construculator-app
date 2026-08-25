@@ -227,6 +227,12 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
   /// Defaults to [ServerException] when null.
   SupabaseExceptionType? streamExceptionType;
 
+  /// When true, a stream error emitted via [shouldEmitStreamErrors] also
+  /// closes that table's stream, mimicking a terminal realtime subscribe
+  /// failure (e.g. RealtimeSubscribeException) after which the channel
+  /// emits nothing further.
+  bool shouldCloseStreamOnError = false;
+
   /// Controls whether [signInWithPassword] returns a user
   bool shouldReturnUser = false;
 
@@ -1112,6 +1118,9 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
       } catch (e, st) {
         controller.addError(e, st);
       }
+      if (shouldCloseStreamOnError) {
+        controller.close();
+      }
       return;
     }
     controller.add(_cloneRows(_tables[table] ?? const []));
@@ -1264,6 +1273,7 @@ class FakeSupabaseWrapper implements SupabaseWrapper {
     completer = null;
     shouldEmitStreamErrors = false;
     streamExceptionType = null;
+    shouldCloseStreamOnError = false;
     shouldReturnUser = false;
     shouldThrowOnGetUserProfile = false;
     _nextId = 1;

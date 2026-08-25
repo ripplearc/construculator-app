@@ -288,9 +288,9 @@ void main() {
       );
 
       test(
-        'degrades to fetch-once on a watchProjectChanges error: no stream '
-        'error reaches listeners and later refreshes still serve the list '
-        '(CA-900)',
+        'suppresses a transient watchProjectChanges error: no stream error '
+        'reaches listeners, and because the fake keeps the stream open a '
+        'later realtime event still refreshes the list (CA-900)',
         () async {
           const userId = 'user-123';
           supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
@@ -319,13 +319,15 @@ void main() {
           );
           await firstEmission.future;
 
-          // Realtime delivery errors (e.g. RealtimeSubscribeException when
-          // the local publication is missing the watched tables).
+          // A transient realtime delivery error: the fake's broadcast
+          // stream stays open afterwards. The terminal case
+          // (RealtimeSubscribeException closing the channel) is pinned by
+          // the next test.
           supabaseWrapper.shouldEmitStreamErrors = true;
           supabaseWrapper.addTableData(DatabaseConstants.projectsTable, []);
 
-          // The subscription survives the error: a later realtime event
-          // still triggers a refresh that serves the full list.
+          // The subscription survives the transient error: a later realtime
+          // event still triggers a refresh that serves the full list.
           supabaseWrapper.shouldEmitStreamErrors = false;
           supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
             _createProjectRow(
@@ -353,6 +355,81 @@ void main() {
           );
           expect(emittedBatches.first, hasLength(1));
           expect(emittedBatches.last, hasLength(2));
+        },
+      );
+
+      test(
+        'still serves the eagerly fetched list when the realtime subscribe '
+        'fails terminally: no error reaches listeners, and the dead channel '
+        'produces no further refreshes (CA-900)',
+        () async {
+          const userId = 'user-123';
+          supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+            _createProjectRow(
+              id: 'owned-project',
+              projectName: 'Owned',
+              creatorUserId: userId,
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+          ]);
+
+          Object? receivedError;
+          final emittedBatches = <List<Project>>[];
+          final firstEmission = Completer<void>();
+          final subscription = repository.watchProjects(userId).listen(
+            (batch) {
+              emittedBatches.add(batch);
+              if (!firstEmission.isCompleted) {
+                firstEmission.complete();
+              }
+            },
+            onError: (Object error, _) => receivedError = error,
+          );
+          await firstEmission.future;
+
+          // A terminal subscribe failure (the production
+          // RealtimeSubscribeException case): the error closes the channel,
+          // which emits nothing further — see the degrade comment in
+          // project_repository_impl.dart and CA-985.
+          supabaseWrapper.shouldEmitStreamErrors = true;
+          supabaseWrapper.shouldCloseStreamOnError = true;
+          supabaseWrapper.addTableData(DatabaseConstants.projectsTable, []);
+          await pumpEventQueue();
+
+          // The dead channel never observes this change, so no refresh runs.
+          supabaseWrapper.shouldEmitStreamErrors = false;
+          supabaseWrapper.addTableData(DatabaseConstants.projectsTable, [
+            _createProjectRow(
+              id: 'owned-project',
+              projectName: 'Owned',
+              creatorUserId: userId,
+              updatedAt: DateTime(2025, 1, 1),
+            ),
+            _createProjectRow(
+              id: 'second-project',
+              projectName: 'Second',
+              creatorUserId: userId,
+              updatedAt: DateTime(2025, 1, 2),
+            ),
+          ]);
+          await pumpEventQueue();
+          await subscription.cancel();
+
+          expect(
+            receivedError,
+            isNull,
+            reason:
+                'a terminal realtime failure must degrade to fetch-once, '
+                'not fail the projects surface',
+          );
+          expect(
+            emittedBatches,
+            hasLength(1),
+            reason:
+                'the eagerly fetched list is served once; a dead channel '
+                'triggers no further refreshes',
+          );
+          expect(emittedBatches.single, hasLength(1));
         },
       );
 
