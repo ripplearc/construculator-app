@@ -96,23 +96,31 @@ class ShellModule extends Module {
         ),
       ),
       guards: [AuthGuard(() => Modular.get<AuthManager>())],
-      children: [
-        ModuleRoute(calculatorBaseRoute, module: CalculatorModule()),
-      ],
     );
-    // Estimation and project-settings destinations are full-screen pushes,
-    // so they must be top-level routes like the search pages below:
-    // AppShellPage renders no RouterOutlet, and a child route resolved
-    // under '/' has no outlet to mount into — Modular swallows the push
-    // with no transition and no error (CA-900). Their inner routes carry
-    // their own AuthGuards.
+    // Estimation, project-settings, and calculator destinations are
+    // full-screen pushes, so they must be top-level routes like the search
+    // pages below: AppShellPage renders no RouterOutlet, and a child route
+    // resolved under '/' has no outlet to mount into — Modular swallows the
+    // push with no transition and no error (CA-900). The estimation and
+    // project-settings inner routes carry their own AuthGuards, so the
+    // top-level guards there are defence in depth for future inner routes;
+    // the calculator's root route has no own guard, so its top-level guard
+    // is load-bearing — it replaces the shell guard the route inherited
+    // while nested.
     r.module(
       estimationBaseRoute,
       module: EstimationRoutesModule(appBootstrap),
+      guards: [AuthGuard(() => Modular.get<AuthManager>())],
     );
     r.module(
       projectSettingsBaseRoute,
       module: ProjectSettingsRoutesModule(appBootstrap),
+      guards: [AuthGuard(() => Modular.get<AuthManager>())],
+    );
+    r.module(
+      calculatorBaseRoute,
+      module: CalculatorModule(),
+      guards: [AuthGuard(() => Modular.get<AuthManager>())],
     );
     r.child(
       projectSearchRoute,
