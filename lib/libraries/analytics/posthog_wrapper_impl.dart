@@ -87,7 +87,7 @@ class PosthogWrapperImpl implements PosthogWrapper {
   Future<bool?> isFeatureEnabled(String flagKey) async {
     if (!_isEnabled) return null;
 
-    return _posthogSdk.isFeatureEnabled(flagKey);
+    return await _posthogSdk.isFeatureEnabled(flagKey);
   }
 
   @override

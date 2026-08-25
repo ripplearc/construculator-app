@@ -51,6 +51,10 @@ abstract class PosthogWrapper {
   /// not a live network call.
   Future<bool?> isFeatureEnabled(String flagKey);
 
-  /// Refreshes the client-side feature flag cache for the current identity.
+  /// Requests a refresh of the client-side feature flag cache for the
+  /// current identity. The returned Future resolves once the refresh has
+  /// been queued — not once the cache is confirmed updated, so a
+  /// subsequent [isFeatureEnabled] call is not guaranteed to reflect it
+  /// immediately.
   Future<void> reloadFeatureFlags();
 }
