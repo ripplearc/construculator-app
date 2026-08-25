@@ -17,11 +17,11 @@ void main() {
 
   group('reads', () {
     test('resolves the configured cached status', () async {
-      repository.cachedStatusToReturn = const ConsentIndeterminate();
+      repository.cachedStatusToReturn = const ConsentIndeterminate(type);
 
       expect(
         await repository.getCachedConsentStatus(type),
-        const ConsentIndeterminate(),
+        const ConsentIndeterminate(type),
       );
     });
 
@@ -46,7 +46,7 @@ void main() {
 
     test('prefers the stream factory over the fixed stream', () async {
       repository.statusStreamToReturn = Stream.value(
-        const ConsentIndeterminate(),
+        const ConsentIndeterminate(type),
       );
       repository.statusStreamFactory = () =>
           Stream.value(const ConsentSatisfied(9));
@@ -172,8 +172,8 @@ void main() {
     repository.dispose();
     // Set after the calls: a pending completer would block the writes above.
     repository
-      ..cachedStatusToReturn = const ConsentIndeterminate()
-      ..verifiedStatusToReturn = const ConsentIndeterminate()
+      ..cachedStatusToReturn = const ConsentIndeterminate(type)
+      ..verifiedStatusToReturn = const ConsentIndeterminate(type)
       ..statusStreamFactory = Stream<ConsentStatus>.empty
       ..acceptanceResultToReturn = const Left(
         ConsentFailure(errorType: ConsentErrorType.unexpectedError),
