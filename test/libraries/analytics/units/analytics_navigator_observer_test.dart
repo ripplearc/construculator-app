@@ -131,6 +131,53 @@ void main() {
       expect(fakePosthogWrapper.capturedEvents, isEmpty);
     });
 
+    test('didPop syncs screenName to the previous route without tracking', () {
+      observer.didPop(_routeNamed('/details'), _routeNamed('/dashboard'));
+
+      expect(currentScreenTracker.screenName, '/dashboard');
+      expect(fakePosthogWrapper.capturedEvents, isEmpty);
+    });
+
+    test('didRemove syncs screenName to the previous route without tracking', () {
+      observer.didRemove(_routeNamed('/details'), _routeNamed('/dashboard'));
+
+      expect(currentScreenTracker.screenName, '/dashboard');
+      expect(fakePosthogWrapper.capturedEvents, isEmpty);
+    });
+
+    test('didReplace syncs screenName to the new route without tracking', () {
+      observer.didReplace(
+        newRoute: _routeNamed('/dashboard'),
+        oldRoute: _routeNamed('/details'),
+      );
+
+      expect(currentScreenTracker.screenName, '/dashboard');
+      expect(fakePosthogWrapper.capturedEvents, isEmpty);
+    });
+
+    test(
+      'leaves screenName unchanged when popping/removing/replacing to a '
+      'route with no name',
+      () {
+        observer.didPush(_routeNamed('/dashboard'), null);
+        fakePosthogWrapper.resetFake();
+
+        observer.didPop(_routeNamed('/details'), _routeNamed(null));
+        expect(currentScreenTracker.screenName, '/dashboard');
+
+        observer.didRemove(_routeNamed('/details'), _routeNamed(null));
+        expect(currentScreenTracker.screenName, '/dashboard');
+
+        observer.didReplace(
+          newRoute: _routeNamed(null),
+          oldRoute: _routeNamed('/details'),
+        );
+        expect(currentScreenTracker.screenName, '/dashboard');
+
+        expect(fakePosthogWrapper.capturedEvents, isEmpty);
+      },
+    );
+
     test('captures nothing when analytics is disabled (NoOpAnalyticsRepository)', () {
       final noOpObserver = AnalyticsNavigatorObserver(
         analyticsRepository: const NoOpAnalyticsRepository(),

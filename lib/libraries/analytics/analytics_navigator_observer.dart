@@ -40,14 +40,44 @@ class AnalyticsNavigatorObserver extends NavigatorObserver {
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
     super.didPush(route, previousRoute);
+    final templateName = _templateNameOf(route);
+    _syncScreenName(templateName);
+    _trackScreenView(templateName);
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPop(route, previousRoute);
+    if (previousRoute != null) {
+      _syncScreenName(_templateNameOf(previousRoute));
+    }
+  }
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didRemove(route, previousRoute);
+    if (previousRoute != null) {
+      _syncScreenName(_templateNameOf(previousRoute));
+    }
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+    if (newRoute != null) {
+      _syncScreenName(_templateNameOf(newRoute));
+    }
+  }
+
+  String? _templateNameOf(Route<dynamic> route) {
     final settings = route.settings;
-    final templateName = settings is ModularPage
-        ? settings.route.name
-        : settings.name;
+    return settings is ModularPage ? settings.route.name : settings.name;
+  }
+
+  void _syncScreenName(String? templateName) {
     if (templateName != null && templateName.isNotEmpty) {
       _currentScreenTracker.screenName = templateName;
     }
-    _trackScreenView(templateName);
   }
 
   void _trackScreenView(String? screenName) {
