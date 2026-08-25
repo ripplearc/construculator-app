@@ -66,6 +66,15 @@ class FakeConsentRepository implements ConsentRepository {
   /// resolves within the same frame it is entered.
   Completer<void>? acceptanceCompleter;
 
+  /// When set, [verifyPublishedVersion] does not complete until this
+  /// completer does.
+  ///
+  /// Lets a test hold the verify phase open long enough to drive a
+  /// concurrent [recordAcceptance] to completion inside that window --
+  /// otherwise every step of that race runs and resolves within the same
+  /// frame, with nothing to interleave it against.
+  Completer<void>? verificationCompleter;
+
   /// When set, [recordWithdrawal] does not complete until this completer does.
   Completer<void>? withdrawalCompleter;
 
@@ -108,6 +117,7 @@ class FakeConsentRepository implements ConsentRepository {
     acceptanceResultToReturn = null;
     withdrawalResultToReturn = null;
     acceptanceCompleter = null;
+    verificationCompleter = null;
     withdrawalCompleter = null;
     disposeCallCount = 0;
     cachedStatusRequests.clear();
@@ -133,6 +143,7 @@ class FakeConsentRepository implements ConsentRepository {
   @override
   Future<ConsentStatus> verifyPublishedVersion(ConsentType type) async {
     verificationRequests.add(type);
+    await verificationCompleter?.future;
     return verifiedStatusToReturn;
   }
 
@@ -169,7 +180,8 @@ class FakeConsentRepository implements ConsentRepository {
   // fake-consent-0 and ids line up with the recording lists' indices.
   UserConsent _record(ConsentType type, int version, ConsentAction action) =>
       UserConsent(
-        id: 'fake-consent-'
+        id:
+            'fake-consent-'
             '${recordedAcceptances.length + recordedWithdrawals.length}',
         userId: 'fake-user',
         consentType: type,

@@ -182,6 +182,7 @@ void main() {
         ConsentFailure(errorType: ConsentErrorType.unexpectedError),
       )
       ..acceptanceCompleter = Completer<void>()
+      ..verificationCompleter = Completer<void>()
       ..withdrawalCompleter = Completer<void>();
 
     repository.reset();
@@ -192,6 +193,7 @@ void main() {
     expect(repository.acceptanceResultToReturn, isNull);
     expect(repository.withdrawalResultToReturn, isNull);
     expect(repository.acceptanceCompleter, isNull);
+    expect(repository.verificationCompleter, isNull);
     expect(repository.withdrawalCompleter, isNull);
     expect(repository.disposeCallCount, 0);
     expect(repository.cachedStatusRequests, isEmpty);
