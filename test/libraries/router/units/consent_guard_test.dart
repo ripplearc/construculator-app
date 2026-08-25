@@ -66,7 +66,7 @@ void main() {
     });
 
     test('blocks when the requirement could not be established', () async {
-      repository.cachedStatusToReturn = const ConsentIndeterminate();
+      repository.cachedStatusToReturn = const ConsentIndeterminate(ConsentType.termsAndPrivacy);
 
       expect(await canActivate(), isFalse);
     });
