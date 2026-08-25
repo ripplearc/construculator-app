@@ -27,8 +27,36 @@ class FakePosthogWrapper implements PosthogWrapper {
   /// Recorded calls to [group].
   final List<GroupCall> groupCalls = [];
 
-  /// If set, [capture], [identify], [reset], [setPersonProperties], and
-  /// [group] throw this instead of recording the call.
+  /// Recorded calls to [isFeatureEnabled], in order of the flag key passed.
+  final List<String> isFeatureEnabledCalls = [];
+
+  /// Per-key return values for [isFeatureEnabled]; a key absent from this
+  /// map behaves the same as an unset flag (`null`).
+  final Map<String, bool?> flagOverrides = {};
+
+  /// Number of times [reloadFeatureFlags] was called.
+  int reloadFeatureFlagsCallCount = 0;
+
+  /// Recorded calls to [getFeatureFlagVariant], in order of the flag key
+  /// passed.
+  final List<String> getFeatureFlagVariantCalls = [];
+
+  /// Per-key return values for [getFeatureFlagVariant]; a key absent from
+  /// this map behaves the same as an unset/non-multivariate flag (`null`).
+  final Map<String, String?> variantOverrides = {};
+
+  /// Recorded calls to [getFeatureFlagPayload], in order of the flag key
+  /// passed.
+  final List<String> getFeatureFlagPayloadCalls = [];
+
+  /// Per-key return values for [getFeatureFlagPayload]; a key absent from
+  /// this map behaves the same as a flag with no payload (`null`).
+  final Map<String, Map<String, dynamic>?> payloadOverrides = {};
+
+  /// If set, [capture], [identify], [reset], [setPersonProperties],
+  /// [group], [isFeatureEnabled], [reloadFeatureFlags],
+  /// [getFeatureFlagVariant], and [getFeatureFlagPayload] throw this
+  /// instead of recording the call.
   Object? errorToThrow;
 
   @override
@@ -101,7 +129,38 @@ class FakePosthogWrapper implements PosthogWrapper {
     );
   }
 
-  /// Clears all recorded calls and any configured error.
+  @override
+  Future<bool?> isFeatureEnabled(String flagKey) async {
+    final error = errorToThrow;
+    if (error != null) throw error;
+    isFeatureEnabledCalls.add(flagKey);
+    return flagOverrides[flagKey];
+  }
+
+  @override
+  Future<void> reloadFeatureFlags() async {
+    final error = errorToThrow;
+    if (error != null) throw error;
+    reloadFeatureFlagsCallCount++;
+  }
+
+  @override
+  Future<String?> getFeatureFlagVariant(String flagKey) async {
+    final error = errorToThrow;
+    if (error != null) throw error;
+    getFeatureFlagVariantCalls.add(flagKey);
+    return variantOverrides[flagKey];
+  }
+
+  @override
+  Future<Map<String, dynamic>?> getFeatureFlagPayload(String flagKey) async {
+    final error = errorToThrow;
+    if (error != null) throw error;
+    getFeatureFlagPayloadCalls.add(flagKey);
+    return payloadOverrides[flagKey];
+  }
+
+  /// Clears all recorded calls, flag overrides, and any configured error.
   ///
   /// Named to avoid colliding with [reset], the interface method under test.
   void resetFake() {
@@ -111,6 +170,13 @@ class FakePosthogWrapper implements PosthogWrapper {
     resetCallCount = 0;
     setPersonPropertiesCalls.clear();
     groupCalls.clear();
+    isFeatureEnabledCalls.clear();
+    flagOverrides.clear();
+    reloadFeatureFlagsCallCount = 0;
+    getFeatureFlagVariantCalls.clear();
+    variantOverrides.clear();
+    getFeatureFlagPayloadCalls.clear();
+    payloadOverrides.clear();
     errorToThrow = null;
   }
 }

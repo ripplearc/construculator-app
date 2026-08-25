@@ -27,6 +27,28 @@ class FakePosthogSdk implements PosthogSdk {
   /// Recorded calls to [group].
   final List<GroupCall> groupCalls = [];
 
+  /// Recorded calls to [isFeatureEnabled], in order of the flag key passed.
+  final List<String> isFeatureEnabledCalls = [];
+
+  /// Value returned by [isFeatureEnabled].
+  bool isFeatureEnabledResult = false;
+
+  /// Number of times [reloadFeatureFlags] was called.
+  int reloadFeatureFlagsCallCount = 0;
+
+  /// Recorded calls to [getFeatureFlag], in order of the flag key passed.
+  final List<String> getFeatureFlagCalls = [];
+
+  /// Value returned by [getFeatureFlag].
+  Object? getFeatureFlagResult;
+
+  /// Recorded calls to [getFeatureFlagPayload], in order of the flag key
+  /// passed.
+  final List<String> getFeatureFlagPayloadCalls = [];
+
+  /// Value returned by [getFeatureFlagPayload].
+  Object? getFeatureFlagPayloadResult;
+
   /// Restores the fake to its initial state.
   ///
   /// Named to avoid colliding with [reset], the interface method under test.
@@ -38,6 +60,13 @@ class FakePosthogSdk implements PosthogSdk {
     resetCallCount = 0;
     setPersonPropertiesCalls.clear();
     groupCalls.clear();
+    isFeatureEnabledCalls.clear();
+    isFeatureEnabledResult = false;
+    reloadFeatureFlagsCallCount = 0;
+    getFeatureFlagCalls.clear();
+    getFeatureFlagResult = null;
+    getFeatureFlagPayloadCalls.clear();
+    getFeatureFlagPayloadResult = null;
   }
 
   @override
@@ -93,6 +122,29 @@ class FakePosthogSdk implements PosthogSdk {
         groupProperties: groupProperties,
       ),
     );
+  }
+
+  @override
+  Future<bool> isFeatureEnabled(String key) async {
+    isFeatureEnabledCalls.add(key);
+    return isFeatureEnabledResult;
+  }
+
+  @override
+  Future<void> reloadFeatureFlags() async {
+    reloadFeatureFlagsCallCount++;
+  }
+
+  @override
+  Future<Object?> getFeatureFlag(String key) async {
+    getFeatureFlagCalls.add(key);
+    return getFeatureFlagResult;
+  }
+
+  @override
+  Future<Object?> getFeatureFlagPayload(String key) async {
+    getFeatureFlagPayloadCalls.add(key);
+    return getFeatureFlagPayloadResult;
   }
 }
 

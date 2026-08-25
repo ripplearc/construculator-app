@@ -64,4 +64,25 @@ class PosthogSdkImpl implements PosthogSdk {
       groupProperties: groupProperties?.cast<String, Object>(),
     );
   }
+
+  @override
+  Future<bool> isFeatureEnabled(String key) {
+    return Posthog().isFeatureEnabled(key);
+  }
+
+  @override
+  Future<void> reloadFeatureFlags() {
+    return Posthog().reloadFeatureFlags();
+  }
+
+  @override
+  Future<Object?> getFeatureFlag(String key) {
+    return Posthog().getFeatureFlag(key);
+  }
+
+  @override
+  Future<Object?> getFeatureFlagPayload(String key) {
+    // ignore: deprecated_member_use
+    return Posthog().getFeatureFlagPayload(key);
+  }
 }

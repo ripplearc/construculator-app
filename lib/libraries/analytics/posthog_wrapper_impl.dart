@@ -82,4 +82,34 @@ class PosthogWrapperImpl implements PosthogWrapper {
       groupProperties: groupProperties,
     );
   }
+
+  @override
+  Future<bool?> isFeatureEnabled(String flagKey) async {
+    if (!_isEnabled) return null;
+
+    return await _posthogSdk.isFeatureEnabled(flagKey);
+  }
+
+  @override
+  Future<void> reloadFeatureFlags() async {
+    if (!_isEnabled) return;
+
+    await _posthogSdk.reloadFeatureFlags();
+  }
+
+  @override
+  Future<String?> getFeatureFlagVariant(String flagKey) async {
+    if (!_isEnabled) return null;
+
+    final result = await _posthogSdk.getFeatureFlag(flagKey);
+    return result is String ? result : null;
+  }
+
+  @override
+  Future<Map<String, dynamic>?> getFeatureFlagPayload(String flagKey) async {
+    if (!_isEnabled) return null;
+
+    final result = await _posthogSdk.getFeatureFlagPayload(flagKey);
+    return result is Map ? Map<String, dynamic>.from(result) : null;
+  }
 }
