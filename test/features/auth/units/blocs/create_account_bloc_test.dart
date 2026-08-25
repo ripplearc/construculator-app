@@ -866,7 +866,7 @@ void main() {
         'fails the signup rather than silently succeeding when the '
         'requirement could not be established',
         build: () {
-          consent.cachedStatusToReturn = const ConsentIndeterminate();
+          consent.cachedStatusToReturn = const ConsentIndeterminate(ConsentType.termsAndPrivacy);
           return bloc;
         },
         act: (bloc) => bloc.add(submitted),
