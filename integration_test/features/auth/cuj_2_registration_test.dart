@@ -19,7 +19,7 @@ void main() {
       await $(const Key('register_email_field')).enterText(email);
       await $(const Key('register_email_continue_button')).tap();
 
-      final otp = await MailpitClient().waitForOtp(email);
+      final otp = await MailpitClient.waitForOtp(email);
       await $(const Key('pin_input')).enterText(otp);
       await $(const Key('otp_verify_button')).tap();
 

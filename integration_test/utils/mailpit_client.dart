@@ -12,10 +12,12 @@ import 'test_config.dart';
 /// (the `[local_smtp]` rename lands in a later CLI release than the one
 /// pinned here), but the pinned CLI already serves it as Mailpit, and
 /// `GET /api/v1/search` / `GET /api/v1/message/{ID}` are Mailpit's endpoints.
+///
+/// Static-only, mirroring [TestConfig]: it carries no instance state of its
+/// own — `baseUrl` is threaded through each call rather than held on an
+/// instance — so there is nothing to construct.
 class MailpitClient {
-  MailpitClient({String? baseUrl}) : baseUrl = baseUrl ?? TestConfig.mailpitUrl;
-
-  final String baseUrl;
+  MailpitClient._();
 
   /// Polls Mailpit for the OTP email sent to [email] and returns the 6-digit
   /// code inside it.
@@ -25,17 +27,19 @@ class MailpitClient {
   /// Mailpit — there is no `Future.delayed`/`Timer` pacing between attempts,
   /// so the loop never sleeps: it is exactly as fast as the mail actually
   /// arrives, and gives up only once [timeout] has genuinely elapsed.
-  Future<String> waitForOtp(
+  static Future<String> waitForOtp(
     String email, {
+    String? baseUrl,
     Duration timeout = const Duration(seconds: 30),
   }) async {
+    final url = baseUrl ?? TestConfig.mailpitUrl;
     final deadline = DateTime.now().add(timeout);
     Object? lastFailure;
     while (DateTime.now().isBefore(deadline)) {
       try {
-        final messageId = await _findLatestMessageId(email);
+        final messageId = await _findLatestMessageId(url, email);
         if (messageId != null) {
-          final otp = await _extractOtp(messageId);
+          final otp = await _extractOtp(url, messageId);
           if (otp != null) return otp;
         }
       } catch (e) {
@@ -48,7 +52,10 @@ class MailpitClient {
     );
   }
 
-  Future<String?> _findLatestMessageId(String email) async {
+  static Future<String?> _findLatestMessageId(
+    String baseUrl,
+    String email,
+  ) async {
     final uri = Uri.parse(
       '$baseUrl/api/v1/search',
     ).replace(queryParameters: {'query': 'to:"$email"'});
@@ -58,7 +65,7 @@ class MailpitClient {
     return (messages.first as Map<String, dynamic>)['ID'] as String?;
   }
 
-  Future<String?> _extractOtp(String messageId) async {
+  static Future<String?> _extractOtp(String baseUrl, String messageId) async {
     final uri = Uri.parse('$baseUrl/api/v1/message/$messageId');
     final message = await _getJson(uri);
     final text = message['Text'] as String? ?? '';
@@ -69,7 +76,7 @@ class MailpitClient {
     return RegExp(r'\b\d{6}\b').firstMatch(source)?.group(0);
   }
 
-  Future<Map<String, dynamic>> _getJson(Uri uri) async {
+  static Future<Map<String, dynamic>> _getJson(Uri uri) async {
     final client = HttpClient();
     try {
       final request = await client.getUrl(uri);
