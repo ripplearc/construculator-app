@@ -70,21 +70,21 @@ scripts/e2e/stop_env.sh --purge   # also deletes the volumes; prompts first
 
 | Service | URL |
 |---------|-----|
-| Supabase API | `http://localhost:54321` |
-| Postgres | `postgresql://postgres:postgres@localhost:54322/postgres` |
-| Supabase Studio | `http://localhost:54323` |
-| Mailpit | `http://localhost:54324` |
-| PowerSync | `http://localhost:8081` |
+| Supabase API | `http://localhost:24321` |
+| Postgres | `postgresql://postgres:postgres@localhost:24322/postgres` |
+| Supabase Studio | `http://localhost:24323` |
+| Mailpit | `http://localhost:24324` |
+| PowerSync | `http://localhost:9081` |
 
 Mailpit is the mail catcher on every Supabase CLI version this project pins. The
 `[inbucket]` key in `supabase/config.toml` is historical naming — the container
 it configures is Mailpit, and its messages are readable at
-`http://localhost:54324/api/v1/search`.
+`http://localhost:24324/api/v1/search`.
 
 ## Devices and emulators
 
 The generated env file points at `localhost`, which on a device means the device
-itself. `scripts/e2e/adb_reverse.sh` forwards ports 54321, 54324 and 8081 from
+itself. `scripts/e2e/adb_reverse.sh` forwards ports 24321, 24324 and 9081 from
 the device back to the host, so one env file works in both places. This is
 preferred over rewriting URLs to `10.0.2.2`, which only works on the Android
 emulator and would need a second set of values.
