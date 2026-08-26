@@ -8,14 +8,17 @@
 # themselves; this file only defines things.
 
 # Backend repository checkout that owns supabase/ and powersync/.
-# Defaults to a sibling of the app repository.
+# Defaults to a sibling of the app repository — which is only a genuinely
+# separate stack if that sibling checkout isn't also the one a developer
+# uses for ordinary local backend work. Nothing here enforces that; see
+# CA-1007 (https://ripplearc.youtrack.cloud/issue/CA-1007).
 #
-# supabase/config.toml declares project_id = "construculator-backend-e2e", a
-# distinct project from whatever a developer's own local Supabase work uses
-# by default — so the containers, volumes and Docker network these scripts
-# start and destroy are their own, not a developer's ordinary dev stack.
-# The confirmation gate below is defense-in-depth for whatever E2E data the
-# stack itself has accumulated, not a guard against hitting unrelated data.
+# supabase/config.toml declares project_id = "construculator-backend-e2e",
+# distinguishing this stack's containers, volumes and Docker network from a
+# separate checkout's — but if E2E_BACKEND_DIR resolves to the same checkout
+# a developer runs `npx supabase start` from, these scripts still act on
+# that one shared project. The confirmation gate below is defense-in-depth
+# either way, not proof the target is actually a dedicated E2E stack.
 E2E_APP_DIR="${E2E_APP_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 E2E_BACKEND_DIR="${E2E_BACKEND_DIR:-$(dirname "$E2E_APP_DIR")/construculator-backend}"
 
@@ -94,8 +97,10 @@ e2e_ensure_powersync_env() {
   }
 }
 
-# Gates an action that destroys data. The target is the isolated E2E project,
-# so this protects only whatever the E2E stack itself has accumulated — the
+# Gates an action that destroys data. The target is whatever project
+# E2E_BACKEND_DIR's config.toml names — the E2E project if that checkout is
+# genuinely dedicated to it, but a developer's ordinary dev data otherwise
+# (see the CA-1007 note above lib.sh's E2E_BACKEND_DIR). Either way, the
 # seeders will not restore anything that was not seeded. CI sets
 # E2E_ASSUME_YES because a runner has nothing of its own to lose.
 e2e_confirm_destructive() {

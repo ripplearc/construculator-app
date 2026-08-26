@@ -6,8 +6,9 @@
 # Usage: scripts/e2e/stop_env.sh [--purge] [--yes]
 #
 #   --purge  Also delete the PowerSync bucket storage volume and the Supabase
-#            database volume of the isolated E2E project, so the next start
-#            begins from empty. It still asks for confirmation first.
+#            database volume of whatever project E2E_BACKEND_DIR's config.toml
+#            names (see lib.sh), so the next start begins from empty. It
+#            still asks for confirmation first.
 #   --yes    Skip that confirmation. Equivalent to E2E_ASSUME_YES=1.
 #
 # Without --purge this is non-destructive: the containers stop and the data

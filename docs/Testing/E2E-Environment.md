@@ -6,16 +6,22 @@ fixture set and a scripted way back to it. The same definition runs on a
 developer machine and on a CI runner, so a failing E2E test means the same thing
 in both places.
 
-> **This stack is isolated from your normal development stack.**
+> **This stack is isolated from your normal development stack only if
+> `E2E_BACKEND_DIR` points at a separate checkout.**
 > `supabase/config.toml` declares its own `project_id`
 > (`construculator-backend-e2e`), and `powersync/compose.yaml` attaches to
-> that project's Docker network by name, so it runs its own containers,
-> volumes and network distinct from whatever project you use for ordinary
-> local backend development. `scripts/e2e/reset_env.sh` and
-> `scripts/e2e/stop_env.sh --purge` only ever destroy the E2E project's own
-> data — the seeders restore `seeder@example.com` and the other sample
-> fixtures. Both commands still ask for confirmation before proceeding, as
-> defense-in-depth against running them by accident.
+> that project's Docker network by name, so a *separate* checkout gets its
+> own containers, volumes and network. But `E2E_BACKEND_DIR` defaults to a
+> sibling directory literally named `construculator-backend` — if that's
+> also the checkout you run `npx supabase start` from for ordinary local
+> dev, `scripts/e2e/reset_env.sh` and `scripts/e2e/stop_env.sh --purge`
+> destroy that shared project's data, not some separate E2E-only copy.
+> Both commands still ask for confirmation before proceeding, naming the
+> project they're about to act on. Nothing yet enforces the separate-checkout
+> requirement structurally — tracked in
+> [CA-1007](https://ripplearc.youtrack.cloud/issue/CA-1007). If you need
+> both a dedicated E2E stack and ordinary local dev, use two checkouts and
+> point `E2E_BACKEND_DIR` at the E2E-only one explicitly.
 
 ## Why this environment exists
 

@@ -110,11 +110,11 @@ Before running the application, you must set up the local backend services:
 2.  **Start the Services:** Follow the instructions in the [construculator-backend README](https://github.com/ripplearc/construculator-backend) to run the server locally using Docker.
 3.  **Verify Services:** Ensure Supabase and the API are running before proceeding to the frontend setup.
 
-End-to-end tests run against an isolated Supabase project of their own,
-driven by the scripts in `scripts/e2e/`. See
-[E2E Environment](docs/Testing/E2E-Environment.md) for how it's kept separate
-from the local development stack set up here, and what its reset and purge
-commands do.
+End-to-end tests run against a Supabase project meant to be dedicated to
+them, driven by the scripts in `scripts/e2e/`. See
+[E2E Environment](docs/Testing/E2E-Environment.md) for what it takes to
+actually keep that separate from the local development stack set up here
+(it isn't separate by default), and what its reset and purge commands do.
 
 ---
 

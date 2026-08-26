@@ -8,9 +8,10 @@
 # its MongoDB bucket storage is discarded afterwards because those buckets still
 # describe the database that was just replaced.
 #
-# This resets the isolated E2E Supabase project (see lib.sh), not a developer's
-# ordinary local dev stack. Everything in that database is destroyed and only
-# the seeded fixtures come back.
+# This resets whatever Supabase project E2E_BACKEND_DIR's config.toml names
+# (see lib.sh — genuinely the E2E project only if that checkout is dedicated
+# to it, a developer's ordinary dev stack otherwise). Everything in that
+# database is destroyed and only the seeded fixtures come back.
 #
 # Usage: scripts/e2e/reset_env.sh [--yes]
 #
