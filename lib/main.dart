@@ -2,6 +2,7 @@ import 'package:construculator/app/app.dart';
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/app_module.dart';
 import 'package:construculator/libraries/analytics/analytics_repository_factory.dart';
+import 'package:construculator/libraries/analytics/current_screen_tracker.dart';
 import 'package:construculator/libraries/analytics/data/repositories/feature_flag_repository_impl.dart';
 import 'package:construculator/libraries/analytics/data/repositories/no_op_feature_flag_repository.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/feature_flag_repository.dart';
@@ -18,6 +19,7 @@ import 'package:construculator/libraries/sentry/sentry_wrapper_impl.dart';
 import 'package:construculator/libraries/supabase/supabase_wrapper_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +33,10 @@ Future<void> main() async {
     () => runApp(
       ModularApp(
         module: AppModule(appBootstrap),
-        child: AppWidget(analyticsRepository: appBootstrap.analyticsRepository),
+        child: AppWidget(
+          analyticsRepository: appBootstrap.analyticsRepository,
+          currentScreenTracker: appBootstrap.currentScreenTracker,
+        ),
       ),
     ),
   );
@@ -55,9 +60,13 @@ Future<AppBootstrap> _initializeApp() async {
     sentrySdk: SentrySdkImpl(),
   );
   final powerSyncDatabase = await openPowerSyncDatabase();
+  final currentScreenTracker = CurrentScreenTracker();
+  final packageInfo = await PackageInfo.fromPlatform();
   final analyticsRepository = await createAnalyticsRepository(
     envLoader: envLoader,
     buildPosthogWrapper: () => PosthogWrapperImpl(posthogSdk: PosthogSdkImpl()),
+    currentScreenTracker: currentScreenTracker,
+    appVersion: packageInfo.version,
   );
   final featureFlagRepository = await _initializeFeatureFlagRepository(
     envLoader,
@@ -70,6 +79,7 @@ Future<AppBootstrap> _initializeApp() async {
     analyticsRepository: analyticsRepository,
     powerSyncDatabase: powerSyncDatabase,
     featureFlagRepository: featureFlagRepository,
+    currentScreenTracker: currentScreenTracker,
   );
 }
 

@@ -1,4 +1,5 @@
 // coverage:ignore-file
+import 'package:construculator/libraries/analytics/current_screen_tracker.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/feature_flag_repository.dart';
 import 'package:construculator/libraries/config/interfaces/config.dart';
@@ -117,6 +118,13 @@ class AppBootstrap {
   /// to the app module.
   final FeatureFlagRepository featureFlagRepository;
 
+  /// Shared holder of the currently active screen's template name.
+  ///
+  /// Must be passed to both `AnalyticsRepositoryImpl` (which reads it to
+  /// enrich every tracked event) and `AnalyticsNavigatorObserver` (which
+  /// writes it on every navigation) — the same instance to both.
+  final CurrentScreenTracker currentScreenTracker;
+
   AppBootstrap({
     required this.envLoader,
     required this.config,
@@ -125,5 +133,6 @@ class AppBootstrap {
     required this.analyticsRepository,
     required this.powerSyncDatabase,
     required this.featureFlagRepository,
+    required this.currentScreenTracker,
   });
 }

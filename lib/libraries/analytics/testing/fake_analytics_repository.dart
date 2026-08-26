@@ -26,8 +26,13 @@ class FakeAnalyticsRepository implements AnalyticsRepository {
   /// Recorded calls to [group].
   final List<GroupCall> groupCalls = [];
 
+  /// Method names in call order, e.g. `['track', 'reset']` — lets tests
+  /// assert ordering between methods, not just that each was called.
+  final List<String> callSequence = [];
+
   @override
   Future<Either<Failure, void>> track(AnalyticsEvent event) async {
+    callSequence.add('track');
     trackedEvents.add(event);
     return const Right(null);
   }
@@ -37,12 +42,14 @@ class FakeAnalyticsRepository implements AnalyticsRepository {
     required String userId,
     required AnalyticsUserProperties properties,
   }) async {
+    callSequence.add('identify');
     identifyCalls.add(IdentifyCall(userId: userId, properties: properties));
     return const Right(null);
   }
 
   @override
   Future<Either<Failure, void>> reset() async {
+    callSequence.add('reset');
     resetCallCount++;
     return const Right(null);
   }
@@ -80,6 +87,7 @@ class FakeAnalyticsRepository implements AnalyticsRepository {
     resetCallCount = 0;
     setUserPropertiesCalls.clear();
     groupCalls.clear();
+    callSequence.clear();
   }
 }
 

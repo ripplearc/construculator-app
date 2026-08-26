@@ -1,6 +1,7 @@
 // coverage:ignore-file
 import 'package:construculator/l10n/generated/app_localizations.dart';
 import 'package:construculator/libraries/analytics/analytics_navigator_observer.dart';
+import 'package:construculator/libraries/analytics/current_screen_tracker.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -8,10 +9,15 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 class AppWidget extends StatefulWidget {
-  const AppWidget({required this.analyticsRepository, super.key});
+  const AppWidget({
+    required this.analyticsRepository,
+    required this.currentScreenTracker,
+    super.key,
+  });
 
   /// Used to wire [AnalyticsNavigatorObserver] for screen-view tracking.
   final AnalyticsRepository analyticsRepository;
+  final CurrentScreenTracker currentScreenTracker;
 
   @override
   State<AppWidget> createState() => _AppWidgetState();
@@ -25,6 +31,7 @@ class _AppWidgetState extends State<AppWidget> {
       SentryNavigatorObserver(),
       AnalyticsNavigatorObserver(
         analyticsRepository: widget.analyticsRepository,
+        currentScreenTracker: widget.currentScreenTracker,
       ),
     ]);
   }

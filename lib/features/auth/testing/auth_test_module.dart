@@ -15,7 +15,9 @@ import 'package:construculator/features/auth/presentation/bloc/login_with_email_
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/set_new_password_bloc/set_new_password_bloc.dart';
-import 'package:construculator/libraries/analytics/data/repositories/no_op_analytics_repository.dart';
+import 'package:construculator/libraries/analytics/current_screen_tracker.dart';
+import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
+import 'package:construculator/libraries/analytics/testing/fake_analytics_repository.dart';
 import 'package:construculator/libraries/analytics/testing/fake_feature_flag_repository.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_notifier.dart';
@@ -35,20 +37,21 @@ import 'package:construculator/libraries/time/testing/fake_clock_impl.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 class AuthTestModule extends Module {
+  final AppBootstrap appBootstrap = AppBootstrap(
+    envLoader: FakeEnvLoader(),
+    config: FakeAppConfig(),
+    supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
+    sentryWrapper: FakeSentryWrapper(),
+    analyticsRepository: FakeAnalyticsRepository(),
+    powerSyncDatabase: FakePowerSyncDatabase(),
+    featureFlagRepository: FakeFeatureFlagRepository(),
+    currentScreenTracker: CurrentScreenTracker(),
+  );
+
   @override
   List<Module> get imports => [
     ClockTestModule(),
-    AuthLibraryModule(
-      AppBootstrap(
-        envLoader: FakeEnvLoader(),
-        config: FakeAppConfig(),
-        supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
-        sentryWrapper: FakeSentryWrapper(),
-        analyticsRepository: const NoOpAnalyticsRepository(),
-        powerSyncDatabase: FakePowerSyncDatabase(),
-        featureFlagRepository: FakeFeatureFlagRepository(),
-      ),
-    ),
+    AuthLibraryModule(appBootstrap),
     RouterTestModule(),
   ];
 
@@ -59,6 +62,7 @@ class AuthTestModule extends Module {
       () => i<AuthNotifierController>() as AuthNotifier,
     );
     i.addSingleton<AuthRepository>(() => FakeAuthRepository(clock: i<Clock>()));
+    i.addSingleton<AnalyticsRepository>(() => appBootstrap.analyticsRepository);
 
     i.add<ResetPasswordUseCase>(() => ResetPasswordUseCase(i()));
     i.add<GetProfessionalRolesUseCase>(() => GetProfessionalRolesUseCase(i()));
@@ -84,12 +88,18 @@ class AuthTestModule extends Module {
         createAccountUseCase: i(),
         getProfessionalRolesUseCase: i(),
         sendOtpUseCase: i(),
+        analyticsRepository: appBootstrap.analyticsRepository,
       ),
     );
     i.add<LoginWithEmailBloc>(
       () => LoginWithEmailBloc(checkEmailAvailabilityUseCase: i()),
     );
-    i.add<EnterPasswordBloc>(() => EnterPasswordBloc(loginUseCase: i()));
+    i.add<EnterPasswordBloc>(
+      () => EnterPasswordBloc(
+        loginUseCase: i(),
+        analyticsRepository: appBootstrap.analyticsRepository,
+      ),
+    );
     i.add<ForgotPasswordBloc>(
       () => ForgotPasswordBloc(resetPasswordUseCase: i()),
     );

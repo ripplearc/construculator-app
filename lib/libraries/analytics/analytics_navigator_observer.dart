@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:construculator/libraries/analytics/current_screen_tracker.dart';
 import 'package:construculator/libraries/analytics/domain/entities/analytics_event.dart';
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
 import 'package:flutter/widgets.dart';
@@ -24,18 +25,59 @@ import 'package:flutter_modular/src/presenter/navigation/modular_page.dart';
 /// since a disabled app resolves to `NoOpAnalyticsRepository` at bootstrap.
 class AnalyticsNavigatorObserver extends NavigatorObserver {
   /// Creates an [AnalyticsNavigatorObserver] backed by [analyticsRepository].
-  AnalyticsNavigatorObserver({required this._analyticsRepository});
+  ///
+  /// [currentScreenTracker] must be the same instance given to
+  /// `AnalyticsRepositoryImpl` so every tracked event, not just
+  /// `screen_viewed`, carries the currently active screen.
+  AnalyticsNavigatorObserver({
+    required this._analyticsRepository,
+    required this._currentScreenTracker,
+  });
 
   final AnalyticsRepository _analyticsRepository;
+  final CurrentScreenTracker _currentScreenTracker;
 
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
     super.didPush(route, previousRoute);
-    final settings = route.settings;
-    final templateName = settings is ModularPage
-        ? settings.route.name
-        : settings.name;
+    final templateName = _templateNameOf(route);
+    _syncScreenName(templateName);
     _trackScreenView(templateName);
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPop(route, previousRoute);
+    if (previousRoute != null) {
+      _syncScreenName(_templateNameOf(previousRoute));
+    }
+  }
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didRemove(route, previousRoute);
+    if (previousRoute != null) {
+      _syncScreenName(_templateNameOf(previousRoute));
+    }
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+    if (newRoute != null) {
+      _syncScreenName(_templateNameOf(newRoute));
+    }
+  }
+
+  String? _templateNameOf(Route<dynamic> route) {
+    final settings = route.settings;
+    return settings is ModularPage ? settings.route.name : settings.name;
+  }
+
+  void _syncScreenName(String? templateName) {
+    if (templateName != null && templateName.isNotEmpty) {
+      _currentScreenTracker.screenName = templateName;
+    }
   }
 
   void _trackScreenView(String? screenName) {

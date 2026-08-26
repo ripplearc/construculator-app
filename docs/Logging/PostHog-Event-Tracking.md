@@ -17,7 +17,9 @@
 
 ### Authentication
 - `user_registered`
+- `user_registration_failed` — properties: `reason` (typed, see Data Safety Rules; derived from `AuthErrorType`, never the raw exception)
 - `user_logged_in`
+- `user_login_failed` — properties: `reason` (typed, see Data Safety Rules; derived from `AuthErrorType`, never the raw exception)
 - `user_logged_out`
 - `user_password_reset`
 - `otp_verified`
@@ -77,15 +79,20 @@ Keep event cardinality bounded — avoid unbounded strings in properties used as
 
 ## Standard Properties
 
-Include in every event:
+Attached automatically to every event by `AnalyticsRepositoryImpl.track()` — callers never set these themselves:
 
 ```dart
 {
-  'app_version': '1.0.0',
-  'platform': Platform.isIOS ? 'ios' : 'android',
-  'screen_name': '/estimation/details',
+  'app_version': '1.0.0',      // resolved once at bootstrap via package_info_plus
+  'platform': 'ios',           // derived from defaultTargetPlatform
+  'screen_name': '/estimation/details', // from the shared CurrentScreenTracker,
+                                         // updated by AnalyticsNavigatorObserver
+                                         // on every navigation; null before the
+                                         // first navigation
 }
 ```
+
+Event-specific properties passed to `track()` take precedence over these on key collision.
 
 > Do **not** include a client-side `timestamp`. PostHog assigns server-side timestamps — injecting `DateTime.now()` causes clock-skew bugs and inconsistent analytics across timezones.
 
