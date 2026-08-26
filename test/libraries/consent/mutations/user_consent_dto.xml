@@ -17,23 +17,23 @@
 
     <rules>
         <!-- RULE 1: Skip the recordedAt guard -->
-        <regex pattern="_when recordedAt == null =&gt; DatabaseConstants\.recordedAtColumn," dotAll="true" id="user_consent_dto.from_json.skip_recorded_at_guard">
-            <mutation text="_when false =&gt; DatabaseConstants.recordedAtColumn,"/>
+        <regex pattern="_ when recordedAt == null =&gt; DatabaseConstants\.recordedAtColumn," dotAll="true" id="user_consent_dto.from_json.skip_recorded_at_guard">
+            <mutation text="_ when false =&gt; DatabaseConstants.recordedAtColumn,"/>
         </regex>
 
         <!-- RULE 2: Weaken the version guard to allow zero -->
-        <regex pattern="_when version == null \|\| version &lt;= 0 =&gt; DatabaseConstants\.versionColumn," dotAll="true" id="user_consent_dto.from_json.allow_version_zero">
-            <mutation text="_when version == null || version &lt; 0 =&gt; DatabaseConstants.versionColumn,"/>
+        <regex pattern="_ when version == null \|\| version &lt;= 0 =&gt; DatabaseConstants\.versionColumn," dotAll="true" id="user_consent_dto.from_json.allow_version_zero">
+            <mutation text="_ when version == null || version &lt; 0 =&gt; DatabaseConstants.versionColumn,"/>
         </regex>
 
         <!-- RULE 3: Skip the action guard -->
-        <regex pattern="_when action == null =&gt; DatabaseConstants\.actionColumn," dotAll="true" id="user_consent_dto.from_json.skip_action_guard">
-            <mutation text="_when false =&gt; DatabaseConstants.actionColumn,"/>
+        <regex pattern="_ when action == null =&gt; DatabaseConstants\.actionColumn," dotAll="true" id="user_consent_dto.from_json.skip_action_guard">
+            <mutation text="_ when false =&gt; DatabaseConstants.actionColumn,"/>
         </regex>
 
         <!-- RULE 4: Skip the consentType guard -->
-        <regex pattern="_when consentType == null =&gt; DatabaseConstants\.consentTypeColumn," dotAll="true" id="user_consent_dto.from_json.skip_consent_type_guard">
-            <mutation text="_when false =&gt; DatabaseConstants.consentTypeColumn,"/>
+        <regex pattern="_ when consentType == null =&gt; DatabaseConstants\.consentTypeColumn," dotAll="true" id="user_consent_dto.from_json.skip_consent_type_guard">
+            <mutation text="_ when false =&gt; DatabaseConstants.consentTypeColumn,"/>
         </regex>
 
         <!-- RULE 5: Drop the .toUtc() on insert -->
