@@ -1,0 +1,158 @@
+name: "Weekly CUJ E2E"
+
+# Runs the Patrol CUJ suite (integration_test/) against a fresh Docker E2E
+# backend (.github/actions/e2e-env) on an Android emulator. See
+# docs/Testing/E2E-CI.md for the retry/quarantine policy, how results are
+# reported, and how to add a new CUJ.
+
+on:
+  schedule:
+    # 03:00 UTC every Monday. Weekly per CA-750 — see docs/Testing/E2E-CI.md.
+    - cron: "0 3 * * 1"
+  issue_comment:
+    types: [created, edited]
+  workflow_dispatch:
+    inputs:
+      backend-ref:
+        description: "construculator-backend ref to run the E2E stack against."
+        required: false
+        default: "master"
+
+permissions:
+  contents: read
+
+jobs:
+  cuj-e2e:
+    name: CUJ E2E (Android)
+    # TODO(CA-980): Android only — iOS functional coverage in CI is
+    # deliberately out of scope for this ticket; revisit by 2026-11-18.
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.issue.pull_request &&
+       contains(github.event.comment.body, '#RunE2E'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Extract PR head ref
+        id: extract-branch
+        if: github.event_name == 'issue_comment'
+        env:
+          PR_NUMBER: ${{ github.event.issue.number }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_JSON=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER")
+          echo "ref=$(echo "$PR_JSON" | jq -r '.head.ref')" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.extract-branch.outputs.ref || github.ref }}
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.4"
+          channel: "stable"
+
+      - name: Install Patrol CLI
+        run: |
+          dart pub global activate patrol_cli
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
+      # Required for reactivecircus/android-emulator-runner on GitHub-hosted
+      # ubuntu-latest runners — see its README's "Running hardware accelerated
+      # emulators on Linux runners" section.
+      - name: Enable KVM group perms
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Start E2E environment
+        id: env
+        uses: ./.github/actions/e2e-env
+        with:
+          backend-ref: ${{ inputs.backend-ref || 'master' }}
+
+      - name: Generate app env file
+        env:
+          E2E_BACKEND_DIR: ${{ github.workspace }}/construculator-backend
+        run: scripts/e2e/generate_e2e_env.sh
+
+      - name: Run CUJ suite on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7_pro
+          disable-animations: true
+          script: |
+            set -uo pipefail
+            scripts/e2e/adb_reverse.sh
+
+            adb shell screenrecord --time-limit 180 /sdcard/e2e.mp4 &
+            recorder_pid=$!
+
+            # One retry absorbs known GitHub-hosted-emulator flake (see
+            # docs/Testing/E2E-CI.md#retry) — it is not meant to paper over a
+            # genuinely broken CUJ, which is what quarantine is for.
+            max_attempts=2
+            attempt=1
+            success=0
+            while [ "$attempt" -le "$max_attempts" ]; do
+              if patrol test \
+                --target integration_test/patrol_test.dart \
+                --flavor fishfood \
+                --dart-define=ENVIRONMENT=dev; then
+                success=1
+                break
+              fi
+              echo "::warning::CUJ suite failed on attempt $attempt of $max_attempts"
+              attempt=$((attempt + 1))
+            done
+
+            kill "$recorder_pid" 2>/dev/null || true
+            sleep 1
+            adb pull /sdcard/e2e.mp4 e2e-recording.mp4 || true
+            adb exec-out screencap -p > e2e-final-state.png || true
+            adb logcat -d > e2e-logcat.txt || true
+
+            [ "$success" -eq 1 ]
+
+      - name: Publish CUJ results summary
+        if: always()
+        run: |
+          xml="$(find build/app/outputs/androidTest-results -name '*.xml' 2>/dev/null | head -1)"
+          if [ -z "$xml" ]; then
+            echo "### CUJ E2E: no JUnit XML produced — the suite failed before reporting results." >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "### CUJ E2E results"
+              echo '```'
+              grep -o '<testsuite[^>]*' "$xml"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload JUnit results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cuj-e2e-junit
+          path: build/app/outputs/androidTest-results/connected/**/*.xml
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cuj-e2e-failure-artifacts
+          path: |
+            e2e-recording.mp4
+            e2e-final-state.png
+            e2e-logcat.txt
+          if-no-files-found: warn
+          retention-days: 30
