@@ -2219,6 +2219,78 @@
   "calculatorGroupTrigonometry": "Trigonometry",
   "@calculatorGroupTrigonometry": {
     "description": "Label for the Trigonometry function group tab in the calculator"
+  },
+  "calculatorHistoryPlaceholder": "Here will show what you type",
+  "@calculatorHistoryPlaceholder": {
+    "description": "Placeholder shown in the calculator history panel before the user types anything"
+  },
+  "calculatorKeyWidth": "Width",
+  "@calculatorKeyWidth": {
+    "description": "Calculator key label for the width dimension"
+  },
+  "calculatorKeyLength": "Length",
+  "@calculatorKeyLength": {
+    "description": "Calculator key label for the length dimension"
+  },
+  "calculatorKeyHeight": "Height",
+  "@calculatorKeyHeight": {
+    "description": "Calculator key label for the height dimension"
+  },
+  "calculatorKeyPitch": "Pitch",
+  "@calculatorKeyPitch": {
+    "description": "Calculator key label for roof pitch"
+  },
+  "calculatorKeyCircle": "Circle",
+  "@calculatorKeyCircle": {
+    "description": "Calculator key label for the circle function"
+  },
+  "calculatorKeyRise": "Rise",
+  "@calculatorKeyRise": {
+    "description": "Calculator key label for the vertical rise of a slope"
+  },
+  "calculatorKeyRun": "Run",
+  "@calculatorKeyRun": {
+    "description": "Calculator key label for the horizontal run of a slope"
+  },
+  "calculatorKeyRadius": "Radius",
+  "@calculatorKeyRadius": {
+    "description": "Calculator key label for the radius dimension"
+  },
+  "calculatorKeyLbs": "Lbs",
+  "@calculatorKeyLbs": {
+    "description": "Calculator key label for pounds, a unit of weight"
+  },
+  "calculatorKeyKg": "Kg",
+  "@calculatorKeyKg": {
+    "description": "Calculator key label for kilograms, a unit of weight"
+  },
+  "calculatorKeyTons": "Tons",
+  "@calculatorKeyTons": {
+    "description": "Calculator key label for tons, a unit of weight"
+  },
+  "calculatorKeyDrywall": "Drywall",
+  "@calculatorKeyDrywall": {
+    "description": "Calculator key label for the drywall material function"
+  },
+  "calculatorKeyFence": "Fence",
+  "@calculatorKeyFence": {
+    "description": "Calculator key label for the fence material function"
+  },
+  "calculatorKeySin": "SIN",
+  "@calculatorKeySin": {
+    "description": "Calculator key label for the sine trigonometric function"
+  },
+  "calculatorKeyCos": "COS",
+  "@calculatorKeyCos": {
+    "description": "Calculator key label for the cosine trigonometric function"
+  },
+  "calculatorKeyTan": "TAN",
+  "@calculatorKeyTan": {
+    "description": "Calculator key label for the tangent trigonometric function"
+  },
+  "calculatorResultPosts": "Posts",
+  "@calculatorResultPosts": {
+    "description": "Result label for the number of fence posts computed by the fence function"
   }
 }
 

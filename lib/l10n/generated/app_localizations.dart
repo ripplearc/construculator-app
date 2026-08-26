@@ -2679,6 +2679,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Trigonometry'**
   String get calculatorGroupTrigonometry;
+
+  /// Placeholder shown in the calculator history panel before the user types anything
+  ///
+  /// In en, this message translates to:
+  /// **'Here will show what you type'**
+  String get calculatorHistoryPlaceholder;
+
+  /// Calculator key label for the width dimension
+  ///
+  /// In en, this message translates to:
+  /// **'Width'**
+  String get calculatorKeyWidth;
+
+  /// Calculator key label for the length dimension
+  ///
+  /// In en, this message translates to:
+  /// **'Length'**
+  String get calculatorKeyLength;
+
+  /// Calculator key label for the height dimension
+  ///
+  /// In en, this message translates to:
+  /// **'Height'**
+  String get calculatorKeyHeight;
+
+  /// Calculator key label for roof pitch
+  ///
+  /// In en, this message translates to:
+  /// **'Pitch'**
+  String get calculatorKeyPitch;
+
+  /// Calculator key label for the circle function
+  ///
+  /// In en, this message translates to:
+  /// **'Circle'**
+  String get calculatorKeyCircle;
+
+  /// Calculator key label for the vertical rise of a slope
+  ///
+  /// In en, this message translates to:
+  /// **'Rise'**
+  String get calculatorKeyRise;
+
+  /// Calculator key label for the horizontal run of a slope
+  ///
+  /// In en, this message translates to:
+  /// **'Run'**
+  String get calculatorKeyRun;
+
+  /// Calculator key label for the radius dimension
+  ///
+  /// In en, this message translates to:
+  /// **'Radius'**
+  String get calculatorKeyRadius;
+
+  /// Calculator key label for pounds, a unit of weight
+  ///
+  /// In en, this message translates to:
+  /// **'Lbs'**
+  String get calculatorKeyLbs;
+
+  /// Calculator key label for kilograms, a unit of weight
+  ///
+  /// In en, this message translates to:
+  /// **'Kg'**
+  String get calculatorKeyKg;
+
+  /// Calculator key label for tons, a unit of weight
+  ///
+  /// In en, this message translates to:
+  /// **'Tons'**
+  String get calculatorKeyTons;
+
+  /// Calculator key label for the drywall material function
+  ///
+  /// In en, this message translates to:
+  /// **'Drywall'**
+  String get calculatorKeyDrywall;
+
+  /// Calculator key label for the fence material function
+  ///
+  /// In en, this message translates to:
+  /// **'Fence'**
+  String get calculatorKeyFence;
+
+  /// Calculator key label for the sine trigonometric function
+  ///
+  /// In en, this message translates to:
+  /// **'SIN'**
+  String get calculatorKeySin;
+
+  /// Calculator key label for the cosine trigonometric function
+  ///
+  /// In en, this message translates to:
+  /// **'COS'**
+  String get calculatorKeyCos;
+
+  /// Calculator key label for the tangent trigonometric function
+  ///
+  /// In en, this message translates to:
+  /// **'TAN'**
+  String get calculatorKeyTan;
+
+  /// Result label for the number of fence posts computed by the fence function
+  ///
+  /// In en, this message translates to:
+  /// **'Posts'**
+  String get calculatorResultPosts;
 }
 
 class _AppLocalizationsDelegate
