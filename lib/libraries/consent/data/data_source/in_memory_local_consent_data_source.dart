@@ -40,7 +40,10 @@ class InMemoryLocalConsentDataSource implements LocalConsentDataSource {
   }) : _publishedVersions = seedVersions ?? _defaultSeed();
 
   static Map<ConsentType, ConsentVersionDto> _defaultSeed() {
-    final publishedAt = DateTime.fromMillisecondsSinceEpoch(0);
+    // UTC rather than local: publishedAt reaches ConsentVersion's props,
+    // so a local epoch would compare differently by machine. Same reason
+    // as parseTimestampOrEpoch in consent_wire_values.dart.
+    final publishedAt = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
     return {
       for (final type in ConsentType.values)
         type: ConsentVersionDto(
