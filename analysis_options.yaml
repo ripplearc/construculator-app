@@ -74,6 +74,12 @@ custom_lint:
         # alternative to instantiating them.
         - 'MetricSeries'
         - 'SeriesPoint'
+        # The per-journey and per-suite groupings those series are collected
+        # into, and the per-CUJ rollup. Also computed from stored runs rather
+        # than injected.
+        - 'SystemHealthGroup'
+        - 'E2eGroup'
+        - 'CujSummary'
 
 linter:
   # The lint rules applied to this project can be customized in the
