@@ -52,6 +52,10 @@ dev_dependencies:
   custom_lint: 0.8.1
   bloc_test: 10.0.0
   patrol: 4.9.0
+  # Used only by scripts/e2e/build_e2e_report.dart to read the instrumentation
+  # runner's JUnit XML. Already resolved transitively at this version, so
+  # declaring it changes nothing about the resolution.
+  xml: 6.6.1
   integration_test:
     sdk: flutter
   fake_async: 1.3.3
