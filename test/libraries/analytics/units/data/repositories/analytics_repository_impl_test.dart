@@ -166,7 +166,7 @@ void main() {
 
         _expectRight(result, (_) {
           expect(
-            fakePosthogWrapper.capturedEvents.single.properties?['app_version'],
+            fakePosthogWrapper.capturedEvents.single.properties!['app_version'],
             'overridden',
           );
         });
