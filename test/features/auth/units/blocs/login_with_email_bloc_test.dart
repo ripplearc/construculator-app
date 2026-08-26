@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:construculator/features/auth/presentation/bloc/login_with_email_bloc/login_with_email_bloc.dart';
 import 'package:construculator/features/auth/testing/auth_test_module.dart';
@@ -183,6 +185,55 @@ void main() {
         expect: () => [
           LoginWithEmailAvailabilityLoading(),
           isA<LoginWithEmailAvailabilityCheckFailure>(),
+        ],
+      );
+
+      blocTest<LoginWithEmailBloc, LoginWithEmailState>(
+        'discards a superseded availability check that resolves after a '
+        'newer check — the stale verdict is never emitted',
+        setUp: () {
+          fakeSupabase.setRpcResponse('check_email_exists', true);
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+        },
+        build: () => bloc,
+        act: (bloc) async {
+          final staleCheckGate = fakeSupabase.completer!;
+          bloc.add(LoginEmailAvailabilityCheckRequested('stale@example.co'));
+          await bloc.stream.firstWhere(
+            (s) => s is LoginWithEmailAvailabilityLoading,
+          );
+          // The newer check awaits its own gate so the stale check can stay
+          // parked while the newer one runs to completion.
+          final newerCheckGate = Completer<void>();
+          fakeSupabase.completer = newerCheckGate;
+          bloc.add(LoginEmailAvailabilityCheckRequested('newer@example.com'));
+          newerCheckGate.complete();
+          await bloc.stream.firstWhere(
+            (s) =>
+                s is LoginWithEmailAvailabilityCheckSuccess &&
+                s.isEmailRegistered,
+          );
+          // The stale check resumes against a contradictory verdict, so a
+          // leaked emit would show up in the captured sequence.
+          fakeSupabase.setRpcResponse('check_email_exists', false);
+          fakeSupabase.shouldDelayOperations = false;
+          staleCheckGate.complete();
+          // Fence: the stale continuation resumes before this ungated
+          // check's RPC resolves, so awaiting the fence's verdict proves the
+          // stale check already ran its generation check and discarded.
+          bloc.add(LoginEmailAvailabilityCheckRequested('fence@example.com'));
+          await bloc.stream.firstWhere(
+            (s) =>
+                s is LoginWithEmailAvailabilityCheckSuccess &&
+                !s.isEmailRegistered,
+          );
+        },
+        expect: () => [
+          LoginWithEmailAvailabilityLoading(),
+          LoginWithEmailAvailabilityCheckSuccess(isEmailRegistered: true),
+          LoginWithEmailAvailabilityLoading(),
+          LoginWithEmailAvailabilityCheckSuccess(isEmailRegistered: false),
         ],
       );
     });
