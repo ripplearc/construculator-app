@@ -76,7 +76,9 @@ class MailpitClient {
       final response = await request.close();
       final body = await response.transform(utf8.decoder).join();
       if (response.statusCode != 200) {
-        throw HttpException('Mailpit returned ${response.statusCode} for $uri: $body');
+        throw HttpException(
+          'Mailpit returned ${response.statusCode} for $uri: $body',
+        );
       }
       return jsonDecode(body) as Map<String, dynamic>;
     } finally {
