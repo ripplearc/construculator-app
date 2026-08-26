@@ -1,5 +1,6 @@
 // coverage:ignore-file
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
+import 'package:construculator/libraries/analytics/domain/repositories/feature_flag_repository.dart';
 import 'package:construculator/libraries/config/interfaces/config.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/sentry/interfaces/sentry_wrapper.dart';
@@ -110,6 +111,12 @@ class AppBootstrap {
   /// connects after authentication.
   final PowerSyncDatabase powerSyncDatabase;
 
+  /// The feature flag repository, resolved to either the real PostHog-backed
+  /// implementation or `NoOpFeatureFlagRepository` based on
+  /// `ANALYTICS_ENABLED`. Must be fully initialized (if real) before passing
+  /// to the app module.
+  final FeatureFlagRepository featureFlagRepository;
+
   AppBootstrap({
     required this.envLoader,
     required this.config,
@@ -117,5 +124,6 @@ class AppBootstrap {
     required this.sentryWrapper,
     required this.analyticsRepository,
     required this.powerSyncDatabase,
+    required this.featureFlagRepository,
   });
 }
