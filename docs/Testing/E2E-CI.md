@@ -97,6 +97,50 @@ last attempt:
 when a retry rescues a run. `flake_rate` is what that number hides, which is
 why the trend dashboard plots both.
 
+## The Trend Store
+
+Runs are appended to the orphan **`e2e-data`** branch, one file per run:
+
+```
+runs/<suite>/<captured-at>-<commit>.json
+index.json
+```
+
+`e2e-data` shares no history with `main`, so the store grows without adding
+commits or files to the source tree. `index.json` is always **rebuilt** from the
+stored runs rather than appended to, so a partially written index repairs itself
+on the next publish, and re-publishing a run overwrites it rather than
+double-counting a retried job. This is the same shape CA-782's `perf-data` store
+uses, deliberately duplicated rather than shared — the two live on independent
+stacks.
+
+`e2e-data` is the **raw archive**, not the published site. The rendered trend
+dashboard is a separate artifact published to `gh-pages` (CA-978, CA-988).
+
+Only default-branch runs are recorded. A `#RunE2E` run on a PR uploads its
+artifacts but records no trend point, so unmerged code cannot move the pass and
+flake rates. A run that produced no attempts at all — an environment or build
+failure rather than a suite result — is also skipped, so infrastructure outages
+do not enter the history as measured runs.
+
+`publish_e2e_run.sh` does not push unless given `--push`, so it is safe to run
+locally to inspect what would be recorded:
+
+```bash
+dart run scripts/e2e/build_e2e_report.dart \
+  --attempts-dir build/e2e-attempts \
+  --output build/e2e/e2e-run.json
+
+bash scripts/e2e/publish_e2e_run.sh --run-file build/e2e/e2e-run.json
+```
+
+### The `suite` field
+
+Every record carries a `suite` (currently `cuj_v1`), and runs are partitioned by
+it on disk. A pass rate is only meaningful relative to the set of CUJs it was
+measured over; publishing under a new suite id starts a **new series** instead
+of moving the existing one for reasons unrelated to the app's health.
+
 ## Quarantine
 
 With one CUJ today, quarantine is a manual, documented step rather than
