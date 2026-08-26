@@ -30,4 +30,29 @@ class TestConfig {
     'E2E_LOGIN_PASSWORD',
     defaultValue: 'Mypass@1',
   );
+
+  /// Base URL of the Mailpit mail catcher started by `scripts/e2e/start_env.sh`
+  /// (or the `e2e-env` GitHub Action in CI). `scripts/e2e/adb_reverse.sh`
+  /// forwards this same port onto a connected Android device/emulator, so one
+  /// URL works on host, device and iOS simulator alike.
+  static const String mailpitUrl = String.fromEnvironment(
+    'E2E_MAILPIT_URL',
+    defaultValue: 'http://localhost:54324',
+  );
+
+  /// Password CUJ-2 (registration) sets on the account-details step. Not a
+  /// secret — see [loginPassword].
+  static const String registerPassword = String.fromEnvironment(
+    'E2E_REGISTER_PASSWORD',
+    defaultValue: 'Mypass@1',
+  );
+
+  /// Builds a new email for a single CUJ-2 (registration) run.
+  ///
+  /// Registration creates a real user against the backend, so the email must
+  /// be unique per run: a fixed address would let a Mailpit search match a
+  /// stale message from a previous run, and would collide with the account
+  /// that run already registered.
+  static String uniqueRegisterEmail() =>
+      'cuj2-${DateTime.now().microsecondsSinceEpoch}@example.com';
 }

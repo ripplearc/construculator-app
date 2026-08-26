@@ -378,6 +378,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   ),
                   const SizedBox(height: CoreSpacing.space8),
                   CoreTextField(
+                    key: const Key('create_account_first_name_field'),
                     label: l10n.firstNameLabel,
                     hintText: l10n.firstNameHint,
                     controller: _firstNameController,
@@ -385,6 +386,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   ),
                   const SizedBox(height: CoreSpacing.space6),
                   CoreTextField(
+                    key: const Key('create_account_last_name_field'),
                     label: l10n.lastNameLabel,
                     hintText: l10n.lastNameHint,
                     controller: _lastNameController,
@@ -402,6 +404,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                     )
                   else
                     SingleItemSelector<String>(
+                      key: const Key('create_account_role_selector'),
                       labelText: l10n.roleLabel,
                       hintText: l10n.roleHint,
                       onOpen: _onItemSelectorOpened,
@@ -481,6 +484,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   ),
                   const SizedBox(height: CoreSpacing.space6),
                   CoreTextField(
+                    key: const Key('create_account_password_field'),
                     label: l10n.passwordLabel,
                     hintText: l10n.passwordHint,
                     controller: _passwordController,
@@ -502,6 +506,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   ),
                   const SizedBox(height: CoreSpacing.space6),
                   CoreTextField(
+                    key: const Key('create_account_confirm_password_field'),
                     label: l10n.confirmPasswordLabel,
                     hintText: l10n.confirmPasswordHint,
                     controller: _confirmPasswordController,
@@ -532,6 +537,7 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   ),
                   const SizedBox(height: 24),
                   CoreButton(
+                    key: const Key('create_account_submit_button'),
                     centerAlign: true,
                     isDisabled:
                         !_canPressContinue || state is CreateAccountLoading,

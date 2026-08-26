@@ -256,6 +256,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
                   ),
                   const SizedBox(height: CoreSpacing.space10),
                   CoreTextField(
+                    key: const Key('register_email_field'),
                     focusNode: _emailTextFieldFocusNode,
                     controller: _emailController,
                     label: l10n.emailLabel,
@@ -265,6 +266,7 @@ class _RegisterWithEmailPageState extends State<RegisterWithEmailPage> {
                   ),
                   const SizedBox(height: CoreSpacing.space6),
                   CoreButton(
+                    key: const Key('register_email_continue_button'),
                     onPressed: () {
                       _emailTextFieldFocusNode.unfocus();
                       BlocProvider.of<RegisterWithEmailBloc>(context).add(
