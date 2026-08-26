@@ -11,6 +11,8 @@ import 'package:construculator/features/dashboard/presentation/bloc/recent_estim
 import 'package:construculator/features/dashboard/presentation/widgets/projects_bottom_sheet.dart';
 import 'package:construculator/features/estimation/presentation/pages/cost_estimation_landing_page.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/analytics/domain/repositories/feature_flag_repository.dart';
+import 'package:construculator/libraries/analytics/testing/fake_feature_flag_repository.dart';
 import 'package:construculator/libraries/auth/data/models/auth_user.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/estimation/domain/repositories/cost_estimation_repository.dart';
@@ -79,6 +81,8 @@ void main() {
 
     appBootstrap = FakeAppBootstrapFactory.create(
       supabaseWrapper: fakeSupabaseWrapper,
+      featureFlagRepository: FakeFeatureFlagRepository()
+        ..flagOverrides['calculator-enabled'] = true,
     );
 
     Modular.init(ShellModule(appBootstrap));
@@ -277,8 +281,9 @@ void main() {
   });
 
   group('Calculator action button', () {
-    testWidgets('tapping the trailing button pushes the calculator route',
-        (tester) async {
+    testWidgets(
+        'tapping the trailing button pushes the calculator route when '
+        'calculator-enabled is true', (tester) async {
       final fakeRouter = FakeAppRouter();
       Modular.replaceInstance<AppRouter>(fakeRouter);
 
@@ -293,6 +298,25 @@ void main() {
         fakeRouter.navigationHistory,
         contains(const RouteCall(calculatorBaseRoute, null)),
       );
+    });
+
+    testWidgets(
+        'tapping the trailing button does nothing when calculator-enabled '
+        'is false', (tester) async {
+      final fakeRouter = FakeAppRouter();
+      Modular.replaceInstance<AppRouter>(fakeRouter);
+      Modular.replaceInstance<FeatureFlagRepository>(
+        FakeFeatureFlagRepository(),
+      );
+
+      await tester.pumpWidget(makeApp());
+      await tester.pumpAndSettle();
+
+      final trailingIcon = find.byType(CoreIconWidget).last;
+      await tester.tap(trailingIcon);
+      await tester.pump();
+
+      expect(fakeRouter.navigationHistory, isEmpty);
     });
   });
 

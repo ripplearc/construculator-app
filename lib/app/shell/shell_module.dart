@@ -50,7 +50,7 @@ class ShellModule extends Module {
   void binds(Injector i) {
     i.addSingleton<TabModuleManager>(() => TabModuleManager(appBootstrap));
     i.add<AppShellBloc>(
-      () => AppShellBloc(moduleLoader: i.get()),
+      () => AppShellBloc(moduleLoader: i.get(), featureFlagRepository: i.get()),
     );
     i.addLazySingleton<ProjectDropdownBloc>(
       () => ProjectDropdownBloc(
