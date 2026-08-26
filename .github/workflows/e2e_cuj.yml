@@ -103,14 +103,24 @@ jobs:
             max_attempts=2
             attempt=1
             success=0
+            results_dir=build/app/outputs/androidTest-results/connected
             while [ "$attempt" -le "$max_attempts" ]; do
               if patrol test \
                 --target integration_test/patrol_test.dart \
                 --flavor fishfood \
                 --dart-define=ENVIRONMENT=dev; then
                 success=1
-                break
               fi
+
+              # Gradle rewrites the results directory on every invocation, so a
+              # failed first attempt's XML is gone the moment the retry starts.
+              # Snapshotting each attempt is what makes a retried-and-passed
+              # case distinguishable from a case that simply passed — the only
+              # flake signal this suite produces.
+              mkdir -p "build/e2e-attempts/attempt-$attempt"
+              cp -r "$results_dir/." "build/e2e-attempts/attempt-$attempt/" || true
+
+              [ "$success" -eq 1 ] && break
               echo "::warning::CUJ suite failed on attempt $attempt of $max_attempts"
               attempt=$((attempt + 1))
             done
@@ -122,6 +132,16 @@ jobs:
             adb logcat -d > e2e-logcat.txt || true
 
             [ "$success" -eq 1 ]
+
+      - name: Build e2e-run.json
+        if: always()
+        run: |
+          flutter pub get
+          dart run scripts/e2e/build_e2e_report.dart \
+            --attempts-dir build/e2e-attempts \
+            --output build/e2e/e2e-run.json \
+            --commit "$(git rev-parse --short HEAD)" \
+            --captured-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
       - name: Publish CUJ results summary
         if: always()
@@ -143,7 +163,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cuj-e2e-junit
-          path: build/app/outputs/androidTest-results/connected/**/*.xml
+          # Per-attempt snapshots rather than the results directory itself: the
+          # directory only ever holds the last attempt, so uploading it discards
+          # the failed first attempt of every retried run.
+          path: |
+            build/e2e-attempts/**/*.xml
+            build/e2e/e2e-run.json
           if-no-files-found: warn
           retention-days: 30
 
