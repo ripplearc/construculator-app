@@ -129,7 +129,7 @@ Real Stage as pulled from YouTrack today, not the ticket text:
 | [CA-645](https://ripplearc.youtrack.cloud/issue/CA-645) | Flutter schema, auto-table creation | **Review** | Unassigned | 2 | **Merged** — PR #283 |
 | [CA-646](https://ripplearc.youtrack.cloud/issue/CA-646) | Backend connector, RLS error handling | **Review** | Unassigned | 2 | **Merged** — PR #284 |
 | [CA-647](https://ripplearc.youtrack.cloud/issue/CA-647) | Sync Streams for core entities | **Review** | Unassigned | 2 | No PR in this repo — sync-stream YAML lives in the backend repo, unverified here |
-| [CA-648](https://ripplearc.youtrack.cloud/issue/CA-648) | On-demand Sync Stream, cost estimates | **Review** | Unassigned | 0 | Open — PRs #364, #367, #405 (see above); blocked by [CA-917](https://ripplearc.youtrack.cloud/issue/CA-917) |
+| [CA-648](https://ripplearc.youtrack.cloud/issue/CA-648) | On-demand Sync Stream, cost estimates | **Review** | Unassigned | 0 | Open — PRs #364, #367, #405 (see above); [CA-917](https://ripplearc.youtrack.cloud/issue/CA-917) tracks a non-blocking `pubspec.yaml` nit on #367, informally resolved (see below) |
 
 All five sit at Stage=Review and are unassigned — none have progressed further despite
 CA-645/CA-646's code already being on `main`. Interpretation: the *code* for CA-645/646
@@ -139,14 +139,22 @@ corresponding code in *this* repo to point to — their deliverables (Docker com
 `sync-config.yaml` stream definitions) live in the backend repo referenced by the parent
 ticket, which this spike did not have access to audit.
 
-**CA-648 is explicitly blocked** by
-[CA-917](https://ripplearc.youtrack.cloud/issue/CA-917): a reviewer flagged that PR #367
-promotes `sqlite_async` from a transitive to a direct `pubspec.yaml` dependency (needed
-because `powersync_database_wrapper_impl.dart` imports `SqliteWriteContext`), which
-violates the project convention of leaving `pubspec.yaml`/`pubspec.lock` untouched in
-feature branches. This needs a team decision — accept the dependency promotion, or spend
-~half a day changing `writeTransaction`'s signature to avoid the SDK import — before #367
-can merge.
+**CA-917, tracking PR #367's `pubspec.yaml` change, reads as informally resolved.** A
+reviewer flagged (2026-06-30) that PR #367 promotes `sqlite_async` from a transitive to a
+direct `pubspec.yaml` dependency (needed because `powersync_database_wrapper_impl.dart`
+imports `SqliteWriteContext`), which violates the project convention of leaving
+`pubspec.yaml`/`pubspec.lock` untouched in feature branches, and offered two options: (a)
+accept the dependency promotion as impl-layer scaffolding, or (b) change
+`writeTransaction`'s signature to avoid the SDK import entirely. What actually happened is
+a hybrid, not a pick of either option outright: a later commit (R2, "improve nitss") added
+a `_WriteContextAdapter` closure so the `sqlite_async` type no longer leaks into the
+repository/interface layer above the impl — but it never touched `pubspec.yaml`, so
+`sqlite_async: ^0.13.1` remains a direct dependency today, unchanged since R1. The nit was
+flagged 🍊 (non-blocking), and that same review was `APPROVED`; PR #367 has since collected
+a second `APPROVED` review (2026-08-19) with the pubspec change still in place. No explicit
+team decision is recorded, but two approvals with the dependency promotion left standing is
+the closest thing to one — treat CA-917 as informally accepted via option (a) rather than
+as a blocker still awaiting a call.
 
 ---
 
@@ -262,30 +270,30 @@ the source of truth for local data. On **cancel**, the watch subscription is can
 `handle.unsubscribe()` releases the on-demand stream — so it only stays active while
 something is actually watching it.
 
-### ⚠️ The skill doc's teaching example lags behind this — don't copy it as-is
+### The skill doc's teaching example now matches this
 
 `skills/code-data-powersync/SKILL.md` (PR #368, still open) teaches this exact pattern to
-every future implementer, and its worked example has been through three review rounds. As
-of the latest round (R3, 2026-07-09), reviewer `ripplearcgit` still had **two open 🔴
-findings** against it:
+every future implementer. As of review round R3 (2026-07-09), reviewer `ripplearcgit` had
+flagged **two open 🔴 findings** against the worked example:
 
-1. `controller.onCancel` in the SKILL.md example is assigned **after** the `await
+1. `controller.onCancel` in the SKILL.md example was assigned **after** the `await
    _wrapper.syncStream(...)` call, not before. If the subscriber cancels while that await
    is still pending, the cancel fires before `onCancel` is set — Dart does not retroactively
    invoke a handler assigned after the cancel already happened — so both the sync-stream
    handle and the watch subscription leak. Reviewer reproduced this directly against
    `Stream.multi` (Dart 3.29.2) to confirm.
-2. The example's `await _wrapper.syncStream(...)` isn't wrapped in try/catch, so a throw
-   (JWT denial, no network) escapes as an unhandled Zone exception instead of reaching
+2. The example's `await _wrapper.syncStream(...)` wasn't wrapped in try/catch, so a throw
+   (JWT denial, no network) escaped as an unhandled Zone exception instead of reaching
    `controller.addError` — contradicting the skill's own testing guidance a few sections
    later, which asserts that exact propagation path.
 
-**The production code above does not have either bug** — `onCancel` is registered before
-the `await`, with a `listenerCancelled` flag checked immediately after it resolves, and the
-`syncStream()` call is wrapped in try/catch. The fix just hasn't been back-ported from the
-real implementation into the SKILL.md teaching example yet. Until PR #368 merges with that
-fix applied, don't copy the pattern out of SKILL.md directly — copy it from
-`powersync_cost_estimation_data_source_impl.dart` instead.
+**Both were fixed the same day**, in commit `ea326af25` ("R3: fix: cancel-before-activation
+race and unhandled syncStream() throw in on-demand example"): `onCancel` is now registered
+synchronously before the `syncStream()` await (with a `cancelled` flag checked once it
+resolves, releasing the handle immediately if a cancel raced it), and the `syncStream()`
+call is wrapped in try/catch so a throw surfaces via `controller.addError` instead of
+escaping as an unhandled exception. The example now matches the production code above, and
+is safe to copy as-is.
 
 ---
 
@@ -377,11 +385,15 @@ None of these were independently verified against the backend repo in this spike
 Punch list of what's real vs. still needed before this stack can land, gathered from PR
 review threads and direct code reading — not from re-running the app:
 
-- **PR #368 (SKILL.md) has 2 open 🔴 findings**, both already fixed in the real
-  implementation but not yet back-ported into the doc's example — see
+- **PR #368 (SKILL.md)'s 2 🔴 findings are fixed** (commit `ea326af25`, same-day fix) —
+  the teaching example now matches the production implementation and is safe to copy — see
   [On-Demand Sync-Stream Lifecycle](#on-demand-sync-stream-lifecycle).
-- **CA-917 blocks PR #367** on an unresolved `sqlite_async` direct-dependency decision —
-  needs a team call before that PR can merge.
+- **CA-917 (`sqlite_async` direct dependency on PR #367) reads as informally resolved,
+  not blocking.** `sqlite_async` is still a direct `pubspec.yaml` dependency (added R1,
+  unchanged since); the SDK-type leak into the repository layer was separately fixed via
+  an adapter closure in R2. The flag was a non-blocking nit, and #367 has since collected
+  two `APPROVED` reviews (2026-06-30, 2026-08-19) with the dependency promotion still in
+  place — see [CA-643 Subtask Status](#ca-643-subtask-status).
 - **`CostEstimationRepositoryImpl` doesn't consume `PowerSyncCostEstimationDataSource` yet**
   (PR #405) — it's registered in DI but the repository still reads through the Supabase-
   direct data source. The switchover PR wasn't found in the current stack.
