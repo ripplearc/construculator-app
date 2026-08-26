@@ -20,6 +20,8 @@ on:
 
 permissions:
   contents: read
+  # Read-only PR lookup for the #RunE2E trigger's branch extraction.
+  pull-requests: read
 
 jobs:
   cuj-e2e:
