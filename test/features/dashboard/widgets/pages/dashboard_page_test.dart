@@ -152,6 +152,10 @@ void main() {
 
     expect(find.text('Welcome back, $firstName $lastName!'), findsOneWidget);
     expect(find.text('You are now logged in to your account'), findsOneWidget);
+    expect(
+      tester.widget<CoreIconWidget>(find.byType(CoreIconWidget)).icon,
+      CoreIcons.home,
+    );
   });
 
   testWidgets('renders RecentEstimationsSection', (tester) async {
