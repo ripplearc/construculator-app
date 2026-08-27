@@ -396,11 +396,16 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
     // repaints the results list over the validation surface.
     final generation = ++_searchExecutionGeneration;
     _loadMoreInFlight = false;
+    // Reset before the first await on both branches: a submit supersedes
+    // the active search either way, and a load-more handled during the
+    // non-empty branch's RPC round trip would otherwise pass the guards on
+    // the previous search's stale cursor and repaint its rows over the new
+    // search's loading view.
+    _activeResults = const SearchResults();
+    _estimationsNextOffset = 0;
+    _hasMoreEstimations = false;
 
     if (trimmedQuery.isEmpty) {
-      _activeResults = const SearchResults();
-      _estimationsNextOffset = 0;
-      _hasMoreEstimations = false;
       emit(const GlobalSearchEmptyQuery());
       return;
     }
