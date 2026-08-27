@@ -117,6 +117,11 @@ class RecentEstimationsBloc
     // instead of skeletoning forever. The project-changed subscription
     // stays alive, so a later successful load (e.g. a retry from the
     // projects sheet) still re-arms the watch.
+    // TODO(CA-1017): re-arming rides on an id CHANGE, so a transient refresh
+    // failure that recovers to the same selected project parks this section
+    // on the error banner permanently — guard on RecentEstimationsLoaded or
+    // re-arm on every dropdown LoadSuccess.
+    // https://ripplearc.youtrack.cloud/issue/CA-1017
     _logger.warning('Project load failed; leaving the loading hold');
     _subscription?.cancel();
     _subscription = null;

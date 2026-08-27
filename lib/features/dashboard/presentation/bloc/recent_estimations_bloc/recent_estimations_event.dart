@@ -20,7 +20,7 @@ class RecentEstimationsWatchStarted extends RecentEstimationsEvent {
 /// waiting forever. Dispatched by the shell when the project dropdown
 /// load reaches its failure state (CA-900).
 class RecentEstimationsProjectLoadFailed extends RecentEstimationsEvent {
-  /// Defines a constructor for the project-load-failure signal.
+  /// Creates a [RecentEstimationsProjectLoadFailed] event.
   const RecentEstimationsProjectLoadFailed();
 }
 
