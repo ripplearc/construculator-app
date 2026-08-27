@@ -10,6 +10,9 @@
 ## Configuration
 - [Launcher Icons](Launcher-Icons-Configuration)
 
+## Data & Sync
+- [PowerSync Integration](PowerSync-Integration)
+
 ## Security
 - [Secure Storage](Secure-Storage)
 - [SSL Pinning](SSL-Pinning-Implementation-Guide)
