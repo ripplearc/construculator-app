@@ -1237,6 +1237,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get perUnitCostLabel => 'Per unit cost*';
 
   @override
+  String get unitOfMeasurementLabel => 'UOM';
+
+  @override
   String get unitOfMeasurementHint => 'UOM';
 
   @override
@@ -1280,6 +1283,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get unitSheets => 'Sheets';
+
+  @override
+  String get uomSheetTitle => 'UOM';
+
+  @override
+  String get uomAddModeQuestion => 'How you want to add a UOM?';
+
+  @override
+  String get uomFromListOption => 'From list';
+
+  @override
+  String get uomManuallyOption => 'Manually';
+
+  @override
+  String get uomManualInputHint => 'Input unit of measurement';
+
+  @override
+  String get addUomButton => 'Add UOM';
+
+  @override
+  String get uomCategoryLength => 'Length';
+
+  @override
+  String get uomCategoryArea => 'Area';
+
+  @override
+  String get uomCategoryVolume => 'Volume';
+
+  @override
+  String get uomCategoryWeight => 'Weight';
+
+  @override
+  String get uomCategoryCount => 'Count';
+
+  @override
+  String get uomCategoryTime => 'Time';
 
   @override
   String get otherMaterialDetailsButton => 'Other material details';
