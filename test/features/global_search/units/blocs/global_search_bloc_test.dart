@@ -1449,6 +1449,72 @@ void main() {
           );
         },
       );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'ignores a load-more dispatched inside a non-empty submit\'s '
+        'in-flight window — the previous search\'s cursor must not survive '
+        'into the new one',
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          await performFullFirstPage(bloc);
+          // Gate the fresh search's RPC so the load-more lands inside its
+          // in-flight window, where the previous search's pagination fields
+          // would be the only thing letting it through the guards.
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          bloc.add(const GlobalSearchPerformed(query: 'fresh'));
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadInProgress && state.query == 'fresh',
+          );
+          bloc.add(const GlobalSearchLoadMoreRequested());
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            _globalSearchResponse(estimations: _fakeEstimationPage(3)),
+          );
+          fakeSupabase.shouldDelayOperations = false;
+          fakeSupabase.completer!.complete();
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchLoadSuccess &&
+                state.results.estimations.length == 3,
+          );
+        },
+        expect: () => [
+          const GlobalSearchLoadInProgress(query: 'wall'),
+          isA<GlobalSearchLoadSuccess>().having(
+            (s) => s.results.estimations,
+            'first search results',
+            hasLength(20),
+          ),
+          const GlobalSearchLoadInProgress(query: 'fresh'),
+          // No emission from the rejected load-more may interleave here:
+          // the submit reset the cursor before its await, so the guard
+          // rejects on _hasMoreEstimations.
+          isA<GlobalSearchLoadSuccess>()
+              .having(
+                (s) => s.results.estimations,
+                'fresh first page owns the surface',
+                hasLength(3),
+              )
+              .having((s) => s.hasMoreEstimations, 'hasMore', isFalse),
+        ],
+        verify: (_) {
+          final paramsPerCall = globalSearchRpcParams();
+          expect(
+            paramsPerCall,
+            hasLength(2),
+            reason:
+                'first search and the fresh search only — the load-more in '
+                'the in-flight window must not fetch a page of its own',
+          );
+          expect(
+            paramsPerCall.last['estimations_offset'],
+            0,
+            reason: 'the fresh search must start from the reset cursor',
+          );
+        },
+      );
     });
 
     group('GlobalSearchQueryUpdated', () {
