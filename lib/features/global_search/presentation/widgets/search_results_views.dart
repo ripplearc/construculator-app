@@ -14,7 +14,6 @@ const double _kLoadMoreExtentThreshold = 200.0;
 // which is sized for a full-page loading surface rather than a list footer.
 const double _kLoadMoreIndicatorSize = CoreSpacing.space12;
 
-// Hairline rule separating the last row from the end-of-results caption.
 const double _kEndOfResultsDividerHeight = 1.0;
 
 /// Scrollable list of search results grouped under a "Most relevant" header.
@@ -95,6 +94,23 @@ class SearchResultsList extends StatelessWidget {
     return false;
   }
 
+  // The one caption style every footer shares; centralized so the three
+  // captions cannot drift apart the way the failure footer's colour once did.
+  Text _buildFooterCaption(
+    BuildContext context,
+    String text, {
+    required Key key,
+  }) {
+    return Text(
+      text,
+      key: key,
+      textAlign: TextAlign.center,
+      style: context.textTheme.bodyMediumRegular.copyWith(
+        color: context.colorTheme.textBody,
+      ),
+    );
+  }
+
   Widget _buildLoadingFooter(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space4),
@@ -110,13 +126,10 @@ class SearchResultsList extends StatelessWidget {
             ),
           ),
           const SizedBox(height: CoreSpacing.space2),
-          Text(
-            context.l10n.searchResultsLoadingMore,
+          _buildFooterCaption(
+            context,
+            context.l10n.searchResultsLoadMoreLoading,
             key: const Key('searchResultsLoadMoreLoadingMessage'),
-            textAlign: TextAlign.center,
-            style: context.textTheme.bodyMediumRegular.copyWith(
-              color: context.colorTheme.textBody,
-            ),
           ),
         ],
       ),
@@ -135,13 +148,10 @@ class SearchResultsList extends StatelessWidget {
             color: context.colorTheme.lineLight,
           ),
           const SizedBox(height: CoreSpacing.space6),
-          Text(
-            context.l10n.searchResultsNoMoreResults,
-            key: const Key('searchResultsNoMoreResultsMessage'),
-            textAlign: TextAlign.center,
-            style: context.textTheme.bodyMediumRegular.copyWith(
-              color: context.colorTheme.textBody,
-            ),
+          _buildFooterCaption(
+            context,
+            context.l10n.searchResultsEndOfResults,
+            key: const Key('searchResultsEndOfResultsMessage'),
           ),
         ],
       ),
@@ -153,13 +163,10 @@ class SearchResultsList extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: CoreSpacing.space4),
       child: Column(
         children: [
-          Text(
+          _buildFooterCaption(
+            context,
             context.l10n.searchResultsLoadMoreFailed,
             key: const Key('searchResultsLoadMoreFailedMessage'),
-            textAlign: TextAlign.center,
-            style: context.textTheme.bodyMediumRegular.copyWith(
-              color: context.colorTheme.textBody,
-            ),
           ),
           const SizedBox(height: CoreSpacing.space4),
           Padding(
@@ -185,6 +192,9 @@ class SearchResultsList extends StatelessWidget {
     if (loadMoreFailed) return _buildFailureFooter(context);
     // An empty list gets SearchResultsEmptyView instead of this widget,
     // so a row is always present when the footer closes the list off.
+    // TODO(CA-979): hasMore is estimation-scoped; widen this guard to cover
+    // project rows once per-domain offsets land.
+    // https://ripplearc.youtrack.cloud/issue/CA-979
     if (!hasMore && results.estimations.isNotEmpty) {
       return _buildEndOfResultsFooter(context);
     }

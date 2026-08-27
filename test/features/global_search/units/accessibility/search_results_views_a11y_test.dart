@@ -109,7 +109,7 @@ void main() {
         await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
           tester,
           (theme) => buildList(results, theme),
-          find.byKey(const Key('searchResultsNoMoreResultsMessage')),
+          find.byKey(const Key('searchResultsEndOfResultsMessage')),
           checkTapTargetSize: false,
           checkLabeledTapTarget: false,
         );

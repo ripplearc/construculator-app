@@ -1003,10 +1003,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchResultsLoadMoreFailed => 'Couldn\'t load more results';
 
   @override
-  String get searchResultsLoadingMore => 'Loading more results';
+  String get searchResultsLoadMoreLoading => 'Loading more results';
 
   @override
-  String get searchResultsNoMoreResults => 'No more results';
+  String get searchResultsEndOfResults => 'No more results';
 
   @override
   String searchResultsEmpty(String query) {
