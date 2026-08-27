@@ -19,14 +19,14 @@ void main() {
   Future<void> pumpActionsSheet({
     required WidgetTester tester,
     required String estimationName,
+    required ThemeData theme,
     bool isLocked = false,
-    ThemeData? theme,
   }) async {
     lockStatusNotifier = ValueNotifier<bool>(isLocked);
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -45,7 +45,10 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('EstimationActionsSheet Screenshot Tests - Light', () {
+  screenshotThemeGroups('EstimationActionsSheet Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     tearDown(() {
       lockStatusNotifier.dispose();
     });
@@ -55,12 +58,16 @@ void main() {
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      await pumpActionsSheet(tester: tester, estimationName: 'Estimation 1');
+      await pumpActionsSheet(
+        tester: tester,
+        estimationName: 'Estimation 1',
+        theme: theme,
+      );
 
       await expectLater(
         find.byType(EstimationActionsSheet),
         matchesGoldenFile(
-          'goldens/estimation_actions_sheet/${size.width}x${size.height}/estimation_actions_sheet_default.png',
+          'goldens/estimation_actions_sheet/${size.width}x${size.height}/estimation_actions_sheet_default$suffix.png',
         ),
       );
     });
@@ -74,12 +81,13 @@ void main() {
         tester: tester,
         estimationName:
             'This is a very very long long long estimation name that should be truncated to best fit the screen',
+        theme: theme,
       );
 
       await expectLater(
         find.byType(EstimationActionsSheet),
         matchesGoldenFile(
-          'goldens/estimation_actions_sheet/${size.width}x${size.height}/estimation_actions_sheet_long_name.png',
+          'goldens/estimation_actions_sheet/${size.width}x${size.height}/estimation_actions_sheet_long_name$suffix.png',
         ),
       );
     });
@@ -93,77 +101,13 @@ void main() {
         tester: tester,
         estimationName: 'Estimation 1',
         isLocked: true,
+        theme: theme,
       );
 
       await expectLater(
         find.byType(EstimationActionsSheet),
         matchesGoldenFile(
-          'goldens/estimation_actions_sheet/${size.width}x${size.height}/estimation_actions_sheet_locked.png',
-        ),
-      );
-    });
-  });
-
-  group('EstimationActionsSheet Screenshot Tests - Dark', () {
-    tearDown(() {
-      lockStatusNotifier.dispose();
-    });
-
-    testWidgets('renders with default state', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpActionsSheet(
-        tester: tester,
-        estimationName: 'Estimation 1',
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(EstimationActionsSheet),
-        matchesGoldenFile(
-          'goldens/estimation_actions_sheet/${size.width}x${size.height}/estimation_actions_sheet_default_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders with long estimation name', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpActionsSheet(
-        tester: tester,
-        estimationName:
-            'This is a very very long long long estimation name that should be truncated to best fit the screen',
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(EstimationActionsSheet),
-        matchesGoldenFile(
-          'goldens/estimation_actions_sheet/${size.width}x${size.height}/estimation_actions_sheet_long_name_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders with locked state', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpActionsSheet(
-        tester: tester,
-        estimationName: 'Estimation 1',
-        isLocked: true,
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(EstimationActionsSheet),
-        matchesGoldenFile(
-          'goldens/estimation_actions_sheet/${size.width}x${size.height}/estimation_actions_sheet_locked_dark.png',
+          'goldens/estimation_actions_sheet/${size.width}x${size.height}/estimation_actions_sheet_locked$suffix.png',
         ),
       );
     });
