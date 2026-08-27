@@ -16,11 +16,11 @@ void main() {
 
   Future<void> pumpSuccessSheet({
     required WidgetTester tester,
-    ThemeData? theme,
+    required ThemeData theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Builder(
@@ -37,7 +37,10 @@ void main() {
     await tester.awaitImages();
   }
 
-  group('ProjectCreationSuccessSheetContent Screenshot Tests - Light', () {
+  screenshotThemeGroups('ProjectCreationSuccessSheetContent Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     final size = const Size(390, 520);
     const ratio = 1.0;
 
@@ -47,18 +50,21 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      await pumpSuccessSheet(tester: tester);
+      await pumpSuccessSheet(tester: tester, theme: theme);
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/project_creation_success_sheet/${size.width}x${size.height}/project_creation_success_sheet.png',
+          'goldens/project_creation_success_sheet/${size.width}x${size.height}/project_creation_success_sheet$suffix.png',
         ),
       );
     });
   });
 
-  group('ProjectCreationSuccessSheet Popup Screenshot Tests - Light', () {
+  screenshotThemeGroups('ProjectCreationSuccessSheet Popup Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     final size = const Size(390, 844);
     const ratio = 1.0;
 
@@ -71,7 +77,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           debugShowCheckedModeBanner: false,
-          theme: createTestTheme(),
+          theme: theme,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
@@ -101,77 +107,7 @@ void main() {
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile(
-          'goldens/project_creation_success_sheet/${size.width}x${size.height}/project_creation_success_sheet_popup.png',
-        ),
-      );
-    });
-  });
-
-  group('ProjectCreationSuccessSheetContent Screenshot Tests - Dark', () {
-    final size = const Size(390, 520);
-    const ratio = 1.0;
-
-    testWidgets('renders success sheet correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await pumpSuccessSheet(tester: tester, theme: createTestThemeDark());
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/project_creation_success_sheet/${size.width}x${size.height}/project_creation_success_sheet_dark.png',
-        ),
-      );
-    });
-  });
-
-  group('ProjectCreationSuccessSheet Popup Screenshot Tests - Dark', () {
-    final size = const Size(390, 844);
-    const ratio = 1.0;
-
-    testWidgets('renders success sheet as popup over background', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(
-        MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: createTestThemeDark(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => Center(
-                child: ElevatedButton(
-                  key: const Key('open_sheet_button'),
-                  onPressed: () {
-                    ProjectCreationSuccessSheet.show(
-                      context,
-                      onContinue: () {},
-                    );
-                  },
-                  child: const Text('Open'),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('open_sheet_button')));
-      await tester.pumpAndSettle();
-      await tester.awaitImages();
-
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile(
-          'goldens/project_creation_success_sheet/${size.width}x${size.height}/project_creation_success_sheet_popup_dark.png',
+          'goldens/project_creation_success_sheet/${size.width}x${size.height}/project_creation_success_sheet_popup$suffix.png',
         ),
       );
     });

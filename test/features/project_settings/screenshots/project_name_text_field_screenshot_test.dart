@@ -13,8 +13,8 @@ void main() {
     await loadAppFontsAll();
   });
 
-  Widget wrap(Widget child, {ThemeData? theme}) => MaterialApp(
-        theme: theme ?? createTestTheme(),
+  Widget wrap(Widget child, {required ThemeData theme}) => MaterialApp(
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -28,119 +28,10 @@ void main() {
         ),
       );
 
-  group('ProjectNameTextField screenshot tests - Light', () {
-    testWidgets('empty state', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      final controller = TextEditingController();
-      addTearDown(controller.dispose);
-
-      await tester.pumpWidget(wrap(ProjectNameTextField(controller: controller)));
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(ProjectNameTextField),
-        matchesGoldenFile(
-          'goldens/project_name_text_field/${size.width}x${size.height}/project_name_text_field_empty.png',
-        ),
-      );
-    });
-
-    testWidgets('with value', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      final controller = TextEditingController(text: 'HD building');
-      addTearDown(controller.dispose);
-
-      await tester.pumpWidget(wrap(ProjectNameTextField(controller: controller)));
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(ProjectNameTextField),
-        matchesGoldenFile(
-          'goldens/project_name_text_field/${size.width}x${size.height}/project_name_text_field_with_value.png',
-        ),
-      );
-    });
-
-    testWidgets('required error state', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      final controller = TextEditingController();
-      addTearDown(controller.dispose);
-
-      await tester.pumpWidget(wrap(ProjectNameTextField(controller: controller)));
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byType(ProjectNameTextField), 'a');
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byType(ProjectNameTextField), '');
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(ProjectNameTextField),
-        matchesGoldenFile(
-          'goldens/project_name_text_field/${size.width}x${size.height}/project_name_text_field_error_required.png',
-        ),
-      );
-    });
-
-    testWidgets('too-long error state', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      final controller = TextEditingController();
-      addTearDown(controller.dispose);
-
-      await tester.pumpWidget(wrap(ProjectNameTextField(controller: controller)));
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byType(ProjectNameTextField), 'A' * 101);
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(ProjectNameTextField),
-        matchesGoldenFile(
-          'goldens/project_name_text_field/${size.width}x${size.height}/project_name_text_field_error_too_long.png',
-        ),
-      );
-    });
-
-    testWidgets('disabled state', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      final controller = TextEditingController(text: 'HD building');
-      addTearDown(controller.dispose);
-
-      await tester.pumpWidget(
-        wrap(ProjectNameTextField(controller: controller, enabled: false)),
-      );
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(ProjectNameTextField),
-        matchesGoldenFile(
-          'goldens/project_name_text_field/${size.width}x${size.height}/project_name_text_field_disabled.png',
-        ),
-      );
-    });
-  });
-
-  group('ProjectNameTextField screenshot tests - Dark', () {
+  screenshotThemeGroups('ProjectNameTextField screenshot tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('empty state', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
@@ -151,17 +42,14 @@ void main() {
       addTearDown(controller.dispose);
 
       await tester.pumpWidget(
-        wrap(
-          ProjectNameTextField(controller: controller),
-          theme: createTestThemeDark(),
-        ),
+        wrap(ProjectNameTextField(controller: controller), theme: theme),
       );
       await tester.pumpAndSettle();
 
       await expectLater(
         find.byType(ProjectNameTextField),
         matchesGoldenFile(
-          'goldens/project_name_text_field/${size.width}x${size.height}/project_name_text_field_empty_dark.png',
+          'goldens/project_name_text_field/${size.width}x${size.height}/project_name_text_field_empty$suffix.png',
         ),
       );
     });
@@ -176,17 +64,14 @@ void main() {
       addTearDown(controller.dispose);
 
       await tester.pumpWidget(
-        wrap(
-          ProjectNameTextField(controller: controller),
-          theme: createTestThemeDark(),
-        ),
+        wrap(ProjectNameTextField(controller: controller), theme: theme),
       );
       await tester.pumpAndSettle();
 
       await expectLater(
         find.byType(ProjectNameTextField),
         matchesGoldenFile(
-          'goldens/project_name_text_field/${size.width}x${size.height}/project_name_text_field_with_value_dark.png',
+          'goldens/project_name_text_field/${size.width}x${size.height}/project_name_text_field_with_value$suffix.png',
         ),
       );
     });
@@ -201,10 +86,7 @@ void main() {
       addTearDown(controller.dispose);
 
       await tester.pumpWidget(
-        wrap(
-          ProjectNameTextField(controller: controller),
-          theme: createTestThemeDark(),
-        ),
+        wrap(ProjectNameTextField(controller: controller), theme: theme),
       );
       await tester.pumpAndSettle();
 
@@ -216,7 +98,7 @@ void main() {
       await expectLater(
         find.byType(ProjectNameTextField),
         matchesGoldenFile(
-          'goldens/project_name_text_field/${size.width}x${size.height}/project_name_text_field_error_required_dark.png',
+          'goldens/project_name_text_field/${size.width}x${size.height}/project_name_text_field_error_required$suffix.png',
         ),
       );
     });
@@ -231,10 +113,7 @@ void main() {
       addTearDown(controller.dispose);
 
       await tester.pumpWidget(
-        wrap(
-          ProjectNameTextField(controller: controller),
-          theme: createTestThemeDark(),
-        ),
+        wrap(ProjectNameTextField(controller: controller), theme: theme),
       );
       await tester.pumpAndSettle();
 
@@ -244,7 +123,7 @@ void main() {
       await expectLater(
         find.byType(ProjectNameTextField),
         matchesGoldenFile(
-          'goldens/project_name_text_field/${size.width}x${size.height}/project_name_text_field_error_too_long_dark.png',
+          'goldens/project_name_text_field/${size.width}x${size.height}/project_name_text_field_error_too_long$suffix.png',
         ),
       );
     });
@@ -261,7 +140,7 @@ void main() {
       await tester.pumpWidget(
         wrap(
           ProjectNameTextField(controller: controller, enabled: false),
-          theme: createTestThemeDark(),
+          theme: theme,
         ),
       );
       await tester.pumpAndSettle();
@@ -269,7 +148,7 @@ void main() {
       await expectLater(
         find.byType(ProjectNameTextField),
         matchesGoldenFile(
-          'goldens/project_name_text_field/${size.width}x${size.height}/project_name_text_field_disabled_dark.png',
+          'goldens/project_name_text_field/${size.width}x${size.height}/project_name_text_field_disabled$suffix.png',
         ),
       );
     });
