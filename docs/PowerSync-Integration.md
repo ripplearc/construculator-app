@@ -1,6 +1,6 @@
 # PowerSync Integration
 
-**Status as of 2026-08-15.** This is the handover doc referenced (but not previously
+**Status as of 2026-08-27.** This is the handover doc referenced (but not previously
 written) by [CA-643](https://ripplearc.youtrack.cloud/issue/CA-643) as the "PowerSync
 Integration Wiki." It documents what actually exists today — merged code, open PRs, and
 real subtask status — not a design proposal. Branch/PR state changes fast in this stack;
@@ -73,7 +73,7 @@ open stack below.
 > #283, #284, and #364 above, already merged. Ignore them when reasoning about what's
 > still open.
 
-### Open stack (unmerged, as of 2026-08-15)
+### Open stack (unmerged, as of 2026-08-27)
 
 The ticket that spawned this doc described a "4-PR chain." With #364 now merged, it's
 **four** open PRs — the skill-doc PR contributes no `lib/` code, which makes it easy to
@@ -109,14 +109,14 @@ upgrade (CA-805) by roughly 100 commits — a real risk if true, since `a108666f
 3.44 upgrade) and `d0d5878c2` (CA-825, the deprecated-API migration that followed it) both
 landed on `main` well after this stack was cut.
 
-**As verified today (2026-08-15), that's no longer the case.** All five branches were
-freshly rebased onto current `main` tip — `git merge-base main origin/feat/power-sync-wrappers`
-resolved to `main`'s HEAD at the time (`ae3979288`), i.e. **0 commits behind**, and both the
-3.44 upgrade and the CA-825 migration commits are confirmed ancestors of the stack. Whether
-this rebase was intentional prep for handover or coincidental, it means the SDK-drift
-concern is currently moot — but re-verify (`git merge-base --is-ancestor <main-tip>
-origin/<branch>`) before relying on it, since these branches can drift out of date again at
-any point.
+**As of 2026-08-27, this needs re-checking before the stack lands.** The narrow facts still
+hold — `a108666f9` (the 3.44 upgrade) and `d0d5878c2` (CA-825, the deprecated-API migration)
+are old commits and remain ancestors of the four open branches. But those branches have
+since drifted: `feat/power-sync-wrappers` (#367) and `feat/powersync_cost_estimate_data_source`
+(#405) are **diverged from `main` — roughly 14 commits behind** after the 2026-08-25 merge
+of #364. That much unreviewed `main` drift is exactly what can reintroduce API breakage, so
+re-rebase each open branch onto `main` and re-confirm the 3.44 / CA-825 ancestry
+(`git merge-base --is-ancestor <main-tip> origin/<branch>`) before relying on it.
 
 ---
 
