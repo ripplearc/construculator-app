@@ -61,28 +61,30 @@ Supabase Postgres  →  PowerSync Service  →  Flutter SDK (PowerSyncDatabase) 
 |---|---|---|
 | [#283](https://github.com/ripplearc/construculator-app/pull/283) | CA-645 | `lib/libraries/powersync/models/schema.dart` — client-side SQLite schema |
 | [#284](https://github.com/ripplearc/construculator-app/pull/284) | CA-646 | `lib/libraries/powersync/data/connectors/supabase_powersync_connector.dart`, `powersync_module.dart` (connector binding only), `testing/fake_powersync_database.dart` |
+| [#364](https://github.com/ripplearc/construculator-app/pull/364) | CA-648 | `lib/libraries/powersync/data/open_powersync_database.dart`, `interfaces/powersync_manager.dart` + `powersync_manager_impl.dart` (auth-driven connect/disconnect), `powersync_module.dart` (adds the `PowerSyncDatabase` + `PowerSyncManager` binds), `powerSyncDatabase` threaded through `AppBootstrap` |
 
-On `main` today, `PowerSyncModule` only binds `PowerSyncBackendConnector`. There is no
-`PowerSyncDatabase`, `PowerSyncDatabaseWrapper`, or `PowerSyncManager` yet — those three
-arrive via the open stack below.
+On `main` today, `PowerSyncModule` binds `PowerSyncBackendConnector`, the opened
+`PowerSyncDatabase`, and `PowerSyncManager` (an eager singleton, via #364).
+`PowerSyncDatabaseWrapper` is the one seam not yet on `main` — it arrives via #367 in the
+open stack below.
 
-> **Branches `feat/init-powersync-flutter` and `feat/powersync-configs` are not stale** —
-> they're the (undeleted) source branches for #283 and #284 above, already merged. Ignore
-> them when reasoning about what's still open.
+> **Branches `feat/init-powersync-flutter`, `feat/powersync-configs`, and
+> `feat/wire-powersync` are not stale** — they're the (undeleted) source branches for
+> #283, #284, and #364 above, already merged. Ignore them when reasoning about what's
+> still open.
 
 ### Open stack (unmerged, as of 2026-08-15)
 
-The ticket that spawned this doc described a "4-PR chain." It's actually **five** open
-PRs — the skill-doc PR contributes no `lib/` code, which makes it easy to miss as a
-distinct link:
+The ticket that spawned this doc described a "4-PR chain." With #364 now merged, it's
+**four** open PRs — the skill-doc PR contributes no `lib/` code, which makes it easy to
+miss as a distinct link:
 
 ```
-main
- └─ feat/wire-powersync                        PR #364  CA-648  OPEN
-     └─ feat/power-sync-wrappers               PR #367  CA-648  OPEN
-         └─ skills/create-agentic-skill-for-powersync   PR #368  CA-671  OPEN (docs only)
-             └─ feat/powersync_cost_estimate_data_source  PR #405  "migration PR1"  OPEN
-                 └─ feat/watch_estimation_by_id  PR #529  "PR2"  OPEN
+main  ← feat/wire-powersync merged via PR #364 (CA-648)
+ └─ feat/power-sync-wrappers                   PR #367  CA-648  OPEN
+     └─ skills/create-agentic-skill-for-powersync   PR #368  CA-671  OPEN (docs only)
+         └─ feat/powersync_cost_estimate_data_source  PR #405  "migration PR1"  OPEN
+             └─ feat/watch_estimation_by_id  PR #529  "PR2"  OPEN
 ```
 
 PR #529 was not mentioned in the ticket that spawned this doc — it's already stacked on
@@ -90,8 +92,7 @@ top of #405 and will land next; flagging it here so it isn't a surprise.
 
 | PR | Base ← Head | Adds |
 |---|---|---|
-| [#364](https://github.com/ripplearc/construculator-app/pull/364) | `main` ← `feat/wire-powersync` | Opens the local DB (`open_powersync_database.dart`), `PowerSyncManager` interface + impl (auth-driven connect/disconnect), threads `powerSyncDatabase` through `AppBootstrap` |
-| [#367](https://github.com/ripplearc/construculator-app/pull/367) | `feat/wire-powersync` ← `feat/power-sync-wrappers` | `PowerSyncDatabaseWrapper` interface + impl + fake (`getAll`/`watch`/`execute`/`writeTransaction`/`syncStream`) |
+| [#367](https://github.com/ripplearc/construculator-app/pull/367) | `feat/wire-powersync` (merged) ← `feat/power-sync-wrappers` | `PowerSyncDatabaseWrapper` interface + impl + fake (`getAll`/`watch`/`execute`/`writeTransaction`/`syncStream`) |
 | [#368](https://github.com/ripplearc/construculator-app/pull/368) | `feat/power-sync-wrappers` ← `skills/create-agentic-skill-for-powersync` | `skills/code-data-powersync/SKILL.md` — the agentic-coding skill for writing PowerSync data layers |
 | [#405](https://github.com/ripplearc/construculator-app/pull/405) | `skills/create-agentic-skill-for-powersync` ← `feat/powersync_cost_estimate_data_source` | First consumer: `PowerSyncCostEstimationDataSource(Impl)`, `CostEstimateDto`, DI registration |
 | [#529](https://github.com/ripplearc/construculator-app/pull/529) | `feat/powersync_cost_estimate_data_source` ← `feat/watch_estimation_by_id` | `watchEstimationById` |
@@ -109,8 +110,8 @@ upgrade (CA-805) by roughly 100 commits — a real risk if true, since `a108666f
 landed on `main` well after this stack was cut.
 
 **As verified today (2026-08-15), that's no longer the case.** All five branches were
-freshly rebased onto current `main` tip — `git merge-base main origin/feat/wire-powersync`
-resolves to `main`'s current HEAD (`ae3979288`), i.e. **0 commits behind**, and both the
+freshly rebased onto current `main` tip — `git merge-base main origin/feat/power-sync-wrappers`
+resolved to `main`'s HEAD at the time (`ae3979288`), i.e. **0 commits behind**, and both the
 3.44 upgrade and the CA-825 migration commits are confirmed ancestors of the stack. Whether
 this rebase was intentional prep for handover or coincidental, it means the SDK-drift
 concern is currently moot — but re-verify (`git merge-base --is-ancestor <main-tip>
@@ -129,7 +130,7 @@ Real Stage as pulled from YouTrack today, not the ticket text:
 | [CA-645](https://ripplearc.youtrack.cloud/issue/CA-645) | Flutter schema, auto-table creation | **Review** | Unassigned | 2 | **Merged** — PR #283 |
 | [CA-646](https://ripplearc.youtrack.cloud/issue/CA-646) | Backend connector, RLS error handling | **Review** | Unassigned | 2 | **Merged** — PR #284 |
 | [CA-647](https://ripplearc.youtrack.cloud/issue/CA-647) | Sync Streams for core entities | **Review** | Unassigned | 2 | No PR in this repo — sync-stream YAML lives in the backend repo, unverified here |
-| [CA-648](https://ripplearc.youtrack.cloud/issue/CA-648) | On-demand Sync Stream, cost estimates | **Review** | Unassigned | 0 | Open — PRs #364, #367, #405 (see above); [CA-917](https://ripplearc.youtrack.cloud/issue/CA-917) tracks a non-blocking `pubspec.yaml` nit on #367, informally resolved (see below) |
+| [CA-648](https://ripplearc.youtrack.cloud/issue/CA-648) | On-demand Sync Stream, cost estimates | **Review** | Unassigned | 0 | PR #364 **merged**; #367/#405 still open (see above); [CA-917](https://ripplearc.youtrack.cloud/issue/CA-917) tracks a non-blocking `pubspec.yaml` nit on #367, informally resolved (see below) |
 
 All five sit at Stage=Review and are unassigned — none have progressed further despite
 CA-645/CA-646's code already being on `main`. Interpretation: the *code* for CA-645/646
@@ -161,8 +162,8 @@ as a blocker still awaiting a call.
 ## The Seam: Manager / Wrapper / Data Source
 
 Three layers sit between feature code and the native PowerSync SDK, each with a distinct
-job. None of them are on `main` yet except the module shell — they arrive via PRs #364 and
-#367.
+job. The Manager layer is on `main` (via #364); the Wrapper layer is not yet — it arrives
+via #367, and the per-feature data sources land later still (#405 onward).
 
 | Layer | File | Owns |
 |---|---|---|
@@ -270,7 +271,7 @@ the source of truth for local data. On **cancel**, the watch subscription is can
 `handle.unsubscribe()` releases the on-demand stream — so it only stays active while
 something is actually watching it.
 
-### The skill doc's teaching example now matches this
+### The skill doc's guidance matches this
 
 `skills/code-data-powersync/SKILL.md` (PR #368, still open) teaches this exact pattern to
 every future implementer. As of review round R3 (2026-07-09), reviewer `ripplearcgit` had
@@ -292,8 +293,10 @@ race and unhandled syncStream() throw in on-demand example"): `onCancel` is now 
 synchronously before the `syncStream()` await (with a `cancelled` flag checked once it
 resolves, releasing the handle immediately if a cancel raced it), and the `syncStream()`
 call is wrapped in try/catch so a throw surfaces via `controller.addError` instead of
-escaping as an unhandled exception. The example now matches the production code above, and
-is safe to copy as-is.
+escaping as an unhandled exception. A later commit on #368 (`e243efc67`, "R4: sync the
+skill with the changes") then replaced the worked `Stream.multi(...)` block with prose
+rules — so there's no literal snippet left to copy — but those rules match the production
+implementation above.
 
 ---
 
@@ -385,9 +388,10 @@ None of these were independently verified against the backend repo in this spike
 Punch list of what's real vs. still needed before this stack can land, gathered from PR
 review threads and direct code reading — not from re-running the app:
 
-- **PR #368 (SKILL.md)'s 2 🔴 findings are fixed** (commit `ea326af25`, same-day fix) —
-  the teaching example now matches the production implementation and is safe to copy — see
-  [On-Demand Sync-Stream Lifecycle](#on-demand-sync-stream-lifecycle).
+- **PR #368 (SKILL.md)'s 2 🔴 findings are fixed** (commit `ea326af25`, same-day fix); a
+  later commit (`e243efc67`, R4) then swapped the worked `Stream.multi(...)` block for
+  prose rules, so there's no snippet to copy — the rules match the production
+  implementation — see [On-Demand Sync-Stream Lifecycle](#on-demand-sync-stream-lifecycle).
 - **CA-917 (`sqlite_async` direct dependency on PR #367) reads as informally resolved,
   not blocking.** `sqlite_async` is still a direct `pubspec.yaml` dependency (added R1,
   unchanged since); the SDK-type leak into the repository layer was separately fixed via
