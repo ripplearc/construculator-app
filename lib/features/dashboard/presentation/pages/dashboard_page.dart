@@ -39,8 +39,8 @@ class DashboardPage extends StatelessWidget {
                 Center(
                   child: Column(
                     children: [
-                      Icon(
-                        Icons.dashboard,
+                      CoreIconWidget(
+                        icon: CoreIcons.home,
                         size: CoreSpacing.space16,
                         color: Theme.of(context).primaryColor,
                       ),

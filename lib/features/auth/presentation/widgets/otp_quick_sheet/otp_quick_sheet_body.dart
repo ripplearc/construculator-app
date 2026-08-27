@@ -87,9 +87,9 @@ class OtpQuickSheetBody extends StatelessWidget {
                             ),
                           ),
                           SizedBox(width: 4),
-                          Icon(
-                            Icons.edit_outlined,
-                            size: 20,
+                          CoreIconWidget(
+                            icon: CoreIcons.edit,
+                            size: CoreIconSize.size20,
                             color: colors.textLink,
                           ),
                         ],
