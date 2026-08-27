@@ -18,13 +18,13 @@ void main() {
     required WidgetTester tester,
     required String title,
     required String description,
+    required ThemeData theme,
     String? contact,
     VoidCallback? onContactPressed,
-    ThemeData? theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         home: Builder(
           builder: (ctx) => Scaffold(
             backgroundColor: ctx.colorTheme.pageBackground,
@@ -44,7 +44,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('AuthHeader Screenshot Tests - Light', () {
+  screenshotThemeGroups('AuthHeader Screenshot Tests', (theme, suffix) {
     testWidgets('renders auth header without contact correctly', (
       tester,
     ) async {
@@ -56,12 +56,13 @@ void main() {
         tester: tester,
         title: 'Welcome Back',
         description: 'Hey, Enter your details to log in to your account',
+        theme: theme,
       );
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/auth_header/${size.width}x${size.height}/auth_header_no_contact.png',
+          'goldens/auth_header/${size.width}x${size.height}/auth_header_no_contact$suffix.png',
         ),
       );
     });
@@ -77,58 +78,13 @@ void main() {
         description: 'Enter your password for this account. Your email id is ',
         contact: 'user@example.com',
         onContactPressed: () {},
+        theme: theme,
       );
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/auth_header/${size.width}x${size.height}/auth_header_with_contact.png',
-        ),
-      );
-    });
-  });
-
-  group('AuthHeader Screenshot Tests - Dark', () {
-    testWidgets('renders auth header without contact correctly', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpAuthHeader(
-        tester: tester,
-        title: 'Welcome Back',
-        description: 'Hey, Enter your details to log in to your account',
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/auth_header/${size.width}x${size.height}/auth_header_no_contact_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders auth header with contact correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpAuthHeader(
-        tester: tester,
-        title: 'Enter your password',
-        description: 'Enter your password for this account. Your email id is ',
-        contact: 'user@example.com',
-        onContactPressed: () {},
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/auth_header/${size.width}x${size.height}/auth_header_with_contact_dark.png',
+          'goldens/auth_header/${size.width}x${size.height}/auth_header_with_contact$suffix.png',
         ),
       );
     });

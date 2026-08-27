@@ -16,14 +16,14 @@ void main() {
 
   Future<void> pumpOtpSheet({
     required WidgetTester tester,
+    required ThemeData theme,
     bool verifyButtonDisabled = false,
     bool isVerifying = false,
     bool isResending = false,
-    ThemeData? theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
@@ -44,17 +44,24 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('OtpVerificationQuickSheet Screenshot Tests - Light', () {
+  screenshotThemeGroups('OtpVerificationQuickSheet Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders with verify button disabled', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
-      await pumpOtpSheet(tester: tester, verifyButtonDisabled: true);
+      await pumpOtpSheet(
+        tester: tester,
+        verifyButtonDisabled: true,
+        theme: theme,
+      );
 
       await expectLater(
         find.byType(OtpVerificationQuickSheet),
         matchesGoldenFile(
-          'goldens/otp_verification_sheet/${size.width}x${size.height}/otp_verification_sheet_verify_disabled.png',
+          'goldens/otp_verification_sheet/${size.width}x${size.height}/otp_verification_sheet_verify_disabled$suffix.png',
         ),
       );
     });
@@ -64,7 +71,7 @@ void main() {
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      await pumpOtpSheet(tester: tester);
+      await pumpOtpSheet(tester: tester, theme: theme);
 
       final pinInput = find.byKey(const Key('pin_input'));
       expect(pinInput, findsOneWidget);
@@ -74,7 +81,7 @@ void main() {
       await expectLater(
         find.byType(OtpVerificationQuickSheet),
         matchesGoldenFile(
-          'goldens/otp_verification_sheet/${size.width}x${size.height}/otp_verification_sheet_verify_enabled.png',
+          'goldens/otp_verification_sheet/${size.width}x${size.height}/otp_verification_sheet_verify_enabled$suffix.png',
         ),
       );
     });
@@ -87,12 +94,13 @@ void main() {
         tester: tester,
         isResending: true,
         verifyButtonDisabled: true,
+        theme: theme,
       );
 
       await expectLater(
         find.byType(OtpVerificationQuickSheet),
         matchesGoldenFile(
-          'goldens/otp_verification_sheet/${size.width}x${size.height}/otp_verification_sheet_resending.png',
+          'goldens/otp_verification_sheet/${size.width}x${size.height}/otp_verification_sheet_resending$suffix.png',
         ),
       );
     });
@@ -102,7 +110,7 @@ void main() {
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      await pumpOtpSheet(tester: tester);
+      await pumpOtpSheet(tester: tester, theme: theme);
 
       final pinInput = find.byKey(const Key('pin_input'));
       expect(pinInput, findsOneWidget);
@@ -113,98 +121,13 @@ void main() {
         tester: tester,
         isVerifying: true,
         verifyButtonDisabled: true,
+        theme: theme,
       );
 
       await expectLater(
         find.byType(OtpVerificationQuickSheet),
         matchesGoldenFile(
-          'goldens/otp_verification_sheet/${size.width}x${size.height}/otp_verification_sheet_verifying.png',
-        ),
-      );
-    });
-  });
-
-  group('OtpVerificationQuickSheet Screenshot Tests - Dark', () {
-    testWidgets('renders with verify button disabled', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-      await pumpOtpSheet(
-        tester: tester,
-        verifyButtonDisabled: true,
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(OtpVerificationQuickSheet),
-        matchesGoldenFile(
-          'goldens/otp_verification_sheet/${size.width}x${size.height}/otp_verification_sheet_verify_disabled_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders with verify button enabled', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpOtpSheet(tester: tester, theme: createTestThemeDark());
-
-      final pinInput = find.byKey(const Key('pin_input'));
-      expect(pinInput, findsOneWidget);
-      await tester.enterText(pinInput, '123456');
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(OtpVerificationQuickSheet),
-        matchesGoldenFile(
-          'goldens/otp_verification_sheet/${size.width}x${size.height}/otp_verification_sheet_verify_enabled_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders with resending state', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-      await pumpOtpSheet(
-        tester: tester,
-        isResending: true,
-        verifyButtonDisabled: true,
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(OtpVerificationQuickSheet),
-        matchesGoldenFile(
-          'goldens/otp_verification_sheet/${size.width}x${size.height}/otp_verification_sheet_resending_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders with verifying state', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpOtpSheet(tester: tester, theme: createTestThemeDark());
-
-      final pinInput = find.byKey(const Key('pin_input'));
-      expect(pinInput, findsOneWidget);
-      await tester.enterText(pinInput, '123456');
-      await tester.pump();
-
-      await pumpOtpSheet(
-        tester: tester,
-        isVerifying: true,
-        verifyButtonDisabled: true,
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(OtpVerificationQuickSheet),
-        matchesGoldenFile(
-          'goldens/otp_verification_sheet/${size.width}x${size.height}/otp_verification_sheet_verifying_dark.png',
+          'goldens/otp_verification_sheet/${size.width}x${size.height}/otp_verification_sheet_verifying$suffix.png',
         ),
       );
     });
