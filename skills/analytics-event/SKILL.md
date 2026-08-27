@@ -44,15 +44,18 @@ A name is valid only if **all** of the following hold:
 ## PII / Data Safety Rule
 
 Reject any event name or property whose tokens suggest raw PII, per the registry's Data Safety
-Rules table: `email`, `phone`, `ssn`, `address`, `password`, `token`, `card`, `full_name` (or
-similar free-text identity fields). IDs, enums, booleans, counters, and durations are fine.
+Rules table: `email`, `phone`, `ssn`, `address`, `password`, `card`, `full_name` (or similar
+free-text identity fields). Flag `token` only when it sits next to `raw`, `value`, or `secret`
+(e.g. `raw_token`, `token_value`, `token_secret`) — a bare `token` is fine for technical events
+like `auth_token_refreshed` or `session_token_expired`. IDs, enums, booleans, counters, and
+durations are fine.
 
 ## Operations
 
 ### `list-events`
 Read the registry, filter `## Event Categories` bullets by `category` and/or `status` (active =
-no `status: deprecated` annotation; deprecated = listed under `## Deprecated Events`). Return a
-markdown table: Event | Category | Owner | Properties | Status.
+listed under any `### <Category>` heading; deprecated = listed under `## Deprecated Events`).
+Return a markdown table: Event | Category | Owner | Properties | Status.
 
 ### `validate-event`
 Check `name` against the Naming Convention and PII rule above. Return `{ valid: bool, reasons:
@@ -62,9 +65,10 @@ Check `name` against the Naming Convention and PII rule above. Return `{ valid: 
 1. Run `validate-event` on `name` first — refuse to add on any failure and report why.
 2. If `category` doesn't exist as a `###` heading under `## Event Categories`, ask the user
    whether to create it — never invent a new category silently.
-3. Append the bullet under the target category, alphabetically among existing entries, with
-   inline metadata if `owner`/`properties` were given (see `## Event Metadata` in the registry
-   for the format).
+3. Append the bullet under the target category, alphabetically among existing entries — or at
+   the end if that category isn't already alphabetized (several aren't today, so treat the
+   mixed order as intentional, not a bug). Add inline metadata if `owner`/`properties` were
+   given (see `## Event Metadata` in the registry for the format).
 4. Save and echo the new line back to the user.
 
 ### `update-event`

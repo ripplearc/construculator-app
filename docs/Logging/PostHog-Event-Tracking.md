@@ -16,7 +16,7 @@
 An event may carry optional inline metadata after a ` — ` separator: `owner` and `properties`.
 Events with no metadata are undocumented examples pending a real owner. Example:
 
-- `estimation_created` — owner: `@estimation-team`; properties: estimation_id, project_id
+- `widget_action_performed` — owner: `@estimation-team`; properties: widget_id, project_id
 
 ---
 
