@@ -1898,13 +1898,13 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Loading more results'**
-  String get searchResultsLoadingMore;
+  String get searchResultsLoadMoreLoading;
 
   /// Label shown in the results list footer once every page of search results has been loaded
   ///
   /// In en, this message translates to:
   /// **'No more results'**
-  String get searchResultsNoMoreResults;
+  String get searchResultsEndOfResults;
 
   /// Message shown when a search returns no results
   ///

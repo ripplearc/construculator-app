@@ -433,7 +433,7 @@ void main() {
           findsNothing,
         );
         expect(
-          find.byKey(const Key('searchResultsNoMoreResultsMessage')),
+          find.byKey(const Key('searchResultsEndOfResultsMessage')),
           findsNothing,
         );
       });
@@ -465,7 +465,7 @@ void main() {
         );
 
         expect(
-          find.byKey(const Key('searchResultsNoMoreResultsMessage')),
+          find.byKey(const Key('searchResultsEndOfResultsMessage')),
           findsOneWidget,
         );
         expect(find.text('No more results'), findsOneWidget);
@@ -486,7 +486,7 @@ void main() {
         );
 
         expect(
-          find.byKey(const Key('searchResultsNoMoreResultsMessage')),
+          find.byKey(const Key('searchResultsEndOfResultsMessage')),
           findsNothing,
         );
         expect(
@@ -507,7 +507,7 @@ void main() {
         );
 
         expect(
-          find.byKey(const Key('searchResultsNoMoreResultsMessage')),
+          find.byKey(const Key('searchResultsEndOfResultsMessage')),
           findsNothing,
         );
         expect(

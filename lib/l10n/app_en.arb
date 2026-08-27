@@ -1593,13 +1593,13 @@
     "description": "Message shown in the results list footer when fetching the next page of search results fails",
     "context": "N/A"
   },
-  "searchResultsLoadingMore": "Loading more results",
-  "@searchResultsLoadingMore": {
+  "searchResultsLoadMoreLoading": "Loading more results",
+  "@searchResultsLoadMoreLoading": {
     "description": "Label shown under the spinner in the results list footer while the next page of search results is being fetched",
     "context": "N/A"
   },
-  "searchResultsNoMoreResults": "No more results",
-  "@searchResultsNoMoreResults": {
+  "searchResultsEndOfResults": "No more results",
+  "@searchResultsEndOfResults": {
     "description": "Label shown in the results list footer once every page of search results has been loaded",
     "context": "N/A"
   },
