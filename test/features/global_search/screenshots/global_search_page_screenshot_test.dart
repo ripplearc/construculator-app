@@ -76,11 +76,11 @@ void main() {
 
   Future<void> pumpGlobalSearchPage({
     required WidgetTester tester,
-    ThemeData? theme,
+    required ThemeData theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -95,18 +95,18 @@ void main() {
     await tester.awaitImages();
   }
 
-  group('GlobalSearchPage Screenshot Tests - Light', () {
+  screenshotThemeGroups('GlobalSearchPage Screenshot Tests', (theme, suffix) {
     testWidgets('renders default state correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      await pumpGlobalSearchPage(tester: tester);
+      await pumpGlobalSearchPage(tester: tester, theme: theme);
 
       await expectLater(
         find.byType(GlobalSearchPage),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_default.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_default$suffix.png',
         ),
       );
     });
@@ -118,7 +118,7 @@ void main() {
         tester.view.devicePixelRatio = ratio;
         addTearDown(tester.view.reset);
 
-        await pumpGlobalSearchPage(tester: tester);
+        await pumpGlobalSearchPage(tester: tester, theme: theme);
 
         final textFieldFinder = find.descendant(
           of: find.byType(GlobalSearchPage),
@@ -131,7 +131,7 @@ void main() {
         await expectLater(
           find.byType(GlobalSearchPage),
           matchesGoldenFile(
-            'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_text.png',
+            'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_text$suffix.png',
           ),
         );
       },
@@ -154,12 +154,12 @@ void main() {
         _fakeHistoryRow('MD bungalow'),
       ]);
 
-      await pumpGlobalSearchPage(tester: tester);
+      await pumpGlobalSearchPage(tester: tester, theme: theme);
 
       await expectLater(
         find.byType(GlobalSearchPage),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_recent_searches.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_recent_searches$suffix.png',
         ),
       );
     });
@@ -171,7 +171,7 @@ void main() {
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      await pumpGlobalSearchPage(tester: tester);
+      await pumpGlobalSearchPage(tester: tester, theme: theme);
 
       Modular.get<GlobalSearchBloc>().add(
         const GlobalSearchTagFiltersApplied(tags: {'Roofing', 'Wall'}),
@@ -181,7 +181,7 @@ void main() {
       await expectLater(
         find.byType(GlobalSearchPage),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_active_tags.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_active_tags$suffix.png',
         ),
       );
     });
@@ -193,7 +193,7 @@ void main() {
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      await pumpGlobalSearchPage(tester: tester);
+      await pumpGlobalSearchPage(tester: tester, theme: theme);
 
       // Apply a fixed range directly to the in-tree BLoC rather than tapping
       // through the sheet, which resolves to DateTime.now() and would make the
@@ -222,7 +222,7 @@ void main() {
       await expectLater(
         find.byType(GlobalSearchPage),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_active_date_filter.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_active_date_filter$suffix.png',
         ),
       );
     });
@@ -262,7 +262,7 @@ void main() {
         'members': <Map<String, dynamic>>[],
       });
 
-      await pumpGlobalSearchPage(tester: tester);
+      await pumpGlobalSearchPage(tester: tester, theme: theme);
 
       final textFieldFinder = find.descendant(
         of: find.byType(GlobalSearchPage),
@@ -277,189 +277,7 @@ void main() {
       await expectLater(
         find.byType(GlobalSearchPage),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_results.png',
-        ),
-      );
-    });
-  });
-
-  group('GlobalSearchPage Screenshot Tests - Dark', () {
-    testWidgets('renders default state correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpGlobalSearchPage(tester: tester, theme: createTestThemeDark());
-
-      await expectLater(
-        find.byType(GlobalSearchPage),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_default_dark.png',
-        ),
-      );
-    });
-
-    testWidgets(
-      'renders with search text and clear button visible correctly',
-      (tester) async {
-        tester.view.physicalSize = size;
-        tester.view.devicePixelRatio = ratio;
-        addTearDown(tester.view.reset);
-
-        await pumpGlobalSearchPage(tester: tester, theme: createTestThemeDark());
-
-        final textFieldFinder = find.descendant(
-          of: find.byType(GlobalSearchPage),
-          matching: find.byType(TextFormField),
-        );
-        await tester.enterText(textFieldFinder, 'concrete');
-        await tester.pumpAndSettle();
-        expect(find.text('concrete'), findsOneWidget);
-
-        await expectLater(
-          find.byType(GlobalSearchPage),
-          matchesGoldenFile(
-            'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_text_dark.png',
-          ),
-        );
-      },
-    );
-
-    testWidgets('renders with recent searches correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      fakeSupabase.setCurrentUser(
-        FakeUser(
-          id: _testUserId,
-          email: _testUserEmail,
-          createdAt: '2024-01-01T00:00:00.000Z',
-        ),
-      );
-      fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
-        _fakeHistoryRow('Material of building'),
-        _fakeHistoryRow('MD bungalow'),
-      ]);
-
-      await pumpGlobalSearchPage(tester: tester, theme: createTestThemeDark());
-
-      await expectLater(
-        find.byType(GlobalSearchPage),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_recent_searches_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders with active tag filter chips correctly', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpGlobalSearchPage(tester: tester, theme: createTestThemeDark());
-
-      Modular.get<GlobalSearchBloc>().add(
-        const GlobalSearchTagFiltersApplied(tags: {'Roofing', 'Wall'}),
-      );
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(GlobalSearchPage),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_active_tags_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders with active date filter chip correctly', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpGlobalSearchPage(tester: tester, theme: createTestThemeDark());
-
-      final element = tester.element(
-        find.descendant(
-          of: find.byType(GlobalSearchPage),
-          matching: find.byType(
-            BlocConsumer<GlobalSearchBloc, GlobalSearchState>,
-          ),
-        ),
-      );
-      BlocProvider.of<GlobalSearchBloc>(element).add(
-        GlobalSearchDateFilterApplied(
-          range: DateRange(
-            start: DateTime(2026, 1, 5),
-            end: DateTime(2026, 1, 12),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await expectLater(
-        find.byType(GlobalSearchPage),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_active_date_filter_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders search results correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      fakeSupabase.setCurrentUser(
-        FakeUser(
-          id: _testUserId,
-          email: _testUserEmail,
-          createdAt: '2024-01-01T00:00:00.000Z',
-        ),
-      );
-      fakeSupabase.setRpcResponse(
-        DatabaseConstants.searchSuggestionsRpcFunction,
-        <String>[],
-      );
-      fakeSupabase.setRpcResponse(DatabaseConstants.globalSearchRpcFunction, {
-        'projects': <Map<String, dynamic>>[],
-        'estimations': [
-          estimation_factory
-              .EstimationTestDataMapFactory.createFakeEstimationData(
-            id: 'estimate-results-1',
-            estimateName: '2nd Wall Cost Estimate',
-            totalCost: 12343.88,
-          ),
-          estimation_factory
-              .EstimationTestDataMapFactory.createFakeEstimationData(
-            id: 'estimate-results-2',
-            estimateName: 'Steel Frame Estimate',
-            totalCost: 250000.0,
-          ),
-        ],
-        'members': <Map<String, dynamic>>[],
-      });
-
-      await pumpGlobalSearchPage(tester: tester, theme: createTestThemeDark());
-
-      final textFieldFinder = find.descendant(
-        of: find.byType(GlobalSearchPage),
-        matching: find.byType(TextFormField),
-      );
-      await tester.enterText(textFieldFinder, 'estimate');
-      await tester.pump(const Duration(milliseconds: 400));
-      await tester.testTextInput.receiveAction(TextInputAction.search);
-      await tester.pumpAndSettle();
-      await tester.awaitImages();
-
-      await expectLater(
-        find.byType(GlobalSearchPage),
-        matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_results_dark.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_search_results$suffix.png',
         ),
       );
     });

@@ -60,11 +60,12 @@ void main() {
 
   Future<void> pumpPageAndOpenTypeSheet({
     required WidgetTester tester,
+    required ThemeData theme,
     SearchScope scopeBeforeOpen = SearchScope.dashboard,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -106,18 +107,21 @@ void main() {
     await tester.awaitImages();
   }
 
-  group('GlobalSearchTypeFilterSheet Screenshot Tests', () {
+  screenshotThemeGroups('GlobalSearchTypeFilterSheet Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders default state with nothing selected', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      await pumpPageAndOpenTypeSheet(tester: tester);
+      await pumpPageAndOpenTypeSheet(tester: tester, theme: theme);
 
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_default.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_default$suffix.png',
         ),
       );
     });
@@ -130,12 +134,13 @@ void main() {
       await pumpPageAndOpenTypeSheet(
         tester: tester,
         scopeBeforeOpen: SearchScope.estimation,
+        theme: theme,
       );
 
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile(
-          'goldens/$testName/${size.width}x${size.height}/${testName}_with_cost_scope.png',
+          'goldens/$testName/${size.width}x${size.height}/${testName}_with_cost_scope$suffix.png',
         ),
       );
     });
