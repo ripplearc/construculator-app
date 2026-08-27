@@ -16,8 +16,8 @@ void main() {
 
   Future<void> pumpButton({
     required WidgetTester tester,
+    required ThemeData theme,
     bool isDeleting = false,
-    ThemeData? theme,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = ratio;
@@ -26,7 +26,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -44,53 +44,28 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('DeleteProjectButton Screenshot Tests - Light', () {
+  screenshotThemeGroups('DeleteProjectButton Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders enabled state', (tester) async {
-      await pumpButton(tester: tester);
+      await pumpButton(tester: tester, theme: theme);
 
       await expectLater(
         find.byType(DeleteProjectButton),
         matchesGoldenFile(
-          'goldens/delete_project_button/${size.width.toInt()}x${size.height.toInt()}/enabled.png',
+          'goldens/delete_project_button/${size.width.toInt()}x${size.height.toInt()}/enabled$suffix.png',
         ),
       );
     });
 
     testWidgets('renders disabled state during deletion', (tester) async {
-      await pumpButton(tester: tester, isDeleting: true);
+      await pumpButton(tester: tester, isDeleting: true, theme: theme);
 
       await expectLater(
         find.byType(DeleteProjectButton),
         matchesGoldenFile(
-          'goldens/delete_project_button/${size.width.toInt()}x${size.height.toInt()}/disabled_deleting.png',
-        ),
-      );
-    });
-  });
-
-  group('DeleteProjectButton Screenshot Tests - Dark', () {
-    testWidgets('renders enabled state', (tester) async {
-      await pumpButton(tester: tester, theme: createTestThemeDark());
-
-      await expectLater(
-        find.byType(DeleteProjectButton),
-        matchesGoldenFile(
-          'goldens/delete_project_button/${size.width.toInt()}x${size.height.toInt()}/enabled_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders disabled state during deletion', (tester) async {
-      await pumpButton(
-        tester: tester,
-        isDeleting: true,
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(DeleteProjectButton),
-        matchesGoldenFile(
-          'goldens/delete_project_button/${size.width.toInt()}x${size.height.toInt()}/disabled_deleting_dark.png',
+          'goldens/delete_project_button/${size.width.toInt()}x${size.height.toInt()}/disabled_deleting$suffix.png',
         ),
       );
     });

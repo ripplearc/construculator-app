@@ -17,7 +17,7 @@ void main() {
   Future<void> pumpCostFileItem({
     required WidgetTester tester,
     required CostFile file,
-    ThemeData? theme,
+    required ThemeData theme,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = ratio;
@@ -25,7 +25,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -40,7 +40,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('CostFileItem Screenshot Tests - Light', () {
+  screenshotThemeGroups('CostFileItem Screenshot Tests', (theme, suffix) {
     testWidgets('renders normal file correctly', (tester) async {
       await pumpCostFileItem(
         tester: tester,
@@ -50,12 +50,13 @@ void main() {
           fileSizeInBytes: 204800,
           uploadedAt: DateTime(2024, 4, 23),
         ),
+        theme: theme,
       );
 
       await expectLater(
         find.byType(CostFileItem),
         matchesGoldenFile(
-          'goldens/cost_file_item/${size.width}x${size.height}/normal.png',
+          'goldens/cost_file_item/${size.width}x${size.height}/normal$suffix.png',
         ),
       );
     });
@@ -69,54 +70,13 @@ void main() {
           fileSizeInBytes: 1572864,
           uploadedAt: DateTime(2024, 4, 23),
         ),
+        theme: theme,
       );
 
       await expectLater(
         find.byType(CostFileItem),
         matchesGoldenFile(
-          'goldens/cost_file_item/${size.width}x${size.height}/long_name.png',
-        ),
-      );
-    });
-  });
-
-  group('CostFileItem Screenshot Tests - Dark', () {
-    testWidgets('renders normal file correctly', (tester) async {
-      await pumpCostFileItem(
-        tester: tester,
-        file: CostFile(
-          id: 'file-1',
-          fileName: 'Major Material Cost.xls',
-          fileSizeInBytes: 204800,
-          uploadedAt: DateTime(2024, 4, 23),
-        ),
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(CostFileItem),
-        matchesGoldenFile(
-          'goldens/cost_file_item/${size.width}x${size.height}/normal_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders long file name correctly', (tester) async {
-      await pumpCostFileItem(
-        tester: tester,
-        file: CostFile(
-          id: 'file-2',
-          fileName: 'Very Long Construction Project Material Cost Estimation Document.xlsx',
-          fileSizeInBytes: 1572864,
-          uploadedAt: DateTime(2024, 4, 23),
-        ),
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(CostFileItem),
-        matchesGoldenFile(
-          'goldens/cost_file_item/${size.width}x${size.height}/long_name_dark.png',
+          'goldens/cost_file_item/${size.width}x${size.height}/long_name$suffix.png',
         ),
       );
     });
