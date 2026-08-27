@@ -177,11 +177,26 @@ class SearchResultsList extends StatelessWidget {
     );
   }
 
+  // The footer that closes the list off, or null when the list is open-ended.
+  // Resolved to a single widget so every footer renders under one shared
+  // gutter — the same space4 inset the cards above use.
+  Widget? _buildFooter(BuildContext context) {
+    if (isLoadingMore) return _buildLoadingFooter(context);
+    if (loadMoreFailed) return _buildFailureFooter(context);
+    // An empty list gets SearchResultsEmptyView instead of this widget,
+    // so a row is always present when the footer closes the list off.
+    if (!hasMore && results.estimations.isNotEmpty) {
+      return _buildEndOfResultsFooter(context);
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final typography = context.textTheme;
     final appColors = context.colorTheme;
     final menuTap = onEstimationMenuTap;
+    final footer = _buildFooter(context);
 
     return NotificationListener<ScrollNotification>(
       onNotification: _onScrollNotification,
@@ -222,20 +237,12 @@ class SearchResultsList extends StatelessWidget {
               },
             ),
           ),
-          if (isLoadingMore)
-            SliverToBoxAdapter(child: _buildLoadingFooter(context))
-          else if (loadMoreFailed)
-            SliverToBoxAdapter(child: _buildFailureFooter(context))
-          // An empty list gets SearchResultsEmptyView instead of this widget,
-          // so a row is always present when the footer closes the list off.
-          else if (!hasMore && results.estimations.isNotEmpty)
+          if (footer != null)
             SliverPadding(
               padding: const EdgeInsets.symmetric(
                 horizontal: CoreSpacing.space4,
               ),
-              sliver: SliverToBoxAdapter(
-                child: _buildEndOfResultsFooter(context),
-              ),
+              sliver: SliverToBoxAdapter(child: footer),
             ),
         ],
       ),
