@@ -12,12 +12,12 @@ void main() {
 
   Future<void> pumpCostEstimationEmptyPage({
     required WidgetTester tester,
+    required ThemeData theme,
     String? message,
-    ThemeData? theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         home: Builder(
           builder: (ctx) => Scaffold(
             backgroundColor: ctx.colorTheme.pageBackground,
@@ -37,7 +37,10 @@ void main() {
     await loadAppFontsAll();
   });
 
-  group('CostEstimationEmptyPage Screenshot Tests - Light', () {
+  screenshotThemeGroups('CostEstimationEmptyPage Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('renders with custom message correctly', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
@@ -45,12 +48,13 @@ void main() {
       await pumpCostEstimationEmptyPage(
         tester: tester,
         message: 'No data available. Please add some content to get started.',
+        theme: theme,
       );
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/cost_estimation_empty_widget/${size.width}x${size.height}/cost_estimation_empty_widget_custom_message.png',
+          'goldens/cost_estimation_empty_widget/${size.width}x${size.height}/cost_estimation_empty_widget_custom_message$suffix.png',
         ),
       );
     });
@@ -63,51 +67,13 @@ void main() {
         tester: tester,
         message:
             'This is a very long message that should wrap to multiple lines and demonstrate how the widget handles text overflow and proper spacing between elements.',
+        theme: theme,
       );
 
       await expectLater(
         find.byType(Scaffold),
         matchesGoldenFile(
-          'goldens/cost_estimation_empty_widget/${size.width}x${size.height}/cost_estimation_empty_widget_long_message.png',
-        ),
-      );
-    });
-  });
-
-  group('CostEstimationEmptyPage Screenshot Tests - Dark', () {
-    testWidgets('renders with custom message correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-      await pumpCostEstimationEmptyPage(
-        tester: tester,
-        message: 'No data available. Please add some content to get started.',
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/cost_estimation_empty_widget/${size.width}x${size.height}/cost_estimation_empty_widget_custom_message_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('renders with long message correctly', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-      await pumpCostEstimationEmptyPage(
-        tester: tester,
-        message:
-            'This is a very long message that should wrap to multiple lines and demonstrate how the widget handles text overflow and proper spacing between elements.',
-        theme: createTestThemeDark(),
-      );
-
-      await expectLater(
-        find.byType(Scaffold),
-        matchesGoldenFile(
-          'goldens/cost_estimation_empty_widget/${size.width}x${size.height}/cost_estimation_empty_widget_long_message_dark.png',
+          'goldens/cost_estimation_empty_widget/${size.width}x${size.height}/cost_estimation_empty_widget_long_message$suffix.png',
         ),
       );
     });

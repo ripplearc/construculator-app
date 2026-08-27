@@ -18,11 +18,11 @@ void main() {
   Future<void> pumpToggle(
     WidgetTester tester, {
     required bool fromCostFile,
-    ThemeData? theme,
+    required ThemeData theme,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
-        theme: theme ?? createTestTheme(),
+        theme: theme,
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -41,18 +41,21 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('CostItemModeToggle Screenshot Tests - Light', () {
+  screenshotThemeGroups('CostItemModeToggle Screenshot Tests', (
+    theme,
+    suffix,
+  ) {
     testWidgets('manually active state', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      await pumpToggle(tester, fromCostFile: false);
+      await pumpToggle(tester, fromCostFile: false, theme: theme);
 
       await expectLater(
         find.byType(CostItemModeToggle),
         matchesGoldenFile(
-          'goldens/cost_item_mode_toggle/${size.width}x${size.height}/cost_item_mode_toggle_manually_active.png',
+          'goldens/cost_item_mode_toggle/${size.width}x${size.height}/cost_item_mode_toggle_manually_active$suffix.png',
         ),
       );
     });
@@ -62,44 +65,12 @@ void main() {
       tester.view.devicePixelRatio = ratio;
       addTearDown(tester.view.reset);
 
-      await pumpToggle(tester, fromCostFile: true);
+      await pumpToggle(tester, fromCostFile: true, theme: theme);
 
       await expectLater(
         find.byType(CostItemModeToggle),
         matchesGoldenFile(
-          'goldens/cost_item_mode_toggle/${size.width}x${size.height}/cost_item_mode_toggle_from_cost_file_active.png',
-        ),
-      );
-    });
-  });
-
-  group('CostItemModeToggle Screenshot Tests - Dark', () {
-    testWidgets('manually active state', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpToggle(tester, fromCostFile: false, theme: createTestThemeDark());
-
-      await expectLater(
-        find.byType(CostItemModeToggle),
-        matchesGoldenFile(
-          'goldens/cost_item_mode_toggle/${size.width}x${size.height}/cost_item_mode_toggle_manually_active_dark.png',
-        ),
-      );
-    });
-
-    testWidgets('from cost file active state', (tester) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = ratio;
-      addTearDown(tester.view.reset);
-
-      await pumpToggle(tester, fromCostFile: true, theme: createTestThemeDark());
-
-      await expectLater(
-        find.byType(CostItemModeToggle),
-        matchesGoldenFile(
-          'goldens/cost_item_mode_toggle/${size.width}x${size.height}/cost_item_mode_toggle_from_cost_file_active_dark.png',
+          'goldens/cost_item_mode_toggle/${size.width}x${size.height}/cost_item_mode_toggle_from_cost_file_active$suffix.png',
         ),
       );
     });
