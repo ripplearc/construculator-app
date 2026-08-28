@@ -66,7 +66,9 @@ class GlobalSearchRecentSearchItem extends StatelessWidget {
       child: Semantics(
         customSemanticsActions: {
           CustomSemanticsAction(
-            label: context.l10n.globalSearchRecentSearchDeleteSemanticLabel(term),
+            label: context.l10n.globalSearchRecentSearchDeleteSemanticLabel(
+              term,
+            ),
           ): () {
             unawaited(onDismissRequested());
           },
@@ -75,8 +77,8 @@ class GlobalSearchRecentSearchItem extends StatelessWidget {
           text: term,
           onTap: onTap,
           onTrailingTap: onTrailingTap,
-          trailingSemanticLabel:
-              context.l10n.globalSearchRecentSearchFillSemanticLabel(term),
+          trailingSemanticLabel: context.l10n
+              .globalSearchRecentSearchFillSemanticLabel(term),
         ),
       ),
     );

@@ -595,12 +595,17 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
       event.scope,
     );
 
-    // Emissions are gated on the idle surface still owning the body: a
-    // deletion resolving after the user ran a search must update the list
-    // without yanking the results surface back to recents. The row's
-    // Dismissible resolves its confirmDismiss on the term-carrying ack —
-    // and only on its own term, so concurrent swipes cannot cross-resolve.
-    final onRecentsSurface = state is GlobalSearchReady;
+    // A stale delete can resolve after the user switched scopes, and its
+    // term may textually collide with an entry in the new scope's reloaded
+    // list — so the cache prune is gated on the scope still matching.
+    // Emissions are additionally gated on the idle surface still owning the
+    // body: a deletion resolving after the user ran a search must update
+    // the list without yanking the results surface back to recents. The
+    // row's Dismissible resolves its confirmDismiss on the term-carrying
+    // ack — and only on its own term, so concurrent swipes cannot
+    // cross-resolve.
+    final scopeStillCurrent = _recentsScope == event.scope;
+    final onRecentsSurface = state is GlobalSearchReady && scopeStillCurrent;
 
     result.fold(
       (failure) {
@@ -614,8 +619,10 @@ class GlobalSearchBloc extends Bloc<GlobalSearchEvent, GlobalSearchState> {
         emit(_readyState());
       },
       (_) {
-        _recentSearches = List<String>.from(_recentSearches)
-          ..removeWhere((term) => term == event.searchTerm);
+        if (scopeStillCurrent) {
+          _recentSearches = List<String>.from(_recentSearches)
+            ..removeWhere((term) => term == event.searchTerm);
+        }
         if (!onRecentsSurface) return;
         emit(GlobalSearchRecentDeleteSuccess(searchTerm: event.searchTerm));
         emit(_readyState());

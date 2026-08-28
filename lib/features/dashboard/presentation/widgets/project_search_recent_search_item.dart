@@ -67,7 +67,9 @@ class ProjectSearchRecentSearchItem extends StatelessWidget {
       child: Semantics(
         customSemanticsActions: {
           CustomSemanticsAction(
-            label: context.l10n.projectSearchRecentSearchDeleteSemanticLabel(term),
+            label: context.l10n.projectSearchRecentSearchDeleteSemanticLabel(
+              term,
+            ),
           ): () {
             unawaited(onDismissRequested());
           },
@@ -76,8 +78,8 @@ class ProjectSearchRecentSearchItem extends StatelessWidget {
           text: term,
           onTap: onTap,
           onTrailingTap: onTrailingTap,
-          trailingSemanticLabel:
-              context.l10n.projectSearchRecentSearchFillSemanticLabel(term),
+          trailingSemanticLabel: context.l10n
+              .projectSearchRecentSearchFillSemanticLabel(term),
         ),
       ),
     );
