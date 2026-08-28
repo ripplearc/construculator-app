@@ -1,10 +1,9 @@
-import 'package:construculator/features/dashboard/presentation/widgets/project_search_recent_search_item.dart';
+import 'package:construculator/libraries/global_search/presentation/widgets/recent_search_item.dart';
 import 'package:flutter/material.dart';
 
 /// A scrollable list of recent project search terms.
 ///
-/// Displays one [ProjectSearchRecentSearchItem] per entry in
-/// [recentSearches]. All interaction is delegated upward via callbacks — this
+/// Displays one [RecentSearchItem] per entry in [recentSearches]. All interaction is delegated upward via callbacks — this
 /// widget holds no BLoC references.
 ///
 /// [recentSearches] must be non-empty; use [ProjectSearchEmptyRecentWidget]
@@ -45,7 +44,7 @@ class ProjectSearchRecentSearchesList extends StatelessWidget {
       itemCount: recentSearches.length,
       itemBuilder: (context, index) {
         final term = recentSearches[index];
-        return ProjectSearchRecentSearchItem(
+        return RecentSearchItem(
           key: ValueKey('recent_search_item_$term'),
           term: term,
           onTap: () => onItemTap(term),

@@ -4,16 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-/// A single row in the recent searches list.
+/// A single swipe-to-delete row in a recent searches list, shared by
+/// GlobalSearchPage and ProjectSearchPage.
 ///
 /// Wraps [CoreSearchRowItem.recentSearch] and supplies a localized
-/// trailing-icon semantic label via [AppLocalizations.globalSearchRecentSearchFillSemanticLabel].
+/// trailing-icon semantic label via
+/// [AppLocalizations.recentSearchFillSemanticLabel].
 ///
 /// The row can be swiped end-to-start to delete the term from history;
 /// [Dismissible] exposes the swipe as a semantic scroll action for
 /// assistive technologies. The trailing ↗ fill-the-field affordance is
 /// unchanged.
-class GlobalSearchRecentSearchItem extends StatelessWidget {
+class RecentSearchItem extends StatelessWidget {
   /// The search term to display.
   final String term;
 
@@ -32,8 +34,8 @@ class GlobalSearchRecentSearchItem extends StatelessWidget {
   /// mounted in the tree.
   final Future<bool> Function() onDismissRequested;
 
-  /// Creates a [GlobalSearchRecentSearchItem].
-  const GlobalSearchRecentSearchItem({
+  /// Creates a [RecentSearchItem].
+  const RecentSearchItem({
     super.key,
     required this.term,
     required this.onTap,
@@ -66,9 +68,7 @@ class GlobalSearchRecentSearchItem extends StatelessWidget {
       child: Semantics(
         customSemanticsActions: {
           CustomSemanticsAction(
-            label: context.l10n.globalSearchRecentSearchDeleteSemanticLabel(
-              term,
-            ),
+            label: context.l10n.recentSearchDeleteSemanticLabel(term),
           ): () {
             unawaited(onDismissRequested());
           },
@@ -77,8 +77,9 @@ class GlobalSearchRecentSearchItem extends StatelessWidget {
           text: term,
           onTap: onTap,
           onTrailingTap: onTrailingTap,
-          trailingSemanticLabel: context.l10n
-              .globalSearchRecentSearchFillSemanticLabel(term),
+          trailingSemanticLabel: context.l10n.recentSearchFillSemanticLabel(
+            term,
+          ),
         ),
       ),
     );

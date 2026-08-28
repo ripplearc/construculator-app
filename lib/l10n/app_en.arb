@@ -1496,46 +1496,6 @@
     "description": "Accessibility label for the clear search button on the project search screen",
     "context": "N/A"
   },
-  "globalSearchRecentSearchFillSemanticLabel": "Fill search field with {term}",
-  "@globalSearchRecentSearchFillSemanticLabel": {
-    "description": "Accessibility label for the trailing icon on a recent search row — fills the search field with the term",
-    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design",
-    "placeholders": {
-      "term": {
-        "type": "String"
-      }
-    }
-  },
-  "globalSearchRecentSearchDeleteSemanticLabel": "Delete {term} from recent searches",
-  "@globalSearchRecentSearchDeleteSemanticLabel": {
-    "description": "Label of the custom accessibility action on a recent search row that deletes the term from history (the assistive-technology equivalent of the swipe-to-dismiss gesture)",
-    "context": "N/A",
-    "placeholders": {
-      "term": {
-        "type": "String"
-      }
-    }
-  },
-  "projectSearchRecentSearchFillSemanticLabel": "Fill search field with {term}",
-  "@projectSearchRecentSearchFillSemanticLabel": {
-    "description": "Accessibility label for the trailing icon on a recent project search row — fills the search field with the term",
-    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design",
-    "placeholders": {
-      "term": {
-        "type": "String"
-      }
-    }
-  },
-  "projectSearchRecentSearchDeleteSemanticLabel": "Delete {term} from recent searches",
-  "@projectSearchRecentSearchDeleteSemanticLabel": {
-    "description": "Label of the custom accessibility action on a recent project search row that deletes the term from history (the assistive-technology equivalent of the swipe-to-dismiss gesture)",
-    "context": "N/A",
-    "placeholders": {
-      "term": {
-        "type": "String"
-      }
-    }
-  },
   "projectSearchSuggestionsTitle": "Search suggestions",
   "@projectSearchSuggestionsTitle": {
     "description": "Section title shown above the suggestions list on the project search screen when the user has typed a query",
@@ -1570,6 +1530,26 @@
   "@searchFailureRetryLabel": {
     "description": "Label for the retry button on the search failure state that re-runs the failed search",
     "context": "N/A"
+  },
+  "recentSearchFillSemanticLabel": "Fill search field with {term}",
+  "@recentSearchFillSemanticLabel": {
+    "description": "Accessibility label for the trailing icon on a recent search row (global and project search) — fills the search field with the term",
+    "context": "https://www.figma.com/design/vugaGpii5HfgEQHPbrS3mU/Construculator-Visual-Design",
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
+  },
+  "recentSearchDeleteSemanticLabel": "Delete {term} from recent searches",
+  "@recentSearchDeleteSemanticLabel": {
+    "description": "Label of the custom accessibility action on a recent search row (global and project search) that deletes the term from history (the assistive-technology equivalent of the swipe-to-dismiss gesture)",
+    "context": "N/A",
+    "placeholders": {
+      "term": {
+        "type": "String"
+      }
+    }
   },
   "globalSearchDeleteErrorMessage": "Failed to remove recent search. Please try again.",
   "@globalSearchDeleteErrorMessage": {

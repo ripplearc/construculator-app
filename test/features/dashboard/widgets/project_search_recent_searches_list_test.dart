@@ -1,6 +1,6 @@
-import 'package:construculator/features/dashboard/presentation/widgets/project_search_recent_search_item.dart';
 import 'package:construculator/features/dashboard/presentation/widgets/project_search_recent_searches_list.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/global_search/presentation/widgets/recent_search_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import '../../../utils/screenshot/font_loader.dart';
@@ -38,7 +38,7 @@ void main() {
       await tester.pumpWidget(makeTestableWidget());
       await tester.pump();
 
-      expect(find.byType(ProjectSearchRecentSearchItem), findsNWidgets(2));
+      expect(find.byType(RecentSearchItem), findsNWidgets(2));
       expect(
         find.byKey(const ValueKey('recent_search_item_foundation')),
         findsOneWidget,
