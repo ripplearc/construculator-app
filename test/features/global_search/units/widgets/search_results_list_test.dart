@@ -546,6 +546,25 @@ void main() {
         );
       });
 
+      testWidgets('closes a project-only result set off with the '
+          'end-of-results footer', (tester) async {
+        await tester.pumpWidget(
+          createWidget(
+            results: SearchResults(projects: [makeProject(id: 'p1')]),
+            hasMore: false,
+          ),
+        );
+
+        expect(
+          find.byKey(const Key('searchResultsEndOfResultsMessage')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('searchResultsEndOfResultsDivider')),
+          findsOneWidget,
+        );
+      });
+
       testWidgets('renders no end-of-results footer while a page fetch is in '
           'flight', (tester) async {
         await tester.pumpWidget(

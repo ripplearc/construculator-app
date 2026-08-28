@@ -1,5 +1,8 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/features/dashboard/presentation/bloc/project_dropdown_bloc/project_dropdown_bloc.dart';
+// TODO(CA-983): Promote a selection contract to libraries/ so global_search
+// doesn't import dashboard's concrete bloc directly.
+// https://ripplearc.youtrack.cloud/issue/CA-983
 import 'package:construculator/features/global_search/data/data_source/interfaces/global_search_data_source.dart';
 import 'package:construculator/features/global_search/data/data_source/remote_global_search_data_source.dart';
 import 'package:construculator/features/global_search/data/repositories/global_search_repository_impl.dart';

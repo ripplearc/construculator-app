@@ -199,10 +199,11 @@ class SearchResultsList extends StatelessWidget {
     if (loadMoreFailed) return _buildFailureFooter(context);
     // An empty list gets SearchResultsEmptyView instead of this widget,
     // so a row is always present when the footer closes the list off.
-    // TODO(CA-979): hasMore is estimation-scoped; widen this guard to cover
-    // project rows once per-domain offsets land.
+    // TODO(CA-979): hasMore itself is still estimation-scoped; once
+    // per-domain offsets land it must aggregate every paginated domain.
     // https://ripplearc.youtrack.cloud/issue/CA-979
-    if (!hasMore && results.estimations.isNotEmpty) {
+    if (!hasMore &&
+        (results.estimations.isNotEmpty || results.projects.isNotEmpty)) {
       return _buildEndOfResultsFooter(context);
     }
     return null;
