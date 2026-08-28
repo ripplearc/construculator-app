@@ -18,7 +18,7 @@ import '../../../utils/screenshot/await_images_extension.dart';
 import '../../../utils/screenshot/font_loader.dart';
 
 void main() {
-  final size = const Size(390, 56);
+  final size = const Size(390, 64);
   final ratio = 1.0;
   final testName = 'project_header_app_bar';
   TestWidgetsFlutterBinding.ensureInitialized();

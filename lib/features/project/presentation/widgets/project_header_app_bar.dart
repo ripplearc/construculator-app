@@ -4,12 +4,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
-class ProjectHeaderAppBar extends StatefulWidget implements PreferredSizeWidget {
+/// Shell header bar shown while a project is selected, with the project-name
+/// selector, search, notification, and profile-avatar cluster.
+///
+/// Both bloc states render a [CoreAppBar] with the same geometry as
+/// `TitleSearchAppBar`, so the shell's header slot keeps one height whether a
+/// project is selected or not.
+class ProjectHeaderAppBar extends StatefulWidget
+    implements PreferredSizeWidget {
+  /// Creates the [GetProjectBloc] this bar owns for its lifetime.
   final GetProjectBloc Function() getProjectBlocFactory;
+
+  /// Called when the project-name selector is tapped.
   final VoidCallback? onProjectTap;
+
+  /// Called when the search icon is tapped.
   final VoidCallback? onSearchTap;
+
+  /// Called when the notification icon is tapped.
   final VoidCallback? onNotificationTap;
 
+  /// Creates a [ProjectHeaderAppBar].
   const ProjectHeaderAppBar({
     super.key,
     required this.getProjectBlocFactory,
@@ -18,8 +33,17 @@ class ProjectHeaderAppBar extends StatefulWidget implements PreferredSizeWidget 
     this.onNotificationTap,
   });
 
+  // The content box the title and actions are laid out in. [CoreAppBar] adds
+  // [_padding] around this rather than subtracting it from it, so every
+  // control keeps a full 48x48 tap target in both bloc states (CA-822).
+  static const double _height = CoreSpacing.space12;
+  static const EdgeInsets _padding = EdgeInsets.symmetric(
+    horizontal: CoreSpacing.space4,
+    vertical: CoreSpacing.space2,
+  );
+
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => Size.fromHeight(_height + _padding.vertical);
 
   @override
   State<ProjectHeaderAppBar> createState() => _ProjectHeaderAppBarState();
@@ -49,41 +73,24 @@ class _ProjectHeaderAppBarState extends State<ProjectHeaderAppBar> {
       child: BlocBuilder<GetProjectBloc, GetProjectState>(
         builder: (context, state) {
           if (state is GetProjectInitial) {
-            return Container(
-              decoration: BoxDecoration(
-                color: appColorTheme.pageBackground,
-                boxShadow: CoreShadows.medium,
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: CoreSpacing.space4,
-                vertical: CoreSpacing.space2,
-              ),
-              child: AppBar(
-                backgroundColor: appColorTheme.pageBackground,
-                elevation: 0,
-                centerTitle: true,
-                titleSpacing: 0,
-                title: Text(context.l10n.appTitle),
-              ),
+            return CoreAppBar(
+              height: ProjectHeaderAppBar._height,
+              padding: ProjectHeaderAppBar._padding,
+              centerTitle: true,
+              titleSpacing: 0,
+              titleText: context.l10n.appTitle,
             );
           }
-          return PhysicalModel(
-            color: appColorTheme.pageBackground,
-            elevation: 0,
-            borderRadius: BorderRadius.zero,
-            child: Container(
-              decoration: BoxDecoration(
-                boxShadow: CoreShadows.medium,
-                color: appColorTheme.pageBackground,
-              ),
-              height: double.infinity,
-              padding: EdgeInsets.symmetric(horizontal: CoreSpacing.space4),
-              child: AppBar(
-                backgroundColor: appColorTheme.pageBackground,
-                elevation: 0,
-                scrolledUnderElevation: 0,
-                titleSpacing: 0,
-                title: InkWell(
+          return CoreAppBar(
+            height: ProjectHeaderAppBar._height,
+            padding: ProjectHeaderAppBar._padding,
+            titleSpacing: 0,
+            title: Semantics(
+              label: context.l10n.projectDropdownSemanticLabel,
+              button: widget.onProjectTap != null,
+              child: SizedBox(
+                height: ProjectHeaderAppBar._height,
+                child: InkWell(
                   onTap: widget.onProjectTap,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -98,27 +105,29 @@ class _ProjectHeaderAppBarState extends State<ProjectHeaderAppBar> {
                     ],
                   ),
                 ),
-                actions: [
-                  CoreIconWidget(
-                    key: const Key('project_header_search_button'),
-                    icon: CoreIcons.search,
-                    size: 24,
-                    padding: const EdgeInsets.all(CoreSpacing.space3),
-                    onTap: widget.onSearchTap,
-                    color: appColorTheme.iconDark,
-                  ),
-                  CoreIconWidget(
-                    key: const Key('project_header_notification_button'),
-                    onTap: widget.onNotificationTap,
-                    icon: CoreIcons.notification,
-                    size: 24,
-                    padding: const EdgeInsets.all(CoreSpacing.space3),
-                    color: appColorTheme.iconDark,
-                  ),
-                  _buildAvatar(),
-                ],
               ),
             ),
+            actions: [
+              CoreIconWidget(
+                key: const Key('project_header_search_button'),
+                icon: CoreIcons.search,
+                size: 24,
+                padding: const EdgeInsets.all(CoreSpacing.space3),
+                onTap: widget.onSearchTap,
+                color: appColorTheme.iconDark,
+                semanticLabel: context.l10n.dashboardSearchSemanticLabel,
+              ),
+              CoreIconWidget(
+                key: const Key('project_header_notification_button'),
+                onTap: widget.onNotificationTap,
+                icon: CoreIcons.notification,
+                size: 24,
+                padding: const EdgeInsets.all(CoreSpacing.space3),
+                color: appColorTheme.iconDark,
+                semanticLabel: context.l10n.notificationSemanticLabel,
+              ),
+              _buildAvatar(),
+            ],
           );
         },
       ),

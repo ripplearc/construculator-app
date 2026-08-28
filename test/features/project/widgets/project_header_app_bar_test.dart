@@ -1,3 +1,4 @@
+import 'package:construculator/features/app_header/presentation/widgets/title_search_app_bar.dart';
 import 'package:construculator/features/project/presentation/bloc/get_project_bloc/get_project_bloc.dart';
 import 'package:construculator/features/project/presentation/widgets/project_header_app_bar.dart';
 import 'package:construculator/features/project/project_module.dart';
@@ -69,9 +70,37 @@ void main() {
 
     testWidgets('shows app title when no project is selected', (tester) async {
       await pumpNoProject(tester);
-      expect(find.text(AppLocalizations.of(buildContext!)!.appTitle), findsOneWidget);
+      expect(
+        find.text(AppLocalizations.of(buildContext!)!.appTitle),
+        findsOneWidget,
+      );
       expect(find.byType(CoreLoadingIndicator), findsNothing);
     });
+
+    test('preferred size matches TitleSearchAppBar so the shell header slot '
+        'keeps one height across project selection', () {
+      final bar = ProjectHeaderAppBar(
+        getProjectBlocFactory: () => Modular.get<GetProjectBloc>(),
+      );
+      expect(bar.preferredSize, const TitleSearchAppBar().preferredSize);
+      expect(
+        bar.preferredSize.height,
+        CoreSpacing.space12 + CoreSpacing.space2 * 2,
+      );
+    });
+
+    testWidgets(
+      'initial state renders a CoreAppBar at the full preferred height',
+      (tester) async {
+        await pumpNoProject(tester);
+
+        expect(find.byType(CoreAppBar), findsOneWidget);
+        expect(
+          tester.getSize(find.byType(CoreAppBar)).height,
+          CoreSpacing.space12 + CoreSpacing.space2 * 2,
+        );
+      },
+    );
 
     Future<void> pumpProjectHeaderAppBar(
       WidgetTester tester, {
@@ -137,6 +166,24 @@ void main() {
       expect(find.byType(ProjectHeaderAppBar), findsOneWidget);
       expect(find.text(projectName), findsOneWidget);
     });
+
+    testWidgets(
+      'loaded state renders a CoreAppBar at the full preferred height',
+      (tester) async {
+        await pumpProjectHeaderAppBar(
+          tester,
+          projectId: 'test-project-id',
+          projectName: 'Test Project',
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CoreAppBar), findsOneWidget);
+        expect(
+          tester.getSize(find.byType(CoreAppBar)).height,
+          CoreSpacing.space12 + CoreSpacing.space2 * 2,
+        );
+      },
+    );
 
     testWidgets('calls onProjectTap when project name is tapped', (
       WidgetTester tester,
