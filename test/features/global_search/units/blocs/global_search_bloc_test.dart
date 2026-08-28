@@ -53,6 +53,16 @@ Map<String, dynamic> _fakeProjectData({String? id, String? projectName}) {
   };
 }
 
+Future<void> _untilHandlerRuns(
+  bool Function() condition, {
+  int maxTurns = 100,
+}) async {
+  for (var turn = 0; turn < maxTurns; turn++) {
+    if (condition()) return;
+    await Future<void>.microtask(() {});
+  }
+}
+
 Map<String, dynamic> _fakeSearchHistoryData({
   required String userId,
   required String searchTerm,
@@ -2159,6 +2169,179 @@ void main() {
             'recentSearches kept intact',
             allOf(hasLength(2), containsAll(['wall', 'concrete'])),
           ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'a delete succeeding after the user ran a search emits no ack but '
+        'still prunes the term for the next recents visit',
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
+            _fakeSearchHistoryData(userId: _testUserId, searchTerm: 'wall'),
+            _fakeSearchHistoryData(userId: _testUserId, searchTerm: 'concrete'),
+          ]);
+          fakeSupabase.setRpcResponse(
+            DatabaseConstants.globalSearchRpcFunction,
+            _globalSearchResponse(estimations: _fakeEstimationPage(3)),
+          );
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('wall'),
+          );
+          bloc.add(const GlobalSearchPerformed(query: 'brick'));
+          await bloc.stream.firstWhere(
+            (state) => state is GlobalSearchLoadSuccess,
+          );
+          // The delete resolves on microtasks while the results surface owns
+          // the body; the debounced query-clear afterwards is the barrier,
+          // and its Ready re-exposes the pruned cache.
+          bloc.add(
+            const GlobalSearchRecentRemoved(
+              searchTerm: 'wall',
+              scope: SearchScope.dashboard,
+            ),
+          );
+          bloc.add(const GlobalSearchQueryUpdated(query: ''));
+          await bloc.stream.firstWhere((state) => state is GlobalSearchReady);
+        },
+        skip: 1,
+        expect: () => [
+          isA<GlobalSearchLoadInProgress>(),
+          isA<GlobalSearchLoadSuccess>(),
+          // No delete ack may interleave here: the results surface owned
+          // the body when the delete resolved.
+          isA<GlobalSearchReady>().having(
+            (s) => s.recentSearches,
+            'recentSearches on returning to recents',
+            allOf(isNot(contains('wall')), contains('concrete')),
+          ),
+        ],
+      );
+
+      blocTest<GlobalSearchBloc, GlobalSearchState>(
+        'a stale delete resolving after a scope switch neither prunes the '
+        "new scope's identically-named entry nor emits an ack",
+        setUp: () {
+          fakeSupabase.setCurrentUser(
+            FakeUser(
+              id: _testUserId,
+              email: _testUserEmail,
+              createdAt: fakeClock.now().toIso8601String(),
+            ),
+          );
+          fakeSupabase.addTableData(DatabaseConstants.searchHistoryTable, [
+            _fakeSearchHistoryData(userId: _testUserId, searchTerm: 'wall'),
+            _fakeSearchHistoryData(
+              userId: _testUserId,
+              searchTerm: 'wall',
+              scope: SearchScope.estimation,
+            ),
+          ]);
+        },
+        build: () => Modular.get<GlobalSearchBloc>(),
+        act: (bloc) async {
+          bloc.add(const GlobalSearchStarted());
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentSearches.contains('wall'),
+          );
+          // Gate the dashboard-scoped delete in flight. The event emits
+          // nothing before its await, so the backend-call record is the
+          // signal that it reached the gate.
+          fakeSupabase.shouldDelayOperations = true;
+          fakeSupabase.completer = Completer<void>();
+          bloc.add(
+            const GlobalSearchRecentRemoved(
+              searchTerm: 'wall',
+              scope: SearchScope.dashboard,
+            ),
+          );
+          await _untilHandlerRuns(
+            () => fakeSupabase.getMethodCallsFor('deleteMatch').isNotEmpty,
+          );
+          // The scope switch and its history reload run ungated past the
+          // held delete, so the delete resolves strictly after the
+          // estimation history owns the surface.
+          fakeSupabase.shouldDelayOperations = false;
+          bloc.add(
+            const GlobalSearchScopeChanged(scope: SearchScope.estimation),
+          );
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentsScope == SearchScope.estimation,
+          );
+          fakeSupabase.completer!.complete();
+          // The resumed stale delete must touch nothing; the second scope
+          // switch is the barrier, and its immediate emission re-exposes
+          // the estimation cache.
+          bloc.add(
+            const GlobalSearchScopeChanged(scope: SearchScope.dashboard),
+          );
+          await bloc.stream.firstWhere(
+            (state) =>
+                state is GlobalSearchReady &&
+                state.recentsScope == SearchScope.dashboard,
+          );
+        },
+        expect: () => [
+          isA<GlobalSearchReady>().having(
+            (s) => s.recentSearches,
+            'dashboard history',
+            contains('wall'),
+          ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedScope,
+                'scope emitted',
+                SearchScope.estimation,
+              )
+              .having(
+                (s) => s.recentsScope,
+                'recents lag',
+                SearchScope.dashboard,
+              ),
+          isA<GlobalSearchReady>().having(
+            (s) => s.recentsScope,
+            'estimation history loaded',
+            SearchScope.estimation,
+          ),
+          // The stale delete's completion must emit nothing in between.
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.selectedScope,
+                'scope emitted',
+                SearchScope.dashboard,
+              )
+              .having(
+                (s) => s.recentSearches,
+                'estimation cache un-pruned by the stale dashboard delete',
+                contains('wall'),
+              ),
+          isA<GlobalSearchReady>()
+              .having(
+                (s) => s.recentsScope,
+                'dashboard history reloaded',
+                SearchScope.dashboard,
+              )
+              .having(
+                (s) => s.recentSearches,
+                'backend row genuinely deleted',
+                isEmpty,
+              ),
         ],
       );
     });
