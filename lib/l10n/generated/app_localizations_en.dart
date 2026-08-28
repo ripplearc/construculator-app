@@ -941,26 +941,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get projectSearchClearSearchSemanticLabel => 'Clear search';
 
   @override
-  String globalSearchRecentSearchFillSemanticLabel(String term) {
-    return 'Fill search field with $term';
-  }
-
-  @override
-  String globalSearchRecentSearchDeleteSemanticLabel(String term) {
-    return 'Delete $term from recent searches';
-  }
-
-  @override
-  String projectSearchRecentSearchFillSemanticLabel(String term) {
-    return 'Fill search field with $term';
-  }
-
-  @override
-  String projectSearchRecentSearchDeleteSemanticLabel(String term) {
-    return 'Delete $term from recent searches';
-  }
-
-  @override
   String get projectSearchSuggestionsTitle => 'Search suggestions';
 
   @override
@@ -981,6 +961,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchFailureRetryLabel => 'Retry';
+
+  @override
+  String recentSearchFillSemanticLabel(String term) {
+    return 'Fill search field with $term';
+  }
+
+  @override
+  String recentSearchDeleteSemanticLabel(String term) {
+    return 'Delete $term from recent searches';
+  }
 
   @override
   String get globalSearchDeleteErrorMessage =>

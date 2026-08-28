@@ -1,6 +1,6 @@
-import 'package:construculator/features/global_search/presentation/widgets/global_search_recent_search_item.dart';
 import 'package:construculator/features/global_search/presentation/widgets/global_search_recent_searches_list.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/global_search/presentation/widgets/recent_search_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import '../../../utils/screenshot/font_loader.dart';
@@ -39,7 +39,7 @@ void main() {
       await tester.pumpWidget(makeTestableWidget());
       await tester.pump();
 
-      expect(find.byType(GlobalSearchRecentSearchItem), findsNWidgets(2));
+      expect(find.byType(RecentSearchItem), findsNWidgets(2));
       expect(find.text('Material of building'), findsOneWidget);
       expect(find.text('MD bungalow'), findsOneWidget);
     });
@@ -48,7 +48,7 @@ void main() {
       await tester.pumpWidget(makeTestableWidget(recentSearches: ['a', 'b', 'c']));
       await tester.pump();
 
-      expect(find.byType(GlobalSearchRecentSearchItem), findsNWidgets(3));
+      expect(find.byType(RecentSearchItem), findsNWidgets(3));
     });
 
     testWidgets('onItemTap called with correct term', (tester) async {

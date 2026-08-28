@@ -1,9 +1,9 @@
-import 'package:construculator/features/global_search/presentation/widgets/global_search_recent_search_item.dart';
+import 'package:construculator/libraries/global_search/presentation/widgets/recent_search_item.dart';
 import 'package:flutter/material.dart';
 
 /// A scrollable list of recent search terms.
 ///
-/// Displays one [GlobalSearchRecentSearchItem] per entry in [recentSearches].
+/// Displays one [RecentSearchItem] per entry in [recentSearches].
 /// All interaction is delegated upward via callbacks — this widget holds no
 /// BLoC references.
 ///
@@ -42,7 +42,7 @@ class GlobalSearchRecentSearchesList extends StatelessWidget {
       itemCount: recentSearches.length,
       itemBuilder: (context, index) {
         final term = recentSearches[index];
-        return GlobalSearchRecentSearchItem(
+        return RecentSearchItem(
           key: ValueKey('recent_search_item_$term'),
           term: term,
           onTap: () => onItemTap(term),
