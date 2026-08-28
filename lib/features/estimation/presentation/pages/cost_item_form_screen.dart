@@ -45,52 +45,46 @@ class _CostItemFormScreenState extends State<CostItemFormScreen> {
     final colorTheme = context.colorTheme;
     final textTheme = context.textTheme;
     final l10n = context.l10n;
-    return PreferredSize(
-      preferredSize: const Size.fromHeight(kToolbarHeight + 5),
-      child: Container(
-        decoration: BoxDecoration(
-          boxShadow: CoreShadows.medium,
-          color: colorTheme.pageBackground,
-        ),
-        child: AppBar(
-          backgroundColor: colorTheme.pageBackground,
-          elevation: 0,
-          centerTitle: false,
-          titleSpacing: CoreSpacing.space1,
-          leading: CoreIconWidget(
-            key: const Key('back_button'),
-            icon: CoreIcons.cross,
+    return CoreAppBar(
+      height: CoreSpacing.space12,
+      padding: const EdgeInsets.only(
+        top: CoreSpacing.space2,
+        bottom: CoreSpacing.space2,
+        right: CoreSpacing.space4,
+      ),
+      centerTitle: false,
+      titleSpacing: CoreSpacing.space1,
+      leading: CoreIconWidget(
+        key: const Key('back_button'),
+        icon: CoreIcons.cross,
+        color: colorTheme.iconDark,
+        padding: EdgeInsets.all(CoreSpacing.space3),
+        size: 24,
+        semanticLabel: l10n.closeLabel,
+        onTap: widget.router.pop,
+      ),
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(
+              _screenTitle(context),
+              style: textTheme.titleMediumSemiBold.copyWith(
+                color: colorTheme.textHeadline,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          // TODO: [CA-356] [Cost Estimation] Build Edit Cost Item Screen UI https://ripplearc.youtrack.cloud/issue/CA-356/Cost-Estimation-Build-Edit-Cost-Item-Screen-UI
+          CoreIconWidget(
+            key: const Key('edit_title_button'),
+            icon: CoreIcons.edit,
             color: colorTheme.iconDark,
-            padding: EdgeInsets.all(CoreSpacing.space4),
+            padding: EdgeInsets.all(CoreSpacing.space2),
             size: 24,
-            visualDensity: VisualDensity.compact,
-            semanticLabel: l10n.closeLabel,
-            onTap: widget.router.pop,
+            semanticLabel: l10n.editCostItemNameLabel,
           ),
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: Text(
-                  _screenTitle(context),
-                  style: textTheme.titleMediumSemiBold.copyWith(
-                    color: colorTheme.textHeadline,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              // TODO: [CA-356] [Cost Estimation] Build Edit Cost Item Screen UI https://ripplearc.youtrack.cloud/issue/CA-356/Cost-Estimation-Build-Edit-Cost-Item-Screen-UI
-              CoreIconWidget(
-                key: const Key('edit_title_button'),
-                icon: CoreIcons.edit,
-                color: colorTheme.iconDark,
-                padding: EdgeInsets.all(CoreSpacing.space2),
-                size: 24,
-                semanticLabel: l10n.editCostItemNameLabel,
-              ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }

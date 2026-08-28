@@ -1,5 +1,6 @@
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// Fake implementation of [ProjectUIProvider] for testing.
 ///
@@ -25,8 +26,11 @@ class FakeProjectUIProvider implements ProjectUIProvider {
     VoidCallback? onNotificationTap,
   }) {
     buildProjectHeaderAppbarCallCount++;
+    // Mirrors ProjectHeaderAppBar.preferredSize.
     return const PreferredSize(
-      preferredSize: Size.fromHeight(kToolbarHeight),
+      preferredSize: Size.fromHeight(
+        CoreSpacing.space12 + CoreSpacing.space2 * 2,
+      ),
       child: FakeProjectAppBar(),
     );
   }

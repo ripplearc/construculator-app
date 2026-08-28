@@ -135,6 +135,23 @@ void main() {
       expect(find.byType(CostEstimationDetailsTabView), findsOneWidget);
     });
 
+    testWidgets('app bar is a CoreAppBar on the Figma Action Bar geometry', (
+      WidgetTester tester,
+    ) async {
+      setUpAuthenticatedUser(
+        credentialId: 'test-credential-id',
+        email: 'test@example.com',
+      );
+
+      await pumpAppAtRoute(tester, testEstimationRoute);
+
+      expect(find.byType(CoreAppBar), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(CoreAppBar)).height,
+        CoreSpacing.space12 + CoreSpacing.space2 * 2,
+      );
+    });
+
     testWidgets('displays back navigation button', (WidgetTester tester) async {
       setUpAuthenticatedUser(
         credentialId: 'test-credential-id',

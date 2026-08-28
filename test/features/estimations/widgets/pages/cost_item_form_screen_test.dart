@@ -114,6 +114,19 @@ void main() {
       expect(find.byType(CostItemFormScreen), findsOneWidget);
     });
 
+    testWidgets('app bar is a CoreAppBar on the Figma Action Bar geometry', (
+      tester,
+    ) async {
+      setUpAuthenticatedUser();
+      await pumpAppAtRoute(tester, makeApp(), materialRoute);
+
+      expect(find.byType(CoreAppBar), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(CoreAppBar)).height,
+        CoreSpacing.space12 + CoreSpacing.space2 * 2,
+      );
+    });
+
     testWidgets('renders labour cost form screen', (tester) async {
       setUpAuthenticatedUser();
       await pumpAppAtRoute(tester, makeApp(), labourRoute);

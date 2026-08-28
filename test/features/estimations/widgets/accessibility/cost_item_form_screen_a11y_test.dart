@@ -128,6 +128,20 @@ void main() {
       );
     });
 
+    testWidgets('a11y: back button meets the 48x48 tap target', (tester) async {
+      setUpAuthenticatedUser();
+
+      await pumpAppAtRoute(tester, makeApp(), materialRoute);
+
+      // The global tap-target guideline stays off for this screen (the 32px
+      // pills above), so the bar's own close target is pinned directly.
+      final backButtonSize = tester.getSize(
+        find.byKey(const Key('back_button')),
+      );
+      expect(backButtonSize.width, greaterThanOrEqualTo(CoreSpacing.space12));
+      expect(backButtonSize.height, greaterThanOrEqualTo(CoreSpacing.space12));
+    });
+
     testWidgets('a11y: mode toggle meets tap target guidelines in both themes', (
       tester,
     ) async {

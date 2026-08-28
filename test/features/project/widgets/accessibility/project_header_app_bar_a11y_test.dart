@@ -79,14 +79,7 @@ void main() {
   }
 
   group('ProjectHeaderAppBar A11y', () {
-    // Note: checkTapTargetSize and checkLabeledTapTarget are disabled for
-    // the icon-button tests below due to two pre-existing gaps:
-    //   - The project-name InkWell is constrained to AppBar title height
-    //     (~26 px), which is below the 48 px guideline.
-    //   - CoreIconWidget does not expose a semantic label for search and
-    //     notification icons; adding semantic labels is tracked separately.
-
-    testWidgets('search button renders in tree without contrast violations', (
+    testWidgets('search button meets all a11y guidelines in both themes', (
       tester,
     ) async {
       await setupA11yTest(tester);
@@ -94,28 +87,24 @@ void main() {
         tester,
         buildWidget,
         find.byKey(const Key('project_header_search_button')),
-        checkTapTargetSize: false,
-        checkLabeledTapTarget: false,
         setupAfterPump: (t) => t.pumpAndSettle(),
       );
     });
 
     testWidgets(
-      'notification button renders in tree without contrast violations',
+      'notification button meets all a11y guidelines in both themes',
       (tester) async {
         await setupA11yTest(tester);
         await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
           tester,
           buildWidget,
           find.byKey(const Key('project_header_notification_button')),
-          checkTapTargetSize: false,
-          checkLabeledTapTarget: false,
           setupAfterPump: (t) => t.pumpAndSettle(),
         );
       },
     );
 
-    testWidgets('project name text meets contrast guidelines in both themes', (
+    testWidgets('project name text meets all a11y guidelines in both themes', (
       tester,
     ) async {
       await setupA11yTest(tester);
@@ -123,8 +112,6 @@ void main() {
         tester,
         buildWidget,
         find.text(testProjectName),
-        checkTapTargetSize: false,
-        checkLabeledTapTarget: false,
         setupAfterPump: (t) => t.pumpAndSettle(),
       );
     });
