@@ -6,6 +6,7 @@
 
 ## Development Guidelines
 - [Agentic Skills Migration Plan](Agentic-Skills-Migration-Plan)
+- [Agentic Protocol — Customer Support](Agentic-Protocol-Customer-Support)
 
 ## Configuration
 - [Launcher Icons](Launcher-Icons-Configuration)
