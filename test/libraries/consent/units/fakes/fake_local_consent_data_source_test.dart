@@ -278,21 +278,31 @@ void main() {
         await expectation;
       });
 
-      test('does not emit for a write to a different user or type', () async {
-        // This used to pass only because the wrapped store's watch stream
-        // dropped both writes into an unsubscribed window (a race fixed in
-        // #542) rather than because they were genuinely filtered by identity
-        // -- expectLater/emitsInOrder against a synchronously-subscribed,
-        // distinct-collapsed stream makes the same assertion for the right
-        // reason instead.
+      test('ignores writes for a different user or type', () async {
+        // The sequence has to end on a real matching write to be able to
+        // fail. `emitsInOrder([isNull])` alone is satisfied by the initial
+        // emission, which is `null` for a watched pair with no record no
+        // matter whether identity filtering works, and then ignores every
+        // later event. Two matchers consume one event each, so a foreign
+        // write leaking through `_latest` lands on the second matcher --
+        // version 1 rather than 9 -- and reddens the test.
         final stream = fake.watchLatestUserConsent(userId, type);
-        final expectation = expectLater(stream, emitsInOrder([isNull]));
+        final expectation = expectLater(
+          stream,
+          emitsInOrder([
+            isNull,
+            predicate<UserConsentDto?>((r) => r!.version == 9),
+          ]),
+        );
 
         await fake.insertUserConsent(
           record('user-2', type, 1, ConsentAction.accepted),
         );
         await fake.insertUserConsent(
           record(userId, ConsentType.analytics, 1, ConsentAction.accepted),
+        );
+        await fake.insertUserConsent(
+          record(userId, type, 9, ConsentAction.accepted),
         );
 
         await expectation;
