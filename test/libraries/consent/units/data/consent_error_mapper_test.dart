@@ -94,7 +94,9 @@ void main() {
       );
     });
 
-    test('maps an expired token to permissionDenied via PGRST301', () {
+    test('maps an expired JWT to authenticationError via PGRST301', () {
+      // PostgREST rejects the request before it reaches a table's policy, so
+      // no identity was ever presented — this is not a policy denial.
       expect(
         ConsentErrorMapper.toErrorType(
           const supabase.PostgrestException(
@@ -102,7 +104,7 @@ void main() {
             code: 'PGRST301',
           ),
         ),
-        ConsentErrorType.permissionDenied,
+        ConsentErrorType.authenticationError,
       );
     });
 

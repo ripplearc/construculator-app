@@ -14,10 +14,13 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 /// failure means recognizing `PostgrestException` codes and auth errors, and
 /// the domain is not allowed to know those types exist.
 ///
-/// Permission denials are the one rejection [PostgresErrorCode] has no value
-/// for: an expired or missing JWT arrives as `PGRST301`, and PostgREST reports
-/// some policy denials in prose rather than a code, so both are matched by
-/// hand under [PostgresErrorCode.unknownError].
+/// Some rejections [PostgresErrorCode] has no value for are matched by hand,
+/// ahead of the switch. A missing or expired JWT arrives as `PGRST301`, which
+/// PostgREST returns before the request reaches a table's policy, so it is an
+/// authentication failure rather than a denial of a known identity. Policy
+/// denials that PostgREST reports in prose rather than a code have no marker
+/// at all, so they are what is left falling through to
+/// [PostgresErrorCode.unknownError].
 class ConsentErrorMapper {
   const ConsentErrorMapper._();
 
@@ -77,6 +80,14 @@ class ConsentErrorMapper {
         return ConsentErrorType.connectionError;
       }
 
+      // PGRST301: PostgREST rejects a missing or expired JWT before the
+      // request reaches a table's row-level security policy, so no identity
+      // was ever presented — an authentication failure, not a denial of a
+      // known one.
+      if (error.code == 'PGRST301') {
+        return ConsentErrorType.authenticationError;
+      }
+
       final postgresErrorCode = PostgresErrorCode.fromCode(error.code);
 
       switch (postgresErrorCode) {
@@ -90,7 +101,7 @@ class ConsentErrorMapper {
         case PostgresErrorCode.noDataFound:
           return ConsentErrorType.unexpectedDatabaseError;
         case PostgresErrorCode.unknownError:
-          return _isPermissionDenied(error)
+          return _isDeniedByPolicy(error)
               ? ConsentErrorType.permissionDenied
               : ConsentErrorType.unexpectedDatabaseError;
       }
@@ -99,8 +110,7 @@ class ConsentErrorMapper {
     return ConsentErrorType.unexpectedError;
   }
 
-  static bool _isPermissionDenied(supabase.PostgrestException error) {
-    return error.code == 'PGRST301' ||
-        error.message.toLowerCase().contains('permission denied');
+  static bool _isDeniedByPolicy(supabase.PostgrestException error) {
+    return error.message.toLowerCase().contains('permission denied');
   }
 }

@@ -27,12 +27,19 @@
             <mutation text="if (false) {\n        return ConsentErrorType.connectionError;\n      }"/>
         </regex>
 
-        <!-- RULE 4: isTransient stops recognising timeoutError as transient. -->
+        <!-- RULE 4: Skip the PGRST301 arm, so an expired JWT falls through to
+             the switch's unknownError branch and is reported as a database
+             error instead of an authentication failure. -->
+        <regex pattern="if \(error\.code == 'PGRST301'\) \{\n        return ConsentErrorType\.authenticationError;\n      \}" dotAll="true" id="consent_error_mapper.to_error_type.skip_pgrst301">
+            <mutation text="if (false) {\n        return ConsentErrorType.authenticationError;\n      }"/>
+        </regex>
+
+        <!-- RULE 5: isTransient stops recognising timeoutError as transient. -->
         <regex pattern="errorType == ConsentErrorType\.connectionError \|\|\n        errorType == ConsentErrorType\.timeoutError;" dotAll="true" id="consent_error_mapper.is_transient.drop_timeout">
             <mutation text="errorType == ConsentErrorType.connectionError;"/>
         </regex>
 
-        <!-- RULE 5: isTransient stops recognising connectionError as transient. -->
+        <!-- RULE 6: isTransient stops recognising connectionError as transient. -->
         <regex pattern="errorType == ConsentErrorType\.connectionError \|\|\n        errorType == ConsentErrorType\.timeoutError;" dotAll="true" id="consent_error_mapper.is_transient.drop_connection">
             <mutation text="errorType == ConsentErrorType.timeoutError;"/>
         </regex>
