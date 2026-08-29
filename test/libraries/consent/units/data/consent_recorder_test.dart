@@ -57,6 +57,15 @@ void main() {
       expect(stored.userId, 'user-1');
       expect(stored.version, 4);
       expect(stored.action, ConsentAction.accepted);
+
+      // The row the store wrote back, not one rebuilt from the arguments:
+      // only the store can supply the id, so a recorder that echoed its own
+      // input would be indistinguishable from this without the comparison.
+      final onFile = await dataSource.fetchLatestUserConsent(
+        'user-1',
+        ConsentType.termsAndPrivacy,
+      );
+      expect(stored, onFile!.toDomain());
     });
 
     test('records a withdrawal the same way as an acceptance', () async {

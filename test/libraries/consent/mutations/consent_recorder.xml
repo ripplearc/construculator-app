@@ -3,8 +3,9 @@
     <!-- CONSENT RECORDER MUTATION TESTING -->
     <!-- Targets: ConsentRecorder.record — the one path in the consent library
          that returns a real Failure. Covers the null-userId guard, the
-         timestamp it stamps a write with, and the catch block reaching the
-         error mapper rather than swallowing the write failure. -->
+         timestamp it stamps a write with, the row it hands back to the
+         caller, and the catch block reaching the error mapper rather than
+         swallowing the write failure. -->
 
     <files>
         <file>lib/libraries/consent/data/consent_recorder.dart</file>
@@ -27,6 +28,14 @@
              mapping it, so a permission or auth failure is misreported. -->
         <regex pattern="return Left\(ConsentErrorMapper\.toFailure\(error\)\);" dotAll="true" id="consent_recorder.record.flatten_error_mapping">
             <mutation text="return const Left(ConsentFailure(errorType: ConsentErrorType.unexpectedError));"/>
+        </regex>
+
+        <!-- RULE 4: Return an entity rebuilt from the arguments the caller
+             passed rather than the row the store wrote back, so an id the
+             store never assigned would be handed to the caller as a
+             recorded consent. -->
+        <regex pattern="return Right\(stored\.toDomain\(\)\);" dotAll="true" id="consent_recorder.record.echo_the_input">
+            <mutation text="return Right(UserConsent(id: 'unwritten', userId: userId, consentType: consentType, version: version, action: action, recordedAt: _clock.now()));"/>
         </regex>
     </rules>
 

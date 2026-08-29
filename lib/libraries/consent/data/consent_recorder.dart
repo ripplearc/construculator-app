@@ -47,6 +47,9 @@ class ConsentRecorder {
     }
 
     try {
+      // TODO: [CA-1026] appVersion and platform are left null — the columns
+      // and the DTO fields exist, but ConsentRepository does not expose them,
+      // so there is no path for a caller to supply them yet.
       final stored = await _localDataSource.insertUserConsent(
         UserConsentDto.draft(
           userId: userId,
