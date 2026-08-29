@@ -61,8 +61,10 @@ class AuthTestModule extends Module {
       AppBootstrap(
         // Defaults to 'on' here so existing signup-consent tests exercise
         // _recordSignupConsent the way they did before that call was gated
-        // behind this flag -- a test that is specifically about the flag
-        // being off grabs Modular.get<EnvLoader>() and overrides it.
+        // -- a test that is specifically about the flag being off grabs
+        // Modular.get<EnvLoader>() and overrides it. Pairs with
+        // persistenceReady: true on the bloc bind below; the flag alone
+        // cannot reach that code path any more.
         envLoader: FakeEnvLoader()..setEnvVar(consentGateEnabledKey, 'true'),
         config: FakeAppConfig(),
         supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
@@ -116,6 +118,10 @@ class AuthTestModule extends Module {
         checkConsentStatusUseCase: i(),
         recordConsentUseCase: i(),
         envLoader: Modular.get<EnvLoader>(),
+        // Stands in for CA-971 having landed, so the recording tests keep
+        // exercising the real write path while consentPersistenceReady is
+        // false. The real AuthModule passes nothing and gets the block.
+        persistenceReady: true,
       ),
     );
     i.add<LoginWithEmailBloc>(

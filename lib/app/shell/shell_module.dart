@@ -17,7 +17,7 @@ import 'package:construculator/features/project_settings/project_settings_routes
 import 'package:construculator/libraries/analytics/feature_flag_module.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
-import 'package:construculator/libraries/config/env_constants.dart';
+import 'package:construculator/libraries/consent/consent_gate_readiness.dart';
 import 'package:construculator/libraries/consent/consent_library_module.dart';
 import 'package:construculator/libraries/consent/domain/usecases/check_consent_status_usecase.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
@@ -38,7 +38,15 @@ import 'package:flutter_modular/flutter_modular.dart';
 /// Modular module that owns the app shell's dependency bindings and root route.
 class ShellModule extends Module {
   final AppBootstrap appBootstrap;
-  ShellModule(this.appBootstrap);
+
+  /// Seam for [consentGateEnabled]'s `persistenceReady`; the app never
+  /// passes it, so the shell always gets the compile-time answer.
+  final bool persistenceReady;
+
+  ShellModule(
+    this.appBootstrap, {
+    this.persistenceReady = consentPersistenceReady,
+  });
 
   @override
   List<Module> get imports => [
@@ -54,12 +62,15 @@ class ShellModule extends Module {
   /// Guards protecting the authenticated shell.
   ///
   /// [AuthGuard] is unconditional and always first, so [ConsentGuard] only
-  /// ever evaluates for a signed-in user. The consent gate is opt-in until
-  /// CA-971 lands — see [consentGateEnabledKey] for why enabling it against
-  /// the in-memory stand-in would lock users out.
+  /// ever evaluates for a signed-in user. The consent gate additionally
+  /// requires [consentPersistenceReady], so no `.env` value alone can mount
+  /// a gate this build cannot durably record an acceptance for.
   List<RouteGuard> get _shellGuards => [
     AuthGuard(() => Modular.get<AuthManager>()),
-    if (appBootstrap.envLoader.get(consentGateEnabledKey) == 'true')
+    if (consentGateEnabled(
+      appBootstrap.envLoader,
+      persistenceReady: persistenceReady,
+    ))
       ConsentGuard(() => Modular.get<CheckConsentStatusUseCase>()),
   ];
 

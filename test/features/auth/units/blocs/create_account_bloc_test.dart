@@ -905,6 +905,44 @@ void main() {
           expect(consent.recordedAcceptances, isEmpty);
         },
       );
+
+      blocTest<CreateAccountBloc, CreateAccountState>(
+        'does not check or record consent at the production default, '
+        'even with the gate flag on',
+        // AuthTestModule's bind passes persistenceReady: true to stand in
+        // for CA-971; this builds the bloc the way the real AuthModule
+        // does, leaving readiness at the compile-time default. With the
+        // flag deliberately on, a deployment that flips CONSENT_GATE_ENABLED
+        // by mistake still writes nothing.
+        build: () {
+          (Modular.get<EnvLoader>() as FakeEnvLoader).setEnvVar(
+            consentGateEnabledKey,
+            'true',
+          );
+          consent.cachedStatusToReturn = ConsentNeverGiven(requiredVersion);
+          // Built by hand rather than resolved: AuthTestModule's bind is the
+          // one place persistenceReady is forced true, and this case is
+          // specifically about the production default.
+          // ignore: no_direct_instantiation
+          return CreateAccountBloc(
+            createAccountUseCase: Modular.get(),
+            getProfessionalRolesUseCase: Modular.get(),
+            sendOtpUseCase: Modular.get(),
+            checkConsentStatusUseCase: Modular.get(),
+            recordConsentUseCase: Modular.get(),
+            envLoader: Modular.get<EnvLoader>(),
+          );
+        },
+        act: (bloc) => bloc.add(submitted),
+        expect: () => [
+          isA<CreateAccountLoading>(),
+          isA<CreateAccountSuccess>(),
+        ],
+        verify: (_) {
+          expect(consent.cachedStatusRequests, isEmpty);
+          expect(consent.recordedAcceptances, isEmpty);
+        },
+      );
     });
   });
 }

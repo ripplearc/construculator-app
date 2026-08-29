@@ -37,7 +37,12 @@ class ConsentLibraryModule extends Module {
 void _registerDependencies(Injector i) {
   // TODO: https://ripplearc.youtrack.cloud/issue/CA-971 - Replace with the
   // offline-first local store. Nothing above LocalConsentDataSource changes
-  // when this binding is swapped.
+  // when this binding is swapped. Swapping it is only half the ticket: the
+  // gate stays compile-time blocked until remoteConsentWritePathLanded flips
+  // too (consent_gate_readiness.dart), which needs a write method on
+  // RemoteConsentDataSource, a SupabaseConsentDataSource implementation of
+  // it, and a backend RPC. A durable store alone still records nothing
+  // attributable.
   i.addLazySingleton<LocalConsentDataSource>(
     InMemoryLocalConsentDataSource.new,
   );

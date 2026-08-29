@@ -1,6 +1,7 @@
 import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/consent/consent_gate_readiness.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
 import 'package:construculator/libraries/router/guards/consent_guard.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -13,9 +14,16 @@ void main() {
   // closures (`() => Modular.get<...>()`), never resolving them -- so this
   // can run against a bare RouteManager with no Modular.init, matching the
   // pattern already used for ConsentModule's own route test.
-  List<RouteGuard> guardsFor(FakeEnvLoader envLoader) {
+  // persistenceReady defaults to true so these cases still test the flag
+  // wiring itself; consentPersistenceReady is false today, so leaving it at
+  // the production default would make every case trivially pass.
+  List<RouteGuard> guardsFor(
+    FakeEnvLoader envLoader, {
+    bool persistenceReady = true,
+  }) {
     final module = ShellModule(
       FakeAppBootstrapFactory.create(envLoader: envLoader),
+      persistenceReady: persistenceReady,
     );
     // ignore: no_direct_instantiation
     final routeManager = RouteManager();
@@ -37,6 +45,18 @@ void main() {
       );
 
       expect(guards.whereType<ConsentGuard>(), hasLength(1));
+    });
+
+    test('does not register ConsentGuard at the production default', () {
+      // The compile-time block: consentPersistenceReady is false until
+      // CA-971 lands, so the flag being on is not enough to mount a gate
+      // this build cannot durably record an acceptance for.
+      final guards = guardsFor(
+        FakeEnvLoader()..setEnvVar(consentGateEnabledKey, 'true'),
+        persistenceReady: consentPersistenceReady,
+      );
+
+      expect(guards.whereType<ConsentGuard>(), isEmpty);
     });
 
     test('does not register ConsentGuard when the flag is "false"', () {

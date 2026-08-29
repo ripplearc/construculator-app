@@ -12,6 +12,7 @@ import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/auth/domain/validation/auth_validation.dart';
 import 'package:construculator/libraries/config/env_constants.dart';
 import 'package:construculator/libraries/config/interfaces/env_loader.dart';
+import 'package:construculator/libraries/consent/consent_gate_readiness.dart';
 import 'package:construculator/libraries/consent/domain/entities/consent_status_entity.dart';
 import 'package:construculator/libraries/consent/domain/entities/consent_version_entity.dart';
 import 'package:construculator/libraries/consent/domain/repositories/consent_repository.dart';
@@ -39,6 +40,10 @@ class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
   final RecordConsentUseCase _recordConsentUseCase;
   final EnvLoader _envLoader;
 
+  /// Seam for [consentGateEnabled]'s `persistenceReady`; AuthModule never
+  /// passes it, so signup always gets the compile-time answer.
+  final bool persistenceReady;
+
   CreateAccountBloc({
     required this._createAccountUseCase,
     required this._getProfessionalRolesUseCase,
@@ -47,6 +52,7 @@ class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
     required this._checkConsentStatusUseCase,
     required this._recordConsentUseCase,
     required this._envLoader,
+    this.persistenceReady = consentPersistenceReady,
   }) : super(CreateAccountInitial()) {
     on<CreateAccountSubmitted>(_onSubmitted);
     on<CreateAccountGetProfessionalRolesRequested>(_onLoadProfessionalRoles);
@@ -248,13 +254,11 @@ class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
       _analyticsRepository.track(const AnalyticsEvent(name: 'user_registered')),
     );
 
-    // Recording targets InMemoryLocalConsentDataSource, which has no
-    // server-side write path (CA-971) and loses everything on restart --
-    // this is currently the only production code path that writes into it
-    // at all, so it must ship inert everywhere the route guard does.
-    // CONSENT_GATE_ENABLED already governs the guard in shell_module.dart;
-    // turning it off must turn this off too, not just hide the gate UI.
-    if (_envLoader.get(consentGateEnabledKey) == 'true') {
+    // One of the two production consent writes (the other is
+    // ConsentGateBloc._onAccepted, behind a route ConsentModule only
+    // registers under the same predicate) -- turning the gate off has to
+    // turn the writes off too, not just hide the gate UI.
+    if (consentGateEnabled(_envLoader, persistenceReady: persistenceReady)) {
       final consentFailure = await _recordSignupConsent();
       if (consentFailure != null) {
         emit(CreateAccountFailure(failure: consentFailure));

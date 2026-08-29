@@ -20,26 +20,23 @@ const String posthogApiKeyKey = 'POSTHOG_API_KEY';
 const String posthogHostKey = 'POSTHOG_HOST';
 const String posthogDebugKey = 'POSTHOG_DEBUG';
 
-/// Env key controlling whether the consent gate's route guard is registered
-/// on the shell (see `ShellModule._shellGuards`), and whether signup records
-/// an initial acceptance (see `CreateAccountBloc._onSubmitted`).
+/// Env key opting this build into the consent gate: the route guard on the
+/// shell (`ShellModule._shellGuards`) and the initial acceptance signup
+/// records (`CreateAccountBloc._onSubmitted`).
 ///
-/// Off until every precondition below holds, not just the one this comment
-/// used to name:
-/// - a persistent local consent store lands (CA-971) -- with the current
-///   in-memory stand-in and this on, a user would be re-prompted on every
-///   cold start, and any device that has not synced would be blocked
-///   outright;
-/// - the consent-write path reaches the server, not just local storage --
-///   `ConsentRecorder` has no route to `RemoteConsentDataSource` today, so
-///   even a durable local store would produce no attributable record;
-/// - the parse-boundary fix (CA-963/CA-964, #539/#543) has landed -- a
-///   corrupt published-version row must not resolve as "nothing required";
-/// - the watch-stream subscription race fix (#542/#554) has landed;
+/// Necessary but not sufficient, and deliberately so. `consentGateEnabled`
+/// in `consent_gate_readiness.dart` ands this with `consentPersistenceReady`,
+/// a compile-time const that is false until CA-971 lands both a durable local
+/// store and a consent-write path that reaches the server. Setting this key
+/// `true` in any `.env` does nothing on its own -- a gate that collects an
+/// acceptance it cannot durably record must not be one config edit away.
+///
+/// Still to land before flipping the const, none of it behind this flag:
+/// - the parse-boundary fix (CA-963/CA-964, #539/#543) -- a corrupt
+///   published-version row must not resolve as "nothing required";
+/// - the watch-stream subscription race fix (#542/#554);
 /// - the UI lockout cluster (#547-#550: reachable terms/privacy links, a
-///   scroll fallback at large text scale, a golden for every gate state) has
-///   landed -- none of that is behind this flag, so it ships regardless, but
-///   it must ship *before* this flag ever does.
+///   scroll fallback at large text scale, a golden for every gate state).
 ///
 /// Everything below the guard ships and is tested regardless of this flag.
 const String consentGateEnabledKey = 'CONSENT_GATE_ENABLED';

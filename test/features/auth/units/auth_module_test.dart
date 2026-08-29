@@ -6,6 +6,7 @@ import 'package:construculator/features/auth/presentation/bloc/login_with_email_
 import 'package:construculator/features/auth/presentation/bloc/otp_verification_bloc/otp_verification_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/register_with_email_bloc/register_with_email_bloc.dart';
 import 'package:construculator/features/auth/presentation/bloc/set_new_password_bloc/set_new_password_bloc.dart';
+import 'package:construculator/libraries/consent/consent_gate_readiness.dart';
 import 'package:construculator/libraries/consent/domain/repositories/consent_repository.dart';
 import 'package:construculator/libraries/consent/domain/usecases/check_consent_status_usecase.dart';
 import 'package:construculator/libraries/consent/domain/usecases/record_consent_usecase.dart';
@@ -36,6 +37,24 @@ void main() {
       // rather than surfacing as an opaque CreateAccountBloc failure.
       expect(Modular.get<CheckConsentStatusUseCase>(), isNotNull);
       expect(Modular.get<RecordConsentUseCase>(), isNotNull);
+
+      bloc.close();
+      Modular.get<ConsentRepository>().dispose();
+    });
+
+    // The seam that keeps the signup write testable is a plain constructor
+    // parameter, so a future bind could pass persistenceReady: true the way
+    // AuthTestModule does and re-open the write with every test still green.
+    // This pins the real module to the source-level answer.
+    test('CreateAccountBloc resolves with the production readiness default', () {
+      final bloc = Modular.get<CreateAccountBloc>();
+
+      expect(
+        bloc.persistenceReady,
+        consentPersistenceReady,
+        reason: 'AuthModule must not override the consent persistence block; '
+            'only CA-971 flipping the const may enable the signup write.',
+      );
 
       bloc.close();
       Modular.get<ConsentRepository>().dispose();
