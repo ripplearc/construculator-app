@@ -43,7 +43,10 @@ void main() {
 
   tearDown(Modular.destroy);
 
-  Future<void> pumpPage(WidgetTester tester) async {
+  Future<void> pumpPage(
+    WidgetTester tester, {
+    bool documentLinksAvailable = true,
+  }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = ratio;
     addTearDown(tester.view.reset);
@@ -60,6 +63,7 @@ void main() {
           child: ConsentGatePage(
             router: Modular.get<AppRouter>(),
             onOpenDocument: (_) {},
+            documentLinksAvailable: documentLinksAvailable,
           ),
         ),
       ),
@@ -132,6 +136,27 @@ void main() {
         find.byType(ConsentGatePage),
         matchesGoldenFile(
           'goldens/consent_gate_page/${size.width}x${size.height}/consent_gate_page_submit_failed.png',
+        ),
+      );
+    });
+
+    testWidgets('renders the prompt with the document links hidden', (
+      tester,
+    ) async {
+      // The only configuration production ships today: consent_module.dart
+      // passes documentLinksAvailable: false until the URL launcher lands
+      // (CA-1024). Every other golden here renders with the default true, so
+      // without this one nothing captures what a real user actually sees.
+      repository.resolveTo(
+        ConsentOutdated(acceptedVersion: 1, requiredVersion: requiredVersion),
+      );
+
+      await pumpPage(tester, documentLinksAvailable: false);
+
+      await expectLater(
+        find.byType(ConsentGatePage),
+        matchesGoldenFile(
+          'goldens/consent_gate_page/${size.width}x${size.height}/consent_gate_page_links_hidden.png',
         ),
       );
     });
