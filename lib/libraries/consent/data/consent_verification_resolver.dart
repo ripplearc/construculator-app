@@ -21,6 +21,9 @@ class ConsentVerificationResolver {
 
   static final _logger = AppLogger().tag('ConsentVerificationResolver');
 
+  /// Takes only the remote source: the local acceptance is the caller's to
+  /// read and arrives through [resolve]'s `acceptedVersion`, for the reason
+  /// given on the class above.
   const ConsentVerificationResolver(this._remoteDataSource);
 
   /// Resolves [type] against the server's published versions.
@@ -47,10 +50,11 @@ class ConsentVerificationResolver {
       // establish the requirement, so this resolves exactly as a failed
       // fetch does below, rather than asserting a consent we never saw.
       //
-      // TODO: [CA-XXX] gatesAccess is not yet type-aware, so this also gates
-      // a missing `analytics` row. Safe today because every production call
-      // site passes only termsAndPrivacy, but that stops holding once the
-      // Settings opt-out toggle ships analytics verification -- make
+      // TODO: https://ripplearc.youtrack.cloud/issue/CA-1025 - gatesAccess
+      // is not yet type-aware, so this also gates a missing `analytics` row.
+      // Safe today because every production call site passes only
+      // termsAndPrivacy, but that stops holding once the Settings opt-out
+      // toggle ships analytics verification -- make
       // ConsentStatus.gatesAccess type-aware before that lands.
       if (match == null) {
         _logger.error('No published consent version for ${type.toJson()}');
