@@ -36,22 +36,32 @@
             <mutation text="_ when false =&gt; DatabaseConstants.consentTypeColumn,"/>
         </regex>
 
-        <!-- RULE 5: Drop the .toUtc() on insert -->
+        <!-- RULE 5: Skip the id guard -->
+        <regex pattern="_ when id is! String =&gt; DatabaseConstants\.idColumn," dotAll="true" id="user_consent_dto.from_json.skip_id_guard">
+            <mutation text="_ when false =&gt; DatabaseConstants.idColumn,"/>
+        </regex>
+
+        <!-- RULE 6: Skip the userId guard -->
+        <regex pattern="_ when userId is! String =&gt; DatabaseConstants\.userIdColumn," dotAll="true" id="user_consent_dto.from_json.skip_user_id_guard">
+            <mutation text="_ when false =&gt; DatabaseConstants.userIdColumn,"/>
+        </regex>
+
+        <!-- RULE 7: Drop the .toUtc() on insert -->
         <regex pattern="recordedAt\.toUtc\(\)\.toIso8601String\(\)" dotAll="true" id="user_consent_dto.to_insert_json.drop_utc">
             <mutation text="recordedAt.toIso8601String()"/>
         </regex>
 
-        <!-- RULE 6: Drop appVersion from props -->
+        <!-- RULE 8: Drop appVersion from props -->
         <regex pattern="action,\n    recordedAt,\n    appVersion,\n    platform,\n  \];" dotAll="true" id="user_consent_dto.props.drop_app_version_and_platform">
             <mutation text="action,\n    recordedAt,\n  ];"/>
         </regex>
 
-        <!-- RULE 7: Accept a non-string appVersion instead of dropping it -->
+        <!-- RULE 9: Accept a non-string appVersion instead of dropping it -->
         <regex pattern="appVersion: rawAppVersion is String \? rawAppVersion : null," dotAll="true" id="user_consent_dto.from_json.keep_bad_app_version">
             <mutation text="appVersion: rawAppVersion as String?,"/>
         </regex>
 
-        <!-- RULE 8: toDomain silently accepts a draft record -->
+        <!-- RULE 10: toDomain silently accepts a draft record -->
         <regex pattern="if \(assignedId == null\) \{" dotAll="true" id="user_consent_dto.to_domain.skip_draft_guard">
             <mutation text="if (false) {"/>
         </regex>
