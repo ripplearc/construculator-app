@@ -83,9 +83,11 @@ DateTime parseTimestampOrEpoch(Object? value) =>
 /// Accepts either shape: the repo's convention for numeric columns is `as
 /// num` rather than an int type test, and whether a local store hands this
 /// back as text is each store's choice to make, not something a DTO should
-/// silently depend on.
+/// silently depend on. A whole-number double is accepted; a fractional one
+/// is rejected rather than silently truncated.
 int? parseVersion(Object? value) => switch (value) {
-  final num n => n.toInt(),
+  final int n => n,
+  final double n when n.truncateToDouble() == n => n.toInt(),
   final String s => int.tryParse(s),
   _ => null,
 };
