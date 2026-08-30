@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 
 /// A scrollable list of recent project search terms.
 ///
-/// Displays one [RecentSearchItem] per entry in [recentSearches]. All interaction is delegated upward via callbacks — this
-/// widget holds no BLoC references.
+/// Displays one [RecentSearchItem] per entry in [recentSearches]. All
+/// interaction is delegated upward via callbacks — this widget holds no
+/// BLoC references.
 ///
 /// [recentSearches] must be non-empty; use [ProjectSearchEmptyRecentWidget]
 /// for the empty state. This widget uses a bare [ListView.builder] and must be
