@@ -30,7 +30,7 @@ void main() {
       ConsentType forType,
       int number,
       ConsentAction action,
-    ) => UserConsentDto(
+    ) => UserConsentDto.stored(
       id: 'record-$number',
       userId: forUserId,
       consentType: forType,
