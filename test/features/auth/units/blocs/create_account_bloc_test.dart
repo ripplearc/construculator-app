@@ -928,6 +928,7 @@ void main() {
             createAccountUseCase: Modular.get(),
             getProfessionalRolesUseCase: Modular.get(),
             sendOtpUseCase: Modular.get(),
+            analyticsRepository: Modular.get(),
             checkConsentStatusUseCase: Modular.get(),
             recordConsentUseCase: Modular.get(),
             envLoader: Modular.get<EnvLoader>(),

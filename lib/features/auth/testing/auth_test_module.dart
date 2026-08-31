@@ -69,6 +69,13 @@ class AuthTestModule extends Module {
         config: FakeAppConfig(),
         supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
         sentryWrapper: FakeSentryWrapper(),
+        // Shared with the outer appBootstrap, not fresh fakes: AuthManagerImpl
+        // is built from this bootstrap, and tests observe events and PowerSync
+        // state through the outer instances via Modular.get.
+        analyticsRepository: appBootstrap.analyticsRepository,
+        powerSyncDatabase: appBootstrap.powerSyncDatabase,
+        featureFlagRepository: appBootstrap.featureFlagRepository,
+        currentScreenTracker: appBootstrap.currentScreenTracker,
       ),
     ),
     RouterTestModule(),
