@@ -31,7 +31,7 @@ void main() {
 
         expect(
           dto,
-          UserConsentDto(
+          UserConsentDto.stored(
             id: 'record-1',
             userId: 'user-1',
             consentType: ConsentType.termsAndPrivacy,

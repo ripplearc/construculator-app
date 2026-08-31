@@ -39,7 +39,7 @@ class UserConsentDto extends Equatable {
   /// The platform the action was taken on, when known. Audit metadata only.
   final String? platform;
 
-  const UserConsentDto({
+  const UserConsentDto._({
     required this.id,
     required this.userId,
     required this.consentType,
@@ -50,19 +50,49 @@ class UserConsentDto extends Equatable {
     this.platform,
   });
 
+  /// A record already assigned an [id] by the store.
+  const UserConsentDto.stored({
+    required String id,
+    required String userId,
+    required ConsentType consentType,
+    required int version,
+    required ConsentAction action,
+    required DateTime recordedAt,
+    String? appVersion,
+    String? platform,
+  }) : this._(
+         id: id,
+         userId: userId,
+         consentType: consentType,
+         version: version,
+         action: action,
+         recordedAt: recordedAt,
+         appVersion: appVersion,
+         platform: platform,
+       );
+
   /// A record not yet written to the store, which assigns [id] on insert.
   ///
   /// Exists so the write path does not have to fabricate a sentinel id that
   /// [fromJson]'s own guard would reject.
   const UserConsentDto.draft({
-    required this.userId,
-    required this.consentType,
-    required this.version,
-    required this.action,
-    required this.recordedAt,
-    this.appVersion,
-    this.platform,
-  }) : id = null;
+    required String userId,
+    required ConsentType consentType,
+    required int version,
+    required ConsentAction action,
+    required DateTime recordedAt,
+    String? appVersion,
+    String? platform,
+  }) : this._(
+         id: null,
+         userId: userId,
+         consentType: consentType,
+         version: version,
+         action: action,
+         recordedAt: recordedAt,
+         appVersion: appVersion,
+         platform: platform,
+       );
 
   /// Builds a DTO from a raw user consents row.
   ///
@@ -102,7 +132,7 @@ class UserConsentDto extends Equatable {
       throw FormatException('Unreadable user consent row: $unreadable');
     }
 
-    return UserConsentDto(
+    return UserConsentDto.stored(
       id: id as String,
       userId: userId as String,
       consentType: consentType!,
