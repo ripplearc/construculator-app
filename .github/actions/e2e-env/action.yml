@@ -75,17 +75,17 @@ runs:
         anon_key="$(supabase status -o json | python3 -c 'import json,sys; print(json.load(sys.stdin)["ANON_KEY"])')"
         echo "::add-mask::$anon_key"
         {
-          echo "supabase-url=http://127.0.0.1:54321"
+          echo "supabase-url=http://127.0.0.1:24321"
           echo "supabase-anon-key=$anon_key"
-          echo "mailpit-url=http://127.0.0.1:54324"
-          echo "powersync-url=http://127.0.0.1:8081"
+          echo "mailpit-url=http://127.0.0.1:24324"
+          echo "powersync-url=http://127.0.0.1:9081"
         } >> "$GITHUB_OUTPUT"
 
     - name: Wait for PowerSync
       shell: bash
       run: |
         for _ in $(seq 1 60); do
-          if curl -fsS -o /dev/null http://127.0.0.1:8081/probes/liveness; then
+          if curl -fsS -o /dev/null http://127.0.0.1:9081/probes/liveness; then
             exit 0
           fi
           sleep 2
