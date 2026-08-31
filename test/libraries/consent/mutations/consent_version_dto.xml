@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CONSENT VERSION DTO MUTATION TESTING -->
+    <!-- Targets: ConsentVersionDto, the throw-vs-fallback split between the
+         four gate-deciding fields (consentType, version, documentUrl, id) and
+         the one audit field (publishedAt). Critical path: version is compared
+         against the user's acceptance, and documentUrl is what the consent
+         page shows -- a weakened guard here can silently pass an unusable
+         row through the gate. -->
+
+    <files>
+        <file>lib/libraries/consent/data/models/consent_version_dto.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="try\s*\{" dotAll="false"/>
+        <regex pattern="catch\s*\(" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- RULE 1: Skip the consentType guard -->
+        <regex pattern="_ when consentType == null =&gt; DatabaseConstants\.consentTypeColumn," dotAll="true" id="consent_version_dto.from_json.skip_consent_type_guard">
+            <mutation text="_ when false =&gt; DatabaseConstants.consentTypeColumn,"/>
+        </regex>
+
+        <!-- RULE 2: Weaken the version guard to allow zero -->
+        <regex pattern="_ when version == null \|\| version &lt;= 0 =&gt; DatabaseConstants\.versionColumn," dotAll="true" id="consent_version_dto.from_json.allow_version_zero">
+            <mutation text="_ when version == null || version &lt; 0 =&gt; DatabaseConstants.versionColumn,"/>
+        </regex>
+
+        <!-- RULE 3: Skip the documentUrl guard -->
+        <regex pattern="_ when !_isPresentableUrl\(documentUrl\) =&gt;" dotAll="true" id="consent_version_dto.from_json.skip_document_url_guard">
+            <mutation text="_ when false =&gt;"/>
+        </regex>
+
+        <!-- RULE 4: Skip the id guard -->
+        <regex pattern="_ when id is! String =&gt; DatabaseConstants\.idColumn," dotAll="true" id="consent_version_dto.from_json.skip_id_guard">
+            <mutation text="_ when false =&gt; DatabaseConstants.idColumn,"/>
+        </regex>
+
+        <!-- RULE 5: _parseVersionAcceptingNumericString accepts a fractional
+             number instead of rejecting it -->
+        <regex pattern="final num n when n == n\.truncate\(\) =&gt; n\.toInt\(\)," dotAll="true" id="consent_version_dto.parse_version.accept_fractional">
+            <mutation text="final num n =&gt; n.toInt(),"/>
+        </regex>
+
+        <!-- RULE 6: _parseVersionAcceptingNumericString stops reading a
+             numeric string -->
+        <regex pattern="final String s =&gt; int\.tryParse\(s\)," dotAll="true" id="consent_version_dto.parse_version.drop_string_branch">
+            <mutation text="final String s =&gt; null,"/>
+        </regex>
+
+        <!-- RULE 7: _isPresentableUrl accepts a non-String or empty value -->
+        <regex pattern="if \(value is! String \|\| value\.isEmpty\) return false;" dotAll="true" id="consent_version_dto.is_presentable_url.skip_type_and_empty_check">
+            <mutation text="if (false) return false;"/>
+        </regex>
+
+        <!-- RULE 8: _isPresentableUrl accepts an unparseable Uri -->
+        <regex pattern="return uri != null &amp;&amp; \(uri\.isScheme\('https'\) \|\| uri\.isScheme\('http'\)\);" dotAll="true" id="consent_version_dto.is_presentable_url.skip_uri_check">
+            <mutation text="return uri.isScheme('https') || uri.isScheme('http');"/>
+        </regex>
+
+        <!-- RULE 9: _isPresentableUrl accepts a non-web scheme -->
+        <regex pattern="uri\.isScheme\('https'\) \|\| uri\.isScheme\('http'\)" dotAll="true" id="consent_version_dto.is_presentable_url.drop_scheme_check">
+            <mutation text="true"/>
+        </regex>
+
+        <!-- RULE 10: tryFromJson swallows a valid row as if it were unreadable -->
+        <regex pattern="return ConsentVersionDto\.fromJson\(json\);" dotAll="true" id="consent_version_dto.try_from_json.always_null">
+            <mutation text="return null;"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="consent_version_dto" expected-return="0">flutter test test/libraries/consent/units/data/models/consent_version_dto_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
