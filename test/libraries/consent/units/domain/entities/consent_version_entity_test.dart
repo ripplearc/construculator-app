@@ -17,7 +17,7 @@ void main() {
       consentType: consentType,
       version: version,
       documentUrl: documentUrl,
-      publishedAt: published ?? publishedAt,
+      publishedAt: published == null ? publishedAt : published,
     );
 
     test('treats versions with identical fields as equal', () {
