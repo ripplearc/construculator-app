@@ -82,6 +82,16 @@ void main() {
         );
       });
 
+      test('rejects a fractional version rather than truncating it', () {
+        // A silent truncation (2.7 -> 2) would compare against the wrong
+        // acceptance; the backend guarantees an integer column, so this is
+        // defensive, but it must fail loudly rather than round.
+        expect(
+          () => ConsentVersionDto.fromJson(buildJson(version: 2.7)),
+          throwsA(isA<FormatException>()),
+        );
+      });
+
       test('rejects an unrecognised consent type', () {
         expect(
           () => ConsentVersionDto.fromJson(
@@ -177,13 +187,19 @@ void main() {
         // fail a row the gate can otherwise decide on.
         final dto = ConsentVersionDto.fromJson(buildJson(publishedAt: 'soon'));
 
-        expect(dto.publishedAt, DateTime.fromMillisecondsSinceEpoch(0, isUtc: true));
+        expect(
+          dto.publishedAt,
+          DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+        );
       });
 
       test('falls back to the epoch when the value is missing', () {
         final dto = ConsentVersionDto.fromJson(buildJson(publishedAt: null));
 
-        expect(dto.publishedAt, DateTime.fromMillisecondsSinceEpoch(0, isUtc: true));
+        expect(
+          dto.publishedAt,
+          DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+        );
       });
 
       test('stamps the fallback in UTC', () {
