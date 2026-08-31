@@ -93,7 +93,7 @@ class InMemoryLocalConsentDataSource implements LocalConsentDataSource {
 
   @override
   Future<UserConsentDto> insertUserConsent(UserConsentDto dto) async {
-    final stored = UserConsentDto(
+    final stored = UserConsentDto.stored(
       id: 'in-memory-${_nextId++}',
       userId: dto.userId,
       consentType: dto.consentType,
