@@ -12,13 +12,19 @@ void main() {
       int version = 2,
       String documentUrl = 'https://example.com/terms/v2',
       DateTime? published,
-    }) => ConsentVersion(
-      id: id,
-      consentType: consentType,
-      version: version,
-      documentUrl: documentUrl,
-      publishedAt: published == null ? publishedAt : published,
-    );
+    }) {
+      var resolvedPublishedAt = publishedAt;
+      if (published != null) {
+        resolvedPublishedAt = published;
+      }
+      return ConsentVersion(
+        id: id,
+        consentType: consentType,
+        version: version,
+        documentUrl: documentUrl,
+        publishedAt: resolvedPublishedAt,
+      );
+    }
 
     test('treats versions with identical fields as equal', () {
       expect(buildVersion(), buildVersion());
