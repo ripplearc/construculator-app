@@ -53,6 +53,10 @@ jobs:
 
       - name: Dump PowerSync logs
         if: failure()
-        # Assumes a container literally named "powersync"; construculator-backend#52
-        # drops that container_name pin, after which this no-ops.
-        run: docker logs powersync --tail 100 || true
+        env:
+          # The e2e-env action checks the backend out to this path (its
+          # backend-path input, left at its default here).
+          E2E_BACKEND_DIR: ${{ github.workspace }}/construculator-backend
+        run: |
+          source scripts/e2e/lib.sh
+          e2e_powersync_compose logs --tail 100 powersync || true
