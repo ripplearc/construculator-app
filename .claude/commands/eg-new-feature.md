@@ -44,21 +44,25 @@ Print the design doc to the user. For most features this lives in chat; for subs
 
 Required sections:
 
-```
-DESIGN DOC
-- Why: <user problem this solves; cite YouTrack issue or conversation>
-- Scope: <what is in; what is explicitly out>
-- Surfaces touched: <files / feature slices / BLoCs / usecases / repositories / domain entities / Supabase tables / PowerSync queries>
-- Interfaces: <BLoC events/states, usecase signatures, repository method signatures, Supabase request/response shapes, widget props>
-- UX flow: <screen-by-screen for UI; event→state transitions for BLoC>
-- State management: <which BLoC(s) own this state; event→state transitions; stream disposal path; broadcast vs. single-listener>
-- PowerSync / Supabase split: <which reads use PowerSync watches vs. direct Supabase calls; which mutations go via Supabase>
-- RBAC / auth: <which roles can perform this action; is the route guarded by AuthGuard()>
-- Platform considerations: <iOS / Android divergence, if any>
-- Failure modes: <what the user sees when each thing breaks; what Either<Failure, T> returns on each error path>
-- Verification criteria: <unit tests, BLoC tests, widget tests, integration_test steps, manual simulator steps>
-- Out-of-scope follow-ups: <noted, not built>
-```
+Read `docs/specs/_TEMPLATE.md` and use it verbatim as the design-doc skeleton — keep its headers as written, fill every section, and drop only the `Figma` block when the feature has no visual surface. The structure is the template's whether the doc lives in chat or on disk; the save-to-disk path below just writes the same filled-in skeleton to a file.
+
+What each section must contain:
+
+- **Why** — the user problem this solves; cite the YouTrack issue or the conversation.
+- **Scope** — what is in; what is explicitly out.
+- **Figma** — idle / result / error node IDs (omit if no visual surface).
+- **Surfaces touched** — files / feature slices / BLoCs / usecases / repositories / domain entities / Supabase tables / PowerSync queries.
+- **Interfaces** — BLoC events/states, usecase signatures, repository method signatures, Supabase request/response shapes, widget props, computation rules.
+- **UX flow** — screen-by-screen for UI; event→state transitions for BLoC.
+- **State management** — which BLoC(s) own this state; event→state transitions; stream disposal path; broadcast vs. single-listener.
+- **PowerSync / Supabase split** — which reads use PowerSync watches vs. direct Supabase calls; which mutations go via Supabase.
+- **CoreUI Components** — components from `ripplearc_coreui` this uses.
+- **RBAC / auth** — which roles can perform this action; is the route guarded by `AuthGuard()`.
+- **Platform considerations** — iOS / Android divergence, if any.
+- **Edge Cases + Failure Modes** — what the user sees when each thing breaks; what `Either<Failure, T>` returns on each error path.
+- **Test Contract (95% gate)** — the scenarios the test suite must assert (unit, BLoC, widget, integration_test, manual simulator steps).
+- **Out-of-scope follow-ups** — noted, not built.
+- **Dependencies** — depends on / blocks.
 
 For UI work, sketch the visual structure in plain text. Check `../coreui` for an existing CoreUI component before designing a new widget (standalone components, inner parts, primitives — check all three levels). If the design needs a visual reference, ask the user to share a Figma node ID or point at an existing screen to mirror.
 

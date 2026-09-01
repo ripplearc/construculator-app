@@ -231,14 +231,14 @@ If **Another round, tighter framing**: capture the user's refinements in chat, u
 
 If **Another round, different lenses**: present the lens kit (Step 2's list) via `AskUserQuestion` with `multiSelect: true` and let the user pick. Re-run from Step 2 with the new selection.
 
-If **Save brief and stop**: write the concepts brief to `docs/specs/<slug>-<YYYY-MM-DD>.md` ONLY if the user confirms via one more `AskUserQuestion`:
+If **Save brief and stop**: write the concepts brief to `docs/specs/<slug>-brief-<YYYY-MM-DD>.md` ONLY if the user confirms via one more `AskUserQuestion`. The `-brief-` infix keeps it distinct from `/eg-new-feature`'s design doc at `docs/specs/<slug>-<YYYY-MM-DD>.md` — a concepts brief and an engineering design doc are different artifacts and must not collide on the same slug and date.
 
 **Q8 — Save location:**
 - `question`: "Where should I save the brief?"
 - `header`: `"Save"`
 - `multiSelect`: `false`
 - `options`:
-  1. **`docs/specs/<slug>-<YYYY-MM-DD>.md`** — "Save to `docs/specs/<slug>-<YYYY-MM-DD>.md`."
+  1. **`docs/specs/<slug>-brief-<YYYY-MM-DD>.md`** — "Save to `docs/specs/<slug>-brief-<YYYY-MM-DD>.md`."
   2. **Just print, don't save** — "Keep it in chat only."
   3. **Different path** — "I'll specify in chat."
 
