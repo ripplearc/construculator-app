@@ -13,9 +13,9 @@ The E2E workload is split across two execution targets, because the functional s
 
 Neither half uses a device cloud. That is not a cost preference — Firebase Test Lab **cannot run the system-health harness at all**, for reasons set out in [Why Firebase Test Lab was rejected](#why-firebase-test-lab-was-rejected).
 
-This is settled, not provisional — [CA-749](https://ripplearc.youtrack.cloud/issue/CA-749), [CA-750](https://ripplearc.youtrack.cloud/issue/CA-750), [CA-782](https://ripplearc.youtrack.cloud/issue/CA-782) and [CA-976](https://ripplearc.youtrack.cloud/issue/CA-976) should be built against it.
+This decision is settled. [CA-749](https://ripplearc.youtrack.cloud/issue/CA-749), [CA-750](https://ripplearc.youtrack.cloud/issue/CA-750), [CA-782](https://ripplearc.youtrack.cloud/issue/CA-782) and [CA-976](https://ripplearc.youtrack.cloud/issue/CA-976) should be built against it.
 
-Android-first in CI is a deliberate, time-boxed trade-off, and it applies **only to the functional suite**. The system-health run is not permanently restricted to Android; see [Platform coverage of the system-health run](#platform-coverage-of-the-system-health-run).
+Android-first in CI is a deliberate, time-boxed trade-off, and it applies only to the functional suite. The system-health run is not permanently restricted to Android; see [Platform coverage of the system-health run](#platform-coverage-of-the-system-health-run).
 
 **TODO [CA-980](https://ripplearc.youtrack.cloud/issue/CA-980):** The Android-first CI decision is time-boxed and due for review by 2026-11-18, together with what it would take to add iOS functional coverage in CI.
 
@@ -25,14 +25,11 @@ The reasoning, the options that were rejected, and the cost model are below.
 
 ## Why one target does not fit
 
-A device running in **Firebase Test Lab** has no network path to a Supabase or Mailpit container on the CI runner. The OTP capture that CUJ-2 depends on needs an HTTP request from the test binary to `localhost:54324`, and FTL offers no mechanism to carry that request back to the runner.
+A device running in Firebase Test Lab has no network path to a Supabase or Mailpit container on the CI runner. CUJ-2's OTP capture needs an HTTP request from the test binary to `localhost:54324`, and FTL offers no way to carry that request back to the runner.
 
-This is specific to FTL, not a property of device clouds generally. BrowserStack Local, Sauce Connect and LambdaTest all provide tunnels built precisely to expose a runner-local service to a cloud device, and BrowserStack documents that pattern for CI/CD. Those products are evaluated as [option D](#d--tunnel-capable-real-device-cloud--runner-local-stack) and rejected on cost, not on capability.
+Other device clouds are not limited this way. BrowserStack Local, Sauce Connect and LambdaTest all provide tunnels built to expose a runner-local service to a cloud device, and BrowserStack documents that pattern for CI/CD. Those products are evaluated as [option D](#d--tunnel-capable-real-device-cloud--runner-local-stack) and rejected on cost rather than capability.
 
-Beyond the network question, the two suites want different answers:
-
-- The **functional suite** needs a real mail round trip and a database it can reset. Both are properties of the local stack.
-- The **system-health run** needs the same physical hardware every week or its numbers do not trend, and it needs a host process attached to the device while the app runs. It does **not** need registration, OTP, or a resettable database — cold start, TTID, warm start, memory and jank are measured on a scripted profile-mode journey that can start from an already-authenticated session.
+Beyond the network question, the two suites want different answers. The functional suite needs a real mail round trip and a database it can reset, and both are properties of the local stack. The system-health run needs the same physical hardware every week or its numbers do not trend, plus a host process attached to the device while the app runs. It does not need registration, OTP, or a resettable database: cold start, TTID, warm start, memory and jank are measured on a scripted profile-mode journey that can start from an already-authenticated session.
 
 Forcing a single target to serve both is what produced two incompatible commitments in the strategy document. Splitting them removes the conflict rather than resolving it.
 
@@ -40,20 +37,20 @@ Forcing a single target to serve both is what produced two incompatible commitme
 
 ## Why Firebase Test Lab was rejected
 
-FTL was the strategy document's recommended target. It cannot run the system-health harness, and this is a capability failure rather than a pricing one — no budget makes it work.
+FTL was the strategy document's recommended target. It cannot run the system-health harness. This is a capability failure rather than a pricing one: no budget makes it work.
 
-Flutter's performance instrumentation is **host-side**. The tooling drives the device over a VM-service connection from the machine running the command, and writes its output there:
+Flutter's performance instrumentation is host-side. The tooling drives the device over a VM-service connection from the machine running the command, and writes its output there:
 
 | Metric | Mechanism | Requires |
 |---|---|---|
 | Cold start, TTID, warm start | `run_cold.dart` guards `if (traceStartup)` on a live `device.vmService`, then `downloadStartupTrace` writes the trace to a host path | A host-side VM-service connection |
 | Memory | `drive_service.dart` shells out to `dart devtools --record-memory-profile=<path>` | A host process and a host filesystem |
 
-Line references are `packages/flutter_tools/lib/src/run_cold.dart:113` and `packages/flutter_tools/lib/src/drive/drive_service.dart:252` in Flutter 3.32.0, the version `codemagic.yaml` pins. The same mechanism is present in 3.44.4 (`run_cold.dart:103`, `drive_service.dart:259`), so this is not a version artifact.
+Line references are `packages/flutter_tools/lib/src/run_cold.dart:113` and `packages/flutter_tools/lib/src/drive/drive_service.dart:252` in Flutter 3.32.0, the version `codemagic.yaml` pins. The same mechanism is present in 3.44.4 (`run_cold.dart:103`, `drive_service.dart:255`), so this is not a version artifact.
 
-FTL runs an instrumentation package inside Google's cloud with no host attachment and returns pass/fail; the Android runner does not surface `reportData`. There is nowhere for the trace or the memory profile to be written, and nothing to write it.
+FTL runs an instrumentation package inside Google's cloud with no host attachment and returns pass/fail; the Android runner does not surface `reportData`. There is nowhere for the trace or the memory profile to be written, and no host process to write it.
 
-This reframes the strategy document's entire cost table. It ranked FTL virtual against FTL physical against Codemagic on **device-minute price**, for a workload that could not execute on the first two at any price. The comparison was made on a dimension that did not apply.
+This changes how the strategy document's cost table should be read. That table ranked FTL virtual, FTL physical and Codemagic on device-minute price, for a workload that could not execute on the first two at any price.
 
 ---
 
@@ -65,7 +62,7 @@ Both suites run on physical devices in a device cloud against a hosted Supabase 
 
 Mailpit does not exist in a hosted project, so the OTP has to be read from a real inbox. That is a larger change than swapping one client for another:
 
-- The hosted default SMTP service is capped at **2 emails per hour**, and delivers **only to addresses belonging to the project's organization**. A unique-per-run address — which [CA-976](https://ripplearc.youtrack.cloud/issue/CA-976) requires so a search cannot match a stale message — is rejected outright with "Email address not authorized".
+- The hosted default SMTP service is capped at 2 emails per hour, and delivers only to addresses belonging to the project's organization. A unique-per-run address — which [CA-976](https://ripplearc.youtrack.cloud/issue/CA-976) requires so a search cannot match a stale message — is rejected outright with "Email address not authorized".
 - So a custom SMTP provider must be provisioned *before* any inbox strategy is reachable, and then a programmable inbox (Mailosaur, MailSlurp, or a catch-all domain with an inbound API) on top of it.
 
 Two new vendors, CA-976's Mailpit client discarded rather than adapted, and the system-health half still fails on host attachment if the cloud is FTL.
@@ -74,13 +71,13 @@ Two new vendors, CA-976's Mailpit client discarded rather than adapted, and the 
 
 The `construculator-backend` stack runs as a service on the CI runner; the app runs on an emulator on the same runner. Everything is on `localhost`.
 
-Mailpit survives untouched and CA-976's scope stands as written. This is also the least speculative option: the backend repo **already** runs `supabase db start` on `ubuntu-latest` in `.github/workflows/database_tests.yml`, so Docker-in-CI on GitHub Actions is proven in production today. The E2E use needs the fuller `supabase start` (auth and the mail catcher, not just the database), but the runner and toolchain are known-good.
+Mailpit survives untouched and CA-976's scope stands as written. This is also the least speculative option: the backend repo already runs `supabase db start` on `ubuntu-latest` in `.github/workflows/database_tests.yml`, so Docker-in-CI on GitHub Actions is proven in production today. The E2E use needs the fuller `supabase start` (auth and the mail catcher, not just the database), but the runner and toolchain are known-good.
 
 Two costs. Codemagic's `mac_mini_m2` instances have no Docker daemon and cannot host a Linux stack, so iOS cannot join the suite in CI. And emulated devices make CA-782's numbers untrendable.
 
 ### C — Split
 
-The functional suite runs as in option B on a hosted GitHub Actions Linux runner. The system-health run moves to a **self-hosted** GitHub Actions runner with USB-attached, pinned handsets, starting from a primed session, with no dependency on the OTP flow.
+The functional suite runs as in option B on a hosted GitHub Actions Linux runner. The system-health run moves to a self-hosted GitHub Actions runner with USB-attached, pinned handsets, starting from a primed session, with no dependency on the OTP flow.
 
 The self-hosted runner is what makes the performance harness work: `flutter drive` runs on the runner host, the handset is attached to it, and the VM-service connection and output paths that FTL cannot provide are simply local.
 
@@ -88,17 +85,17 @@ Each suite gets the property it actually needs. The iOS-in-CI gap from option B 
 
 ### D — Tunnel-capable real-device cloud + runner-local stack
 
-BrowserStack, Sauce Labs and LambdaTest all ship tunnel clients that expose a runner-local service to a cloud device, so the Mailpit path that FTL breaks would work here. This is the option that disproves any claim that device clouds are categorically incompatible with a runner-local backend.
+BrowserStack, Sauce Labs and LambdaTest all ship tunnel clients that expose a runner-local service to a cloud device, so the Mailpit path that FTL breaks would work here. Unlike FTL, a tunnel-capable device cloud is not incompatible with a runner-local backend.
 
-It is rejected on recurring cost. BrowserStack App Automate lists at roughly **$199–249/mo for a single parallel** — treat that as indicative rather than firm, since BrowserStack does not publish a complete price list. That is an order of magnitude above option C's recurring cost, for a functional suite of two tests.
+It is rejected on recurring cost. BrowserStack App Automate lists at roughly $199–249/mo for a single parallel; treat that as indicative rather than firm, since BrowserStack does not publish a complete price list. Even so, that is an order of magnitude above option C's recurring cost, for a functional suite of two tests.
 
-It also only addresses half the problem. A tunnel solves the network path; it does not give `flutter drive` a host attached to the device, so the system-health harness would still need the self-hosted runner from option C. Option D could at best replace the functional-suite leg, at ~$199+/mo, for no capability the runner-local emulator lacks.
+It also only addresses half the problem. A tunnel solves the network path; it does not give `flutter drive` a host attached to the device, so the system-health harness would still need the self-hosted runner from option C. Option D could at best replace the functional-suite leg, at ~$199+/mo, and the runner-local emulator already covers that leg.
 
 ---
 
 ## Platform coverage of the system-health run
 
-**Android is first; iOS Class B remains in scope as a follow-on.** The Android-only constraint on the *functional* suite is a property of the Docker stack — Codemagic's `mac_mini_m2` instances have no Docker daemon, so an iOS job cannot host Supabase and the mail catcher. The system-health run does not use that stack, so the constraint does not carry over.
+Android is first; iOS Class B remains in scope as a follow-on. The Android-only constraint on the *functional* suite is a property of the Docker stack — Codemagic's `mac_mini_m2` instances have no Docker daemon, so an iOS job cannot host Supabase and the mail catcher. The system-health run does not use that stack, so the constraint does not carry over.
 
 What it needs instead is a host with the handset attached. For iOS that means a macOS machine acting as a self-hosted runner with a pinned device on USB. That is additional hardware and setup rather than a blocker, which is why iOS is sequenced after Android rather than dropped: the Class B baseline row in the device matrix survives.
 
@@ -122,7 +119,7 @@ The first is preferred. [CA-782](https://ripplearc.youtrack.cloud/issue/CA-782) 
 
 Registration cannot avoid this. The app's flow (`SendOtpUseCase` → `AuthManagerImpl.sendOtp`/`verifyOtp` → `signInWithOtp`/`verifyOTP`) goes through Supabase's passwordless OTP, which sends a code unconditionally. The backend's `enable_confirmations = false` applies to the password-signup confirmation flow, not this one, and Supabase's static test OTP exists only for SMS (`auth.sms.test_otp`). The code has to be read out of a real inbox on any target.
 
-The backend's `config.toml` configures the mail catcher under the `[inbucket]` key, and its README still calls the service Inbucket, which raises the question of which API CA-976 should target. It is resolved: `database_tests.yml` pins `supabase/setup-cli@v1` at **2.106.0**, and the CLI was already serving Mailpit behind the `[inbucket]` key at that version. The `[local_smtp]` key that replaced `[inbucket]` arrived later, in CLI 2.108, as a rename of an implementation that had already changed. **CA-976's `/api/v1/search` paths are correct as scoped.**
+The backend's `config.toml` configures the mail catcher under the `[inbucket]` key, and its README still calls the service Inbucket, which raises the question of which API CA-976 should target. It is resolved: `database_tests.yml` pins `supabase/setup-cli@v1` at 2.106.0, and the CLI was already serving Mailpit behind the `[inbucket]` key at that version. The `[local_smtp]` key that replaced `[inbucket]` arrived later, in CLI 2.108, as a rename of an implementation that had already changed. CA-976's `/api/v1/search` paths are correct as scoped.
 
 ---
 
@@ -130,7 +127,7 @@ The backend's `config.toml` configures the mail catcher under the `[inbucket]` k
 
 ### The cadence correction
 
-The strategy document's cost table is built on **30 nightly runs per month**. [CA-750](https://ripplearc.youtrack.cloud/issue/CA-750) and [CA-782](https://ripplearc.youtrack.cloud/issue/CA-782) have both since settled on a **weekly** cadence — 52 runs a year, or 4.33 a month.
+The strategy document's cost table is built on 30 nightly runs per month. [CA-750](https://ripplearc.youtrack.cloud/issue/CA-750) and [CA-782](https://ripplearc.youtrack.cloud/issue/CA-782) have both since settled on a weekly cadence: 52 runs a year, or 4.33 a month.
 
 Every figure in that table is therefore overstated by `30 ÷ 4.33 ≈ 6.9×`. Its tier-1 row, cadence-corrected:
 
@@ -140,26 +137,19 @@ Every figure in that table is therefore overstated by `30 ÷ 4.33 ≈ 6.9×`. It
 | GitHub Actions + FTL physical | ~$75/mo | ~$10.80/mo |
 | Codemagic pay-as-you-go | ~$115/mo | ~$16.60/mo |
 
-Those rows are the document's "1–10 tests" band priced at its **upper bound of 10 tests**. Phase 1 has two CUJs, so the real Phase-1 numbers are smaller again:
+Those rows are the document's "1–10 tests" band priced at its upper bound of 10 tests. Phase 1 has two CUJs, so the real Phase-1 numbers are smaller again. Two tests at 3 min each over 4.33 runs/mo is 26 device-minutes a month: about $2.16 on physical devices (26 × $0.083) and $0.43 on virtual (26 × $0.0167), a delta of $1.73/mo.
 
-```
-2 tests x 3 min x 4.33 runs/mo = 26 device-min/mo
-physical  26 x $0.083  = $2.16/mo
-virtual   26 x $0.0167 = $0.43/mo
-delta                  = $1.73/mo
-```
+That $1.73/mo is what the document's central recommendation to prefer virtual devices was actually buying, in exchange for numbers too noisy to trend. Even at the band's upper bound the gap is only $8.66/mo, and neither FTL column could have run the harness at any price regardless (see [Why Firebase Test Lab was rejected](#why-firebase-test-lab-was-rejected)).
 
-That $1.73/mo is what the document's central recommendation — prefer virtual devices — was actually buying, in exchange for numbers too noisy to trend. Even at the band's upper bound the gap is only $8.66/mo. And as [Why Firebase Test Lab was rejected](#why-firebase-test-lab-was-rejected) establishes, neither FTL column could have run the harness at any price.
-
-The 3 min/test input is the **bottom** of the strategy document's own stated 3–10 min range; that document notes every figure roughly triples at the top of it. Figures below carry the same sensitivity.
+The 3 min/test input is the bottom of the strategy document's own stated 3–10 min range; that document notes every figure roughly triples at the top of it. Figures below carry the same sensitivity.
 
 ### What the decided target costs
 
-Neither half of option C bills per device-minute, so there is no usage-based cost model to build. What remains is device **occupancy** — how long the pinned handsets are tied up each week — and the non-recurring cost of owning them.
+Neither half of option C bills per device-minute, so there is no usage-based cost model to build. What remains is device occupancy — how long the pinned handsets are tied up each week — and the non-recurring cost of owning them.
 
 Sample counts come from the device matrix in [Performance Measurement](Performance-Measurement) (itself marked *proposed, pending sign-off*, so these move if it does). Cold start and TTID are read from the same `--trace-startup` capture, so ten runs yield both; warm start needs its own trace.
 
-Assuming **30 s per startup sample** and **3 min per scripted journey** — both assumptions, not measurements, and the first thing to replace with real timings:
+Assuming 30 s per startup sample and 3 min per scripted journey — both assumptions, not measurements, and the first thing to replace with real timings:
 
 ```
 Class A startup   (10 cold+TTID + 10 warm) x 0.5 min = 10 min
@@ -170,9 +160,9 @@ Class C jank       5 journeys x 3 min                = 15 min
                                               total  = 65 min
 ```
 
-Treating cold start and TTID as separate captures gives 75 min; adding the protocol's discarded first run per block puts the realistic figure at **65–78 minutes per weekly run**. At the top of the 3–10 min journey range it approaches 170 minutes.
+Treating cold start and TTID as separate captures gives 75 min; adding the protocol's discarded first run per block puts the realistic figure at 65–78 minutes per weekly run. At the top of the 3–10 min journey range it approaches 170 minutes.
 
-So a weekly run occupies the pinned devices for roughly **an hour to an hour and a quarter**, once a week. That is comfortable on owned hardware and is a scheduling fact rather than a bill.
+So a weekly run occupies the pinned devices for roughly an hour to an hour and a quarter, once a week. On owned hardware that is a scheduling question, not a recurring bill.
 
 ### Recurring cost by option
 
@@ -185,7 +175,7 @@ So a weekly run occupies the pinned devices for roughly **an hour to an hour and
 | GitHub Actions runner minutes | ~$0 | ~$0 | ~$0 |
 | **Recurring total** | **~$34–64/mo** | **~$199–249/mo** | **~$0/mo** |
 
-Option C's zero is a zero in *recurring cloud spend*, not a claim that it is free. It carries real costs that simply do not arrive monthly:
+Option C's zero covers recurring cloud spend only. It still carries real costs, but they do not arrive monthly:
 
 - **Handsets**, one per pinned device class, bought once and never swapped — swapping one breaks the trend it exists to produce.
 - **A runner host that stays up**, with the devices attached, plus a macOS host if and when iOS is added.
