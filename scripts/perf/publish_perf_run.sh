@@ -39,16 +39,37 @@ if [[ ! -f "$RUN_FILE" ]]; then
 fi
 
 RUN_FILE_ABS="$(cd "$(dirname "$RUN_FILE")" && pwd)/$(basename "$RUN_FILE")"
-WORKTREE="$(mktemp -d)"
+
+# The trap below only covers the ordinary exit path. A hard-killed job (a
+# workflow timeout, a forced cancellation) can orphan the worktree, and this
+# runs on a persistent self-hosted runner where /tmp is not wiped between jobs.
+# Sweep leftovers from prior runs before registering a new worktree.
+WORKTREE_PREFIX="${TMPDIR:-/tmp}/perf-trend-store"
+git worktree prune
+for stale in "$WORKTREE_PREFIX".*; do
+  [[ -d "$stale" ]] || continue
+  git worktree remove --force "$stale" 2>/dev/null || rm -rf "$stale"
+done
+
+WORKTREE="$(mktemp -d "$WORKTREE_PREFIX.XXXXXXXX")"
 cleanup() {
   git worktree remove --force "$WORKTREE" 2>/dev/null || rm -rf "$WORKTREE"
 }
 trap cleanup EXIT
 
-git fetch "$REMOTE" "$BRANCH" 2>/dev/null || true
+# Probe for the branch explicitly so a transient fetch failure can't be
+# mistaken for "branch doesn't exist yet". ls-remote exits 2 when the ref is
+# genuinely absent, non-zero otherwise for a real error.
+ls_remote_status=0
+git ls-remote --exit-code "$REMOTE" "refs/heads/$BRANCH" >/dev/null 2>&1 || ls_remote_status=$?
+if [[ "$ls_remote_status" -ne 0 && "$ls_remote_status" -ne 2 ]]; then
+  echo "❌ Could not reach $REMOTE to check for $BRANCH (git ls-remote exit $ls_remote_status)" >&2
+  exit 1
+fi
 
-if git rev-parse --verify "$REMOTE/$BRANCH" >/dev/null 2>&1; then
+if [[ "$ls_remote_status" -eq 0 ]]; then
   echo "📥 Checking out existing $BRANCH..."
+  git fetch "$REMOTE" "$BRANCH"
   git worktree add --force -B "$BRANCH" "$WORKTREE" "$REMOTE/$BRANCH"
 else
   # First ever run: start the branch with no history from main so the trend
@@ -73,7 +94,20 @@ fi
 git -C "$WORKTREE" commit -q -m "perf: record run from $(git rev-parse --short HEAD)"
 
 if [[ "$PUSH" == true ]]; then
-  git -C "$WORKTREE" push "$REMOTE" "$BRANCH"
+  # Retry a rejected non-fast-forward push: another run may have appended to
+  # perf-data since we forked it. Rebase onto the new tip and push again.
+  attempt=1
+  max_attempts=3
+  until git -C "$WORKTREE" push "$REMOTE" "$BRANCH"; do
+    if [[ "$attempt" -ge "$max_attempts" ]]; then
+      echo "❌ Push failed after $max_attempts attempts" >&2
+      exit 1
+    fi
+    echo "⚠️  Push rejected, rebasing onto $REMOTE/$BRANCH and retrying ($attempt/$max_attempts)..."
+    git -C "$WORKTREE" fetch "$REMOTE" "$BRANCH"
+    git -C "$WORKTREE" rebase "$REMOTE/$BRANCH"
+    attempt=$((attempt + 1))
+  done
   echo "✅ Published to $REMOTE/$BRANCH"
 else
   echo "✅ Committed to local $BRANCH (pass --push to publish)"
