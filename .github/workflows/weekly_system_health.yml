@@ -28,13 +28,21 @@ concurrency:
   group: perf-lab
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  # Read-only PR lookup for the #RunPerf trigger's branch extraction.
+  pull-requests: read
+
 jobs:
   measure:
     name: Measure performance
+    # The #RunPerf comment path runs untrusted-PR code on the sole self-hosted
+    # lab device, so restrict it to users who already have repo write access.
     if: >-
       github.event_name != 'issue_comment' ||
       (github.event.issue.pull_request &&
-       contains(github.event.comment.body, '#RunPerf'))
+       contains(github.event.comment.body, '#RunPerf') &&
+       contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association))
     runs-on: [self-hosted, perf-lab, android]
     timeout-minutes: 90
 
