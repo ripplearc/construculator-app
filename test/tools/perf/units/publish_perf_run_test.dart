@@ -154,5 +154,14 @@ void main() {
       expect(rebuildIndex(store), 1);
       expect(indexRuns().length, 1);
     });
+
+    test('skips a corrupt run file and indexes the rest', () {
+      publishRun(writeRunFile(runRecord()), store);
+      File('${store.path}/runs/pre_login_v1/truncated.json')
+          .writeAsStringSync('{"journey":"pre_login_v1","comm');
+
+      expect(rebuildIndex(store), 1);
+      expect(indexRuns().length, 1);
+    });
   });
 }

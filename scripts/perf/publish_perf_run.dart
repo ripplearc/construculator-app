@@ -16,6 +16,11 @@ import 'dart:io';
 const String _unknown = 'unknown';
 
 Future<void> main(List<String> args) async {
+  if (args.length.isOdd) {
+    stderr.writeln('Missing value for flag: ${args.last}');
+    exitCode = 1;
+    return;
+  }
   final Map<String, String> options = <String, String>{};
   for (int i = 0; i + 1 < args.length; i += 2) {
     options[args[i]] = args[i + 1];
@@ -31,9 +36,14 @@ Future<void> main(List<String> args) async {
   }
 
   final Directory data = Directory(dataDir);
-  final File destination = publishRun(File(runFile), data);
-  final int count = rebuildIndex(data);
-  stdout.writeln('✅ Filed ${destination.path} ($count runs indexed)');
+  try {
+    final File destination = publishRun(File(runFile), data);
+    final int count = rebuildIndex(data);
+    stdout.writeln('✅ Filed ${destination.path} ($count runs indexed)');
+  } catch (error) {
+    stderr.writeln('❌ Failed to publish run: $error');
+    exitCode = 1;
+  }
 }
 
 /// Copies [runFile] into its canonical location under [dataDir].
@@ -77,7 +87,13 @@ int rebuildIndex(Directory dataDir) {
           ..sort((File a, File b) => a.path.compareTo(b.path));
 
     for (final File file in files) {
-      final Map<String, Object?> run = _readJsonObject(file);
+      Map<String, Object?> run;
+      try {
+        run = _readJsonObject(file);
+      } catch (error) {
+        stderr.writeln('⚠️  Skipping unreadable run file: ${file.path} ($error)');
+        continue;
+      }
       final Map<String, Object?> metrics =
           run['metrics'] is Map<String, Object?>
           ? run['metrics'] as Map<String, Object?>
