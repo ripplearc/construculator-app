@@ -8,8 +8,8 @@ import 'package:construculator/libraries/errors/failures.dart';
 ///
 /// ## Why the read path never returns a [Failure]
 ///
-/// Three of these five methods answer the question "may this user into the
-/// app?", and for those a `Left` would be actively harmful. The gate has to
+/// Three of these five methods answer the question "may this user get into
+/// the app?", and for those a `Left` would be actively harmful. The gate has to
 /// distinguish *knowing* consent is stale from *being unable to check*, and it
 /// has to treat a broken read no more leniently than a clean one. Both
 /// distinctions live in [ConsentStatus], so the read methods resolve every
