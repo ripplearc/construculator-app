@@ -119,5 +119,10 @@ Map<String, Object?> readJsonObject(File file) {
     return decoded is Map<String, Object?> ? decoded : <String, Object?>{};
   } on FormatException {
     return <String, Object?>{};
+  } on FileSystemException {
+    // readAsStringSync decodes as UTF-8 and throws this (not FormatException)
+    // when a run file is truncated inside a multi-byte character or is
+    // otherwise not valid UTF-8. Same handling: treat it as unreadable.
+    return <String, Object?>{};
   }
 }
