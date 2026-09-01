@@ -70,10 +70,19 @@ class ConsentVersionDto extends Equatable {
       throw FormatException('Unreadable consent version row: $unreadable');
     }
 
+    // consentType and version are known non-null here — unreadable above
+    // already rejected either being null. Narrowing through locals promotes
+    // them without a forced unwrap.
+    final readConsentType = consentType;
+    final readVersion = version;
+    if (readConsentType == null || readVersion == null) {
+      throw StateError('Unreachable: unreadable already validated these');
+    }
+
     return ConsentVersionDto(
       id: id as String,
-      consentType: consentType!,
-      version: version!,
+      consentType: readConsentType,
+      version: readVersion,
       documentUrl: documentUrl as String,
       publishedAt: parseTimestampOrEpoch(
         json[DatabaseConstants.publishedAtColumn],

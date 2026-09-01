@@ -213,7 +213,10 @@ void main() {
 
     group('tryFromJson', () {
       test('reads a valid row', () {
-        expect(ConsentVersionDto.tryFromJson(buildJson())?.version, 2);
+        final dto = ConsentVersionDto.tryFromJson(buildJson());
+
+        expect(dto, isNotNull);
+        expect(dto!.version, 2);
       });
 
       test('returns null instead of throwing on an unreadable row', () {
