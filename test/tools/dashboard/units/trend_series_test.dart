@@ -99,6 +99,18 @@ void main() {
 
       expect(readRunRecord(store, indexEntry), same(indexEntry));
     });
+
+    test('falls back to the index entry when the run file is invalid UTF-8', () {
+      final Map<String, Object?> indexEntry = entry(
+        '2026-08-24T03:00:00Z',
+        'abc',
+      );
+      final File file = File('${store.path}/${indexEntry['path']}');
+      file.parent.createSync(recursive: true);
+      file.writeAsBytesSync(<int>[0x7B, 0x22, 0xFF, 0xFE]);
+
+      expect(readRunRecord(store, indexEntry), same(indexEntry));
+    });
   });
 
   group('groupRunsBy', () {
