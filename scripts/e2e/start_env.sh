@@ -34,7 +34,7 @@ e2e_wait_for_http "http://127.0.0.1:${E2E_MAILPIT_PORT}/api/v1/messages" "Mailpi
 e2e_log "Starting PowerSync"
 e2e_powersync_compose up -d
 
-e2e_wait_for_http "http://127.0.0.1:${E2E_POWERSYNC_PORT}/api/health" "PowerSync"
+e2e_wait_for_http "http://127.0.0.1:${E2E_POWERSYNC_PORT}/probes/liveness" "PowerSync"
 
 e2e_log "E2E environment is ready"
 printf '    Supabase API : http://127.0.0.1:%s\n' "$E2E_SUPABASE_API_PORT"

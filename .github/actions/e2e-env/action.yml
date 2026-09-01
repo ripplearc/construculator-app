@@ -48,48 +48,23 @@ runs:
       with:
         version: ${{ inputs.supabase-version }}
 
-    - name: Generate auth signing key
+    - name: Start environment
       shell: bash
-      working-directory: ${{ inputs.backend-path }}
-      run: |
-        printf '[]\n' > supabase/signing_key.json
-        supabase gen signing-key --algorithm ES256 --append
-
-    - name: Start Supabase
-      shell: bash
-      working-directory: ${{ inputs.backend-path }}
-      run: supabase start
-
-    - name: Start PowerSync
-      shell: bash
-      working-directory: ${{ inputs.backend-path }}/powersync
-      run: |
-        sed "s|^PS_API_TOKEN=.*|PS_API_TOKEN=$(openssl rand -hex 32)|" .env.example > .env
-        docker compose up -d
+      env:
+        E2E_BACKEND_DIR: ${{ github.workspace }}/${{ inputs.backend-path }}
+      run: ${{ github.workspace }}/scripts/e2e/start_env.sh
 
     - name: Report connection details
       id: stack
       shell: bash
       working-directory: ${{ inputs.backend-path }}
       run: |
+        source "${{ github.workspace }}/scripts/e2e/lib.sh"
         anon_key="$(supabase status -o json | python3 -c 'import json,sys; print(json.load(sys.stdin)["ANON_KEY"])')"
         echo "::add-mask::$anon_key"
         {
-          echo "supabase-url=http://127.0.0.1:24321"
+          echo "supabase-url=http://127.0.0.1:${E2E_SUPABASE_API_PORT}"
           echo "supabase-anon-key=$anon_key"
-          echo "mailpit-url=http://127.0.0.1:24324"
-          echo "powersync-url=http://127.0.0.1:9081"
+          echo "mailpit-url=http://127.0.0.1:${E2E_MAILPIT_PORT}"
+          echo "powersync-url=http://127.0.0.1:${E2E_POWERSYNC_PORT}"
         } >> "$GITHUB_OUTPUT"
-
-    - name: Wait for PowerSync
-      shell: bash
-      run: |
-        for _ in $(seq 1 60); do
-          if curl -fsS -o /dev/null http://127.0.0.1:9081/probes/liveness; then
-            exit 0
-          fi
-          sleep 2
-        done
-        echo "::error::PowerSync did not become healthy within 120s"
-        docker compose -f "${{ inputs.backend-path }}/powersync/compose.yaml" logs --tail 50 || true
-        exit 1

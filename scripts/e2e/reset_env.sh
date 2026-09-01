@@ -46,6 +46,6 @@ e2e_log "Resetting database"
 e2e_log "Starting PowerSync"
 e2e_powersync_compose up -d
 
-e2e_wait_for_http "http://127.0.0.1:${E2E_POWERSYNC_PORT}/api/health" "PowerSync"
+e2e_wait_for_http "http://127.0.0.1:${E2E_POWERSYNC_PORT}/probes/liveness" "PowerSync"
 
 e2e_log "E2E environment reset to its seeded state"

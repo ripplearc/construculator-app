@@ -53,4 +53,6 @@ jobs:
 
       - name: Dump PowerSync logs
         if: failure()
+        # Assumes a container literally named "powersync"; construculator-backend#52
+        # drops that container_name pin, after which this no-ops.
         run: docker logs powersync --tail 100 || true
