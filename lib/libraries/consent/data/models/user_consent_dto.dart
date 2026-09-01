@@ -132,13 +132,27 @@ class UserConsentDto extends Equatable {
       throw FormatException('Unreadable user consent row: $unreadable');
     }
 
+    // consentType, action, version and recordedAt are known non-null here —
+    // unreadable above already rejected any of them being null. Narrowing
+    // through locals promotes them without a forced unwrap.
+    final readConsentType = consentType;
+    final readAction = action;
+    final readVersion = version;
+    final readRecordedAt = recordedAt;
+    if (readConsentType == null ||
+        readAction == null ||
+        readVersion == null ||
+        readRecordedAt == null) {
+      throw StateError('Unreachable: unreadable already validated these');
+    }
+
     return UserConsentDto.stored(
       id: id as String,
       userId: userId as String,
-      consentType: consentType!,
-      version: version!,
-      action: action!,
-      recordedAt: recordedAt!,
+      consentType: readConsentType,
+      version: readVersion,
+      action: readAction,
+      recordedAt: readRecordedAt,
       // Audit metadata: an unreadable value is dropped rather than failing a
       // row the gate can otherwise decide on.
       appVersion: rawAppVersion is String ? rawAppVersion : null,
