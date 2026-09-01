@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:construculator/libraries/consent/data/data_source/interfaces/remote_consent_data_source.dart';
 import 'package:construculator/libraries/consent/data/models/consent_version_dto.dart';
 
