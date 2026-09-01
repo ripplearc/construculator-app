@@ -75,8 +75,25 @@ fi
 git -C "$WORKTREE" commit -q -m "dashboard: publish data/$DEST"
 
 if [[ "$PUSH" == true ]]; then
-  git -C "$WORKTREE" push "$REMOTE" "$BRANCH"
-  echo "✅ Published to $REMOTE/$BRANCH"
+  # gh-pages can move under us between our fetch and our push when another CI
+  # run publishes concurrently. Retry a few times, rebasing our lone commit
+  # onto the updated branch each time, before giving up.
+  MAX_PUSH_ATTEMPTS=3
+  attempt=1
+  while true; do
+    if git -C "$WORKTREE" push "$REMOTE" "$BRANCH"; then
+      echo "✅ Published to $REMOTE/$BRANCH"
+      break
+    fi
+    if [[ "$attempt" -ge "$MAX_PUSH_ATTEMPTS" ]]; then
+      echo "❌ Push to $REMOTE/$BRANCH rejected after $MAX_PUSH_ATTEMPTS attempts" >&2
+      exit 1
+    fi
+    echo "🔄 Push rejected, rebasing onto $REMOTE/$BRANCH and retrying (attempt $attempt/$MAX_PUSH_ATTEMPTS)..."
+    git -C "$WORKTREE" fetch "$REMOTE" "$BRANCH"
+    git -C "$WORKTREE" rebase "$REMOTE/$BRANCH"
+    attempt=$((attempt + 1))
+  done
 else
   echo "✅ Committed to local $BRANCH (pass --push to publish)"
 fi

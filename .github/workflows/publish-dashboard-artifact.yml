@@ -38,6 +38,14 @@ on:
 permissions:
   contents: read
 
+# gh-pages is an append-only store: serialise every run that pushes to it so two
+# overlapping callers can't both branch off the same commit and have the second
+# push rejected as non-fast-forward. cancel-in-progress stays false so a queued
+# publish always runs rather than being dropped.
+concurrency:
+  group: gh-pages-publish
+  cancel-in-progress: false
+
 jobs:
   publish:
     name: Publish to gh-pages store
