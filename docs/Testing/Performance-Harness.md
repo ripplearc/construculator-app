@@ -138,10 +138,13 @@ index.json
 ```
 
 `perf-data` shares no history with `main`, so the store grows without adding
-commits or files to the source tree. `index.json` is always **rebuilt** from the
-stored runs rather than appended to, so a partially written index repairs itself
-on the next publish, and re-publishing a run overwrites it rather than
-double-counting a retried job.
+commits or files to the source tree. `index.json` specifically is always
+**rebuilt** from the stored runs rather than appended to, so a partially written
+or hand-edited `index.json` repairs itself on the next publish. A corrupt *run*
+file under `runs/` does not self-heal the same way — it is skipped with a
+warning on every publish until someone removes or repairs it (see Known Gaps
+below). Re-publishing a run overwrites it rather than double-counting a retried
+job.
 
 ### The `journey` field
 
@@ -185,6 +188,17 @@ enough screen the form fits without overflowing, so the gesture produces frames
 without producing scrolling. Jank numbers are therefore comparable across runs
 **on the same device**, but not necessarily across devices of different sizes.
 
+### A corrupted run file needs a manual cleanup
+
+`rebuildIndex` (in `publish_perf_run.dart`) re-reads every file under `runs/` on
+every publish. A truncated or malformed run file — a half-written capture, a
+disk-full write — is skipped with a warning on stderr
+(`⚠️  Skipping unreadable run file: <path>`) and the rest of the store is still
+indexed, so one bad file does not jam every future publish. It does still fall
+out of the trend and stays in the branch until a human removes it: unlike
+`index.json`, a bad run file does not repair itself. See Troubleshooting for how
+to spot and recover one.
+
 ## Troubleshooting
 
 ### `Device '<id>' is not attached`
@@ -205,3 +219,41 @@ disconnected before the first frame.
 
 Only default-branch runs publish. A `#RunPerf` run on a PR uploads its artifact
 but does not record history — this is intended.
+
+### A corrupted run file jams a journey's trend
+
+**Symptom:** the publish step log shows
+`⚠️  Skipping unreadable run file: runs/<journey>/<file>.json` and that
+journey's trend stops gaining points even though weekly runs keep succeeding.
+
+The publish itself no longer fails on this — `rebuildIndex` skips the bad file
+and indexes the rest — but the skipped run never re-enters the trend on its own.
+To recover it:
+
+1. Take the path from the warning in the publish step log.
+2. Check out the `perf-data` branch in a scratch worktree
+   (`git worktree add /tmp/perf-data perf-data`).
+3. Either restore a well-formed copy of that file from the run's uploaded
+   `perf-run-<run_id>` artifact, or `git rm` it if the run is unrecoverable.
+4. Commit and push `perf-data`. The next publish rebuilds `index.json` and the
+   trend is whole again.
+
+### Publish step failed but the artifact is still there
+
+The "Publish run to trend store" step runs with `continue-on-error: true` and
+"Upload performance run" runs with `if: always()`, so a publish failure no
+longer discards that week's capture — a red publish step with a green upload
+step below it is exactly this case. The `perf-run.json` is in the
+`perf-run-<run_id>` artifact.
+
+Read the publish step's log for the underlying cause — a corrupt run file in the
+store (above), a `git fetch` that failed loudly against `perf-data`, or a push
+still rejected after the script's three rebase-and-retry attempts. Once the
+store is healthy, backfill that week by running
+
+```bash
+bash scripts/perf/publish_perf_run.sh --run-file <perf-run.json from the artifact> --push
+```
+
+or simply let the next weekly run resume the trend — only that one week's point
+is missing.
