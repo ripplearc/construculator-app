@@ -97,6 +97,28 @@ void main() {
       expect(svg, contains('<title>2026-08-01 · 800 ms · commit0</title>'));
     });
 
+    test('omits the commit segment from a tooltip when no commit is recorded', () {
+      final MetricSeries series = MetricSeries(
+        id: 'cold_start_ms',
+        label: 'Cold start',
+        unit: 'ms',
+        points: <SeriesPoint>[
+          SeriesPoint(capturedAt: '2026-08-01T03:00:00Z', value: 800),
+        ],
+      );
+
+      final String svg = lineChartSvg(series);
+
+      expect(svg, contains('<title>2026-08-01 · 800 ms</title>'));
+    });
+
+    test('names the gridlines with a class that cannot clash with a CSS grid', () {
+      final String svg = lineChartSvg(seriesOf(<double?>[800, 820]));
+
+      expect(svg, contains('class="gridline"'));
+      expect(svg, isNot(contains('class="grid"')));
+    });
+
     test('labels only the first and last run on the x axis', () {
       final String svg = lineChartSvg(
         seriesOf(<double?>[800, 820, 810, 805]),

@@ -77,7 +77,6 @@ String sparklineSvg(List<int> values) {
       'aria-label="Failures per run, oldest first">$bars</svg>';
 }
 
-/// Maps series values and run indices onto chart coordinates.
 class _Scale {
   _Scale({
     required this.min,
@@ -126,7 +125,6 @@ class _Scale {
       (chartHeight - _padTop - _padBottom).toDouble();
 }
 
-/// Draws the three recessive gridlines and their value labels.
 String _gridAndAxis(_Scale scale, String unit) {
   final StringBuffer buffer = StringBuffer();
   for (int step = 0; step <= 2; step++) {
@@ -135,7 +133,7 @@ String _gridAndAxis(_Scale scale, String unit) {
     buffer
       ..write(
         '<line x1="$_padLeft" y1="$y" x2="${chartWidth - _padRight}" y2="$y" '
-        'class="grid"/>',
+        'class="gridline"/>',
       )
       ..write(
         '<text x="${_padLeft - 6}" y="${y + 3.5}" class="tick" '
@@ -145,7 +143,6 @@ String _gridAndAxis(_Scale scale, String unit) {
   return '$buffer<text x="$_padLeft" y="10" class="unit">${escapeMarkup(unit)}</text>';
 }
 
-/// Draws the baseline as a dashed rule in chrome ink, not as a second series.
 String _baseline(_Scale scale, double baseline) {
   final double y = _round(scale.y(baseline));
   return '<line x1="$_padLeft" y1="$y" x2="${chartWidth - _padRight}" y2="$y" '
@@ -154,10 +151,9 @@ String _baseline(_Scale scale, double baseline) {
       'text-anchor="end">baseline</text>';
 }
 
-/// Draws the line as one polyline per run of consecutive recorded values.
-///
-/// A gap is left open rather than bridged, because joining across a run that
-/// recorded nothing would draw a trend that was never measured.
+// One polyline per run of consecutive recorded values: a gap is left open
+// rather than bridged, because joining across a run that recorded nothing would
+// draw a trend that was never measured.
 String _segments(MetricSeries series, _Scale scale) {
   final StringBuffer buffer = StringBuffer();
   List<String> current = <String>[];
@@ -183,7 +179,6 @@ String _segments(MetricSeries series, _Scale scale) {
   return buffer.toString();
 }
 
-/// Draws a marker per recorded run, each carrying its own native tooltip.
 String _markers(MetricSeries series, _Scale scale) {
   final StringBuffer buffer = StringBuffer();
   for (int i = 0; i < series.points.length; i++) {
@@ -205,7 +200,6 @@ String _markers(MetricSeries series, _Scale scale) {
   return buffer.toString();
 }
 
-/// Labels only the first and last run, so dates cannot collide.
 String _xAxisLabels(MetricSeries series, _Scale scale) {
   final int last = series.points.length - 1;
   final String first =
