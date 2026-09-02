@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- USER CONSENT DTO MUTATION TESTING -->
+    <!-- Targets: UserConsentDto, the throw-vs-drop split on every field of a
+         user_consents row. Critical path: recordedAt is the ordering key
+         ConsentRepositoryImpl reads to decide the gate, so a weakened guard
+         here can silently reverse an acceptance/withdrawal outcome. -->
+
+    <files>
+        <file>lib/libraries/consent/data/models/user_consent_dto.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="try\s*\{" dotAll="false"/>
+        <regex pattern="catch\s*\(" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- RULE 1: Skip the recordedAt guard -->
+        <regex pattern="_ when recordedAt == null =&gt; DatabaseConstants\.recordedAtColumn," dotAll="true" id="user_consent_dto.from_json.skip_recorded_at_guard">
+            <mutation text="_ when false =&gt; DatabaseConstants.recordedAtColumn,"/>
+        </regex>
+
+        <!-- RULE 2: Weaken the version guard to allow zero -->
+        <regex pattern="_ when version == null \|\| version &lt;= 0 =&gt; DatabaseConstants\.versionColumn," dotAll="true" id="user_consent_dto.from_json.allow_version_zero">
+            <mutation text="_ when version == null || version &lt; 0 =&gt; DatabaseConstants.versionColumn,"/>
+        </regex>
+
+        <!-- RULE 3: Skip the action guard -->
+        <regex pattern="_ when action == null =&gt; DatabaseConstants\.actionColumn," dotAll="true" id="user_consent_dto.from_json.skip_action_guard">
+            <mutation text="_ when false =&gt; DatabaseConstants.actionColumn,"/>
+        </regex>
+
+        <!-- RULE 4: Skip the consentType guard -->
+        <regex pattern="_ when consentType == null =&gt; DatabaseConstants\.consentTypeColumn," dotAll="true" id="user_consent_dto.from_json.skip_consent_type_guard">
+            <mutation text="_ when false =&gt; DatabaseConstants.consentTypeColumn,"/>
+        </regex>
+
+        <!-- RULE 5: Skip the id guard -->
+        <regex pattern="_ when id is! String =&gt; DatabaseConstants\.idColumn," dotAll="true" id="user_consent_dto.from_json.skip_id_guard">
+            <mutation text="_ when false =&gt; DatabaseConstants.idColumn,"/>
+        </regex>
+
+        <!-- RULE 6: Skip the userId guard -->
+        <regex pattern="_ when userId is! String =&gt; DatabaseConstants\.userIdColumn," dotAll="true" id="user_consent_dto.from_json.skip_user_id_guard">
+            <mutation text="_ when false =&gt; DatabaseConstants.userIdColumn,"/>
+        </regex>
+
+        <!-- RULE 7: Drop the .toUtc() on insert -->
+        <regex pattern="recordedAt\.toUtc\(\)\.toIso8601String\(\)" dotAll="true" id="user_consent_dto.to_insert_json.drop_utc">
+            <mutation text="recordedAt.toIso8601String()"/>
+        </regex>
+
+        <!-- RULE 8: Drop appVersion from props -->
+        <regex pattern="action,\n    recordedAt,\n    appVersion,\n    platform,\n  \];" dotAll="true" id="user_consent_dto.props.drop_app_version_and_platform">
+            <mutation text="action,\n    recordedAt,\n  ];"/>
+        </regex>
+
+        <!-- RULE 9: Accept a non-string appVersion instead of dropping it -->
+        <regex pattern="appVersion: rawAppVersion is String \? rawAppVersion : null," dotAll="true" id="user_consent_dto.from_json.keep_bad_app_version">
+            <mutation text="appVersion: rawAppVersion as String?,"/>
+        </regex>
+
+        <!-- RULE 10: toDomain silently accepts a draft record -->
+        <regex pattern="if \(assignedId == null\) \{" dotAll="true" id="user_consent_dto.to_domain.skip_draft_guard">
+            <mutation text="if (false) {"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="user_consent_dto" expected-return="0">flutter test test/libraries/consent/units/data/models/user_consent_dto_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
