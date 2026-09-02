@@ -35,11 +35,15 @@ class SupabaseConsentDataSource implements RemoteConsentDataSource {
       // than silently dropping a requirement the user never satisfied.
       final versions = <ConsentVersionDto>[];
       for (final row in rows) {
-        if (ConsentTypeWireValue.fromJson(
-              row[DatabaseConstants.consentTypeColumn],
-            ) ==
-            null) {
-          _logger.warning('Skipping unrecognised consent type row');
+        final rawConsentType = row[DatabaseConstants.consentTypeColumn];
+        // Only a value this build has no gate for is skipped. A missing,
+        // null, empty or non-String column is a corrupt row rather than a
+        // newer server, so it falls through to fromJson and throws like any
+        // other unreadable gate field.
+        if (ConsentTypeWireValue.isUnrecognisedWireValue(rawConsentType)) {
+          // Named, because the log is the only way to tell a genuinely new
+          // document from a gated type whose wire value the server renamed.
+          _logger.warning('Skipping unrecognised consent type: $rawConsentType');
           continue;
         }
         versions.add(ConsentVersionDto.fromJson(row));

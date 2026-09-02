@@ -15,15 +15,25 @@ extension ConsentTypeWireValue on ConsentType {
   /// Resolves a consent type wire value, or null when unrecognised.
   ///
   /// Returns null rather than defaulting to a type: guessing here would
-  /// attach a consent record to the wrong document. Callers drop the row
-  /// instead — an unrecognised type means a newer server than this client,
-  /// not a corrupt row, so it must not fail the types this build does
-  /// understand.
+  /// attach a consent record to the wrong document. Null does not by itself
+  /// license dropping the row — it covers a corrupt column as well as a newer
+  /// server's document. Use [isUnrecognisedWireValue] to tell those apart.
   static ConsentType? fromJson(Object? value) => switch (value) {
     'terms_and_privacy' => ConsentType.termsAndPrivacy,
     'analytics' => ConsentType.analytics,
     _ => null,
   };
+
+  /// Whether [value] names a document this build has no gate for.
+  ///
+  /// True only for a non-empty string matching no known type — what a newer
+  /// server publishing a third document looks like from here, and the one
+  /// case a reader may skip. A missing, null, empty or non-string column is a
+  /// corrupt row instead: skipping it would hand the gate a list that reads
+  /// as "nothing required" for a requirement the user never satisfied, so it
+  /// must be allowed to fail the read.
+  static bool isUnrecognisedWireValue(Object? value) =>
+      value is String && value.isNotEmpty && fromJson(value) == null;
 }
 
 /// Wire representation of [ConsentAction].

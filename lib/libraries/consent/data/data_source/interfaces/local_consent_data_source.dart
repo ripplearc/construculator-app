@@ -1,3 +1,4 @@
+// coverage:ignore-file
 import 'package:construculator/libraries/consent/data/models/consent_version_dto.dart';
 import 'package:construculator/libraries/consent/data/models/user_consent_dto.dart';
 import 'package:construculator/libraries/consent/domain/types/consent_types.dart';

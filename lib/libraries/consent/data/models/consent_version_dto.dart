@@ -90,19 +90,6 @@ class ConsentVersionDto extends Equatable {
     );
   }
 
-  /// Builds a DTO from a row, or returns null when the row cannot be read.
-  ///
-  /// For callers reading a batch, where one bad row must not discard the good
-  /// ones beside it — a consent type this build does not recognise means a
-  /// newer server, not a reason to block the user.
-  static ConsentVersionDto? tryFromJson(Map<String, dynamic> json) {
-    try {
-      return ConsentVersionDto.fromJson(json);
-    } on FormatException {
-      return null;
-    }
-  }
-
   /// Converts to the domain [ConsentVersion] entity.
   ConsentVersion toDomain() => ConsentVersion(
     id: id,

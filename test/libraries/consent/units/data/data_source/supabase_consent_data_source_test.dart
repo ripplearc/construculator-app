@@ -8,11 +8,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 Map<String, dynamic> _versionRow({
-  String id = 'version-1',
-  String consentType = 'terms_and_privacy',
-  int version = 1,
-  String documentUrl = 'https://ripplearc.com/legal/terms-and-privacy',
-  String publishedAt = '2026-08-14T00:00:00.000Z',
+  Object? id = 'version-1',
+  Object? consentType = 'terms_and_privacy',
+  Object? version = 1,
+  Object? documentUrl = 'https://ripplearc.com/legal/terms-and-privacy',
+  Object? publishedAt = '2026-08-14T00:00:00.000Z',
 }) {
   return {
     DatabaseConstants.idColumn: id,
@@ -22,6 +22,11 @@ Map<String, dynamic> _versionRow({
     DatabaseConstants.publishedAtColumn: publishedAt,
   };
 }
+
+/// Matches the [FormatException] the DTO throws for a named column, so a test
+/// cannot pass on a row that failed for some other field.
+Matcher _unreadable(String column) =>
+    isA<FormatException>().having((e) => e.message, 'message', contains(column));
 
 void main() {
   group('SupabaseConsentDataSource', () {
@@ -134,6 +139,57 @@ void main() {
       expect(versions, hasLength(1));
       expect(versions.single.consentType, ConsentType.termsAndPrivacy);
     });
+
+    // A null consent_type reaches the same "unrecognised" predicate as a
+    // newer server's type would, but it is a corrupt row: dropping it hands
+    // the caller a list that reads as "nothing required" for a requirement
+    // the user never satisfied.
+    test(
+      'fetchPublishedVersions rethrows a row with a null consent type',
+      () async {
+        supabaseWrapper.addTableData(
+          DatabaseConstants.currentConsentVersionsView,
+          [_versionRow(consentType: null)],
+        );
+
+        await expectLater(
+          () => dataSource.fetchPublishedVersions(),
+          throwsA(_unreadable(DatabaseConstants.consentTypeColumn)),
+        );
+      },
+    );
+
+    test(
+      'fetchPublishedVersions rethrows a row with a non-string consent type',
+      () async {
+        supabaseWrapper.addTableData(
+          DatabaseConstants.currentConsentVersionsView,
+          [_versionRow(consentType: 7)],
+        );
+
+        await expectLater(
+          () => dataSource.fetchPublishedVersions(),
+          throwsA(_unreadable(DatabaseConstants.consentTypeColumn)),
+        );
+      },
+    );
+
+    // An empty string is textually well-formed but names no document, so it
+    // is a corrupt row rather than a newer server's type.
+    test(
+      'fetchPublishedVersions rethrows a row with an empty consent type',
+      () async {
+        supabaseWrapper.addTableData(
+          DatabaseConstants.currentConsentVersionsView,
+          [_versionRow(consentType: '')],
+        );
+
+        await expectLater(
+          () => dataSource.fetchPublishedVersions(),
+          throwsA(_unreadable(DatabaseConstants.consentTypeColumn)),
+        );
+      },
+    );
 
     test(
       'fetchPublishedVersions rethrows on a corrupt row of a known type',

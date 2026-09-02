@@ -38,6 +38,30 @@ void main() {
       expect(ConsentTypeWireValue.fromJson(null), isNull);
       expect(ConsentTypeWireValue.fromJson(3), isNull);
     });
+
+    test('isUnrecognisedWireValue accepts a well-formed unknown value', () {
+      // What a newer server publishing a third document looks like here.
+      expect(
+        ConsentTypeWireValue.isUnrecognisedWireValue('marketing_emails'),
+        isTrue,
+      );
+    });
+
+    test('isUnrecognisedWireValue rejects a known value', () {
+      expect(
+        ConsentTypeWireValue.isUnrecognisedWireValue('terms_and_privacy'),
+        isFalse,
+      );
+    });
+
+    test('isUnrecognisedWireValue rejects a corrupt column', () {
+      // fromJson returns null for these too, so telling them apart is the
+      // whole point: dropping one reads as "nothing required" for a
+      // requirement the user never satisfied.
+      expect(ConsentTypeWireValue.isUnrecognisedWireValue(null), isFalse);
+      expect(ConsentTypeWireValue.isUnrecognisedWireValue(''), isFalse);
+      expect(ConsentTypeWireValue.isUnrecognisedWireValue(3), isFalse);
+    });
   });
 
   group('ConsentActionWireValue', () {
