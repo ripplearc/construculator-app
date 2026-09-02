@@ -14,8 +14,8 @@
 # Without --purge this is non-destructive: the containers stop and the data
 # volumes are left alone.
 #
-# TODO(CA-991): isolate via a distinct backend project_id instead of relying on
-# this confirmation gate.
+# TODO: https://ripplearc.youtrack.cloud/issue/CA-991 - isolate via a
+# distinct backend project_id instead of relying on this confirmation gate.
 
 set -euo pipefail
 

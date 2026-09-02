@@ -8,8 +8,8 @@
 # Starting is harmless; see reset_env.sh and stop_env.sh --purge for the
 # operations that destroy that project's data.
 #
-# TODO(CA-991): isolate via a distinct backend project_id instead of relying on
-# this confirmation gate.
+# TODO: https://ripplearc.youtrack.cloud/issue/CA-991 - isolate via a
+# distinct backend project_id instead of relying on this confirmation gate.
 #
 # Usage: scripts/e2e/start_env.sh
 #

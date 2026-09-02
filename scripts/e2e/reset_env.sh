@@ -12,8 +12,8 @@
 # development, not a separate one. Everything in that database is destroyed and
 # only the seeded fixtures come back.
 #
-# TODO(CA-991): isolate via a distinct backend project_id instead of relying on
-# this confirmation gate.
+# TODO: https://ripplearc.youtrack.cloud/issue/CA-991 - isolate via a
+# distinct backend project_id instead of relying on this confirmation gate.
 #
 # Usage: scripts/e2e/reset_env.sh [--yes]
 #

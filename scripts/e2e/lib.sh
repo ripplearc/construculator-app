@@ -18,8 +18,8 @@
 # starts on a fresh runner. Anything destructive here hits real local dev data,
 # which is why reset and purge require explicit confirmation.
 #
-# TODO(CA-991): isolate via a distinct backend project_id instead of relying on
-# this confirmation gate.
+# TODO: https://ripplearc.youtrack.cloud/issue/CA-991 - isolate via a
+# distinct backend project_id instead of relying on this confirmation gate.
 E2E_APP_DIR="${E2E_APP_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 E2E_BACKEND_DIR="${E2E_BACKEND_DIR:-$(dirname "$E2E_APP_DIR")/construculator-backend}"
 
@@ -80,13 +80,22 @@ e2e_ensure_signing_key() {
   fi
 }
 
-# powersync/.env is gitignored and holds a locally generated API token.
+# powersync/.env is gitignored and holds a locally generated API token. Tests
+# for a real token rather than mere file existence, and removes the file on
+# failure, for the same reason as e2e_ensure_signing_key above: a write that
+# fails partway (missing .env.example, disk full, openssl failing) would
+# otherwise leave a file that exists but holds no usable token, and the next
+# run would see it exists and skip regenerating it.
 e2e_ensure_powersync_env() {
   local env_file="$E2E_BACKEND_DIR/powersync/.env"
-  [ -f "$env_file" ] && return 0
+  grep -q '^PS_API_TOKEN=.\+' "$env_file" 2>/dev/null && return 0
   e2e_log "Creating powersync/.env with a generated PS_API_TOKEN"
   sed "s|^PS_API_TOKEN=.*|PS_API_TOKEN=$(openssl rand -hex 32)|" \
     "$E2E_BACKEND_DIR/powersync/.env.example" >"$env_file"
+  grep -q '^PS_API_TOKEN=.\+' "$env_file" 2>/dev/null || {
+    rm -f "$env_file"
+    e2e_die "could not generate powersync/.env."
+  }
 }
 
 # Gates an action that destroys data. Locally the target is the developer's own
