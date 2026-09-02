@@ -12,17 +12,15 @@ import 'package:integration_test/integration_test.dart';
 /// this one.
 const String preLoginJourneyId = 'pre_login_v1';
 
-/// Upper bound on frames pumped while waiting for a scripted step to appear.
-///
-/// A fixed budget keeps the journey deterministic: every run pumps at most the
-/// same number of frames regardless of device speed, and a step that never
-/// appears fails loudly instead of hanging.
+// A fixed budget keeps the journey deterministic: every run pumps at most the
+// same number of frames regardless of device speed, and a step that never
+// appears fails loudly instead of hanging.
 const int _stepFrameBudget = 120;
 
-/// Frames pumped after a gesture so the resulting animation is recorded.
+// Frames pumped after a gesture so the resulting animation is recorded.
 const int _gestureFrameBudget = 60;
 
-/// Cadence of a single pumped frame, matching a 60Hz display.
+// Cadence of a single pumped frame, matching a 60Hz display.
 const Duration _frameInterval = Duration(milliseconds: 16);
 
 void main() {
@@ -43,7 +41,7 @@ void main() {
   });
 }
 
-/// Pumps frames until [target] is present, failing once the budget is spent.
+// Pumps frames until [target] is present, failing once the budget is spent.
 Future<void> _pumpUntilPresent(WidgetTester tester, Finder target) async {
   for (int frame = 0; frame < _stepFrameBudget; frame++) {
     await tester.pump(_frameInterval);
@@ -57,12 +55,10 @@ Future<void> _pumpUntilPresent(WidgetTester tester, Finder target) async {
   );
 }
 
-/// Drags the login form to generate a scripted, repeatable frame workload.
-///
-/// Targets [SingleChildScrollView] rather than [Scrollable] because the page
-/// contains two scrollables: the form's own scroll view and the one
-/// [EditableText] builds inside the email field. A [Scrollable] finder matches
-/// both, and [WidgetTester.fling] throws on an ambiguous target.
+// Targets SingleChildScrollView rather than Scrollable because the page
+// contains two scrollables: the form's own scroll view and the one
+// EditableText builds inside the email field. A Scrollable finder matches
+// both, and WidgetTester.fling throws on an ambiguous target.
 Future<void> _scrollLoginForm(WidgetTester tester) async {
   await tester.fling(
     find.byType(SingleChildScrollView),

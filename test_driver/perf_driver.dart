@@ -3,10 +3,9 @@ import 'dart:io';
 import 'package:flutter_driver/flutter_driver.dart';
 import 'package:integration_test/integration_test_driver.dart';
 
-/// Directory the timeline and summary files are written to.
-///
-/// The capture script overrides this per run so each run's artifacts land in
-/// their own directory instead of overwriting the previous run's.
+// The capture script overrides PERF_OUTPUT_DIR per run so each run's
+// artifacts land in their own directory instead of overwriting the
+// previous run's.
 final String _outputDirectory =
     Platform.environment['PERF_OUTPUT_DIR'] ?? 'build/perf';
 

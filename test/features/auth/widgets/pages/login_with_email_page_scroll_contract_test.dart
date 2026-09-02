@@ -20,13 +20,12 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 import '../../../../utils/fake_app_bootstrap_factory.dart';
 import '../../../../utils/screenshot/font_loader.dart';
 
-/// Guards the assumptions the pre-login performance journey makes about this
-/// page.
-///
-/// The journey lives in `integration_test/`, which neither `flutter test` nor
-/// any per-PR workflow executes, and `flutter drive` needs a physical device.
-/// A finder that silently stops matching there would only surface as a failed
-/// weekly lab run, so the assumptions are pinned here instead.
+// Guards the assumptions the pre-login performance journey makes about this
+// page. The journey lives in `integration_test/`, which neither `flutter
+// test` nor any per-PR workflow executes, and `flutter drive` needs a
+// physical device. A finder that silently stops matching there would only
+// surface as a failed weekly lab run, so the assumptions are pinned here
+// instead.
 class _ScrollContractModule extends Module {
   final AppBootstrap appBootstrap;
   _ScrollContractModule(this.appBootstrap);
