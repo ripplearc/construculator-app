@@ -8,9 +8,10 @@ class FakeRemoteConsentDataSource implements RemoteConsentDataSource {
   /// Versions returned once the fake stops throwing.
   List<ConsentVersionDto> publishedVersionsToReturn = [];
 
-  /// Thrown on every call while set.
+  /// Thrown while set, subject to [failuresBeforeSuccess].
   ///
-  /// Use with [failuresBeforeSuccess] to model a connection that recovers.
+  /// On its own it throws on every call; pair it with [failuresBeforeSuccess]
+  /// to model a connection that recovers.
   Object? error;
 
   /// How many calls throw [error] before the fake starts succeeding.
