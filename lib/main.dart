@@ -20,9 +20,12 @@ import 'package:construculator/libraries/supabase/supabase_wrapper_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  // Must use Sentry's binding (not WidgetsFlutterBinding) so its frame
+  // tracking integration can install before SentryFlutter.init runs.
+  SentryWidgetsFlutterBinding.ensureInitialized();
 
   final appBootstrap = await _initializeApp();
 
