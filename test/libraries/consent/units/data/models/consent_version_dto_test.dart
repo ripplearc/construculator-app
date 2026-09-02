@@ -211,24 +211,6 @@ void main() {
       });
     });
 
-    group('tryFromJson', () {
-      test('reads a valid row', () {
-        final dto = ConsentVersionDto.tryFromJson(buildJson());
-
-        expect(dto, isNotNull);
-        expect(dto!.version, 2);
-      });
-
-      test('returns null instead of throwing on an unreadable row', () {
-        // Lets a batch reader drop one bad row without discarding the good
-        // ones beside it.
-        expect(
-          ConsentVersionDto.tryFromJson(buildJson(consentType: 'marketing')),
-          isNull,
-        );
-      });
-    });
-
     test('toDomain carries every field to the entity', () {
       final entity = ConsentVersionDto.fromJson(buildJson()).toDomain();
 

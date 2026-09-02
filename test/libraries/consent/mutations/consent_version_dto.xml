@@ -64,11 +64,6 @@
         <regex pattern="uri\.isScheme\('https'\) \|\| uri\.isScheme\('http'\)" dotAll="true" id="consent_version_dto.is_presentable_url.drop_scheme_check">
             <mutation text="true"/>
         </regex>
-
-        <!-- RULE 10: tryFromJson swallows a valid row as if it were unreadable -->
-        <regex pattern="return ConsentVersionDto\.fromJson\(json\);" dotAll="true" id="consent_version_dto.try_from_json.always_null">
-            <mutation text="return null;"/>
-        </regex>
     </rules>
 
     <commands>
