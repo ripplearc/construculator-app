@@ -69,6 +69,11 @@ custom_lint:
         - 'Posthog'
         - 'PostHogConfig'
         - 'PowerSyncDatabase'
+        # Trend-store value objects built from published run records. They are
+        # constructed from data, not injected, so the dashboard builder has no
+        # alternative to instantiating them.
+        - 'MetricSeries'
+        - 'SeriesPoint'
 
 linter:
   # The lint rules applied to this project can be customized in the
