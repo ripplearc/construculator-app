@@ -33,10 +33,10 @@ E2E_DB_PROJECT="construculator-backend"
 # health checks and the generated env file somewhere else — it does not move the
 # stack. To actually move a port, change it in the backend repository and update
 # the matching value here.
-E2E_SUPABASE_API_PORT=54321
-E2E_SUPABASE_DB_PORT=54322
-E2E_MAILPIT_PORT=54324
-E2E_POWERSYNC_PORT=8081
+E2E_SUPABASE_API_PORT=24321
+E2E_SUPABASE_DB_PORT=24322
+E2E_MAILPIT_PORT=24324
+E2E_POWERSYNC_PORT=9081
 
 e2e_log() { printf '==> %s\n' "$*"; }
 e2e_warn() { printf 'warning: %s\n' "$*" >&2; }
