@@ -50,7 +50,7 @@ void main() {
         id: 'version-7',
         consentType: ConsentType.analytics,
         version: 7,
-        documentUrl: 'https://ripplearc.com/legal/analytics',
+        documentUrl: 'https://consent-seed.invalid/legal/analytics',
         publishedAt: DateTime.utc(2026, 8, 1),
       );
       dataSource = InMemoryLocalConsentDataSource(
@@ -67,6 +67,35 @@ void main() {
         reason:
             'an explicit seed replaces the defaults rather than adding to '
             'them',
+      );
+    });
+
+    // FakeLocalConsentDataSource passes an empty map in and fills it
+    // afterwards, so the store must read through to the caller's map rather
+    // than a defensive copy. Pinned here because a later "harden this"
+    // pass adding Map.of(seedVersions) would look obviously correct and
+    // would silently break every test that seeds a published version.
+    test('seedVersions is aliased, so later mutations are visible', () async {
+      final seedVersions = <ConsentType, ConsentVersionDto>{};
+      dataSource = InMemoryLocalConsentDataSource(seedVersions: seedVersions);
+
+      expect(
+        await dataSource.fetchPublishedVersion(ConsentType.termsAndPrivacy),
+        isNull,
+      );
+
+      final added = ConsentVersionDto(
+        id: 'version-2',
+        consentType: ConsentType.termsAndPrivacy,
+        version: 2,
+        documentUrl: 'https://consent-seed.invalid/legal/termsAndPrivacy',
+        publishedAt: DateTime.utc(2026, 8, 1),
+      );
+      seedVersions[ConsentType.termsAndPrivacy] = added;
+
+      expect(
+        await dataSource.fetchPublishedVersion(ConsentType.termsAndPrivacy),
+        added,
       );
     });
 
@@ -208,6 +237,23 @@ void main() {
       await dataSource.dispose();
 
       await expectation;
+    });
+
+    // Module teardown disposes the store while a write may still be in
+    // flight; the notification has nowhere to go, but the write must not
+    // throw and the record must still be readable.
+    test('insertUserConsent after dispose stores without throwing', () async {
+      await dataSource.dispose();
+
+      final stored = await dataSource.insertUserConsent(_draft());
+
+      expect(
+        await dataSource.fetchLatestUserConsent(
+          'user-1',
+          ConsentType.termsAndPrivacy,
+        ),
+        stored,
+      );
     });
   });
 }
