@@ -301,7 +301,7 @@ Example variables in `construculator_dev`:
 ENVIRONMENT=dev
 SENTRY_DSN=           (empty - Sentry disabled in dev)
 API_URL=http://localhost:8000/api
-SUPABASE_URL=http://localhost:54321
+SUPABASE_URL=http://localhost:24321
 DEBUG_MODE=true
 ANALYTICS_ENABLED=true
 POSTHOG_API_KEY=...   (dev only for now)

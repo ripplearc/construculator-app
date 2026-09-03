@@ -6,19 +6,22 @@ fixture set and a scripted way back to it. The same definition runs on a
 developer machine and on a CI runner, so a failing E2E test means the same thing
 in both places.
 
-> **⚠️ Locally this is your normal development stack, not a separate one.**
-> `supabase/config.toml` declares a single `project_id`
-> (`construculator-backend`), and `powersync/compose.yaml` attaches to that
-> project's Docker network by name, so there is only ever one local Supabase
-> project. `scripts/e2e/reset_env.sh` and `scripts/e2e/stop_env.sh --purge`
-> therefore destroy your ordinary local development data — the seeders restore
-> only `seeder@example.com` and the other sample fixtures, not any accounts or
-> work you created yourself. Both commands ask for confirmation before
-> proceeding. **Only CI is genuinely isolated**, because each run starts on a
-> fresh runner with nothing to lose.
-
-> **TODO [CA-991](https://ripplearc.youtrack.cloud/issue/CA-991):** give the E2E
-> backend stack its own distinct project_id so this warning becomes unnecessary.
+> **This stack is isolated from your normal development stack only if
+> `E2E_BACKEND_DIR` points at a separate checkout.**
+> `supabase/config.toml` declares its own `project_id`
+> (`construculator-backend-e2e`), and `powersync/compose.yaml` attaches to
+> that project's Docker network by name, so a *separate* checkout gets its
+> own containers, volumes and network. But `E2E_BACKEND_DIR` defaults to a
+> sibling directory literally named `construculator-backend` — if that's
+> also the checkout you run `npx supabase start` from for ordinary local
+> dev, `scripts/e2e/reset_env.sh` and `scripts/e2e/stop_env.sh --purge`
+> destroy that shared project's data, not some separate E2E-only copy.
+> Both commands still ask for confirmation before proceeding, naming the
+> project they're about to act on. Nothing yet enforces the separate-checkout
+> requirement structurally — tracked in
+> [CA-1007](https://ripplearc.youtrack.cloud/issue/CA-1007). If you need
+> both a dedicated E2E stack and ordinary local dev, use two checkouts and
+> point `E2E_BACKEND_DIR` at the E2E-only one explicitly.
 
 ## Why this environment exists
 
@@ -26,11 +29,6 @@ E2E tests need a backend that can be returned to a known state. Without one,
 tests become order-dependent and failures get ambiguous — a test can fail
 because the code broke or because a row left over from an earlier run changed.
 The seeded fixtures and `reset_env.sh` give that known state.
-
-Full project-level isolation from local development would need backend changes:
-a distinct `project_id` and the network and host names currently hardcoded in
-`powersync/.env.example` and `powersync/compose.yaml`. That is not part of this
-setup today, which is why the warning above matters.
 
 ## Prerequisites
 
@@ -50,7 +48,7 @@ fvm flutter run --dart-define=ENVIRONMENT=dev
 ```
 
 To return the data to its seeded state between test runs — destructive, see the
-warning above:
+note above:
 
 ```bash
 scripts/e2e/reset_env.sh          # prompts; --yes or E2E_ASSUME_YES=1 to skip
@@ -78,21 +76,21 @@ scripts/e2e/stop_env.sh --purge   # also deletes the volumes; prompts first
 
 | Service | URL |
 |---------|-----|
-| Supabase API | `http://localhost:54321` |
-| Postgres | `postgresql://postgres:postgres@localhost:54322/postgres` |
-| Supabase Studio | `http://localhost:54323` |
-| Mailpit | `http://localhost:54324` |
-| PowerSync | `http://localhost:8081` |
+| Supabase API | `http://localhost:24321` |
+| Postgres | `postgresql://postgres:postgres@localhost:24322/postgres` |
+| Supabase Studio | `http://localhost:24323` |
+| Mailpit | `http://localhost:24324` |
+| PowerSync | `http://localhost:9081` |
 
 Mailpit is the mail catcher on every Supabase CLI version this project pins. The
 `[inbucket]` key in `supabase/config.toml` is historical naming — the container
 it configures is Mailpit, and its messages are readable at
-`http://localhost:54324/api/v1/search`.
+`http://localhost:24324/api/v1/search`.
 
 ## Devices and emulators
 
 The generated env file points at `localhost`, which on a device means the device
-itself. `scripts/e2e/adb_reverse.sh` forwards ports 54321, 54324 and 8081 from
+itself. `scripts/e2e/adb_reverse.sh` forwards ports 24321, 24324 and 9081 from
 the device back to the host, so one env file works in both places. This is
 preferred over rewriting URLs to `10.0.2.2`, which only works on the Android
 emulator and would need a second set of values.
@@ -127,8 +125,8 @@ with `public` — accounts registered through GoTrue during a test run do not
 survive a reset, and the seeded account is restored by the seeders. A
 registration journey can therefore be run repeatedly from a known state.
 
-That same thoroughness is why the reset is gated: locally it clears the `auth`
-and `public` schemas of the development database, and only the sample fixtures
+That same thoroughness is why the reset is gated: it clears the `auth` and
+`public` schemas of the E2E project's database, and only the sample fixtures
 come back. Confirm at the prompt, or pass `--yes` / set `E2E_ASSUME_YES=1` when
 scripting it.
 
@@ -138,10 +136,11 @@ scripting it.
 a runner. `.github/workflows/e2e_env_smoke.yml` exercises it and asserts that the
 seeded user can actually sign in.
 
-This is the isolated case: a runner starts with no Supabase project of its own,
-so the stack is created from nothing and discarded with the runner. Nothing
-there is shared with anyone's development data, and destructive steps need no
-prompt — set `E2E_ASSUME_YES=1` if a workflow calls the reset script directly.
+A runner starts with no Supabase project of its own, so the stack is created
+from nothing and discarded with the runner — on top of the `project_id`
+isolation described above, this gives CI a doubly clean slate. Destructive
+steps need no prompt there; set `E2E_ASSUME_YES=1` if a workflow calls the
+reset script directly.
 
 ```yaml
 - uses: ./.github/actions/e2e-env

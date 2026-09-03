@@ -8,24 +8,25 @@
 # themselves; this file only defines things.
 
 # Backend repository checkout that owns supabase/ and powersync/.
-# Defaults to a sibling of the app repository.
+# Defaults to a sibling of the app repository — which is only a genuinely
+# separate stack if that sibling checkout isn't also the one a developer
+# uses for ordinary local backend work. Nothing here enforces that; see
+# CA-1007 (https://ripplearc.youtrack.cloud/issue/CA-1007).
 #
-# WARNING: locally this is the same Supabase project a developer uses for
-# ordinary development — supabase/config.toml declares
-# project_id = "construculator-backend", and powersync/compose.yaml attaches to
-# that project's network by name. These scripts therefore do NOT get their own
-# isolated stack on a developer machine; only CI is isolated, because each run
-# starts on a fresh runner. Anything destructive here hits real local dev data,
-# which is why reset and purge require explicit confirmation.
-#
-# TODO: https://ripplearc.youtrack.cloud/issue/CA-991 - isolate via a
-# distinct backend project_id instead of relying on this confirmation gate.
+# supabase/config.toml declares project_id = "construculator-backend-e2e",
+# distinguishing this stack's containers, volumes and Docker network from a
+# separate checkout's — but if E2E_BACKEND_DIR resolves to the same checkout
+# a developer runs `npx supabase start` from, these scripts still act on
+# that one shared project. The confirmation gate below is defense-in-depth
+# either way, not proof the target is actually a dedicated E2E stack.
 E2E_APP_DIR="${E2E_APP_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 E2E_BACKEND_DIR="${E2E_BACKEND_DIR:-$(dirname "$E2E_APP_DIR")/construculator-backend}"
 
-# project_id from the backend's supabase/config.toml. Named here so the
-# confirmation prompts can say exactly which project is about to be destroyed.
-E2E_DB_PROJECT="construculator-backend"
+# Mirrors the project_id in the backend's supabase/config.toml, kept in sync
+# manually like the port constants below — not read from that file. Named
+# here so the confirmation prompts can say which project is about to be
+# destroyed, but the label is only as accurate as this value matches config.toml.
+E2E_DB_PROJECT="construculator-backend-e2e"
 
 # Read-only mirrors of the ports the backend already binds: the API, database
 # and Mailpit ports come from supabase/config.toml, and the PowerSync port from
@@ -98,9 +99,11 @@ e2e_ensure_powersync_env() {
   }
 }
 
-# Gates an action that destroys data. Locally the target is the developer's own
-# Supabase project, so the seeders will not restore anything that was not seeded
-# — real accounts and any other local work are simply gone. CI sets
+# Gates an action that destroys data. The target is whatever project
+# E2E_BACKEND_DIR's config.toml names — the E2E project if that checkout is
+# genuinely dedicated to it, but a developer's ordinary dev data otherwise
+# (see the CA-1007 note above lib.sh's E2E_BACKEND_DIR). Either way, the
+# seeders will not restore anything that was not seeded. CI sets
 # E2E_ASSUME_YES because a runner has nothing of its own to lose.
 e2e_confirm_destructive() {
   local action="$1"

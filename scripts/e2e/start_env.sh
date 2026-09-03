@@ -3,13 +3,10 @@
 # Starts the E2E backend: Supabase (API, Postgres, auth, Mailpit) plus the
 # self-hosted PowerSync stack that attaches to Supabase's network.
 #
-# Locally this starts the same Supabase project used for ordinary development
-# rather than a separate one, so an already-running dev stack is reused as-is.
-# Starting is harmless; see reset_env.sh and stop_env.sh --purge for the
-# operations that destroy that project's data.
-#
-# TODO: https://ripplearc.youtrack.cloud/issue/CA-991 - isolate via a
-# distinct backend project_id instead of relying on this confirmation gate.
+# This starts whatever Supabase project E2E_BACKEND_DIR's config.toml names
+# (see lib.sh — genuinely the E2E project only if that checkout is dedicated
+# to it). Starting is harmless either way; see reset_env.sh and
+# stop_env.sh --purge for the operations that destroy that project's data.
 #
 # Usage: scripts/e2e/start_env.sh
 #

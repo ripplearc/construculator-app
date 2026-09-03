@@ -8,12 +8,10 @@
 # its MongoDB bucket storage is discarded afterwards because those buckets still
 # describe the database that was just replaced.
 #
-# WARNING: locally this resets the same Supabase project used for ordinary
-# development, not a separate one. Everything in that database is destroyed and
-# only the seeded fixtures come back.
-#
-# TODO: https://ripplearc.youtrack.cloud/issue/CA-991 - isolate via a
-# distinct backend project_id instead of relying on this confirmation gate.
+# This resets whatever Supabase project E2E_BACKEND_DIR's config.toml names
+# (see lib.sh — genuinely the E2E project only if that checkout is dedicated
+# to it, a developer's ordinary dev stack otherwise). Everything in that
+# database is destroyed and only the seeded fixtures come back.
 #
 # Usage: scripts/e2e/reset_env.sh [--yes]
 #
