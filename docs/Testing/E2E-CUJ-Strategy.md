@@ -113,12 +113,12 @@ If a hosted cloud project is ever preferred over Docker-in-CI (e.g. for closer p
 
 ### When tests run
 
-E2E tests take 3–10 minutes per CUJ on a real device. Running them on every pull request adds too much friction. The proposed model:
+E2E tests take 3–10 minutes per CUJ on a real device. Running them on every pull request adds too much friction. The model implemented by [CA-750](https://ripplearc.youtrack.cloud/issue/CA-750):
 
-- **Nightly scheduled run on `main` if there's a change** — catches regressions automatically without slowing down the daily PR cycle
+- **Weekly scheduled run on `main`** — chosen over nightly while the suite is new and its flake profile is unknown; see CA-750's cost/regression-range tradeoff for when to revisit.
 - **Opt-in trigger on PRs** — a comment like `#RunE2E` fires a targeted E2E workflow on demand, following the same pattern already established for `#RunCheck`
 
-As the suite grows and stabilizes, gating production deploys on a CUJ pass is worth revisiting (it is listed as a stretch goal in CA-746).
+As the suite grows and stabilizes, gating production deploys on a CUJ pass is worth revisiting (it is listed as a stretch goal in CA-746). See [E2E-CI.md](E2E-CI.md) for the implemented workflow, retry/quarantine behaviour and the pattern for adding a new CUJ.
 
 ### Platform options
 
