@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CONSENT ERROR MAPPER MUTATION TESTING -->
+    <!-- Targets: ConsentErrorMapper.toErrorType — the exception taxonomy the
+         write path and the retry decorator both depend on — and isTransient,
+         derived from it, which RetryingRemoteConsentDataSource uses to decide
+         whether a failure is worth another attempt. -->
+
+    <files>
+        <file>lib/libraries/consent/data/consent_error_mapper.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: Drop the timeout arm. -->
+        <regex pattern="if \(error is TimeoutException\) \{\n      return ConsentErrorType\.timeoutError;\n    \}" dotAll="true" id="consent_error_mapper.to_error_type.drop_timeout">
+            <mutation text="if (false) {\n      return ConsentErrorType.timeoutError;\n    }"/>
+        </regex>
+
+        <!-- RULE 2: Drop the ClientException arm, leaving only SocketException. -->
+        <regex pattern="if \(error is SocketException \|\| error is http\.ClientException\) \{" dotAll="true" id="consent_error_mapper.to_error_type.drop_client_exception">
+            <mutation text="if (error is SocketException) {"/>
+        </regex>
+
+        <!-- RULE 3: Skip the 08000 special case, so it falls through to the
+             switch's unknownError branch instead of connectionError. -->
+        <regex pattern="if \(error\.code == '08000'\) \{\n        return ConsentErrorType\.connectionError;\n      \}" dotAll="true" id="consent_error_mapper.to_error_type.skip_08000">
+            <mutation text="if (false) {\n        return ConsentErrorType.connectionError;\n      }"/>
+        </regex>
+
+        <!-- RULE 4: Skip the PGRST301 arm, so an expired JWT falls through to
+             the switch's unknownError branch and is reported as a database
+             error instead of an authentication failure. -->
+        <regex pattern="if \(error\.code == 'PGRST301'\) \{\n        return ConsentErrorType\.authenticationError;\n      \}" dotAll="true" id="consent_error_mapper.to_error_type.skip_pgrst301">
+            <mutation text="if (false) {\n        return ConsentErrorType.authenticationError;\n      }"/>
+        </regex>
+
+        <!-- RULE 5: isTransient stops recognising timeoutError as transient. -->
+        <regex pattern="errorType == ConsentErrorType\.connectionError \|\|\n        errorType == ConsentErrorType\.timeoutError;" dotAll="true" id="consent_error_mapper.is_transient.drop_timeout">
+            <mutation text="errorType == ConsentErrorType.connectionError;"/>
+        </regex>
+
+        <!-- RULE 6: isTransient stops recognising connectionError as transient. -->
+        <regex pattern="errorType == ConsentErrorType\.connectionError \|\|\n        errorType == ConsentErrorType\.timeoutError;" dotAll="true" id="consent_error_mapper.is_transient.drop_connection">
+            <mutation text="errorType == ConsentErrorType.timeoutError;"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="consent_error_mapper" expected-return="0">flutter test test/libraries/consent/units/data/consent_error_mapper_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
