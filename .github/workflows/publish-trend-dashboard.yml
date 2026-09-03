@@ -1,0 +1,81 @@
+name: Publish Trend Dashboard
+
+# Rebuilds the trend dashboard from the current state of both raw stores
+# (perf-data, e2e-data) and publishes the rendered page to gh-pages.
+#
+# This does not call the reusable publish-dashboard-artifact.yml workflow:
+# that workflow re-runs actions/checkout in its own job, so it can only publish
+# files that already exist in the repository, not a page built earlier in this
+# run. It reuses the same underlying script instead, then performs the same
+# Pages deploy, which is the step that actually updates the live site.
+
+on:
+  # Refresh as soon as either producer finishes, so a new run shows up without
+  # waiting for the weekly backstop. workflow_run only fires for workflows that
+  # exist on the default branch — until CA-782 and CA-750 merge, the schedule
+  # below is what keeps the page current.
+  workflow_run:
+    workflows: ["Weekly System Health", "Weekly CUJ E2E"]
+    types: [completed]
+  schedule:
+    # Mondays 05:00 UTC — after both weekly producers have had time to finish.
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+# Only one publish at a time: two concurrent runs would race on the gh-pages
+# branch and on the Pages deployment.
+concurrency:
+  group: trend-dashboard
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and publish dashboard
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.4"
+          channel: "stable"
+
+      - name: Build dashboard and publish to gh-pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          bash scripts/dashboard/build_and_publish_dashboard.sh --push
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload gh-pages tree as Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

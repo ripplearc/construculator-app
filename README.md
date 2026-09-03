@@ -572,12 +572,59 @@ job explicitly deploys via `actions/deploy-pages`. This keeps every publish
 outside GitHub's legacy Pages build queue (10 builds/hour), which still
 applies to the branch-watcher regardless of Jekyll processing.
 
-**URL:** https://ripplearc.github.io/construculator-app/
+**URL:** https://ripplearc.github.io/construculator-app/data/dashboard/index.html
 
-> **TODO [CA-978](https://ripplearc.youtrack.cloud/issue/CA-978):** build the
-> dashboard rendering and data-ingestion logic that reads the store below and
-> renders both views (system-health metrics, E2E results) at this URL. This
-> host and its publish path are already in place.
+Both views live on that one page and are reachable by anchor:
+
+| View | URL |
+|---|---|
+| System health | …/data/dashboard/index.html**#system-health** |
+| E2E suite | …/data/dashboard/index.html**#e2e** |
+
+The page sits under `data/` because `publish_artifact.sh` writes everything it
+publishes under that directory; the site root remains the placeholder CA-988
+seeded. Pointing the root at the dashboard is a `gh-pages` content change, not
+a source change, so it is deliberately not done here.
+
+### What the dashboard shows
+
+- **System health** — cold start, TTID, warm start, peak memory and jank,
+  plotted per perf journey against a baseline when one has been recorded.
+- **E2E suite** — pass rate, flake rate and run duration per suite, plus a
+  per-CUJ table of failures, flakes and last status with a failures-per-run
+  sparkline.
+
+Pass rate counts a flaked case as a pass, because that is what CI reports when
+a retry rescues a run; flake rate is what that number hides. The page says so
+in its own footer, so the two are read together.
+
+Charts render empty rather than guessing when there is no data. **No baselines
+exist yet** — CA-476 defines the methodology but a baseline cannot be recorded
+before a harness has produced one — so no threshold line is drawn until a
+`baselines.json` appears in the perf store, keyed by journey. TTID likewise has
+no producer yet: the harness records startup as cold and warm start and emits no
+separate TTID field, so that chart stays empty until it does.
+
+### How the dashboard is built and published
+
+`.github/workflows/publish-trend-dashboard.yml` rebuilds the page from the
+current state of both raw stores and publishes it. It runs when either producer
+workflow completes, on a Monday 05:00 UTC backstop, and on demand.
+
+```bash
+# Reads perf-data and e2e-data, renders, and stages the page (add --push to publish).
+scripts/dashboard/build_and_publish_dashboard.sh
+```
+
+The raw stores are the archives; `gh-pages` holds only the rendered page. The
+build reads `perf-data` and `e2e-data` through throwaway worktrees and never
+writes to them. A store branch that does not exist yet renders as "nothing
+recorded yet" rather than failing, so the page works before the first run lands.
+
+This workflow reuses `publish_artifact.sh` directly rather than calling the
+reusable `publish-dashboard-artifact.yml`: that workflow re-runs
+`actions/checkout` in its own job, so it can only publish files already
+committed to the repository, not a page built earlier in the same run.
 
 ### How a CI job publishes to the store
 
