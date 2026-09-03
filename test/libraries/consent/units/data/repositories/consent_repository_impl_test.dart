@@ -268,6 +268,22 @@ void main() {
       expect(result, const ConsentSatisfied(0));
       expect(remote.callCount, 0);
     });
+
+    test(
+      'resolves a failed local read to indeterminate without reaching the '
+      'network',
+      () async {
+        // Distinct from the remote-fetch failures above: this fails before
+        // the round trip, so the resolver -- and its fail-open/fail-closed
+        // split -- is never reached at all.
+        local.latestConsentReadError = const FormatException('corrupt row');
+
+        final result = await repository.verifyPublishedVersion(type);
+
+        expect(result, const ConsentIndeterminate(type));
+        expect(remote.callCount, 0);
+      },
+    );
   });
 
   group('recordAcceptance', () {
@@ -390,6 +406,14 @@ void main() {
   });
 
   group('watchConsentStatus', () {
+    test('does not gate a signed-out user', () async {
+      supabase.setInternalUserId(null);
+
+      final statuses = repository.watchConsentStatus(type);
+
+      await expectLater(statuses, emits(const ConsentSatisfied(0)));
+    });
+
     test('emits a new status when the consent record changes', () async {
       local.publishedVersions[type] = version(2);
 
@@ -463,5 +487,23 @@ void main() {
       repository.dispose();
       await done;
     });
+
+    test(
+      'logs rather than throwing when the underlying dispose fails',
+      () async {
+        local.disposeError = Exception('close failed');
+
+        repository.dispose();
+
+        // dispose() is fire-and-forget; give the catchError callback a turn
+        // to run so an unhandled zone error, were catchError missing, would
+        // surface within this test rather than escape it silently.
+        await Future<void>.delayed(Duration.zero);
+
+        // Clear it so tearDown's own local.dispose() call -- which nothing
+        // here catches -- succeeds rather than throwing a second time.
+        local.disposeError = null;
+      },
+    );
   });
 }
