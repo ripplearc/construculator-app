@@ -317,6 +317,16 @@ void main() {
 
         await expectLater(stream.drain<void>(), completes);
       });
+
+      test('throws the configured disposeError instead of closing', () async {
+        fake.disposeError = Exception('close failed');
+
+        await expectLater(fake.dispose(), throwsException);
+
+        // Clear it so tearDown's own dispose() call -- which nothing here
+        // catches -- succeeds rather than throwing a second time.
+        fake.disposeError = null;
+      });
     });
   });
 }

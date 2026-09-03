@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CONSENT VERIFICATION RESOLVER MUTATION TESTING -->
+    <!-- Targets: ConsentVerificationResolver.resolve(), which decides what a
+         background verification attempt means. Critical path: this decides
+         whether a returning user gets re-gated or stays in the app. -->
+
+    <files>
+        <file>lib/libraries/consent/data/consent_verification_resolver.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+        <regex pattern="try\s*\{" dotAll="false"/>
+        <regex pattern="catch\s*\(" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- RULE 1: Invert the consent-type match filter -->
+        <regex pattern="version\.consentType == type" dotAll="true" id="resolver.match.invert_type_filter">
+            <mutation text="version.consentType != type"/>
+        </regex>
+
+        <!-- RULE 2: Skip the no-match-published branch -->
+        <regex pattern="if \(match == null\) \{" dotAll="true" id="resolver.match.skip_no_match_branch">
+            <mutation text="if (false) {"/>
+        </regex>
+
+        <!-- RULE 3: Invert the fail-open/fail-closed decision when the server
+             publishes no row for this type. Anchored on the log line so it
+             stays distinct from RULE 4, which targets the identical
+             expression inside the catch block. -->
+        <regex pattern="No published consent version for \$\{type\.toJson\(\)\}'\);\s*return acceptedVersion == null" dotAll="true" id="resolver.match.invert_has_prior_acceptance">
+            <mutation text="No published consent version for ${type.toJson()}');&#10;        return acceptedVersion != null"/>
+        </regex>
+
+        <!-- RULE 4: Invert the fail-open/fail-closed decision on a failed
+             check. Anchored on the catch-block comment so it stays distinct
+             from RULE 3. -->
+        <regex pattern="whether there is a prior acceptance to fall back on\.\s*return acceptedVersion == null" dotAll="true" id="resolver.failure.invert_has_prior_acceptance">
+            <mutation text="whether there is a prior acceptance to fall back on.&#10;      return acceptedVersion != null"/>
+        </regex>
+
+        <!-- RULE 5: Wrong status when there is nothing to fall back on -->
+        <regex pattern="// Nothing to fall back on and no document to present\.\s*\? ConsentIndeterminate\(type\)" dotAll="true" id="resolver.failure.wrong_indeterminate_status">
+            <mutation text="// Nothing to fall back on and no document to present.&#10;          ? ConsentUnverified(0)"/>
+        </regex>
+
+        <!-- RULE 6: Wrong status when a prior acceptance exists -->
+        <regex pattern="// Trust the last known-good acceptance; retry next launch\.\s*: ConsentUnverified\(acceptedVersion\);" dotAll="true" id="resolver.failure.wrong_unverified_status">
+            <mutation text="// Trust the last known-good acceptance; retry next launch.&#10;          : ConsentIndeterminate(type);"/>
+        </regex>
+
+        <!-- RULE 7: Wrong status in the no-published-row branch, which must
+             not report a consent the server never confirmed. -->
+        <regex pattern="No published consent version for \$\{type\.toJson\(\)\}'\);\s*return acceptedVersion == null\s*\? ConsentIndeterminate\(type\)" dotAll="true" id="resolver.match.wrong_indeterminate_status">
+            <mutation text="No published consent version for ${type.toJson()}');&#10;        return acceptedVersion == null&#10;            ? ConsentSatisfied(acceptedVersion ?? 0)"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="consent_verification_resolver" expected-return="0">flutter test test/libraries/consent/units/data/repositories/consent_repository_impl_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

@@ -59,6 +59,9 @@ class FakeLocalConsentDataSource implements LocalConsentDataSource {
   /// otherwise unreachable through this fake.
   Object? watchError;
 
+  /// Error thrown by [dispose].
+  Object? disposeError;
+
   /// Records passed to [insertUserConsent], in call order. Excludes records
   /// seeded through [seedLatestConsent].
   final List<UserConsentDto> insertedRecords = [];
@@ -130,5 +133,9 @@ class FakeLocalConsentDataSource implements LocalConsentDataSource {
   }
 
   @override
-  Future<void> dispose() => _store.dispose();
+  Future<void> dispose() async {
+    final error = disposeError;
+    if (error != null) throw error;
+    return _store.dispose();
+  }
 }
