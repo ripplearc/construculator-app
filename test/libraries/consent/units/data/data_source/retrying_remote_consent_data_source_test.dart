@@ -152,20 +152,31 @@ void main() {
       );
     });
 
-    test('retries an attempt that exceeds attemptTimeout', () async {
-      dataSource = RetryingRemoteConsentDataSource(
-        inner,
-        backoff: _noDelay,
-        attemptTimeout: const Duration(milliseconds: 10),
-      );
-      inner
-        ..delaySequence.add(const Duration(milliseconds: 50))
-        ..publishedVersionsToReturn = [_version(5)];
+    // Virtual time again: a stalled attempt racing its own timeout is a
+    // timing assertion, and racing two real durations is the one shape in
+    // this file that could flake on a loaded machine.
+    test('retries an attempt that exceeds attemptTimeout', () {
+      fakeAsync((async) {
+        dataSource = RetryingRemoteConsentDataSource(
+          inner,
+          backoff: _noDelay,
+          attemptTimeout: const Duration(seconds: 1),
+        );
+        inner
+          ..delaySequence.add(const Duration(seconds: 5))
+          ..publishedVersionsToReturn = [_version(5)];
 
-      final result = await dataSource.fetchPublishedVersions();
+        final result = <ConsentVersionDto>[];
+        dataSource.fetchPublishedVersions().then(result.addAll);
 
-      expect(result.single.version, 5);
-      expect(inner.callCount, 2, reason: 'stalled first attempt, fast retry');
+        async.elapse(const Duration(milliseconds: 999));
+        expect(inner.callCount, 1, reason: 'first attempt still stalled');
+
+        async.elapse(const Duration(milliseconds: 1));
+        async.flushMicrotasks();
+        expect(inner.callCount, 2, reason: 'stalled first attempt, fast retry');
+        expect(result.single.version, 5);
+      });
     });
   });
 

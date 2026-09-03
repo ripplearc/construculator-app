@@ -20,7 +20,28 @@ import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 ///
 /// Retries only conditions that can plausibly clear on their own. A parse
 /// failure or a permission denial fails identically every time, so retrying
-/// them only delays the answer the caller is waiting on.
+/// them only delays the answer the caller is waiting on. Transient means a
+/// timeout, a socket failure, an [http.ClientException], or one of the
+/// Postgres connection-level codes 08000, 08003 and 08006 — all three
+/// describe the server rather than the request.
+///
+/// The HTTP arm matches [http.ClientException] rather than `HttpException`:
+/// `IOClient` converts `dart:io`'s `HttpException` into a plain
+/// `ClientException` before it ever escapes the HTTP layer, so a mid-flight
+/// drop ("Connection closed before full header was received") only surfaces
+/// under that type. [SocketException] still matches directly, because
+/// `IOClient`'s `_ClientSocketException` implements it.
+///
+/// The default budget is four attempts, delayed 250ms, 1s and 2s and each
+/// capped at 3s, so a user opening the app on a flaky connection still gets an
+/// answer within roughly `attemptTimeout * (backoff.length + 1) +
+/// sum(backoff)`. The cap has to live here because nothing downstream imposes
+/// one: `selectMatch` carries no `.timeout()`, so a stalled connection would
+/// hang instead of failing.
+///
+/// That cap stops the decorator *waiting* on an attempt; it does not cancel
+/// it. A genuinely hung request keeps running while the next attempt goes out,
+/// so exhausting the budget can leave several requests in flight at once.
 ///
 /// Exhausted retries rethrow. The caller decides what an unreachable server
 /// means — for consent it is an expected condition on a mobile network, not an
@@ -30,20 +51,15 @@ class RetryingRemoteConsentDataSource implements RemoteConsentDataSource {
   final List<Duration> _backoff;
   final Duration _attemptTimeout;
 
-  /// Delay before each retry. Short enough that a user opening the app on a
-  /// flaky connection still gets an answer within roughly
-  /// `attemptTimeout * (backoff.length + 1) + sum(backoff)`.
   static const _defaultBackoff = [
     Duration(milliseconds: 250),
     Duration(seconds: 1),
     Duration(seconds: 2),
   ];
 
-  /// How long a single attempt is given before it counts as a failure worth
-  /// retrying. Nothing downstream imposes one on its own: `selectMatch` has
-  /// no `.timeout()` of its own, so a stalled connection would otherwise hang
-  /// instead of failing.
   static const _defaultAttemptTimeout = Duration(seconds: 3);
+
+  static const _transientPostgrestCodes = {'08000', '08003', '08006'};
 
   const RetryingRemoteConsentDataSource(
     this._inner, {
@@ -64,17 +80,6 @@ class RetryingRemoteConsentDataSource implements RemoteConsentDataSource {
     return await _inner.fetchPublishedVersions().timeout(_attemptTimeout);
   }
 
-  /// Postgres connection-level codes: cannot connect, cannot establish, and
-  /// unable to connect now. All three describe the server, not the request.
-  static const _transientPostgrestCodes = {'08000', '08003', '08006'};
-
-  // Whether [error] is worth another attempt.
-  //
-  // http.ClientException, not HttpException: IOClient converts dart:io's
-  // HttpException into a plain ClientException before it ever escapes the
-  // HTTP layer, so the mid-flight-drop case ("Connection closed before full
-  // header was received") only matches this type. SocketException still
-  // matches directly — IOClient's _ClientSocketException implements it.
   bool _isTransient(Object error) =>
       error is TimeoutException ||
       error is SocketException ||
