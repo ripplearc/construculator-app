@@ -80,6 +80,11 @@ custom_lint:
         - 'SystemHealthGroup'
         - 'E2eGroup'
         - 'CujSummary'
+        # Chart geometry derived from a series' own min/max. Private to the
+        # renderer and built by a factory from that data, so there is nothing
+        # to inject; '_Fake' above is the existing precedent for a private
+        # prefix in this list.
+        - '_Scale'
 
 linter:
   # The lint rules applied to this project can be customized in the
