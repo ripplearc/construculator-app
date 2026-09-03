@@ -126,6 +126,8 @@ This keeps pre-checks faster while preserving quality on authored code.
 - The script looks for changed XML config files under:
    - `test/features/**/mutations/*.xml`
    - `test/libraries/**/mutations/*.xml`
+   - `test/app/**/mutations/*.xml`
+   - `test/tools/**/mutations/*.xml`
 - If no mutation config changed, mutation run is skipped with a success exit.
 - If configs changed, the script runs:
 
@@ -379,6 +381,10 @@ These paths are assumed by script and workflow logic. Tests outside these patter
 - `test/features/**/mutations/*.xml`
 - `test/libraries/**/units/*.dart`
 - `test/libraries/**/mutations/*.xml`
+- `test/app/**/units/*.dart`
+- `test/app/**/widgets/*.dart`
+- `test/tools/**/units/*.dart`
+- `test/tools/**/widgets/*.dart`
 
 When adding new test suites, keep naming and placement consistent with existing conventions.
 
