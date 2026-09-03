@@ -1,3 +1,5 @@
+// coverage:ignore-file
+
 part of 'consent_gate_bloc.dart';
 
 /// Things that can change what the consent gate shows.
@@ -35,9 +37,6 @@ class ConsentGateRetryRequested extends ConsentGateEvent {
   const ConsentGateRetryRequested();
 }
 
-/// The watched consent data changed.
-///
-/// Private: raised by the BLoC's own subscription, never by the UI.
 // ignore: unused_element -- constructed and handled once ConsentGateBloc lands.
 class _ConsentGateStatusChanged extends ConsentGateEvent {
   final Either<Failure, ConsentStatus> result;

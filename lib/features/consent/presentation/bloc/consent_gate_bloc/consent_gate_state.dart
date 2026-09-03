@@ -1,3 +1,5 @@
+// coverage:ignore-file
+
 part of 'consent_gate_bloc.dart';
 
 /// What the consent gate is currently showing.

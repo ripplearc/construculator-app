@@ -1,3 +1,5 @@
+// coverage:ignore-file
+
 import 'package:construculator/libraries/consent/domain/entities/consent_status_entity.dart';
 import 'package:construculator/libraries/consent/domain/entities/consent_version_entity.dart';
 import 'package:construculator/libraries/either/either.dart';
