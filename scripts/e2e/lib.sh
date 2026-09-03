@@ -22,8 +22,10 @@
 E2E_APP_DIR="${E2E_APP_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 E2E_BACKEND_DIR="${E2E_BACKEND_DIR:-$(dirname "$E2E_APP_DIR")/construculator-backend}"
 
-# project_id from the backend's supabase/config.toml. Named here so the
-# confirmation prompts can say exactly which project is about to be destroyed.
+# Mirrors the project_id in the backend's supabase/config.toml, kept in sync
+# manually like the port constants below — not read from that file. Named
+# here so the confirmation prompts can say which project is about to be
+# destroyed, but the label is only as accurate as this value matches config.toml.
 E2E_DB_PROJECT="construculator-backend-e2e"
 
 # Read-only mirrors of the ports the backend already binds: the API, database
