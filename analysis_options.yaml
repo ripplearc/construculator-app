@@ -69,6 +69,15 @@ custom_lint:
         - 'Posthog'
         - 'PostHogConfig'
         - 'PowerSyncDatabase'
+        # package:xml's parser entry point, used by the E2E report builder. It
+        # is a vendor type produced from a file on disk, not an injected
+        # collaborator, so the builder has no alternative to naming it.
+        - 'XmlDocument'
+        # JUnit result value objects built from a parsed report. They are
+        # constructed from data, not injected, so the E2E reporter has no
+        # alternative to instantiating them.
+        - 'AttemptResults'
+        - 'CaseAttempt'
 
 linter:
   # The lint rules applied to this project can be customized in the
