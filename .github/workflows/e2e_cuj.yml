@@ -35,6 +35,9 @@ jobs:
        contains(github.event.comment.body, '#RunE2E'))
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: write # Appends the run to the orphan e2e-data branch.
+      pull-requests: read
     steps:
       - name: Extract PR head ref
         id: extract-branch
@@ -157,6 +160,30 @@ jobs:
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
           fi
+
+      - name: Publish run to trend store
+        # Only runs measured on the default branch become trend points. A
+        # #RunE2E run against a PR is a one-off check, and recording it would
+        # mix unmerged code into the pass and flake rates.
+        if: >-
+          always() &&
+          (steps.extract-branch.outputs.ref || github.ref_name) ==
+          github.event.repository.default_branch
+        run: |
+          # A run that produced no attempts failed before the suite reported
+          # anything — an environment or build failure, not a suite result.
+          # Recording it would enter a run with null rates into the permanent
+          # history as though the suite had been measured.
+          if [ ! -f build/e2e/e2e-run.json ] || \
+             [ "$(jq -r '.attempt_count' build/e2e/e2e-run.json)" -eq 0 ]; then
+            echo "::warning::No CUJ attempt produced results; recording no trend point."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          bash scripts/e2e/publish_e2e_run.sh \
+            --run-file build/e2e/e2e-run.json \
+            --push
 
       - name: Upload JUnit results
         if: always()
