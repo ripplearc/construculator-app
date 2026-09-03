@@ -26,9 +26,7 @@ void main() {
       dataSource = InMemoryLocalConsentDataSource();
     });
 
-    tearDown(() {
-      dataSource.dispose();
-    });
+    tearDown(() => dataSource.dispose());
 
     // Seeded rather than empty so the gate resolves to a real requirement. An
     // empty seed would leave every type unknown, which the repository reads as
@@ -53,6 +51,7 @@ void main() {
         documentUrl: 'https://consent-seed.invalid/legal/analytics',
         publishedAt: DateTime.utc(2026, 8, 1),
       );
+      await dataSource.dispose();
       dataSource = InMemoryLocalConsentDataSource(
         seedVersions: {ConsentType.analytics: seeded},
       );
@@ -77,6 +76,7 @@ void main() {
     // would silently break every test that seeds a published version.
     test('seedVersions is aliased, so later mutations are visible', () async {
       final seedVersions = <ConsentType, ConsentVersionDto>{};
+      await dataSource.dispose();
       dataSource = InMemoryLocalConsentDataSource(seedVersions: seedVersions);
 
       expect(
@@ -203,12 +203,14 @@ void main() {
       await expectation;
     });
 
-    // Re-emits rather than staying silent -- the store notifies on any write
-    // and each subscriber re-reads its own slice -- but the value the watcher
-    // sees must still be its own, and user-1 has nothing on file. `.distinct()`
-    // on the source means a write that doesn't change this watcher's own
-    // latest record produces no second emission at all, so a single `isNull`
-    // is the complete, deterministic expectation, not a truncated read of it.
+    // The store notifies on any write and each subscriber re-reads its own
+    // slice, so user-2's write does reach this watcher's controller -- but
+    // `_latest` filters it out and `.distinct()` then drops the resulting
+    // duplicate null, so user-1 must see exactly one emission and no second.
+    // Closing the stream is what makes that assertable: emitsDone directly
+    // after the single isNull fails if a redundant null slips through, where
+    // a bare emitsInOrder([isNull]) would match the first event and ignore
+    // whatever followed. Without `.distinct()` this test fails.
     test(
       'watchLatestUserConsent does not leak another user\'s write',
       () async {
@@ -216,9 +218,13 @@ void main() {
           'user-1',
           ConsentType.termsAndPrivacy,
         );
-        final expectation = expectLater(stream, emitsInOrder([isNull]));
+        final expectation = expectLater(
+          stream,
+          emitsInOrder([isNull, emitsDone]),
+        );
 
         await dataSource.insertUserConsent(_draft(userId: 'user-2'));
+        await dataSource.dispose();
 
         await expectation;
       },
