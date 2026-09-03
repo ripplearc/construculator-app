@@ -1,0 +1,86 @@
+import 'package:construculator/libraries/consent/data/data_source/interfaces/remote_consent_data_source.dart';
+import 'package:construculator/libraries/consent/data/models/consent_wire_values.dart';
+import 'package:construculator/libraries/consent/domain/entities/consent_status_entity.dart';
+import 'package:construculator/libraries/consent/domain/types/consent_types.dart';
+import 'package:construculator/libraries/logging/app_logger.dart';
+
+/// Resolves the outcome of a background consent-version verification.
+///
+/// Extracted from `ConsentRepositoryImpl` because a verification attempt has
+/// exactly two shapes regardless of caller: it succeeds and produces a
+/// [ConsentStatus] by comparison, or it fails and the fallback depends only on
+/// whether [acceptedVersion] exists. Neither shape needs anything else the
+/// repository knows — not the local data source, not the write path — so
+/// isolating it keeps the repository to orchestration.
+///
+/// An unreachable server is an expected condition on a mobile network, not an
+/// error to surface: this class always returns a [ConsentStatus], never a
+/// `Failure`.
+class ConsentVerificationResolver {
+  final RemoteConsentDataSource _remoteDataSource;
+
+  static final _logger = AppLogger().tag('ConsentVerificationResolver');
+
+  /// Takes only the remote source: the local acceptance is the caller's to
+  /// read and arrives through [resolve]'s `acceptedVersion`, for the reason
+  /// given on the class above.
+  const ConsentVerificationResolver(this._remoteDataSource);
+
+  /// Resolves [type] against the server's published versions.
+  ///
+  /// [acceptedVersion] is the caller's already-resolved local acceptance,
+  /// passed in rather than looked up here since the local read and the remote
+  /// check fail independently and the caller already needed it before
+  /// deciding to call this at all.
+  Future<ConsentStatus> resolve({
+    required ConsentType type,
+    required int? acceptedVersion,
+  }) async {
+    try {
+      final published = await _remoteDataSource.fetchPublishedVersions();
+      final match = published
+          .where((version) => version.consentType == type)
+          .firstOrNull;
+
+      // The server answered but has no row for this type. That is
+      // indistinguishable from a row the data source dropped as unreadable
+      // (SupabaseConsentDataSource#fetchPublishedVersions logs and rethrows a
+      // corrupt row of a known type, but a row whose consent_type column is
+      // itself corrupt still drops as "unknown"). We cannot positively
+      // establish the requirement, so this resolves exactly as a failed
+      // fetch does below, rather than asserting a consent we never saw.
+      //
+      // TODO: https://ripplearc.youtrack.cloud/issue/CA-1025 - gatesAccess
+      // is not yet type-aware, so this also gates a missing `analytics` row.
+      // Safe today because every production call site passes only
+      // termsAndPrivacy, but that stops holding once the Settings opt-out
+      // toggle ships analytics verification -- make
+      // ConsentStatus.gatesAccess type-aware before that lands.
+      if (match == null) {
+        _logger.error('No published consent version for ${type.toJson()}');
+        return acceptedVersion == null
+            ? ConsentIndeterminate(type)
+            : ConsentUnverified(acceptedVersion);
+      }
+
+      return ConsentStatus.resolve(
+        acceptedVersion: acceptedVersion,
+        published: match.toDomain(),
+      );
+    } catch (error, stackTrace) {
+      _logger.warning(
+        'Consent verification failed for ${type.toJson()}',
+        error,
+        stackTrace,
+      );
+
+      // Deliberately a status, not a failure: which one depends entirely on
+      // whether there is a prior acceptance to fall back on.
+      return acceptedVersion == null
+          // Nothing to fall back on and no document to present.
+          ? ConsentIndeterminate(type)
+          // Trust the last known-good acceptance; retry next launch.
+          : ConsentUnverified(acceptedVersion);
+    }
+  }
+}
