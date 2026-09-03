@@ -18,6 +18,7 @@
 - [Testing](#testing)
 - [Scripts & Automation](#scripts--automation)
 - [CI/CD](#cicd)
+- [Trend Dashboard Host](#trend-dashboard-host)
 - [Troubleshooting](#troubleshooting)
 
 ---
@@ -553,6 +554,69 @@ To manually trigger CI checks on a PR, add a comment with:
 ```
 
 This will trigger the `comprehensive-check`, `pre-check` and `ios-debug-build` workflows.
+
+---
+
+## Trend Dashboard Host
+
+The system-health and E2E trend dashboard is published as a static site on
+GitHub Pages. Pages is configured with the **GitHub Actions** build type, not
+"Deploy from a branch" — a push alone does not publish anything; a workflow
+job explicitly deploys via `actions/deploy-pages`. This keeps every publish
+outside GitHub's legacy Pages build queue (10 builds/hour), which still
+applies to the branch-watcher regardless of Jekyll processing.
+
+**URL:** https://ripplearc.github.io/construculator-app/
+
+> **TODO [CA-978](https://ripplearc.youtrack.cloud/issue/CA-978):** build the
+> dashboard rendering and data-ingestion logic that reads the store below and
+> renders both views (system-health metrics, E2E results) at this URL. This
+> host and its publish path are already in place.
+
+### How a CI job publishes to the store
+
+`gh-pages` holds a placeholder `index.html` plus an append-only `data/`
+directory — this branch is the durable history CA-978 reads from, not the
+thing GitHub Pages watches directly. Any CI job in this repo publishes a new
+file by calling the reusable `.github/workflows/publish-dashboard-artifact.yml`
+workflow (`workflow_call`, or `workflow_dispatch` to run it manually), which
+does two things in order:
+
+1. **`publish` job** — runs `scripts/dashboard/publish_artifact.sh`, which
+   checks out `gh-pages` into a throwaway `git worktree`, copies the file
+   under `data/<dest>`, commits, and pushes. It never touches the caller's own
+   checkout or branch, and re-publishing identical content at the same
+   destination is a no-op (no new commit). Needs only `contents: write`.
+2. **`deploy` job** — checks out the now-updated `gh-pages` branch and
+   deploys it through the Pages Actions API
+   (`actions/configure-pages` → `actions/upload-pages-artifact` →
+   `actions/deploy-pages`). This is the step that actually publishes; needs
+   `pages: write` and `id-token: write`, plus the `github-pages` deployment
+   environment.
+
+Calling the script directly only updates the git history — it does not, by
+itself, update the live site. Use the workflow (or run both steps) to publish.
+
+```bash
+scripts/dashboard/publish_artifact.sh \
+  --file build/my-run.json \
+  --dest system-health/2026-08-21.json \
+  --push
+```
+
+### Size budget
+
+GitHub Pages caps a published site at 1 GB. The store is append-only JSON, so
+budget for pruning raw per-run files or rolling them up into periodic
+summaries once `data/` approaches a few hundred MB — well before the 1 GB
+ceiling, to leave headroom for the site's other assets. No pruning tooling
+exists yet; this is a threshold to watch, not something built by CA-988.
+
+### Cost
+
+GitHub Pages and Actions minutes are both free for public repositories, and
+`ripplearc/construculator-app` is public. No recurring cost, no trial period,
+no card on file.
 
 ---
 
