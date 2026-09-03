@@ -15,7 +15,7 @@ import 'package:construculator/libraries/consent/domain/types/consent_types.dart
 /// reason to expose — error injection and a record of what was written.
 class FakeLocalConsentDataSource implements LocalConsentDataSource {
   /// Published versions keyed by type. Absent means the requirement is
-  /// unknown. Passed to the wrapped store by reference, so mutating this map
+  /// unknown. Read directly by [fetchPublishedVersion], so mutating this map
   /// is visible to reads without needing a setter.
   final Map<ConsentType, ConsentVersionDto> publishedVersions = {};
 
@@ -26,13 +26,17 @@ class FakeLocalConsentDataSource implements LocalConsentDataSource {
   /// in order. A null entry lets that one call succeed.
   ///
   /// Takes priority over [publishedVersionReadError] for as many calls as it
-  /// has entries; once exhausted, later calls fall back to it. This is the
-  /// read behind each tick of [watchLatestUserConsent], so it is the lever
-  /// that fails one tick and then clears — the "superseded by the next
-  /// successful one" half of `ConsentRepository.watchConsentStatus`'s
-  /// contract, which the sticky field above cannot express because it also
-  /// fails every later tick. Mirrors `FakeRemoteConsentDataSource`'s
-  /// `errorSequence`, for the same reason.
+  /// has entries; once exhausted, later calls fall back to it. The counter is
+  /// shared by every caller of [fetchPublishedVersion] in call order — both
+  /// the ticks behind [watchLatestUserConsent] and one-shot reads such as
+  /// `ConsentRepositoryImpl.getCachedConsentStatus` consume the same
+  /// sequence, so a test mixing both call styles must account for the
+  /// combined order. For watch ticks specifically, this is the lever that
+  /// fails one tick and then clears — the "superseded by the next successful
+  /// one" half of `ConsentRepository.watchConsentStatus`'s contract, which
+  /// the sticky field above cannot express because it also fails every later
+  /// tick. Mirrors `FakeRemoteConsentDataSource`'s `errorSequence`, for the
+  /// same reason.
   final List<Object?> publishedVersionReadErrorSequence = [];
 
   /// Error thrown by [fetchLatestUserConsent].
@@ -62,7 +66,7 @@ class FakeLocalConsentDataSource implements LocalConsentDataSource {
   var _publishedVersionReadCount = 0;
 
   late final InMemoryLocalConsentDataSource _store =
-      InMemoryLocalConsentDataSource(seedVersions: publishedVersions);
+      InMemoryLocalConsentDataSource();
 
   /// Stores [record] as if it were already on file, without counting as a
   /// write in [insertedRecords].
@@ -79,7 +83,7 @@ class FakeLocalConsentDataSource implements LocalConsentDataSource {
         ? publishedVersionReadErrorSequence[index]
         : publishedVersionReadError;
     if (error != null) throw error;
-    return _store.fetchPublishedVersion(type);
+    return publishedVersions[type];
   }
 
   @override
