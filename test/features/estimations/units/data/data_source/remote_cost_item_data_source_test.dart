@@ -133,6 +133,9 @@ void main() {
           },
           'orderBy': DatabaseConstants.createdAtColumn,
           'ascending': true,
+          // Recorded by FakeSupabaseWrapper since selectMatch gained the
+          // retry parameter; true is the default this call leaves untouched.
+          'retry': true,
         });
       });
 
@@ -162,6 +165,7 @@ void main() {
           },
           'orderBy': DatabaseConstants.createdAtColumn,
           'ascending': true,
+          'retry': true,
         });
       });
 

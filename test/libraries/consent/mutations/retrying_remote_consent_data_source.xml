@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- RETRYING REMOTE CONSENT DATA SOURCE MUTATION TESTING -->
+    <!-- Targets: RetryingRemoteConsentDataSource.fetchPublishedVersions and
+         _isTransient — the predicate deciding whether a failure is worth
+         retrying, and the loop deciding how long to keep trying. -->
+
+    <files>
+        <file>lib/libraries/consent/data/data_source/retrying_remote_consent_data_source.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: Invert the transient check, so a transient failure gives
+             up immediately instead of retrying. -->
+        <regex pattern="if \(!_isTransient\(error\)\) rethrow;" dotAll="true" id="retry.loop.invert_transient_check">
+            <mutation text="if (_isTransient(error)) rethrow;"/>
+        </regex>
+
+        <!-- RULE 2: Drop the timeout arm of _isTransient. -->
+        <regex pattern="error is TimeoutException \|\|\n      error is SocketException" dotAll="true" id="retry.is_transient.drop_timeout">
+            <mutation text="error is SocketException"/>
+        </regex>
+
+        <!-- RULE 3: Drop the socket arm of _isTransient. -->
+        <regex pattern="error is SocketException \|\|\n      error is http\.ClientException" dotAll="true" id="retry.is_transient.drop_socket">
+            <mutation text="error is http.ClientException"/>
+        </regex>
+
+        <!-- RULE 4: Drop the ClientException arm of _isTransient. -->
+        <regex pattern="error is http\.ClientException \|\|\n      \(error is PostgrestException" dotAll="true" id="retry.is_transient.drop_client_exception">
+            <mutation text="(error is PostgrestException"/>
+        </regex>
+
+        <!-- RULE 5: Empty the transient PostgREST code set, so a
+             connection-level PostgrestException is never retried. -->
+        <regex pattern="static const _transientPostgrestCodes = \{'08000', '08003', '08006'\};" dotAll="true" id="retry.postgrest_codes.empty">
+            <mutation text="static const _transientPostgrestCodes = &lt;String&gt;{};"/>
+        </regex>
+
+        <!-- RULE 6: Empty the default backoff, collapsing 4 attempts to 1.
+             Kills any test not asserting callCount precisely. -->
+        <regex pattern="static const _defaultBackoff = \[\n    Duration\(milliseconds: 250\),\n    Duration\(seconds: 1\),\n    Duration\(seconds: 2\),\n  \];" dotAll="true" id="retry.backoff.empty">
+            <mutation text="static const _defaultBackoff = &lt;Duration&gt;[];"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="retrying_remote_consent_data_source" expected-return="0">flutter test test/libraries/consent/units/data/data_source/retrying_remote_consent_data_source_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

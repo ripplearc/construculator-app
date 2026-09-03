@@ -421,21 +421,24 @@ void main() {
         expect(fakeWrapper.currentSession, isNull);
       });
 
-      test('currentSession returns a FakeSession with correct tokens after sign-in', () async {
-        await fakeWrapper.signInWithPassword(
-          email: 'session@example.com',
-          password: 'password',
-        );
+      test(
+        'currentSession returns a FakeSession with correct tokens after sign-in',
+        () async {
+          await fakeWrapper.signInWithPassword(
+            email: 'session@example.com',
+            password: 'password',
+          );
 
-        final session = fakeWrapper.currentSession;
-        expect(session, isA<FakeSession>());
-        expect(session!.user.email, equals('session@example.com'));
-        expect(
-          session.accessToken,
-          equals('fake-access-token-${fakeWrapper.currentUser!.id}'),
-        );
-        expect(session.refreshToken, equals('fake-refresh-token'));
-      });
+          final session = fakeWrapper.currentSession;
+          expect(session, isA<FakeSession>());
+          expect(session!.user.email, equals('session@example.com'));
+          expect(
+            session.accessToken,
+            equals('fake-access-token-${fakeWrapper.currentUser!.id}'),
+          );
+          expect(session.refreshToken, equals('fake-refresh-token'));
+        },
+      );
 
       test('isAuthenticated reflects the current sign-in status', () async {
         // Initially not authenticated
@@ -1293,21 +1296,25 @@ void main() {
           expect(call['limit'], equals(3));
         });
 
-        test('omits orderBy key from recorded call when orderBy is null', () async {
-          fakeWrapper.addTableData('items', []);
+        test(
+          'omits orderBy key from recorded call when orderBy is null',
+          () async {
+            fakeWrapper.addTableData('items', []);
 
-          await fakeWrapper.selectMatch(
-            table: 'items',
-            filters: {'project_id': 'p1'},
-          );
+            await fakeWrapper.selectMatch(
+              table: 'items',
+              filters: {'project_id': 'p1'},
+            );
 
-          final call = fakeWrapper.getMethodCallsFor('selectMatch').first;
-          expect(
-            call.containsKey('orderBy'),
-            isFalse,
-            reason: 'orderBy must not appear in the recorded call when omitted',
-          );
-        });
+            final call = fakeWrapper.getMethodCallsFor('selectMatch').first;
+            expect(
+              call.containsKey('orderBy'),
+              isFalse,
+              reason:
+                  'orderBy must not appear in the recorded call when omitted',
+            );
+          },
+        );
 
         test('omits limit key from recorded call when limit is null', () async {
           fakeWrapper.addTableData('items', []);
@@ -1323,6 +1330,31 @@ void main() {
             isFalse,
             reason: 'limit must not appear in the recorded call when omitted',
           );
+        });
+
+        test('records retry as true by default', () async {
+          fakeWrapper.addTableData('items', []);
+
+          await fakeWrapper.selectMatch(
+            table: 'items',
+            filters: {'project_id': 'p1'},
+          );
+
+          final call = fakeWrapper.getMethodCallsFor('selectMatch').first;
+          expect(call['retry'], isTrue);
+        });
+
+        test('records retry as false when passed', () async {
+          fakeWrapper.addTableData('items', []);
+
+          await fakeWrapper.selectMatch(
+            table: 'items',
+            filters: {'project_id': 'p1'},
+            retry: false,
+          );
+
+          final call = fakeWrapper.getMethodCallsFor('selectMatch').first;
+          expect(call['retry'], isFalse);
         });
 
         test('truncates matching rows to limit after ordering', () async {
@@ -1638,7 +1670,8 @@ void main() {
           fakeWrapper.shouldThrowOnUpsert = true;
           fakeWrapper.upsertExceptionType = SupabaseExceptionType.postgrest;
           fakeWrapper.postgrestErrorCode = PostgresErrorCode.rlsViolation;
-          fakeWrapper.upsertErrorMessage = 'permission denied for table projects';
+          fakeWrapper.upsertErrorMessage =
+              'permission denied for table projects';
 
           await expectLater(
             () async => fakeWrapper.upsert(
@@ -1649,8 +1682,11 @@ void main() {
             throwsA(
               isA<supabase.PostgrestException>()
                   .having((e) => e.code, 'code', '42501')
-                  .having((e) => e.message, 'message',
-                      'permission denied for table projects'),
+                  .having(
+                    (e) => e.message,
+                    'message',
+                    'permission denied for table projects',
+                  ),
             ),
           );
         });

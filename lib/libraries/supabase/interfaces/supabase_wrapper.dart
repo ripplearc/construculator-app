@@ -100,6 +100,9 @@ abstract class SupabaseWrapper {
   /// [ascending] Sort direction when [orderBy] is provided, defaults to true
   /// [limit] Optional maximum number of rows to return, applied at the
   /// database level; null means no limit
+  /// [retry] Whether PostgREST's own retry applies to this request, defaults
+  /// to true. Pass false when the caller owns its own retry policy, so the
+  /// two budgets don't compound.
   Future<List<Map<String, dynamic>>> selectMatch({
     required String table,
     String columns = '*',
@@ -107,6 +110,7 @@ abstract class SupabaseWrapper {
     String? orderBy,
     bool ascending = true,
     int? limit,
+    bool retry = true,
   });
 
   /// Select a set of rows from a table where [filterColumn] value is in [filterValues].

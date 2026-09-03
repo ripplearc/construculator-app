@@ -41,38 +41,92 @@ void main() {
         expect(fake.callCount, 2);
       });
 
-      test('throws error on every call when failuresBeforeSuccess is unset', () async {
-        fake.error = Exception('offline');
+      test(
+        'throws error on every call when failuresBeforeSuccess is unset',
+        () async {
+          fake.error = Exception('offline');
 
-        await expectLater(fake.fetchPublishedVersions(), throwsException);
-        await expectLater(fake.fetchPublishedVersions(), throwsException);
-        expect(fake.callCount, 2);
-      });
+          await expectLater(fake.fetchPublishedVersions(), throwsException);
+          await expectLater(fake.fetchPublishedVersions(), throwsException);
+          expect(fake.callCount, 2);
+        },
+      );
 
-      test('throws for calls at or below failuresBeforeSuccess, then succeeds', () async {
-        fake.error = Exception('offline');
-        fake.failuresBeforeSuccess = 2;
+      test(
+        'throws for calls at or below failuresBeforeSuccess, then succeeds',
+        () async {
+          fake.error = Exception('offline');
+          fake.failuresBeforeSuccess = 2;
+          fake.publishedVersionsToReturn = [version(1)];
+
+          await expectLater(fake.fetchPublishedVersions(), throwsException);
+          await expectLater(fake.fetchPublishedVersions(), throwsException);
+          final result = await fake.fetchPublishedVersions();
+
+          expect(result, [version(1)]);
+          expect(fake.callCount, 3);
+        },
+      );
+
+      test(
+        'does not throw once callCount exceeds failuresBeforeSuccess even if error is still set',
+        () async {
+          // Pins the off-by-one in `callCount <= limit`: the boundary call
+          // itself still throws, only calls past it succeed.
+          fake.error = Exception('offline');
+          fake.failuresBeforeSuccess = 1;
+          fake.publishedVersionsToReturn = [version(1)];
+
+          await expectLater(fake.fetchPublishedVersions(), throwsException);
+          final result = await fake.fetchPublishedVersions();
+
+          expect(result, [version(1)]);
+        },
+      );
+
+      test(
+        'errorSequence throws a different error per call, then falls back to error',
+        () async {
+          fake.errorSequence.addAll([
+            Exception('first call fails one way'),
+            Exception('second call fails another way'),
+          ]);
+          fake.error = Exception('subsequent calls fail this way');
+          fake.publishedVersionsToReturn = [version(1)];
+
+          await expectLater(fake.fetchPublishedVersions(), throwsException);
+          await expectLater(fake.fetchPublishedVersions(), throwsException);
+          // errorSequence is exhausted; falls back to error, which is unset
+          // to failuresBeforeSuccess so it throws on every remaining call.
+          await expectLater(fake.fetchPublishedVersions(), throwsException);
+          expect(fake.callCount, 3);
+        },
+      );
+
+      test('delaySequence delays each successive call in order', () async {
+        fake.delaySequence.addAll([
+          const Duration(milliseconds: 5),
+          const Duration(milliseconds: 15),
+        ]);
         fake.publishedVersionsToReturn = [version(1)];
 
-        await expectLater(fake.fetchPublishedVersions(), throwsException);
-        await expectLater(fake.fetchPublishedVersions(), throwsException);
-        final result = await fake.fetchPublishedVersions();
+        final stopwatch = Stopwatch()..start();
+        await fake.fetchPublishedVersions();
+        final firstElapsed = stopwatch.elapsed;
+        stopwatch
+          ..reset()
+          ..start();
+        await fake.fetchPublishedVersions();
+        final secondElapsed = stopwatch.elapsed;
 
-        expect(result, [version(1)]);
-        expect(fake.callCount, 3);
-      });
-
-      test('does not throw once callCount exceeds failuresBeforeSuccess even if error is still set', () async {
-        // Pins the off-by-one in `callCount <= limit`: the boundary call
-        // itself still throws, only calls past it succeed.
-        fake.error = Exception('offline');
-        fake.failuresBeforeSuccess = 1;
-        fake.publishedVersionsToReturn = [version(1)];
-
-        await expectLater(fake.fetchPublishedVersions(), throwsException);
-        final result = await fake.fetchPublishedVersions();
-
-        expect(result, [version(1)]);
+        expect(
+          firstElapsed,
+          greaterThanOrEqualTo(const Duration(milliseconds: 5)),
+        );
+        expect(
+          secondElapsed,
+          greaterThanOrEqualTo(const Duration(milliseconds: 15)),
+        );
       });
     });
   });
