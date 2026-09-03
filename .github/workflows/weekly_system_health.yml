@@ -106,7 +106,25 @@ jobs:
             --input "build/perf/${{ steps.params.outputs.run_id }}" \
             --output "build/perf/${{ steps.params.outputs.run_id }}/perf-run.json"
 
+      - name: Publish run to trend store
+        # Only runs measured on the default branch become trend points. A
+        # #RunPerf run against a PR is a one-off check, and recording it would
+        # mix unmerged code into the history the baselines are read from.
+        if: steps.ref.outputs.ref == github.event.repository.default_branch
+        # A store-side failure must never cost us this run's own captured data;
+        # the upload step below still runs and keeps the artifact.
+        continue-on-error: true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          bash scripts/perf/publish_perf_run.sh \
+            --run-file "build/perf/${{ steps.params.outputs.run_id }}/perf-run.json" \
+            --push
+
       - name: Upload performance run
+        # Keep the freshly captured run even when publishing to the trend store
+        # failed — it can be filed manually afterwards from the artifact.
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: perf-run-${{ steps.params.outputs.run_id }}
