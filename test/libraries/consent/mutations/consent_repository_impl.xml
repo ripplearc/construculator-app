@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CONSENT REPOSITORY IMPL MUTATION TESTING -->
+    <!-- Targets: ConsentRepositoryImpl, which decides what every read/write
+         outcome means for the gate. Critical path: this decides whether a
+         user reaches the app. -->
+
+    <files>
+        <file>lib/libraries/consent/data/repositories/consent_repository_impl.dart</file>
+    </files>
+
+    <exclude>
+        <regex pattern="_logger\.(debug|info|warning|error)\s*\(" dotAll="false"/>
+        <regex pattern="try\s*\{" dotAll="false"/>
+        <regex pattern="catch\s*\(" dotAll="false"/>
+    </exclude>
+
+    <rules>
+        <!-- RULE 1: Skip the signed-out guard in getCachedConsentStatus.
+             Regenerated: the #534 contract narrowing (reads return
+             ConsentStatus directly, not Either) removed the Right(...)
+             wrapper this rule targeted, making it inert -- see #545 B2.
+             Anchored on the method signature since "if (userId == null)
+             return _ungated;" is identical text in verifyPublishedVersion
+             (rule 6) a few lines below. -->
+        <regex pattern="Future&lt;ConsentStatus&gt; getCachedConsentStatus\(ConsentType type\) async \{\n    final userId = _supabaseWrapper\.getInternalUserId\(\);\n    if \(userId == null\) return _ungated;" dotAll="true" id="repo.read.skip_signed_out_guard">
+            <mutation text="Future&lt;ConsentStatus&gt; getCachedConsentStatus(ConsentType type) async {\n    final userId = _supabaseWrapper.getInternalUserId();\n    if (false) return _ungated;"/>
+        </regex>
+
+        <!-- RULE 2: Skip the missing-published-version guard in
+             getCachedConsentStatus. Regenerated for the same reason as rule
+             1; anchored on the preceding comment since the guard's own text
+             is now identical to watchConsentStatus's copy (rule 5). -->
+        <regex pattern="no document to present\.\n      if \(published == null\) return ConsentIndeterminate\(type\);" dotAll="true" id="repo.read.skip_no_published_guard">
+            <mutation text="no document to present.\n      if (false) return ConsentIndeterminate(type);"/>
+        </regex>
+
+        <!-- RULE 3: Invert the withdrawn-action check -->
+        <regex pattern="newest\.action == ConsentAction\.withdrawn" dotAll="true" id="repo.effective_version.invert_withdrawn_check">
+            <mutation text="newest.action != ConsentAction.withdrawn"/>
+        </regex>
+
+        <!-- RULE 4: Swap the withdrawn-vs-active ternary branches -->
+        <regex pattern="\? null\n      : newest\.version;" dotAll="true" id="repo.effective_version.swap_branches">
+            <mutation text="? newest.version\n      : null;"/>
+        </regex>
+
+        <!-- RULE 5: Skip the missing-published-version guard in
+             watchConsentStatus. Regenerated: the #545 B1 fix restructured
+             this method entirely (the guard now lives inside asyncMap's
+             try block, and the fail-open/fail-closed split on a read
+             failure is new -- see rule 11). Anchored on the preceding
+             fetchPublishedVersion call for uniqueness against rule 2. -->
+        <regex pattern="_localDataSource\.fetchPublishedVersion\(\n              type,\n            \);\n            if \(published == null\) return ConsentIndeterminate\(type\);" dotAll="true" id="repo.watch.skip_no_published_guard">
+            <mutation text="_localDataSource.fetchPublishedVersion(\n              type,\n            );\n            if (false) return ConsentIndeterminate(type);"/>
+        </regex>
+
+        <!-- RULE 6: Skip the signed-out guard in verifyPublishedVersion.
+             Regenerated: the distinguishing comment this rule anchored on
+             was removed by a later revision, leaving it byte-identical to
+             rule 1's target and matching neither -- see #545 B2. Anchored
+             on the method signature instead. -->
+        <regex pattern="Future&lt;ConsentStatus&gt; verifyPublishedVersion\(ConsentType type\) async \{\n    final userId = _supabaseWrapper\.getInternalUserId\(\);\n    if \(userId == null\) return _ungated;" dotAll="true" id="repo.verify.skip_signed_out_guard">
+            <mutation text="Future&lt;ConsentStatus&gt; verifyPublishedVersion(ConsentType type) async {\n    final userId = _supabaseWrapper.getInternalUserId();\n    if (false) return _ungated;"/>
+        </regex>
+
+        <!-- RULE 11: Swap the fail-open/fail-closed split #545 B1 added --
+             a failed published-version read with a prior acceptance must
+             fall back to ConsentUnverified, not blanket-gate to
+             ConsentIndeterminate. This is the exact branch the review
+             found silently wrong; it must not go back to being untested. -->
+        <regex pattern="return acceptedVersion == null\n                \? ConsentIndeterminate\(type\)\n                : ConsentUnverified\(acceptedVersion\);" dotAll="true" id="repo.watch.swap_read_failure_fallback">
+            <mutation text="return acceptedVersion == null\n                ? ConsentUnverified(acceptedVersion)\n                : ConsentIndeterminate(type);"/>
+        </regex>
+
+        <!-- RULE 7: recordAcceptance records the wrong action -->
+        <regex pattern="version: version,\n    action: ConsentAction\.accepted,\n  \);" dotAll="true" id="repo.record_acceptance.wrong_action">
+            <mutation text="version: version,\n    action: ConsentAction.withdrawn,\n  );"/>
+        </regex>
+
+        <!-- RULE 8: recordWithdrawal records the wrong action -->
+        <regex pattern="version: version,\n      action: ConsentAction\.withdrawn,\n    \);" dotAll="true" id="repo.record_withdrawal.wrong_action">
+            <mutation text="version: version,\n      action: ConsentAction.accepted,\n    );"/>
+        </regex>
+
+        <!-- RULE 9: Skip looking up the version being withdrawn -->
+        <regex pattern="var version = 0;\n    if \(userId != null\) \{" dotAll="true" id="repo.record_withdrawal.skip_version_lookup">
+            <mutation text="var version = 0;\n    if (false) {"/>
+        </regex>
+
+        <!-- RULE 10: Wrong fallback when nothing is on file to withdraw -->
+        <regex pattern="version = _effectiveAcceptedVersion\(current\) \?\? 0;" dotAll="true" id="repo.record_withdrawal.wrong_fallback_version">
+            <mutation text="version = _effectiveAcceptedVersion(current) ?? 999;"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="consent_repository_impl" expected-return="0">flutter test test/libraries/consent/units/data/repositories/consent_repository_impl_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>
