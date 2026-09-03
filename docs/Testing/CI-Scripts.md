@@ -388,6 +388,15 @@ These paths are assumed by script and workflow logic. Tests outside these patter
 
 When adding new test suites, keep naming and placement consistent with existing conventions.
 
+`test/tools/**` holds tests for repository tooling that ships outside `lib/` —
+for example the performance report builder under `scripts/perf/`. Tooling tests
+live here rather than under `test/libraries/**` so they are not mistaken for
+tests of shipped application code.
+
+Performance journeys under `integration_test/` are deliberately **not** covered
+by these paths. They need a device and are run by the weekly performance
+harness, not by the per-PR unit test steps.
+
 ## Failure Modes and Troubleshooting
 
 ### 1) Rebase conflict during checks
