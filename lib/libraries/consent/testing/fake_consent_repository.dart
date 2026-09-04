@@ -38,6 +38,16 @@ class FakeConsentRepository implements ConsentRepository {
     _defaultAcceptedVersion,
   );
 
+  /// Drives the cached read and the verification to the same [status].
+  ///
+  /// A consumer that verifies after reading re-emits once the server confirms,
+  /// so a fixture setting only [cachedStatusToReturn] is superseded before the
+  /// subject settles.
+  void resolveTo(ConsentStatus status) {
+    cachedStatusToReturn = status;
+    verifiedStatusToReturn = status;
+  }
+
   /// The stream [watchConsentStatus] returns.
   Stream<ConsentStatus> statusStreamToReturn = const Stream.empty();
 
