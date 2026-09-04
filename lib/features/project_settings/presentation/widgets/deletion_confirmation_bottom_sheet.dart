@@ -75,9 +75,7 @@ class DeletionConfirmationBottomSheet extends StatelessWidget {
                 child: Center(
                   child: CoreIconWidget(
                     icon: CoreIcons.delete,
-                    // TODO: [CA-792] Change to 24 to match Figma spec.
-                    // https://ripplearc.youtrack.cloud/issue/CA-792
-                    size: CoreSpacing.space8,
+                    size: CoreIconSize.size24,
                     color: colorTheme.iconRed,
                   ),
                 ),
