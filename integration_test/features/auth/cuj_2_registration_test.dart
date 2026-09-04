@@ -38,7 +38,9 @@ void main() {
       await $(
         const Key('create_account_confirm_password_field'),
       ).enterText(TestConfig.registerPassword);
-      await $(const Key('create_account_submit_button')).tap();
+      // The submit button sits below the fold on this form once the soft
+      // keyboard is up — scroll it into the (keyboard-resized) viewport first.
+      await $(const Key('create_account_submit_button')).scrollTo().tap();
 
       // The success modal is a package-owned bottom sheet whose button carries
       // no key, so it is anchored to the sheet rather than to screen position.
