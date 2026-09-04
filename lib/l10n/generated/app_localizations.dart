@@ -178,10 +178,10 @@ abstract class AppLocalizations {
   /// **'privacy policy'**
   String get consentGatePrivacyLink;
 
-  /// Label for the retry action shown when recording acceptance failed
+  /// Label for the retry action shown when recording acceptance failed. Matches consentUnavailableRetryButton's wording -- see #548 N2.
   ///
   /// In en, this message translates to:
-  /// **'Try again'**
+  /// **'Retry'**
   String get consentGateRetryButton;
 
   /// Inline error shown under the accept button when the acceptance write failed
@@ -220,31 +220,31 @@ abstract class AppLocalizations {
   /// **'We couldn\'t load the terms'**
   String get consentUnavailableTitle;
 
-  /// Label dismissing the consent withdrawal confirmation
+  /// Label dismissing the consent withdrawal confirmation. Unused until CA-962 (https://ripplearc.youtrack.cloud/issue/CA-962) ships the withdrawal flow -- see #548 N1.
   ///
   /// In en, this message translates to:
   /// **'Cancel'**
   String get consentWithdrawalCancelButton;
 
-  /// Label confirming consent withdrawal
+  /// Label confirming consent withdrawal. Unused until CA-962 (https://ripplearc.youtrack.cloud/issue/CA-962) ships the withdrawal flow -- see #548 N1.
   ///
   /// In en, this message translates to:
   /// **'Yes, withdraw'**
   String get consentWithdrawalConfirmButton;
 
-  /// Body of the consent withdrawal confirmation explaining the consequence
+  /// Body of the consent withdrawal confirmation explaining the consequence. Unused until CA-962 (https://ripplearc.youtrack.cloud/issue/CA-962) ships the withdrawal flow -- see #548 N1.
   ///
   /// In en, this message translates to:
   /// **'You\'ll be signed out and asked to accept the terms again next time you open the app.'**
   String get consentWithdrawalDialogBody;
 
-  /// Title of the consent withdrawal confirmation
+  /// Title of the consent withdrawal confirmation. Unused until CA-962 (https://ripplearc.youtrack.cloud/issue/CA-962) ships the withdrawal flow -- see #548 N1.
   ///
   /// In en, this message translates to:
   /// **'Withdraw your consent?'**
   String get consentWithdrawalDialogTitle;
 
-  /// Label of the settings row that opens the consent withdrawal confirmation
+  /// Label of the settings row that opens the consent withdrawal confirmation. Unused until CA-962 (https://ripplearc.youtrack.cloud/issue/CA-962) ships the withdrawal flow -- see #548 N1.
   ///
   /// In en, this message translates to:
   /// **'Withdraw consent'**

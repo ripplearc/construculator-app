@@ -1,7 +1,5 @@
-import 'package:construculator/features/consent/presentation/bloc/consent_gate_bloc/consent_gate_bloc.dart';
 import 'package:construculator/libraries/extensions/extensions.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 /// Shown when the requirement could not be established and there is nothing on
@@ -11,7 +9,10 @@ import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 /// no document to name, so there is nothing here for the user to agree to —
 /// only something to retry.
 class ConsentUnavailable extends StatelessWidget {
-  const ConsentUnavailable({super.key});
+  /// Retries establishing the consent requirement.
+  final VoidCallback onRetry;
+
+  const ConsentUnavailable({super.key, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +45,7 @@ class ConsentUnavailable extends StatelessWidget {
               Text(
                 l10n.consentUnavailableBody,
                 style: typography.bodyMediumRegular.copyWith(
-                  color: colors.textHeadline,
+                  color: colors.textBody,
                 ),
               ),
               const SizedBox(height: CoreSpacing.space8),
@@ -52,9 +53,7 @@ class ConsentUnavailable extends StatelessWidget {
                 key: const Key('consentUnavailableRetryButton'),
                 centerAlign: true,
                 label: l10n.consentUnavailableRetryButton,
-                onPressed: () => context.read<ConsentGateBloc>().add(
-                  const ConsentGateRetryRequested(),
-                ),
+                onPressed: onRetry,
               ),
             ],
           ),

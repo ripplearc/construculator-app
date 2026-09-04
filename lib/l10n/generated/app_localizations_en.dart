@@ -52,7 +52,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get consentGatePrivacyLink => 'privacy policy';
 
   @override
-  String get consentGateRetryButton => 'Try again';
+  String get consentGateRetryButton => 'Retry';
 
   @override
   String get consentGateSubmitErrorMessage =>

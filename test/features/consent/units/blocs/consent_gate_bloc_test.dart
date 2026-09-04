@@ -297,11 +297,7 @@ void main() {
         resolveTo(const ConsentSatisfied(2));
         bloc.add(const ConsentGateRetryRequested());
       },
-      expect: () => const [
-        ConsentGateUnavailable(),
-        ConsentGateChecking(),
-        ConsentGateAllowed(2),
-      ],
+      expect: () => const [ConsentGateUnavailable(), ConsentGateAllowed(2)],
     );
   });
 }

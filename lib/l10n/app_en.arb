@@ -70,9 +70,9 @@
     "description": "Link text opening the privacy policy from the consent gate page",
     "context": "N/A"
   },
-  "consentGateRetryButton": "Try again",
+  "consentGateRetryButton": "Retry",
   "@consentGateRetryButton": {
-    "description": "Label for the retry action shown when recording acceptance failed",
+    "description": "Label for the retry action shown when recording acceptance failed. Matches consentUnavailableRetryButton's wording -- see #548 N2.",
     "context": "N/A"
   },
   "consentGateSubmitErrorMessage": "We couldn't save your response. Please try again.",
@@ -107,27 +107,27 @@
   },
   "consentWithdrawalCancelButton": "Cancel",
   "@consentWithdrawalCancelButton": {
-    "description": "Label dismissing the consent withdrawal confirmation",
+    "description": "Label dismissing the consent withdrawal confirmation. Unused until CA-962 (https://ripplearc.youtrack.cloud/issue/CA-962) ships the withdrawal flow -- see #548 N1.",
     "context": "N/A"
   },
   "consentWithdrawalConfirmButton": "Yes, withdraw",
   "@consentWithdrawalConfirmButton": {
-    "description": "Label confirming consent withdrawal",
+    "description": "Label confirming consent withdrawal. Unused until CA-962 (https://ripplearc.youtrack.cloud/issue/CA-962) ships the withdrawal flow -- see #548 N1.",
     "context": "N/A"
   },
   "consentWithdrawalDialogBody": "You'll be signed out and asked to accept the terms again next time you open the app.",
   "@consentWithdrawalDialogBody": {
-    "description": "Body of the consent withdrawal confirmation explaining the consequence",
+    "description": "Body of the consent withdrawal confirmation explaining the consequence. Unused until CA-962 (https://ripplearc.youtrack.cloud/issue/CA-962) ships the withdrawal flow -- see #548 N1.",
     "context": "N/A"
   },
   "consentWithdrawalDialogTitle": "Withdraw your consent?",
   "@consentWithdrawalDialogTitle": {
-    "description": "Title of the consent withdrawal confirmation",
+    "description": "Title of the consent withdrawal confirmation. Unused until CA-962 (https://ripplearc.youtrack.cloud/issue/CA-962) ships the withdrawal flow -- see #548 N1.",
     "context": "N/A"
   },
   "consentWithdrawalTileLabel": "Withdraw consent",
   "@consentWithdrawalTileLabel": {
-    "description": "Label of the settings row that opens the consent withdrawal confirmation",
+    "description": "Label of the settings row that opens the consent withdrawal confirmation. Unused until CA-962 (https://ripplearc.youtrack.cloud/issue/CA-962) ships the withdrawal flow -- see #548 N1.",
     "context": "N/A"
   },
   "continueButton": "Continue",
