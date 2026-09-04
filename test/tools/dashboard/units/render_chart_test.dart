@@ -164,7 +164,7 @@ void main() {
     });
 
     test('keeps bars on screen when many runs accumulate', () {
-      final String svg = sparklineSvg(List<int>.filled(60, 1));
+      final String svg = sparklineSvg(List.filled(60, 1));
 
       expect(svg, isNot(contains('width="0"')));
       expect(svg, isNot(contains('width="-')));
