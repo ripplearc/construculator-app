@@ -10,9 +10,11 @@ import 'package:construculator/libraries/consent/domain/entities/consent_version
 import 'package:construculator/libraries/consent/domain/repositories/consent_repository.dart';
 import 'package:construculator/libraries/consent/domain/types/consent_error_type.dart';
 import 'package:construculator/libraries/consent/domain/types/consent_types.dart';
+import 'package:construculator/libraries/consent/domain/usecases/check_consent_status_usecase.dart';
 import 'package:construculator/libraries/consent/testing/fake_consent_repository.dart';
 import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
+import 'package:construculator/libraries/router/guards/consent_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/shell_routes.dart';
 import 'package:construculator/libraries/router/testing/fake_router.dart';
@@ -282,4 +284,76 @@ void main() {
       expect(router.navigationHistory.map((c) => c.route), contains(shellRoute));
     });
   });
+
+  group('when the session carries no internal user id', () {
+    // The one status the guard decides on its own rather than through
+    // gatesAccess, so it is the one status the guard and this page can
+    // disagree about. They are driven together here, against a single
+    // repository, because either half read alone looks correct: the guard
+    // blocking is right, and the page leaving for the shell is right for
+    // every other ConsentSatisfied. Only the pair shows the loop.
+    late ConsentGuard guard;
+
+    setUp(() {
+      repository.resolveTo(
+        const ConsentSatisfied(ConsentRepository.noUserVersion),
+      );
+      guard = ConsentGuard(() => Modular.get<CheckConsentStatusUseCase>());
+    });
+
+    testWidgets('the guard blocks and the gate does not bounce back', (
+      tester,
+    ) async {
+      expect(
+        await guard.canActivate('/', _anyRoute),
+        isFalse,
+        reason: 'the shell must stay closed for an unidentified session',
+      );
+
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      // If the page navigated here, the shell guard would redirect straight
+      // back and the user would never reach a rendered frame.
+      expect(
+        router.navigationHistory.map((c) => c.route),
+        isNot(contains(shellRoute)),
+      );
+    });
+
+    testWidgets('the gate renders the retry screen, not an accept prompt', (
+      tester,
+    ) async {
+      // There is no identified user to record an acceptance against, so the
+      // dead end mirrors the guard rather than asking for consent that could
+      // not be attributed. Retry re-reads the status, so a JWT that later
+      // carries the claim still resolves.
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('consentUnavailableTitle')), findsOneWidget);
+      expect(
+        find.byKey(const Key('consentUnavailableRetryButton')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('consentGateAcceptButton')), findsNothing);
+    });
+
+    testWidgets('retrying leaves for the shell once the claim arrives', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      repository.resolveTo(const ConsentSatisfied(2));
+      await tester.tap(find.byKey(const Key('consentUnavailableRetryButton')));
+      await tester.pumpAndSettle();
+
+      expect(await guard.canActivate('/', _anyRoute), isTrue);
+      expect(router.navigationHistory.map((c) => c.route), contains(shellRoute));
+    });
+  });
 }
+
+// ignore: no_direct_instantiation
+final _anyRoute = ChildRoute('/', child: (_) => const SizedBox());

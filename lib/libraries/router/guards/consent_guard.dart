@@ -24,6 +24,16 @@ import 'package:flutter_modular/flutter_modular.dart';
 /// round trip — this answers from cached state and never awaits the network
 /// inside [canActivate]. Background verification happens in
 /// `ConsentGateBloc` and never delays route evaluation.
+///
+/// That "completes fast enough" claim is a property of today's store, not of
+/// this guard: [InMemoryLocalConsentDataSource] answers synchronously, so the
+/// unbounded `await` below cannot stall app start. CA-971 swaps in PowerSync
+/// watched queries, at which point the read becomes genuinely asynchronous
+/// and the assumption stops holding on its own — that change must either keep
+/// the read local and non-blocking or give this call a timeout, since a hang
+/// here hangs route evaluation with no gate and no app.
+/// TODO: https://ripplearc.youtrack.cloud/issue/CA-971 - Revisit this await
+/// when the PowerSync-backed local store lands.
 class ConsentGuard extends RouteGuard {
   final CheckConsentStatusUseCase Function() _getUseCase;
 
@@ -40,13 +50,19 @@ class ConsentGuard extends RouteGuard {
     // it tests the auth session, not the internal user id claim. Reading it
     // as "already consented" would silently un-gate the shell for a signed-in
     // user whose consent was never evaluated.
+    //
+    // This is the one branch gatesAccess does not carry, so ConsentGateBloc
+    // mirrors it: _stateFor maps the same status to ConsentGateUnavailable
+    // rather than Allowed. Without that mirror the redirect below would land
+    // on a page that immediately navigates back to the shell, and the two
+    // sides would trade the user back and forth.
     if (status == const ConsentSatisfied(ConsentRepository.noUserVersion)) {
       return false;
     }
 
-    // Which other states block is ConsentStatus's own definition, not this
-    // guard's. Restating the mapping here would let the route and the gate
-    // page disagree about the same status.
+    // Every other state is ConsentStatus's own definition, not this guard's.
+    // Restating the mapping here would let the route and the gate page
+    // disagree about the same status.
     return !status.gatesAccess;
   }
 }
