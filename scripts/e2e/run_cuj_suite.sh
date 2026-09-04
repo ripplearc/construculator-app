@@ -62,7 +62,13 @@ if [ "$success" -ne 1 ]; then
   if command -v ffmpeg >/dev/null 2>&1; then
     for video in "$VIDEO_DIR"/*.mp4; do
       [ -e "$video" ] || continue
-      ffmpeg -y -sseof -1 -i "$video" -update 1 -q:v 2 "${video%.mp4}.png" \
+      # Decodes the whole clip rather than seeking from the end: `-sseof`
+      # landed past the last decodable frame on a ~55s recording and
+      # silently produced a zero-byte output. These recordings are short
+      # enough (one CUJ each) that decoding start-to-finish is cheap, and
+      # `-update 1` keeps overwriting the same file, so what's left once
+      # ffmpeg reaches the end is exactly the last frame.
+      ffmpeg -y -i "$video" -vsync 0 -update 1 -q:v 2 "${video%.mp4}.png" \
         2>/dev/null || e2e_warn "could not extract a screenshot from $video"
     done
   else
