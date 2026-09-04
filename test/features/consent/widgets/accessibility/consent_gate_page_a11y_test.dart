@@ -34,15 +34,6 @@ void main() {
 
   tearDown(Modular.destroy);
 
-  /// Drives the local read and the verification to the same answer.
-  ///
-  /// The gate's third phase re-emits after confirming against the server, so a
-  /// fixture that sets only the cached status would be superseded before the
-  /// page finished rendering it.
-  void resolveTo(ConsentStatus status) => repository
-    ..cachedStatusToReturn = status
-    ..verifiedStatusToReturn = status;
-
   Widget buildPage(ThemeData theme) => MaterialApp(
     theme: theme,
     locale: const Locale('en'),
@@ -63,7 +54,7 @@ void main() {
       tester,
     ) async {
       await setupA11yTest(tester);
-      resolveTo(ConsentNeverGiven(requiredVersion));
+      repository.resolveTo(ConsentNeverGiven(requiredVersion));
 
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
@@ -78,7 +69,7 @@ void main() {
       // Underlined body text is well under 48dp on its own, so the link is
       // wrapped to reach the guideline rather than relying on text bounds.
       await setupA11yTest(tester);
-      resolveTo(ConsentNeverGiven(requiredVersion));
+      repository.resolveTo(ConsentNeverGiven(requiredVersion));
 
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
@@ -91,7 +82,7 @@ void main() {
       tester,
     ) async {
       await setupA11yTest(tester);
-      resolveTo(ConsentNeverGiven(requiredVersion));
+      repository.resolveTo(ConsentNeverGiven(requiredVersion));
 
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
@@ -104,7 +95,9 @@ void main() {
       tester,
     ) async {
       await setupA11yTest(tester);
-      resolveTo(const ConsentIndeterminate(ConsentType.termsAndPrivacy));
+      repository.resolveTo(
+        const ConsentIndeterminate(ConsentType.termsAndPrivacy),
+      );
 
       await expectMeetsTapTargetAndLabelGuidelinesForEachTheme(
         tester,
@@ -131,7 +124,7 @@ void main() {
       tester,
     ) async {
       await setupA11yTest(tester);
-      resolveTo(ConsentNeverGiven(requiredVersion));
+      repository.resolveTo(ConsentNeverGiven(requiredVersion));
       tester.platformDispatcher.textScaleFactorTestValue = 2.0;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
 
@@ -151,7 +144,9 @@ void main() {
       tester,
     ) async {
       await setupA11yTest(tester);
-      resolveTo(const ConsentIndeterminate(ConsentType.termsAndPrivacy));
+      repository.resolveTo(
+        const ConsentIndeterminate(ConsentType.termsAndPrivacy),
+      );
       tester.platformDispatcher.textScaleFactorTestValue = 2.0;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
 

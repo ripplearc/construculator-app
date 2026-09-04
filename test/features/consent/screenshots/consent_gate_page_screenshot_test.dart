@@ -43,15 +43,6 @@ void main() {
 
   tearDown(Modular.destroy);
 
-  /// Drives the local read and the verification to the same answer.
-  ///
-  /// The gate's third phase re-emits after confirming against the server, so a
-  /// fixture that sets only the cached status would be superseded before the
-  /// page finished rendering it.
-  void resolveTo(ConsentStatus status) => repository
-    ..cachedStatusToReturn = status
-    ..verifiedStatusToReturn = status;
-
   Future<void> pumpPage(WidgetTester tester) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = ratio;
@@ -80,7 +71,7 @@ void main() {
     testWidgets('renders the prompt when blocked on a new version', (
       tester,
     ) async {
-      resolveTo(
+      repository.resolveTo(
         ConsentOutdated(acceptedVersion: 1, requiredVersion: requiredVersion),
       );
 
@@ -97,12 +88,19 @@ void main() {
     testWidgets('renders the loading indicator while submitting', (
       tester,
     ) async {
-      resolveTo(ConsentNeverGiven(requiredVersion));
+      repository.resolveTo(ConsentNeverGiven(requiredVersion));
       final inFlight = Completer<void>();
       repository.acceptanceCompleter = inFlight;
 
       await pumpPage(tester);
       await tester.tap(find.byKey(const Key('consentGateAcceptButton')));
+      // A single pump freezes the indicator's deterministic pre-load frame —
+      // the Lottie composition loads asynchronously and never resolves inside
+      // the fake-async zone, matching project_creation_screen_screenshot_test.
+      // The golden therefore shows an empty band where the accept button was,
+      // not a spinner: it asserts the button is gone and the indicator holds
+      // its 80px of space. The indicator's presence is asserted in
+      // consent_gate_page_test.dart instead.
       await tester.pump();
 
       await expectLater(
@@ -147,7 +145,9 @@ void main() {
       // and #547 maps ConsentIndeterminate here unconditionally whenever a
       // prior state doesn't exist, so it's reachable far more often than
       // "the backend is down."
-      resolveTo(const ConsentIndeterminate(ConsentType.termsAndPrivacy));
+      repository.resolveTo(
+        const ConsentIndeterminate(ConsentType.termsAndPrivacy),
+      );
 
       await pumpPage(tester);
 

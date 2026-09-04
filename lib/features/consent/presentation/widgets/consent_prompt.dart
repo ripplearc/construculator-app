@@ -98,8 +98,8 @@ class ConsentPrompt extends StatelessWidget {
                 const SizedBox(height: CoreSpacing.space3),
                 // liveRegion so a screen-reader user hears that the write
                 // failed -- otherwise the only signal is a silent button
-                // relabel from "Agree and continue" to "Try again", with
-                // focus left where it was.
+                // relabel from "Agree and continue" to "Retry", with focus
+                // left where it was.
                 Semantics(
                   liveRegion: true,
                   child: Row(

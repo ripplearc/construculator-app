@@ -45,16 +45,6 @@ void main() {
 
   tearDown(Modular.destroy);
 
-  /// Drives the local read and the verification to the same answer.
-  ///
-  /// The gate's third phase re-emits after confirming against the server, so a
-  /// fixture that sets only the cached status would be superseded before the
-  /// page finished rendering it.
-  void resolveTo(ConsentStatus status) => repository
-    ..cachedStatusToReturn = status
-    ..verifiedStatusToReturn = status;
-
-
   Widget buildPage({ThemeData? theme, List<String> openedUrls = const []}) {
     return MaterialApp(
       theme: theme ?? createTestTheme(),
@@ -74,7 +64,7 @@ void main() {
 
   group('when a new version is published', () {
     setUp(
-      () => resolveTo(
+      () => repository.resolveTo(
         ConsentOutdated(acceptedVersion: 1, requiredVersion: requiredVersion),
       ),
     );
@@ -144,7 +134,9 @@ void main() {
 
   group('when the requirement cannot be established', () {
     setUp(
-      () => resolveTo(const ConsentIndeterminate(ConsentType.termsAndPrivacy)),
+      () => repository.resolveTo(
+        const ConsentIndeterminate(ConsentType.termsAndPrivacy),
+      ),
     );
 
     testWidgets('renders a retry screen rather than a consent prompt', (
@@ -161,6 +153,20 @@ void main() {
       );
       expect(find.byKey(const Key('consentGateAcceptButton')), findsNothing);
       expect(find.byKey(const Key('consentGateTermsLink')), findsNothing);
+    });
+
+    testWidgets('retrying re-runs the check and lifts the gate once it '
+        'resolves', (tester) async {
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      repository.resolveTo(const ConsentSatisfied(2));
+      await tester.tap(
+        find.byKey(const Key('consentUnavailableRetryButton')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(router.navigationHistory.map((c) => c.route), contains(shellRoute));
     });
   });
 
@@ -190,7 +196,7 @@ void main() {
     testWidgets('renders nothing and leaves for the shell', (tester) async {
       // Resolving from cache completes within a frame, so a spinner here would
       // only flash.
-      resolveTo(const ConsentSatisfied(2));
+      repository.resolveTo(const ConsentSatisfied(2));
 
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
@@ -204,7 +210,7 @@ void main() {
     testWidgets('renders nothing and leaves for the shell', (tester) async {
       // The fail-open path: nothing is wrong from the user's point of view,
       // so it must be indistinguishable from the fully-satisfied path here.
-      resolveTo(const ConsentUnverified(2));
+      repository.resolveTo(const ConsentUnverified(2));
 
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();

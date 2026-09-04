@@ -69,7 +69,11 @@ class ConsentGatePage extends StatelessWidget {
                 onOpenDocument: onOpenDocument,
                 hasSubmitFailed: true,
               ),
-              ConsentGateUnavailable() => const ConsentUnavailable(),
+              ConsentGateUnavailable() => ConsentUnavailable(
+                onRetry: () => context.read<ConsentGateBloc>().add(
+                  const ConsentGateRetryRequested(),
+                ),
+              ),
             },
           ),
         ),
