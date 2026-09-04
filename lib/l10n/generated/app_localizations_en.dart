@@ -42,6 +42,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectionError => 'Connection error';
 
   @override
+  String get consentGateAcceptButton => 'Agree and continue';
+
+  @override
+  String get consentGateBody =>
+      'Please review and accept our terms of service and privacy policy to continue.';
+
+  @override
+  String get consentGatePrivacyLink => 'privacy policy';
+
+  @override
+  String get consentGateRetryButton => 'Retry';
+
+  @override
+  String get consentGateSubmitErrorMessage =>
+      'We couldn\'t save your response. Please try again.';
+
+  @override
+  String get consentGateTermsLink => 'terms of service';
+
+  @override
+  String get consentGateTitle => 'Review our terms';
+
+  @override
+  String get consentUnavailableBody =>
+      'Check your connection and try again. You\'ll be able to continue once we can confirm the current terms.';
+
+  @override
+  String get consentUnavailableRetryButton => 'Retry';
+
+  @override
+  String get consentUnavailableTitle => 'We couldn\'t load the terms';
+
+  @override
+  String get consentWithdrawalCancelButton => 'Cancel';
+
+  @override
+  String get consentWithdrawalConfirmButton => 'Yes, withdraw';
+
+  @override
+  String get consentWithdrawalDialogBody =>
+      'You\'ll be signed out and asked to accept the terms again next time you open the app.';
+
+  @override
+  String get consentWithdrawalDialogTitle => 'Withdraw your consent?';
+
+  @override
+  String get consentWithdrawalTileLabel => 'Withdraw consent';
+
+  @override
   String get continueButton => 'Continue';
 
   @override
