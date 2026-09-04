@@ -9,6 +9,11 @@
 # under /usr/bin/sh (dash), which does not support `set -o pipefail`.
 set -euo pipefail
 
+# Ports the E2E stack publishes. adb_reverse.sh forwards these onto the emulator;
+# TestConfig.mailpitUrl is a compile-time dart-define, so CUJ-2's Mailpit client
+# only reaches the catcher if E2E_MAILPIT_URL is passed here with the same port.
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+
 scripts/e2e/adb_reverse.sh
 
 adb shell screenrecord --time-limit 180 /sdcard/e2e.mp4 &
@@ -21,7 +26,8 @@ while [ "$attempt" -le "$max_attempts" ]; do
   if patrol test \
     --target integration_test/patrol_test.dart \
     --flavor fishfood \
-    --dart-define=ENVIRONMENT=dev; then
+    --dart-define=ENVIRONMENT=dev \
+    --dart-define=E2E_MAILPIT_URL="http://localhost:${E2E_MAILPIT_PORT}"; then
     success=1
     break
   fi

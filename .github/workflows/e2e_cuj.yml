@@ -90,6 +90,12 @@ jobs:
           arch: x86_64
           profile: pixel_7_pro
           disable-animations: true
+          # A long two-CUJ run on a Skia/SwiftShader emulator OOM-killed the
+          # instrumentation process on a retry — give it more headroom than the
+          # hardware-profile default.
+          cores: 3
+          ram-size: 4096M
+          heap-size: 1024M
           # android-emulator-runner runs `script:` under /usr/bin/sh (dash), which
           # has no `set -o pipefail` and no bashisms — keep the body in a bash
           # script and just invoke it here.

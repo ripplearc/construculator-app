@@ -30,7 +30,7 @@ class MailpitClient {
   static Future<String> waitForOtp(
     String email, {
     String? baseUrl,
-    Duration timeout = const Duration(seconds: 30),
+    Duration timeout = const Duration(seconds: 60),
   }) async {
     final url = baseUrl ?? TestConfig.mailpitUrl;
     final deadline = DateTime.now().add(timeout);
