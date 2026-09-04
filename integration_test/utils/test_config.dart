@@ -25,11 +25,19 @@ class TestConfig {
   ///
   /// Must match the password `construculator-backend`'s
   /// `supabase/seeders/sample_data/100_auth_users.sql` sets on the GoTrue
-  /// account backing `seeder@example.com`. Only ever valid against a local
-  /// Docker/CI stack started from that repository.
+  /// account backing `seeder@example.com` — **and** satisfy
+  /// `AuthValidation.validatePassword` (8+ chars, upper, lower, number,
+  /// special char from `!@#$&*~`), since the login form rejects the password
+  /// client-side before ever calling the backend.
+  ///
+  /// The seeder currently sets `e2e-local-only-password`, which has no
+  /// uppercase letter and no special character, so it fails validation and
+  /// CUJ-1 can never reach the backend at all. This default (`Mypass@1`)
+  /// satisfies the app's rules but does not match the seeded account until
+  /// the seeder's password is changed to something that satisfies both.
   static const String loginPassword = String.fromEnvironment(
     'E2E_LOGIN_PASSWORD',
-    defaultValue: 'e2e-local-only-password',
+    defaultValue: 'Mypass@1',
   );
 
   /// Base URL of the Mailpit mail catcher started by `scripts/e2e/start_env.sh`

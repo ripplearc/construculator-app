@@ -160,7 +160,6 @@ class AuthManagerImpl implements AuthManager {
         email: email,
         password: password,
       );
-      _logger.info('DIAG: signInWithPassword returned'); // TEMP DIAGNOSTIC
       final user = response.user;
       if (user == null) {
         _logger.warning('Login failed for user: $email - No user returned');
@@ -168,7 +167,6 @@ class AuthManagerImpl implements AuthManager {
       }
 
       await _sentryWrapper.setUser(user.id);
-      _logger.info('DIAG: setUser done'); // TEMP DIAGNOSTIC
       // TODO: [CA-961] Gate identify() on recorded analytics consent once
       // the server-driven consent flow lands; currently relies on the
       // signup terms & privacy acceptance covering analytics consent.
@@ -176,7 +174,6 @@ class AuthManagerImpl implements AuthManager {
         userId: user.id,
         properties: const AnalyticsUserProperties(),
       );
-      _logger.info('DIAG: identify done'); // TEMP DIAGNOSTIC
 
       _logger.info('Login successful for user: $email');
       return AuthResult.success(_mapSupabaseUserToCredential(user));

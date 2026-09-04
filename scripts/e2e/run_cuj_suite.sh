@@ -19,7 +19,7 @@ scripts/e2e/adb_reverse.sh
 adb shell screenrecord --time-limit 180 /sdcard/e2e.mp4 &
 recorder_pid=$!
 
-max_attempts=1 # TEMP DIAGNOSTIC: was 2 — a stuck retry ate the 45m job timeout last run
+max_attempts=2
 attempt=1
 success=0
 while [ "$attempt" -le "$max_attempts" ]; do

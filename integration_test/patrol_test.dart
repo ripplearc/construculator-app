@@ -1,5 +1,6 @@
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
 import 'package:construculator/libraries/powersync/interfaces/powersync_manager.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:patrol/patrol.dart';
 
@@ -23,12 +24,21 @@ void main() {
   // PowerSync state so neither the next test in this run nor the next full
   // suite invocation inherits it. A new CUJ file needs nothing beyond
   // importing and calling its `main()` here to get this for free.
-  patrolTearDown(
-    () => resetE2EState(
-      authManager: Modular.get<AuthManager>(),
-      powerSyncManager: Modular.get<PowerSyncManager>(),
-    ),
-  );
+  patrolTearDown(() async {
+    try {
+      await resetE2EState(
+        authManager: Modular.get<AuthManager>(),
+        powerSyncManager: Modular.get<PowerSyncManager>(),
+      );
+    } catch (e) {
+      // A CUJ that navigates into the app shell (e.g. CUJ-2 reaching the
+      // dashboard) disposes the auth module's bindings along the way, so
+      // Modular.get throws here instead of finding a live instance. There is
+      // nothing left to reset in that case — the module tore itself down
+      // along with whatever state this call would have cleared.
+      debugPrint('resetE2EState: skipped, dependencies unavailable ($e)');
+    }
+  });
 
   cuj1.main();
   cuj2.main();

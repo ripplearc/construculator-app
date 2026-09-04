@@ -25,9 +25,6 @@ void main() {
 
       await $(const Key('app_shell_bottom_nav_bar')).waitUntilVisible();
     },
-    config: const PatrolTesterConfig(
-      visibleTimeout: Duration(seconds: 60),
-      printLogs: true,
-    ),
+    config: const PatrolTesterConfig(visibleTimeout: Duration(seconds: 60)),
   );
 }
