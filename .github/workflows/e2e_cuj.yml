@@ -90,38 +90,10 @@ jobs:
           arch: x86_64
           profile: pixel_7_pro
           disable-animations: true
-          script: |
-            set -uo pipefail
-            scripts/e2e/adb_reverse.sh
-
-            adb shell screenrecord --time-limit 180 /sdcard/e2e.mp4 &
-            recorder_pid=$!
-
-            # One retry absorbs known GitHub-hosted-emulator flake (see
-            # docs/Testing/E2E-CI.md#retry) — it is not meant to paper over a
-            # genuinely broken CUJ, which is what quarantine is for.
-            max_attempts=2
-            attempt=1
-            success=0
-            while [ "$attempt" -le "$max_attempts" ]; do
-              if patrol test \
-                --target integration_test/patrol_test.dart \
-                --flavor fishfood \
-                --dart-define=ENVIRONMENT=dev; then
-                success=1
-                break
-              fi
-              echo "::warning::CUJ suite failed on attempt $attempt of $max_attempts"
-              attempt=$((attempt + 1))
-            done
-
-            kill "$recorder_pid" 2>/dev/null || true
-            sleep 1
-            adb pull /sdcard/e2e.mp4 e2e-recording.mp4 || true
-            adb exec-out screencap -p > e2e-final-state.png || true
-            adb logcat -d > e2e-logcat.txt || true
-
-            [ "$success" -eq 1 ]
+          # android-emulator-runner runs `script:` under /usr/bin/sh (dash), which
+          # has no `set -o pipefail` and no bashisms — keep the body in a bash
+          # script and just invoke it here.
+          script: bash scripts/e2e/run_cuj_suite.sh
 
       - name: Publish CUJ results summary
         if: always()
