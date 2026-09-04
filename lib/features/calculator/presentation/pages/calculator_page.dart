@@ -29,17 +29,10 @@ class _CalculatorPageState extends State<CalculatorPage> {
     return groups;
   }
 
-  // Group ids are the plain English names the BLoC and CalculatorMath already
-  // match on. Keeping them as the identifier means localization never reaches
-  // the domain layer, so `calculator_math.dart` needs no change.
   static const String _basicGeometryId = 'Basic Geometry';
   static const String _materialsId = 'Materials';
   static const String _trigonometryId = 'Trigonometry';
 
-  // Resolves a domain id to the string shown to the user. Ids flow through the
-  // BLoC (CalculatorKeySelected, finalizedValues, resultLabel) and are
-  // locale-independent by design; every id that can surface in the UI is
-  // translated back here, at the one layer that has a BuildContext.
   String _displayLabelFor(AppLocalizations l10n, String id) => switch (id) {
     'Width' => l10n.calculatorKeyWidth,
     'Length' => l10n.calculatorKeyLength,
@@ -61,16 +54,11 @@ class _CalculatorPageState extends State<CalculatorPage> {
     _ => _untranslated(id),
   };
 
-  // Every id that can reach the UI is listed in _displayLabelFor. Falling
-  // through means a key was added without an ARB entry, which would render the
-  // raw English id in every locale. English hides that, so assert instead.
   String _untranslated(String id) {
     assert(false, 'No localized label for calculator id "$id"');
     return id;
   }
 
-  // Rebuilds chips with localized labels. The BLoC stores chips carrying domain
-  // ids; only the text shown to the user is swapped.
   List<CoreCalculatorChip> _localizeChips(
     AppLocalizations l10n,
     List<CoreCalculatorChip> chips,
