@@ -156,8 +156,12 @@ void main() {
       expect(parseVersion(3), 3);
     });
 
-    test('accepts a double', () {
+    test('accepts a whole-number double', () {
       expect(parseVersion(3.0), 3);
+    });
+
+    test('rejects a fractional double instead of truncating it', () {
+      expect(parseVersion(2.7), isNull);
     });
 
     test('accepts a numeric string', () {

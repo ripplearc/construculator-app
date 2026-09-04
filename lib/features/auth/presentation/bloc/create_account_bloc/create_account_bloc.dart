@@ -11,6 +11,16 @@ import 'package:construculator/libraries/auth/data/models/professional_role.dart
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
 import 'package:construculator/libraries/auth/domain/validation/auth_validation.dart';
 import 'package:construculator/libraries/config/env_constants.dart';
+import 'package:construculator/libraries/config/interfaces/env_loader.dart';
+import 'package:construculator/libraries/consent/consent_gate_readiness.dart';
+import 'package:construculator/libraries/consent/domain/entities/consent_status_entity.dart';
+import 'package:construculator/libraries/consent/domain/entities/consent_version_entity.dart';
+import 'package:construculator/libraries/consent/domain/repositories/consent_repository.dart';
+import 'package:construculator/libraries/consent/domain/types/consent_error_type.dart';
+import 'package:construculator/libraries/consent/domain/types/consent_types.dart';
+import 'package:construculator/libraries/consent/domain/usecases/check_consent_status_usecase.dart';
+import 'package:construculator/libraries/consent/domain/usecases/params/consent_usecase_params.dart';
+import 'package:construculator/libraries/consent/domain/usecases/record_consent_usecase.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -26,12 +36,23 @@ class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
   final GetProfessionalRolesUseCase _getProfessionalRolesUseCase;
   final SendOtpUseCase _sendOtpUseCase;
   final AnalyticsRepository _analyticsRepository;
+  final CheckConsentStatusUseCase _checkConsentStatusUseCase;
+  final RecordConsentUseCase _recordConsentUseCase;
+  final EnvLoader _envLoader;
+
+  /// Seam for [consentGateEnabled]'s `persistenceReady`; AuthModule never
+  /// passes it, so signup always gets the compile-time answer.
+  final bool persistenceReady;
 
   CreateAccountBloc({
     required this._createAccountUseCase,
     required this._getProfessionalRolesUseCase,
     required this._sendOtpUseCase,
     required this._analyticsRepository,
+    required this._checkConsentStatusUseCase,
+    required this._recordConsentUseCase,
+    required this._envLoader,
+    this.persistenceReady = consentPersistenceReady,
   }) : super(CreateAccountInitial()) {
     on<CreateAccountSubmitted>(_onSubmitted);
     on<CreateAccountGetProfessionalRolesRequested>(_onLoadProfessionalRoles);
@@ -215,26 +236,97 @@ class CreateAccountBloc extends Bloc<CreateAccountEvent, CreateAccountState> {
         countryCode: event.phonePrefix,
       ),
     );
-    result.fold(
-      (failure) {
-        unawaited(
-          _analyticsRepository.track(
-            AnalyticsEvent(
-              name: 'user_registration_failed',
-              properties: {'reason': failure.analyticsReason},
-            ),
+    final accountFailure = result.getLeftOrNull();
+    if (accountFailure != null) {
+      unawaited(
+        _analyticsRepository.track(
+          AnalyticsEvent(
+            name: 'user_registration_failed',
+            properties: {'reason': accountFailure.analyticsReason},
           ),
-        );
-        emit(CreateAccountFailure(failure: failure));
-      },
-      (roles) {
-        unawaited(
-          _analyticsRepository.track(
-            const AnalyticsEvent(name: 'user_registered'),
-          ),
-        );
-        emit(CreateAccountSuccess());
-      },
+        ),
+      );
+      emit(CreateAccountFailure(failure: accountFailure));
+      return;
+    }
+
+    unawaited(
+      _analyticsRepository.track(const AnalyticsEvent(name: 'user_registered')),
     );
+
+    // One of the two production consent writes (the other is
+    // ConsentGateBloc._onAccepted, behind a route ConsentModule only
+    // registers under the same predicate) -- turning the gate off has to
+    // turn the writes off too, not just hide the gate UI.
+    if (consentGateEnabled(_envLoader, persistenceReady: persistenceReady)) {
+      final consentFailure = await _recordSignupConsent();
+      if (consentFailure != null) {
+        emit(CreateAccountFailure(failure: consentFailure));
+        return;
+      }
+    }
+
+    emit(CreateAccountSuccess());
+  }
+
+  // Awaited before CreateAccountSuccess, or ConsentGuard blocks the account
+  // just created. Returns the failure to surface, or null when done.
+  Future<Failure?> _recordSignupConsent() async {
+    final status = await _checkConsentStatusUseCase(
+      const ConsentStatusParams(consentType: ConsentType.termsAndPrivacy),
+    );
+
+    // The version to record, or the failure to surface instead -- computed
+    // as one value up front so the write below has a single call site
+    // rather than duplicating the status match.
+    final (ConsentVersion?, Failure?) versionOrFailure = switch (status) {
+      ConsentNeverGiven(:final requiredVersion) => (requiredVersion, null),
+      ConsentOutdated(:final requiredVersion) => (requiredVersion, null),
+      // A real prior acceptance: signup has nothing to record. Excludes the
+      // synthetic no-user-id marker handled below -- a real acceptance's
+      // version always traces to a published row, enforced to be >= 1, so
+      // acceptedVersion can only equal ConsentRepository.noUserVersion (0)
+      // as that marker, never as a genuine version.
+      ConsentSatisfied(:final acceptedVersion)
+          when acceptedVersion != ConsentRepository.noUserVersion =>
+        (null, null),
+      // A prior acceptance exists but couldn't be reconfirmed against the
+      // server right now -- the gate's own fail-open leniency. Nothing new
+      // to record.
+      ConsentUnverified() => (null, null),
+      // The synthetic "could not identify the user" marker used to reach
+      // this same (null, null) arm, silently reporting success while
+      // recording nothing -- reachable for exactly the user this method
+      // exists to protect: a brand-new signup, whose session token is
+      // minted before createUserProfile runs, making internal_user_id the
+      // claim most likely to still be missing. Silently equating "could not
+      // identify the user" with "already consented" is the same fail-open
+      // shape #537-#543 already fixed upstream.
+      ConsentSatisfied() => (
+        null,
+        const ConsentFailure(errorType: ConsentErrorType.authenticationError),
+      ),
+      // The requirement itself could not be established (a failed local
+      // read, or nothing published yet). Also used to silently return null
+      // here; recording an acceptance is genuinely impossible without a
+      // version to name, but reporting success while doing nothing is not
+      // the same thing as correctly doing nothing.
+      ConsentIndeterminate() => (
+        null,
+        const ConsentFailure(errorType: ConsentErrorType.unexpectedError),
+      ),
+    };
+
+    final (version, failure) = versionOrFailure;
+    if (version == null) return failure;
+
+    final recordResult = await _recordConsentUseCase(
+      RecordConsentParams(
+        consentType: ConsentType.termsAndPrivacy,
+        version: version.version,
+      ),
+    );
+
+    return recordResult.getLeftOrNull();
   }
 }

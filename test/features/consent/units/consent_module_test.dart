@@ -4,6 +4,8 @@ import 'package:construculator/features/consent/presentation/pages/consent_gate_
 import 'package:construculator/features/consent/presentation/widgets/consent_document_links.dart';
 import 'package:construculator/features/consent/testing/consent_test_module.dart';
 import 'package:construculator/l10n/generated/app_localizations.dart';
+import 'package:construculator/libraries/config/env_constants.dart';
+import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
 import 'package:construculator/libraries/consent/domain/repositories/consent_repository.dart';
 import 'package:construculator/libraries/consent/testing/fake_consent_repository.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
@@ -42,7 +44,15 @@ void main() {
   late ConsentModule module;
 
   setUp(() {
-    module = ConsentModule(FakeAppBootstrapFactory.create());
+    // persistenceReady: true so the route-shape cases below still exercise a
+    // registered route; consentPersistenceReady is false today, so the
+    // production default registers nothing at all.
+    module = ConsentModule(
+      FakeAppBootstrapFactory.create(
+        envLoader: FakeEnvLoader()..setEnvVar(consentGateEnabledKey, 'true'),
+      ),
+      persistenceReady: true,
+    );
   });
 
   tearDown(Modular.destroy);
@@ -72,6 +82,41 @@ void main() {
             'would send the redirect back to itself with no route left to '
             'admit the user.',
       );
+    });
+
+    test('registers no route at the production default', () {
+      // The gate page's Accept button is a consent write
+      // (ConsentGateBloc._onAccepted). Until CA-971 lands there must be no
+      // route that can reach it -- not merely no guard redirecting to it,
+      // since a deep link or a stray router.navigate would do just as well.
+      final module = ConsentModule(
+        FakeAppBootstrapFactory.create(
+          envLoader: FakeEnvLoader()
+            ..setEnvVar(consentGateEnabledKey, 'true'),
+        ),
+      );
+      // ignore: no_direct_instantiation
+      final routeManager = RouteManager();
+
+      module.routes(routeManager);
+
+      expect(routeManager.allRoutes, isEmpty);
+    });
+
+    test('registers no route when the flag is off, even if ready', () {
+      final module = ConsentModule(
+        FakeAppBootstrapFactory.create(
+          envLoader: FakeEnvLoader()
+            ..setEnvVar(consentGateEnabledKey, 'false'),
+        ),
+        persistenceReady: true,
+      );
+      // ignore: no_direct_instantiation
+      final routeManager = RouteManager();
+
+      module.routes(routeManager);
+
+      expect(routeManager.allRoutes, isEmpty);
     });
 
     test('registers the gate bloc', () {

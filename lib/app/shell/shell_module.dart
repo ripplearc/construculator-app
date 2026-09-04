@@ -17,11 +17,15 @@ import 'package:construculator/features/project_settings/project_settings_routes
 import 'package:construculator/libraries/analytics/feature_flag_module.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/auth/interfaces/auth_manager.dart';
+import 'package:construculator/libraries/consent/consent_gate_readiness.dart';
+import 'package:construculator/libraries/consent/consent_library_module.dart';
+import 'package:construculator/libraries/consent/domain/usecases/check_consent_status_usecase.dart';
 import 'package:construculator/libraries/estimation/estimation_library_module.dart';
 import 'package:construculator/libraries/project/interfaces/current_project_notifier.dart';
 import 'package:construculator/libraries/project/presentation/project_ui_provider.dart';
 import 'package:construculator/libraries/project/project_library_module.dart';
 import 'package:construculator/libraries/router/guards/auth_guard.dart';
+import 'package:construculator/libraries/router/guards/consent_guard.dart';
 import 'package:construculator/libraries/router/interfaces/app_router.dart';
 import 'package:construculator/libraries/router/routes/calculator_routes.dart';
 import 'package:construculator/libraries/router/routes/estimation_routes.dart';
@@ -34,16 +38,40 @@ import 'package:flutter_modular/flutter_modular.dart';
 /// Modular module that owns the app shell's dependency bindings and root route.
 class ShellModule extends Module {
   final AppBootstrap appBootstrap;
-  ShellModule(this.appBootstrap);
+
+  /// Seam for [consentGateEnabled]'s `persistenceReady`; the app never
+  /// passes it, so the shell always gets the compile-time answer.
+  final bool persistenceReady;
+
+  ShellModule(
+    this.appBootstrap, {
+    this.persistenceReady = consentPersistenceReady,
+  });
 
   @override
   List<Module> get imports => [
     AuthLibraryModule(appBootstrap),
     ProjectLibraryModule(appBootstrap),
     EstimationLibraryModule(appBootstrap),
+    ConsentLibraryModule(appBootstrap),
     DashboardModule(appBootstrap),
     AppHeaderModule(),
     FeatureFlagModule(appBootstrap),
+  ];
+
+  /// Guards protecting the authenticated shell.
+  ///
+  /// [AuthGuard] is unconditional and always first, so [ConsentGuard] only
+  /// ever evaluates for a signed-in user. The consent gate additionally
+  /// requires [consentPersistenceReady], so no `.env` value alone can mount
+  /// a gate this build cannot durably record an acceptance for.
+  List<RouteGuard> get _shellGuards => [
+    AuthGuard(() => Modular.get<AuthManager>()),
+    if (consentGateEnabled(
+      appBootstrap.envLoader,
+      persistenceReady: persistenceReady,
+    ))
+      ConsentGuard(() => Modular.get<CheckConsentStatusUseCase>()),
   ];
 
   @override
@@ -98,7 +126,7 @@ class ShellModule extends Module {
           router: Modular.get<AppRouter>(),
         ),
       ),
-      guards: [AuthGuard(() => Modular.get<AuthManager>())],
+      guards: _shellGuards,
     );
     // Estimation, project-settings, and calculator destinations are
     // full-screen pushes, so they must be top-level routes like the search

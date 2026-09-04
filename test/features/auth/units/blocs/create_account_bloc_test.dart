@@ -5,6 +5,16 @@ import 'package:construculator/libraries/analytics/domain/entities/analytics_eve
 import 'package:construculator/libraries/analytics/domain/repositories/analytics_repository.dart';
 import 'package:construculator/libraries/analytics/testing/fake_analytics_repository.dart';
 import 'package:construculator/libraries/auth/domain/types/auth_types.dart';
+import 'package:construculator/libraries/config/env_constants.dart';
+import 'package:construculator/libraries/config/interfaces/env_loader.dart';
+import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/consent/domain/entities/consent_status_entity.dart';
+import 'package:construculator/libraries/consent/domain/entities/consent_version_entity.dart';
+import 'package:construculator/libraries/consent/domain/repositories/consent_repository.dart';
+import 'package:construculator/libraries/consent/domain/types/consent_error_type.dart';
+import 'package:construculator/libraries/consent/domain/types/consent_types.dart';
+import 'package:construculator/libraries/consent/testing/fake_consent_repository.dart';
+import 'package:construculator/libraries/either/either.dart';
 import 'package:construculator/libraries/errors/failures.dart';
 import 'package:construculator/libraries/supabase/interfaces/supabase_wrapper.dart';
 import 'package:construculator/libraries/supabase/testing/fake_supabase_user.dart';
@@ -700,5 +710,240 @@ void main() {
         ]);
       },
     );
+
+    group('consent recording', () {
+      const submitted = CreateAccountSubmitted(
+        email: 'consent@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        mobileNumber: '1234567890',
+        password: 'securePassword',
+        confirmPassword: 'securePassword',
+        role: 'engineer',
+        phonePrefix: '+1',
+      );
+
+      final requiredVersion = ConsentVersion(
+        id: 'version-1',
+        consentType: ConsentType.termsAndPrivacy,
+        version: 1,
+        documentUrl: 'https://example.com/terms/v1',
+        publishedAt: DateTime.utc(2026, 8, 11),
+      );
+
+      late FakeConsentRepository consent;
+
+      setUp(() {
+        consent = Modular.get<ConsentRepository>() as FakeConsentRepository;
+        fakeSupabase.setCurrentUser(createFakeUser('consent@example.com'));
+      });
+
+      blocTest<CreateAccountBloc, CreateAccountState>(
+        'records an acceptance before reporting success',
+        // The success state is what routes to the shell, so the record has to
+        // exist by the time it is emitted or ConsentGuard blocks the account
+        // signup just created.
+        build: () {
+          consent.cachedStatusToReturn = ConsentNeverGiven(requiredVersion);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(submitted),
+        expect: () => [
+          isA<CreateAccountLoading>(),
+          isA<CreateAccountSuccess>(),
+        ],
+        verify: (_) => expect(consent.recordedAcceptances, [
+          (consentType: ConsentType.termsAndPrivacy, version: 1),
+        ]),
+      );
+
+      blocTest<CreateAccountBloc, CreateAccountState>(
+        'records the published version when one is already outdated',
+        build: () {
+          consent.cachedStatusToReturn = ConsentOutdated(
+            acceptedVersion: 0,
+            requiredVersion: requiredVersion,
+          );
+          return bloc;
+        },
+        act: (bloc) => bloc.add(submitted),
+        // N3: this used to assert only the write happened, never that the
+        // bloc actually reached success -- a regression that recorded and
+        // then failed the signup anyway would have passed unchanged.
+        expect: () => [
+          isA<CreateAccountLoading>(),
+          isA<CreateAccountSuccess>(),
+        ],
+        verify: (_) => expect(consent.recordedAcceptances, [
+          (consentType: ConsentType.termsAndPrivacy, version: 1),
+        ]),
+      );
+
+      blocTest<CreateAccountBloc, CreateAccountState>(
+        'writes nothing when the check failed but an acceptance is on file',
+        // ConsentUnverified: same "nothing new to record" outcome as
+        // ConsentSatisfied, previously untested on its own.
+        build: () {
+          consent.cachedStatusToReturn = const ConsentUnverified(1);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(submitted),
+        expect: () => [
+          isA<CreateAccountLoading>(),
+          isA<CreateAccountSuccess>(),
+        ],
+        verify: (_) => expect(consent.recordedAcceptances, isEmpty),
+      );
+
+      blocTest<CreateAccountBloc, CreateAccountState>(
+        'writes nothing when an acceptance is already on file',
+        build: () {
+          consent.cachedStatusToReturn = const ConsentSatisfied(1);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(submitted),
+        expect: () => [
+          isA<CreateAccountLoading>(),
+          isA<CreateAccountSuccess>(),
+        ],
+        verify: (_) => expect(consent.recordedAcceptances, isEmpty),
+      );
+
+      blocTest<CreateAccountBloc, CreateAccountState>(
+        'fails the signup when the consent write fails',
+        // Advancing here would land the user in the shell believing they had
+        // consented, with no record to show for it.
+        build: () {
+          consent
+            ..cachedStatusToReturn = ConsentNeverGiven(requiredVersion)
+            ..acceptanceResultToReturn = const Left(
+              ConsentFailure(errorType: ConsentErrorType.connectionError),
+            );
+          return bloc;
+        },
+        act: (bloc) => bloc.add(submitted),
+        expect: () => [
+          isA<CreateAccountLoading>(),
+          isA<CreateAccountFailure>().having(
+            (s) => s.failure,
+            'failure',
+            isA<ConsentFailure>(),
+          ),
+        ],
+      );
+
+      // N4: neither of these two branches had any coverage. Both used to
+      // silently return null -- reporting a successful signup while
+      // recording nothing -- and both are reachable for a brand-new user:
+      // the session token is minted before createUserProfile runs, so a
+      // missing internal_user_id claim (-> the synthetic ConsentSatisfied
+      // sentinel) or a local read that hasn't warmed up yet (->
+      // ConsentIndeterminate) are the likely case, not the exception.
+      blocTest<CreateAccountBloc, CreateAccountState>(
+        'fails the signup rather than silently succeeding when the '
+        'internal user id could not be identified',
+        build: () {
+          consent.cachedStatusToReturn = const ConsentSatisfied(
+            ConsentRepository.noUserVersion,
+          );
+          return bloc;
+        },
+        act: (bloc) => bloc.add(submitted),
+        expect: () => [
+          isA<CreateAccountLoading>(),
+          isA<CreateAccountFailure>().having(
+            (s) => s.failure,
+            'failure',
+            const ConsentFailure(
+              errorType: ConsentErrorType.authenticationError,
+            ),
+          ),
+        ],
+        verify: (_) => expect(consent.recordedAcceptances, isEmpty),
+      );
+
+      blocTest<CreateAccountBloc, CreateAccountState>(
+        'fails the signup rather than silently succeeding when the '
+        'requirement could not be established',
+        build: () {
+          consent.cachedStatusToReturn = const ConsentIndeterminate(ConsentType.termsAndPrivacy);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(submitted),
+        expect: () => [
+          isA<CreateAccountLoading>(),
+          isA<CreateAccountFailure>().having(
+            (s) => s.failure,
+            'failure',
+            const ConsentFailure(errorType: ConsentErrorType.unexpectedError),
+          ),
+        ],
+        verify: (_) => expect(consent.recordedAcceptances, isEmpty),
+      );
+
+      blocTest<CreateAccountBloc, CreateAccountState>(
+        'does not check or record consent at all when the gate flag is off',
+        // The flag already governs whether ConsentGuard is registered on
+        // the shell (shell_module.dart); this proves the one thing that
+        // actually writes today is inert under the same flag, not just the
+        // route guard's UI.
+        build: () {
+          (Modular.get<EnvLoader>() as FakeEnvLoader).setEnvVar(
+            consentGateEnabledKey,
+            'false',
+          );
+          consent.cachedStatusToReturn = ConsentNeverGiven(requiredVersion);
+          return bloc;
+        },
+        act: (bloc) => bloc.add(submitted),
+        expect: () => [
+          isA<CreateAccountLoading>(),
+          isA<CreateAccountSuccess>(),
+        ],
+        verify: (_) {
+          expect(consent.cachedStatusRequests, isEmpty);
+          expect(consent.recordedAcceptances, isEmpty);
+        },
+      );
+
+      blocTest<CreateAccountBloc, CreateAccountState>(
+        'does not check or record consent at the production default, '
+        'even with the gate flag on',
+        // AuthTestModule's bind passes persistenceReady: true to stand in
+        // for CA-971; this builds the bloc the way the real AuthModule
+        // does, leaving readiness at the compile-time default. With the
+        // flag deliberately on, a deployment that flips CONSENT_GATE_ENABLED
+        // by mistake still writes nothing.
+        build: () {
+          (Modular.get<EnvLoader>() as FakeEnvLoader).setEnvVar(
+            consentGateEnabledKey,
+            'true',
+          );
+          consent.cachedStatusToReturn = ConsentNeverGiven(requiredVersion);
+          // Built by hand rather than resolved: AuthTestModule's bind is the
+          // one place persistenceReady is forced true, and this case is
+          // specifically about the production default.
+          // ignore: no_direct_instantiation
+          return CreateAccountBloc(
+            createAccountUseCase: Modular.get(),
+            getProfessionalRolesUseCase: Modular.get(),
+            sendOtpUseCase: Modular.get(),
+            analyticsRepository: Modular.get(),
+            checkConsentStatusUseCase: Modular.get(),
+            recordConsentUseCase: Modular.get(),
+            envLoader: Modular.get<EnvLoader>(),
+          );
+        },
+        act: (bloc) => bloc.add(submitted),
+        expect: () => [
+          isA<CreateAccountLoading>(),
+          isA<CreateAccountSuccess>(),
+        ],
+        verify: (_) {
+          expect(consent.cachedStatusRequests, isEmpty);
+          expect(consent.recordedAcceptances, isEmpty);
+        },
+      );
+    });
   });
 }

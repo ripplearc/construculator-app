@@ -25,8 +25,14 @@ import 'package:construculator/libraries/auth/interfaces/auth_notifier_controlle
 import 'package:construculator/libraries/auth/interfaces/auth_repository.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_notifier.dart';
 import 'package:construculator/libraries/auth/testing/fake_auth_repository.dart';
+import 'package:construculator/libraries/config/env_constants.dart';
+import 'package:construculator/libraries/config/interfaces/env_loader.dart';
 import 'package:construculator/libraries/config/testing/fake_app_config.dart';
 import 'package:construculator/libraries/config/testing/fake_env_loader.dart';
+import 'package:construculator/libraries/consent/domain/repositories/consent_repository.dart';
+import 'package:construculator/libraries/consent/domain/usecases/check_consent_status_usecase.dart';
+import 'package:construculator/libraries/consent/domain/usecases/record_consent_usecase.dart';
+import 'package:construculator/libraries/consent/testing/fake_consent_repository.dart';
 import 'package:construculator/libraries/powersync/testing/fake_powersync_database.dart';
 import 'package:construculator/libraries/router/testing/router_test_module.dart';
 import 'package:construculator/libraries/sentry/fake_sentry_wrapper.dart';
@@ -51,7 +57,27 @@ class AuthTestModule extends Module {
   @override
   List<Module> get imports => [
     ClockTestModule(),
-    AuthLibraryModule(appBootstrap),
+    AuthLibraryModule(
+      AppBootstrap(
+        // Defaults to 'on' here so existing signup-consent tests exercise
+        // _recordSignupConsent the way they did before that call was gated
+        // -- a test that is specifically about the flag being off grabs
+        // Modular.get<EnvLoader>() and overrides it. Pairs with
+        // persistenceReady: true on the bloc bind below; the flag alone
+        // cannot reach that code path any more.
+        envLoader: FakeEnvLoader()..setEnvVar(consentGateEnabledKey, 'true'),
+        config: FakeAppConfig(),
+        supabaseWrapper: FakeSupabaseWrapper(clock: FakeClockImpl()),
+        sentryWrapper: FakeSentryWrapper(),
+        // Shared with the outer appBootstrap, not fresh fakes: AuthManagerImpl
+        // is built from this bootstrap, and tests observe events and PowerSync
+        // state through the outer instances via Modular.get.
+        analyticsRepository: appBootstrap.analyticsRepository,
+        powerSyncDatabase: appBootstrap.powerSyncDatabase,
+        featureFlagRepository: appBootstrap.featureFlagRepository,
+        currentScreenTracker: appBootstrap.currentScreenTracker,
+      ),
+    ),
     RouterTestModule(),
   ];
 
@@ -71,6 +97,13 @@ class AuthTestModule extends Module {
     );
     i.add<CreateAccountUseCase>(() => CreateAccountUseCase(i(), i()));
     i.add<SendOtpUseCase>(() => SendOtpUseCase(i()));
+
+    // Signup records an initial acceptance, so the consent path has to be
+    // resolvable here. Faked at the repository because it belongs to another
+    // library — tests drive it via Modular.get<ConsentRepository>().
+    i.addSingleton<ConsentRepository>(FakeConsentRepository.new);
+    i.add<CheckConsentStatusUseCase>(() => CheckConsentStatusUseCase(i()));
+    i.add<RecordConsentUseCase>(() => RecordConsentUseCase(i()));
     i.add<VerifyOtpUseCase>(() => VerifyOtpUseCase(i()));
     i.add<LoginUseCase>(() => LoginUseCase(i()));
     i.add<SetNewPasswordUseCase>(() => SetNewPasswordUseCase(i()));
@@ -89,6 +122,13 @@ class AuthTestModule extends Module {
         getProfessionalRolesUseCase: i(),
         sendOtpUseCase: i(),
         analyticsRepository: appBootstrap.analyticsRepository,
+        checkConsentStatusUseCase: i(),
+        recordConsentUseCase: i(),
+        envLoader: Modular.get<EnvLoader>(),
+        // Stands in for CA-971 having landed, so the recording tests keep
+        // exercising the real write path while consentPersistenceReady is
+        // false. The real AuthModule passes nothing and gets the block.
+        persistenceReady: true,
       ),
     );
     i.add<LoginWithEmailBloc>(

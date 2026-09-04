@@ -29,7 +29,7 @@
         </regex>
 
         <!-- RULE 3: Skip the documentUrl guard -->
-        <regex pattern="_ when !_isPresentableUrl\(documentUrl\) =&gt;" dotAll="true" id="consent_version_dto.from_json.skip_document_url_guard">
+        <regex pattern="_ when !_isHttpUrl\(documentUrl\) =&gt;" dotAll="true" id="consent_version_dto.from_json.skip_document_url_guard">
             <mutation text="_ when false =&gt;"/>
         </regex>
 
@@ -50,18 +50,18 @@
             <mutation text="final String s =&gt; null,"/>
         </regex>
 
-        <!-- RULE 7: _isPresentableUrl accepts a non-String or empty value -->
-        <regex pattern="if \(value is! String \|\| value\.isEmpty\) return false;" dotAll="true" id="consent_version_dto.is_presentable_url.skip_type_and_empty_check">
+        <!-- RULE 7: _isHttpUrl accepts a non-String or empty value -->
+        <regex pattern="if \(value is! String \|\| value\.isEmpty\) return false;" dotAll="true" id="consent_version_dto.is_http_url.skip_type_and_empty_check">
             <mutation text="if (false) return false;"/>
         </regex>
 
-        <!-- RULE 8: _isPresentableUrl accepts an unparseable Uri -->
-        <regex pattern="return uri != null &amp;&amp; \(uri\.isScheme\('https'\) \|\| uri\.isScheme\('http'\)\);" dotAll="true" id="consent_version_dto.is_presentable_url.skip_uri_check">
+        <!-- RULE 8: _isHttpUrl accepts an unparseable Uri -->
+        <regex pattern="return uri != null &amp;&amp; \(uri\.isScheme\('https'\) \|\| uri\.isScheme\('http'\)\);" dotAll="true" id="consent_version_dto.is_http_url.skip_uri_check">
             <mutation text="return uri.isScheme('https') || uri.isScheme('http');"/>
         </regex>
 
-        <!-- RULE 9: _isPresentableUrl accepts a non-web scheme -->
-        <regex pattern="uri\.isScheme\('https'\) \|\| uri\.isScheme\('http'\)" dotAll="true" id="consent_version_dto.is_presentable_url.drop_scheme_check">
+        <!-- RULE 9: _isHttpUrl accepts a non-web scheme -->
+        <regex pattern="uri\.isScheme\('https'\) \|\| uri\.isScheme\('http'\)" dotAll="true" id="consent_version_dto.is_http_url.drop_scheme_check">
             <mutation text="true"/>
         </regex>
     </rules>

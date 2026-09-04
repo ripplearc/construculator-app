@@ -2,12 +2,14 @@
 import 'package:construculator/app/app_bootstrap.dart';
 import 'package:construculator/app/shell/shell_module.dart';
 import 'package:construculator/features/auth/auth_module.dart';
+import 'package:construculator/features/consent/consent_module.dart';
 import 'package:construculator/features/project/project_module.dart';
 import 'package:construculator/libraries/analytics/analytics_module.dart';
 import 'package:construculator/libraries/auth/auth_library_module.dart';
 import 'package:construculator/libraries/config/config_module.dart';
 import 'package:construculator/libraries/powersync/powersync_module.dart';
 import 'package:construculator/libraries/router/router_module.dart';
+import 'package:construculator/libraries/router/routes/consent_routes.dart';
 import 'package:construculator/libraries/supabase/supabase_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
@@ -29,6 +31,7 @@ class AppModule extends Module {
   @override
   void routes(RouteManager r) {
     r.module('/auth', module: AuthModule(appBootstrap));
+    r.module(consentBaseRoute, module: ConsentModule(appBootstrap));
     r.module('/', module: ShellModule(appBootstrap));
   }
 }

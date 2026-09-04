@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.0">
+    <!-- CONSENT GATE READINESS MUTATION TESTING -->
+    <!-- Targets: consentGateEnabled — the compile-time block standing between
+         CONSENT_GATE_ENABLED and a live consent gate. Every mutation here is
+         a way the block could be weakened into a plain flag read, which is
+         exactly the state B1 on #551 was raised against.
+
+         Not targeted: the `&&` joining durableLocalConsentStoreLanded and
+         remoteConsentWritePathLanded. Both consts are false today, so `||`
+         yields the same value and no test can kill it. That mutation becomes
+         killable when CA-971 flips one half; it is not a coverage hole. -->
+
+    <files>
+        <file>lib/libraries/consent/consent_gate_readiness.dart</file>
+    </files>
+
+    <rules>
+        <!-- RULE 1: Drop the readiness half, leaving the flag alone in
+             control — the pre-fix behaviour B1 blocks on. -->
+        <regex pattern="persistenceReady &amp;&amp; envLoader" dotAll="true" id="consent_gate_readiness.drop_persistence_block">
+            <mutation text="envLoader"/>
+        </regex>
+
+        <!-- RULE 2: Weaken the conjunction, so either input alone opens the
+             gate. -->
+        <literal text="&amp;&amp; envLoader" id="consent_gate_readiness.and_to_or">
+            <mutation text="|| envLoader"/>
+        </literal>
+
+        <!-- RULE 3: Invert the flag comparison, so the shipped default
+             ('false', or unset) is what turns the gate on. -->
+        <regex pattern="envLoader\.get\(consentGateEnabledKey\) == 'true'" dotAll="true" id="consent_gate_readiness.invert_flag_comparison">
+            <mutation text="envLoader.get(consentGateEnabledKey) != 'true'"/>
+        </regex>
+
+        <!-- RULE 4: Accept any set value rather than exactly 'true', so a
+             typo in a deployment's .env enables the gate. -->
+        <regex pattern="envLoader\.get\(consentGateEnabledKey\) == 'true'" dotAll="true" id="consent_gate_readiness.accept_any_value">
+            <mutation text="envLoader.get(consentGateEnabledKey) != null"/>
+        </regex>
+
+        <!-- RULE 5: Default the seam open, so production callers taking the
+             default silently bypass the block. -->
+        <regex pattern="bool persistenceReady = consentPersistenceReady," dotAll="true" id="consent_gate_readiness.default_seam_open">
+            <mutation text="bool persistenceReady = true,"/>
+        </regex>
+    </rules>
+
+    <commands>
+        <command group="consent_gate_readiness" expected-return="0">flutter test test/libraries/consent/units/consent_gate_readiness_test.dart</command>
+    </commands>
+
+    <threshold failure="85">
+        <rating over="85" name="A"/>
+        <rating over="75" name="B"/>
+        <rating over="65" name="C"/>
+        <rating over="55" name="D"/>
+        <rating over="35" name="E"/>
+        <rating over="0" name="F"/>
+    </threshold>
+</mutations>

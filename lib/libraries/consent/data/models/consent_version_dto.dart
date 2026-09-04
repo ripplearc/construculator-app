@@ -61,8 +61,7 @@ class ConsentVersionDto extends Equatable {
       _ when consentType == null => DatabaseConstants.consentTypeColumn,
       // Zero mirrors the backend's check (version > 0); see the class doc.
       _ when version == null || version <= 0 => DatabaseConstants.versionColumn,
-      _ when !_isPresentableUrl(documentUrl) =>
-        DatabaseConstants.documentUrlColumn,
+      _ when !_isHttpUrl(documentUrl) => DatabaseConstants.documentUrlColumn,
       _ when id is! String => DatabaseConstants.idColumn,
       _ => null,
     };
@@ -106,7 +105,9 @@ class ConsentVersionDto extends Equatable {
         _ => null,
       };
 
-  static bool _isPresentableUrl(Object? value) {
+  // The consent page has no back affordance, so an unreadable link (e.g.
+  // 'n/a') must be caught here rather than failing later at tap time.
+  static bool _isHttpUrl(Object? value) {
     if (value is! String || value.isEmpty) return false;
     final uri = Uri.tryParse(value);
     return uri != null && (uri.isScheme('https') || uri.isScheme('http'));
