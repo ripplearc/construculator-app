@@ -29,15 +29,73 @@ class _CalculatorPageState extends State<CalculatorPage> {
     return groups;
   }
 
-  // TODO(CA-898): KeyType.label doubles as BLoC domain identifier and display
-  // string, blocking localization. Requires CoreUI to add a separate `id` field
-  // so `onKeyTapped` passes key.id while displayLabel comes from context.l10n.
+  static const String _basicGeometryId = 'Basic Geometry';
+  static const String _materialsId = 'Materials';
+  static const String _trigonometryId = 'Trigonometry';
+
+  String _displayLabelFor(AppLocalizations l10n, String id) => switch (id) {
+    'Width' => l10n.calculatorKeyWidth,
+    'Length' => l10n.calculatorKeyLength,
+    'Height' => l10n.calculatorKeyHeight,
+    'Pitch' => l10n.calculatorKeyPitch,
+    'Circle' => l10n.calculatorKeyCircle,
+    'Rise' => l10n.calculatorKeyRise,
+    'Run' => l10n.calculatorKeyRun,
+    'Radius' => l10n.calculatorKeyRadius,
+    'Lbs' => l10n.calculatorKeyLbs,
+    'Kg' => l10n.calculatorKeyKg,
+    'Tons' => l10n.calculatorKeyTons,
+    'Drywall' => l10n.calculatorKeyDrywall,
+    'Fence' => l10n.calculatorKeyFence,
+    'SIN' => l10n.calculatorKeySin,
+    'COS' => l10n.calculatorKeyCos,
+    'TAN' => l10n.calculatorKeyTan,
+    'Posts' => l10n.calculatorResultPosts,
+    _ => _untranslated(id),
+  };
+
+  String _untranslated(String id) {
+    assert(false, 'No localized label for calculator id "$id"');
+    return id;
+  }
+
+  List<CoreCalculatorChip> _localizeChips(
+    AppLocalizations l10n,
+    List<CoreCalculatorChip> chips,
+  ) {
+    return [
+      for (final chip in chips)
+        CoreCalculatorChip(
+          key: chip.key,
+          type: chip.type,
+          label: switch (chip.label) {
+            final label? => _displayLabelFor(l10n, label),
+            null => null,
+          },
+          value: chip.value,
+          factor: chip.factor,
+          onTap: chip.onTap,
+        ),
+    ];
+  }
+
+  KeyType _key({
+    required String id,
+    required String groupId,
+    required AppLocalizations l10n,
+  }) => KeyType(id: id, groupName: groupId, label: _displayLabelFor(l10n, id));
+
   List<FunctionGroup> _buildGroups(AppLocalizations l10n) {
     final basicGeometryGroup = GroupNameType(
+      id: _basicGeometryId,
       label: l10n.calculatorGroupBasicGeometry,
     );
-    final materialsGroup = GroupNameType(label: l10n.calculatorGroupMaterials);
+    final materialsGroup = GroupNameType(
+      id: _materialsId,
+      label: l10n.calculatorGroupMaterials,
+    );
     final trigonometryGroup = GroupNameType(
+      id: _trigonometryId,
       label: l10n.calculatorGroupTrigonometry,
     );
 
@@ -45,32 +103,31 @@ class _CalculatorPageState extends State<CalculatorPage> {
       FunctionGroup(
         name: basicGeometryGroup,
         keys: [
-          KeyType(groupName: 'Basic Geometry', label: 'Width'),
-          KeyType(groupName: 'Basic Geometry', label: 'Length'),
-          KeyType(groupName: 'Basic Geometry', label: 'Height'),
-          KeyType(groupName: 'Basic Geometry', label: 'Pitch'),
-          KeyType(groupName: 'Basic Geometry', label: 'Circle'),
-          KeyType(groupName: 'Basic Geometry', label: 'Rise'),
-          KeyType(groupName: 'Basic Geometry', label: 'Run'),
-          KeyType(groupName: 'Basic Geometry', label: 'Radius'),
+          for (final id in const [
+            'Width',
+            'Length',
+            'Height',
+            'Pitch',
+            'Circle',
+            'Rise',
+            'Run',
+            'Radius',
+          ])
+            _key(id: id, groupId: _basicGeometryId, l10n: l10n),
         ],
       ),
       FunctionGroup(
         name: materialsGroup,
         keys: [
-          KeyType(groupName: 'Materials', label: 'Lbs'),
-          KeyType(groupName: 'Materials', label: 'Kg'),
-          KeyType(groupName: 'Materials', label: 'Tons'),
-          KeyType(groupName: 'Materials', label: 'Drywall'),
-          KeyType(groupName: 'Materials', label: 'Fence'),
+          for (final id in const ['Lbs', 'Kg', 'Tons', 'Drywall', 'Fence'])
+            _key(id: id, groupId: _materialsId, l10n: l10n),
         ],
       ),
       FunctionGroup(
         name: trigonometryGroup,
         keys: [
-          KeyType(groupName: 'Trigonometry', label: 'SIN'),
-          KeyType(groupName: 'Trigonometry', label: 'COS'),
-          KeyType(groupName: 'Trigonometry', label: 'TAN'),
+          for (final id in const ['SIN', 'COS', 'TAN'])
+            _key(id: id, groupId: _trigonometryId, l10n: l10n),
         ],
       ),
     ];
@@ -79,6 +136,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
   @override
   Widget build(BuildContext context) {
     final colors = context.colorTheme;
+    final l10n = context.l10n;
     final groups = _groupsFor(context);
     final Map<GroupNameType, Color> groupAccentColors = {
       groups[0].name: colors.keyboardFunctions,
@@ -103,16 +161,21 @@ class _CalculatorPageState extends State<CalculatorPage> {
                           ? const NeverScrollableScrollPhysics()
                           : const AlwaysScrollableScrollPhysics(),
                       child: CoreDisplayArea(
-                        label: state.resultLabel ?? state.activeInputLabel,
+                        label: switch (state.resultLabel ??
+                            state.activeInputLabel) {
+                          final id? => _displayLabelFor(l10n, id),
+                          null => null,
+                        },
                         value: state.resultValue ?? state.currentInputValue,
                         isTyping: state.isTyping,
-                        closeSemanticLabel: context.l10n.closeButton,
-                        chipsList: state.chipsList,
+                        closeSemanticLabel: l10n.closeButton,
+                        historyPlaceholder: l10n.calculatorHistoryPlaceholder,
+                        chipsList: _localizeChips(l10n, state.chipsList),
                         // TODO(CA-965): previousSessions is unwired pending
                         // research into archiving trigger, data model, and
                         // persistence approach for calculation history.
                         dependentKeyLabel: state.dependentKeyLabel == 'oc'
-                            ? context.l10n.calculatorOcLabel
+                            ? l10n.calculatorOcLabel
                             : state.dependentKeyLabel,
                         dependentKeyValue: state.dependentKeyValue,
                         onPressedDependentKey: () {},
@@ -173,7 +236,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
                         bloc.add(CalculatorGroupSelected(index));
                       },
                       onKeyTapped: (key) =>
-                          bloc.add(CalculatorKeySelected(key.label)),
+                          bloc.add(CalculatorKeySelected(key.id)),
                       onUnitSystemChanged: (unitSystem) =>
                           bloc.add(CalculatorUnitSystemChanged(unitSystem)),
                     ),

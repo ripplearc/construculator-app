@@ -11,13 +11,14 @@ sealed class CalculatorEvent extends Equatable {
 
 /// A calculator key (e.g. a labeled input) was selected.
 class CalculatorKeySelected extends CalculatorEvent {
-  /// The label of the selected key.
-  final String label;
+  /// The stable, locale-independent id of the selected key — never its
+  /// displayed label, which changes with locale.
+  final String id;
 
-  const CalculatorKeySelected(this.label);
+  const CalculatorKeySelected(this.id);
 
   @override
-  List<Object?> get props => [label];
+  List<Object?> get props => [id];
 }
 
 /// A digit key was pressed on the calculator keypad.
