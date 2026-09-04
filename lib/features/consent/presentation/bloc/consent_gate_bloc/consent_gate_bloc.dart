@@ -23,14 +23,15 @@ part 'consent_gate_state.dart';
 /// The BLoC decides nothing about consent itself. It maps a [ConsentStatus]
 /// onto what the page shows; the statuses come from the repository, which owns
 /// the comparison and every failure branch around it.
+///
+/// The gate only ever governs terms & privacy. Analytics consent is read
+/// elsewhere and never blocks the app.
 class ConsentGateBloc extends Bloc<ConsentGateEvent, ConsentGateState> {
   final CheckConsentStatusUseCase _checkConsentStatusUseCase;
   final WatchConsentStatusUseCase _watchConsentStatusUseCase;
   final VerifyConsentStatusUseCase _verifyConsentStatusUseCase;
   final RecordConsentUseCase _recordConsentUseCase;
 
-  /// The gate only ever governs terms & privacy. Analytics consent is read
-  /// elsewhere and never blocks the app.
   static const _params = ConsentStatusParams(
     consentType: ConsentType.termsAndPrivacy,
   );
@@ -58,7 +59,10 @@ class ConsentGateBloc extends Bloc<ConsentGateEvent, ConsentGateState> {
 
     // Subscribed after the first resolution so a version published mid-session
     // re-gates the user without a restart. Distinct because an unrelated write
-    // to the consent history should not churn the UI.
+    // to the consent history should not churn the UI. Deliberately
+    // once-per-bloc: a retry re-adds ConsentGateStarted without tearing this
+    // down, since watchConsentStatus's handleError resolves a failed tick to
+    // ConsentIndeterminate rather than closing the stream.
     _subscription ??= _watchConsentStatusUseCase(
       _params,
     ).distinct().listen((status) => add(_ConsentGateStatusChanged(status)));
@@ -88,6 +92,13 @@ class ConsentGateBloc extends Bloc<ConsentGateEvent, ConsentGateState> {
     // this specific await -- i.e. a concurrent _onAccepted -- should block
     // it, which is what an equality check against the snapshot captures and
     // a type check on the current state cannot.
+    //
+    // Known limitation: a watch-stream tick landing in this same window also
+    // changes state and trips this guard, so a genuine verify result can be
+    // dropped alongside a stale one. Narrow in practice -- watch ticks only
+    // fire on a real local row change -- and scoping the guard to
+    // accept-completions specifically would need a generation counter rather
+    // than a state snapshot.
     if (state != beforeVerify) return;
     emit(_stateFor(verified));
   }
@@ -96,9 +107,13 @@ class ConsentGateBloc extends Bloc<ConsentGateEvent, ConsentGateState> {
     _ConsentGateStatusChanged event,
     Emitter<ConsentGateState> emit,
   ) {
-    // A write in flight must not be clobbered by a stream tick, or the button
-    // would flicker back out of its loading state mid-submit.
-    if (state is ConsentGateSubmitting) return;
+    // A write in flight, or one that just failed, must not be clobbered by a
+    // stream tick: Submitting guards the button from flickering out of its
+    // loading state mid-submit, and SubmitFailed guards the inline error and
+    // retry affordance from being silently swapped for a generic status.
+    if (state case ConsentGateSubmitting() || ConsentGateSubmitFailed()) {
+      return;
+    }
 
     emit(_stateFor(event.status));
   }
@@ -128,11 +143,10 @@ class ConsentGateBloc extends Bloc<ConsentGateEvent, ConsentGateState> {
     );
   }
 
-  Future<void> _onRetryRequested(
-    ConsentGateRetryRequested event,
+  void _onRetryRequested(
+    ConsentGateRetryRequested _,
     Emitter<ConsentGateState> emit,
-  ) async {
-    emit(const ConsentGateChecking());
+  ) {
     add(const ConsentGateStarted());
   }
 
