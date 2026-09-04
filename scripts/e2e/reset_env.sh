@@ -41,6 +41,15 @@ e2e_powersync_compose down --volumes
 e2e_log "Resetting database"
 (cd "$E2E_BACKEND_DIR" && e2e_supabase db reset)
 
+# `supabase db reset` recycles the stack's own containers (auth, Mailpit,
+# Kong, ...), not just the database rows — unlike start_env.sh's first boot,
+# nothing here previously re-confirmed they came back up before handing
+# control to the next attempt. A CUJ that registers a new account right
+# after a reset sends its OTP through this same path, so a stack that is
+# still settling can silently miss it.
+e2e_wait_for_http "http://127.0.0.1:${E2E_SUPABASE_API_PORT}/auth/v1/health" "Supabase auth"
+e2e_wait_for_http "http://127.0.0.1:${E2E_MAILPIT_PORT}/api/v1/messages" "Mailpit"
+
 e2e_log "Starting PowerSync"
 e2e_powersync_compose up -d
 
