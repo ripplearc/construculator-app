@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:patrol/patrol.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../utils/app_runner.dart';
+import '../../utils/success_or_error.dart';
 import '../../utils/test_config.dart';
 
 void main() {
@@ -21,7 +21,9 @@ void main() {
 
       // The success modal is a package-owned bottom sheet whose button carries
       // no key, so it is anchored to the sheet rather than to screen position.
-      await $(BottomSheet).$(CoreButton).tap();
+      // Fails immediately on an error toast instead of waiting out the full
+      // timeout for a success sheet a real error means will never appear.
+      await tapSuccessSheetOrFailFast($);
 
       await $(const Key('app_shell_bottom_nav_bar')).waitUntilVisible();
     },

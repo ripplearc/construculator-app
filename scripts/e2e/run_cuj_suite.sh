@@ -16,8 +16,14 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 scripts/e2e/adb_reverse.sh
 
-adb shell screenrecord --time-limit 180 /sdcard/e2e.mp4 &
-recorder_pid=$!
+# Patrol's own --record-video starts a fresh `adb shell screenrecord` per Dart
+# test (Android's screenrecord caps a single recording at 180s), rather than
+# one recording spanning the whole script the way a hand-rolled `adb shell
+# screenrecord` at the top of this file would. Build+install alone has taken
+# up to ~213s in CI, which would exhaust a single 180s recording before the
+# app is even on screen -- this is why the previous approach only ever
+# captured a stuck home screen.
+VIDEO_DIR="build/e2e-videos"
 
 max_attempts=2
 attempt=1
@@ -28,11 +34,18 @@ while [ "$attempt" -le "$max_attempts" ]; do
   # collides on users_phone_key.
   scripts/e2e/reset_env.sh --yes
 
+  # Discard the previous attempt's videos so only the kept (last) attempt's
+  # recordings survive, matching Gradle's own results-dir overwrite behaviour.
+  rm -rf "$VIDEO_DIR"
+  mkdir -p "$VIDEO_DIR"
+
   if patrol test \
     --target integration_test/patrol_test.dart \
     --flavor fishfood \
     --dart-define=ENVIRONMENT=dev \
-    --dart-define=E2E_MAILPIT_URL="http://localhost:${E2E_MAILPIT_PORT}"; then
+    --dart-define=E2E_MAILPIT_URL="http://localhost:${E2E_MAILPIT_PORT}" \
+    --record-video \
+    --video-output-dir "$VIDEO_DIR"; then
     success=1
     break
   fi
@@ -40,10 +53,21 @@ while [ "$attempt" -le "$max_attempts" ]; do
   attempt=$((attempt + 1))
 done
 
-kill "$recorder_pid" 2>/dev/null || true
-sleep 1
-adb pull /sdcard/e2e.mp4 e2e-recording.mp4 || true
-adb exec-out screencap -p > e2e-final-state.png || true
 adb logcat -d > e2e-logcat.txt || true
+
+# A screenshot of each test's last recorded frame -- the state closest to
+# wherever it stopped -- only when the suite is about to be reported as
+# failed. A passing run has no "point of failure" to capture.
+if [ "$success" -ne 1 ]; then
+  if command -v ffmpeg >/dev/null 2>&1; then
+    for video in "$VIDEO_DIR"/*.mp4; do
+      [ -e "$video" ] || continue
+      ffmpeg -y -sseof -1 -i "$video" -update 1 -q:v 2 "${video%.mp4}.png" \
+        2>/dev/null || e2e_warn "could not extract a screenshot from $video"
+    done
+  else
+    e2e_warn "ffmpeg not found; skipping failure screenshots"
+  fi
+fi
 
 [ "$success" -eq 1 ]

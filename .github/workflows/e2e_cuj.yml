@@ -134,9 +134,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cuj-e2e-failure-artifacts
+          # build/e2e-videos holds one video per CUJ (Patrol's --record-video,
+          # scoped to each test's own execution) plus a screenshot extracted
+          # from each video's last frame — see run_cuj_suite.sh.
           path: |
-            e2e-recording.mp4
-            e2e-final-state.png
+            build/e2e-videos/*.mp4
+            build/e2e-videos/*.png
             e2e-logcat.txt
           if-no-files-found: warn
           retention-days: 30
