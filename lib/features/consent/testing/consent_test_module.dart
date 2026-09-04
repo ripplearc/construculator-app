@@ -22,7 +22,16 @@ class ConsentTestModule extends Module {
 
   @override
   void binds(Injector i) {
-    i.addSingleton<ConsentRepository>(FakeConsentRepository.new);
+    // Mirrors ConsentLibraryModule's BindConfig, so the dispose path
+    // production relies on is exercised somewhere rather than only declared.
+    // FakeConsentRepository.dispose() records the call rather than closing a
+    // controller, which is what makes it assertable: a test can check
+    // disposeCallCount after Modular.destroy and catch a production bind that
+    // drops the config.
+    i.addSingleton<ConsentRepository>(
+      FakeConsentRepository.new,
+      config: BindConfig(onDispose: (repository) => repository.dispose()),
+    );
 
     i.add<CheckConsentStatusUseCase>(() => CheckConsentStatusUseCase(i()));
     i.add<WatchConsentStatusUseCase>(() => WatchConsentStatusUseCase(i()));

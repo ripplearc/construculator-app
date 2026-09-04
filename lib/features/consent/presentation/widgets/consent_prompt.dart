@@ -19,6 +19,17 @@ class ConsentPrompt extends StatelessWidget {
   /// Opens a consent document externally.
   final void Function(String url) onOpenDocument;
 
+  /// Whether the terms/privacy links can actually open a document.
+  ///
+  /// [onOpenDocument] is currently a no-op everywhere it's wired (no
+  /// url_launcher yet, matching the existing signup terms links) -- but this
+  /// screen, unlike signup, cannot be dismissed. A dead link a user cannot
+  /// tell is dead is worse than no link, so when this is false the links are
+  /// hidden rather than rendered inert. Defaults to true so a future caller
+  /// that genuinely wires a working launcher doesn't have to remember to
+  /// flip it.
+  final bool documentLinksAvailable;
+
   /// Whether an acceptance is in flight; replaces the action with a spinner.
   final bool isSubmitting;
 
@@ -30,6 +41,7 @@ class ConsentPrompt extends StatelessWidget {
     super.key,
     required this.version,
     required this.onOpenDocument,
+    this.documentLinksAvailable = true,
     this.isSubmitting = false,
     this.hasSubmitFailed = false,
   });
@@ -70,13 +82,15 @@ class ConsentPrompt extends StatelessWidget {
                   color: colors.textHeadline,
                 ),
               ),
-              const SizedBox(height: CoreSpacing.space6),
-              ConsentDocumentLinks(
-                termsLabel: l10n.consentGateTermsLink,
-                privacyLabel: l10n.consentGatePrivacyLink,
-                onTermsPressed: () => onOpenDocument(version.documentUrl),
-                onPrivacyPressed: () => onOpenDocument(version.documentUrl),
-              ),
+              if (documentLinksAvailable) ...[
+                const SizedBox(height: CoreSpacing.space6),
+                ConsentDocumentLinks(
+                  termsLabel: l10n.consentGateTermsLink,
+                  privacyLabel: l10n.consentGatePrivacyLink,
+                  onTermsPressed: () => onOpenDocument(version.documentUrl),
+                  onPrivacyPressed: () => onOpenDocument(version.documentUrl),
+                ),
+              ],
               const SizedBox(height: CoreSpacing.space8),
               if (isSubmitting)
                 const Center(
