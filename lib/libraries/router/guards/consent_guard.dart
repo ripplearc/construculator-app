@@ -16,7 +16,8 @@ import 'package:flutter_modular/flutter_modular.dart';
 /// before the claim was provisioned, or any refresh race between
 /// authentication and claim propagation, leaves an authenticated session
 /// with no internal user id. [ConsentRepository.getCachedConsentStatus]
-/// answers that case with the synthetic [ConsentSatisfied.noUserVersion],
+/// answers that case with [ConsentSatisfied] carrying the synthetic
+/// [ConsentRepository.noUserVersion],
 /// which this guard must not read as an acceptance -- see the explicit check
 /// below.
 ///

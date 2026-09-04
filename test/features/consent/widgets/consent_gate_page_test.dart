@@ -226,9 +226,7 @@ void main() {
       await tester.pumpAndSettle();
 
       repository.resolveTo(const ConsentSatisfied(2));
-      await tester.tap(
-        find.byKey(const Key('consentUnavailableRetryButton')),
-      );
+      await tester.tap(find.byKey(const Key('consentUnavailableRetryButton')));
       await tester.pumpAndSettle();
 
       expect(router.navigationHistory.map((c) => c.route), contains(shellRoute));

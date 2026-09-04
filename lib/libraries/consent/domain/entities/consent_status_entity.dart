@@ -65,10 +65,21 @@ sealed class ConsentStatus extends Equatable {
 class ConsentSatisfied extends ConsentStatus {
   /// The version the user has on file.
   ///
-  /// May be synthetic. When no version is published for a type there is no
-  /// requirement to meet, and `ConsentVerificationResolver` reports this state
-  /// carrying `0` rather than inventing a sixth state for "nothing to consent
-  /// to". Callers must not read that as a version the user actually accepted.
+  /// May be synthetic. `ConsentRepository.noUserVersion` (`0`) is what the
+  /// repository reports when it cannot identify the user at all, which is
+  /// neither an acceptance nor an error. Callers must not read it as a version
+  /// the user actually accepted.
+  ///
+  /// `ConsentGuard` tests for that exact value and blocks, and
+  /// `ConsentGateBloc._stateFor` mirrors it — so `0` now carries a decision,
+  /// not just a caveat. Nothing else may report this state carrying `0`:
+  /// `ConsentVerificationResolver` resolves "nothing published for this type"
+  /// to [ConsentIndeterminate] or [ConsentUnverified] for that reason, and a
+  /// future path that reused `0` for a different meaning would lock those
+  /// users out at the gate's retry screen.
+  /// TODO: https://ripplearc.youtrack.cloud/issue/CA-1025 - Give the sentinel
+  /// its own sealed state so gatesAccess carries the branch and the overload
+  /// goes away.
   final int acceptedVersion;
 
   const ConsentSatisfied(this.acceptedVersion);

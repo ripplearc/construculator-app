@@ -31,9 +31,6 @@ class ConsentLibraryModule extends Module {
   List<Module> get imports => [ClockModule(), SupabaseModule(appBootstrap)];
 
   @override
-  void routes(RouteManager r) {}
-
-  @override
   void exportedBinds(Injector i) => _registerDependencies(i);
 }
 

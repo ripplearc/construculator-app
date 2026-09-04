@@ -1,3 +1,9 @@
+// coverage:ignore-file
+// Top-level constants only, so the VM emits no coverable statements and the
+// file never appears in lcov.info -- matching calculator_routes.dart and
+// project_search_routes.dart. The values themselves are asserted in
+// consent_module_test.dart against the routes actually registered.
+
 /// Base route segment for the consent feature module.
 const String consentBaseRoute = '/consent';
 
