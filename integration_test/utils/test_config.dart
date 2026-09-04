@@ -23,12 +23,13 @@ class TestConfig {
 
   /// Password of the seeded account used by CUJ-1 (login).
   ///
-  /// The seeder creates the `public.users` row but not the matching
-  /// Supabase Auth identity, so this password must currently be set by hand
-  /// when linking the account. Tracked as a Phase 1 gap in the strategy doc.
+  /// Must match the password `construculator-backend`'s
+  /// `supabase/seeders/sample_data/100_auth_users.sql` sets on the GoTrue
+  /// account backing `seeder@example.com`. Only ever valid against a local
+  /// Docker/CI stack started from that repository.
   static const String loginPassword = String.fromEnvironment(
     'E2E_LOGIN_PASSWORD',
-    defaultValue: 'Mypass@1',
+    defaultValue: 'e2e-local-only-password',
   );
 
   /// Base URL of the Mailpit mail catcher started by `scripts/e2e/start_env.sh`

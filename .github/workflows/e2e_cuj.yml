@@ -84,6 +84,10 @@ jobs:
 
       - name: Run CUJ suite on Android emulator
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          # run_cuj_suite.sh resets the seeded DB between attempts via
+          # scripts/e2e/reset_env.sh, which needs the backend checkout path.
+          E2E_BACKEND_DIR: ${{ github.workspace }}/construculator-backend
         with:
           api-level: 34
           target: google_apis

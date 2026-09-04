@@ -23,6 +23,11 @@ max_attempts=2
 attempt=1
 success=0
 while [ "$attempt" -le "$max_attempts" ]; do
+  # Each attempt starts from the seeded database. Registration (CUJ-2) writes a
+  # users row with a UNIQUE phone, so a second attempt against a dirty database
+  # collides on users_phone_key.
+  scripts/e2e/reset_env.sh --yes
+
   if patrol test \
     --target integration_test/patrol_test.dart \
     --flavor fishfood \
