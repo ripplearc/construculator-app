@@ -50,11 +50,21 @@ void main() {
     test('is false for every non-"true" flag value, ready or not', () {
       // Unset is the shipped default; 'false' is what .env.template carries;
       // 'TRUE' proves the comparison is not case-insensitive by accident.
-      for (final flag in [null, 'false', 'TRUE', '1', '']) {
+      // Paired with the label the failure message needs, rather than deriving
+      // one from a nullable at the call site: the custom linter forbids `??`
+      // in tests and the analyzer forbids the `?:` that replaces it.
+      const flagCases = <(String?, String)>[
+        (null, '<unset>'),
+        ('false', 'false'),
+        ('TRUE', 'TRUE'),
+        ('1', '1'),
+        ('', '<empty>'),
+      ];
+      for (final (flag, label) in flagCases) {
         expect(
           consentGateEnabled(envWith(flag), persistenceReady: true),
           isFalse,
-          reason: 'flag ${flag ?? '<unset>'} must not enable the gate',
+          reason: 'flag $label must not enable the gate',
         );
         expect(consentGateEnabled(envWith(flag)), isFalse);
       }
