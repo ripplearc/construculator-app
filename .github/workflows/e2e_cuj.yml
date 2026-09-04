@@ -62,6 +62,12 @@ jobs:
           dart pub global activate patrol_cli
           echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
 
+      # ffmpeg isn't on PATH inside android-emulator-runner's script step, even
+      # though it's normally preinstalled on this runner image. run_cuj_suite.sh
+      # uses it to pull a failure screenshot from each CUJ's recorded video.
+      - name: Install ffmpeg
+        run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
+
       # Required for reactivecircus/android-emulator-runner on GitHub-hosted
       # ubuntu-latest runners — see its README's "Running hardware accelerated
       # emulators on Linux runners" section.
