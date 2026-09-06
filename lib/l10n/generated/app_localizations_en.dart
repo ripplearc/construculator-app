@@ -1419,4 +1419,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get calculatorGroupTrigonometry => 'Trigonometry';
+
+  @override
+  String get calculatorHistoryPlaceholder => 'Here will show what you type';
+
+  @override
+  String get calculatorKeyWidth => 'Width';
+
+  @override
+  String get calculatorKeyLength => 'Length';
+
+  @override
+  String get calculatorKeyHeight => 'Height';
+
+  @override
+  String get calculatorKeyPitch => 'Pitch';
+
+  @override
+  String get calculatorKeyCircle => 'Circle';
+
+  @override
+  String get calculatorKeyRise => 'Rise';
+
+  @override
+  String get calculatorKeyRun => 'Run';
+
+  @override
+  String get calculatorKeyRadius => 'Radius';
+
+  @override
+  String get calculatorKeyLbs => 'Lbs';
+
+  @override
+  String get calculatorKeyKg => 'Kg';
+
+  @override
+  String get calculatorKeyTons => 'Tons';
+
+  @override
+  String get calculatorKeyDrywall => 'Drywall';
+
+  @override
+  String get calculatorKeyFence => 'Fence';
+
+  @override
+  String get calculatorKeySin => 'SIN';
+
+  @override
+  String get calculatorKeyCos => 'COS';
+
+  @override
+  String get calculatorKeyTan => 'TAN';
+
+  @override
+  String get calculatorResultPosts => 'Posts';
 }

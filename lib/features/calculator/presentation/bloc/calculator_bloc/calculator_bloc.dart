@@ -39,7 +39,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     CalculatorKeySelected event,
     Emitter<CalculatorState> emit,
   ) {
-    if (event.label == _fenceLabel) {
+    if (event.id == _fenceLabel) {
       final finalizedState = _finalizeCurrentInput(state);
       emit(_computeFence(finalizedState));
       return;
@@ -48,7 +48,7 @@ class CalculatorBloc extends Bloc<CalculatorEvent, CalculatorState> {
     final finalizedState = _finalizeCurrentInput(state);
 
     emit(finalizedState.copyWith(
-      activeInputLabel: () => event.label,
+      activeInputLabel: () => event.id,
       currentInputValue: '',
       currentNumericValue: '',
       isTyping: true,
