@@ -200,6 +200,34 @@ void main() {
         expect(fake.insertedRecords.single.version, 2);
       });
 
+      // Moved here from in_memory_local_consent_data_source_test when that
+      // store was deleted: the id assignment is now this class's own.
+      test('assigns an id and preserves the record', () async {
+        final dto = record(userId, type, 3, ConsentAction.accepted);
+
+        final stored = await fake.insertUserConsent(dto);
+
+        expect(stored.id, isNotNull);
+        expect(stored.userId, dto.userId);
+        expect(stored.consentType, dto.consentType);
+        expect(stored.version, dto.version);
+        expect(stored.action, dto.action);
+        expect(stored.recordedAt, dto.recordedAt);
+      });
+
+      // Module teardown disposes the store while a write may still be in
+      // flight; the notification has nowhere to go, but the write must not
+      // throw and the record must still be readable.
+      test('after dispose stores without throwing', () async {
+        await fake.dispose();
+
+        final stored = await fake.insertUserConsent(
+          record(userId, type, 7, ConsentAction.accepted),
+        );
+
+        expect(await fake.fetchLatestUserConsent(userId, type), stored);
+      });
+
       test('becomes visible to a subsequent fetchLatestUserConsent', () async {
         await fake.insertUserConsent(
           record(userId, type, 4, ConsentAction.accepted),
