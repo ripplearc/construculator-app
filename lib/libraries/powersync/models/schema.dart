@@ -60,6 +60,51 @@ const Schema schema = Schema([
     ],
   ),
 
+  // The full publication history, not just the version currently in force.
+  // The backend has a `current_consent_versions` view that resolves "in
+  // force", but a sync stream replicates a base table's WAL and a view has no
+  // replication identity to follow -- and the view's own predicate is
+  // `effective_from <= now()`, which no row change fires, so a version
+  // scheduled to go live next month would never enter the stream. That is why
+  // `effective_from` is synced: PowerSyncLocalConsentDataSource applies the
+  // view's two rules itself (effective_from in the past, highest version
+  // wins). Unindexed -- a handful of rows per consent type.
+  Table('consent_versions', [
+    Column.text('consent_type'),
+    Column.integer('version'),
+    Column.text('document_url'),
+    Column.text('effective_from'),
+    Column.text('published_at'),
+  ]),
+
+  Table(
+    'user_consents',
+    [
+      Column.text('user_id'),
+      Column.text('consent_type'),
+      Column.integer('version'),
+      Column.text('action'),
+      Column.text('recorded_at'),
+      Column.text('app_version'),
+      Column.text('platform'),
+    ],
+    indexes: [
+      // Equality on both columns, which is the whole of the only query the
+      // gate runs against this table. Deliberately two columns where the
+      // backend's `user_consents_user_type_recorded_idx` has three: the
+      // trailing `recorded_at DESC` earns its place there because Postgres
+      // sorts on that column, while here the newest row is picked in Dart
+      // rather than by SQL. A `recorded_at` synced from Postgres and one
+      // written locally need not be the same text format, and a lexicographic
+      // ORDER BY across the two would sort by which side wrote the row rather
+      // than by time -- see PowerSyncLocalConsentDataSource.
+      Index('by_user_type', [
+        IndexedColumn('user_id'),
+        IndexedColumn('consent_type'),
+      ]),
+    ],
+  ),
+
   // On-demand stream: call `db.syncStream('user_cost_estimates')` when the
   // user enters the cost estimation feature. Membership and the
   // `get_cost_estimations` permission are derived from the JWT server-side,
