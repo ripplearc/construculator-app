@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'trend_series.dart';
 
-/// How to pull one metric out of a `perf-run.json` record.
+// How to pull one metric out of a `perf-run.json` record.
 class _MetricDefinition {
   const _MetricDefinition(this.id, this.label, this.unit, this.path);
 
@@ -12,16 +12,16 @@ class _MetricDefinition {
   final String label;
   final String unit;
 
-  /// Dotted path into the run's `metrics` block.
+  // Dotted path into the run's `metrics` block.
   final String path;
 }
 
-/// The five metrics the system-health view is required to plot.
-///
-/// `ttid_ms` has no producer yet: CA-782 records startup from
-/// `timeToFirstFrameRasterizedMicros` as cold and warm start and emits no
-/// separate TTID field. It is declared here so the view renders its slot with
-/// an explicit empty state rather than silently showing four of five metrics.
+// The five metrics the system-health view is required to plot.
+//
+// `ttid_ms` has no producer yet: CA-782 records startup from
+// `timeToFirstFrameRasterizedMicros` as cold and warm start and emits no
+// separate TTID field. It is declared here so the view renders its slot with
+// an explicit empty state rather than silently showing four of five metrics.
 const List<_MetricDefinition> _systemHealthMetrics = <_MetricDefinition>[
   _MetricDefinition('cold_start_ms', 'Cold start', 'ms', 'cold_start_ms.median'),
   _MetricDefinition('ttid_ms', 'TTID', 'ms', 'ttid_ms.median'),
@@ -79,18 +79,18 @@ List<SystemHealthGroup> loadSystemHealth(Directory perfStore) {
   }).toList();
 }
 
-/// Resolves a dotted path inside a run's `metrics` block.
-///
-/// A metric block that reports `available: false` yields null: CA-782 writes
-/// that instead of a number when it could not recognise the upstream artifact,
-/// and plotting the absent value as anything would fabricate a data point.
+// Resolves a dotted path inside a run's `metrics` block.
 double? _metricValue(Map<String, Object?> run, String path) {
   Object? node = run['metrics'];
   for (final String segment in path.split('.')) {
-    if (node is! Map<String, Object?> || node['available'] == false) {
+    if (node is! Map<String, Object?>) return null;
+    node = node[segment];
+    // CA-782 writes `available: false` instead of a number when it could not
+    // recognise the upstream artifact. Plotting the absent value as anything
+    // would fabricate a data point, so the whole metric resolves to null.
+    if (node is Map<String, Object?> && node['available'] == false) {
       return null;
     }
-    node = node[segment];
   }
   return toDouble(node);
 }

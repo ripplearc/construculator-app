@@ -81,7 +81,7 @@ void main() {
 
     expect(valueOf(group, 'pass_rate'), 90.0);
     expect(valueOf(group, 'flake_rate'), 25.0);
-    expect(valueOf(group, 'duration_ms'), 20.0);
+    expect(valueOf(group, 'duration_s'), 20.0);
   });
 
   test('plots a run with no recorded rate as a gap', () {

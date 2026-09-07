@@ -73,7 +73,7 @@ List<E2eGroup> loadE2e(Directory e2eStore) {
         series('flake_rate', 'Flake rate', '%', (Map<String, Object?> run) {
           return _percent(run['flake_rate']);
         }),
-        series('duration_ms', 'Run duration', 's', (Map<String, Object?> run) {
+        series('duration_s', 'Run duration', 's', (Map<String, Object?> run) {
           final double? ms = toDouble(run['duration_ms']);
           return ms == null ? null : ms / 1000;
         }),
