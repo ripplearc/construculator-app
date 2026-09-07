@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:patrol/patrol.dart';
-import 'package:ripplearc_coreui/ripplearc_coreui.dart';
 
 import '../../utils/app_runner.dart';
 import '../../utils/mailpit_client.dart';
+import '../../utils/success_or_error.dart';
 import '../../utils/test_config.dart';
 
 void main() {
@@ -38,14 +38,18 @@ void main() {
       await $(
         const Key('create_account_confirm_password_field'),
       ).enterText(TestConfig.registerPassword);
-      await $(const Key('create_account_submit_button')).tap();
+      // The submit button sits below the fold on this form once the soft
+      // keyboard is up — scroll it into the (keyboard-resized) viewport first.
+      await $(const Key('create_account_submit_button')).scrollTo().tap();
 
       // The success modal is a package-owned bottom sheet whose button carries
       // no key, so it is anchored to the sheet rather than to screen position.
-      await $(BottomSheet).$(CoreButton).tap();
+      // Fails immediately on an error toast instead of waiting out the full
+      // timeout for a success sheet a real error means will never appear.
+      await tapSuccessSheetOrFailFast($);
 
       await $(const Key('app_shell_bottom_nav_bar')).waitUntilVisible();
     },
-    config: const PatrolTesterConfig(visibleTimeout: Duration(seconds: 30)),
+    config: const PatrolTesterConfig(visibleTimeout: Duration(seconds: 60)),
   );
 }

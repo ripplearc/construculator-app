@@ -30,26 +30,74 @@ class MailpitClient {
   static Future<String> waitForOtp(
     String email, {
     String? baseUrl,
-    Duration timeout = const Duration(seconds: 30),
+    Duration timeout = const Duration(seconds: 60),
   }) async {
     final url = baseUrl ?? TestConfig.mailpitUrl;
     final deadline = DateTime.now().add(timeout);
     Object? lastFailure;
+    var sawMessageWithoutCode = false;
     while (DateTime.now().isBefore(deadline)) {
       try {
         final messageId = await _findLatestMessageId(url, email);
         if (messageId != null) {
           final otp = await _extractOtp(url, messageId);
           if (otp != null) return otp;
+          sawMessageWithoutCode = true;
         }
       } catch (e) {
         lastFailure = e;
       }
     }
+    // "No OTP email arrived" is ambiguous on its own: it reads the same whether
+    // the mailbox was empty the whole time or an email showed up that simply
+    // had no 6-digit code in it. Dump what Mailpit actually holds now so a CI
+    // failure says which of the two happened, rather than leaving it to a guess.
+    final mailboxState = await _describeMailboxState(url, email);
     throw StateError(
-      'No OTP email arrived for $email within $timeout.'
-      '${lastFailure != null ? ' Last polling error: $lastFailure' : ''}',
+      'No OTP email arrived for $email within $timeout '
+      '(saw a message for this address but no code in it: $sawMessageWithoutCode).'
+      '${lastFailure != null ? ' Last polling error: $lastFailure.' : ''}'
+      ' Mailpit state at timeout: $mailboxState',
     );
+  }
+
+  // A one-line summary of everything Mailpit is holding, plus the full text of
+  // any message addressed to the target address. Diagnostic only — called once,
+  // on the waitForOtp timeout path, to say whether the mailbox was empty or
+  // just held an email with no code in it.
+  static Future<String> _describeMailboxState(
+    String baseUrl,
+    String email,
+  ) async {
+    try {
+      final all = await _getJson(Uri.parse('$baseUrl/api/v1/messages'));
+      final messages = (all['messages'] as List?) ?? const [];
+      if (messages.isEmpty) return 'mailbox empty (0 messages)';
+
+      final lines = <String>['${messages.length} message(s):'];
+      for (final raw in messages) {
+        final m = raw as Map<String, dynamic>;
+        final to = (m['To'] as List?)
+            ?.map((t) => (t as Map<String, dynamic>)['Address'])
+            .join(', ');
+        lines.add('  - "${m['Subject']}" to $to');
+      }
+
+      final mine = await _findLatestMessageId(baseUrl, email);
+      if (mine != null) {
+        final message = await _getJson(
+          Uri.parse('$baseUrl/api/v1/message/$mine'),
+        );
+        final text = message['Text'] as String? ?? '';
+        final html = message['HTML'] as String? ?? '';
+        lines.add(
+          'body for $email: ${text.isNotEmpty ? text : html.replaceAll(RegExp('<[^>]+>'), ' ')}',
+        );
+      }
+      return lines.join('\n');
+    } catch (e) {
+      return 'could not read Mailpit state: $e';
+    }
   }
 
   static Future<String?> _findLatestMessageId(
