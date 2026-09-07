@@ -92,7 +92,7 @@ String _chartGrid(List<MetricSeries> metrics) {
   return '<div class="grid">$cards</div>';
 }
 
-/// Shows the most recent recorded value as the card's headline figure.
+// Shows the most recent recorded value as the card's headline figure.
 String _latest(MetricSeries metric) {
   for (final SeriesPoint point in metric.points.reversed) {
     final double? value = point.value;
@@ -129,10 +129,9 @@ String _cujTable(List<CujSummary> cujs) {
       '<tbody>$rows</tbody></table></div>';
 }
 
-/// Renders a status as a coloured dot beside its name.
-///
-/// The word carries the meaning and stays in body ink; the dot is a secondary
-/// cue, so the status never depends on colour alone.
+// Renders a status as a coloured dot beside its name. The word carries the
+// meaning and stays in body ink; the dot is a secondary cue, so the status
+// never depends on colour alone.
 String _statusBadge(String status) {
   const Map<String, String> tokens = <String, String>{
     'passed': 'good',
