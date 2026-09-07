@@ -10,6 +10,7 @@
 #   - SENTRY_DSN: The Sentry Data Source Name for error tracking
 #   - SUPABASE_URL: The Supabase project URL
 #   - SUPABASE_ANON_KEY: The Supabase anonymous/public key
+#   - POWERSYNC_URL: The PowerSync service URL
 #   - API_URL: The API base URL
 #   - POSTHOG_API_KEY: The PostHog project API key (dev only for now)
 #   - POSTHOG_HOST: The PostHog ingestion host (dev only for now)
@@ -44,6 +45,7 @@ APP_NAME="${APP_NAME:-Construculator}"
 API_URL="${API_URL:-}"
 SUPABASE_URL="${SUPABASE_URL:-}"
 SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-}"
+POWERSYNC_URL="${POWERSYNC_URL:-}"
 DEBUG_MODE="${DEBUG_MODE:-false}"
 ANALYTICS_ENABLED="${ANALYTICS_ENABLED:-false}"
 SENTRY_DSN="${SENTRY_DSN:-}"
@@ -90,6 +92,7 @@ APP_NAME="${APP_NAME}"
 API_URL="${API_URL}"
 SUPABASE_URL="${SUPABASE_URL}"
 SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY}"
+POWERSYNC_URL="${POWERSYNC_URL}"
 DEBUG_MODE="${DEBUG_MODE}"
 ANALYTICS_ENABLED="${ANALYTICS_ENABLED}"
 SENTRY_DSN="${SENTRY_DSN}"
