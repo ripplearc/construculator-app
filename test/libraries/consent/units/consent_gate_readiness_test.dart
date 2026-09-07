@@ -11,16 +11,15 @@ void main() {
   }
 
   group('consentPersistenceReady', () {
-    // A canary, not a tautology: these three lines fail the build the moment
+    // A canary, not a tautology: these lines fail the build the moment
     // someone flips a readiness const without the work behind it, which is
-    // the whole point of the block. CA-971 deletes this group in the same
-    // PR that lands the durable store and the remote write path.
-    test('is false, and so is each half it is built from', () {
+    // the whole point of the block. The group goes away with the last const.
+    test('is false while the remote write path is still missing', () {
       expect(
         durableLocalConsentStoreLanded,
-        isFalse,
-        reason: 'InMemoryLocalConsentDataSource is still the bound '
-            'implementation -- see ConsentLibraryModule.',
+        isTrue,
+        reason: 'PowerSyncLocalConsentDataSource is the bound implementation '
+            'since CA-971 -- see ConsentLibraryModule.',
       );
       expect(
         remoteConsentWritePathLanded,
@@ -28,6 +27,9 @@ void main() {
         reason: 'RemoteConsentDataSource still exposes only '
             'fetchPublishedVersions() -- there is no write to route to.',
       );
+
+      // Both halves, not one. A durable store alone still produces nothing
+      // attributable, so the gate stays blocked on the half that is missing.
       expect(consentPersistenceReady, isFalse);
     });
   });
