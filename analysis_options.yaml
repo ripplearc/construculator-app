@@ -94,6 +94,10 @@ custom_lint:
         # to inject; '_Fake' above is the existing precedent for a private
         # prefix in this list.
         - '_Scale'
+        # flutter_driver value objects built from a recorded trace. They are
+        # constructed from data, not injected, so the perf driver has no
+        # alternative to instantiating them. Covers TimelineSummary too.
+        - 'Timeline'
 
 linter:
   # The lint rules applied to this project can be customized in the
