@@ -51,7 +51,7 @@ workflows:
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
 
           # Find changed test files using find to avoid ** globbing issues
-          TEST_DIRS=$(find test/features test/libraries test/app -type d \
+          TEST_DIRS=$(find test/features test/libraries test/app test/tools -type d \
             \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
 
           CHANGED_TESTS=""
@@ -63,8 +63,19 @@ workflows:
             CHANGED_TESTS=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- "${PATTERNS[@]}")
           fi
 
-          # Identify changed source files (excluding generated code)
+          # Identify changed source files (excluding generated code).
+          # CHANGED_SOURCE_FILES (added-only) is CA-658's scope: only a
+          # newly added lib file must have its own SF: entry. CHANGED_LIB_FILES
+          # (added or modified, not deleted) is deliberately broader: it
+          # decides whether coverage/lcov.info is required to exist at all,
+          # since a modified lib file with broken coverage must still fail,
+          # not just a newly added one.
           CHANGED_SOURCE_FILES=$(git diff --name-only --diff-filter=A $BASE_COMMIT HEAD -- 'lib/*.dart' 'lib/**/*.dart' \
+            | grep -v -E '(\.g\.dart$|\.freezed\.dart$|/generated/|/l10n/)' \
+            | while IFS= read -r f; do
+                head -1 "$f" 2>/dev/null | grep -q '// coverage:ignore-file' || echo "$f"
+              done || true)
+          CHANGED_LIB_FILES=$(git diff --name-only --diff-filter=d $BASE_COMMIT HEAD -- 'lib/*.dart' 'lib/**/*.dart' \
             | grep -v -E '(\.g\.dart$|\.freezed\.dart$|/generated/|/l10n/)' \
             | while IFS= read -r f; do
                 head -1 "$f" 2>/dev/null | grep -q '// coverage:ignore-file' || echo "$f"
@@ -97,12 +108,24 @@ workflows:
           HOMEBREW_NO_AUTO_UPDATE=1 brew install lcov
           mkdir -p test-results
           fvm flutter test $CHANGED_TESTS --coverage --machine > test-results/flutter.json
-          lcov --quiet --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info --ignore-errors unused
 
-          if [ -z "$CHANGED_SOURCE_FILES" ]; then
+          # coverage/lcov.info is only required when a lib/**/*.dart file was
+          # touched at all (added or modified). Check this before touching
+          # the file: flutter test --coverage only instruments files under
+          # lib/, so a change set that touches no lib/ file (e.g. tooling
+          # under scripts/) produces an empty lcov.info by design, and lcov
+          # errors out on an empty tracefile.
+          if [ -z "$CHANGED_LIB_FILES" ]; then
             echo "✅ No changed source files in lib/. Skipping coverage threshold check."
             exit 0
           fi
+
+          if [ ! -s "coverage/lcov.info" ]; then
+            echo "❌ Coverage file coverage/lcov.info is missing or empty."
+            exit 1
+          fi
+
+          lcov --quiet --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info --ignore-errors unused,empty
 
           COVERED_SOURCES=$(grep '^SF:' coverage/lcov.info | cut -d: -f2-)
           EXTRACT_PATTERNS=()
@@ -184,7 +207,7 @@ workflows:
           BASE_COMMIT=$(git merge-base HEAD origin/$CM_PULL_REQUEST_DEST)
 
           # Find changed test files using find to avoid ** globbing issues
-          TEST_DIRS=$(find test/features test/libraries test/app -type d \
+          TEST_DIRS=$(find test/features test/libraries test/app test/tools -type d \
             \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
 
           CHANGED_TESTS=""
@@ -273,7 +296,7 @@ workflows:
           UNIT_TEST_DIRS=()
           while IFS= read -r dir; do
             [[ -n "$dir" ]] && UNIT_TEST_DIRS+=("$dir")
-          done < <(find test/features test/libraries test/app -type d \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
+          done < <(find test/features test/libraries test/app test/tools -type d \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
           
           if [ ${#UNIT_TEST_DIRS[@]} -gt 0 ]; then
             fvm flutter test "${UNIT_TEST_DIRS[@]}" --coverage --machine > test-results/flutter.json
@@ -281,7 +304,7 @@ workflows:
             echo "No test directories found."
             echo "{\"success\":true}" > test-results/flutter.json
           fi
-          lcov --quiet --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info --ignore-errors unused
+          lcov --quiet --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info --ignore-errors unused,empty
           # Compute coverage
           if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
             echo "❌ Coverage file coverage/lcov.info is missing or empty."
@@ -355,10 +378,12 @@ workflows:
           echo "🧬 Checking for changed mutation config files..."
           CHANGED_FILES=$(git diff --name-only --diff-filter=d "$BASE_COMMIT" -- \
             "test/features/**/mutations/*.xml" \
-            "test/libraries/**/mutations/*.xml")
+            "test/libraries/**/mutations/*.xml" \
+            "test/app/**/mutations/*.xml" \
+            "test/tools/**/mutations/*.xml")
 
           if [ -z "$CHANGED_FILES" ]; then
-          echo "✅ No changed mutation config files detected (checked test/features/**/mutations, test/libraries/**/mutations). Skipping mutation tests."
+          echo "✅ No changed mutation config files detected (checked test/features/**/mutations, test/libraries/**/mutations, test/app/**/mutations, test/tools/**/mutations). Skipping mutation tests."
           exit 0
           fi
 
@@ -453,7 +478,7 @@ workflows:
           UNIT_TEST_DIRS=()
           while IFS= read -r dir; do
             [[ -n "$dir" ]] && UNIT_TEST_DIRS+=("$dir")
-          done < <(find test/features test/libraries test/app -type d \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
+          done < <(find test/features test/libraries test/app test/tools -type d \( -name "units" -o -name "widgets" \) 2>/dev/null | sort)
           
           if [ ${#UNIT_TEST_DIRS[@]} -gt 0 ]; then
             fvm flutter test "${UNIT_TEST_DIRS[@]}" --coverage --machine > test-results/flutter.json
@@ -461,7 +486,7 @@ workflows:
             echo "No test directories found."
             echo "{\"success\":true}" > test-results/flutter.json
           fi
-          lcov --quiet --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info --ignore-errors unused
+          lcov --quiet --remove coverage/lcov.info '**/*.g.dart' '**/*.freezed.dart' '**/l10n/**' -o coverage/lcov.info --ignore-errors unused,empty
           # Compute coverage
           if [ ! -f "coverage/lcov.info" ] || [ ! -s "coverage/lcov.info" ]; then
             echo "❌ Coverage file coverage/lcov.info is missing or empty."
@@ -524,9 +549,9 @@ workflows:
 
       - name: Mutation Testing
         script: |
-          echo "🧬 Looking for mutation configs in test/features/**/mutations, test/libraries/**/mutations..."
+          echo "🧬 Looking for mutation configs in test/features/**/mutations, test/libraries/**/mutations, test/app/**/mutations, test/tools/**/mutations..."
 
-          CONFIG_FILES=$(find test/features test/libraries -type f -path "*/mutations/*.xml" 2>/dev/null | tr '\n' ' ')
+          CONFIG_FILES=$(find test/features test/libraries test/app test/tools -type f -path "*/mutations/*.xml" 2>/dev/null | tr '\n' ' ')
 
           if [ -z "$CONFIG_FILES" ]; then
             echo "✅ No mutation config files found. Skipping mutation tests."
