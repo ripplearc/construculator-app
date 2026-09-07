@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:patrol/patrol.dart';
 
 import '../../utils/app_runner.dart';
+import '../../utils/e2e_teardown.dart';
 import '../../utils/mailpit_client.dart';
 import '../../utils/success_or_error.dart';
 import '../../utils/test_config.dart';
 
 void main() {
+  registerE2ETeardown();
   patrolTest(
     'CUJ-2: Registration — new user completes OTP verification and lands on the dashboard',
     ($) async {

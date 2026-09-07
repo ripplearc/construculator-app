@@ -40,15 +40,23 @@ policy below exists largely to absorb it.
    `scripts/e2e/generate_e2e_env.sh`, so the `fishfood`-flavored APK Patrol
    builds is already pointed at it.
 5. Boots an Android emulator, forwards the stack's ports into it
-   (`scripts/e2e/adb_reverse.sh`), and runs
-   `patrol test --target integration_test/patrol_test.dart --flavor fishfood`.
-6. Snapshots each attempt's JUnit XML into `build/e2e-attempts/attempt-<n>/`,
-   reduces the set to one `e2e-run.json` via
-   `scripts/e2e/build_e2e_report.dart`, publishes a pass/fail summary to the job
-   summary, and uploads both — always, not only on failure, so a green run's
-   numbers are visible too.
-7. On failure, also uploads a screen recording, a final-state screenshot and
-   the device log (`adb logcat`) captured during the run.
+   (`scripts/e2e/adb_reverse.sh`), and hands off to
+   `scripts/e2e/run_cuj_suite.sh`, which discovers every
+   `integration_test/features/**/cuj_*_test.dart` file and runs each as its
+   own `patrol test --target <file> --flavor fishfood` invocation — see
+   [Suite structure](#suite-structure) below for why.
+6. `run_cuj_suite.sh` snapshots every attempt of every CUJ into
+   `build/e2e-attempts/attempt-<n>/<cuj-name>.xml`, and each CUJ's last attempt
+   into `build/e2e-results/<cuj-name>.xml`, before the next invocation
+   overwrites Android's shared results directory.
+   `scripts/e2e/build_e2e_report.dart` reduces the per-attempt tree to one
+   `e2e-run.json`. The job publishes a pass/fail summary to the job summary
+   (read from `build/e2e-results/`) and uploads the per-CUJ XML, the
+   per-attempt tree and `e2e-run.json` — always, not only on failure, so a
+   green run's numbers are visible too.
+7. For every CUJ that failed, also uploads that CUJ's own screen recording, a
+   screenshot of its last frame, and the device log (`adb logcat`, one shared
+   file covering the whole run) captured during the run.
 
 ## Results and notifications
 
@@ -67,21 +75,24 @@ run, and via the Actions tab itself.
 
 ## Retry
 
-The `patrol test` invocation gets one automatic retry (two attempts total)
-inside the same job run, before the job is reported red. This targets
-emulator/device-level flake (a slow boot, a dropped ADB connection) — the
-category Patrol's own docs warn about for GitHub-hosted emulators — not
-app-logic flake. A CUJ that still fails on the second attempt is a real
-failure and should be investigated, not re-run again by hand as a first
-response.
+Each CUJ's own `patrol test` invocation gets one automatic retry (two
+attempts total) before that CUJ is reported failed — other CUJs still run
+regardless of an earlier one's outcome (see [Suite structure](#suite-structure)).
+This targets emulator/device-level flake (a slow boot, a dropped ADB
+connection) — the category Patrol's own docs warn about for GitHub-hosted
+emulators — not app-logic flake. A CUJ that still fails on the second attempt
+is a real failure and should be investigated, not re-run again by hand as a
+first response.
 
 ### Attempts are the flake signal
 
 Gradle rewrites `build/app/outputs/androidTest-results/connected` on every
 `patrol test` invocation, so before this the first attempt's XML was gone the
 moment the retry started — a retried-and-passed run was indistinguishable from
-a clean one. Each attempt is now snapshotted to
-`build/e2e-attempts/attempt-<n>/` before the next one starts.
+a clean one. `run_cuj_suite.sh` now snapshots each attempt to
+`build/e2e-attempts/attempt-<n>/<cuj-name>.xml` before the next invocation
+starts, so one attempt directory holds that attempt's result for every CUJ that
+reached it.
 
 `build_e2e_report.dart` reads every snapshot and classifies each case by its
 last attempt:
@@ -143,13 +154,16 @@ of moving the existing one for reasons unrelated to the app's health.
 
 ## Quarantine
 
-With one CUJ today, quarantine is a manual, documented step rather than
-tooling: comment out the failing CUJ's line in `integration_test/patrol_test.dart`
-with `// QUARANTINED: <reason> — <ticket>`, so it stops blocking the weekly
-run and `#RunE2E` while a ticket tracks the fix. Restore it by uncommenting
+Quarantine is a manual, documented step rather than tooling: rename the
+failing CUJ's file to prefix it with `_` (e.g.
+`_cuj_3_something_test.dart`) or move it out of
+`integration_test/features/**`, since `run_cuj_suite.sh` only discovers files
+matching `cuj_*_test.dart` there — and note `// QUARANTINED: <reason> —
+<ticket>` at the top of the file so it stops blocking the weekly run and
+`#RunE2E` while a ticket tracks the fix. Restore it by reverting the rename
 once the fix lands. If the suite grows enough that several CUJs need
 quarantining at once, revisit this for something more structured (e.g. a
-skip-list read by `patrol_test.dart`) — not needed yet.
+skip-list `run_cuj_suite.sh` reads) — not needed yet.
 
 ## Owner
 
@@ -164,10 +178,12 @@ the right call, or name someone else.
 1. Write the test under `integration_test/features/<domain>/cuj_N_<name>_test.dart`,
    following the [selector convention](E2E-CUJ-Strategy.md#selector-convention)
    (stable `Key`s, no positional or raw-text finders).
-2. Import it in `integration_test/patrol_test.dart` and call its `main()` from
-   the aggregator's `main()` — that one file is the whole suite; nothing in
-   the workflow needs to change for a new CUJ to run weekly and under
-   `#RunE2E`.
+2. Call `registerE2ETeardown()` (from `integration_test/utils/e2e_teardown.dart`)
+   at the top of the file's `main()`, before `patrolTest(...)` — this is what
+   clears session/PowerSync state after the CUJ runs. That's it: `run_cuj_suite.sh`
+   discovers every `cuj_*_test.dart` file under `integration_test/features/**`
+   by glob, so nothing else needs editing for a new CUJ to run weekly and
+   under `#RunE2E`, and no shared aggregator file exists to forget to update.
 3. If the CUJ needs seed data, add it to `construculator-backend`'s seeders
    (see [E2E-Environment.md](E2E-Environment.md#seeded-account)) rather than
    creating it at test time, so a fresh CI stack already has what the CUJ
