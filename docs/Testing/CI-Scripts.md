@@ -380,6 +380,7 @@ These paths are assumed by script and workflow logic. Tests outside these patter
 - `test/features/**/screenshots/*.dart`
 - `test/features/**/mutations/*.xml`
 - `test/libraries/**/units/*.dart`
+- `test/libraries/**/widgets/*.dart`
 - `test/libraries/**/mutations/*.xml`
 - `test/app/**/units/*.dart`
 - `test/app/**/widgets/*.dart`
