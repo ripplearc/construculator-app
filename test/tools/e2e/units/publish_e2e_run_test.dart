@@ -152,6 +152,19 @@ void main() {
       expect(indexRuns(), hasLength(1));
     });
 
+    test('skips an unreadable historical run file instead of crashing', () {
+      publishRun(writeRunFile(runRecord(commit: 'good')), store);
+      File(
+        '${store.path}/runs/cuj_v1/2026-01-01T00-00-00Z-corrupt.json',
+      ).writeAsStringSync('{not json');
+
+      expect(rebuildIndex(store), 1);
+      expect(
+        (indexRuns().single as Map<String, Object?>)['commit'],
+        'good',
+      );
+    });
+
     test('writes an empty index when the store holds no runs', () {
       expect(rebuildIndex(store), 0);
       expect(indexRuns(), isEmpty);

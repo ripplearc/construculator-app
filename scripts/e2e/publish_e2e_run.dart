@@ -97,7 +97,21 @@ int rebuildIndex(Directory dataDir) {
           ..sort((File a, File b) => a.path.compareTo(b.path));
 
     for (final File file in files) {
-      final Map<String, Object?> run = _readJsonObject(file);
+      // The store is a permanent, ever-growing archive and this loop re-reads
+      // every file on every publish. One unreadable historical file (a future
+      // bug, a manual edit, corruption) must not crash indexing forever, so
+      // skip it with a warning. The incoming run is still read strictly, in
+      // publishRun.
+      final Map<String, Object?> run;
+      try {
+        run = _readJsonObject(file);
+      } on FormatException catch (e) {
+        stderr.writeln('⚠️  Skipping unreadable run file ${file.path}: $e');
+        continue;
+      } on FileSystemException catch (e) {
+        stderr.writeln('⚠️  Skipping unreadable run file ${file.path}: $e');
+        continue;
+      }
       final Map<String, Object?> totals = run['totals'] is Map<String, Object?>
           ? run['totals'] as Map<String, Object?>
           : <String, Object?>{};
