@@ -10,15 +10,10 @@
 # Backend repository checkout that owns supabase/ and powersync/.
 # Defaults to a sibling of the app repository — which is only a genuinely
 # separate stack if that sibling checkout isn't also the one a developer
-# uses for ordinary local backend work. Nothing here enforces that; see
-# CA-1007 (https://ripplearc.youtrack.cloud/issue/CA-1007).
-#
-# supabase/config.toml declares project_id = "construculator-backend-e2e",
-# distinguishing this stack's containers, volumes and Docker network from a
-# separate checkout's — but if E2E_BACKEND_DIR resolves to the same checkout
-# a developer runs `npx supabase start` from, these scripts still act on
-# that one shared project. The confirmation gate below is defense-in-depth
-# either way, not proof the target is actually a dedicated E2E stack.
+# uses for ordinary local backend work. That default is still just a guess;
+# what actually enforces separation is e2e_require_dedicated_backend below,
+# which every destructive action runs through CA-1007
+# (https://ripplearc.youtrack.cloud/issue/CA-1007).
 E2E_APP_DIR="${E2E_APP_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 E2E_BACKEND_DIR="${E2E_BACKEND_DIR:-$(dirname "$E2E_APP_DIR")/construculator-backend}"
 
@@ -99,14 +94,38 @@ e2e_ensure_powersync_env() {
   }
 }
 
+# Refuses to proceed unless E2E_BACKEND_DIR resolves to a checkout whose own
+# supabase/config.toml declares project_id = "$E2E_DB_PROJECT" — the identity
+# CA-991 gave a genuinely dedicated E2E checkout. E2E_BACKEND_DIR's
+# sibling-directory default has no way to tell a dedicated checkout from a
+# developer's ordinary one; this check does, by reading the one file that
+# actually says which project a checkout is. CA-1007
+# (https://ripplearc.youtrack.cloud/issue/CA-1007).
+#
+# Set E2E_ALLOW_SHARED_BACKEND=1 to proceed anyway against a checkout that
+# fails this check — an explicit, opt-in acknowledgment that the action
+# below will act on that checkout's own data, not a dedicated E2E copy.
+e2e_require_dedicated_backend() {
+  [ "${E2E_ALLOW_SHARED_BACKEND:-}" = "1" ] && return 0
+  local config="$E2E_BACKEND_DIR/supabase/config.toml"
+  # A missing checkout or config.toml is e2e_require_backend's error to
+  # raise, with a clearer message; nothing to check here in that case.
+  [ -f "$config" ] || return 0
+  local project_id
+  project_id="$(sed -n 's/^project_id[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' "$config" | head -n1)"
+  [ "$project_id" = "$E2E_DB_PROJECT" ] && return 0
+  e2e_die "E2E_BACKEND_DIR ('$E2E_BACKEND_DIR') has project_id '${project_id:-<none found>}', not '$E2E_DB_PROJECT'. This looks like an ordinary dev checkout, not one dedicated to the E2E harness — proceeding would act on it instead of a separate E2E-only copy. Point E2E_BACKEND_DIR at a checkout dedicated to the E2E harness, or set E2E_ALLOW_SHARED_BACKEND=1 to proceed anyway and accept that risk."
+}
+
 # Gates an action that destroys data. The target is whatever project
-# E2E_BACKEND_DIR's config.toml names — the E2E project if that checkout is
-# genuinely dedicated to it, but a developer's ordinary dev data otherwise
-# (see the CA-1007 note above lib.sh's E2E_BACKEND_DIR). Either way, the
-# seeders will not restore anything that was not seeded. CI sets
-# E2E_ASSUME_YES because a runner has nothing of its own to lose.
+# E2E_BACKEND_DIR's config.toml names — e2e_require_dedicated_backend above
+# has already refused to proceed unless that's the dedicated E2E project or
+# the caller explicitly opted into sharing. Either way, the seeders will not
+# restore anything that was not seeded. CI sets E2E_ASSUME_YES because a
+# runner has nothing of its own to lose.
 e2e_confirm_destructive() {
   local action="$1"
+  e2e_require_dedicated_backend
   [ "${E2E_ASSUME_YES:-}" = "1" ] && return 0
   [ -t 0 ] ||
     e2e_die "$action This is not an interactive terminal; pass --yes or set E2E_ASSUME_YES=1 to proceed."
