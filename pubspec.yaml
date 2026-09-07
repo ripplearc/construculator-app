@@ -55,6 +55,10 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   fake_async: 1.3.3
+  # Already on the graph through powersync; declared so tests may import it.
+  # PowerSyncDatabase's read methods return sqlite3's ResultSet, so a fake
+  # database has no way to hand a data source query results without it.
+  sqlite3: 2.9.4
 
 patrol:
   app_name: Construculator
