@@ -111,7 +111,11 @@ PERF_OUTPUT_DIR="$OUTPUT_DIR/jank" fvm flutter drive \
   -d "$DEVICE_ID"
 
 echo "🧠 Capturing memory profile..."
-fvm flutter drive \
+# This leg reuses the jank journey and driver, so perf_driver.dart writes a
+# second timeline summary via responseDataCallback. Scope PERF_OUTPUT_DIR under
+# the run so that throwaway output lands beside the run rather than in the
+# driver's build/perf fallback, where it would accumulate on the perf-lab runner.
+PERF_OUTPUT_DIR="$OUTPUT_DIR/.memory-scratch" fvm flutter drive \
   --profile \
   --flavor "$FLAVOR" \
   --dart-define=ENVIRONMENT=dev \
